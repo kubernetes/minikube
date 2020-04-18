@@ -15,13 +15,13 @@ The best method to push your image to minikube depends on the container-runtime 
 Here is a comparison table to help you choose:
 
 
-| Method   	| Supported Runtimes   	|  Issues 	|  Performance 	|
+| Method   	| Supported Runtimes   	| 	|  Performance 	|
 |---	|---	|---	|---	|---	|
-|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env)	|   only docker	|  	|  good 	|
-|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env)	|   only cri-o	|     |  good 	|
-|  [cache add command](/pushing/#2-push-images-using-cache-command) 	|  all 	|    	|  ok 	|
-|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all	|   work in progress for [docker on mac](https://github.com/kubernetes/minikube/issues/7535) |  ok 	|
-|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all	|    |  best 	|
+|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env)	|   only docker	|  good 	|
+|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env)	|   only cri-o |  good 	|
+|  [cache add command](/pushing/#2-push-images-using-cache-command) 	|  all 	|  ok 	|
+|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok 	|
+|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all	| best 	|
 
 
 * note1 : the default container-runtime on minikube is 'docker'.
