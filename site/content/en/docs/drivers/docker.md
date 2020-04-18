@@ -33,3 +33,13 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 - On macOS or Windows, you may need to restart Docker for Desktop if a command gets hung
 
 - Run `--alsologtostderr -v=1` for extra debugging information
+
+- On Linux, if you want to run MySQL pod, you need to disable AppArmor for mysql profile
+
+   AppArmor is access control security system for Linux. This is enabled on Ubuntu by default.
+   If you machine enables AppArmor, you need to disable AppArmor for the mysql profile.
+   To disable apparmor for mysql, run the following command on host machine.
+
+    `sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+    sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+    `
