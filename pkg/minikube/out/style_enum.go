@@ -43,6 +43,7 @@ const (
 	ThumbsUp
 	ThumbsDown
 	Option
+	IndentVerify
 	Command
 	LogEntry
 	Deleted
@@ -73,6 +74,7 @@ const (
 	Enabling
 	Shutdown
 	Pulling
+	HealthCheck
 	Verifying
 	VerifyingNoLine
 	Kubectl

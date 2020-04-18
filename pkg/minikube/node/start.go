@@ -37,7 +37,6 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -145,8 +144,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 
-		// Skip pre-existing, because we already waited for health
-		if kverify.ShouldWait(starter.Cfg.VerifyComponents) && !starter.PreExists {
+		// TODO: existing cluster should wait for health #7597
+		if !starter.PreExists {
 			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}
