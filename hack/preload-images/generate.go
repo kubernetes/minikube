@@ -29,9 +29,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util"
 )
 
 func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string) error {
@@ -68,17 +72,42 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	if err != nil {
 		return errors.Wrap(err, "kubeadm images")
 	}
-
 	if containerRuntime != "docker" { // kic overlay image is only needed by containerd and cri-o https://github.com/kubernetes/minikube/issues/7428
 		imgs = append(imgs, kic.OverlayImage)
 	}
 
+	runner := command.NewKICRunner(profile, driver.OCIBinary)
+
+	// will need to do this to enable the container run-time service
+	sv, err := util.ParseKubernetesVersion(constants.DefaultKubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "Failed to parse kubernetes version")
+	}
+
+	co := cruntime.Config{
+		Type:              containerRuntime,
+		Runner:            runner,
+		ImageRepository:   "",
+		KubernetesVersion: sv, // I think this is just to statsify cruntime and shouldnt matter
+	}
+	cr, err := cruntime.New(co)
+	if err != nil {
+		exit.WithError("Failed runtime", err)
+	}
+	if err := cr.Enable(true); err != nil {
+		exit.WithError("enable container runtime ", err)
+	}
+
 	for _, img := range imgs {
 		cmd := exec.Command("docker", "exec", profile, "docker", "pull", img)
+		if containerRuntime == "containerd" {
+			cmd = exec.Command("docker", "exec", profile, "sudo", "crictl", "pull", img)
+		}
+
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "downloading %s", img)
+			return errors.Wrapf(err, "pulling image %s", img)
 		}
 	}
 
@@ -86,26 +115,34 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	kcfg := config.KubernetesConfig{
 		KubernetesVersion: kubernetesVersion,
 	}
-	runner := command.NewKICRunner(profile, driver.OCIBinary)
+
 	sm := sysinit.New(runner)
 
 	if err := bsutil.TransferBinaries(kcfg, runner, sm); err != nil {
 		return errors.Wrap(err, "transferring k8s binaries")
 	}
 	// Create image tarball
-	if err := createImageTarball(tarballFilename); err != nil {
+	if err := createImageTarball(tarballFilename, containerRuntime); err != nil {
 		return errors.Wrap(err, "create tarball")
 	}
+
 	return copyTarballToHost(tarballFilename)
 }
 
-func createImageTarball(tarballFilename string) error {
+func createImageTarball(tarballFilename, containerRuntime string) error {
 	// directories to save into tarball
 	dirs := []string{
-		fmt.Sprintf("./lib/docker/%s", dockerStorageDriver),
-		"./lib/docker/image",
 		"./lib/minikube/binaries",
 	}
+
+	if containerRuntime == "docker" {
+		dirs = append(dirs, fmt.Sprintf("./lib/docker/%s", dockerStorageDriver), "./lib/docker/image")
+	}
+
+	if containerRuntime == "containerd" {
+		dirs = append(dirs, fmt.Sprintf("./lib/containerd"))
+	}
+
 	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename}
 	args = append(args, dirs...)
 	cmd := exec.Command("docker", args...)
