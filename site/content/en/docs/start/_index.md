@@ -115,32 +115,46 @@ kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
-Find your cluster IP:
+It may take a moment, but your deployment will soon show up when you run:
 
 ```shell
-minikube ip
+kubectl get services hello-minikube
 ```
 
-Either navigate to &lt;your ip&gt;:8080 in your web browser, or let minikube do it for you:
+The easiest way to access this service is to let minikube launch a web browser for you:
 
 ```shell
 minikube service hello-minikube
 ```
 
-To access a LoadBalancer application, use the "minikube tunnel" feature. Here is an example deployment:
+Alternatively, use kubectl to forward the port:
+
+```shell
+kubectl port-forward service/hello-minikube 8780:8080
+```
+
+Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/)
+
+### LoadBalancer deployments
+
+To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
 
 ```shell
 kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4  
-kubectl expose deployment balanced --type=LoadBalancer --port=8081
+kubectl expose deployment balanced --type=LoadBalancer --port=8000
 ```
 
-In another window, start the tunnel to create a routable IP for the deployment:
+In another window, start the tunnel to create a routable IP for the 'balanced' deployment:
 
 ```shell
 minikube tunnel
 ```
 
-Access the application using the "service" command, or your web browser. If you are using macOS, minikube will also forward DNS requests for you: [http://balanced.default.svc.cluster.local:8081/](http://balanced.default.svc.cluster.local:8081/)
+To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
+
+`kubectl get services balanced`
+
+Your deployment is now available at &lt;EXTERNAL-IP&gt;:8000
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
 
