@@ -670,7 +670,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
 	}
 	if rr.Stderr.String() != "" {
-		t.Logf("expected stderr to be empty but got *%q*", rr.Stderr)
+		t.Errorf("expected stderr to be empty but got *%q* . args %q", rr.Stderr, rr.Command())
 	}
 
 	endpoint := strings.TrimSpace(rr.Stdout.String())
