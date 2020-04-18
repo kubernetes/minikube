@@ -407,7 +407,7 @@ jobs:
   # collect all the reports and upload
   upload_all_reports:
     if: always()
-    needs: [functional_test_docker_ubuntu_16_04, pause_test_docker_ubuntu_18_04,baremetal_ubuntu16_04, baremetal_ubuntu18_04]
+    needs: [multinode_test_docker_ubuntu_16_04, pause_test_docker_ubuntu_18_04,baremetal_ubuntu16_04, baremetal_ubuntu18_04]
     runs-on: ubuntu-18.04
     steps:
     - name: Download Results docker_ubuntu_16_04
