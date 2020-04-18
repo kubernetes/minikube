@@ -714,6 +714,8 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected status code for %q to be -%q- but got *%q*", endpoint, http.StatusOK, resp.StatusCode)
 	}
+	// this log is added to make this flake result obvious: https://github.com/kubernetes/minikube/issues/7765
+	t.Logf("access to %s is success: %d", endpoint, resp.StatusCode)
 }
 
 // validateAddonsCmd asserts basic "addon" command functionality
