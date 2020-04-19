@@ -524,12 +524,11 @@ jobs:
       run: |
         mkdir -p all_reports
         ls -lah
-        ls -lah minikube_binaries
-        ls -lah minikube_binaries/report
-        cp -r ./minikube_binaries/report/functional_test_docker_ubuntu ./all_reports/
-        cp -r ./minikube_binaries/report/addons_certs_tests_docker_ubuntu ./all_reports/
-        cp -r ./minikube_binaries/report/multinode_pause_tests_docker_ubuntu ./all_reports/
-        cp -r ./minikube_binaries/report/preload_docker_flags_tests_docker_ubuntu        
+        cp -r ./functional_test_docker_ubuntu ./all_reports/
+        cp -r ./addons_certs_tests_docker_ubuntu ./all_reports/
+        cp -r ./multinode_pause_tests_docker_ubuntu ./all_reports/
+        cp -r ./preload_docker_flags_tests_docker_ubuntu ./all_reports/
+        cp -r ./minikube_binaries ./all_reports/
     - uses: actions/upload-artifact@v1
       with:
         name: all_reports
