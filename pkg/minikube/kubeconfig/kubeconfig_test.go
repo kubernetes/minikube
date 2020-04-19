@@ -372,7 +372,7 @@ func TestNewConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { //clean up tempdir
+	defer func() {
 		err := os.RemoveAll(dir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", dir)

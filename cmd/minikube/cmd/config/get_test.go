@@ -21,15 +21,17 @@ import (
 )
 
 func TestGetNotFound(t *testing.T) {
-	createTestConfig(t)
+	createTestConfig(t, "create")
 	_, err := Get("nonexistent")
 	if err == nil || err.Error() != "specified key could not be found in config" {
 		t.Fatalf("Get did not return error for unknown property")
 	}
+	// remove all temp dir
+	createTestConfig(t, "remove")
 }
 
 func TestGetOK(t *testing.T) {
-	createTestConfig(t)
+	createTestConfig(t, "create")
 	name := "driver"
 	err := Set(name, "virtualbox")
 	if err != nil {
@@ -42,4 +44,6 @@ func TestGetOK(t *testing.T) {
 	if val != "virtualbox" {
 		t.Fatalf("Get returned %s, expected virtualbox", val)
 	}
+	// remove all temp dir
+	createTestConfig(t, "remove")
 }

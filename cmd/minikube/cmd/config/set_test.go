@@ -19,29 +19,34 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func TestNotFound(t *testing.T) {
-	createTestConfig(t)
+	createTestConfig(t, "create")
 	err := Set("nonexistent", "10")
 	if err == nil || err.Error() != "find settings for \"nonexistent\" value of \"10\": property name \"nonexistent\" not found" {
 		t.Fatalf("Set did not return error for unknown property: %+v", err)
 	}
+	// remove all temp dir
+	createTestConfig(t, "remove")
 }
 
 func TestSetNotAllowed(t *testing.T) {
-	createTestConfig(t)
+	createTestConfig(t, "create")
 	err := Set("driver", "123456")
 	if err == nil || err.Error() != "run validations for \"driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
 		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
+	// remove all temp dir
+	createTestConfig(t, "remove")
 }
 
 func TestSetOK(t *testing.T) {
-	createTestConfig(t)
+	createTestConfig(t, "create")
 	err := Set("driver", "virtualbox")
 	defer func() {
 		err = Unset("driver")
@@ -61,11 +66,19 @@ func TestSetOK(t *testing.T) {
 	}
 }
 
-func createTestConfig(t *testing.T) {
+func createTestConfig(t *testing.T, status string) {
 	t.Helper()
 	td, err := ioutil.TempDir("", "config")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
+	}
+	if strings.EqualFold(status, "remove"){
+		defer func() {
+			err := os.RemoveAll(td)
+			if err != nil {
+				t.Errorf("failed to clean up temp folder  %q", td)
+			}
+		}()
 	}
 
 	err = os.Setenv(localpath.MinikubeHome, td)

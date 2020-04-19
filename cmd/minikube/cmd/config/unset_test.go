@@ -23,7 +23,7 @@ import (
 )
 
 func TestUnsetConfig(t *testing.T) {
-	createTestConfig(t)
+	createTestConfig(t, "create")
 	propName := "cpus"
 	propValue := "1"
 	err := Set(propName, propValue)
@@ -49,4 +49,6 @@ func TestUnsetConfig(t *testing.T) {
 	if err != config.ErrKeyNotFound {
 		t.Errorf("Expected error %q but got %q", config.ErrKeyNotFound, err)
 	}
+	// remove all temp dir
+	createTestConfig(t, "remove")
 }
