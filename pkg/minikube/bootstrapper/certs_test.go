@@ -30,7 +30,12 @@ import (
 
 func TestSetupCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tempDir)
+		}
+	}()
 
 	k8s := config.KubernetesConfig{
 		APIServerName: constants.APIServerName,
