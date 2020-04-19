@@ -83,9 +83,9 @@ iso directory after they've been selected.
 
 To add your own package to the minikube ISO, create a package directory under `iso/minikube-iso/package`.  This directory will require at least 3 files:
 
-`<package name>.mk` - A Makefile describing how to download the source code and build the program
-`<package name>.hash` - Checksums to verify the downloaded source code
-`Config.in` - buildroot configuration.
+`<package name>.mk` - A Makefile describing how to download the source code and build the program  
+`<package name>.hash` - Checksums to verify the downloaded source code  
+`Config.in` - buildroot configuration
 
 For a relatively simple example to start with, you may want to reference the `podman` package.
 

@@ -1,15 +1,16 @@
-name: CI
-on: [pull_request]
+name: MasterCI
+on:
+  push:
+    branches:
+    - master
+    paths:
+    - '**.go'
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
   build_minikube:
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "Docker_Ubuntu_16_04"
-      GOPOGH_RESULT: ""
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
@@ -19,8 +20,6 @@ jobs:
       run : |
         make minikube-linux-amd64
         make e2e-linux-amd64
-        make minikube-windows-amd64.exe
-        make e2e-windows-amd64.exe
         cp -r test/integration/testdata ./out
         whoami
         echo github ref $GITHUB_REF
@@ -35,10 +34,6 @@ jobs:
         name: minikube_binaries
         path: out
   lint:
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "lint"
-      GOPOGH_RESULT: ""
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
@@ -54,10 +49,6 @@ jobs:
       run : make test
       continue-on-error: false
   unit_test:
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "unit_test"
-      GOPOGH_RESULT: ""
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
@@ -74,15 +65,15 @@ jobs:
         make test
       continue-on-error: false
   # Run the following integration tests after the build_minikube
-  # They will run in parallel and use the binaries in previous step
-  docker_ubuntu_16_04:
+  # They will run in parallel and use the binaries in previous step 
+  functional_test_docker_ubuntu:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "Docker_Ubuntu_16_04"
+      JOB_NAME: "functional_test_docker_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-18.04
     steps:    
     - name: Install kubectl
       shell: bash
@@ -112,7 +103,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -128,8 +119,10 @@ jobs:
         mkdir -p testhome
         chmod a+x e2e-*
         chmod a+x minikube-*
+        sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+        sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -test.timeout=80m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
@@ -151,9 +144,9 @@ jobs:
         echo ::set-env name=STAT::${STAT}
     - uses: actions/upload-artifact@v1
       with:
-        name: docker_ubuntu_16_04
+        name: functional_test_docker_ubuntu
         path: minikube_binaries/report
-    - name: The End Result Docker on ubuntu 16:04
+    - name: The End Result functional_test_docker_ubuntu
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
@@ -164,11 +157,11 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  docker_ubuntu_18_04:
+  addons_certs_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "Docker_Ubuntu_18_04"
+      JOB_NAME: "addons_certs_tests_docker_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     needs: [build_minikube]
@@ -201,7 +194,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -217,8 +210,10 @@ jobs:
         mkdir -p testhome
         chmod a+x e2e-*
         chmod a+x minikube-*
+        sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+        sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker -test.timeout=80m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions)" -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
@@ -240,9 +235,9 @@ jobs:
         echo ::set-env name=STAT::${STAT}
     - uses: actions/upload-artifact@v1
       with:
-        name: docker_ubuntu_18_04
+        name: addons_certs_tests_docker_ubuntu
         path: minikube_binaries/report
-    - name: The End Result - Docker On Ubuntu 18:04
+    - name: The End Result - addons_certs_tests_docker_ubuntu
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
@@ -253,78 +248,14 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  docker_on_windows:
-    needs: [build_minikube]
+  multinode_pause_tests_docker_ubuntu:
+    runs-on: ubuntu-18.04
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "Docker_on_windows"
-      COMMIT_STATUS: ""
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Docker Info
-      shell: bash
-      run: |
-        docker info || true
-        docker version || true
-        docker ps || true
-    - name: Download gopogh
-      run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh.exe
-      shell: bash
-    - name: Download binaries
-      uses: actions/download-artifact@v1
-      with:
-        name: minikube_binaries
-    - name: run integration test
-      continue-on-error: true
-      run: |
-        set +euo pipefail
-        mkdir -p report
-        mkdir -p testhome
-        START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome minikube_binaries/e2e-windows-amd64.exe -minikube-start-args=--vm-driver=docker -binary=minikube_binaries/minikube-windows-amd64.exe -test.v -test.timeout=65m 2>&1 | tee ./report/testout.txt
-        END_TIME=$(date -u +%s)
-        TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
-        min=$((${TIME_ELAPSED}/60))
-        sec=$((${TIME_ELAPSED}%60))
-        TIME_ELAPSED="${min} min $sec seconds"
-        echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-      shell: bash
-    - name: Generate html report
-      run: |
-        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-        STAT=$(${GITHUB_WORKSPACE}/gopogh.exe -in ./report/testout.json -out ./report/testout.html -name " $GITHUB_REF" -repo "${JOB_NAME} ${GITHUB_REF} ${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
-        echo status: ${STAT}
-        FailNum=$(echo $STAT | jq '.NumberOfFail')
-        TestsNum=$(echo $STAT | jq '.NumberOfTests')       
-        GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-        echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-        echo ::set-env name=STAT::${STAT}
-      shell: bash
-    - uses: actions/upload-artifact@v1
-      with:
-        name: docker_on_windows
-        path: report
-    - name: The End Result
-      run: |
-        echo ${GOPOGH_RESULT}
-        numFail=$(echo $STAT | jq '.NumberOfFail')
-        echo "----------------${numFail} Failures----------------------------"
-        echo $STAT | jq '.FailedTests' || true
-        echo "--------------------------------------------"
-        numPass=$(echo $STAT | jq '.NumberOfPass')
-        echo "*** $numPass Passed ***"
-        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-      shell: bash
-  none_ubuntu16_04:
-    needs: [build_minikube]
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "None_Ubuntu_16_04"
+      JOB_NAME: "multinode_pause_tests_docker_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-16.04
+    needs: [build_minikube]
     steps:
     - name: Install kubectl
       shell: bash
@@ -332,21 +263,29 @@ jobs:
         curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
         sudo install kubectl /usr/local/bin/kubectl
         kubectl version --client=true
-    # conntrack is required for kubernetes 1.18 and higher
-    # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
-    - name: Install tools for none
+    - name: Install lz4
       shell: bash
       run: |
         sudo apt-get update -qq
-        sudo apt-get -qq -y install conntrack
-        sudo apt-get -qq -y install socat
-        VERSION="v1.17.0"
-        curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
-        sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
+        sudo apt-get -qq -y install liblz4-tool
+    - name: Docker Info
+      shell: bash
+      run: |
+        echo "--------------------------"
+        docker version || true
+        echo "--------------------------"
+        docker info || true
+        echo "--------------------------"
+        docker system df || true
+        echo "--------------------------"
+        docker system info || true
+        echo "--------------------------"
+        docker ps || true
+        echo "--------------------------"
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -362,8 +301,10 @@ jobs:
         mkdir -p testhome
         chmod a+x e2e-*
         chmod a+x minikube-*
+        sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+        sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=none -test.timeout=35m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestPause|TestMultiNode)" -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
@@ -385,9 +326,9 @@ jobs:
         echo ::set-env name=STAT::${STAT}
     - uses: actions/upload-artifact@v1
       with:
-        name: none_ubuntu16_04
+        name: multinode_pause_tests_docker_ubuntu
         path: minikube_binaries/report
-    - name: The End Result - None On Ubuntu 16:04
+    - name: The End Result - multinode_pause_tests_docker_ubuntu
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
@@ -398,11 +339,102 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  none_ubuntu18_04:
+  preload_docker_flags_tests_docker_ubuntu:
+    runs-on: ubuntu-18.04
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "preload_docker_flags_tests_docker_ubuntu"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+    needs: [build_minikube]
+    steps:
+    - name: Install kubectl
+      shell: bash
+      run: |
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+        sudo install kubectl /usr/local/bin/kubectl
+        kubectl version --client=true
+    - name: Install lz4
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get -qq -y install liblz4-tool
+    - name: Docker Info
+      shell: bash
+      run: |
+        echo "--------------------------"
+        docker version || true
+        echo "--------------------------"
+        docker info || true
+        echo "--------------------------"
+        docker system df || true
+        echo "--------------------------"
+        docker system info || true
+        echo "--------------------------"
+        docker ps || true
+        echo "--------------------------"
+    - name: Install gopogh
+      shell: bash
+      run: |
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
+        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+    - name: Download Binaries
+      uses: actions/download-artifact@v1
+      with:
+        name: minikube_binaries
+    - name: Run Integration Test
+      continue-on-error: true
+      # bash {0} to allow test to continue to next step. in case of
+      shell: bash {0}
+      run: |
+        cd minikube_binaries
+        mkdir -p report
+        mkdir -p testhome
+        chmod a+x e2e-*
+        chmod a+x minikube-*
+        sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+        sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+        START_TIME=$(date -u +%s)
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestPreload|TestDockerFlags)" -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        END_TIME=$(date -u +%s)
+        TIME_ELAPSED=$(($END_TIME-$START_TIME))
+        min=$((${TIME_ELAPSED}/60))
+        sec=$((${TIME_ELAPSED}%60))
+        TIME_ELAPSED="${min} min $sec seconds "
+        echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+    - name: Generate HTML Report
+      shell: bash
+      run: |
+        cd minikube_binaries
+        export PATH=${PATH}:`go env GOPATH`/bin
+        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+        echo status: ${STAT}
+        FailNum=$(echo $STAT | jq '.NumberOfFail')
+        TestsNum=$(echo $STAT | jq '.NumberOfTests')
+        GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+        echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
+        echo ::set-env name=STAT::${STAT}
+    - uses: actions/upload-artifact@v1
+      with:
+        name: preload_docker_flags_tests_docker_ubuntu
+        path: minikube_binaries/report
+    - name: The End Result - preload_docker_flags_tests_docker_ubuntu
+      shell: bash
+      run: |
+        echo ${GOPOGH_RESULT}
+        numFail=$(echo $STAT | jq '.NumberOfFail')
+        echo "----------------${numFail} Failures----------------------------"
+        echo $STAT | jq '.FailedTests' || true
+        echo "-------------------------------------------------------"
+        numPass=$(echo $STAT | jq '.NumberOfPass')
+        echo "*** $numPass Passed ***"
+        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+  functional_baremetal_ubuntu18_04:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "None_Ubuntu_18_04"
+      JOB_NAME: "functional_baremetal_ubuntu18_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
@@ -427,7 +459,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -444,7 +476,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=none -test.timeout=35m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=none -test.timeout=35m -test.run TestFunctional -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
@@ -479,153 +511,26 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  podman_ubuntu_18_04_experimental:
-      needs: [build_minikube]
-      env:
-        TIME_ELAPSED: time
-        JOB_NAME: "Podman_Ubuntu_18_04"
-        GOPOGH_RESULT: ""
-        SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-      runs-on: ubuntu-18.04
-      steps:
-      - name: Install kubectl
-        shell: bash
-        run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
-          sudo install kubectl /usr/local/bin/kubectl
-          kubectl version --client=true
-      - name: Install podman
-        shell: bash
-        run: |
-          . /etc/os-release
-          sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-          wget -q https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_${VERSION_ID}/Release.key -O- | sudo apt-key add -
-          sudo apt-key add - < Release.key || true
-          sudo apt-get update -qq
-          sudo apt-get -qq -y install podman
-          sudo podman version || true
-          sudo podman info || true
-      - name: Install gopogh
-        shell: bash
-        run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
-          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
-      - name: Download binaries
-        uses: actions/download-artifact@v1
-        with:
-          name: minikube_binaries
-      - name: Run Integration Test
-        continue-on-error: true
-        # bash {0} to allow test to continue to next step. in case of
-        shell: bash {0}
-        run: |
-          cd minikube_binaries
-          mkdir -p report
-          mkdir -p testhome
-          chmod a+x e2e-*
-          chmod a+x minikube-*
-          START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=podman -test.timeout=30m -test.v -timeout-multiplier=1 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
-          END_TIME=$(date -u +%s)
-          TIME_ELAPSED=$(($END_TIME-$START_TIME))
-          min=$((${TIME_ELAPSED}/60))
-          sec=$((${TIME_ELAPSED}%60))
-          TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-      - name: Generate HTML Report
-        shell: bash
-        run: |
-          cd minikube_binaries
-          export PATH=${PATH}:`go env GOPATH`/bin
-          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
-          echo status: ${STAT}
-          FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')
-          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
-      - uses: actions/upload-artifact@v1
-        with:
-          name: podman_ubuntu_18_04
-          path: minikube_binaries/report
-      - name: The End Result - Podman On Ubuntu 18:04
-        shell: bash
-        run: |
-          echo ${GOPOGH_RESULT}
-          numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
-          numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
-          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  # After all 4 integration tests finished
-  # collect all the reports and upload
+  # After all integration tests finished
+  # collect all the reports and upload them
   upload_all_reports:
     if: always()
-    needs: [docker_ubuntu_16_04,docker_ubuntu_18_04,none_ubuntu16_04,none_ubuntu18_04,podman_ubuntu_18_04_experimental]
+    needs: [functional_test_docker_ubuntu, addons_certs_tests_docker_ubuntu, multinode_pause_tests_docker_ubuntu, preload_docker_flags_tests_docker_ubuntu, functional_baremetal_ubuntu18_04]
     runs-on: ubuntu-18.04
     steps:
-    - name: Download Results docker_ubuntu_16_04
-      uses: actions/download-artifact@v1
-      with:
-        name: docker_ubuntu_16_04
-    - name: cp docker_ubuntu_16_04 to all_report
-      continue-on-error: true
+    - name: download all reports
+      uses: actions/download-artifact@v2-preview
+    - name: upload all reports
       shell: bash {0}
-      run: |
-        mkdir -p all_reports
-        cp -r docker_ubuntu_16_04 ./all_reports/
-    - name: Download Results docker_ubuntu_18_04
-      uses: actions/download-artifact@v1
-      with:
-        name: docker_ubuntu_18_04
-    - name: cp docker_ubuntu_18_04 to all_report
       continue-on-error: true
-      shell: bash {0}
       run: |
         mkdir -p all_reports
-        cp -r docker_ubuntu_18_04 ./all_reports/
-    - name: download results docker_on_windows
-      uses: actions/download-artifact@v1
-      with:
-        name: docker_on_windows
-    - name: cp to all_report
-      shell: bash
-      run: |
-        mkdir -p all_reports
-        cp -r docker_on_windows ./all_reports/
-    - name: Download Results none_ubuntu16_04
-      uses: actions/download-artifact@v1
-      with:
-        name: none_ubuntu16_04
-    - name: cp none_ubuntu16_04 to all_report
-      continue-on-error: true
-      shell: bash {0}
-      run: |
-        mkdir -p all_reports
-        cp -r none_ubuntu16_04 ./all_reports/
-    - name: Download Results none_ubuntu18_04
-      uses: actions/download-artifact@v1
-      with:
-        name: none_ubuntu18_04
-    - name: Copy none_ubuntu18_04 to all_report
-      continue-on-error: true
-      shell: bash {0}
-      run: |
-        mkdir -p all_reports
-        cp -r none_ubuntu18_04 ./all_reports/
-    - name: Download Results podman_ubuntu_18_04
-      uses: actions/download-artifact@v1
-      with:
-        name: podman_ubuntu_18_04
-    - name: Copy podman_ubuntu_18_04 to all_report
-      continue-on-error: true
-      shell: bash {0}
-      run: |
-        mkdir -p all_reports
-        cp -r podman_ubuntu_18_04 ./all_reports/
+        ls -lah
+        cp -r ./functional_test_docker_ubuntu ./all_reports/
+        cp -r ./addons_certs_tests_docker_ubuntu ./all_reports/
+        cp -r ./multinode_pause_tests_docker_ubuntu ./all_reports/
+        cp -r ./preload_docker_flags_tests_docker_ubuntu ./all_reports/
+        cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
     - uses: actions/upload-artifact@v1
       with:
         name: all_reports

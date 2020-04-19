@@ -22,10 +22,12 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
@@ -37,7 +39,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 		return nil
 	}
 	if err := writeResolverFile(route); err != nil {
-		return fmt.Errorf("could not write /etc/resolver/{cluster_domain} file: %s", err)
+		glog.Errorf("DNS forwarding unavailable: %v", err)
 	}
 
 	serviceCIDR := route.DestCIDR.String()
@@ -178,26 +180,48 @@ func (router *osRouter) Cleanup(route *Route) error {
 
 func writeResolverFile(route *Route) error {
 	resolverFile := "/etc/resolver/" + route.ClusterDomain
+
 	content := fmt.Sprintf("nameserver %s\nsearch_order 1\n", route.ClusterDNSIP)
-	// write resolver content into tmpFile, then copy it to /etc/resolver/clusterDomain
-	tmpFile, err := ioutil.TempFile("", "minikube-tunnel-resolver-")
+
+	glog.Infof("preparing DNS forwarding config in %q:\n%s", resolverFile, content)
+
+	// write resolver content into tf, then copy it to /etc/resolver/clusterDomain
+	tf, err := ioutil.TempFile("", "minikube-tunnel-resolver-")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "tempfile")
 	}
-	defer os.Remove(tmpFile.Name())
-	if _, err = tmpFile.WriteString(content); err != nil {
-		return err
+	defer os.Remove(tf.Name())
+
+	if _, err = tf.WriteString(content); err != nil {
+		return errors.Wrap(err, "write")
 	}
-	if err = tmpFile.Close(); err != nil {
-		return err
+
+	if err = tf.Close(); err != nil {
+		return errors.Wrap(err, "close")
 	}
-	cmd := exec.Command("sudo", "mkdir", "-p", "/etc/resolver")
-	if err := cmd.Run(); err != nil {
-		return err
+
+	if err = os.Chmod(tf.Name(), 0644); err != nil {
+		return errors.Wrap(err, "chmod")
 	}
-	cmd = exec.Command("sudo", "cp", "-f", tmpFile.Name(), resolverFile)
-	if err := cmd.Run(); err != nil {
-		return err
+
+	cmd := exec.Command("sudo", "mkdir", "-p", filepath.Dir(resolverFile))
+	_, err = cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("%q failed: %v: %q", strings.Join(cmd.Args, " "), exitErr, exitErr.Stderr)
+		}
+		return errors.Wrap(err, "mkdir")
 	}
+
+	cmd = exec.Command("sudo", "cp", "-fp", tf.Name(), resolverFile)
+
+	_, err = cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("%q failed: %v: %q", strings.Join(cmd.Args, " "), exitErr, exitErr.Stderr)
+		}
+		return errors.Wrap(err, "copy")
+	}
+	glog.Infof("DNS forwarding now configured in %q", resolverFile)
 	return nil
 }
