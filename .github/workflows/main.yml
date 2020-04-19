@@ -1,5 +1,7 @@
 name: CI
-on: [pull_request]
+on: 
+  - pull_request
+  - push
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
@@ -60,7 +62,7 @@ jobs:
         make test
       continue-on-error: false
   # Run the following integration tests after the build_minikube
-  # They will run in parallel and use the binaries in previous step
+  # They will run in parallel and use the binaries in previous step 
   functional_test_docker_ubuntu:
     needs: [build_minikube]
     env:
