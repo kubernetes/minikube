@@ -43,7 +43,12 @@ func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
 
 func TestShouldCheckURL(t *testing.T) {
 	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tempDir)
+		}
+	}()
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
@@ -152,7 +157,12 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 
 func TestMaybePrintUpdateText(t *testing.T) {
 	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tempDir)
+		}
+	}()
 	outputBuffer := tests.NewFakeFile()
 	out.SetErrFile(outputBuffer)
 
