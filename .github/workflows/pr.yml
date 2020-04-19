@@ -428,11 +428,11 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  baremetal_ubuntu18_04:
+  functional_baremetal_ubuntu18_04:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "None_Ubuntu_18_04"
+      JOB_NAME: "functional_baremetal_ubuntu18_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
@@ -513,7 +513,7 @@ jobs:
   # collect all the reports and upload them
   upload_all_reports:
     if: always()
-    needs: [functional_test_docker_ubuntu, addons_certs_tests_docker_ubuntu, multinode_pause_tests_docker_ubuntu, preload_docker_flags_tests_docker_ubuntu]
+    needs: [functional_test_docker_ubuntu, addons_certs_tests_docker_ubuntu, multinode_pause_tests_docker_ubuntu, preload_docker_flags_tests_docker_ubuntu, functional_baremetal_ubuntu18_04]
     runs-on: ubuntu-18.04
     steps:
     - name: download all reports
@@ -528,7 +528,7 @@ jobs:
         cp -r ./addons_certs_tests_docker_ubuntu ./all_reports/
         cp -r ./multinode_pause_tests_docker_ubuntu ./all_reports/
         cp -r ./preload_docker_flags_tests_docker_ubuntu ./all_reports/
-        cp -r ./minikube_binaries ./all_reports/
+        cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
     - uses: actions/upload-artifact@v1
       with:
         name: all_reports
