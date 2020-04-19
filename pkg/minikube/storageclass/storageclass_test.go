@@ -232,7 +232,12 @@ func TestGetStoragev1(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	defer os.Remove(configFile.Name())
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(configFile.Name())
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", configFile.Name())
+		}
+	}()
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if err := setK8SConfig(test.config, configFile.Name()); err != nil {

@@ -251,6 +251,12 @@ func tmpFile(t *testing.T) string {
 	if err != nil {
 		t.Errorf("failed to create temp file %s", err)
 	}
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(f.Name())
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", f.Name())
+		}
+	}()
 	return f.Name()
 }
 
@@ -260,6 +266,12 @@ func createTestRegistry(t *testing.T) (reg *persistentRegistry, cleanup func()) 
 	if err != nil {
 		t.Errorf("failed to create temp file %s", err)
 	}
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(f.Name())
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", f.Name())
+		}
+	}()
 
 	registry := &persistentRegistry{
 		path: f.Name(),

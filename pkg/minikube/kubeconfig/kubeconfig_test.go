@@ -372,7 +372,7 @@ func TestNewConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
+	defer func() { //clean up tempdir
 		err := os.RemoveAll(dir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", dir)
@@ -448,7 +448,12 @@ func tempFile(t *testing.T, data []byte) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(tmp.Name())
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tmp.Name())
+		}
+	}()
 	if len(data) > 0 {
 		if _, err := tmp.Write(data); err != nil {
 			t.Fatal(err)

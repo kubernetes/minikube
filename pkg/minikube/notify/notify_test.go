@@ -233,7 +233,12 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Cannot create temp file: %v", err)
 			}
-			defer os.Remove(tmpfile.Name())
+			defer func() { //clean up tempdir
+				err := os.RemoveAll(tmpfile.Name())
+				if err != nil {
+					t.Errorf("failed to clean up temp folder  %q", tmpfile.Name())
+				}
+			}()
 			status := MaybePrintUpdateText(test.url, tmpfile.Name())
 			if test.status != status {
 				t.Fatalf("MaybePrintUpdateText expected to return %v, but got %v", test.status, status)

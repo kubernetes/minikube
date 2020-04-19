@@ -490,7 +490,12 @@ func TestErrorCreatingTunnel(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to create temp file %s", err)
 	}
-	defer os.Remove(f.Name())
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(f.Name())
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", f.Name())
+		}
+	}()
 	registry := &persistentRegistry{
 		path: f.Name(),
 	}

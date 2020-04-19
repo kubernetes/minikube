@@ -51,7 +51,12 @@ var validLeases = []byte(`{
 
 func Test_getIpAddressFromFile(t *testing.T) {
 	tmpdir := tests.MakeTempDir()
-	defer os.RemoveAll(tmpdir)
+	defer func() {
+		err := os.RemoveAll(tmpdir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tmpdir)
+		}
+	}()
 
 	dhcpFile := filepath.Join(tmpdir, "dhcp")
 	if err := ioutil.WriteFile(dhcpFile, validLeases, 0644); err != nil {

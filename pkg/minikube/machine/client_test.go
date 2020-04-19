@@ -141,6 +141,12 @@ func TestRunDriver(t *testing.T) {
 	// This test is a bit complicated. It verifies that when the root command is
 	// called with the proper environment variables, we setup the libmachine driver.
 	tempDir := makeTempDir()
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tempDir)
+		}
+	}()
 	defer os.RemoveAll(tempDir)
 
 	os.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)

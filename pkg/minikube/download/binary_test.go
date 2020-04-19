@@ -38,7 +38,6 @@ func TestCacheBinary(t *testing.T) {
 		}
 	}()
 
-	defer os.RemoveAll(minikubeHome)
 	noWritePermDir, err := ioutil.TempDir("/tmp", "")
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)

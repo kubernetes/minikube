@@ -93,7 +93,12 @@ func TestFlagDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tempfile: %v", err)
 	}
-	defer os.Remove(tf.Name()) // clean up
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(tf.Name())
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tf.Name())
+		}
+	}()
 
 	expected = FlagHints{
 		CacheImages:  false,

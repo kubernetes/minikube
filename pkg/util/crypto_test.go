@@ -30,15 +30,15 @@ import (
 
 func TestGenerateCACert(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("Error generating tmpdir: %v", err)
+	}
 	defer func() { //clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", tmpDir)
 		}
 	}()
-	if err != nil {
-		t.Fatalf("Error generating tmpdir: %v", err)
-	}
 
 	certPath := filepath.Join(tmpDir, "cert")
 	keyPath := filepath.Join(tmpDir, "key")

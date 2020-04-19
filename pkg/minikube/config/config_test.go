@@ -148,6 +148,12 @@ func TestWriteConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(configFile.Name())
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", configFile.Name())
+		}
+	}()
 
 	cfg := map[string]interface{}{
 		"driver":               "test-driver",

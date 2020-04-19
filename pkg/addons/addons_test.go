@@ -34,6 +34,12 @@ func createTestProfile(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(td)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", td)
+		}
+	}()
 
 	err = os.Setenv(localpath.MinikubeHome, td)
 	if err != nil {

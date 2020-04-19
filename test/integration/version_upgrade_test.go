@@ -51,7 +51,12 @@ func TestVersionUpgrade(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tempfile: %v", err)
 	}
-	defer os.Remove(tf.Name())
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(tf.Name())
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tf.Name())
+		}
+	}()
 	tf.Close()
 
 	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
