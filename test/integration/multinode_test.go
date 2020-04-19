@@ -30,11 +30,6 @@ func TestMultiNode(t *testing.T) {
 		t.Skip("none driver does not support multinode")
 	}
 
-	// TODO: remove this skip once docker multinode is fixed
-	if KicDriver() {
-		t.Skip("docker driver multinode is currently broken :(")
-	}
-
 	profile := UniqueProfileName("multinode")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
