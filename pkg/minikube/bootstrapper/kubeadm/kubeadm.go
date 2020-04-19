@@ -786,6 +786,7 @@ func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
 		return errors.Wrap(err, "starting kubelet")
 	}
 
+	sm.Enable("kubelet")
 	return sm.Start("kubelet")
 }
 
