@@ -33,3 +33,8 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 - On macOS or Windows, you may need to restart Docker for Desktop if a command gets hung
 
 - Run `--alsologtostderr -v=1` for extra debugging information
+
+- On Linux, if you want to run MySQL pod, you need to disable AppArmor for mysql profile
+
+   If your docker has [AppArmor](https://wiki.ubuntu.com/AppArmor) enabled, running mysql in privileged mode with docker driver will have the issue [#7401](https://github.com/kubernetes/minikube/issues/7401).
+   There is a workaround - see [moby/moby#7512](https://github.com/moby/moby/issues/7512#issuecomment-61787845).
