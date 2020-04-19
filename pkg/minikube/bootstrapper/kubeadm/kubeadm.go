@@ -621,6 +621,9 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 	ka := bsutil.InvokeKubeadm(k8s.KubernetesVersion)
 	sp := cr.SocketPath()
+	if sp == "" {
+		sp = kconst.DefaultDockerCRISocket
+	}
 	cmd := fmt.Sprintf("%s reset --cri-socket %s --force", ka, sp)
 	if version.LT(semver.MustParse("1.11.0")) {
 		cmd = fmt.Sprintf("%s reset --cri-socket %s", ka, sp)
