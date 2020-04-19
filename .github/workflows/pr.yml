@@ -1,8 +1,8 @@
 name: CI
-on: 
-  - pull_request
-  paths:
-  - '**.go'
+on:
+  pull_request:
+    paths:
+    - '**.go'
 env:
   GOPROXY: https://proxy.golang.org
 jobs:

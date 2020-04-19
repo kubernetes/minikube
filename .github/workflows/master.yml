@@ -1,10 +1,10 @@
-name: master
-on: 
+name: MasterCI
+on:
   push:
-    path:
-      - '**.go'
-    branches:    
-      - master         # Push events on master branch  paths:
+    branches:
+    - master
+    paths:
+    - '**.go'
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
