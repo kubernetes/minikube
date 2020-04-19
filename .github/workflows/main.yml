@@ -61,7 +61,7 @@ jobs:
       continue-on-error: false
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
-  functional_preload_test_docker_ubuntu:
+  functional_test_docker_ubuntu:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -506,53 +506,28 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  # After all 4 integration tests finished
+  # After all integration tests finished
   # collect all the reports and upload
   upload_all_reports:
     if: always()
-    needs: [functional_preload_test_docker_ubuntu, addons_certs_tests_docker_ubuntu, multinode_pause_tests_docker_ubuntu, preload_docker_flags_tests_docker_ubuntu, baremetal_ubuntu18_04]
+    needs: [functional_test_docker_ubuntu, addons_certs_tests_docker_ubuntu, multinode_pause_tests_docker_ubuntu, preload_docker_flags_tests_docker_ubuntu, baremetal_ubuntu18_04]
     runs-on: ubuntu-18.04
     steps:
-    - name: Download Results functional_test_docker_ubuntu
-      uses: actions/download-artifact@v1
-      with:
-        name: functional_test_docker_ubuntu
-    - name:  functional_test_docker_ubuntu to all_report
+    - name: upload all results
       continue-on-error: true
+      # using preview version to allow download all https://github.com/actions/download-artifact/tree/v2-preview#download-all-artifacts
+      # skiping uploading baremetal_ubuntu18_04 since that finishes too late
+      uses: actions/download-artifact@v2-preview
       shell: bash {0}
       run: |
         mkdir -p all_reports
-        cp -r functional_test_docker_ubuntu ./all_reports/
-    - name: Download Results multinode_pause_tests_docker_ubuntu
-      uses: actions/download-artifact@v1
-      with:
-        name: multinode_pause_tests_docker_ubuntu
-    - name: Copy multinode_pause_tests_docker_ubuntu to all_report
-      continue-on-error: true
-      shell: bash {0}
-      run: |
-        mkdir -p all_reports
-        cp -r multinode_pause_tests_docker_ubuntu ./all_reports/
-    - name: Download Results preload_docker_flags_tests_docker_ubuntu
-      uses: actions/download-artifact@v1
-      with:
-        name: preload_docker_flags_tests_docker_ubuntu
-    - name: Copy preload_docker_flags_tests_docker_ubuntu to all_report
-      continue-on-error: true
-      shell: bash {0}
-      run: |
-        mkdir -p all_reports
-        cp -r none_ubuntu16_04 ./all_reports/
-    - name: Download Results none_ubuntu18_04
-      uses: actions/download-artifact@v1
-      with:
-        name: none_ubuntu18_04
-    - name: Copy none_ubuntu18_04 to all_report
-      continue-on-error: true
-      shell: bash {0}
-      run: |
-        mkdir -p all_reports
-        cp -r none_ubuntu18_04 ./all_reports/
+        ls -lah
+        ls -lah minikube_binaries
+        ls -lah minikube_binaries/report
+        cp -r ./minikube_binaries/report/functional_test_docker_ubuntu ./all_reports/
+        cp -r ./minikube_binaries/report/addons_certs_tests_docker_ubuntu ./all_reports/
+        cp -r ./minikube_binaries/report/multinode_pause_tests_docker_ubuntu ./all_reports/
+        cp -r ./minikube_binaries/report/preload_docker_flags_tests_docker_ubuntu        
     - uses: actions/upload-artifact@v1
       with:
         name: all_reports
