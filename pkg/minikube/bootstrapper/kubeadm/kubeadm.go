@@ -177,7 +177,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
 		"Port-10250", // For "none" users who already have a kubelet online
 		"Swap",       // For "none" users who have swap configured
-		"SystemVerification",
 	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
 
