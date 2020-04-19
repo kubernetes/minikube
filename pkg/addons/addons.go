@@ -28,9 +28,12 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -176,6 +179,17 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		return nil
 	}
 
+	if name == "registry" {
+		if driver.NeedsPortForward(cc.Driver) {
+			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
+			if err != nil {
+				return errors.Wrap(err, "registry port")
+			}
+			out.T(out.Tip, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, out.V{"driver": cc.Driver, "port": port})
+			out.T(out.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
+		}
+	}
+
 	cmd, err := machine.CommandRunner(host)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
@@ -244,7 +258,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		return err
 	}
 
-	return retry.Expo(apply, 1*time.Second, time.Second*30)
+	return retry.Expo(apply, 100*time.Microsecond, time.Minute)
 }
 
 // enableOrDisableStorageClasses enables or disables storage classes
@@ -258,10 +272,6 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	class := defaultStorageClassProvisioner
 	if name == "storage-provisioner-gluster" {
 		class = "glusterfile"
-	}
-	storagev1, err := storageclass.GetStoragev1()
-	if err != nil {
-		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
 	}
 
 	api, err := machine.NewAPIClient()
@@ -277,6 +287,11 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	if !machine.IsRunning(api, driver.MachineName(*cc, cp)) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
 		return enableOrDisableAddon(cc, name, val)
+	}
+
+	storagev1, err := storageclass.GetStoragev1(cc.Name)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
 	}
 
 	if enable {
@@ -332,7 +347,9 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+	defer func() { // making it show after verifications( not perfect till #7613 is closed)
+		out.T(out.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+	}()
 	for _, a := range toEnableList {
 		awg.Add(1)
 		go func(name string) {

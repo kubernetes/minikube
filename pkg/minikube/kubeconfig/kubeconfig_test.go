@@ -167,6 +167,13 @@ func TestUpdate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error making temp directory %v", err)
 			}
+			defer func() { //clean up tempdir
+				err := os.RemoveAll(tmpDir)
+				if err != nil {
+					t.Errorf("failed to clean up temp folder  %q", tmpDir)
+				}
+			}()
+
 			test.cfg.SetPath(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
 				if err := ioutil.WriteFile(test.cfg.filePath(), test.existingCfg, 0600); err != nil {

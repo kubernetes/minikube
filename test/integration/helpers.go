@@ -213,7 +213,7 @@ func clusterLogs(t *testing.T, profile string) {
 	t.Logf("%s logs: %s", t.Name(), rr.Output())
 
 	t.Logf("======> post-mortem[%s]: disk usage <======", t.Name())
-	rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "df -h /var/lib/docker/overlay2 /var /; du -hs /var/lib/docker/overlay2"))
+	rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo df -h /var/lib/docker/overlay2 /var /;sudo du -hs /var/lib/docker/overlay2"))
 	if err != nil {
 		t.Logf("failed df error: %v", err)
 	}

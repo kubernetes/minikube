@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -39,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -92,6 +92,10 @@ func (d *Driver) Create() error {
 		oci.PortMapping{
 			ListenAddress: oci.DefaultBindIPV4,
 			ContainerPort: constants.DockerDaemonPort,
+		},
+		oci.PortMapping{
+			ListenAddress: oci.DefaultBindIPV4,
+			ContainerPort: constants.RegistryAddonPort,
 		},
 	)
 
@@ -259,9 +263,14 @@ func (d *Driver) Kill() error {
 	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "killing kic node %s", d.MachineName)
+
+	if err := oci.ShutDown(d.OCIBinary, d.MachineName); err != nil {
+		glog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
+	}
+
+	cr := command.NewExecRunner() // using exec runner for interacting with dameon.
+	if _, err := cr.RunCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)); err != nil {
+		return errors.Wrapf(err, "killing %q", d.MachineName)
 	}
 	return nil
 }
@@ -269,16 +278,22 @@ func (d *Driver) Kill() error {
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
-		log.Warnf("could not find the container %s to remove it.", d.MachineName)
+		glog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
 	}
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "rm", "-f", "-v", d.MachineName)
-	o, err := cmd.CombinedOutput()
-	out := strings.TrimSpace(string(o))
-	if err != nil {
-		if strings.Contains(out, "is already in progress") {
-			log.Warnf("Docker engine is stuck. please restart docker daemon on your computer.", d.MachineName)
+
+	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
+		if strings.Contains(err.Error(), "is already in progress") {
+			return errors.Wrap(err, "stuck delete")
 		}
-		return errors.Wrapf(err, "removing container %s, output %s", d.MachineName, out)
+		if strings.Contains(err.Error(), "No such container:") {
+			return nil // nothing was found to delete.
+		}
+
+	}
+
+	// check there be no container left after delete
+	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
+		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
 	return nil
 }
@@ -287,40 +302,43 @@ func (d *Driver) Remove() error {
 func (d *Driver) Restart() error {
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "get kic state")
+		glog.Warningf("get state during restart: %v", err)
 	}
-	switch s {
-	case state.Stopped:
+	if s == state.Stopped { // don't stop if already stopped
 		return d.Start()
-	case state.Running, state.Error:
-		if err = d.Stop(); err != nil {
-			return fmt.Errorf("restarting a kic stop phase %v", err)
-		}
-		if err = d.Start(); err != nil {
-			return fmt.Errorf("restarting a kic start phase %v", err)
-		}
-		return nil
 	}
+	if err = d.Stop(); err != nil {
+		return fmt.Errorf("stop during restart %v", err)
+	}
+	if err = d.Start(); err != nil {
+		return fmt.Errorf("start during restart %v", err)
+	}
+	return nil
 
-	return fmt.Errorf("restarted not implemented for kic state %s yet", s)
 }
 
-// Start a _stopped_ kic container
-// not meant to be used for Create().
+// Start an already created kic container
 func (d *Driver) Start() error {
-	s, err := d.GetState()
-	if err != nil {
-		return errors.Wrap(err, "get kic state")
+	cr := command.NewExecRunner() // using exec runner for interacting with docker/podman daemon
+	if _, err := cr.RunCmd(exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName)); err != nil {
+		return errors.Wrap(err, "start")
 	}
-	if s == state.Stopped {
-		cmd := exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName)
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "starting a stopped kic node %s", d.MachineName)
+	checkRunning := func() error {
+		s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
+		if err != nil {
+			return err
 		}
+		if s != state.Running {
+			return fmt.Errorf("expected container state be running but got %q", s)
+		}
+		glog.Infof("container %q state is running.", d.MachineName)
 		return nil
 	}
-	// TODO:medyagh maybe make it idempotent
-	return fmt.Errorf("cant start a not-stopped (%s) kic node", s)
+
+	if err := retry.Expo(checkRunning, 500*time.Microsecond, time.Second*30); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Stop a host gracefully, including any containers that we are managing.
@@ -347,11 +365,18 @@ func (d *Driver) Stop() error {
 		}
 		if len(containers) > 0 {
 			if err := runtime.StopContainers(containers); err != nil {
-				glog.Errorf("unable to stop containers : %v", err)
+				glog.Infof("unable to stop containers : %v", err)
+			}
+			if err := runtime.KillContainers(containers); err != nil {
+				glog.Errorf("unable to kill containers : %v", err)
 			}
 		}
 		glog.Infof("successfully stopped kubernetes!")
 
+	}
+
+	if err := killAPIServerProc(d.exec); err != nil {
+		glog.Warningf("couldn't stop kube-apiserver proc: %v", err)
 	}
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
@@ -364,4 +389,21 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
+}
+
+// killAPIServerProc will kill an api server proc if it exists
+// to ensure this never happens https://github.com/kubernetes/minikube/issues/7521
+func killAPIServerProc(runner command.Runner) error {
+	// first check if it exists
+	rr, err := runner.RunCmd(exec.Command("pgrep", "kube-apiserver"))
+	if err == nil { // this means we might have a running kube-apiserver
+		pid, err := strconv.Atoi(rr.Stdout.String())
+		if err == nil { // this means we have a valid pid
+			glog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
+			if _, err = runner.RunCmd(exec.Command("pkill", "-9", string(pid))); err != nil {
+				return errors.Wrap(err, "kill")
+			}
+		}
+	}
+	return nil
 }
