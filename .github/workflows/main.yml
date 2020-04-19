@@ -507,7 +507,7 @@ jobs:
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   # After all integration tests finished
-  # collect all the reports and upload
+  # collect all the reports and upload them
   upload_all_reports:
     if: always()
     needs: [functional_test_docker_ubuntu, addons_certs_tests_docker_ubuntu, multinode_pause_tests_docker_ubuntu, preload_docker_flags_tests_docker_ubuntu, baremetal_ubuntu18_04]
