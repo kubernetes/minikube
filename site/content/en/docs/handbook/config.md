@@ -93,10 +93,10 @@ The default container runtime in minikube is Docker. You can select it explicitl
 minikube start --container-runtime=docker
 ```
 
-You can also select:
+Other options available are:
 
-* *[containerd](https://github.com/containerd/containerd):
-* `cri-o`: [CRI-O](https://github.com/kubernetes-sigs/cri-o):
+* [containerd](https://github.com/containerd/containerd)
+* [crio](https://github.com/kubernetes-sigs/cri-o)
 
 ## Environment variables
 
