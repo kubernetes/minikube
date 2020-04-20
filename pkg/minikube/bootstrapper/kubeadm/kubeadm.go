@@ -177,14 +177,27 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
 		"Port-10250", // For "none" users who already have a kubelet online
 		"Swap",       // For "none" users who have swap configured
-		"SystemVerification",
 	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
 
+	skipSystemVerification := false
 	// Allow older kubeadm versions to function with newer Docker releases.
+	if version.LT(semver.MustParse("1.13.0")) {
+		glog.Infof("ignoring SystemVerification for kubeadm because of old kubernetes version %v", version)
+		skipSystemVerification = true
+	}
+	if driver.BareMetal(cfg.Driver) && r.Name() == "Docker" {
+		if v, err := r.Version(); err == nil && strings.Contains(v, "azure") {
+			glog.Infof("ignoring SystemVerification for kubeadm because of unknown docker version %s", v)
+			skipSystemVerification = true
+		}
+	}
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
-	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.Driver) {
-		glog.Info("ignoring SystemVerification for kubeadm because of either driver or kubernetes version")
+	if driver.IsKIC(cfg.Driver) {
+		glog.Infof("ignoring SystemVerification for kubeadm because of %s driver", cfg.Driver)
+		skipSystemVerification = true
+	}
+	if skipSystemVerification {
 		ignore = append(ignore, "SystemVerification")
 	}
 
