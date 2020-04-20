@@ -32,7 +32,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
@@ -92,10 +91,10 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
-		exit.WithError("Failed runtime", err)
+		errors.Wrap(err, "failed create new runtime")
 	}
 	if err := cr.Enable(true); err != nil {
-		exit.WithError("enable container runtime ", err)
+		errors.Wrap(err, "create enable container runtime")
 	}
 
 	for _, img := range imgs {
