@@ -94,7 +94,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		return errors.Wrap(err, "failed create new runtime")
 	}
 	if err := cr.Enable(true); err != nil {
-		return errors.Wrap(err, "create enable container runtime")
+		return errors.Wrap(err, "enable container runtime")
 	}
 
 	for _, img := range imgs {
