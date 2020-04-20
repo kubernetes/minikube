@@ -35,7 +35,7 @@ func TestExitCode(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := exitCode(tc.state)
+			got := exitCode([]*Status{tc.state})
 			if got != tc.want {
 				t.Errorf("exitcode(%+v) = %d, want: %d", tc.state, got, tc.want)
 			}
@@ -93,7 +93,7 @@ func TestStatusJSON(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var b bytes.Buffer
-			err := statusJSON(tc.state, &b)
+			err := statusJSON([]*Status{tc.state}, &b)
 			if err != nil {
 				t.Errorf("json(%+v) error: %v", tc.state, err)
 			}
