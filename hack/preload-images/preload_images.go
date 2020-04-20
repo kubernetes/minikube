@@ -35,7 +35,7 @@ const (
 
 var (
 	dockerStorageDriver = "overlay2"
-	containerRuntimes   = []string{"containerd"}
+	containerRuntimes   = []string{"docker", "containerd"}
 	k8sVersion          string
 	k8sVersions         []string
 )
