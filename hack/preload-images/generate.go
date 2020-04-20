@@ -110,8 +110,8 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 			}
 			return nil
 		}
-		// retry up 5 times if network is bad
-		if err = retry.Expo(pull, time.Microsecond, time.Minute, 10); err != nil {
+		// retry up to 5 times if network is bad
+		if err = retry.Expo(pull, time.Microsecond, time.Minute, 5); err != nil {
 			return errors.Wrapf(err, "pull image %s", img)
 		}
 
