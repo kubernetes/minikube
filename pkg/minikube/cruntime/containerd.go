@@ -19,10 +19,10 @@ package cruntime
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"path"
-	"runtime/debug"
 	"strings"
 	"text/template"
 	"time"
@@ -233,7 +233,6 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
-	debug.PrintStack()
 	glog.Infof("Loading image: %s", path)
 	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
@@ -315,10 +314,7 @@ func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
 	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
 		return nil
 	}
-	fmt.Println("(medya dbg) inside Preload docker")
-	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
-		return nil
-	}
+
 	k8sVersion := cfg.KubernetesVersion
 	cRuntime := cfg.ContainerRuntime
 
@@ -329,7 +325,7 @@ func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
 	}
 	if ContainerdImagesPreloaded(r.Runner, images) {
 		glog.Info("Images already preloaded, skipping extraction")
-		return r.Restart()
+		return nil
 	}
 
 	tarballPath := download.TarballPath(k8sVersion, cRuntime)
@@ -375,22 +371,52 @@ func (r *Containerd) Restart() error {
 
 // ContainerdImagesPreloaded returns true if all images have been preloaded
 func ContainerdImagesPreloaded(runner command.Runner, images []string) bool {
-	fmt.Printf("medyadb inside ContainerdImagesPreloaded : images %s \n", strings.Join(images, ","))
-	fmt.Println("=================================")
-	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images"))
+	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
 	if err != nil {
 		return false
 	}
+	type containerdImages struct {
+		Images []struct {
+			ID          string      `json:"id"`
+			RepoTags    []string    `json:"repoTags"`
+			RepoDigests []string    `json:"repoDigests"`
+			Size        string      `json:"size"`
+			UID         interface{} `json:"uid"`
+			Username    string      `json:"username"`
+		} `json:"images"`
+	}
 
-	glog.Infof("Got contained preloaded images: %s", rr.Output())
-	fmt.Println("=================================")
+	var jsonImages containerdImages
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
+	if err != nil {
+		glog.Errorf("failed to unmarshal images, will assume images are not preloaded")
+		return false
+	}
 
-	// // Make sure images == imgs
-	// for _, i := range images {
-	// 	if !strings.Contains(rr.Output(), i) {
-	// 		glog.Infof("%s wasn't preloaded", i)
-	// 		return false
-	// 	}
-	// }
+	// Make sure images == imgs
+	for _, i := range images {
+		found := false
+		for _, ji := range jsonImages.Images {
+			for _, rt := range ji.RepoTags {
+				// for exmaple kubernetesui/dashboard:v2.0.0-rc6 will show up as docker.io/kubernetesui/dashboard:v2.0.0-rc6
+				if !strings.Contains(i, ".io/") {
+					i = "docker.io/" + i
+				}
+				if i == rt {
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+
+		}
+		if !found {
+			glog.Infof("couldn't find preloaded image for %q. assuming images are not preloaded.", i)
+			return false
+		}
+	}
+	glog.Infof("all images are preloaded for containerd runtime.")
 	return true
 }
