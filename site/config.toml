@@ -29,10 +29,6 @@ pygmentsStyle = "tango"
  # First one is picked as the Twitter card image if not set on page.
  #images = ["images/project-illustration.png"]
 
-# Configure how URLs look like per section.
-[permalinks]
-blog = "/:section/:year/:month/:day/:slug/"
-
 [markup]
   [markup.highlight]
     codeFences = true
