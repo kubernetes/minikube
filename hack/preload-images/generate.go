@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -32,10 +33,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string) error {
@@ -92,19 +93,28 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
-		exit.WithError("Failed runtime", err)
+		return errors.Wrap(err, "failed create new runtime")
 	}
 	if err := cr.Enable(true); err != nil {
-		exit.WithError("enable container runtime ", err)
+		return errors.Wrap(err, "enable container runtime")
 	}
 
 	for _, img := range imgs {
 		cmd := imagePullCommand(containerRuntime, img)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "pulling image %s", img)
+
+		pull := func() error {
+			if err := cmd.Run(); err != nil {
+				return errors.Wrapf(err, "pulling image %s", img)
+			}
+			return nil
 		}
+		// retry up to 5 times if network is bad
+		if err = retry.Expo(pull, time.Microsecond, time.Minute, 5); err != nil {
+			return errors.Wrapf(err, "pull image %s", img)
+		}
+
 	}
 
 	// Transfer in k8s binaries
