@@ -24,11 +24,14 @@ import (
 	"path"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -310,5 +313,80 @@ func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
 	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
 		return nil
 	}
-	return fmt.Errorf("not yet implemented for %s", r.Name())
+	fmt.Println("(medya dbg) inside Preload docker")
+	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
+		return nil
+	}
+	k8sVersion := cfg.KubernetesVersion
+	cRuntime := cfg.ContainerRuntime
+
+	// If images already exist, return
+	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
+	if err != nil {
+		return errors.Wrap(err, "getting images")
+	}
+	if ContainerdImagesPreloaded(r.Runner, images) {
+		glog.Info("Images already preloaded, skipping extraction")
+		return nil
+	}
+
+	tarballPath := download.TarballPath(k8sVersion, cRuntime)
+	targetDir := "/"
+	targetName := "preloaded.tar.lz4"
+	dest := path.Join(targetDir, targetName)
+
+	c := exec.Command("which", "lz4")
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return NewErrISOFeature("lz4")
+	}
+
+	// Copy over tarball into host
+	fa, err := assets.NewFileAsset(tarballPath, targetDir, targetName, "0644")
+	if err != nil {
+		return errors.Wrap(err, "getting file asset")
+	}
+	t := time.Now()
+	if err := r.Runner.Copy(fa); err != nil {
+		return errors.Wrap(err, "copying file")
+	}
+	glog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
+
+	t = time.Now()
+	// extract the tarball to /var in the VM
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xvf", dest)); err != nil {
+		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
+	}
+	glog.Infof("Took %f seconds t extract the tarball", time.Since(t).Seconds())
+
+	//  remove the tarball in the VM
+	if err := r.Runner.Remove(fa); err != nil {
+		glog.Infof("error removing tarball: %v", err)
+	}
+
+	return r.Restart()
+}
+
+// Restart restarts Docker on a host
+func (r *Containerd) Restart() error {
+	return r.Init.Restart("containerd")
+}
+
+// ContainerdImagesPreloaded returns true if all images have been preloaded
+func ContainerdImagesPreloaded(runner command.Runner, images []string) bool {
+	fmt.Printf("medyadb inside ContainerdImagesPreloaded : images %s \n", strings.Join(images, ","))
+	// rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images"))
+	// if err != nil {
+	// 	return false
+	// }
+
+	// glog.Infof("Got contained preloaded images: %s", rr.Output())
+
+	// // Make sure images == imgs
+	// for _, i := range images {
+	// 	if !strings.Contains(rr.Output(), i) {
+	// 		glog.Infof("%s wasn't preloaded", i)
+	// 		return false
+	// 	}
+	// }
+	return true
 }

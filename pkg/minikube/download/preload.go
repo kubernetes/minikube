@@ -83,11 +83,10 @@ func PreloadExists(k8sVersion, containerRuntime string) bool {
 		return false
 	}
 
-	// See https://github.com/kubernetes/minikube/issues/6933
 	// and https://github.com/kubernetes/minikube/issues/6934
-	// to track status of adding containerd & crio
-	if containerRuntime != "docker" {
-		glog.Info("Container runtime isn't docker, skipping preload")
+	// to track status of adding crio
+	if containerRuntime == "crio" {
+		glog.Info("crio is not supported yet, skipping preload")
 		return false
 	}
 

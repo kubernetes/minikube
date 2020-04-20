@@ -81,8 +81,10 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // ExtractTarballToVolume runs a docker image imageName which extracts the tarball at tarballPath
 // to the volume named volumeName
 func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
+	fmt.Printf("\n-------------------\n(medya dbg) inside ExtractTarballToVolume. tarballPath: %s  voluneName %s \n-------------------\n", tarballPath, volumeName)
 	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
 	glog.Infof("executing: %s", cmd.Args)
+	fmt.Printf("medya dbg \n---------%s ----------\n", cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}

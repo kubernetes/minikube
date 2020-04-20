@@ -279,6 +279,7 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 2. Extract the preloaded tarball to the correct directory
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(cfg config.KubernetesConfig) error {
+	fmt.Println("(medya dbg) inside Preload docker")
 	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
 		return nil
 	}
