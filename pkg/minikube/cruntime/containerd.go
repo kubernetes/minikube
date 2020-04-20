@@ -398,7 +398,8 @@ func ContainerdImagesPreloaded(runner command.Runner, images []string) bool {
 		found := false
 		for _, ji := range jsonImages.Images {
 			for _, rt := range ji.RepoTags {
-				// for exmaple kubernetesui/dashboard:v2.0.0-rc6 will show up as docker.io/kubernetesui/dashboard:v2.0.0-rc6
+				// in crictl docker.io is appened to images without repo organization
+				// for example "kubernetesui/dashboard:v2.0.0-rc6 will show up as "docker.io/kubernetesui/dashboard:v2.0.0-rc6"
 				if !strings.Contains(i, ".io/") {
 					i = "docker.io/" + i
 				}
