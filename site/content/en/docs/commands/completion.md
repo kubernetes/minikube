@@ -1,19 +1,19 @@
 ---
 title: "completion"
 description: >
-  Outputs minikube shell completion for the given shell (bash or zsh)
+  Outputs minikube shell completion for the given shell (bash, zsh or fish)
 ---
 
 
 
 ## minikube completion
 
-Outputs minikube shell completion for the given shell (bash or zsh)
+Outputs minikube shell completion for the given shell (bash, zsh or fish)
 
 ### Synopsis
 
 
-	Outputs minikube shell completion for the given shell (bash or zsh)
+	Outputs minikube shell completion for the given shell (bash, zsh or fish)
 
 	This depends on the bash-completion binary.  Example installation instructions:
 	OS X:
@@ -22,15 +22,18 @@ Outputs minikube shell completion for the given shell (bash or zsh)
 		$ minikube completion bash > ~/.minikube-completion  # for bash users
 		$ minikube completion zsh > ~/.minikube-completion  # for zsh users
 		$ source ~/.minikube-completion
+		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
 	Ubuntu:
 		$ apt-get install bash-completion
 		$ source /etc/bash-completion
 		$ source <(minikube completion bash) # for bash users
 		$ source <(minikube completion zsh) # for zsh users
+		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
 
 	Additionally, you may want to output the completion to a file and source in your .bashrc
 
 	Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2
+	Note for fish users: [2] please refer to this docs for more details https://fishshell.com/docs/current/#tab-completion
 
 
 ```
