@@ -335,8 +335,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
-	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
-	out.T(out.IndentVerify, "verifying node conditions ...")
+	out.T(out.HealthCheck, "Verifying Kubernetes components...")
 
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
 	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
@@ -366,7 +365,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
-		out.T(out.IndentVerify, "verifying api server ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -381,7 +379,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
-		out.T(out.IndentVerify, "verifying system pods ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -392,7 +389,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
-		out.T(out.IndentVerify, "verifying default service account ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -403,7 +399,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.AppsRunningKey] {
-		out.T(out.IndentVerify, "verifying apps running ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -414,7 +409,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
-		out.T(out.IndentVerify, "verifying node ready")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
