@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -35,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string) error {
@@ -101,9 +103,18 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		cmd := imagePullCommand(containerRuntime, img)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "pulling image %s", img)
+
+		pull := func() error {
+			if err := cmd.Run(); err != nil {
+				return errors.Wrapf(err, "pulling image %s", img)
+			}
+			return nil
 		}
+		// retry up 5 times if network is bad
+		if err = retry.Expo(pull, time.Microsecond, time.Minute, 10); err != nil {
+			return errors.Wrapf(err, "pull image %s", img)
+		}
+
 	}
 
 	// Transfer in k8s binaries
