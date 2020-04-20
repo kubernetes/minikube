@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -78,6 +79,10 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string) bool {
+	// TODO: debug why this func is being called two times
+	fmt.Println("************************************************************************")
+	debug.PrintStack()
+	fmt.Println("************************************************************************")
 	glog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
 	if !viper.GetBool("preload") {
 		return false

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"runtime/debug"
 	"strings"
 	"text/template"
 	"time"
@@ -232,6 +233,7 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
+	debug.PrintStack()
 	glog.Infof("Loading image: %s", path)
 	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
@@ -327,7 +329,7 @@ func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
 	}
 	if ContainerdImagesPreloaded(r.Runner, images) {
 		glog.Info("Images already preloaded, skipping extraction")
-		return nil
+		return r.Restart()
 	}
 
 	tarballPath := download.TarballPath(k8sVersion, cRuntime)
@@ -374,12 +376,14 @@ func (r *Containerd) Restart() error {
 // ContainerdImagesPreloaded returns true if all images have been preloaded
 func ContainerdImagesPreloaded(runner command.Runner, images []string) bool {
 	fmt.Printf("medyadb inside ContainerdImagesPreloaded : images %s \n", strings.Join(images, ","))
-	// rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images"))
-	// if err != nil {
-	// 	return false
-	// }
+	fmt.Println("=================================")
+	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images"))
+	if err != nil {
+		return false
+	}
 
-	// glog.Infof("Got contained preloaded images: %s", rr.Output())
+	glog.Infof("Got contained preloaded images: %s", rr.Output())
+	fmt.Println("=================================")
 
 	// // Make sure images == imgs
 	// for _, i := range images {
