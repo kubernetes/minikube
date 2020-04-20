@@ -323,7 +323,7 @@ func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
-	if ContainerdImagesPreloaded(r.Runner, images) {
+	if containerdImagesPreloaded(r.Runner, images) {
 		glog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
@@ -369,8 +369,8 @@ func (r *Containerd) Restart() error {
 	return r.Init.Restart("containerd")
 }
 
-// ContainerdImagesPreloaded returns true if all images have been preloaded
-func ContainerdImagesPreloaded(runner command.Runner, images []string) bool {
+// containerdImagesPreloaded returns true if all images have been preloaded
+func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
 	if err != nil {
 		return false
