@@ -183,12 +183,12 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	skipSystemVerification := false
 	// Allow older kubeadm versions to function with newer Docker releases.
 	if version.LT(semver.MustParse("1.13.0")) {
-		glog.Info("ignoring SystemVerification for kubeadm because of kubernetes version")
+		glog.Infof("ignoring SystemVerification for kubeadm because of old kubernetes version %v", version)
 		skipSystemVerification = true
 	}
 	if driver.BareMetal(cfg.Driver) && r.Name() == "Docker" {
 		if v, err := r.Version(); err == nil && strings.Contains(v, "azure") {
-			glog.Info("ignoring SystemVerification for kubeadm because of docker version")
+			glog.Infof("ignoring SystemVerification for kubeadm because of unknown docker version %s", v)
 			skipSystemVerification = true
 		}
 	}
