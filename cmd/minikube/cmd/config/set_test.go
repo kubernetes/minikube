@@ -72,7 +72,7 @@ func createTestConfig(t *testing.T, status string) {
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
-	if strings.EqualFold(status, "remove"){
+	if strings.EqualFold(status, "remove") {
 		defer func() {
 			err := os.RemoveAll(td)
 			if err != nil {
