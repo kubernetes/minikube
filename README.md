@@ -1,10 +1,16 @@
 minikube addons enable metadata
+
 kubectl run curl --image=radial/busyboxplus:curl -i --tty
+
 curl metadata.google.internal
+
 kubectl delete deploy curl
 
+
 minikube addons disable metadata
+
 kubectl run curl --image=radial/busyboxplus:curl -i --tty
+
 curl metadata.google.internal # Should fail
 
 # minikube
