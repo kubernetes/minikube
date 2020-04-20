@@ -180,10 +180,18 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
 
+	skipSystemVerification := false
 	// Allow older kubeadm versions to function with newer Docker releases.
+	if version.LT(semver.MustParse("1.13.0")) {
+		glog.Info("ignoring SystemVerification for kubeadm because of kubernetes version")
+		skipSystemVerification = true
+	}
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
-	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.Driver) {
-		glog.Info("ignoring SystemVerification for kubeadm because of either driver or kubernetes version")
+	if driver.IsKIC(cfg.Driver) {
+		glog.Infof("ignoring SystemVerification for kubeadm because of %s driver", cfg.Driver)
+		skipSystemVerification = true
+	}
+	if skipSystemVerification {
 		ignore = append(ignore, "SystemVerification")
 	}
 
