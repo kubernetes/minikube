@@ -220,3 +220,14 @@ func enableIPForwarding(cr CommandRunner) error {
 	}
 	return nil
 }
+
+// ImagesPreloaded returns true if all images have been preloaded
+func ImagesPreloaded(containerRuntime string, runner command.Runner, images []string) bool {
+	if containerRuntime == "docker" {
+		return DockerImagesPreloaded(runner, images)
+	}
+	if containerRuntime == "containerd" {
+		return ContainerdImagesPreloaded(runner, images)
+	}
+	return false
+}

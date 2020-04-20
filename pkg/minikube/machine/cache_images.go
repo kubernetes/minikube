@@ -64,19 +64,10 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
-	if cc.KubernetesConfig.ContainerRuntime == "docker" {
-		// Skip loading images if images already exist
-		if cruntime.DockerImagesPreloaded(runner, images) {
-			glog.Infof("Images are preloaded, skipping loading")
-			return nil
-		}
-	}
-	if cc.KubernetesConfig.ContainerRuntime == "containerd" {
-		// Skip loading images if images already exist
-		if cruntime.ContainerdImagesPreloaded(runner, images) {
-			glog.Infof("Images are preloaded, skipping loading")
-			return nil
-		}
+	// Skip loading images if images already exist
+	if cruntime.ImagesPreloaded(cc.KubernetesConfig.ContainerRuntime, runner, images) {
+		glog.Infof("Images are preloaded, skipping loading")
+		return nil
 	}
 	glog.Infof("LoadImages start: %s", images)
 	start := time.Now()

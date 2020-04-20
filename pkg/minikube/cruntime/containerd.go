@@ -398,11 +398,7 @@ func ContainerdImagesPreloaded(runner command.Runner, images []string) bool {
 		found := false
 		for _, ji := range jsonImages.Images {
 			for _, rt := range ji.RepoTags {
-				// in crictl docker.io is appened to images without repo organization
-				// for example "kubernetesui/dashboard:v2.0.0-rc6 will show up as "docker.io/kubernetesui/dashboard:v2.0.0-rc6"
-				if !strings.Contains(i, ".io/") {
-					i = "docker.io/" + i
-				}
+				i = addRepoTagToImageName(i)
 				if i == rt {
 					found = true
 					break
@@ -420,4 +416,16 @@ func ContainerdImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 	glog.Infof("all images are preloaded for containerd runtime.")
 	return true
+}
+
+// addRepoTagToImageName makes sure the image name has a repo tag in it.
+// in crictl images list have the repo tag prepended to them
+// for example "kubernetesui/dashboard:v2.0.0 will show up as "docker.io/kubernetesui/dashboard:v2.0.0"
+// warning this is only meant for kuberentes images where we know the GCR addreses have .io in them
+// not mean to be used for public images
+func addRepoTagToImageName(imgName string) string {
+	if !strings.Contains(imgName, ".io/") {
+		return "docker.io/" + imgName
+	} // else it already has repo name dont add anything
+	return imgName
 }
