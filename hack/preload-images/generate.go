@@ -88,7 +88,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		Type:              containerRuntime,
 		Runner:            runner,
 		ImageRepository:   "",
-		KubernetesVersion: sv, //  this is just to satsify cruntime and shouldnt matter what version.
+		KubernetesVersion: sv, //  this is just to satisfy cruntime and shouldnt matter what version.
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
