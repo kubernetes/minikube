@@ -35,7 +35,7 @@ const (
 
 var (
 	dockerStorageDriver = "overlay2"
-	containerRuntimes   = []string{"docker"}
+	containerRuntimes   = []string{"docker", "containerd"}
 	k8sVersion          string
 	k8sVersions         []string
 )
@@ -65,10 +65,10 @@ func main() {
 		for _, cr := range containerRuntimes {
 			tf := download.TarballName(kv, cr)
 			if download.PreloadExists(kv, cr) {
-				fmt.Printf("A preloaded tarball for k8s version %s already exists, skipping generation.\n", kv)
+				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
 				continue
 			}
-			fmt.Printf("A preloaded tarball for k8s version %s doesn't exist, generating now...\n", kv)
+			fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
 			if err := generateTarball(kv, cr, tf); err != nil {
 				exit.WithError(fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
 			}
