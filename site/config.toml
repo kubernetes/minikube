@@ -29,10 +29,6 @@ pygmentsStyle = "tango"
  # First one is picked as the Twitter card image if not set on page.
  #images = ["images/project-illustration.png"]
 
-# Configure how URLs look like per section.
-[permalinks]
-blog = "/:section/:year/:month/:day/:slug/"
-
 [markup]
   [markup.highlight]
     codeFences = true
@@ -125,12 +121,12 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	name = "Slack"
 	url = "https://kubernetes.slack.com/messages/C1F5CT6Q1"
 	icon = "fab fa-slack"
-    desc = "Chat with other minikube users & developers"
+    desc = "Chat with other minikube users and developers"
 [[params.links.user]]
 	name = "minikube-users mailing list"
 	url = "https://groups.google.com/forum/#!forum/minikube-users"
 	icon = "fas fa-envelope"
-	desc = "Interact with the minikube Users here"
+	desc = "Interact with the minikube users here"
 
 # Developer relevant links. These will show up on right side of footer and in the community page if you have one.
 [[params.links.developer]]
@@ -142,7 +138,29 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	name = "minikube-dev mailing list"
 	url = "https://groups.google.com/forum/#!forum/minikube-dev"
 	icon = "fa fa-envelope"
-	desc = "Contact the minikube Dev's here"
+	desc = "Contact the minikube developers here"
+[[params.links.developer]]
+	name = "Contributing Guide"
+	url = "https://minikube.sigs.k8s.io/docs/contrib/"
+	icon = "fas fa-external-link-alt"
+	desc = "Check out the contributing guide"
+[[params.links.developer]]
+	name = "Project Roadmap"
+	url = "https://minikube.sigs.k8s.io/docs/contrib/roadmap/"
+	icon = "fas fa-external-link-alt"
+	desc = "Check out the project roadmap"
+
+# minikube meetings
+[[params.links.meetings]]
+	name = "Office hours"
+	url = "https://tinyurl.com/minikube-oh"
+	icon = "fas fa-comments"
+	desc = "Bi-weekly office hours, Mondays @ 11am PST"
+[[params.links.meetings]]
+	name = "Triage Party"
+	url = "https://minikube.sigs.k8s.io/docs/contrib/triage/"
+	icon = "fas fa-comments"
+	desc = "All community members are welcome and encouraged to join and help us triage minikube!"
 
 
 # Related pages - does not appear to work yet
@@ -160,5 +178,3 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
     name  = "keywords"
     weight = 50
     includeNewer = true
-
-    
