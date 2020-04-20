@@ -276,7 +276,7 @@ generate-docs: out/minikube ## Automatically generate commands documentation.
 
 .PHONY: gotest
 gotest: $(SOURCE_GENERATED) ## Trigger minikube test
-	go test -tags "$(MINIKUBE_BUILD_TAGS)" $(MINIKUBE_TEST_FILES)
+	go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
 
 .PHONY: extract
 extract: ## Compile extract tool
