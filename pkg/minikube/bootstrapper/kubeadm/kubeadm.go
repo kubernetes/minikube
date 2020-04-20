@@ -186,6 +186,12 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		glog.Info("ignoring SystemVerification for kubeadm because of kubernetes version")
 		skipSystemVerification = true
 	}
+	if driver.BareMetal(cfg.Driver) && r.Name() == "Docker" {
+		if v, err := r.Version(); err == nil && strings.Contains(v, "azure") {
+			glog.Info("ignoring SystemVerification for kubeadm because of docker version")
+			skipSystemVerification = true
+		}
+	}
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
 	if driver.IsKIC(cfg.Driver) {
 		glog.Infof("ignoring SystemVerification for kubeadm because of %s driver", cfg.Driver)
