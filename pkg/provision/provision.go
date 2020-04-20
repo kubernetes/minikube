@@ -292,7 +292,7 @@ func updateUnit(p provision.SSHCommander, name string, content string, dst strin
 	if _, err := p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s.new", path.Dir(dst), content, dst)); err != nil {
 		return err
 	}
-	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo sudo systemctl -f restart %s; }", dst, dst, dst, dst, name)); err != nil {
+	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo systemctl -f enable %s && sudo systemctl -f restart %s; }", dst, dst, dst, dst, name, name)); err != nil {
 		return err
 	}
 	return nil
