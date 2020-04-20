@@ -88,7 +88,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		Type:              containerRuntime,
 		Runner:            runner,
 		ImageRepository:   "",
-		KubernetesVersion: sv, // I think this is just to statsify cruntime and shouldnt matter
+		KubernetesVersion: sv, //  this is just to satsify cruntime and shouldnt matter what version.
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
@@ -99,11 +99,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	}
 
 	for _, img := range imgs {
-		cmd := exec.Command("docker", "exec", profile, "docker", "pull", img)
-		if containerRuntime == "containerd" {
-			cmd = exec.Command("docker", "exec", profile, "sudo", "crictl", "pull", img)
-		}
-
+		cmd := imagePullCommand(containerRuntime, img)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
@@ -127,6 +123,18 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	}
 
 	return copyTarballToHost(tarballFilename)
+}
+
+// returns the right command to pull image for a specific runtime
+func imagePullCommand(containerRuntime, img string) *exec.Cmd {
+	if containerRuntime == "docker" {
+		return exec.Command("docker", "exec", profile, "docker", "pull", img)
+	}
+
+	if containerRuntime == "containerd" {
+		return exec.Command("docker", "exec", profile, "sudo", "crictl", "pull", img)
+	}
+	return nil
 }
 
 func createImageTarball(tarballFilename, containerRuntime string) error {
