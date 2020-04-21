@@ -56,6 +56,10 @@ func main() {
 		}
 	}()
 
+	if err := deleteMinikube(); err != nil {
+		fmt.Printf("error cleaning up minikube at start up: %v", err)
+	}
+
 	if err := verifyDockerStorage(); err != nil {
 		exit.WithError("Docker storage type is incompatible: %v\n", err)
 	}
@@ -81,6 +85,11 @@ func main() {
 			if err := uploadTarball(tf); err != nil {
 				exit.WithError(fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
 			}
+
+			if err := deleteMinikube(); err != nil {
+				fmt.Printf("error cleaning up minikube at start up: %v", err)
+			}
+
 		}
 	}
 }
