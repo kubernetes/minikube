@@ -14,7 +14,7 @@ Improvements:
 * Check node pressure & new option "node_ready" for --wait flag [#7752](https://github.com/kubernetes/minikube/pull/7752)
 * docker driver: Add Service & Tunnel features to windows   [#7739](https://github.com/kubernetes/minikube/pull/7739)
 * Add master node/worker node type to `minikube status` [#7586](https://github.com/kubernetes/minikube/pull/7586)
-* add new wait component apps_running [#7460](https://github.com/kubernetes/minikube/pull/7460)
+* Add new wait component apps_running [#7460](https://github.com/kubernetes/minikube/pull/7460)
 * none: Add support for OpenRC init (Google CloudShell) [#7539](https://github.com/kubernetes/minikube/pull/7539)
 * Upgrade falco-probe module to version 0.21.0 [#7436](https://github.com/kubernetes/minikube/pull/7436)
 
@@ -22,9 +22,9 @@ Bug Fixes:
 * Fix multinode cluster creation for VM drivers [#7700](https://github.com/kubernetes/minikube/pull/7700)
 * tunnel: Fix resolver file permissions, add DNS forwarding test [#7753](https://github.com/kubernetes/minikube/pull/7753)
 * unconfine apparmor for kic [#7658](https://github.com/kubernetes/minikube/pull/7658)
-* Fix `minikube delete` output nodename missing with KIC driver [#7553](https://github.com/kubernetes/minikube/pull/7553)
+* Fix `minikube delete` output nodename missing with docker/podman driver [#7553](https://github.com/kubernetes/minikube/pull/7553)
 * Respect driver.FlagDefaults even if --extra-config is set [#7509](https://github.com/kubernetes/minikube/pull/7509)
-* remove kic overlay network for docker-runtime [#7425](https://github.com/kubernetes/minikube/pull/7425)
+* remove docker/podman overlay network for docker-runtime [#7425](https://github.com/kubernetes/minikube/pull/7425)
 
 
 Huge thank you for this release towards our contributors:
