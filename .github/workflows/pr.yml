@@ -509,6 +509,16 @@ jobs:
         name: start_stop_tests_docker_ubuntu
         path: minikube_binaries/report
     - name: The End Result - start_stop_tests_docker_ubuntu
+      shell: bash
+      run: |
+        echo ${GOPOGH_RESULT}
+        numFail=$(echo $STAT | jq '.NumberOfFail')
+        echo "----------------${numFail} Failures----------------------------"
+        echo $STAT | jq '.FailedTests' || true
+        echo "-------------------------------------------------------"
+        numPass=$(echo $STAT | jq '.NumberOfPass')
+        echo "*** $numPass Passed ***"
+        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   functional_baremetal_ubuntu18_04:
     needs: [build_minikube]
     env:
