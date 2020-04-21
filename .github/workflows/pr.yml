@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - "**.go"
+      - "**.yml"
+      - "Makefile"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
