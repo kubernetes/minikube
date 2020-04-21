@@ -31,7 +31,7 @@ const (
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	NewestKubernetesVersion = "v1.18.1"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
-	OldestKubernetesVersion = "v1.11.10"
+	OldestKubernetesVersion = "v1.12.0"
 	// DefaultClusterName is the default nane for the k8s cluster
 	DefaultClusterName = "minikube"
 	// DockerDaemonPort is the port Docker daemon listening inside a minikube node (vm or container).
@@ -40,6 +40,8 @@ const (
 	APIServerPort = 8443
 	// SSHPort is the SSH serviceport on the node vm and container
 	SSHPort = 22
+	// RegistryAddonPort os the default registry addon port
+	RegistryAddonPort = 5000
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"

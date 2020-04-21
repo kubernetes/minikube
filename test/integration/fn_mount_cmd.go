@@ -52,6 +52,12 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("failed to clean up %q temp folder.", tempDir)
+		}
+	}()
 	if err != nil {
 		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}

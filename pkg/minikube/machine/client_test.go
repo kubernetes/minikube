@@ -125,7 +125,12 @@ func makeTempDir() string {
 
 func TestRunNotDriver(t *testing.T) {
 	tempDir := makeTempDir()
-	defer os.RemoveAll(tempDir)
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tempDir)
+		}
+	}()
 	StartDriver()
 	if !localbinary.CurrentBinaryIsDockerMachine {
 		t.Fatal("CurrentBinaryIsDockerMachine not set. This will break driver initialization.")

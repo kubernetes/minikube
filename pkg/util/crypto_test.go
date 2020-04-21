@@ -30,10 +30,15 @@ import (
 
 func TestGenerateCACert(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tmpDir)
+		}
+	}()
 	if err != nil {
 		t.Fatalf("Error generating tmpdir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
 
 	certPath := filepath.Join(tmpDir, "cert")
 	keyPath := filepath.Join(tmpDir, "key")
@@ -58,16 +63,26 @@ func TestGenerateCACert(t *testing.T) {
 
 func TestGenerateSignedCert(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", tmpDir)
+		}
+	}()
 	if err != nil {
 		t.Fatalf("Error generating tmpdir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
 
 	signerTmpDir, err := ioutil.TempDir("", "")
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(signerTmpDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", signerTmpDir)
+		}
+	}()
 	if err != nil {
 		t.Fatalf("Error generating signer tmpdir: %v", err)
 	}
-	defer os.RemoveAll(signerTmpDir)
 
 	validSignerCertPath := filepath.Join(signerTmpDir, "cert")
 	validSignerKeyPath := filepath.Join(signerTmpDir, "key")

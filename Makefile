@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 9
-VERSION_BUILD ?= 2
+VERSION_MINOR ?= 10
+VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -274,6 +274,10 @@ test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Tr
 generate-docs: out/minikube ## Automatically generate commands documentation.
 	out/minikube generate-docs --path ./site/content/en/docs/commands/
 
+.PHONY: gotest
+gotest: $(SOURCE_GENERATED) ## Trigger minikube test
+	go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
+
 .PHONY: extract
 extract: ## Compile extract tool
 	go run cmd/extract/extract.go
@@ -392,6 +396,10 @@ reportcard: ## Run goreportcard for minikube
 .PHONY: mdlint
 mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)
+
+.PHONY: verify-iso
+verify-iso: # Make sure the current ISO exists in the expected bucket
+	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
