@@ -7,18 +7,15 @@ description: >
 
 ## Enabling debug logs
 
-To debug issues with minikube (not *Kubernetes* but **minikube** itself), you can use the `-v` flag to see debug level info.  The specified values for `-v` will do the following (the values are all encompassing in that higher values will give you all lower value outputs as well):
+Pass `--alsologtostderr` to minikube commands to see detailed log output output. To increase the log verbosity, you can use:
 
-* `--v=0` will output **INFO** level logs
-* `--v=1` will output **WARNING** level logs
-* `--v=2` will output **ERROR** level logs
-
-* `--v=3` will output *libmachine* logging
-* `--v=7` will output *libmachine --debug* level logging
+* `-v=1`: verbose messages
+* `-v=2`: really verbose messages
+* `-v=8`: more log messages than you can possibly handle.
 
 Example:
 
-`minikube start --v=7` will start minikube and output all the important debug logs to stdout.
+`minikube start --alsologtostderr --v=2` will start minikube and output all the important debug logs to stderr.
 
 ## Gathering VM logs
 
