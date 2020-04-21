@@ -92,6 +92,15 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     umount -f /var || true
     rm -rf /var
     mkdir -p /var
+    mkdir -p /var/lib/docker
+    mkdir -p /var/lib/containers
+    mkdir /var/log
+    mkdir /var/tmp
+    mkdir /var/lib/kubelet
+    mkdir /var/lib/cni
+    ln -s /var/run /run
+    ## make an env file for other services to discover this PARTNAME easier
+    mkdir -p /var/run/minikube
     mount --bind /mnt/$PARTNAME/var /var
 
     mkdir -p /mnt/$PARTNAME/data
@@ -114,8 +123,7 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     chown -R docker:docker /home/docker/.ssh
     rm -f '/home/docker/boot2docker, please format-me'
 
-    ## make an env file for other services to discover this PARTNAME easier
-    mkdir -p /var/run/minikube
+
     echo "PERSISTENT_DIR=\"/mnt/$PARTNAME\"" > /var/run/minikube/env
 fi
 
