@@ -155,7 +155,6 @@ minikube node start [flags]
 ```
       --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
   -h, --help                help for start
-      --name string         The name of the node to start
 ```
 
 ### Options inherited from parent commands
@@ -187,8 +186,7 @@ minikube node stop [flags]
 ### Options
 
 ```
-  -h, --help          help for stop
-      --name string   The name of the node to delete
+  -h, --help   help for stop
 ```
 
 ### Options inherited from parent commands
