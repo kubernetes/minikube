@@ -98,7 +98,6 @@ func validateUnpause(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateDelete(ctx context.Context, t *testing.T, profile string) {
-	// vervose logging because this might go wrong, if container get stuck
 	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -106,6 +105,7 @@ func validateDelete(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// make sure no left over left after deleting a profile such as containers or volumes
 func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 	if err != nil {
