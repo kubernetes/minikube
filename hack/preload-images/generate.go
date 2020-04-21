@@ -182,7 +182,7 @@ func copyTarballToHost(tarballFilename string) error {
 }
 
 func deleteMinikube() error {
-	cmd := exec.Command(minikubePath, "delete", "-p", profile)
+	cmd := exec.Command(minikubePath, "delete", "--all", "--prune") // to avoid https://github.com/kubernetes/minikube/issues/7814
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }
