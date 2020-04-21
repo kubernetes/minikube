@@ -63,7 +63,7 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.9.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.9.0/minikube-v1.9.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.9.0.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.10.0-beta.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.10.0-beta.0/minikube-v1.10.0-beta.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.10.0-beta.0.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.18.1, 'latest' for v1.18.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
@@ -86,7 +86,7 @@ minikube start [flags]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers
       --vm-driver driver                  DEPRECATED, use driver instead.
-      --wait strings                      comma separated list of kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
+      --wait strings                      comma separated list of kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
       --wait-timeout duration             max time to wait per Kubernetes core services to be healthy. (default 6m0s)
 ```
 

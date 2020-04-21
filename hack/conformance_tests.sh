@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2019 The Kubernetes Authors All rights reserved.
 #
@@ -27,15 +27,16 @@ set -ex -o pipefail
 readonly PROFILE_NAME="k8sconformance"
 readonly MINIKUBE=${1:-./out/minikube}
 shift || true
-readonly START_ARGS=$*
 
 # Requires a fully running Kubernetes cluster.
 "${MINIKUBE}" delete -p "${PROFILE_NAME}" || true
-"${MINIKUBE}" start -p "${PROFILE_NAME}" $START_ARGS
+"${MINIKUBE}" start -p "${PROFILE_NAME}" --wait=all
+kubectl --context "${PROFILE_NAME}" get pods --all-namespaces
 "${MINIKUBE}" status -p "${PROFILE_NAME}"
-kubectl get pods --all-namespaces
 
-go get -u -v github.com/heptio/sonobuoy
+go get -u -v github.com/vmware-tanzu/sonobuoy
+
+
 sonobuoy run --wait
 outdir="$(mktemp -d)"
 sonobuoy retrieve "${outdir}"
@@ -47,8 +48,8 @@ mkdir ./results; tar xzf *.tar.gz -C ./results
 
 version=$(${MINIKUBE} version  | cut -d" " -f3)
 
-mkdir minikube-${version}
-cd minikube-${version}
+mkdir "minikube-${version}"
+cd "minikube-${version}"
 
 cat <<EOF >PRODUCT.yaml
 vendor: minikube
@@ -68,4 +69,4 @@ EOF
 
 cp ../results/plugins/e2e/results/* .
 cd ..
-cp -r minikube-${version} ${cwd}
+cp -r "minikube-${version}" "${cwd}"

@@ -1,8 +1,11 @@
 ---
-title: "Proxies & VPN's"
+title: "Proxies and VPNs"
 weight: 6
 description: >
   How to use minikube with a VPN or HTTP/HTTPS Proxy
+aliases:
+  - /docs/reference/networking/vpn
+  - /docs/reference/networking/proxy
 ---
 
 minikube requires access to the internet via HTTP, HTTPS, and DNS protocols.

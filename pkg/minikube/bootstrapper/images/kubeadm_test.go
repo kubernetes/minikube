@@ -101,18 +101,6 @@ func TestKubeadmImages(t *testing.T) {
 			"kubernetesui/dashboard:v2.0.0-rc6",
 			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
-		{"v1.11.10", "", []string{
-			"k8s.gcr.io/kube-proxy-amd64:v1.11.10",
-			"k8s.gcr.io/kube-scheduler-amd64:v1.11.10",
-			"k8s.gcr.io/kube-controller-manager-amd64:v1.11.10",
-			"k8s.gcr.io/kube-apiserver-amd64:v1.11.10",
-			"k8s.gcr.io/coredns:1.1.3",
-			"k8s.gcr.io/etcd-amd64:3.2.18",
-			"k8s.gcr.io/pause:3.1",
-			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"kubernetesui/dashboard:v2.0.0-rc6",
-			"kubernetesui/metrics-scraper:v1.0.2",
-		}},
 	}
 	for _, tc := range tests {
 		got, err := Kubeadm(tc.mirror, tc.version)
