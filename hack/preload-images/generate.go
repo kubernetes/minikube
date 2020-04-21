@@ -100,11 +100,10 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	}
 
 	for _, img := range imgs {
-		cmd := imagePullCommand(containerRuntime, img)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
 		pull := func() error {
+			cmd := imagePullCommand(containerRuntime, img)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 			if err := cmd.Run(); err != nil {
 				time.Sleep(time.Second) // to avoid error: : exec: already started
 				return errors.Wrapf(err, "pulling image %s", img)
