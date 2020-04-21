@@ -188,7 +188,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 	}
 
 	// We have a fully operational host, now we can check for details
-	if _, err := cluster.GetHostDriverIP(api, name); err != nil {
+	if _, err := cluster.DriverIP(api, name); err != nil {
 		glog.Errorf("failed to get driver ip: %v", err)
 		st.Host = state.Error.String()
 		return st, err
