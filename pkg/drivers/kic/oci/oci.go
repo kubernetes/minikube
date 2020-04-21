@@ -43,7 +43,7 @@ import (
 func DeleteContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 
-	cs, err := listContainersByLabel(ociBin, label)
+	cs, err := ListContainersByLabel(ociBin, label)
 	if err != nil {
 		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
@@ -322,7 +322,7 @@ func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
 func ListOwnedContainers(ociBinary string) ([]string, error) {
-	return listContainersByLabel(ociBinary, ProfileLabelKey)
+	return ListContainersByLabel(ociBinary, ProfileLabelKey)
 }
 
 // inspect return low-level information on containers
@@ -452,8 +452,8 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 	}
 }
 
-// listContainersByLabel returns all the container names with a specified label
-func listContainersByLabel(ociBinary string, label string) ([]string, error) {
+// ListContainersByLabel returns all the container names with a specified label
+func ListContainersByLabel(ociBinary string, label string) ([]string, error) {
 	stdout, err := WarnIfSlow(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	if err != nil {
 		return nil, err
