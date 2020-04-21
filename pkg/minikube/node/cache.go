@@ -43,7 +43,8 @@ const (
 
 // BeginCacheKubernetesImages caches images required for kubernetes version in the background
 func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
-	if download.PreloadExists(k8sVersion, cRuntime) {
+	// TODO: remove imageRepository check once #7695 is fixed
+	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime) {
 		glog.Info("Caching tarball of preloaded images")
 		err := download.Preload(k8sVersion, cRuntime)
 		if err == nil {
