@@ -107,15 +107,13 @@ func validateDelete(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
-	// vervose logging because this might go wrong, if container get stuck
-	args := []string{"profile", "list"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 	if err != nil {
 		t.Errorf("failed to list profiles with json format after it was deleted. args %q: %v", rr.Command(), err)
 	}
+
 	var jsonObject map[string][]map[string]interface{}
-	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
-	if err != nil {
+	if err := json.Unmarshal(rr.Stdout.Bytes(), &jsonObject); err != nil {
 		t.Errorf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
 	}
 	validProfiles := jsonObject["valid"]
@@ -127,7 +125,7 @@ func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 		}
 	}
 	if profileExists {
-		t.Errorf("expected the deleted profile doesnt show up in profile list anymore but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
+		t.Errorf("expected the deleted profile %q not to show up in profile list but it does! output: %s . args: %q", profile, rr.Stdout.String(), rr.Command())
 	}
 
 	if KicDriver() {
@@ -135,15 +133,12 @@ func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 		if PodmanDriver() {
 			bin = "podman"
 		}
-		args = []string{"ps", "-a"}
-		rr, err := Run(t, exec.CommandContext(ctx, bin, args...))
+		rr, err := Run(t, exec.CommandContext(ctx, bin, "ps", "-a"))
 		if err == nil && strings.Contains(rr.Output(), profile) {
-
-			t.Errorf("expected container %q not to exist in output of %s but got : %s", rr.Command(), rr.Output())
+			t.Errorf("expected container %q not to exist in output of %s but it does output: %s.", profile, rr.Command(), rr.Output())
 		}
 
-		args = []string{"volume", "inspect", profile}
-		rr, err := Run(t, exec.CommandContext(ctx, bin, args...))
+		rr, err = Run(t, exec.CommandContext(ctx, bin, "volume", "inspect", profile))
 		if err == nil {
 			t.Errorf("expected to see error and volume %q to not exist after deletion but got no error and this output: %s", rr.Command(), rr.Output())
 		}
