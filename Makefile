@@ -397,6 +397,10 @@ reportcard: ## Run goreportcard for minikube
 mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)
 
+.PHONY: verify-iso
+verify-iso: # Make sure the current ISO exists in the expected bucket
+	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
+
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
