@@ -5,6 +5,8 @@ on:
       - master
     paths:
       - "**.go"
+      - "**.yml"
+      - "Makefile"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
