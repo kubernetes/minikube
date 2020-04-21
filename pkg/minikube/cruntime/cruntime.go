@@ -104,8 +104,6 @@ type Manager interface {
 	SystemLogCmd(int) string
 	// Preload preloads the container runtime with k8s images
 	Preload(config.KubernetesConfig) error
-	// ForceSystemdCgroupManager forces the runtime to use systemd as cgroup manager
-	ForceSystemdCgroupManager() error
 }
 
 // Config is runtime configuration
