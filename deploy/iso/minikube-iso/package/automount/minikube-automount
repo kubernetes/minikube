@@ -89,37 +89,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     fi
 
     # Just in case, the links will fail if not
-    umount -f /var/lib/docker || true
-    rm -rf /var/lib/docker /var/lib/boot2docker
-    mkdir -p /var/lib
-
-    mkdir -p /mnt/$PARTNAME/var/lib/boot2docker
-    mkdir /var/lib/boot2docker
-    mount --bind /mnt/$PARTNAME/var/lib/boot2docker /var/lib/boot2docker
-
-    mkdir -p /mnt/$PARTNAME/var/lib/docker
-    mkdir -p /var/lib/docker
-    mount --bind /mnt/$PARTNAME/var/lib/docker /var/lib/docker
-
-    mkdir -p /mnt/$PARTNAME/var/lib/containers
-    mkdir -p /var/lib/containers
-    mount --bind /mnt/$PARTNAME/var/lib/containers /var/lib/containers
-
-    mkdir -p /mnt/$PARTNAME/var/log
-    mkdir /var/log
-    mount --bind /mnt/$PARTNAME/var/log /var/log
-
-    mkdir -p /mnt/$PARTNAME/var/tmp
-    mkdir /var/tmp
-    mount --bind /mnt/$PARTNAME/var/tmp /var/tmp
-
-    mkdir -p /mnt/$PARTNAME/var/lib/kubelet
-    mkdir /var/lib/kubelet
-    mount --bind /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
-
-    mkdir -p /mnt/$PARTNAME/var/lib/cni
-    mkdir /var/lib/cni
-    mount --bind /mnt/$PARTNAME/var/lib/cni /var/lib/cni
+    umount -f /var || true
+    rm -rf /var
+    mkdir -p /var
+    mount --bind /mnt/$PARTNAME/var /var
 
     mkdir -p /mnt/$PARTNAME/data
     mkdir /data
@@ -140,18 +113,6 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     tar xf /var/lib/boot2docker/userdata.tar -C /home/docker/
     chown -R docker:docker /home/docker/.ssh
     rm -f '/home/docker/boot2docker, please format-me'
-
-    mkdir -p /mnt/$PARTNAME/var/lib/minikube
-    mkdir /var/lib/minikube
-    mount --bind /mnt/$PARTNAME/var/lib/minikube /var/lib/minikube
-
-    mkdir -p /mnt/$PARTNAME/var/lib/toolbox
-    mkdir /var/lib/toolbox
-    mount --bind /mnt/$PARTNAME/var/lib/toolbox /var/lib/toolbox
-
-    mkdir -p /mnt/$PARTNAME/var/lib/minishift
-    mkdir /var/lib/minishift
-    mount --bind /mnt/$PARTNAME/var/lib/minishift /var/lib/minishift
 
     ## make an env file for other services to discover this PARTNAME easier
     mkdir -p /var/run/minikube
