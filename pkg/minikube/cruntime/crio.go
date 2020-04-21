@@ -229,8 +229,3 @@ func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
 	}
 	return fmt.Errorf("not yet implemented for %s", r.Name())
 }
-
-// ForceSystemdCgroupManager does nothing since CRIO already uses systemd
-func (r *CRIO) ForceSystemdCgroupManager() error {
-	return nil
-}

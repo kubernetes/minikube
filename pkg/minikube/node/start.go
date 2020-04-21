@@ -99,7 +99,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 		// setup kubeadm (must come after setupKubeconfig)
 		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
-
 		err = bs.StartCluster(*starter.Cfg)
 
 		if err != nil {
@@ -260,12 +259,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if err != nil {
 		debug.PrintStack()
 		exit.WithError("Failed to enable container runtime", err)
-	}
-
-	if driver.IsKIC(cc.Driver) {
-		if err := cr.ForceSystemdCgroupManager(); err != nil {
-			glog.Warningf("Failed to force %s to use systemd as cgroup manager (this might be ok): %v", cr.Name(), err)
-		}
 	}
 
 	return cr
