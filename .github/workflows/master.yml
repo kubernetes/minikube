@@ -1,4 +1,4 @@
-name: MasterCI
+name: Master
 on:
   push:
     branches:
