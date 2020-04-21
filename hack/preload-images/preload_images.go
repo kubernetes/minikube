@@ -85,6 +85,11 @@ func main() {
 			if err := uploadTarball(tf); err != nil {
 				exit.WithError(fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
 			}
+
+			if err := deleteMinikube(); err != nil {
+				fmt.Printf("error cleaning up minikube at start up: %v", err)
+			}
+
 		}
 	}
 }
