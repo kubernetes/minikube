@@ -55,6 +55,18 @@ Huge thank you for this release towards our contributors:
 - sayboras
 - tomocy
 
+Thank you so much to users who helped with community triage:
+
+- ps-feng
+- Prasad Katti
+
+And big thank you to those who participated in our docs fixit week:
+
+- matjung
+- jlaswell
+- remraz
+
+
 ## Version 1.9.2 - 2020-04-04
 
 Minor improvements:
