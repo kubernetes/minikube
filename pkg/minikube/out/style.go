@@ -85,6 +85,7 @@ var styles = map[StyleEnum]style{
 	Unpause:       {Prefix: "⏯️  "},
 	Confused:      {Prefix: "😕  "},
 	Shrug:         {Prefix: "🤷  "},
+	New:           {Prefix: "🆕  "},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
