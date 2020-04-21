@@ -429,3 +429,8 @@ func addRepoTagToImageName(imgName string) string {
 	} // else it already has repo name dont add anything
 	return imgName
 }
+
+// TODO: Enable for containerd
+func (r *Containerd) ForceSystemdCgroupManager() error {
+	return nil
+}
