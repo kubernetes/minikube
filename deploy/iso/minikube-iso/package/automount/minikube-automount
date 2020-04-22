@@ -101,6 +101,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /var/lib/docker
     mount --bind /mnt/$PARTNAME/var/lib/docker /var/lib/docker
 
+    mkdir -p /mnt/$PARTNAME/var/lib/containerd
+    mkdir -p /var/lib/containerd
+    mount --bind /mnt/$PARTNAME/var/lib/containerd /var/lib/containerd
+
     mkdir -p /mnt/$PARTNAME/var/lib/containers
     mkdir -p /var/lib/containers
     mount --bind /mnt/$PARTNAME/var/lib/containers /var/lib/containers
@@ -117,9 +121,14 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /var/lib/kubelet
     mount --bind /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
 
+    mkdir -p /mnt/$PARTNAME/var/lib/kubelet/pods
+    mkdir /var/lib/kubelet/pods
+    mount --bind /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet/pods
+
     mkdir -p /mnt/$PARTNAME/var/lib/cni
     mkdir /var/lib/cni
     mount --bind /mnt/$PARTNAME/var/lib/cni /var/lib/cni
+
 
     mkdir -p /mnt/$PARTNAME/data
     mkdir /data
