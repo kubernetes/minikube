@@ -997,9 +997,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 
 	}
 	if defaultVersion.GT(nvs) {
-        out.T(out.New,
-              "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}",
-              out.V{"new": defaultVersion})
+        out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
 }
