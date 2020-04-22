@@ -25,6 +25,7 @@ import (
 	"bufio"
 	"bytes"
 
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -42,7 +43,7 @@ import (
 func DeleteContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 
-	cs, err := listContainersByLabel(ociBin, label)
+	cs, err := ListContainersByLabel(ociBin, label)
 	if err != nil {
 		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
@@ -59,6 +60,9 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again!", c, ociBin))
 			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
 			continue
+		}
+		if err := ShutDown(ociBin, c); err != nil {
+			glog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
 		}
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
 		if out, err := cmd.CombinedOutput(); err != nil {
@@ -77,6 +81,9 @@ func DeleteContainer(ociBin string, name string) error {
 		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
 	}
 	// try to delete anyways
+	if err := ShutDown(ociBin, name); err != nil {
+		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
+	}
 	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "delete container %s: output %s", name, out)
@@ -108,7 +115,9 @@ func CreateContainerNode(p CreateParams) error {
 		// including some ones docker would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
-		"--security-opt", "seccomp=unconfined", // also ignore seccomp
+		"--security-opt", "seccomp=unconfined", //  ignore seccomp
+		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
+		"--security-opt", "apparmor=unconfined",
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// logs,pods be stroed on  filesystem vs inside container,
@@ -163,7 +172,7 @@ func CreateContainerNode(p CreateParams) error {
 		if err != nil {
 			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
 		}
-		if s != "running" {
+		if s != state.Running {
 			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
 		glog.Infof("the created container %q has a running status.", p.Name)
@@ -313,7 +322,7 @@ func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
 func ListOwnedContainers(ociBinary string) ([]string, error) {
-	return listContainersByLabel(ociBinary, ProfileLabelKey)
+	return ListContainersByLabel(ociBinary, ProfileLabelKey)
 }
 
 // inspect return low-level information on containers
@@ -443,8 +452,8 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 	}
 }
 
-// listContainersByLabel returns all the container names with a specified label
-func listContainersByLabel(ociBinary string, label string) ([]string, error) {
+// ListContainersByLabel returns all the container names with a specified label
+func ListContainersByLabel(ociBinary string, label string) ([]string, error) {
 	stdout, err := WarnIfSlow(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	if err != nil {
 		return nil, err
@@ -480,7 +489,51 @@ func PointToHostDockerDaemon() error {
 }
 
 // ContainerStatus returns status of a container running,exited,...
-func ContainerStatus(ociBin string, name string) (string, error) {
+func ContainerStatus(ociBin string, name string) (state.State, error) {
 	out, err := WarnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
-	return strings.TrimSpace(string(out)), err
+	o := strings.TrimSpace(string(out))
+	switch o {
+	case "running":
+		return state.Running, nil
+	case "exited":
+		return state.Stopped, nil
+	case "paused":
+		return state.Paused, nil
+	case "restarting":
+		return state.Starting, nil
+	case "dead":
+		return state.Error, nil
+	default:
+		return state.None, errors.Wrapf(err, "unknown state %q", name)
+	}
+}
+
+// Shutdown will run command to shut down the container
+// to ensure the containers process and networking bindings are all closed
+// to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
+func ShutDown(ociBin string, name string) error {
+	cmd := exec.Command(ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		glog.Infof("error shutdown %s output %q : %v", name, out, err)
+	}
+	// helps with allowing docker realize the container is exited and report its status correctly.
+	time.Sleep(time.Second * 1)
+	// wait till it is stoped
+	stopped := func() error {
+		st, err := ContainerStatus(ociBin, name)
+		if st == state.Stopped {
+			glog.Infof("container %s status is %s", name, st)
+			return nil
+		}
+		if err != nil {
+			glog.Infof("temporary error verifying shutdown: %v", err)
+		}
+		glog.Infof("temporary error: container %s status is %s but expect it to be exited", name, st)
+		return errors.Wrap(err, "couldn't verify cointainer is exited. %v")
+	}
+	if err := retry.Expo(stopped, time.Millisecond*500, time.Second*20); err != nil {
+		return errors.Wrap(err, "verify shutdown")
+	}
+	glog.Infof("Successfully shutdown container %s", name)
+	return nil
 }

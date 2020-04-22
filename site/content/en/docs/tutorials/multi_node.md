@@ -21,12 +21,13 @@ date: 2019-11-24
 minikube start --nodes 2 -p multinode-demo --network-plugin=cni --extra-config=kubeadm.pod-network-cidr=10.244.0.0/16
 😄  [multinode-demo] minikube v1.9.2 on Darwin 10.14.6
 ✨  Automatically selected the hyperkit driver
-👍  Starting control plane node m01 in cluster multinode-demo
+👍  Starting control plane node multinode-demo in cluster multinode-demo
 🔥  Creating hyperkit VM (CPUs=2, Memory=4000MB, Disk=20000MB) ...
 🐳  Preparing Kubernetes v1.18.0 on Docker 19.03.8 ...
+    ▪ kubeadm.pod-network-cidr=10.244.0.0/16
 🌟  Enabling addons: default-storageclass, storage-provisioner
 
-👍  Starting node m02 in cluster multinode-demo
+👍  Starting node multinode-demo-m02 in cluster multinode-demo
 🔥  Creating hyperkit VM (CPUs=2, Memory=4000MB, Disk=20000MB) ...
 🌐  Found network options:
     ▪ NO_PROXY=192.168.64.213
@@ -40,6 +41,22 @@ kubectl get nodes
 NAME                 STATUS   ROLES    AGE     VERSION
 multinode-demo       Ready    master   9m58s   v1.18.0
 multinode-demo-m02   Ready    <none>   9m5s    v1.18.0
+```
+
+NOTE: You can also check the status of your nodes:
+```
+$ minikube status
+multinode-demo
+type: Control Plane
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
+
+multinode-demo-m02
+type: Worker
+host: Running
+kubelet: Running
 ```
 
 - Install a CNI (e.g. flannel):

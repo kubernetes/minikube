@@ -29,6 +29,8 @@ endef
 
 define PODMAN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 $(@D)/bin/podman $(TARGET_DIR)/usr/bin/podman
+	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/cni/net.d/
+	$(INSTALL) -m 644 cni/87-podman-bridge.conflist $(TARGET_DIR)/etc/cni/net.d/87-podman-bridge.conflist
 endef
 
 $(eval $(generic-package))

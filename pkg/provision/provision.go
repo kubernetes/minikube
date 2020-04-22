@@ -39,7 +39,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 // generic interface for minikube provisioner
@@ -83,7 +82,7 @@ func configureAuth(p miniProvisioner) error {
 	glog.Infof("configureAuth start")
 	start := time.Now()
 	defer func() {
-		glog.Infof("configureAuth took %s", time.Since(start))
+		glog.Infof("duration metric: configureAuth took %s", time.Since(start))
 	}()
 
 	driver := p.GetDriver()
@@ -165,11 +164,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		authOptions.ServerKeyPath:  authOptions.ServerKeyRemotePath,
 	}
 
-	sshClient, err := sshutil.NewSSHClient(driver)
-	if err != nil {
-		return errors.Wrap(err, "provisioning: error getting ssh client")
-	}
-	sshRunner := command.NewSSHRunner(sshClient)
+	sshRunner := command.NewSSHRunner(driver)
 
 	dirs := []string{}
 	for _, dst := range remoteCerts {
@@ -177,7 +172,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 	}
 
 	args := append([]string{"mkdir", "-p"}, dirs...)
-	if _, err = sshRunner.RunCmd(exec.Command("sudo", args...)); err != nil {
+	if _, err := sshRunner.RunCmd(exec.Command("sudo", args...)); err != nil {
 		return err
 	}
 
@@ -297,7 +292,7 @@ func updateUnit(p provision.SSHCommander, name string, content string, dst strin
 	if _, err := p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s.new", path.Dir(dst), content, dst)); err != nil {
 		return err
 	}
-	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo sudo systemctl -f restart %s; }", dst, dst, dst, dst, name)); err != nil {
+	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo systemctl -f enable %s && sudo systemctl -f restart %s; }", dst, dst, dst, dst, name, name)); err != nil {
 		return err
 	}
 	return nil

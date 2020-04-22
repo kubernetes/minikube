@@ -26,8 +26,6 @@ import (
 	"testing"
 	"text/template"
 
-	"time"
-
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
@@ -35,7 +33,6 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	testing_fake "k8s.io/client-go/testing"
@@ -55,7 +52,7 @@ type MockClientGetter struct {
 // Force GetCoreClient to fail
 var getCoreClientFail bool
 
-func (m *MockClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
+func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, error) {
 	if getCoreClientFail {
 		return nil, fmt.Errorf("test Error - Mocked Get")
 	}
@@ -63,10 +60,6 @@ func (m *MockClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
 		servicesMap:  m.servicesMap,
 		endpointsMap: m.endpointsMap,
 		secretsMap:   m.secretsMap}, nil
-}
-
-func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
-	return nil, nil
 }
 
 func (m *MockCoreClient) Secrets(ns string) typed_core.SecretInterface {
@@ -476,7 +469,7 @@ func TestGetServiceURLs(t *testing.T) {
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,
 			}
-			urls, err := GetServiceURLs(test.api, test.namespace, defaultTemplate)
+			urls, err := GetServiceURLs(test.api, "minikube", test.namespace, defaultTemplate)
 			if err != nil && !test.err {
 				t.Errorf("Error GetServiceURLs %v", err)
 			}
@@ -544,7 +537,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,
 			}
-			svcURL, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
+			svcURL, err := GetServiceURLsForService(test.api, "minikube", test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
 				t.Errorf("Error GetServiceURLsForService %v", err)
 			}
@@ -626,7 +619,7 @@ users:
 			os.Setenv("KUBECONFIG", mockK8sConfigPath)
 
 			k8s := K8sClientGetter{}
-			_, err = k8s.GetCoreClient()
+			_, err = k8s.GetCoreClient("minikube")
 			if err != nil && !test.err {
 				t.Fatalf("GetCoreClient returned unexpected error: %v", err)
 			}
@@ -691,7 +684,7 @@ func TestGetServiceListByLabel(t *testing.T) {
 				secretsMap:   secretsNamespaces,
 			}
 			getCoreClientFail = test.failedGetClient
-			svcs, err := GetServiceListByLabel(test.ns, test.name, test.label)
+			svcs, err := GetServiceListByLabel("minikube", test.ns, test.name, test.label)
 			if err != nil && !test.err {
 				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
 			}
@@ -741,7 +734,7 @@ func TestCheckService(t *testing.T) {
 				secretsMap:   secretsNamespaces,
 			}
 			getCoreClientFail = test.failedGetClient
-			err := CheckService(test.ns, test.name)
+			err := CheckService("minikube", test.ns, test.name)
 			if err == nil && test.err {
 				t.Fatalf("Test %v expected error but got nil", test.description)
 			}
@@ -780,7 +773,7 @@ func TestDeleteSecret(t *testing.T) {
 				secretsMap:   secretsNamespaces,
 			}
 			getCoreClientFail = test.failedGetClient
-			err := DeleteSecret(test.ns, test.name)
+			err := DeleteSecret("minikube", test.ns, test.name)
 			if err == nil && test.err {
 				t.Fatalf("Test %v expected error but got nil", test.description)
 			}
@@ -819,7 +812,7 @@ func TestCreateSecret(t *testing.T) {
 				secretsMap:   secretsNamespaces,
 			}
 			getCoreClientFail = test.failedGetClient
-			err := CreateSecret(test.ns, test.name, map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"})
+			err := CreateSecret("minikube", test.ns, test.name, map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"})
 			if err == nil && test.err {
 				t.Fatalf("Test %v expected error but got nil", test.description)
 			}
@@ -921,7 +914,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			}
 
 			var urlList []string
-			urlList, err := WaitForService(test.api, test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
+			urlList, err := WaitForService(test.api, "minikube", test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
 			if test.err && err == nil {
 				t.Fatalf("WaitForService expected to fail for test: %v", test)
 			}
@@ -986,7 +979,7 @@ func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 				servicesMap:  serviceNamespaceOther,
 				endpointsMap: endpointNamespaces,
 			}
-			_, err := WaitForService(test.api, test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
+			_, err := WaitForService(test.api, "minikube", test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
 			if test.err && err == nil {
 				t.Fatalf("WaitForService expected to fail for test: %v", test)
 			}

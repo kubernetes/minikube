@@ -212,45 +212,6 @@ users:
 - name: minikube
 `
 
-func TestGetClient(t *testing.T) {
-	var tests = []struct {
-		description string
-		config      string
-		err         bool
-	}{
-		{
-			description: "ok",
-			config:      mockK8sConfig,
-		},
-		{
-			description: "no valid config",
-			config:      "this is not valid config",
-			err:         true,
-		},
-	}
-	configFile, err := ioutil.TempFile("/tmp", "")
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-	defer os.Remove(configFile.Name())
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-
-			if err := setK8SConfig(test.config, configFile.Name()); err != nil {
-				t.Fatalf(err.Error())
-			}
-
-			_, err = getClient()
-			if err != nil && !test.err {
-				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
-			}
-			if err == nil && test.err {
-				t.Fatalf("Expected err for test: %v", test.description)
-			}
-		})
-	}
-}
-
 func TestGetStoragev1(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -278,7 +239,8 @@ func TestGetStoragev1(t *testing.T) {
 				t.Fatalf(err.Error())
 			}
 
-			_, err = GetStoragev1()
+			// context name is hardcoded by mockK8sConfig
+			_, err = GetStoragev1("minikube")
 			if err != nil && !test.err {
 				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
 			}
