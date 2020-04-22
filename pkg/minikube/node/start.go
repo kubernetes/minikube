@@ -37,7 +37,6 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -89,18 +88,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
-	// ssh should be set up by now
-	// switch to using ssh runner since it is faster
-	if driver.IsKIC(starter.Cfg.Driver) {
-		sshRunner, err := machine.SSHRunner(starter.Host)
-		if err != nil {
-			glog.Infof("error getting ssh runner: %v", err)
-		} else {
-			glog.Infof("Using ssh runner for kic...")
-			starter.Runner = sshRunner
-		}
-	}
-
 	var bs bootstrapper.Bootstrapper
 	var kcs *kubeconfig.Settings
 	if apiServer {
@@ -111,7 +98,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 
 		// setup kubeadm (must come after setupKubeconfig)
-		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node)
+		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
 		err = bs.StartCluster(*starter.Cfg)
 
 		if err != nil {
@@ -124,7 +111,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed to update kubeconfig file.")
 		}
 	} else {
-		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, *starter.Node)
+		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
@@ -157,8 +144,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 
-		// Skip pre-existing, because we already waited for health
-		if kverify.ShouldWait(starter.Cfg.VerifyComponents) && !starter.PreExists {
+		// TODO: existing cluster should wait for health #7597
+		if !starter.PreExists {
 			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}
@@ -168,13 +155,23 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Updating node")
 		}
 
+		// Make sure to use the command runner for the control plane to generate the join token
 		cp, err := config.PrimaryControlPlane(starter.Cfg)
 		if err != nil {
-			return nil, errors.Wrap(err, "Getting primary control plane")
+			return nil, errors.Wrap(err, "getting primary control plane")
 		}
-		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, cp)
+		h, err := machine.LoadHost(starter.MachineAPI, driver.MachineName(*starter.Cfg, cp))
 		if err != nil {
-			return nil, errors.Wrap(err, "Getting bootstrapper")
+			return nil, errors.Wrap(err, "getting control plane host")
+		}
+		cpr, err := machine.CommandRunner(h)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting control plane command runner")
+		}
+
+		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, cpr)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
 		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
@@ -268,8 +265,8 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node) bootstrapper.Bootstrapper {
-	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, n)
+func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) bootstrapper.Bootstrapper {
+	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, r)
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
@@ -277,24 +274,16 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node) 
 		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
-	// update cluster and set up certs in parallel
-	var parallel sync.WaitGroup
-	parallel.Add(2)
-	go func() {
-		if err := bs.UpdateCluster(cfg); err != nil {
-			exit.WithError("Failed to update cluster", err)
-		}
-		parallel.Done()
-	}()
+	// update cluster and set up certs
 
-	go func() {
-		if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
-			exit.WithError("Failed to setup certs", err)
-		}
-		parallel.Done()
-	}()
+	if err := bs.UpdateCluster(cfg); err != nil {
+		exit.WithError("Failed to update cluster", err)
+	}
 
-	parallel.Wait()
+	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
+		exit.WithError("Failed to setup certs", err)
+	}
+
 	return bs
 }
 
@@ -414,7 +403,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
 			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
-				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details", out.V{"ip_address": ip, "documentation_url": "https://minikube.sigs.k8s.io/docs/reference/networking/proxy/"})
+				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details", out.V{"ip_address": ip, "documentation_url": "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"})
 				warnedOnce = true
 			}
 		}

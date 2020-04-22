@@ -1,6 +1,6 @@
 ## Install Docker
 
-- [Docker Desktop](https://hub.docker.com/search?q=&type=edition&offering=community&sort=updated_at&order=desc)
+- [Docker](https://hub.docker.com/search?q=&type=edition&offering=community&sort=updated_at&order=desc)
 
 ## Usage
 

@@ -35,7 +35,7 @@ func TestExitCode(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := exitCode(tc.state)
+			got := exitCode([]*Status{tc.state})
 			if got != tc.want {
 				t.Errorf("exitcode(%+v) = %d, want: %d", tc.state, got, tc.want)
 			}
@@ -52,17 +52,17 @@ func TestStatusText(t *testing.T) {
 		{
 			name:  "ok",
 			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured},
-			want:  "minikube\nhost: Running\nkubelet: Running\napiserver: Running\nkubeconfig: Configured\n\n",
+			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Running\napiserver: Running\nkubeconfig: Configured\n\n",
 		},
 		{
 			name:  "paused",
 			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured},
-			want:  "minikube\nhost: Running\nkubelet: Stopped\napiserver: Paused\nkubeconfig: Configured\n\n",
+			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Stopped\napiserver: Paused\nkubeconfig: Configured\n\n",
 		},
 		{
 			name:  "down",
 			state: &Status{Name: "minikube", Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured},
-			want:  "minikube\nhost: Stopped\nkubelet: Stopped\napiserver: Stopped\nkubeconfig: Misconfigured\n\n\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n",
+			want:  "minikube\ntype: Control Plane\nhost: Stopped\nkubelet: Stopped\napiserver: Stopped\nkubeconfig: Misconfigured\n\n\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n",
 		},
 	}
 	for _, tc := range tests {
@@ -93,7 +93,7 @@ func TestStatusJSON(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var b bytes.Buffer
-			err := statusJSON(tc.state, &b)
+			err := statusJSON([]*Status{tc.state}, &b)
 			if err != nil {
 				t.Errorf("json(%+v) error: %v", tc.state, err)
 			}

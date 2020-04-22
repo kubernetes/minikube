@@ -53,7 +53,7 @@ var logsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		co := mustload.Running(ClusterFlagValue())
 
-		bs, err := cluster.Bootstrapper(co.API, viper.GetString(cmdcfg.Bootstrapper), *co.Config, *co.CP.Node)
+		bs, err := cluster.Bootstrapper(co.API, viper.GetString(cmdcfg.Bootstrapper), *co.Config, co.CP.Runner)
 		if err != nil {
 			exit.WithError("Error getting cluster bootstrapper", err)
 		}

@@ -35,21 +35,26 @@ const (
 
 var (
 	// For testing
-	collectTimeMinikubeStart = timeMinikubeStart
+	collectTimeMinikubeStart = collectTimes
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
-func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []string) error {
-	durations, err := collectTimes(ctx, binaries)
+func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
+	durations, err := collectTimeMinikubeStart(ctx, binaries)
 	if err != nil {
 		return err
 	}
 
-	fmt.Fprintf(out, "Old binary: %v\nNew binary: %v\nAverage Old: %f\nAverage New: %f\n", durations[0], durations[1], average(durations[0]), average(durations[1]))
+	for i, d := range durations {
+		fmt.Fprintf(out, "Results for %s:\n", binaries[i].Name())
+		fmt.Fprintf(out, "Times: %v\n", d)
+		fmt.Fprintf(out, "Average Time: %f\n\n", average(d))
+	}
+
 	return nil
 }
 
-func collectTimes(ctx context.Context, binaries []string) ([][]float64, error) {
+func collectTimes(ctx context.Context, binaries []*Binary) ([][]float64, error) {
 	durations := make([][]float64, len(binaries))
 	for i := range durations {
 		durations[i] = make([]float64, runs)
@@ -58,9 +63,9 @@ func collectTimes(ctx context.Context, binaries []string) ([][]float64, error) {
 	for r := 0; r < runs; r++ {
 		log.Printf("Executing run %d...", r)
 		for index, binary := range binaries {
-			duration, err := collectTimeMinikubeStart(ctx, binary)
+			duration, err := timeMinikubeStart(ctx, binary)
 			if err != nil {
-				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary)
+				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary.Name())
 			}
 			durations[index][r] = duration
 		}
@@ -79,12 +84,12 @@ func average(nums []float64) float64 {
 
 // timeMinikubeStart returns the time it takes to execute `minikube start`
 // It deletes the VM after `minikube start`.
-func timeMinikubeStart(ctx context.Context, binary string) (float64, error) {
-	startCmd := exec.CommandContext(ctx, binary, "start")
+func timeMinikubeStart(ctx context.Context, binary *Binary) (float64, error) {
+	startCmd := exec.CommandContext(ctx, binary.path, "start")
 	startCmd.Stdout = os.Stdout
 	startCmd.Stderr = os.Stderr
 
-	deleteCmd := exec.CommandContext(ctx, binary, "delete")
+	deleteCmd := exec.CommandContext(ctx, binary.path, "delete")
 	defer func() {
 		if err := deleteCmd.Run(); err != nil {
 			log.Printf("error deleting minikube: %v", err)
