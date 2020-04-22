@@ -129,7 +129,6 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /var/lib/cni
     mount --bind /mnt/$PARTNAME/var/lib/cni /var/lib/cni
 
-
     mkdir -p /mnt/$PARTNAME/data
     mkdir /data
     mount --bind /mnt/$PARTNAME/data /data
