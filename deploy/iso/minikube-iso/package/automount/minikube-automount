@@ -121,10 +121,6 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /var/lib/kubelet
     mount --bind /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
 
-    mkdir -p /mnt/$PARTNAME/var/lib/kubelet/pods
-    mkdir /var/lib/kubelet/pods
-    mount --bind /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet/pods
-
     mkdir -p /mnt/$PARTNAME/var/lib/cni
     mkdir /var/lib/cni
     mount --bind /mnt/$PARTNAME/var/lib/cni /var/lib/cni
