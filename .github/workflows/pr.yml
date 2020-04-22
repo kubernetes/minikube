@@ -114,6 +114,7 @@ jobs:
       shell: bash {0}
       run: |
         cd minikube_binaries
+        make kic-base-image
         mkdir -p report
         mkdir -p testhome
         chmod a+x e2e-*
