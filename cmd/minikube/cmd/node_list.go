@@ -17,16 +17,42 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+	"fmt"
+
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
-// nodeCmd represents the set of node subcommands
-var nodeCmd = &cobra.Command{
-	Use:   "node",
-	Short: "Node operations",
-	Long:  "Operations on nodes",
+var nodeListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List nodes.",
+	Long:  "List existing Minikube nodes.",
 	Run: func(cmd *cobra.Command, args []string) {
-		exit.UsageT("Usage: minikube node [add|start|stop|delete|list]")
+		if len(args) != 0 {
+			exit.UsageT("Usage: minikube node list")
+		}
+
+		cname := ClusterFlagValue()
+		_, cc := mustload.Partial(cname)
+
+		if len(cc.Nodes) < 1 {
+			glog.Warningf("Did not found any Minikube node.")
+		} else {
+			glog.Infof("%v", cc.Nodes)
+		}
+
+		for _, n := range cc.Nodes {
+			machineName := driver.MachineName(*cc, n)
+			fmt.Printf("%s\n", machineName)
+		}
+		os.Exit(0)
 	},
+}
+
+func init() {
+	nodeCmd.AddCommand(nodeListCmd)
 }
