@@ -17,8 +17,8 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
 	"fmt"
+	"os"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
