@@ -31,7 +31,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
@@ -41,7 +40,7 @@ import (
 func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string) error {
 	driver := kic.NewDriver(kic.Config{
 		KubernetesVersion: kubernetesVersion,
-		ContainerRuntime:  driver.Docker,
+		ContainerRuntime:  containerRuntime,
 		OCIBinary:         oci.Docker,
 		MachineName:       profile,
 		ImageDigest:       kic.BaseImage,
