@@ -19,6 +19,7 @@ jobs:
         make minikube-linux-amd64
         make e2e-linux-amd64
         make kic-base-image
+        docker save kic > out/kic.tar
         cp -r test/integration/testdata ./out
         whoami
         echo github ref $GITHUB_REF
@@ -114,7 +115,7 @@ jobs:
       shell: bash {0}
       run: |
         cd minikube_binaries
-        make kic-base-image
+        docker load -i kic.tar
         mkdir -p report
         mkdir -p testhome
         chmod a+x e2e-*
@@ -206,6 +207,7 @@ jobs:
       shell: bash {0}
       run: |
         cd minikube_binaries
+        docker load -i kic.tar
         mkdir -p report
         mkdir -p testhome
         chmod a+x e2e-*
@@ -297,6 +299,7 @@ jobs:
       shell: bash {0}
       run: |
         cd minikube_binaries
+        docker load -i kic.tar
         mkdir -p report
         mkdir -p testhome
         chmod a+x e2e-*
@@ -388,6 +391,7 @@ jobs:
       shell: bash {0}
       run: |
         cd minikube_binaries
+        docker load -i kic.tar
         mkdir -p report
         mkdir -p testhome
         chmod a+x e2e-*
