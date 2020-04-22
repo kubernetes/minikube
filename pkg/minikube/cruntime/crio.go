@@ -229,3 +229,8 @@ func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
 	}
 	return fmt.Errorf("not yet implemented for %s", r.Name())
 }
+
+// ForceSystemd does nothing for crio since it already uses systemd as cgroup manager
+func (r *CRIO) ForceSystemd() error {
+	return nil
+}

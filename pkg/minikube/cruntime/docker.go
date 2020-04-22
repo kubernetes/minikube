@@ -25,6 +25,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -108,6 +109,10 @@ func (r *Docker) Enable(disOthers bool) error {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
 		}
+	}
+
+	if err := r.ForceSystemd(); err != nil {
+		return errors.Wrap(err, "forcing systemd")
 	}
 
 	return r.Init.Start("docker")
@@ -272,6 +277,24 @@ func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
 // SystemLogCmd returns the command to retrieve system logs
 func (r *Docker) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
+}
+
+// ForceSystemd forces the docker daemon to use systemd as cgroup manager
+func (r *Docker) ForceSystemd() error {
+	if !viper.GetBool("force-systemd") {
+		return nil
+	}
+	daemonConfig := `{
+"exec-opts": ["native.cgroupdriver=systemd"],
+"log-driver": "json-file",
+"log-opts": {
+	"max-size": "100m"
+},
+"storage-driver": "overlay2"
+}
+`
+	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
+	return r.Runner.Copy(ma)
 }
 
 // Preload preloads docker with k8s images:
