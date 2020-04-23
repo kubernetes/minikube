@@ -23,11 +23,15 @@ minikube start supports additional hyperkit specific flags:
 
 ## Issues
 
-### Upgrade hyperkit 
-Having an old hyperkit verison, could cause issues such as stuck during creation. the minimum required installed hyperkit verison is 0.20190201. 
+## HyperKit upgrade
+In some cases upgrading hyperkit and ensuring the right version is in the path, could solve start issues.
+The latest version could be found (here)[https://github.com/moby/hyperkit/releases],  you can check your current HyperKit version by.
 
-The latest version of hyperkit can be found in (here)[https://github.com/moby/hyperkit/releases].
-to upgrade your hyperkit try 
+```
+hyperkit -v
+```
+
+To upgrade try:
 ```
 brew upgrade
 ```
@@ -36,6 +40,7 @@ To verify your hyperkit version please run;
 ```
 hyperkit -v
 ```
+
 
 ### Local DNS server conflict
 
