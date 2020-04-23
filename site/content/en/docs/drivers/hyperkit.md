@@ -23,6 +23,20 @@ minikube start supports additional hyperkit specific flags:
 
 ## Issues
 
+### Upgrade hyperkit 
+Having an old hyperkit verison, could cause issues such as stuck during creation. the minimum required installed hyperkit verison is 0.20190201. 
+
+The latest version of hyperkit can be found in (here)[https://github.com/moby/hyperkit/releases].
+to upgrade your hyperkit try 
+```
+brew upgrade
+```
+
+To verify your hyperkit version please run; 
+```
+hyperkit -v
+```
+
 ### Local DNS server conflict
 
 If you are using `dnsmasq` and `minikube` fails, add `listen-address=192.168.64.1` to dnsmasq.conf.
