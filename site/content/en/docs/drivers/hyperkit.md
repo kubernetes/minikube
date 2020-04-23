@@ -23,9 +23,11 @@ minikube start supports additional hyperkit specific flags:
 
 ## Issues
 
-## HyperKit upgrade
-In some cases upgrading hyperkit and ensuring the right version is in the path, could solve start issues.
-The latest version could be found (here)[https://github.com/moby/hyperkit/releases],  you can check your current HyperKit version by.
+### old hyperkit version 
+In start issues with hyperkit driver, upgrading hyperkit and ensuring the upgraded version is in the path, could solve the problem.
+The latest version of hyperkit could be found [here](https://github.com/moby/hyperkit/releases).
+
+You can check your current version by:
 
 ```
 hyperkit -v
@@ -33,14 +35,13 @@ hyperkit -v
 
 To upgrade try:
 ```
-brew upgrade
+brew upgrade hyperkit
 ```
 
 To verify your hyperkit version please run; 
 ```
 hyperkit -v
 ```
-
 
 ### Local DNS server conflict
 
