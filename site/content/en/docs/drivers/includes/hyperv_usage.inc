@@ -1,6 +1,6 @@
 ## Requirements
 
-* Windows 10 Enterprise, Pro, or Education ([system requirements](https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/reference/hyper-v-requirements))
+* 64-bit versions of Windows 10 Enterprise, Pro, or Education ([system requirements](https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/reference/hyper-v-requirements))
 * Hyper-V enabled
 
 ## Enabling Hyper-V

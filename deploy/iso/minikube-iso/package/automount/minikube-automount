@@ -101,6 +101,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /var/lib/docker
     mount --bind /mnt/$PARTNAME/var/lib/docker /var/lib/docker
 
+    mkdir -p /mnt/$PARTNAME/var/lib/containerd
+    mkdir -p /var/lib/containerd
+    mount --bind /mnt/$PARTNAME/var/lib/containerd /var/lib/containerd
+
     mkdir -p /mnt/$PARTNAME/var/lib/containers
     mkdir -p /var/lib/containers
     mount --bind /mnt/$PARTNAME/var/lib/containers /var/lib/containers
