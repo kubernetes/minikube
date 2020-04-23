@@ -75,7 +75,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
         curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
         apt-key add - < Release.key && apt-get update && \
-        apt-get install -y --no-install-recommends cri-o-1.17 podman \
+        apt-get install -y --no-install-recommends cri-o-1.17 podman lz4 sudo docker.io dnsutils \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -129,14 +129,14 @@ ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 ARG COMMIT_SHA
 
 # specify version of everything explicitly using 'apt-cache policy'
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    lz4 \
-    sudo \
-    docker.io \
-    openssh-server\
-    dnsutils \
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+    # lz4 \
+    # sudo \
+    # docker.io \
+    # openssh-server\
+    # dnsutils \
     # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0
+    # libglib2.0-0
 
 # In this step we First disable non-docker runtimes by default
 # then enable docker which is default
@@ -147,6 +147,7 @@ RUN echo "disable non-docker runtimes ..." \
     && systemctl disable containerd && systemctl disable crio \
     && systemctl enable docker \
  && echo "making SSH work for docker ..." \
+    && apt-get install -y --no-install-recommends openssh-server \
     && mkdir /var/run/sshd \
     && echo 'root:root' |chpasswd \
     && sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
