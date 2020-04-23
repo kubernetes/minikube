@@ -17,7 +17,6 @@ limitations under the License.
 package oci
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"time"
@@ -30,7 +29,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"fmt"
@@ -188,7 +186,7 @@ func CreateContainerNode(p CreateParams) error {
 }
 
 // CreateContainer creates a container with "docker/podman run"
-func createContainer(ociBinary string, image string, opts ...createOpt) error {
+func createContainer(ociBin string, image string, opts ...createOpt) error {
 	o := &createOpts{}
 	for _, opt := range opts {
 		o = opt(o)
@@ -205,7 +203,7 @@ func createContainer(ociBinary string, image string, opts ...createOpt) error {
 	args := []string{"run"}
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
-	if ociBinary == Podman {
+	if ociBin == Podman {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
@@ -213,7 +211,7 @@ func createContainer(ociBinary string, image string, opts ...createOpt) error {
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
 
-	if _, err := cli.RunCmd(exec.Command(ociBinary, args...)); err != nil {
+	if _, err := cli.RunCmd(exec.Command(ociBin, args...)); err != nil {
 		return err
 	}
 
@@ -221,8 +219,8 @@ func createContainer(ociBinary string, image string, opts ...createOpt) error {
 }
 
 // ContainerID returns id of a container name
-func ContainerID(ociBinary string, nameOrID string) (string, error) {
-	rr, err := cli.RunCmd(exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID))
+func ContainerID(ociBin string, nameOrID string) (string, error) {
+	rr, err := cli.RunCmd(exec.Command(ociBin, "inspect", "-f", "{{.Id}}", nameOrID))
 	if err != nil { // don't return error if not found, only return empty string
 		if strings.Contains(rr.Stdout.String(), "Error: No such object:") || strings.Contains(rr.Stdout.String(), "unable to find") {
 			err = nil
@@ -232,48 +230,14 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 	return rr.Stdout.String(), nil
 }
 
-// warnIfSlow runs an oci command, warning about performance issues
-func warnIfSlow(args ...string) ([]byte, error) {
-	killTime := 19 * time.Second
-	warnTime := 2 * time.Second
-
-	if args[1] == "volume" || args[1] == "ps" { // volume and ps requires more time than inspect
-		killTime = 30 * time.Second
-		warnTime = 3 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), killTime)
-	defer cancel()
-
-	start := time.Now()
-	glog.Infof("executing with %s timeout: %v", args, killTime)
-	rr, err := cli.RunCmd(exec.CommandContext(ctx, args[0], args[1:]...))
-	d := time.Since(start)
-	if d > warnTime {
-		out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": d})
-		out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": args[0]})
-	}
-
-	if ctx.Err() == context.DeadlineExceeded {
-		return []byte(rr.Output()), fmt.Errorf("%q timed out after %s", rr.Command(), killTime)
-	}
-	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return []byte(rr.Output()), fmt.Errorf("%q failed: %v: %s", rr.Command(), exitErr, exitErr.Stderr)
-		}
-		return []byte(rr.Output()), err
-	}
-	return []byte(rr.Output()), nil
-}
-
 // ContainerExists checks if container name exists (either running or exited)
-func ContainerExists(ociBin string, name string) (bool, error) {
-	out, err := warnIfSlow(ociBin, "ps", "-a", "--format", "{{.Names}}")
+func ContainerExists(ociBin string, name string, warnSlow ...bool) (bool, error) {
+	rr, err := cli.RunCmd(exec.Command(ociBin, "ps", "-a", "--format", "{{.Names}}"), true)
 	if err != nil {
-		return false, errors.Wrapf(err, string(out))
+		return false, err
 	}
 
-	containers := strings.Split(string(out), "\n")
+	containers := strings.Split(rr.Stdout.String(), "\n")
 	for _, c := range containers {
 		if strings.TrimSpace(c) == name {
 			return true, nil
@@ -285,8 +249,8 @@ func ContainerExists(ociBin string, name string) (bool, error) {
 
 // IsCreatedByMinikube returns true if the container was created by minikube
 // with default assumption that it is not created by minikube when we don't know for sure
-func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
-	rr, err := cli.RunCmd(exec.Command(ociBinary, "inspect", nameOrID, "--format", "{{.Config.Labels}}"))
+func IsCreatedByMinikube(ociBin string, nameOrID string) bool {
+	rr, err := cli.RunCmd(exec.Command(ociBin, "inspect", nameOrID, "--format", "{{.Config.Labels}}"))
 	if err != nil {
 		return false
 	}
@@ -299,13 +263,13 @@ func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
 }
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
-func ListOwnedContainers(ociBinary string) ([]string, error) {
-	return ListContainersByLabel(ociBinary, ProfileLabelKey)
+func ListOwnedContainers(ociBin string) ([]string, error) {
+	return ListContainersByLabel(ociBin, ProfileLabelKey)
 }
 
 // inspect return low-level information on containers
-func inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
-	cmd := exec.Command(ociBinary, "inspect",
+func inspect(ociBin string, containerNameOrID, format string) ([]string, error) {
+	cmd := exec.Command(ociBin, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
 	var buff bytes.Buffer
@@ -367,8 +331,8 @@ func generateMountBindings(mounts ...Mount) []string {
 }
 
 // isUsernsRemapEnabled checks if userns-remap is enabled in docker
-func isUsernsRemapEnabled(ociBinary string) bool {
-	cmd := exec.Command(ociBinary, "info", "--format", "'{{json .SecurityOptions}}'")
+func isUsernsRemapEnabled(ociBin string) bool {
+	cmd := exec.Command(ociBin, "info", "--format", "'{{json .SecurityOptions}}'")
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
@@ -430,12 +394,12 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 }
 
 // ListContainersByLabel returns all the container names with a specified label
-func ListContainersByLabel(ociBinary string, label string) ([]string, error) {
-	stdout, err := warnIfSlow(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
+func ListContainersByLabel(ociBin string, label string, warnSlow ...bool) ([]string, error) {
+	rr, err := cli.RunCmd(exec.Command(ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), true)
 	if err != nil {
 		return nil, err
 	}
-	s := bufio.NewScanner(bytes.NewReader(stdout))
+	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
 	var names []string
 	for s.Scan() {
 		n := strings.TrimSpace(s.Text())
@@ -467,8 +431,9 @@ func PointToHostDockerDaemon() error {
 
 // ContainerStatus returns status of a container running,exited,...
 func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State, error) {
-	out, err := warnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
-	o := strings.TrimSpace(string(out))
+	cmd := exec.Command(ociBin, "inspect", name, "--format={{.State.Status}}")
+	rr, err := cli.RunCmd(cmd, true)
+	o := strings.TrimSpace(rr.Stdout.String())
 	switch o {
 	case "running":
 		return state.Running, nil

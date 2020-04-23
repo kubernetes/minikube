@@ -18,6 +18,7 @@ package oci
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os/exec"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var cli = newRunner()
@@ -73,7 +75,29 @@ func newRunner() *cliRunner {
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (*cliRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+func (*cliRunner) RunCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
+	warn := false
+	if len(warnSlow) > 0 {
+		warn = warnSlow[0]
+	}
+
+	killTime := 19 * time.Second // this will be applied only if warnSlow is true
+	warnTime := 2 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), killTime)
+	defer cancel()
+
+	if cmd.Args[1] == "volume" || cmd.Args[1] == "ps" { // volume and ps requires more time than inspect
+		killTime = 30 * time.Second
+		warnTime = 3 * time.Second
+	}
+
+	if warn { // convert exec.Command to with context
+		cmdWithCtx := exec.CommandContext(ctx, cmd.Args[0], cmd.Args[1:]...)
+		cmdWithCtx.Stdout = cmd.Stdout //copying the original command
+		cmdWithCtx.Stderr = cmd.Stderr
+		cmd = cmdWithCtx
+	}
+
 	rr := &RunResult{Args: cmd.Args}
 	glog.Infof("Run: %v", rr.Command())
 
@@ -98,6 +122,16 @@ func (*cliRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	start := time.Now()
 	err := cmd.Run()
 	elapsed := time.Since(start)
+	if warn {
+		if elapsed > warnTime {
+			out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
+			out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+		}
+
+		if ctx.Err() == context.DeadlineExceeded {
+			return rr, fmt.Errorf("%q timed out after %s", rr.Command(), killTime)
+		}
+	}
 
 	if exitError, ok := err.(*exec.ExitError); ok {
 		rr.ExitCode = exitError.ExitCode()

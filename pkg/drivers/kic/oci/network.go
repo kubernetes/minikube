@@ -78,18 +78,18 @@ func dockerGatewayIP() (net.IP, error) {
 // will return the docker assigned port:
 // 32769, nil
 // only supports TCP ports
-func ForwardedPort(ociBinary string, ociID string, contPort int) (int, error) {
+func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	var rr *RunResult
 	var err error
 
-	if ociBinary == Podman {
+	if ociBin == Podman {
 		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
-		rr, err = cli.RunCmd(exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID))
+		rr, err = cli.RunCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID))
 		if err != nil {
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
 	} else {
-		rr, err = cli.RunCmd(exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID))
+		rr, err = cli.RunCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID))
 		if err != nil {
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
@@ -107,8 +107,8 @@ func ForwardedPort(ociBinary string, ociID string, contPort int) (int, error) {
 }
 
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
-func ContainerIPs(ociBinary string, name string) (string, string, error) {
-	if ociBinary == Podman {
+func ContainerIPs(ociBin string, name string) (string, string, error) {
+	if ociBin == Podman {
 		return podmanConttainerIP(name)
 	}
 	return dockerContainerIP(name)
