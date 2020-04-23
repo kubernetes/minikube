@@ -111,7 +111,7 @@ func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 	}
 
 	if forceSystemd {
-		if err := r.ForceSystemd(); err != nil {
+		if err := r.forceSystemd(); err != nil {
 			return err
 		}
 	}
@@ -281,7 +281,7 @@ func (r *Docker) SystemLogCmd(len int) string {
 }
 
 // ForceSystemd forces the docker daemon to use systemd as cgroup manager
-func (r *Docker) ForceSystemd() error {
+func (r *Docker) forceSystemd() error {
 	daemonConfig := `{
 "exec-opts": ["native.cgroupdriver=systemd"],
 "log-driver": "json-file",
