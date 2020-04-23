@@ -221,7 +221,7 @@ func dockerSystemInfo() (dockerSysInfo, error) {
 		return ds, errors.Wrap(err, "get docker system info")
 	}
 
-	if err := json.Unmarshal([]byte(strings.TrimSpace(string(rr.Stdout.Bytes()))), &ds); err != nil {
+	if err := json.Unmarshal([]byte(strings.TrimSpace(rr.Stdout.String())), &ds); err != nil {
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
 
@@ -235,7 +235,8 @@ func podmanSystemInfo() (podmanSysInfo, error) {
 	if err != nil {
 		return ps, errors.Wrap(err, "get podman system info")
 	}
-	if err := json.Unmarshal([]byte(strings.TrimSpace(string(rr.Stdout.Bytes()))), &ps); err != nil {
+
+	if err := json.Unmarshal([]byte(strings.TrimSpace(rr.Stdout.String())), &ps); err != nil {
 		return ps, errors.Wrapf(err, "unmarshal podman system info")
 	}
 	return ps, nil
