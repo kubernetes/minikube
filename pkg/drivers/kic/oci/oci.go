@@ -232,8 +232,8 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 	return rr.Stdout.String(), nil
 }
 
-// WarnIfSlow runs an oci command, warning about performance issues
-func WarnIfSlow(args ...string) ([]byte, error) {
+// warnIfSlow runs an oci command, warning about performance issues
+func warnIfSlow(args ...string) ([]byte, error) {
 	killTime := 19 * time.Second
 	warnTime := 2 * time.Second
 
@@ -268,7 +268,7 @@ func WarnIfSlow(args ...string) ([]byte, error) {
 
 // ContainerExists checks if container name exists (either running or exited)
 func ContainerExists(ociBin string, name string) (bool, error) {
-	out, err := WarnIfSlow(ociBin, "ps", "-a", "--format", "{{.Names}}")
+	out, err := warnIfSlow(ociBin, "ps", "-a", "--format", "{{.Names}}")
 	if err != nil {
 		return false, errors.Wrapf(err, string(out))
 	}
@@ -431,7 +431,7 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 
 // ListContainersByLabel returns all the container names with a specified label
 func ListContainersByLabel(ociBinary string, label string) ([]string, error) {
-	stdout, err := WarnIfSlow(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
+	stdout, err := warnIfSlow(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	if err != nil {
 		return nil, err
 	}
@@ -466,8 +466,8 @@ func PointToHostDockerDaemon() error {
 }
 
 // ContainerStatus returns status of a container running,exited,...
-func ContainerStatus(ociBin string, name string) (state.State, error) {
-	out, err := WarnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
+func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State, error) {
+	out, err := warnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
 	o := strings.TrimSpace(string(out))
 	switch o {
 	case "running":
