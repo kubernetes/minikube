@@ -25,7 +25,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -102,11 +101,12 @@ func doCacheBinaries(k8sVersion string) error {
 // BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
 func beginDownloadKicArtifacts(g *errgroup.Group) {
 	glog.Info("Beginning downloading kic artifacts")
-	if !image.ExistsImageInDaemon(kic.BaseImage) {
+	baseImage := viper.GetString("base-image")
+	if !image.ExistsImageInDaemon(baseImage) {
 		out.T(out.Pulling, "Pulling base image ...")
 		g.Go(func() error {
-			glog.Infof("Downloading %s to local daemon", kic.BaseImage)
-			return image.WriteImageToDaemon(kic.BaseImage)
+			glog.Infof("Downloading %s to local daemon", baseImage)
+			return image.WriteImageToDaemon(baseImage)
 		})
 	}
 }
