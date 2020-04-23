@@ -96,7 +96,7 @@ func status() registry.State {
 	cmd := exec.CommandContext(ctx, path, "-v")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: true, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Run 'brew install hyperkit'", Doc: docURL}
+		return registry.State{Installed: true, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Run 'brew install hyperkit'", Doc: docURL+"#hyperkit-upgrade"}
 	}
 
 	// Split version from v0.YYYYMMDD-HH-xxxxxxx or 0.YYYYMMDD to YYYYMMDD
