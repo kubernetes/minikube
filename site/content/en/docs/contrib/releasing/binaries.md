@@ -46,7 +46,7 @@ Update the version numbers in  `Makefile`:
 * `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD`
 * `ISO_VERSION`:
   - beta releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)`
-  - real releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).0`
+  - major/minor releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).0`
   - if the ISO was updated, a patch release may use `v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)`
 
 {{% alert title="Warning" color="warning" %}}
