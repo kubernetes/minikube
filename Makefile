@@ -255,7 +255,7 @@ docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hype
 docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
-integration: out/minikube ## Trigger minikube integration test
+integration: out/minikube$(IS_EXE) ## Trigger minikube integration test
 	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
