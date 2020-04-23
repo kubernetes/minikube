@@ -23,8 +23,15 @@ minikube start supports additional hyperkit specific flags:
 
 ## Issues
 
-### old hyperkit version 
-In start issues with hyperkit driver, upgrading hyperkit and ensuring the upgraded version is in the path, could solve the problem.
+### Local DNS server conflict
+
+If you are using `dnsmasq` and `minikube` fails, add `listen-address=192.168.64.1` to dnsmasq.conf.
+
+If you are running other DNS servers, shut them off or specify an alternative bind address.
+
+### hyperkit installation
+The version of correct Hyperkit not being in the path could cause issues in starting minikube.
+Try upgrading hyperkit and ensure the upgraded version is in the path, could solve the problem.
 The latest version of hyperkit could be found [here](https://github.com/moby/hyperkit/releases).
 
 You can check your current version by:
@@ -43,11 +50,10 @@ To verify your hyperkit version please run;
 hyperkit -v
 ```
 
-### Local DNS server conflict
-
-If you are using `dnsmasq` and `minikube` fails, add `listen-address=192.168.64.1` to dnsmasq.conf.
-
-If you are running other DNS servers, shut them off or specify an alternative bind address.
+alternatively you check the path of your hyperkit by:
+```
+which hyperkit
+```
 
 ### Other
 
