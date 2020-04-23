@@ -43,7 +43,7 @@ func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, erro
 
 // digDNS will get the IP record for a dns
 func digDNS(ociBin, containerName, dns string) (net.IP, error) {
-	rr, err := cli.RunCmd(exec.Command(ociBin, "exec", "-t", containerName, "dig", "+short", dns))
+	rr, err := runCmd(exec.Command(ociBin, "exec", "-t", containerName, "dig", "+short", dns))
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
 	if err != nil {
 		return ip, errors.Wrapf(err, "resolve dns to ip")
@@ -56,13 +56,13 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 // dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
 // gets the ip from user's host docker
 func dockerGatewayIP() (net.IP, error) {
-	rr, err := cli.RunCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "get network bridge")
 	}
 
 	bridgeID := strings.TrimSpace(rr.Stdout.String())
-	rr, err = cli.RunCmd(exec.Command(Docker, "inspect",
+	rr, err = runCmd(exec.Command(Docker, "inspect",
 		"--format", "{{(index .IPAM.Config 0).Gateway}}", bridgeID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect IP bridge network %q.", bridgeID)
@@ -84,12 +84,12 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 
 	if ociBin == Podman {
 		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
-		rr, err = cli.RunCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID))
+		rr, err = runCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID))
 		if err != nil {
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
 	} else {
-		rr, err = cli.RunCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID))
+		rr, err = runCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID))
 		if err != nil {
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
@@ -116,7 +116,7 @@ func ContainerIPs(ociBin string, name string) (string, string, error) {
 
 // podmanConttainerIP returns ipv4, ipv6 of container or error
 func podmanConttainerIP(name string) (string, string, error) {
-	rr, err := cli.RunCmd(exec.Command(Podman, "inspect",
+	rr, err := runCmd(exec.Command(Podman, "inspect",
 		"-f", "{{.NetworkSettings.IPAddress}}",
 		name))
 	if err != nil {

@@ -40,7 +40,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []er
 	}
 
 	for _, v := range vs {
-		if _, err := cli.RunCmd(exec.Command(ociBin, "volume", "rm", "--force", v), true); err != nil {
+		if _, err := runCmd(exec.Command(ociBin, "volume", "rm", "--force", v), true); err != nil {
 			deleteErrs = append(deleteErrs, fmt.Errorf("deleting %q", v))
 		}
 	}
@@ -55,7 +55,7 @@ func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []err
 	var deleteErrs []error
 	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
 	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
-	if _, err := cli.RunCmd(cmd, true); err != nil {
+	if _, err := runCmd(cmd, true); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s", label))
 	}
 
@@ -65,7 +65,7 @@ func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []err
 // allVolumesByLabel returns name of all docker volumes by a specific label
 // will not return error if there is no volume found.
 func allVolumesByLabel(ociBin string, label string) ([]string, error) {
-	rr, err := cli.RunCmd(exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}"))
+	rr, err := runCmd(exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}"))
 	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
 	var vols []string
 	for s.Scan() {
@@ -81,7 +81,7 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // to the volume named volumeName
 func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
-	if _, err := cli.RunCmd(cmd); err != nil {
+	if _, err := runCmd(cmd); err != nil {
 		return err
 	}
 	return nil
@@ -91,7 +91,7 @@ func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
 func createDockerVolume(profile string, nodeName string) error {
-	if _, err := cli.RunCmd(exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))); err != nil {
+	if _, err := runCmd(exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))); err != nil {
 		return err
 	}
 	return nil

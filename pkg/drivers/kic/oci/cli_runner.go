@@ -29,12 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-var cli = newRunner()
-
-//cliRunner runs commands using the os/exec package.
-type cliRunner struct {
-}
-
 // RunResult holds the results of a Runner
 type RunResult struct {
 	Stdout   bytes.Buffer
@@ -69,13 +63,8 @@ func (rr RunResult) Output() string {
 	return sb.String()
 }
 
-// newRunner returns an oci runner
-func newRunner() *cliRunner {
-	return &cliRunner{}
-}
-
-// RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (*cliRunner) RunCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
+// runCmd runs a command exec.Command against docker daemon or podman
+func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	warn := false
 	if len(warnSlow) > 0 {
 		warn = warnSlow[0]
