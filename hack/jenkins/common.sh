@@ -288,7 +288,7 @@ make kic-base-image
 
 touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
-  -minikube-start-args="--driver=${VM_DRIVER} --docker-base-image=kic ${EXTRA_START_ARGS}" \
+  -minikube-start-args="--driver=${VM_DRIVER} --base-image=kic ${EXTRA_START_ARGS}" \
   -test.timeout=70m -test.v \
   ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
