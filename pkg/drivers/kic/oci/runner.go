@@ -27,8 +27,10 @@ import (
 	"github.com/golang/glog"
 )
 
-//runner runs commands using the os/exec package.
-type runner struct {
+var cli = newRunner()
+
+//cliRunner runs commands using the os/exec package.
+type cliRunner struct {
 }
 
 // RunResult holds the results of a Runner
@@ -66,12 +68,12 @@ func (rr RunResult) Output() string {
 }
 
 // newRunner returns an oci runner
-func newRunner() *runner {
-	return &runner{}
+func newRunner() *cliRunner {
+	return &cliRunner{}
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (*runner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+func (*cliRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
 	glog.Infof("Run: %v", rr.Command())
 
