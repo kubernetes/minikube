@@ -17,7 +17,7 @@
 # For systemd + docker configuration used below, see the following references:
 # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 
-# start from ubuntu 19.10, this image is reasonably small as a starting point
+# start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20200319 as base
 
@@ -46,6 +46,9 @@ COPY files/ /usr/local/bin/
 # After installing packages we cleanup by:
 # - removing unwanted systemd services
 # - disabling kmsg in journald (these log entries would be confusing)
+#
+# Then we install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
+# along with podman
 #
 # Then we install containerd from our nightly build infrastructure, as this
 # build for multiple architectures and allows us to upgrade to patched releases
@@ -92,7 +95,6 @@ RUN echo "Ensuring scripts are executable ..." \
     && curl -sSL --retry 5 --output /usr/local/sbin/runc "${CONTAINERD_BASE_URL}/runc.${ARCH}" \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
-    # && systemctl enable containerd \
  && echo "Installing crictl ..." \
     && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
  && echo "Installing CNI binaries ..." \
@@ -125,14 +127,10 @@ STOPSIGNAL SIGRTMIN+3
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
 ARG COMMIT_SHA
-# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile
-# which is an ubuntu 19.10 with an entry-point that helps running systemd
-# could be changed to any debian that can run systemd
-# FROM kindest/base:v20200317-92225082 as base
 
+# specify version of everything explicitly using 'apt-cache policy'
 RUN apt-get update && apt-get install -y --no-install-recommends \
     lz4 \
-    # gnupg=2.2.12-1ubuntu3 \
     sudo \
     docker.io \
     openssh-server\
@@ -140,35 +138,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0
 
-# making SSH work for docker container
+# In this step we First disable non-docker runtimes by default
+# then enable docker which is default
+# next making SSH work for docker container
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
-RUN systemctl disable containerd && systemctl disable crio \
- && systemctl enable docker \
- && mkdir /var/run/sshd \
- && echo 'root:root' |chpasswd \
- && sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
- && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
- && adduser --ingroup docker --disabled-password --gecos '' docker \
- && adduser docker sudo \
- && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+# finally create docker user for minikube ssh. to match VM using "docker" as username
+RUN echo "disable non-docker runtimes ..." \
+    && systemctl disable containerd && systemctl disable crio \
+    && systemctl enable docker \
+ && echo "making SSH work for docker ..." \
+    && mkdir /var/run/sshd \
+    && echo 'root:root' |chpasswd \
+    && sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+    && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
+ && echo "create docker user for minikube ssh ..." \
+    && adduser --ingroup docker --disabled-password --gecos '' docker \
+    && adduser docker sudo \
+    && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 EXPOSE 22
-# create docker user for minikube ssh. to match VM using "docker" as username
 
-USER docker
-RUN mkdir /home/docker/.ssh
-USER root
-# kind base-image entry-point expects a "kind" folder for product_name,product_uuid
-# https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
-RUN mkdir -p /kind
 # Deleting leftovers
-RUN apt-get clean -y && rm -rf \
-  /var/cache/debconf/* \
-  /var/lib/apt/lists/* \
-  /var/log/* \
-  /tmp/* \
-  /var/tmp/* \
-  /usr/share/doc/* \
-  /usr/share/man/* \
-  /usr/share/local/* \
-RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+RUN echo "creating docker folders && delete leftovers ..." \
+ && mkdir /home/docker/.ssh \
+    && mkdir -p /kind \
+ && apt-get clean -y && rm -rf \
+    /var/cache/debconf/* \
+    /var/lib/apt/lists/* \
+    /var/log/* \
+    /tmp/* \
+    /var/tmp/* \
+    /usr/share/doc/* \
+    /usr/share/man/* \
+    /usr/share/local/* \
+ && echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
