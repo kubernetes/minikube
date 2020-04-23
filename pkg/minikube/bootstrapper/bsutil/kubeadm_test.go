@@ -55,6 +55,11 @@ func getExtraOpts() []config.ExtraOption {
 			Key:       "dry-run",
 			Value:     "true",
 		},
+		config.ExtraOption{
+			Component: Kubeproxy,
+			Key:       "mode",
+			Value:     "iptables",
+		},
 	}
 }
 
