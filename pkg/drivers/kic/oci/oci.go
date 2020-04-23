@@ -286,14 +286,12 @@ func ContainerExists(ociBin string, name string) (bool, error) {
 // IsCreatedByMinikube returns true if the container was created by minikube
 // with default assumption that it is not created by minikube when we don't know for sure
 func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
-	cmd := exec.Command(ociBinary, "inspect", nameOrID, "--format", "{{.Config.Labels}}")
-	out, err := cmd.CombinedOutput()
-
+	rr, err := cli.RunCmd(exec.Command(ociBinary, "inspect", nameOrID, "--format", "{{.Config.Labels}}"))
 	if err != nil {
 		return false
 	}
 
-	if strings.Contains(string(out), fmt.Sprintf("%s:true", CreatedByLabelKey)) {
+	if strings.Contains(rr.Stdout.String(), fmt.Sprintf("%s:true", CreatedByLabelKey)) {
 		return true
 	}
 
@@ -307,14 +305,13 @@ func ListOwnedContainers(ociBinary string) ([]string, error) {
 
 // inspect return low-level information on containers
 func inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
-
 	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
-	err := cmd.Run()
+	_, err := cli.RunCmd(cmd)
 	scanner := bufio.NewScanner(&buff)
 	var lines []string
 	for scanner.Scan() {
@@ -375,8 +372,8 @@ func isUsernsRemapEnabled(ociBinary string) bool {
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
-	err := cmd.Run()
-	if err != nil {
+
+	if _, err := cli.RunCmd(cmd); err != nil {
 		return false
 	}
 
@@ -488,13 +485,12 @@ func ContainerStatus(ociBin string, name string) (state.State, error) {
 	}
 }
 
-// Shutdown will run command to shut down the container
+// ShutDown will run command to shut down the container
 // to ensure the containers process and networking bindings are all closed
 // to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
 func ShutDown(ociBin string, name string) error {
-	cmd := exec.Command(ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		glog.Infof("error shutdown %s output %q : %v", name, out, err)
+	if _, err := cli.RunCmd(exec.Command(ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")); err != nil {
+		glog.Infof("error shutdown %s: %v", name, err)
 	}
 	// helps with allowing docker realize the container is exited and report its status correctly.
 	time.Sleep(time.Second * 1)
