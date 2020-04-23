@@ -29,11 +29,11 @@ If you are using `dnsmasq` and `minikube` fails, add `listen-address=192.168.64.
 
 If you are running other DNS servers, shut them off or specify an alternative bind address.
 
-### hyperkit installation
+### Hyperkit upgrade version
 The version of correct Hyperkit not being in the path could cause issues in starting minikube.
-Try upgrading hyperkit and ensure the upgraded version is in the path.
+Try upgrading Hyperkit and ensure the upgraded version is in the path.
 
-The latest version of hyperkit could be found [here](https://github.com/moby/hyperkit/releases).
+The latest version of Hyperkit could be found [here](https://github.com/moby/hyperkit/releases).
 
 You can check your current version by:
 
@@ -46,15 +46,17 @@ To upgrade try:
 brew upgrade hyperkit
 ```
 
-To verify your hyperkit version please run; 
+To verify your hyperkit version please run:
 ```
 hyperkit -v
 ```
 
-if the version didn't change to the latest version [here](https://github.com/moby/hyperkit/releases), you check if there is an existing hyperkit in the path:
+if the version didn't change to the latest version [here](https://github.com/moby/hyperkit/releases), you can check if there is an existing hyperkit in the path.
 ```
 which hyperkit
 ```
+
+alternatively you might want to install the latest version of docker-desktop.
 
 ### Other
 
