@@ -64,9 +64,9 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		if err := ShutDown(ociBin, c); err != nil {
 			glog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
 		}
-		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
+
+		if _, err := cli.RunCmd(exec.Command(ociBin, "rm", "-f", "-v", c)); err != nil {
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, err))
 		}
 
 	}
@@ -84,9 +84,9 @@ func DeleteContainer(ociBin string, name string) error {
 	if err := ShutDown(ociBin, name); err != nil {
 		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
-	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "delete container %s: output %s", name, out)
+
+	if _, err := cli.RunCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
+		return errors.Wrapf(err, "delete %s", name)
 	}
 	return nil
 }
@@ -213,24 +213,8 @@ func createContainer(ociBinary string, image string, opts ...createOpt) error {
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
 
-	out, err := exec.Command(ociBinary, args...).CombinedOutput()
-	if err != nil {
-		return errors.Wrapf(err, "failed args: %v output: %s", args, out)
-	}
-
-	return nil
-}
-
-// Copy copies a local asset into the container
-func Copy(ociBinary string, ociID string, targetDir string, fName string) error {
-	if _, err := os.Stat(fName); os.IsNotExist(err) {
-		return errors.Wrapf(err, "error source %s does not exist", fName)
-	}
-
-	destination := fmt.Sprintf("%s:%s", ociID, targetDir)
-	cmd := exec.Command(ociBinary, "cp", fName, destination)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "error copying %s into node", fName)
+	if _, err := cli.RunCmd(exec.Command(ociBinary, args...)); err != nil {
+		return err
 	}
 
 	return nil
@@ -238,17 +222,14 @@ func Copy(ociBinary string, ociID string, targetDir string, fName string) error 
 
 // ContainerID returns id of a container name
 func ContainerID(ociBinary string, nameOrID string) (string, error) {
-	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
-	out, err := cmd.CombinedOutput()
-
+	rr, err := cli.RunCmd(exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID))
 	if err != nil { // don't return error if not found, only return empty string
-		if strings.Contains(string(out), "Error: No such object:") || strings.Contains(string(out), "unable to find") {
+		if strings.Contains(rr.Stdout.String(), "Error: No such object:") || strings.Contains(rr.Stdout.String(), "unable to find") {
 			err = nil
 		}
-		out = []byte{}
+		return "", err
 	}
-
-	return string(out), err
+	return rr.Stdout.String(), nil
 }
 
 // WarnIfSlow runs an oci command, warning about performance issues
@@ -266,24 +247,23 @@ func WarnIfSlow(args ...string) ([]byte, error) {
 
 	start := time.Now()
 	glog.Infof("executing with %s timeout: %v", args, killTime)
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	stdout, err := cmd.Output()
+	rr, err := cli.RunCmd(exec.CommandContext(ctx, args[0], args[1:]...))
 	d := time.Since(start)
 	if d > warnTime {
-		out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": strings.Join(cmd.Args, " "), "duration": d})
+		out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": d})
 		out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": args[0]})
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return stdout, fmt.Errorf("%q timed out after %s", strings.Join(cmd.Args, " "), killTime)
+		return []byte(rr.Output()), fmt.Errorf("%q timed out after %s", rr.Command(), killTime)
 	}
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			return stdout, fmt.Errorf("%q failed: %v: %s", strings.Join(cmd.Args, " "), exitErr, exitErr.Stderr)
+			return []byte(rr.Output()), fmt.Errorf("%q failed: %v: %s", rr.Command(), exitErr, exitErr.Stderr)
 		}
-		return stdout, fmt.Errorf("%q failed: %v", strings.Join(cmd.Args, " "), err)
+		return []byte(rr.Output()), err
 	}
-	return stdout, nil
+	return []byte(rr.Output()), nil
 }
 
 // ContainerExists checks if container name exists (either running or exited)

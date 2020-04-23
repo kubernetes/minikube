@@ -80,10 +80,9 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // ExtractTarballToVolume runs a docker image imageName which extracts the tarball at tarballPath
 // to the volume named volumeName
 func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
-	rr, err := cli.RunCmd(exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir"))
-	glog.Infof("executed: %s", rr.Command())
-	if err != nil {
-		return errors.Wrapf(err, "output: %s", rr.Output())
+	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
+	if _, err := cli.RunCmd(cmd); err != nil {
+		return err
 	}
 	return nil
 }
@@ -92,10 +91,8 @@ func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
 func createDockerVolume(profile string, nodeName string) error {
-	rr, err := cli.RunCmd(exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true")))
-	glog.Infof("executed: %s", rr.Command())
-	if err != nil {
-		return errors.Wrapf(err, "output: %s", rr.Output())
+	if _, err := cli.RunCmd(exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))); err != nil {
+		return err
 	}
 	return nil
 }
