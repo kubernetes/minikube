@@ -31,7 +31,8 @@ If you are running other DNS servers, shut them off or specify an alternative bi
 
 ### hyperkit installation
 The version of correct Hyperkit not being in the path could cause issues in starting minikube.
-Try upgrading hyperkit and ensure the upgraded version is in the path, could solve the problem.
+Try upgrading hyperkit and ensure the upgraded version is in the path.
+
 The latest version of hyperkit could be found [here](https://github.com/moby/hyperkit/releases).
 
 You can check your current version by:
@@ -50,7 +51,7 @@ To verify your hyperkit version please run;
 hyperkit -v
 ```
 
-alternatively you check the path of your hyperkit by:
+if the version didn't change to the latest version [here](https://github.com/moby/hyperkit/releases), you check if there is an existing hyperkit in the path:
 ```
 which hyperkit
 ```
