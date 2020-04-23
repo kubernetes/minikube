@@ -1,5 +1,27 @@
 # Release Notes
 
+## Version 1.10.0-beta.1 - 2020-04-22
+
+Improvements:
+* Skip preload download if --image-repository is set [#7707](https://github.com/kubernetes/minikube/pull/7707)
+
+
+Bug Fixes:
+* ISO: persistently mount /var/lib/containerd [#7843](https://github.com/kubernetes/minikube/pull/7843)
+* docker/podman: fix delete -p not cleaning up & add integration test [#7819](https://github.com/kubernetes/minikube/pull/7819)
+
+
+Huge thank you for this release towards our contributors: 
+- Anders F Björklund
+- Kenta Iso
+- Medya Ghazizadeh
+- Prasad Katti
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Stromberg
+- Tobias Klauser
+
+
 ## Version 1.10.0-beta.0 - 2020-04-20
 
 Improvements:
