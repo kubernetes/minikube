@@ -429,8 +429,3 @@ func addRepoTagToImageName(imgName string) string {
 	} // else it already has repo name dont add anything
 	return imgName
 }
-
-// TODO: Implement for containerd
-func (r *Containerd) ForceSystemd() error {
-	return nil
-}
