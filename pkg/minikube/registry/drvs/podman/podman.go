@@ -51,7 +51,7 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	baseImage := viper.GetString("docker-base-image")
+	baseImage := viper.GetString("base-image")
 	return kic.NewDriver(kic.Config{
 		MachineName:   driver.MachineName(cc, n),
 		StorePath:     localpath.MiniPath(),

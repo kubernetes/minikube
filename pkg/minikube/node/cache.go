@@ -101,7 +101,7 @@ func doCacheBinaries(k8sVersion string) error {
 // BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
 func beginDownloadKicArtifacts(g *errgroup.Group) {
 	glog.Info("Beginning downloading kic artifacts")
-	baseImage := viper.GetString("docker-base-image")
+	baseImage := viper.GetString("base-image")
 	if !image.ExistsImageInDaemon(baseImage) {
 		out.T(out.Pulling, "Pulling base image ...")
 		g.Go(func() error {
