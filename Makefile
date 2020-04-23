@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 10
-VERSION_BUILD ?= 0-beta.0
+VERSION_BUILD ?= 0-beta.1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -255,7 +255,7 @@ docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hype
 docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
-integration: out/minikube ## Trigger minikube integration test
+integration: out/minikube$(IS_EXE) ## Trigger minikube integration test
 	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
@@ -396,6 +396,10 @@ reportcard: ## Run goreportcard for minikube
 .PHONY: mdlint
 mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)
+
+.PHONY: verify-iso
+verify-iso: # Make sure the current ISO exists in the expected bucket
+	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
