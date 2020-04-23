@@ -65,9 +65,8 @@ func PruneAllVolumesByLabel(ociBin string, label string) []error {
 // allVolumesByLabel returns name of all docker volumes by a specific label
 // will not return error if there is no volume found.
 func allVolumesByLabel(ociBin string, label string) ([]string, error) {
-	cmd := exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}")
-	stdout, err := cmd.Output()
-	s := bufio.NewScanner(bytes.NewReader(stdout))
+	rr, err := cli.RunCmd(exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}"))
+	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
 	var vols []string
 	for s.Scan() {
 		v := strings.TrimSpace(s.Text())
@@ -81,10 +80,10 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // ExtractTarballToVolume runs a docker image imageName which extracts the tarball at tarballPath
 // to the volume named volumeName
 func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
-	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
-	glog.Infof("executing: %s", cmd.Args)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "output %s", string(out))
+	rr, err := cli.RunCmd(exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir"))
+	glog.Infof("executed: %s", rr.Command())
+	if err != nil {
+		return errors.Wrapf(err, "output: %s", rr.Output())
 	}
 	return nil
 }
@@ -93,10 +92,10 @@ func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
 func createDockerVolume(profile string, nodeName string) error {
-	cmd := exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
-	glog.Infof("executing: %s", cmd.Args)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "output %s", string(out))
+	rr, err := cli.RunCmd(exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true")))
+	glog.Infof("executed: %s", rr.Command())
+	if err != nil {
+		return errors.Wrapf(err, "output: %s", rr.Output())
 	}
 	return nil
 }
