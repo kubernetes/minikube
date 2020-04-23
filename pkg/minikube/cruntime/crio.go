@@ -110,10 +110,15 @@ func (r *CRIO) Active() bool {
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable(disOthers bool) error {
+func (r *CRIO) Enable(disOthers, forceSystemd bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
+		}
+	}
+	if forceSystemd {
+		if err := r.ForceSystemd(); err != nil {
+			return err
 		}
 	}
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {

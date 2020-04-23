@@ -25,7 +25,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -104,15 +103,17 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(disOthers bool) error {
+func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
 		}
 	}
 
-	if err := r.ForceSystemd(); err != nil {
-		return errors.Wrap(err, "forcing systemd")
+	if forceSystemd {
+		if err := r.ForceSystemd(); err != nil {
+			return err
+		}
 	}
 
 	return r.Init.Start("docker")
@@ -281,9 +282,6 @@ func (r *Docker) SystemLogCmd(len int) string {
 
 // ForceSystemd forces the docker daemon to use systemd as cgroup manager
 func (r *Docker) ForceSystemd() error {
-	if !viper.GetBool("force-systemd") {
-		return nil
-	}
 	daemonConfig := `{
 "exec-opts": ["native.cgroupdriver=systemd"],
 "log-driver": "json-file",
