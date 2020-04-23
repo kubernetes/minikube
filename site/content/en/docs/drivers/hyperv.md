@@ -6,7 +6,7 @@ aliases:
 ---
 ## Overview
 
-Hyper-V is a native hypervisor built in to modern versions of Microsoft Windows.
+[Hyper-V](https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/) is a native hypervisor built in to modern versions of Microsoft Windows.
 
 {{% readfile file="/docs/drivers/includes/hyperv_usage.inc" %}}
 
@@ -14,7 +14,9 @@ Hyper-V is a native hypervisor built in to modern versions of Microsoft Windows.
 
 The `minikube start` command supports additional hyperv specific flags:
 
-* **`--hyperv-virtual-switch`**: The hyperv virtual switch name. Defaults to first found
+* **`--hyperv-virtual-switch`**: Name of the virtual switch the minikube VM should use. Defaults to first found
+* **`--hyperv-use-external-switch`**: Use external virtual switch over Default Switch if virtual switch not explicitly specified, creates a new one if not found. If the adapter is not specified, the driver first looks up LAN adapters before other adapters (WiFi, ...). Or the user may specify an adapter to attach to the external switch. Default false
+* **`--hyperv-external-adapter`**:  External adapter on which the new external switch is created if no existing external switch is found. Since Windows 10 only allows one external switch for the same adapter, it finds the virtual switch before creating one. The external switch is created and named "minikube"
 
 ## Issues
 
