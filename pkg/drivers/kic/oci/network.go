@@ -45,9 +45,8 @@ func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, erro
 func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	rr, err := cli.RunCmd(exec.Command(ociBin, "exec", "-t", containerName, "dig", "+short", dns))
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
-
 	if err != nil {
-		return ip, errors.Wrapf(err, "resolve dns to ip: %s", rr.Output())
+		return ip, errors.Wrapf(err, "resolve dns to ip")
 	}
 
 	glog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
@@ -59,14 +58,14 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 func dockerGatewayIP() (net.IP, error) {
 	rr, err := cli.RunCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
 	if err != nil {
-		return nil, errors.Wrapf(err, "get network bridge. output: %s", rr.Output())
+		return nil, errors.Wrapf(err, "get network bridge")
 	}
 
 	bridgeID := strings.TrimSpace(rr.Stdout.String())
 	rr, err = cli.RunCmd(exec.Command(Docker, "inspect",
 		"--format", "{{(index .IPAM.Config 0).Gateway}}", bridgeID))
 	if err != nil {
-		return nil, errors.Wrapf(err, "inspect IP gatway for bridge network: %q. output: %s", rr.Output(), bridgeID)
+		return nil, errors.Wrapf(err, "inspect IP bridge network %q.", bridgeID)
 	}
 
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
@@ -87,12 +86,12 @@ func ForwardedPort(ociBinary string, ociID string, contPort int) (int, error) {
 		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
 		rr, err = cli.RunCmd(exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID))
 		if err != nil {
-			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, rr.Output())
+			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
 	} else {
 		rr, err = cli.RunCmd(exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID))
 		if err != nil {
-			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, rr.Output())
+			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
 	}
 
