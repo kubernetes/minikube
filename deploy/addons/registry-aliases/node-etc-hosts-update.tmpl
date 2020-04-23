@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
         - name: update
-          image: registry.fedoraproject.org/fedora
+          image: ubuntu:bionic
           volumeMounts:
             - name: etchosts
               mountPath: /host-etc/hosts
