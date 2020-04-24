@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
         - name: update
-          image: ubuntu:bionic
+          image: alpine:3.11
           volumeMounts:
             - name: etchosts
               mountPath: /host-etc/hosts
@@ -39,7 +39,7 @@ spec:
               for H in $REGISTRY_ALIASES; do                
                 echo "$HOSTS" | grep "$H"  || HOSTS="$HOSTS$NL$REGISTRY_SERVICE_HOST$TAB$H";
               done;
-              echo "$HOSTS" | diff -u /host-etc/hosts - || echo "$HOSTS" > /host-etc/hosts
+              echo "$HOSTS" | diff -U 3 /host-etc/hosts - || echo "$HOSTS" > /host-etc/hosts
               echo "Done."
       containers:
         - name: pause-for-update
