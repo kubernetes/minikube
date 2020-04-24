@@ -17,7 +17,7 @@
 # For systemd + docker configuration used below, see the following references:
 # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 
-# start from ubuntu 20.04, this image is reasonably small as a starting point
+# start from ubuntu 20.04(focal), this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20200319 as base
 
@@ -84,6 +84,7 @@ RUN echo "set ENV variables ..." \
     DNSUTILS_VERSION="1:9.16.1-0ubuntu2" \
     CNI_VERSION="v0.8.5" \
     CRICTL_VERSION="v1.17.0" \
+    CONTAINERD_VERSION="1.3.3-61-g60bc1282" \
  && echo "Ensuring scripts are executable ..." \
     && chmod +x /usr/local/bin/entrypoint \
  && echo "Installing Packages ..." \
@@ -110,8 +111,8 @@ RUN echo "set ENV variables ..." \
     && ln -s "$(which systemd)" /sbin/init \
  && echo "Installing containerd ..." \
     && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
-    && export CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-1.3.3-61-g60bc1282" \
-    && curl -sSL --retry 5 --output /tmp/containerd.tgz "${CONTAINERD_BASE_URL}/containerd-1.3.3-61-g60bc1282.linux-amd64.tar.gz" \
+    && export CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION}" \
+    && curl -sSL --retry 5 --output /tmp/containerd.tgz "${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz" \
     && tar -C /usr/local -xzvf /tmp/containerd.tgz \
     && rm -rf /tmp/containerd.tgz \
     && rm -f /usr/local/bin/containerd-stress /usr/local/bin/containerd-shim-runc-v1 \
