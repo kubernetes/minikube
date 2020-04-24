@@ -29,7 +29,7 @@ import (
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
-func DeleteAllVolumesByLabel(ociBin string, label string) []error {
+func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
 	glog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
 
@@ -40,7 +40,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string) []error {
 	}
 
 	for _, v := range vs {
-		if _, err := WarnIfSlow(ociBin, "volume", "rm", "--force", v); err != nil {
+		if _, err := runCmd(exec.Command(ociBin, "volume", "rm", "--force", v), warnSlow...); err != nil {
 			deleteErrs = append(deleteErrs, fmt.Errorf("deleting %q", v))
 		}
 	}
@@ -51,11 +51,11 @@ func DeleteAllVolumesByLabel(ociBin string, label string) []error {
 // PruneAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
 // example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
-func PruneAllVolumesByLabel(ociBin string, label string) []error {
+func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
 	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
-
-	if _, err := WarnIfSlow(ociBin, "volume", "prune", "-f", "--filter", "label="+label); err != nil {
+	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
+	if _, err := runCmd(cmd, warnSlow...); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s", label))
 	}
 
@@ -65,9 +65,8 @@ func PruneAllVolumesByLabel(ociBin string, label string) []error {
 // allVolumesByLabel returns name of all docker volumes by a specific label
 // will not return error if there is no volume found.
 func allVolumesByLabel(ociBin string, label string) ([]string, error) {
-	cmd := exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}")
-	stdout, err := cmd.Output()
-	s := bufio.NewScanner(bytes.NewReader(stdout))
+	rr, err := runCmd(exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}"))
+	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
 	var vols []string
 	for s.Scan() {
 		v := strings.TrimSpace(s.Text())
@@ -82,9 +81,8 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // to the volume named volumeName
 func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
-	glog.Infof("executing: %s", cmd.Args)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "output %s", string(out))
+	if _, err := runCmd(cmd); err != nil {
+		return err
 	}
 	return nil
 }
@@ -93,10 +91,8 @@ func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
 func createDockerVolume(profile string, nodeName string) error {
-	cmd := exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
-	glog.Infof("executing: %s", cmd.Args)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "output %s", string(out))
+	if _, err := runCmd(exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))); err != nil {
+		return err
 	}
 	return nil
 }
