@@ -27,8 +27,6 @@ import (
 	"strconv"
 	"strings"
 
-	lib_shell "github.com/docker/machine/libmachine/shell"
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -170,14 +168,7 @@ var dockerEnvCmd = &cobra.Command{
 		if ec.Shell == "" {
 			ec.Shell, err = shell.Detect()
 			if err != nil {
-				// if we can't detect it could be bash. for example github actions
-				if err == lib_shell.ErrUnknownShell {
-					ec.Shell = "bash"
-					glog.Warningf("couldn't detect shell type, will default to bash: %v", err)
-				} else {
-					exit.WithError("Error detecting shell", err)
-				}
-
+				exit.WithError("Error detecting shell", err)
 			}
 		}
 
