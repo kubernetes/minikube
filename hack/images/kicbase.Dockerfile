@@ -23,11 +23,11 @@ FROM ubuntu:focal-20200319 as base
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="v1.3.3-14-g449e9269"
+# ARG CONTAINERD_VERSION="v1.3.3-14-g449e9269"
 # Configure CNI binaries from upstream
-ARG CNI_VERSION="v0.8.5"
+# ARG CNI_VERSION="v0.8.5"
 # Configure crictl binary from upstream
-ARG CRICTL_VERSION="v1.17.0"
+# ARG CRICTL_VERSION="v1.17.0"
 
 # copy in static files (configs, scripts)
 COPY files/ /usr/local/bin/
@@ -69,9 +69,10 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
-      conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod gnupg libglib2.0-0\
+      conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod gnupg libglib2.0-0 \
       libseccomp2 \
       bash ca-certificates curl rsync \
+      && rm -rf /var/lib/apt/lists/* \
     && sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
         curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
         apt-key add - < Release.key && apt-get update && \
@@ -96,10 +97,11 @@ RUN echo "Ensuring scripts are executable ..." \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
  && echo "Installing crictl ..." \
-    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
+    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.17.0/crictl-v1.17.0-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
+    && rm -rf crictl-v1.17.0-linux-${ARCH}.tar.gz \
  && echo "Installing CNI binaries ..." \
     && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
-    && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
+    && export CNI_TARBALL="v0.8.5/cni-plugins-linux-${ARCH}-v0.8.5.tgz" \
     && export CNI_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && mkdir -p /opt/cni/bin \
@@ -128,26 +130,18 @@ ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
 ARG COMMIT_SHA
 
-# specify version of everything explicitly using 'apt-cache policy'
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-    # lz4 \
-    # sudo \
-    # docker.io \
-    # openssh-server\
-    # dnsutils \
-    # libglib2.0-0 is required for conmon, which is required for podman
-    # libglib2.0-0
-
 # In this step we First disable non-docker runtimes by default
 # then enable docker which is default
 # next making SSH work for docker container
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
-# finally create docker user for minikube ssh. to match VM using "docker" as username
+# next create docker user for minikube ssh. to match VM using "docker" as username
+# finally deleting leftovers
 RUN echo "disable non-docker runtimes ..." \
     && systemctl disable containerd && systemctl disable crio \
     && systemctl enable docker \
  && echo "making SSH work for docker ..." \
     && apt-get install -y --no-install-recommends openssh-server \
+    && rm -rf /var/lib/apt/lists/* \
     && mkdir /var/run/sshd \
     && echo 'root:root' |chpasswd \
     && sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
@@ -155,12 +149,8 @@ RUN echo "disable non-docker runtimes ..." \
  && echo "create docker user for minikube ssh ..." \
     && adduser --ingroup docker --disabled-password --gecos '' docker \
     && adduser docker sudo \
-    && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-
-EXPOSE 22
-
-# Deleting leftovers
-RUN echo "creating docker folders && delete leftovers ..." \
+    && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+ && echo "creating docker folders && delete leftovers ..." \
  && mkdir /home/docker/.ssh \
     && mkdir -p /kind \
  && apt-get clean -y && rm -rf \
