@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/download"
 )
 
 type copyFailRunner struct {
@@ -82,6 +83,8 @@ func TestCopyBinary(t *testing.T) {
 }
 
 func TestCacheBinariesForBootstrapper(t *testing.T) {
+	download.Mock = true
+
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 

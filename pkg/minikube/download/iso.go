@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/hashicorp/go-getter"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -134,19 +133,5 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 		urlWithChecksum = isoURL
 	}
 
-	tmpDst := dst + ".download"
-
-	opts := []getter.ClientOption{getter.WithProgress(DefaultProgressBar)}
-	client := &getter.Client{
-		Src:     urlWithChecksum,
-		Dst:     tmpDst,
-		Mode:    getter.ClientModeFile,
-		Options: opts,
-	}
-
-	glog.Infof("full url: %s", urlWithChecksum)
-	if err := client.Get(); err != nil {
-		return errors.Wrap(err, isoURL)
-	}
-	return os.Rename(tmpDst, dst)
+	return download(urlWithChecksum, dst)
 }
