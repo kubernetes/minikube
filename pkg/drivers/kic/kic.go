@@ -99,7 +99,7 @@ func (d *Driver) Create() error {
 		},
 	)
 
-	exists, err := oci.ContainerExists(d.OCIBinary, params.Name)
+	exists, err := oci.ContainerExists(d.OCIBinary, params.Name, true)
 	if err != nil {
 		glog.Warningf("failed to check if container already exists: %v", err)
 	}
@@ -234,26 +234,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	out, err := oci.WarnIfSlow(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
-	if err != nil {
-		return state.Error, err
-	}
-
-	o := strings.TrimSpace(string(out))
-	switch o {
-	case "running":
-		return state.Running, nil
-	case "exited":
-		return state.Stopped, nil
-	case "paused":
-		return state.Paused, nil
-	case "restarting":
-		return state.Starting, nil
-	case "dead":
-		return state.Error, nil
-	default:
-		return state.None, fmt.Errorf("unknown state")
-	}
+	return oci.ContainerStatus(d.OCIBinary, d.MachineName, true)
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.

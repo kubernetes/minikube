@@ -89,9 +89,9 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online")
+	cmd := exec.CommandContext(ctx, path, "@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent")
 	out, err := cmd.CombinedOutput()
-	if err != nil {
+	if string(out) != "True\r\n" {
 		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
 		fixMessage := "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
 
