@@ -40,7 +40,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []er
 	}
 
 	for _, v := range vs {
-		if _, err := runCmd(exec.Command(ociBin, "volume", "rm", "--force", v), true); err != nil {
+		if _, err := runCmd(exec.Command(ociBin, "volume", "rm", "--force", v), warnSlow...); err != nil {
 			deleteErrs = append(deleteErrs, fmt.Errorf("deleting %q", v))
 		}
 	}
@@ -55,7 +55,7 @@ func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []err
 	var deleteErrs []error
 	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
 	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
-	if _, err := runCmd(cmd, true); err != nil {
+	if _, err := runCmd(cmd, warnSlow...); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s", label))
 	}
 
