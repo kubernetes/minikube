@@ -115,12 +115,7 @@ func hideEnv(t *testing.T) func(t *testing.T) {
 func TestPreRunDirectories(t *testing.T) {
 	// Make sure we create the required directories.
 	tempDir := tests.MakeTempDir()
-	defer func() { //clean up tempdir
-		err := os.RemoveAll(tempDir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", tempDir)
-		}
-	}()
+	defer os.RemoveAll(tempDir)
 
 	runCommand(RootCmd.PersistentPreRun)
 
