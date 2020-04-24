@@ -24,6 +24,7 @@ import (
 
 	// Driver used by testdata
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -70,6 +71,8 @@ var defaultClusterConfig = config.ClusterConfig{
 }
 
 func TestCreateHost(t *testing.T) {
+	download.Mock = true
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
@@ -113,6 +116,8 @@ func TestCreateHost(t *testing.T) {
 }
 
 func TestStartHostExists(t *testing.T) {
+	download.Mock = true
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
@@ -150,6 +155,8 @@ func TestStartHostExists(t *testing.T) {
 }
 
 func TestStartHostErrMachineNotExist(t *testing.T) {
+	download.Mock = true
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
@@ -195,6 +202,8 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 }
 
 func TestStartStoppedHost(t *testing.T) {
+	download.Mock = true
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an initial host.
@@ -230,6 +239,8 @@ func TestStartStoppedHost(t *testing.T) {
 }
 
 func TestStartHost(t *testing.T) {
+	download.Mock = true
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
@@ -258,6 +269,8 @@ func TestStartHost(t *testing.T) {
 }
 
 func TestStartHostConfig(t *testing.T) {
+	download.Mock = true
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
