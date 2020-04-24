@@ -160,8 +160,8 @@ func TestDownloadOnlyKic(t *testing.T) {
 	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr"}
 	args = append(args, StartArgs()...)
 
-	if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
-		t.Errorf("start with download only failed %q : %v", args, err)
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+		t.Errorf("start with download only failed %q : %v\n%s", args, err, rr.Output())
 	}
 
 	// Make sure the downloaded image tarball exists
