@@ -15,8 +15,10 @@ limitations under the License.
 */
 package perf
 
-import "testing"
-import "strings"
+import (
+	"strings"
+	"testing"
+)
 
 func TestBinaryName(t *testing.T) {
 	tests := []struct {
