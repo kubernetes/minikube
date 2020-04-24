@@ -1,4 +1,4 @@
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2019 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# kind node base image
-#
-# For systemd + docker configuration used below, see the following references:
-# https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
-
-# start from ubuntu 20.04(focal), this image is reasonably small as a starting point
-# for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20200319 as base
 
 # copy in static files (configs, scripts)
@@ -59,7 +52,7 @@ ARG COMMIT_SHA
 # likely to try to export logs etc.
 
 RUN echo "set ENV variables ..." \
- && export SYSTEM_VERSION="245.4-4ubuntu3" \
+ && export SYSTEMD_VERSION="245.4-4ubuntu3" \
     CONNTRACK_VERSION="1:1.4.5-2" \
     IPTABLES_VERSION="1.8.4-3ubuntu2" \
     IPROUTE2_VERSION="5.5.0-1ubuntu1" \
@@ -90,7 +83,7 @@ RUN echo "set ENV variables ..." \
  && echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive apt-get update && \
       apt-get install -y --no-install-recommends \
-      systemd=${SYSTEM_VERSION} conntrack=${CONNTRACK_VERSION} iptables=${IPTABLES_VERSION} iproute2=${IPROUTE2_VERSION} ethtool=${ETHTOOL_VERSION} \
+      systemd=${SYSTEMD_VERSION} conntrack=${CONNTRACK_VERSION} iptables=${IPTABLES_VERSION} iproute2=${IPROUTE2_VERSION} ethtool=${ETHTOOL_VERSION} \
       socat=${SOCAT_VERSION} util-linux=${UTIL_LINUX_VERSION} mount=${MOUNT_VERSION} ebtables=${EBTABLES_VERSION} udev=${UDEV_VERSION} kmod=${KMOD_VERSION} \
       gnupg=${GNUPG_VERSION} libglib2.0-0=${LIBGLIB2_VERSION} libseccomp2=${LIBSECCOMP2_VERSION} ca-certificates=${CA_CERTIFICATES_VERSION} \
       curl=${CURL_VERSION} rsync=${RSYNC_VERSION} \
