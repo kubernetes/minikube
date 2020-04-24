@@ -53,6 +53,5 @@ var nodeStopCmd = &cobra.Command{
 }
 
 func init() {
-	nodeStopCmd.Flags().String("name", "", "The name of the node to delete")
 	nodeCmd.AddCommand(nodeStopCmd)
 }
