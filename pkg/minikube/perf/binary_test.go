@@ -16,35 +16,67 @@ limitations under the License.
 package perf
 
 import "testing"
+import "strings"
+
+func TestBinaryName(t *testing.T) {
+	tests := []struct {
+		expected string
+		binary   Binary
+	}{
+		{
+			expected: "foo",
+			binary:   Binary{path: "foo", pr: 0},
+		},
+		{
+			expected: "Minikube (PR 1)",
+			binary:   Binary{path: "bar", pr: 1},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			name := test.binary.Name()
+			if name != test.expected {
+				t.Fatalf("Binary name(%v) doesn't match expected name(%v)", name, test.expected)
+			}
+		})
+
+	}
+}
 
 func TestNewBinary(t *testing.T) {
 	tests := []struct {
-		input       string
-		errExpected bool
+		input, prNum string
+		errExpected  bool
 	}{
 		{
-			input:       "/bin/sh",
-			errExpected: true,
+			input: prPrefix + "42",
+			prNum: "42",
 		},
 		{
-			input:       "foo",
+			input: "42",
+			prNum: "42",
+		},
+		{
+			input:       prPrefix + "XYZ",
 			errExpected: true,
-		}, {
-			input: prPrefix + "foo",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {
 			bin, err := NewBinary(test.input)
-			if err != nil && test.errExpected {
+			if err == nil && test.errExpected {
 				t.Fatalf("Input %v returned unexpected error", test.input)
 			}
 			if test.errExpected {
 				return
 			}
-			if bin != nil {
-				t.Fatalf("Input %v returned unexpected empty binary", test.input)
+			if bin == nil {
+				t.Fatalf("Input string(%v) returned unexpected empty binary", test.input)
+			}
+			if !strings.Contains(bin.path, test.prNum) {
+				t.Fatalf("Binary path(%v) doesn't contain expected(%v)", bin.path, test.prNum)
 			}
 		})
 	}
