@@ -21,18 +21,12 @@
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20200319 as base
 
-# Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
-# The repository contains latest stable releases and nightlies built for multiple architectures
-# ARG CONTAINERD_VERSION="v1.3.3-14-g449e9269"
-# Configure CNI binaries from upstream
-# ARG CNI_VERSION="v0.8.5"
-# Configure crictl binary from upstream
-# ARG CRICTL_VERSION="v1.17.0"
-
 # copy in static files (configs, scripts)
 COPY files/ /usr/local/bin/
 
-# Install dependencies, first from apt, then from release tarballs.
+ARG COMMIT_SHA
+
+# Set environment variable along with Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
 #
 # First we must ensure that our util scripts are executable.
@@ -64,19 +58,47 @@ COPY files/ /usr/local/bin/
 # This is plenty after we've done initial setup for a node, but before we are
 # likely to try to export logs etc.
 
-RUN echo "Ensuring scripts are executable ..." \
-    && chmod +x /usr/local/bin/clean-install /usr/local/bin/entrypoint \
+RUN echo "set ENV variables ..." \
+ && export SYSTEM_VERSION="245.4-4ubuntu3" \
+    CONNTRACK_VERSION="1:1.4.5-2" \
+    IPTABLES_VERSION="1.8.4-3ubuntu2" \
+    IPROUTE2_VERSION="5.5.0-1ubuntu1" \
+    ETHTOOL_VERSION="1:5.4-1" \
+    SOCAT_VERSION="1.7.3.3-2" \
+    UTIL_LINUX_VERSION="2.34-0.1ubuntu9" \
+    MOUNT_VERSION="2.34-0.1ubuntu9" \
+    EBTABLES_VERSION="2.0.11-3build1" \
+    UDEV_VERSION="245.4-4ubuntu3" \
+    KMOD_VERSION="27-1ubuntu2" \
+    GNUPG_VERSION="2.2.19-3ubuntu2" \
+    LIBGLIB2_VERSION="2.64.2-1~fakesync1" \
+    LIBSECCOMP2_VERSION="2.4.3-1ubuntu1" \
+    CA_CERTIFICATES_VERSION="20190110ubuntu1" \
+    CURL_VERSION="7.68.0-1ubuntu2" \
+    RSYNC_VERSION="3.1.3-8" \
+    CRIO_VERSION="1.17.3~2" \
+    PODMAN_VERSION="1.9.0~2" \
+    LZ4_VERSION="1.9.2-2" \
+    SUDO_VERSION="1.8.31-1ubuntu1" \
+    DOCKER_VERSION="19.03.8-0ubuntu1" \
+    DNSUTILS_VERSION="1:9.16.1-0ubuntu2" \
+    CNI_VERSION="v0.8.5" \
+    CRICTL_VERSION="v1.17.0" \
+ && echo "Ensuring scripts are executable ..." \
+    && chmod +x /usr/local/bin/entrypoint \
  && echo "Installing Packages ..." \
-    && DEBIAN_FRONTEND=noninteractive clean-install \
-      systemd \
-      conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod gnupg libglib2.0-0 \
-      libseccomp2 \
-      bash ca-certificates curl rsync \
+    && DEBIAN_FRONTEND=noninteractive apt-get update && \
+      apt-get install -y --no-install-recommends \
+      systemd=${SYSTEM_VERSION} conntrack=${CONNTRACK_VERSION} iptables=${IPTABLES_VERSION} iproute2=${IPROUTE2_VERSION} ethtool=${ETHTOOL_VERSION} \
+      socat=${SOCAT_VERSION} util-linux=${UTIL_LINUX_VERSION} mount=${MOUNT_VERSION} ebtables=${EBTABLES_VERSION} udev=${UDEV_VERSION} kmod=${KMOD_VERSION} \
+      gnupg=${GNUPG_VERSION} libglib2.0-0=${LIBGLIB2_VERSION} libseccomp2=${LIBSECCOMP2_VERSION} ca-certificates=${CA_CERTIFICATES_VERSION} \
+      curl=${CURL_VERSION} rsync=${RSYNC_VERSION} \
       && rm -rf /var/lib/apt/lists/* \
     && sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
         curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
         apt-key add - < Release.key && apt-get update && \
-        apt-get install -y --no-install-recommends cri-o-1.17 podman lz4 sudo docker.io dnsutils \
+        apt-get install -y --no-install-recommends cri-o-1.17=${CRIO_VERSION} podman=${PODMAN_VERSION} lz4=${LZ4_VERSION} sudo=${SUDO_VERSION} \
+        docker.io=${DOCKER_VERSION} dnsutils=${DNSUTILS_VERSION} \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -97,11 +119,11 @@ RUN echo "Ensuring scripts are executable ..." \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
  && echo "Installing crictl ..." \
-    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.17.0/crictl-v1.17.0-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
-    && rm -rf crictl-v1.17.0-linux-${ARCH}.tar.gz \
+    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
+    && rm -rf crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz \
  && echo "Installing CNI binaries ..." \
     && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
-    && export CNI_TARBALL="v0.8.5/cni-plugins-linux-${ARCH}-v0.8.5.tgz" \
+    && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
     && export CNI_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && mkdir -p /opt/cni/bin \
@@ -117,7 +139,7 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \
-    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
+    && sed -i /usr/lib/systemd/user/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
 
 # tell systemd that it is in docker (it will check for the container env)
 # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
@@ -127,8 +149,6 @@ ENV container docker
 STOPSIGNAL SIGRTMIN+3
 # NOTE: this is *only* for documentation, the entrypoint is overridden later
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
-
-ARG COMMIT_SHA
 
 # In this step we First disable non-docker runtimes by default
 # then enable docker which is default
