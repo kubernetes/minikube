@@ -18,8 +18,10 @@ package config
 
 import (
 	"io/ioutil"
+	"net"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
@@ -182,6 +184,30 @@ var addonsConfigureCmd = &cobra.Command{
 
 			if err != nil {
 				out.WarningT("ERROR creating `registry-creds-acr` secret")
+			}
+
+		case "metallb":
+			profile := ClusterFlagValue()
+			cfg, err := config.Load(profile)
+			if err != nil {
+				out.ErrT(out.FatalType, "Failed to load config {{.profile}}", out.V{"profile": profile})
+			}
+
+			validator := func(s string) bool {
+				return net.ParseIP(s) != nil
+			}
+
+			if cfg.KubernetesConfig.LoadBalancerStartIP == "" {
+				cfg.KubernetesConfig.LoadBalancerStartIP = AskForStaticValidatedValue("-- Enter Load Balancer Start IP: ", validator)
+			}
+
+			if cfg.KubernetesConfig.LoadBalancerEndIP == "" {
+				cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
+			}
+
+			err = config.SaveProfile(profile, cfg)
+			if err != nil {
+				out.ErrT(out.FatalType, "Failed to save config {{.profile}}", out.V{"profile": profile})
 			}
 
 		default:
