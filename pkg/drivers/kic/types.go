@@ -18,6 +18,7 @@ package kic
 
 import (
 	"fmt"
+
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 )
 
