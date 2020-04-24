@@ -99,7 +99,7 @@ func (d *Driver) Create() error {
 		},
 	)
 
-	exists, err := oci.ContainerExists(d.OCIBinary, params.Name)
+	exists, err := oci.ContainerExists(d.OCIBinary, params.Name, true)
 	if err != nil {
 		glog.Warningf("failed to check if container already exists: %v", err)
 	}
@@ -234,7 +234,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	return oci.ContainerStatus(d.OCIBinary, d.MachineName)
+	return oci.ContainerStatus(d.OCIBinary, d.MachineName, true)
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.

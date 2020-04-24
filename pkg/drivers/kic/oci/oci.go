@@ -232,7 +232,7 @@ func ContainerID(ociBin string, nameOrID string) (string, error) {
 
 // ContainerExists checks if container name exists (either running or exited)
 func ContainerExists(ociBin string, name string, warnSlow ...bool) (bool, error) {
-	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--format", "{{.Names}}"), true)
+	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--format", "{{.Names}}"), warnSlow...)
 	if err != nil {
 		return false, err
 	}
@@ -395,7 +395,7 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 
 // ListContainersByLabel returns all the container names with a specified label
 func ListContainersByLabel(ociBin string, label string, warnSlow ...bool) ([]string, error) {
-	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), true)
+	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
 	if err != nil {
 		return nil, err
 	}
@@ -432,7 +432,7 @@ func PointToHostDockerDaemon() error {
 // ContainerStatus returns status of a container running,exited,...
 func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State, error) {
 	cmd := exec.Command(ociBin, "inspect", name, "--format={{.State.Status}}")
-	rr, err := runCmd(cmd, true)
+	rr, err := runCmd(cmd, warnSlow...)
 	o := strings.TrimSpace(rr.Stdout.String())
 	switch o {
 	case "running":
