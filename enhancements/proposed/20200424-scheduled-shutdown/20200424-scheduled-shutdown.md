@@ -37,8 +37,8 @@ This is useful for two sets of users:
 
 ### Proposed interface:
 
-* `minikube pause --schedule 5m`
-* `minikube stop --schedule 5m`
+* `minikube pause --after 5m`
+* `minikube stop --after 5m`
 
 * Each scheduled pause would overwrite the previous scheduled event.
 * Each scheduled stop would overwrite the previous scheduled event.
