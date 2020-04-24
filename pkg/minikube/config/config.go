@@ -25,6 +25,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -199,4 +200,18 @@ func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *ClusterCo
 		return err
 	}
 	return ioutil.WriteFile(path, contents, 0644)
+}
+
+// MultiNodeCNIConfig add default CNI config needed for multinode clusters and saves off the config
+func MultiNodeCNIConfig(cc *ClusterConfig) {
+	cc.KubernetesConfig.NetworkPlugin = "cni"
+	cc.KubernetesConfig.ExtraOptions.Set(fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
+	SaveProfile(cc.Name, cc)
+}
+
+// MultiNode returns true if the cluster
+func MultiNode(cc ClusterConfig) bool {
+	if len(cc.Nodes) > 1 {
+		return true
+	}
 }
