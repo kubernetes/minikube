@@ -156,20 +156,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 
 		// Make sure to use the command runner for the control plane to generate the join token
-		cp, err := config.PrimaryControlPlane(starter.Cfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting primary control plane")
-		}
-		h, err := machine.LoadHost(starter.MachineAPI, driver.MachineName(*starter.Cfg, cp))
-		if err != nil {
-			return nil, errors.Wrap(err, "getting control plane host")
-		}
-		cpr, err := machine.CommandRunner(h)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting control plane command runner")
-		}
-
-		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, cpr)
+		cpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
