@@ -26,12 +26,14 @@ This is useful for two sets of users:
 ## Goals
 
 * The ability to schedule a pause or shutdown event
-* The ability to defer or update the scheduled event
+* The ability to defer the scheduled pause or shutdown event
 * "minikube start" transparently clears pending scheduled events
 
 ## Non-Goals
 
-* Automatically idle detection. This is a related, but complimentary idea.
+* Automatic idle detection: This is a more advanced, but complimentary idea, that would keep users from having to invoke a keep-alive command. It is possible to create using the same mechanisms, but is beyond the scope of this proposal.
+
+* Automatic re-activation: This is significantly more advanced, particularly for the scheduled shutdown case. It would be possible to create this, but it to is out of scope for this proposal.
 
 ## Design Details
 
