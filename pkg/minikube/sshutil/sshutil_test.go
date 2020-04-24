@@ -36,6 +36,7 @@ func TestNewSSHClient(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSSHServer: %v", err)
 	}
+
 	port, err := s.Start()
 	if err != nil {
 		t.Fatalf("Error starting ssh server: %v", err)
@@ -50,27 +51,30 @@ func TestNewSSHClient(t *testing.T) {
 		},
 		T: t,
 	}
+
 	c, err := NewSSHClient(d)
 	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
+		t.Fatalf("Error creating client: %v", err)
 	}
 	defer c.Close()
 
 	sess, err := c.NewSession()
 	if err != nil {
-		t.Fatal("Error creating new session for ssh client")
+		t.Fatalf("Error creating new session: %v", err)
 	}
 	defer sess.Close()
 
 	cmd := "foo"
 	if err := sess.Run(cmd); err != nil {
-		t.Fatalf("Error running %q: %v", cmd, err)
+		t.Errorf("Error running %q: %v", cmd, err)
 	}
+
 	if !s.Connected {
-		t.Fatalf("Server not connected")
+		t.Errorf("mock ssh server is not connected")
 	}
+
 	if _, ok := s.Commands[cmd]; !ok {
-		t.Fatalf("Expected command: %s", cmd)
+		t.Errorf("Expected %q to be run, but it never was!", cmd)
 	}
 }
 
