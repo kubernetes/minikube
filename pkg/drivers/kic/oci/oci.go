@@ -158,6 +158,16 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 	}
 
+	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+	var virtualization string
+	if p.OCIBinary == Podman {
+		virtualization = "podman" // VIRTUALIZATION_PODMAN
+	}
+	if p.OCIBinary == Docker {
+		virtualization = "docker" // VIRTUALIZATION_DOCKER
+	}
+	runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", "container", virtualization))
+
 	for key, val := range p.Envs {
 		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
