@@ -31,6 +31,7 @@ import (
 
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -139,7 +140,23 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 	}
 
-	runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
+	runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
+
+	memcgSwap := true
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/sys/fs/cgroup/memory/memsw.limit_in_bytes"); os.IsNotExist(err) {
+			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
+			glog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
+			memcgSwap = false
+		}
+	}
+
+	if p.OCIBinary == Podman && memcgSwap { // swap is required for memory
+		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+	}
+	if p.OCIBinary == Docker { // swap is only required for --memory-swap
+		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+	}
 
 	for key, val := range p.Envs {
 		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
