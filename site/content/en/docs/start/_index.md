@@ -130,7 +130,7 @@ minikube service hello-minikube
 Alternatively, use kubectl to forward the port:
 
 ```shell
-kubectl port-forward service/hello-minikube 8780:8080
+kubectl port-forward service/hello-minikube 7080:8080
 ```
 
 Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/)

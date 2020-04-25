@@ -70,7 +70,7 @@ require (
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/spf13/cast v1.3.1 // indirect
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.6.1
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect

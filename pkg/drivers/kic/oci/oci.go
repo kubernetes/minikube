@@ -17,7 +17,6 @@ limitations under the License.
 package oci
 
 import (
-	"context"
 	"os"
 	"time"
 
@@ -28,7 +27,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"fmt"
@@ -42,7 +40,7 @@ import (
 func DeleteContainersByLabel(prefix string, ociBin string, label string) []error {
 	var deleteErrs []error
 
-	cs, err := listContainersByLabel(prefix, ociBin, label)
+	cs, err := ListContainersByLabel(prefix, ociBin, label)
 	if err != nil {
 		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
@@ -63,9 +61,9 @@ func DeleteContainersByLabel(prefix string, ociBin string, label string) []error
 		if err := ShutDown(prefix, ociBin, c); err != nil {
 			glog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
 		}
-		cmd := exec.Command(prefix, ociBin, "rm", "-f", "-v", c)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
+
+		if _, err := runCmd(exec.Command(prefix, ociBin, "rm", "-f", "-v", c)); err != nil {
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, err))
 		}
 
 	}
@@ -83,9 +81,9 @@ func DeleteContainer(prefix string, ociBin string, name string) error {
 	if err := ShutDown(prefix, ociBin, name); err != nil {
 		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
-	cmd := exec.Command(prefix, ociBin, "rm", "-f", "-v", name)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "delete container %s: output %s", name, out)
+
+	if _, err := runCmd(exec.Command(prefix, ociBin, "rm", "-f", "-v", name)); err != nil {
+		return errors.Wrapf(err, "delete %s", name)
 	}
 	return nil
 }
@@ -213,9 +211,8 @@ func createContainer(prefix string, ociBin string, image string, opts ...createO
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
 
-	out, err := exec.Command(prefix, args...).CombinedOutput()
-	if err != nil {
-		return errors.Wrapf(err, "failed args: %v output: %s", args, out)
+	if _, err := runCmd(exec.Command(prefix, args...)); err != nil {
+		return err
 	}
 
 	return nil
@@ -228,72 +225,33 @@ func Copy(prefix string, ociBin string, ociID string, targetDir string, fName st
 	}
 
 	destination := fmt.Sprintf("%s:%s", ociID, targetDir)
-	cmd := exec.Command(prefix, ociBin, "cp", fName, destination)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "error copying %s into node", fName)
+	if _, err := runCmd(exec.Command(prefix, ociBin, "cp", fName, destination)); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 // ContainerID returns id of a container name
-func ContainerID(prefix string, ociBin string, nameOrID string) (string, error) {
-	cmd := exec.Command(prefix, ociBin, "inspect", "-f", "{{.Id}}", nameOrID)
-	out, err := cmd.CombinedOutput()
-
+func ContainerID(prefix, ociBin string, nameOrID string) (string, error) {
+	rr, err := runCmd(exec.Command(prefix, ociBin, "inspect", "-f", "{{.Id}}", nameOrID))
 	if err != nil { // don't return error if not found, only return empty string
-		if strings.Contains(string(out), "Error: No such object:") || strings.Contains(string(out), "unable to find") {
+		if strings.Contains(rr.Stdout.String(), "Error: No such object:") || strings.Contains(rr.Stdout.String(), "unable to find") {
 			err = nil
 		}
-		out = []byte{}
+		return "", err
 	}
-
-	return string(out), err
-}
-
-// WarnIfSlow runs an oci command, warning about performance issues
-func WarnIfSlow(args ...string) ([]byte, error) {
-	killTime := 19 * time.Second
-	warnTime := 2 * time.Second
-
-	if args[1] == "volume" || args[1] == "ps" { // volume and ps requires more time than inspect
-		killTime = 30 * time.Second
-		warnTime = 3 * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), killTime)
-	defer cancel()
-
-	start := time.Now()
-	glog.Infof("executing with %s timeout: %v", args, killTime)
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	stdout, err := cmd.Output()
-	d := time.Since(start)
-	if d > warnTime {
-		out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": strings.Join(cmd.Args, " "), "duration": d})
-		out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": args[0]})
-	}
-
-	if ctx.Err() == context.DeadlineExceeded {
-		return stdout, fmt.Errorf("%q timed out after %s", strings.Join(cmd.Args, " "), killTime)
-	}
-	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return stdout, fmt.Errorf("%q failed: %v: %s", strings.Join(cmd.Args, " "), exitErr, exitErr.Stderr)
-		}
-		return stdout, fmt.Errorf("%q failed: %v", strings.Join(cmd.Args, " "), err)
-	}
-	return stdout, nil
+	return rr.Stdout.String(), nil
 }
 
 // ContainerExists checks if container name exists (either running or exited)
-func ContainerExists(prefix string, ociBin string, name string) (bool, error) {
-	out, err := WarnIfSlow(prefix, ociBin, "ps", "-a", "--format", "{{.Names}}")
+func ContainerExists(prefix string, ociBin string, name string, warnSlow ...bool) (bool, error) {
+	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--format", "{{.Names}}"), warnSlow...)
 	if err != nil {
-		return false, errors.Wrapf(err, string(out))
+		return false, err
 	}
 
-	containers := strings.Split(string(out), "\n")
+	containers := strings.Split(rr.Stdout.String(), "\n")
 	for _, c := range containers {
 		if strings.TrimSpace(c) == name {
 			return true, nil
@@ -305,36 +263,32 @@ func ContainerExists(prefix string, ociBin string, name string) (bool, error) {
 
 // IsCreatedByMinikube returns true if the container was created by minikube
 // with default assumption that it is not created by minikube when we don't know for sure
-func IsCreatedByMinikube(prefix string, ociBin string, nameOrID string) bool {
-	cmd := exec.Command(prefix, ociBin, "inspect", nameOrID, "--format", "{{.Config.Labels}}")
-	out, err := cmd.CombinedOutput()
-
+func IsCreatedByMinikube(prefix, ociBin string, nameOrID string) bool {
+	rr, err := runCmd(exec.Command(prefix, ociBin, "inspect", nameOrID, "--format", "{{.Config.Labels}}"))
 	if err != nil {
 		return false
 	}
 
-	if strings.Contains(string(out), fmt.Sprintf("%s:true", CreatedByLabelKey)) {
+	if strings.Contains(rr.Stdout.String(), fmt.Sprintf("%s:true", CreatedByLabelKey)) {
 		return true
 	}
 
 	return false
 }
 
-// ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
 func ListOwnedContainers(prefix string, ociBin string) ([]string, error) {
-	return listContainersByLabel(prefix, ociBin, ProfileLabelKey)
+	return ListContainersByLabel(prefix, ociBin, ProfileLabelKey)
 }
 
 // inspect return low-level information on containers
 func inspect(prefix string, ociBin string, containerNameOrID, format string) ([]string, error) {
-
 	cmd := exec.Command(prefix, ociBin, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
-	err := cmd.Run()
+	_, err := runCmd(cmd)
 	scanner := bufio.NewScanner(&buff)
 	var lines []string
 	for scanner.Scan() {
@@ -395,8 +349,8 @@ func isUsernsRemapEnabled(prefix string, ociBin string) bool {
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
-	err := cmd.Run()
-	if err != nil {
+
+	if _, err := runCmd(cmd); err != nil {
 		return false
 	}
 
@@ -452,13 +406,13 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 	}
 }
 
-// listContainersByLabel returns all the container names with a specified label
-func listContainersByLabel(prefix string, ociBin string, label string) ([]string, error) {
-	stdout, err := WarnIfSlow(prefix, ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
+// ListContainersByLabel returns all the container names with a specified label
+func ListContainersByLabel(prefix string, ociBin string, label string, warnSlow ...bool) ([]string, error) {
+	rr, err := runCmd(exec.Command(prefix, ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
 	if err != nil {
 		return nil, err
 	}
-	s := bufio.NewScanner(bytes.NewReader(stdout))
+	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
 	var names []string
 	for s.Scan() {
 		n := strings.TrimSpace(s.Text())
@@ -489,18 +443,19 @@ func PointToHostDockerDaemon() error {
 }
 
 // ContainerRunning returns running state of a container
-func ContainerRunning(prefix string, ociBin string, name string) (bool, error) {
-	out, err := WarnIfSlow(prefix, ociBin, "inspect", name, "--format={{.State.Running}}")
+func ContainerRunning(prefix string, ociBin string, name string, warnSlow ...bool) (bool, error) {
+	rr, err := runCmd(exec.Command(prefix, ociBin, "inspect", name, "--format={{.State.Running}}"), warnSlow...)
 	if err != nil {
 		return false, err
 	}
-	return strconv.ParseBool(strings.TrimSpace(string(out)))
+	return strconv.ParseBool(strings.TrimSpace(rr.Stdout.String()))
 }
 
 // ContainerStatus returns status of a container running,exited,...
-func ContainerStatus(prefix string, ociBin string, name string) (state.State, error) {
-	out, err := WarnIfSlow(prefix, ociBin, "inspect", name, "--format={{.State.Status}}")
-	o := strings.TrimSpace(string(out))
+func ContainerStatus(prefix string, ociBin string, name string, warnSlow ...bool) (state.State, error) {
+	cmd := exec.Command(prefix, ociBin, "inspect", name, "--format={{.State.Status}}")
+	rr, err := runCmd(cmd, warnSlow...)
+	o := strings.TrimSpace(rr.Stdout.String())
 	switch o {
 	case "running":
 		return state.Running, nil
@@ -517,13 +472,12 @@ func ContainerStatus(prefix string, ociBin string, name string) (state.State, er
 	}
 }
 
-// Shutdown will run command to shut down the container
+// ShutDown will run command to shut down the container
 // to ensure the containers process and networking bindings are all closed
 // to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
 func ShutDown(prefix string, ociBin string, name string) error {
-	cmd := exec.Command(prefix, ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		glog.Infof("error shutdown %s output %q : %v", name, out, err)
+	if _, err := runCmd(exec.Command(prefix, ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")); err != nil {
+		glog.Infof("error shutdown %s: %v", name, err)
 	}
 	// helps with allowing docker realize the container is exited and report its status correctly.
 	time.Sleep(time.Second * 1)

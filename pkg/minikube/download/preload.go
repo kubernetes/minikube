@@ -41,7 +41,7 @@ const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v2"
+	PreloadVersion = "v3"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
@@ -78,16 +78,16 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string) bool {
+	// TODO: debug why this func is being called two times
 	glog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
 	if !viper.GetBool("preload") {
 		return false
 	}
 
-	// See https://github.com/kubernetes/minikube/issues/6933
 	// and https://github.com/kubernetes/minikube/issues/6934
-	// to track status of adding containerd & crio
-	if containerRuntime != "docker" {
-		glog.Info("Container runtime isn't docker, skipping preload")
+	// to track status of adding crio
+	if containerRuntime == "crio" {
+		glog.Info("crio is not supported yet, skipping preload")
 		return false
 	}
 
