@@ -14,42 +14,9 @@
 
 FROM ubuntu:focal-20200319 as base
 
-# copy in static files (configs, scripts)
 COPY files/ /usr/local/bin/
 
 ARG COMMIT_SHA
-
-# Set environment variable along with Install dependencies, first from apt, then from release tarballs.
-# NOTE: we use one RUN to minimize layers.
-#
-# First we must ensure that our util scripts are executable.
-#
-# The base image already has: ssh, apt, snapd, but we need to install more packages.
-# Packages installed are broken down into (each on a line):
-# - packages needed to run services (systemd)
-# - packages needed for kubernetes components
-# - packages needed by the container runtime
-# - misc packages kind uses itself
-# After installing packages we cleanup by:
-# - removing unwanted systemd services
-# - disabling kmsg in journald (these log entries would be confusing)
-#
-# Then we install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
-# along with podman
-#
-# Then we install containerd from our nightly build infrastructure, as this
-# build for multiple architectures and allows us to upgrade to patched releases
-# more quickly.
-#
-# Next we download and extract crictl and CNI plugin binaries from upstream.
-#
-# Next we ensure the /etc/kubernetes/manifests directory exists. Normally
-# a kubeadm debain / rpm package would ensure that this exists but we install
-# freshly built binaries directly when we build the node image.
-#
-# Finally we adjust tempfiles cleanup to be 1 minute after "boot" instead of 15m
-# This is plenty after we've done initial setup for a node, but before we are
-# likely to try to export logs etc.
 
 RUN echo "set ENV variables ..." \
  && export SYSTEMD_VERSION="245.4-4ubuntu3" \
