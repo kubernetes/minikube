@@ -153,7 +153,7 @@ minikube tunnel
 To find the routable external IP, run this command:
 
 ```shell
-kubectl get services balanced --output=jsonpath='{.spec.clusterIP}'
+kubectl get services balanced --output=jsonpath='{.status.loadBalancer.ingress[0].ip}''
 ```
 
 Your deployment is now available at &lt;EXTERNAL-IP&gt;:8000
