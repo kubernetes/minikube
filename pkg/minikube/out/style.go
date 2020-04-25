@@ -63,7 +63,7 @@ var styles = map[StyleEnum]style{
 	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Issues:        {Prefix: "⁉️   "},
 	Launch:        {Prefix: "🚀  "},
-	LogEntry:      {Prefix: "    "},                         // Indent
+	LogEntry:      {Prefix: "    "}, // Indent
 	New:           {Prefix: "🆕  "},
 	Notice:        {Prefix: "📌  "},
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
