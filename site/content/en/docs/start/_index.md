@@ -150,9 +150,11 @@ In another window, start the tunnel to create a routable IP for the 'balanced' d
 minikube tunnel
 ```
 
-To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
+To find the routable external IP, run this command:
 
-`kubectl get services balanced`
+```shell
+kubectl get services balanced --output=jsonpath='{.spec.clusterIP}'
+```
 
 Your deployment is now available at &lt;EXTERNAL-IP&gt;:8000
 
