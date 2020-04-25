@@ -112,7 +112,7 @@ func beginDownloadKicArtifacts(g *errgroup.Group, driver string, cRuntime string
 		}
 	} else {
 		// TODO: driver == "podman"
-		glog.Info("Container runtime isn't docker, skipping download")
+		glog.Info("Driver isn't docker, skipping base-image download")
 	}
 }
 
