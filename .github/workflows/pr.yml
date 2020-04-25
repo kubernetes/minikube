@@ -48,6 +48,8 @@ jobs:
           TESTSUITE: lintall
         run: make test
         continue-on-error: false
+      - name: Broken Link Check
+        uses: technote-space/broken-link-checker-action@v1
   unit_test:
     runs-on: ubuntu-18.04
     steps:
