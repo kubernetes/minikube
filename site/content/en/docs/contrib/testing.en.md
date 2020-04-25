@@ -16,8 +16,9 @@ make test
 
 ### Integration Tests
 
-Integration tests are currently run manually.
-To run them, build the binary and run the tests:
+#### The basics
+
+From the minikube root directory, build the binary and run the tests:
 
 ```shell
 make integration
@@ -28,6 +29,34 @@ You may find it useful to set various options to test only a particular test aga
 ```shell
  env TEST_ARGS="-minikube-start-args=--driver=hyperkit -test.run TestStartStop" make integration
  ```
+
+#### Quickly iterating on a single test
+
+Run a single test on an active cluster:
+
+```shell
+make integration -e TEST_ARGS="-test.run TestFunctional/parallel/MountCmd --profile=minikube --cleanup=false"
+```
+
+WARNING: For this to work repeatedly, the test must be written so that it cleans up after itself.
+
+The `--cleanup=false` test arg ensures that the cluster will not be deleted after the test is run.
+
+See [main.go](https://github.com/kubernetes/minikube/blob/master/test/integration/main.go) for details.
+
+#### Disabling parallelism
+
+```shell
+make integration -e TEST_ARGS="-test.parallel=1"
+```
+
+#### Testing philosophy
+
+- Tests should be so simple as to be correct by inspection
+- Readers should need to read only the test body to understand the test
+- Top-to-bottom readability is more important than code de-duplication
+
+Tests are typically read with a great air of skepticism, because chances are they are being read only when things are broken. 
 
 ### Conformance Tests
 

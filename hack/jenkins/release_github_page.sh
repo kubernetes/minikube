@@ -75,34 +75,13 @@ github-release -v release ${RELEASE_FLAGS} \
     --name "${TAGNAME}" \
     --description "${DESCRIPTION}"
 
-# Uploading the files into github
-FILES_TO_UPLOAD=(
-    'minikube-linux-amd64'
-    'minikube-linux-amd64.sha256'
-    'minikube-darwin-amd64'
-    'minikube-darwin-amd64.sha256'
-    'minikube-windows-amd64.exe'
-    'minikube-windows-amd64.exe.sha256'
-    'minikube-installer.exe'
-    "minikube_${DEB_VERSION}-0_amd64.deb"
-    "minikube-${RPM_VERSION}-0.x86_64.rpm"
-    'docker-machine-driver-kvm2'
-    'docker-machine-driver-kvm2.sha256'
-    'docker-machine-driver-hyperkit'
-    'docker-machine-driver-hyperkit.sha256'
-)
-
-# ISO files are special, as they are generated pre-release tagging
-ISO_FILES=("minikube-v${VERSION}.iso" "minikube-v${VERSION}.iso.sha256")
-for DOWNLOAD in "${ISO_FILES[@]}"
-do
-  gsutil cp "gs://${ISO_BUCKET}/${DOWNLOAD}" out/ \
-    && FILES_TO_UPLOAD+=("${DOWNLOAD}") \
-    || echo "${DOWNLOAD} was not generated for this release"
+# ISO files are built from a separate process, and may not be included in this release
+for path in $(gsutil ls "gs://${ISO_BUCKET}/minikube-v${VERSION}*" || true); do
+  gsutil cp "${path}" out/
 done
-
-for UPLOAD in "${FILES_TO_UPLOAD[@]}"
-do
+ 
+# Upload all end-user assets other than preload files, as they are release independent
+for file in out/minikube[_-]* out/docker-machine-*; do
     n=0
     until [ $n -ge 5 ]
     do
@@ -110,8 +89,8 @@ do
           --user "${GITHUB_ORGANIZATION}" \
           --repo "${GITHUB_REPO}" \
           --tag "${TAGNAME}" \
-          --name "$UPLOAD" \
-          --file "out/$UPLOAD" && break
+          --name "$(basename ${file})" \
+          --file "${file}" && break
         n=$((n+1))
         sleep 15
     done

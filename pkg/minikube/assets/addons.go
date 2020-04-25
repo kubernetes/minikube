@@ -355,6 +355,20 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "ingress-dns"),
+	"metallb": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/metallb/metallb.yaml",
+			vmpath.GuestAddonsDir,
+			"metallb.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/metallb/metallb-config.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"metallb-config.yaml",
+			"0640",
+			true),
+	}, false, "metallb"),
 }
 
 // GenerateTemplateData generates template data for template assets
@@ -368,13 +382,17 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		ea = "-" + runtime.GOARCH
 	}
 	opts := struct {
-		Arch            string
-		ExoticArch      string
-		ImageRepository string
+		Arch                string
+		ExoticArch          string
+		ImageRepository     string
+		LoadBalancerStartIP string
+		LoadBalancerEndIP   string
 	}{
-		Arch:            a,
-		ExoticArch:      ea,
-		ImageRepository: cfg.ImageRepository,
+		Arch:                a,
+		ExoticArch:          ea,
+		ImageRepository:     cfg.ImageRepository,
+		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
 	}
 
 	return opts

@@ -147,6 +147,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cname})
 		}
 
+		deletePossibleKicLeftOver(cname)
+
 		errs := DeleteProfiles([]*config.Profile{profile})
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
@@ -189,20 +191,32 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-func deleteProfileContainersAndVolumes(name string) {
+func deletePossibleKicLeftOver(name string) {
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
-	errs := oci.DeleteContainersByLabel("env", oci.Docker, delLabel)
-	if errs != nil { // it will error if there is no container to delete
-		glog.Infof("error deleting containers for %s (might be okay):\n%v", name, errs)
-	}
-	errs = oci.DeleteAllVolumesByLabel("env", oci.Docker, delLabel)
-	if errs != nil { // it will not error if there is nothing to delete
-		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
-	}
+	prefixes := []string{"env", "sudo"}
+	for i, bin := range []string{oci.Docker, oci.Podman} {
+		prefix := prefixes[i]
+		cs, err := oci.ListContainersByLabel(prefix, bin, delLabel)
+		if err == nil && len(cs) > 0 {
+			for _, c := range cs {
+				out.T(out.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": name})
+				err := oci.DeleteContainer(prefix, bin, c)
+				if err != nil { // it will error if there is no container to delete
+					glog.Errorf("error deleting container %q. you might want to delete that manually :\n%v", name, err)
+				}
 
-	errs = oci.PruneAllVolumesByLabel("env", oci.Docker, delLabel)
-	if len(errs) > 0 { // it will not error if there is nothing to delete
-		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
+			}
+		}
+
+		errs := oci.DeleteAllVolumesByLabel(prefix, bin, delLabel)
+		if errs != nil { // it will not error if there is nothing to delete
+			glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+		}
+
+		errs = oci.PruneAllVolumesByLabel(prefix, bin, delLabel)
+		if len(errs) > 0 { // it will not error if there is nothing to delete
+			glog.Warningf("error pruning volume (might be okay):\n%v", errs)
+		}
 	}
 }
 
@@ -212,7 +226,7 @@ func deleteProfile(profile *config.Profile) error {
 		// if driver is oci driver, delete containers and volumes
 		if driver.IsKIC(profile.Config.Driver) {
 			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
-			deleteProfileContainersAndVolumes(profile.Name)
+			deletePossibleKicLeftOver(profile.Name)
 		}
 	}
 

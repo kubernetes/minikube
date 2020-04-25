@@ -43,7 +43,6 @@ const (
 	ThumbsUp
 	ThumbsDown
 	Option
-	IndentVerify
 	Command
 	LogEntry
 	Deleted
@@ -93,4 +92,5 @@ const (
 	AddonEnable
 	AddonDisable
 	Shrug
+	New
 )

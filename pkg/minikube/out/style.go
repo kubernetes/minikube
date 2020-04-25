@@ -70,7 +70,6 @@ var styles = map[StyleEnum]style{
 	ThumbsUp:      {Prefix: "👍  "},
 	ThumbsDown:    {Prefix: "👎  "},
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	IndentVerify:  {Prefix: "    🔎 ", LowPrefix: lowIndent}, //  Indented verifying icon, it needs extra space to make it work
 	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	LogEntry:      {Prefix: "    "},                         // Indent
 	Deleted:       {Prefix: "💀  "},
@@ -86,6 +85,7 @@ var styles = map[StyleEnum]style{
 	Unpause:       {Prefix: "⏯️  "},
 	Confused:      {Prefix: "😕  "},
 	Shrug:         {Prefix: "🤷  "},
+	New:           {Prefix: "🆕  "},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
@@ -109,7 +109,7 @@ var styles = map[StyleEnum]style{
 	Enabling:         {Prefix: "🔌  "},
 	Shutdown:         {Prefix: "🛑  "},
 	Pulling:          {Prefix: "🚜  "},
-	HealthCheck:      {Prefix: "🕵️   "}, // mac needed extra space for right tabbing
+	HealthCheck:      {Prefix: "🔎  "},
 	Verifying:        {Prefix: "🤔  "},
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
 	Kubectl:          {Prefix: "💗  "},
