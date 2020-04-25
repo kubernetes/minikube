@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# using entrypoint created by kind https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
+
 set -o errexit
 set -o nounset
 set -o pipefail
