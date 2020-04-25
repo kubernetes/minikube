@@ -49,19 +49,21 @@ func download(src string, dst string) error {
 		},
 	}
 
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+
 	// Don't bother with getter.MockGetter, as we don't provide a way to inspect the outcome
 	if Mock {
 		glog.Infof("Mock download: %s -> %s", src, dst)
-		return nil
+		// Callers expect the file to exist
+		_, err := os.Create(dst)
+		return err
 	}
 
 	// Politely prevent tests from shooting themselves in the foot
 	if underTest() {
-		return fmt.Errorf("unmocked download under test, set download.Mock=true")
-	}
-
-	if err := os.MkdirAll(filepath.Dir(dst), 0750); err != nil {
-		return errors.Wrap(err, "mkdir")
+		return fmt.Errorf("unmocked download under test")
 	}
 
 	glog.Infof("Downloading: %s -> %s", src, dst)
