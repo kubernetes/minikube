@@ -1,6 +1,4 @@
-#!/bin/bash
-
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2019 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,185 +12,135 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# using entrypoint created by kind https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
+FROM ubuntu:focal-20200319 as base
 
-set -o errexit
-set -o nounset
-set -o pipefail
+COPY files/ /usr/local/bin/
 
-fix_mount() {
-  echo 'INFO: ensuring we can execute /bin/mount even with userns-remap'
-  # necessary only when userns-remap is enabled on the host, but harmless
-  # The binary /bin/mount should be owned by root and have the setuid bit
-  chown root:root /bin/mount
-  chmod -s /bin/mount
+ARG COMMIT_SHA
 
-  # This is a workaround to an AUFS bug that might cause `Text file
-  # busy` on `mount` command below. See more details in
-  # https://github.com/moby/moby/issues/9547
-  if [[ "$(stat -f -c %T /bin/mount)" == 'aufs' ]]; then
-    echo 'INFO: detected aufs, calling sync'
-    sync
-  fi
+RUN echo "set ENV variables ..." \
+ && export SYSTEMD_VERSION="245.4-4ubuntu3" \
+    CONNTRACK_VERSION="1:1.4.5-2" \
+    IPTABLES_VERSION="1.8.4-3ubuntu2" \
+    IPROUTE2_VERSION="5.5.0-1ubuntu1" \
+    ETHTOOL_VERSION="1:5.4-1" \
+    SOCAT_VERSION="1.7.3.3-2" \
+    UTIL_LINUX_VERSION="2.34-0.1ubuntu9" \
+    MOUNT_VERSION="2.34-0.1ubuntu9" \
+    EBTABLES_VERSION="2.0.11-3build1" \
+    UDEV_VERSION="245.4-4ubuntu3" \
+    KMOD_VERSION="27-1ubuntu2" \
+    GNUPG_VERSION="2.2.19-3ubuntu2" \
+    LIBGLIB2_VERSION="2.64.2-1~fakesync1" \
+    LIBSECCOMP2_VERSION="2.4.3-1ubuntu1" \
+    CA_CERTIFICATES_VERSION="20190110ubuntu1" \
+    CURL_VERSION="7.68.0-1ubuntu2" \
+    RSYNC_VERSION="3.1.3-8" \
+    CRIO_VERSION="1.17.3~2" \
+    PODMAN_VERSION="1.9.0~2" \
+    LZ4_VERSION="1.9.2-2" \
+    SUDO_VERSION="1.8.31-1ubuntu1" \
+    DOCKER_VERSION="19.03.8-0ubuntu1" \
+    DNSUTILS_VERSION="1:9.16.1-0ubuntu2" \
+    CNI_VERSION="v0.8.5" \
+    CRICTL_VERSION="v1.17.0" \
+    CONTAINERD_VERSION="1.3.3-61-g60bc1282" \
+ && echo "Ensuring scripts are executable ..." \
+    && chmod +x /usr/local/bin/entrypoint \
+ && echo "Installing Packages ..." \
+    && DEBIAN_FRONTEND=noninteractive apt-get update && \
+      apt-get install -y --no-install-recommends \
+      systemd=${SYSTEMD_VERSION} conntrack=${CONNTRACK_VERSION} iptables=${IPTABLES_VERSION} iproute2=${IPROUTE2_VERSION} ethtool=${ETHTOOL_VERSION} \
+      socat=${SOCAT_VERSION} util-linux=${UTIL_LINUX_VERSION} mount=${MOUNT_VERSION} ebtables=${EBTABLES_VERSION} udev=${UDEV_VERSION} kmod=${KMOD_VERSION} \
+      gnupg=${GNUPG_VERSION} libglib2.0-0=${LIBGLIB2_VERSION} libseccomp2=${LIBSECCOMP2_VERSION} ca-certificates=${CA_CERTIFICATES_VERSION} \
+      curl=${CURL_VERSION} rsync=${RSYNC_VERSION} \
+      && rm -rf /var/lib/apt/lists/* \
+    && sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+        curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
+        apt-key add - < Release.key && apt-get update && \
+        apt-get install -y --no-install-recommends cri-o-1.17=${CRIO_VERSION} podman=${PODMAN_VERSION} lz4=${LZ4_VERSION} sudo=${SUDO_VERSION} \
+        docker.io=${DOCKER_VERSION} dnsutils=${DNSUTILS_VERSION} \
+    && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
+    && rm -f /lib/systemd/system/multi-user.target.wants/* \
+    && rm -f /etc/systemd/system/*.wants/* \
+    && rm -f /lib/systemd/system/local-fs.target.wants/* \
+    && rm -f /lib/systemd/system/sockets.target.wants/*udev* \
+    && rm -f /lib/systemd/system/sockets.target.wants/*initctl* \
+    && rm -f /lib/systemd/system/basic.target.wants/* \
+    && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
+    && ln -s "$(which systemd)" /sbin/init \
+ && echo "Installing containerd ..." \
+    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
+    && export CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION}" \
+    && curl -sSL --retry 5 --output /tmp/containerd.tgz "${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz" \
+    && tar -C /usr/local -xzvf /tmp/containerd.tgz \
+    && rm -rf /tmp/containerd.tgz \
+    && rm -f /usr/local/bin/containerd-stress /usr/local/bin/containerd-shim-runc-v1 \
+    && curl -sSL --retry 5 --output /usr/local/sbin/runc "${CONTAINERD_BASE_URL}/runc.${ARCH}" \
+    && chmod 755 /usr/local/sbin/runc \
+    && containerd --version \
+ && echo "Installing crictl ..." \
+    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
+    && rm -rf crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz \
+ && echo "Installing CNI binaries ..." \
+    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
+    && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
+    && export CNI_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_TARBALL}" \
+    && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
+    && mkdir -p /opt/cni/bin \
+    && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
+    && rm -rf /tmp/cni.tgz \
+    && find /opt/cni/bin -type f -not \( \
+         -iname host-local \
+         -o -iname ptp \
+         -o -iname portmap \
+         -o -iname loopback \
+      \) \
+      -delete \
+ && echo "Ensuring /etc/kubernetes/manifests" \
+    && mkdir -p /etc/kubernetes/manifests \
+ && echo "Adjusting systemd-tmpfiles timer" \
+    && sed -i /usr/lib/systemd/user/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
 
-  echo 'INFO: remounting /sys read-only'
-  # systemd-in-a-container should have read only /sys
-  # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
-  # however, we need other things from `docker run --privileged` ...
-  # and this flag also happens to make /sys rw, amongst other things
-  mount -o remount,ro /sys
+# tell systemd that it is in docker (it will check for the container env)
+# https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+ENV container docker
+# systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
+# https://bugzilla.redhat.com/show_bug.cgi?id=1201657
+STOPSIGNAL SIGRTMIN+3
+# NOTE: this is *only* for documentation, the entrypoint is overridden later
+ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
-  echo 'INFO: making mounts shared'
-  # for mount propagation
-  mount --make-rshared /
-}
-
-fix_cgroup() {
-  echo 'INFO: fix cgroup mounts for all subsystems'
-  # For each cgroup subsystem, Docker does a bind mount from the current
-  # cgroup to the root of the cgroup subsystem. For instance:
-  #   /sys/fs/cgroup/memory/docker/<cid> -> /sys/fs/cgroup/memory
-  #
-  # This will confuse Kubelet and cadvisor and will dump the following error
-  # messages in kubelet log:
-  #   `summary_sys_containers.go:47] Failed to get system container stats for ".../kubelet.service"`
-  #
-  # This is because `/proc/<pid>/cgroup` is not affected by the bind mount.
-  # The following is a workaround to recreate the original cgroup
-  # environment by doing another bind mount for each subsystem.
-  local docker_cgroup_mounts
-  docker_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep docker || true)
-  if [[ -n "${docker_cgroup_mounts}" ]]; then
-    local docker_cgroup cgroup_subsystems subsystem
-    docker_cgroup=$(echo "${docker_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
-    cgroup_subsystems=$(echo "${docker_cgroup_mounts}" | cut -d' ' -f 5)
-    echo "${cgroup_subsystems}" |
-    while IFS= read -r subsystem; do
-      mkdir -p "${subsystem}${docker_cgroup}"
-      mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
-    done
-  fi
-}
-
-fix_machine_id() {
-  # Deletes the machine-id embedded in the node image and generates a new one.
-  # This is necessary because both kubelet and other components like weave net
-  # use machine-id internally to distinguish nodes.
-  echo 'INFO: clearing and regenerating /etc/machine-id'
-  rm -f /etc/machine-id
-  systemd-machine-id-setup
-}
-
-fix_product_name() {
-  # this is a small fix to hide the underlying hardware and fix issue #426
-  # https://github.com/kubernetes-sigs/kind/issues/426
-  if [[ -f /sys/class/dmi/id/product_name ]]; then
-    echo 'INFO: faking /sys/class/dmi/id/product_name to be "kind"'
-    echo 'kind' > /kind/product_name
-    mount -o ro,bind /kind/product_name /sys/class/dmi/id/product_name
-  fi
-}
-
-fix_product_uuid() {
-  # The system UUID is usually read from DMI via sysfs, the problem is that
-  # in the kind case this means that all (container) nodes share the same
-  # system/product uuid, as they share the same DMI.
-  # Note: The UUID is read from DMI, this tool is overwriting the sysfs files
-  # which should fix the attached issue, but this workaround does not address
-  # the issue if a tool is reading directly from DMI.
-  # https://github.com/kubernetes-sigs/kind/issues/1027
-  [[ ! -f /kind/product_uuid ]] && cat /proc/sys/kernel/random/uuid > /kind/product_uuid
-  if [[ -f /sys/class/dmi/id/product_uuid ]]; then
-    echo 'INFO: faking /sys/class/dmi/id/product_uuid to be random'
-    mount -o ro,bind /kind/product_uuid /sys/class/dmi/id/product_uuid
-  fi
-  if [[ -f /sys/devices/virtual/dmi/id/product_uuid ]]; then
-    echo 'INFO: faking /sys/devices/virtual/dmi/id/product_uuid as well'
-    mount -o ro,bind /kind/product_uuid /sys/devices/virtual/dmi/id/product_uuid
-  fi
-}
-
-fix_kmsg() {
-  # In environments where /dev/kmsg is not available, the kubelet (1.15+) won't
-  # start because it cannot open /dev/kmsg when starting the kmsgparser in the
-  # OOM parser.
-  # To support those environments, we link /dev/kmsg to /dev/console.
-  # https://github.com/kubernetes-sigs/kind/issues/662
-  if [[ ! -e /dev/kmsg ]]; then
-    if [[ -e /dev/console ]]; then
-      echo 'WARN: /dev/kmsg does not exist, symlinking /dev/console' >&2
-      ln -s /dev/console /dev/kmsg
-    else
-      echo 'WARN: /dev/kmsg does not exist, nor does /dev/console!' >&2
-    fi
-  fi
-}
-
-configure_proxy() {
-  # ensure all processes receive the proxy settings by default
-  # https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html
-  mkdir -p /etc/systemd/system.conf.d/
-  cat <<EOF >/etc/systemd/system.conf.d/proxy-default-environment.conf
-[Manager]
-DefaultEnvironment="HTTP_PROXY=${HTTP_PROXY:-}" "HTTPS_PROXY=${HTTPS_PROXY:-}" "NO_PROXY=${NO_PROXY:-}"
-EOF
-}
-
-select_iptables() {
-  # based on: https://github.com/kubernetes/kubernetes/blob/ffe93b3979486feb41a0f85191bdd189cbd56ccc/build/debian-iptables/iptables-wrapper
-  local mode=nft
-  num_legacy_lines=$( (iptables-legacy-save || true; ip6tables-legacy-save || true) 2>/dev/null | grep '^-' | wc -l || true)
-  if [ "${num_legacy_lines}" -ge 10 ]; then
-    mode=legacy
-  else
-    num_nft_lines=$( (timeout 5 sh -c "iptables-nft-save; ip6tables-nft-save" || true) 2>/dev/null | grep '^-' | wc -l || true)
-    if [ "${num_legacy_lines}" -ge "${num_nft_lines}" ]; then
-      mode=legacy
-    fi
-  fi
-
-  echo "INFO: setting iptables to detected mode: ${mode}"
-  update-alternatives --set iptables "/usr/sbin/iptables-${mode}" > /dev/null
-  update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
-}
-
-enable_network_magic(){
-  # well-known docker embedded DNS is at 127.0.0.11:53
-  local docker_embedded_dns_ip='127.0.0.11'
-
-  # first we need to detect an IP to use for reaching the docker host
-  local docker_host_ip
-  docker_host_ip="$( (getent ahostsv4 'host.docker.internal' | head -n1 | cut -d' ' -f1) || true)"
-  if [[ -z "${docker_host_ip}" ]]; then
-    docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
-  fi
-
-  # patch docker's iptables rules to switch out the DNS IP
-  iptables-save \
-    | sed \
-      `# switch docker DNS DNAT rules to our chosen IP` \
-      -e "s/-d ${docker_embedded_dns_ip}/-d ${docker_host_ip}/g" \
-      `# we need to also apply these rules to non-local traffic (from pods)` \
-      -e 's/-A OUTPUT \(.*\) -j DOCKER_OUTPUT/\0\n-A PREROUTING \1 -j DOCKER_OUTPUT/' \
-      `# switch docker DNS SNAT rules rules to our chosen IP` \
-      -e "s/--to-source :53/--to-source ${docker_host_ip}:53/g"\
-    | iptables-restore
-
-  # now we can ensure that DNS is configured to use our IP
-  cp /etc/resolv.conf /etc/resolv.conf.original
-  sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
-}
-
-# run pre-init fixups
-fix_kmsg
-fix_mount
-fix_cgroup
-fix_machine_id
-fix_product_name
-fix_product_uuid
-configure_proxy
-select_iptables
-enable_network_magic
-
-# we want the command (expected to be systemd) to be PID1, so exec to it
-exec "$@"
+# In this step we First disable non-docker runtimes by default
+# then enable docker which is default
+# next making SSH work for docker container
+# based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
+# next create docker user for minikube ssh. to match VM using "docker" as username
+# finally deleting leftovers
+RUN echo "disable non-docker runtimes ..." \
+    && systemctl disable containerd && systemctl disable crio \
+    && systemctl enable docker \
+ && echo "making SSH work for docker ..." \
+    && apt-get install -y --no-install-recommends openssh-server \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir /var/run/sshd \
+    && echo 'root:root' |chpasswd \
+    && sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+    && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
+ && echo "create docker user for minikube ssh ..." \
+    && adduser --ingroup docker --disabled-password --gecos '' docker \
+    && adduser docker sudo \
+    && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+ && echo "creating docker folders && delete leftovers ..." \
+ && mkdir /home/docker/.ssh \
+    && mkdir -p /kind \
+ && apt-get clean -y && rm -rf \
+    /var/cache/debconf/* \
+    /var/lib/apt/lists/* \
+    /var/log/* \
+    /tmp/* \
+    /var/tmp/* \
+    /usr/share/doc/* \
+    /usr/share/man/* \
+    /usr/share/local/* \
+ && echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
