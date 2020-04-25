@@ -21,7 +21,7 @@ type StyleEnum int
 
 // All the Style constants available
 const (
-	AddonDisable = iota
+	AddonDisable StyleEnum = iota
 	AddonEnable
 	Caching
 	Celebrate
@@ -47,7 +47,7 @@ const (
 	FatalType
 	FileDownload
 	Fileserver
-	Happy StyleEnum
+	Happy
 	HealthCheck
 	Internet
 	ISODownload
