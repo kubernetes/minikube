@@ -45,7 +45,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Podman,
 		Config:   configure,
-		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIPrefix: "sudo", OCIBinary: oci.Podman}) },
+		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIPrefix: oci.Sudo, OCIBinary: oci.Podman}) },
 		Status:   status,
 		Priority: registry.Experimental,
 	}); err != nil {
@@ -61,7 +61,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ImageDigest:   strings.Split(baseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
 		CPU:           cc.CPUs,
 		Memory:        cc.Memory,
-		OCIPrefix:     "sudo",
+		OCIPrefix:     oci.Sudo,
 		OCIBinary:     oci.Podman,
 		APIServerPort: cc.Nodes[0].Port,
 	}), nil
@@ -101,7 +101,7 @@ func status() registry.State {
 
 	// Run with sudo on linux (local), otherwise podman-remote (as podman)
 	if runtime.GOOS == "linux" {
-		cmd = exec.CommandContext(ctx, "sudo", "-n", oci.Podman, "info")
+		cmd = exec.CommandContext(ctx, oci.Sudo, "-n", oci.Podman, "info")
 		cmd.Env = append(os.Environ(), "LANG=C", "LC_ALL=C") // sudo is localized
 	} else {
 		cmd = exec.CommandContext(ctx, oci.Podman, "info")

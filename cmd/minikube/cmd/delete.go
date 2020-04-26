@@ -90,17 +90,17 @@ func init() {
 
 func deleteContainersAndVolumes() {
 	delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
-	errs := oci.DeleteContainersByLabel("env", oci.Docker, delLabel)
+	errs := oci.DeleteContainersByLabel(oci.Env, oci.Docker, delLabel)
 	if len(errs) > 0 { // it will error if there is no container to delete
 		glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.DeleteAllVolumesByLabel("env", oci.Docker, delLabel)
+	errs = oci.DeleteAllVolumesByLabel(oci.Env, oci.Docker, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.PruneAllVolumesByLabel("env", oci.Docker, delLabel)
+	errs = oci.PruneAllVolumesByLabel(oci.Env, oci.Docker, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
@@ -193,7 +193,7 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 
 func deletePossibleKicLeftOver(name string) {
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
-	prefixes := []string{"env", "sudo"}
+	prefixes := []string{oci.Env, oci.Sudo}
 	for i, bin := range []string{oci.Docker, oci.Podman} {
 		prefix := prefixes[i]
 		cs, err := oci.ListContainersByLabel(prefix, bin, delLabel)

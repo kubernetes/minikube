@@ -41,7 +41,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	driver := kic.NewDriver(kic.Config{
 		KubernetesVersion: kubernetesVersion,
 		ContainerRuntime:  containerRuntime,
-		OCIPrefix:         "env",
+		OCIPrefix:         oci.Env,
 		OCIBinary:         oci.Docker,
 		MachineName:       profile,
 		ImageDigest:       kic.BaseImage,

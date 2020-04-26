@@ -48,7 +48,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
-		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIPrefix: "env", OCIBinary: oci.Docker}) },
+		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIPrefix: oci.Env, OCIBinary: oci.Docker}) },
 		Status:   status,
 		Priority: priority,
 	}); err != nil {
@@ -63,7 +63,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ImageDigest:       viper.GetString("base-image"),
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
-		OCIPrefix:         "env",
+		OCIPrefix:         oci.Env,
 		OCIBinary:         oci.Docker,
 		APIServerPort:     cc.Nodes[0].Port,
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,

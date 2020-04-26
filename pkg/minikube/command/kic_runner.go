@@ -202,7 +202,7 @@ func (k *kicRunner) chmod(dst string, perm string) error {
 
 // Podman cp command doesn't match docker and doesn't have -a
 func copyToPodman(src string, dest string) error {
-	if out, err := exec.Command("sudo", oci.Podman, "cp", src, dest).CombinedOutput(); err != nil {
+	if out, err := exec.Command(oci.Sudo, oci.Podman, "cp", src, dest).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "podman copy %s into %s, output: %s", src, dest, string(out))
 	}
 	return nil
