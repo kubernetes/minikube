@@ -639,7 +639,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceCmd asserts basic "service" command functionality
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=gcr.io/hello-minikube-zero-install/hello-node"))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.4"))
 	if err != nil {
 		t.Logf("%q failed: %v (may not be an error).", rr.Command(), err)
 	}
@@ -670,7 +670,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
 	}
 	if rr.Stderr.String() != "" {
-		t.Errorf("expected stderr to be empty but got *%q*", rr.Stderr)
+		t.Errorf("expected stderr to be empty but got *%q* . args %q", rr.Stderr, rr.Command())
 	}
 
 	endpoint := strings.TrimSpace(rr.Stdout.String())

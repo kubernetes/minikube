@@ -60,7 +60,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/util"
-	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -144,6 +143,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
+	if !config.ProfileNameValid(ClusterFlagValue()) {
+		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
+		exit.UsageT("Only alphanumeric, dots, underscores and dashes '-' are permitted. Minimum 2 characters, starting by alphanumeric.")
+	}
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
@@ -747,7 +750,7 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
 
 // validateMemorySize validates the memory size matches the minimum recommended
 func validateMemorySize() {
-	req, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	req, err := util.CalculateSizeInMB(viper.GetString(memory))
 	if err != nil {
 		exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 	}
@@ -783,7 +786,7 @@ func validateCPUCount(local bool) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
-		diskSizeMB, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
 			exit.WithCodeT(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
@@ -993,7 +996,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 
 	}
 	if defaultVersion.GT(nvs) {
-		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
+		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
 }

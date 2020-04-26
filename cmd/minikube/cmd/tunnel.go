@@ -21,19 +21,18 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strconv"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
-	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 )
@@ -65,7 +64,7 @@ var tunnelCmd = &cobra.Command{
 		// We define the tunnel and minikube error free if the API server responds within a second.
 		// This also contributes to better UX, the tunnel status check can happen every second and
 		// doesn't hang on the API server call during startup and shutdown time or if there is a temporary error.
-		clientset, err := service.K8s.GetClientset(1 * time.Second)
+		clientset, err := kapi.Client(cname)
 		if err != nil {
 			exit.WithError("error creating clientset", err)
 		}
@@ -78,7 +77,8 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+		if driver.NeedsPortForward(co.Config.Driver) {
+
 			port, err := oci.ForwardedPort(oci.Docker, cname, 22)
 			if err != nil {
 				exit.WithError("error getting ssh port", err)

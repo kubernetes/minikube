@@ -142,6 +142,16 @@ func HasResourceLimits(name string) bool {
 	return !(name == None || name == Podman)
 }
 
+// NeedsShutdown returns true if driver needs manual shutdown command before stopping.
+// Hyper-V requires special care to avoid ACPI and file locking issues
+// KIC also needs shutdown to avoid container getting stuck, https://github.com/kubernetes/minikube/issues/7657
+func NeedsShutdown(name string) bool {
+	if name == HyperV || IsKIC(name) {
+		return true
+	}
+	return false
+}
+
 // FlagHints are hints for what default options should be used for this driver
 type FlagHints struct {
 	ExtraOptions     []string

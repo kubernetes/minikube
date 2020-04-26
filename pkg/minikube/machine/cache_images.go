@@ -65,11 +65,10 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
 	// Skip loading images if images already exist
-	if cruntime.DockerImagesPreloaded(runner, images) {
+	if cruntime.ImagesPreloaded(cc.KubernetesConfig.ContainerRuntime, runner, images) {
 		glog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
-
 	glog.Infof("LoadImages start: %s", images)
 	start := time.Now()
 
@@ -159,6 +158,10 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 
 // CacheAndLoadImages caches and loads images to all profiles
 func CacheAndLoadImages(images []string) error {
+	if len(images) == 0 {
+		return nil
+	}
+
 	// This is the most important thing
 	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrap(err, "save to dir")
@@ -193,7 +196,7 @@ func CacheAndLoadImages(images []string) error {
 
 			status, err := Status(api, m)
 			if err != nil {
-				glog.Errorf("error getting status for %s: %v", pName, err)
+				glog.Warningf("error getting status for %s: %v", pName, err)
 				failed = append(failed, pName)
 				continue
 			}
@@ -201,7 +204,7 @@ func CacheAndLoadImages(images []string) error {
 			if status == state.Running.String() { // the not running hosts will load on next start
 				h, err := api.Load(m)
 				if err != nil {
-					glog.Errorf("Failed to load machine %q: %v", m, err)
+					glog.Warningf("Failed to load machine %q: %v", m, err)
 					failed = append(failed, pName)
 					continue
 				}

@@ -31,7 +31,7 @@ minikube start \
   --extra-config=apiserver.audit-policy-file=/etc/ssl/certs/audit-policy.yaml \
   --extra-config=apiserver.audit-log-path=-
 
-kubectl logs kube-apiserver-minikube -n  kube-system | grep audit.k8s.io/v1
+kubectl logs kube-apiserver-minikube -n kube-system | grep audit.k8s.io/v1
 ```
 
 The [Audit Policy](https://kubernetes.io/docs/Handbook/debug-application-cluster/audit/#audit-policy) used in this tutorial is very minimal and quite verbose. As a next step you might want to finetune the `audit-policy.yaml` file. To get the changes applied you need to stop and start minikube. Restarting minikube triggers the [file sync mechanism]({{< ref "/docs/handbook/filesync.md" >}}) that copies the yaml file onto the minikube node and causes the API server to read the changed policy file.

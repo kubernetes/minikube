@@ -21,6 +21,7 @@ import (
 	"context"
 	"os/exec"
 	"path"
+	"runtime"
 	"sync"
 
 	"fmt"
@@ -37,9 +38,11 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -174,14 +177,27 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
 		"Port-10250", // For "none" users who already have a kubelet online
 		"Swap",       // For "none" users who have swap configured
-		"SystemVerification",
 	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
 
+	skipSystemVerification := false
 	// Allow older kubeadm versions to function with newer Docker releases.
+	if version.LT(semver.MustParse("1.13.0")) {
+		glog.Infof("ignoring SystemVerification for kubeadm because of old kubernetes version %v", version)
+		skipSystemVerification = true
+	}
+	if driver.BareMetal(cfg.Driver) && r.Name() == "Docker" {
+		if v, err := r.Version(); err == nil && strings.Contains(v, "azure") {
+			glog.Infof("ignoring SystemVerification for kubeadm because of unknown docker version %s", v)
+			skipSystemVerification = true
+		}
+	}
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
-	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.Driver) {
-		glog.Info("ignoring SystemVerification for kubeadm because of either driver or kubernetes version")
+	if driver.IsKIC(cfg.Driver) {
+		glog.Infof("ignoring SystemVerification for kubeadm because of %s driver", cfg.Driver)
+		skipSystemVerification = true
+	}
+	if skipSystemVerification {
 		ignore = append(ignore, "SystemVerification")
 	}
 
@@ -202,9 +218,13 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(3)
 
 	go func() {
+		// we need to have cluster role binding before applying overlay to avoid #7428
+		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
+			glog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
+		}
 		// the overlay is required for containerd and cri-o runtime: see #7428
 		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
 			if err := k.applyKICOverlay(cfg); err != nil {
@@ -224,13 +244,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	go func() {
 		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 			glog.Warningf("unable to adjust resource limits: %v", err)
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
-			glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
 		}
 		wg.Done()
 	}()
@@ -316,7 +329,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 
 	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(ip, strconv.Itoa(port)))
 	if cc.Host != endpoint {
-		glog.Errorf("Overriding stale ClientConfig host %s with %s", cc.Host, endpoint)
+		glog.Warningf("Overriding stale ClientConfig host %s with %s", cc.Host, endpoint)
 		cc.Host = endpoint
 	}
 	c, err := kubernetes.NewForConfig(cc)
@@ -327,26 +340,41 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForNode blocks until the node appears to be healthy
-func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) (waitErr error) {
 	start := time.Now()
 
 	if !n.ControlPlane {
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
+
+	out.T(out.HealthCheck, "Verifying Kubernetes components...")
+
+	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
+	if err != nil {
+		return errors.Wrap(err, "get control plane endpoint")
+	}
+
+	defer func() { // run pressure verification after all other checks, so there be an api server to talk to.
+		client, err := k.client(hostname, port)
+		if err != nil {
+			waitErr = errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.NodePressure(client); err != nil {
+			adviseNodePressure(err, cfg.Name, cfg.Driver)
+			waitErr = errors.Wrap(err, "node pressure")
+		}
+	}()
+
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
 		glog.Infof("skip waiting for components based on config.")
-		return nil
+		return waitErr
 	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
-	}
-
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
-	if err != nil {
-		return errors.Wrap(err, "get control plane endpoint")
 	}
 
 	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
@@ -383,7 +411,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
-	if cfg.VerifyComponents[kverify.AppsRunning] {
+	if cfg.VerifyComponents[kverify.AppsRunningKey] {
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -393,8 +421,18 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
+	if cfg.VerifyComponents[kverify.NodeReadyKey] {
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
+			return errors.Wrap(err, "waiting for node to be ready")
+		}
+	}
+
 	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
-	return nil
+	return waitErr
 }
 
 // needsReset returns whether or not the cluster needs to be reconfigured
@@ -424,7 +462,8 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 		glog.Infof("needs reset: %v", err)
 		return true
 	}
-
+	// to be used in the ingeration test to verify it wont reset.
+	glog.Infof("The running cluster does not need a reset. hostname: %s", hostname)
 	return false
 }
 
@@ -518,12 +557,16 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "system pods")
 	}
 
+	if err := kverify.NodePressure(client); err != nil {
+		adviseNodePressure(err, cfg.Name, cfg.Driver)
+	}
+
 	// This can fail during upgrades if the old pods have not shut down yet
 	addonPhase := func() error {
 		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf)))
 		return err
 	}
-	if err = retry.Expo(addonPhase, 1*time.Second, 30*time.Second); err != nil {
+	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
 		glog.Warningf("addon install failed, wil retry: %v", err)
 		return errors.Wrap(err, "addons")
 	}
@@ -573,14 +616,24 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
+	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	cmd := fmt.Sprintf("%s reset --force", bsutil.InvokeKubeadm(k8s.KubernetesVersion))
+	ka := bsutil.InvokeKubeadm(k8s.KubernetesVersion)
+	sp := cr.SocketPath()
+	if sp == "" {
+		sp = kconst.DefaultDockerCRISocket
+	}
+	cmd := fmt.Sprintf("%s reset --cri-socket %s --force", ka, sp)
 	if version.LT(semver.MustParse("1.11.0")) {
-		cmd = fmt.Sprintf("%s reset", bsutil.InvokeKubeadm(k8s.KubernetesVersion))
+		cmd = fmt.Sprintf("%s reset --cri-socket %s", ka, sp)
 	}
 
 	rr, derr := k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
@@ -590,11 +643,6 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 	if err := sysinit.New(k.c).ForceStop("kubelet"); err != nil {
 		glog.Warningf("stop kubelet: %v", err)
-	}
-
-	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket})
-	if err != nil {
-		return errors.Wrap(err, "runtime")
 	}
 
 	containers, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
@@ -750,6 +798,9 @@ func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
 		return errors.Wrap(err, "starting kubelet")
 	}
 
+	if err := sm.Enable("kubelet"); err != nil {
+		return err
+	}
 	return sm.Start("kubelet")
 }
 
@@ -820,6 +871,10 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 // elevateKubeSystemPrivileges gives the kube-system service account cluster admin privileges to work with RBAC.
 func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) error {
 	start := time.Now()
+	defer func() {
+		glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
+	}()
+
 	// Allow no more than 5 seconds for creating cluster role bindings
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -836,6 +891,84 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 			return nil
 		}
 	}
-	glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
-	return err
+
+	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+		// double checking defalut sa was created.
+		// good for ensuring using minikube in CI is robust.
+		checkSA := func() (bool, error) {
+			cmd = exec.Command("sudo", kubectlPath(cfg),
+				"get", "sa", "default", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
+			rr, err = k.c.RunCmd(cmd)
+			if err != nil {
+				return false, nil
+			}
+			return true, nil
+		}
+
+		// retry up to make sure SA is created
+		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
+			return errors.Wrap(err, "ensure sa was created")
+		}
+	}
+	return nil
+}
+
+// adviseNodePressure will advise the user what to do with difference pressure errors based on their environment
+func adviseNodePressure(err error, name string, drv string) {
+	if diskErr, ok := err.(*kverify.ErrDiskPressure); ok {
+		out.ErrLn("")
+		glog.Warning(diskErr)
+		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
+		// generic advice for all drivers
+		out.T(out.Tip, "Please free up disk or prune images.")
+		if driver.IsVM(drv) {
+			out.T(out.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
+		} else if drv == oci.Docker && runtime.GOOS != "linux" {
+			out.T(out.Stopped, "Please increse Desktop's disk size.")
+			if runtime.GOOS == "darwin" {
+				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+			}
+			if runtime.GOOS == "windows" {
+				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+			}
+		}
+		out.ErrLn("")
+		return
+	}
+
+	if memErr, ok := err.(*kverify.ErrMemoryPressure); ok {
+		out.ErrLn("")
+		glog.Warning(memErr)
+		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
+		out.T(out.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
+		if driver.IsVM(drv) {
+			out.T(out.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
+		} else if drv == oci.Docker && runtime.GOOS != "linux" {
+			out.T(out.Stopped, "Consider increasing Docker Desktop's memory size.")
+			if runtime.GOOS == "darwin" {
+				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+			}
+			if runtime.GOOS == "windows" {
+				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+			}
+		}
+		out.ErrLn("")
+		return
+	}
+
+	if pidErr, ok := err.(*kverify.ErrPIDPressure); ok {
+		glog.Warning(pidErr)
+		out.ErrLn("")
+		out.WarningT("The node {{.name}} has ran out of available PIDs.", out.V{"name": name})
+		out.ErrLn("")
+		return
+	}
+
+	if netErr, ok := err.(*kverify.ErrNetworkNotReady); ok {
+		glog.Warning(netErr)
+		out.ErrLn("")
+		out.WarningT("The node {{.name}} network is not available. Please verify network settings.", out.V{"name": name})
+		out.ErrLn("")
+		return
+	}
 }

@@ -6,4 +6,5 @@ description: >
   How to contribute to minikube
 aliases:
  - /docs/contributing
+ - /docs/contributing/guide
 ---

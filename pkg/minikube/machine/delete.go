@@ -42,13 +42,16 @@ func deleteOrphanedKIC(ociBin string, name string) {
 
 	_, err := oci.ContainerStatus(ociBin, name)
 	if err != nil {
-		glog.Infof("couldn't inspect container %q before deleting, %s-daemon might needs a restart!: %v", name, ociBin, err)
+		glog.Infof("couldn't inspect container %q before deleting: %v", name, err)
 		return
 	}
 	// allow no more than 5 seconds for delting the container
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	if err := oci.ShutDown(ociBin, name); err != nil {
+		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
+	}
 	cmd := exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)
 	err = cmd.Run()
 	if err == nil {
@@ -77,8 +80,8 @@ func DeleteHost(api libmachine.API, machineName string) error {
 		return mcnerror.ErrHostDoesNotExist{Name: machineName}
 	}
 
-	// Hyper-V requires special care to avoid ACPI and file locking issues
-	if host.Driver.DriverName() == driver.HyperV {
+	// some drivers need manual shut down before delete to avoid getting stuck.
+	if driver.NeedsShutdown(host.Driver.DriverName()) {
 		if err := StopHost(api, machineName); err != nil {
 			glog.Warningf("stop host: %v", err)
 		}

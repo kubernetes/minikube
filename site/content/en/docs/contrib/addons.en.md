@@ -6,6 +6,20 @@ description: >
   How to develop minikube addons
 ---
 
+## Testing Addon changes
+
+Build the minikube binary:
+
+```shell
+make
+```
+
+Apply addon from your newly built minikube binary:
+
+```shell
+./out/minikube addons enable
+```
+
 ## Adding a New Addon
 
 To add a new addon to minikube the following steps are required:
@@ -62,6 +76,3 @@ To add a new addon to minikube the following steps are required:
     }, false, "efk"),
   }
   ```
-
-* Rebuild minikube using `make out/minikube`.  This will put the addon's .yaml binary files into the minikube binary using go-bindata.
-* Test addon using `minikube addons enable <NEW_ADDON_NAME>` command to start service.

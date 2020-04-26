@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/golang/glog"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -59,7 +60,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
-		ImageDigest:       kic.BaseImage,
+		ImageDigest:       viper.GetString("base-image"),
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Docker,
@@ -96,6 +97,10 @@ func status() registry.State {
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		stderr := strings.TrimSpace(string(exitErr.Stderr))
 		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
+
+		if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
+			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
+		}
 
 		if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") {
 			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
