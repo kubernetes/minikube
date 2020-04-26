@@ -63,8 +63,8 @@ func deleteOrphanedKIC(prefix string, ociBin string, name string) {
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
 	if err != nil && host == nil {
-		deleteOrphanedKIC("env", oci.Docker, machineName)
-		deleteOrphanedKIC("sudo", oci.Podman, machineName)
+		deleteOrphanedKIC(oci.Env, oci.Docker, machineName)
+		deleteOrphanedKIC(oci.Sudo, oci.Podman, machineName)
 		// Keep going even if minikube does not know about the host
 	}
 

@@ -19,6 +19,10 @@ package oci
 const (
 	// DefaultBindIPV4 is The default IP the container will listen on.
 	DefaultBindIPV4 = "127.0.0.1"
+	// Env is env
+	Env = "env"
+	// Sudo is sudo
+	Sudo = "sudo"
 	// Docker is docker
 	Docker = "docker"
 	// Podman is podman
