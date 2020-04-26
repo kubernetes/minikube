@@ -245,20 +245,6 @@ func createContainer(prefix string, ociBin string, image string, opts ...createO
 	return nil
 }
 
-// Copy copies a local asset into the container
-func Copy(prefix string, ociBin string, ociID string, targetDir string, fName string) error {
-	if _, err := os.Stat(fName); os.IsNotExist(err) {
-		return errors.Wrapf(err, "error source %s does not exist", fName)
-	}
-
-	destination := fmt.Sprintf("%s:%s", ociID, targetDir)
-	if _, err := runCmd(exec.Command(prefix, ociBin, "cp", fName, destination)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // ContainerID returns id of a container name
 func ContainerID(prefix, ociBin string, nameOrID string) (string, error) {
 	rr, err := runCmd(exec.Command(prefix, ociBin, "inspect", "-f", "{{.Id}}", nameOrID))
