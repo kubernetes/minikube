@@ -85,6 +85,7 @@ var styles = map[StyleEnum]style{
 	Unpause:       {Prefix: "⏯️  "},
 	Confused:      {Prefix: "😕  "},
 	Shrug:         {Prefix: "🤷  "},
+	New:           {Prefix: "🆕  "},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
@@ -108,6 +109,7 @@ var styles = map[StyleEnum]style{
 	Enabling:         {Prefix: "🔌  "},
 	Shutdown:         {Prefix: "🛑  "},
 	Pulling:          {Prefix: "🚜  "},
+	HealthCheck:      {Prefix: "🔎  "},
 	Verifying:        {Prefix: "🤔  "},
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
 	Kubectl:          {Prefix: "💗  "},

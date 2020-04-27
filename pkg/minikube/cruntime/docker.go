@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // KubernetesContainerPrefix is the prefix of each kubernetes container
@@ -56,6 +57,7 @@ func (e *ErrISOFeature) Error() string {
 type Docker struct {
 	Socket string
 	Runner CommandRunner
+	Init   sysinit.Manager
 }
 
 // Name is a human readable name for Docker
@@ -97,9 +99,7 @@ func (r *Docker) Available() error {
 
 // Active returns if docker is active on the host
 func (r *Docker) Active() bool {
-	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "docker")
-	_, err := r.Runner.RunCmd(c)
-	return err == nil
+	return r.Init.Active("docker")
 }
 
 // Enable idempotently enables Docker on a host
@@ -109,29 +109,18 @@ func (r *Docker) Enable(disOthers bool) error {
 			glog.Warningf("disableOthers: %v", err)
 		}
 	}
-	c := exec.Command("sudo", "systemctl", "start", "docker")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "enable docker.")
-	}
-	return nil
+
+	return r.Init.Start("docker")
 }
 
 // Restart restarts Docker on a host
 func (r *Docker) Restart() error {
-	c := exec.Command("sudo", "systemctl", "restart", "docker")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "restarting docker.")
-	}
-	return nil
+	return r.Init.Restart("docker")
 }
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	c := exec.Command("sudo", "systemctl", "stop", "-f", "docker", "docker.socket")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "disable docker")
-	}
-	return nil
+	return r.Init.ForceStop("docker")
 }
 
 // ImageExists checks if an image exists
@@ -301,7 +290,7 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
-	if DockerImagesPreloaded(r.Runner, images) {
+	if dockerImagesPreloaded(r.Runner, images) {
 		glog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
@@ -353,8 +342,8 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	return r.Restart()
 }
 
-// DockerImagesPreloaded returns true if all images have been preloaded
-func DockerImagesPreloaded(runner command.Runner, images []string) bool {
+// dockerImagesPreloaded returns true if all images have been preloaded
+func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
 	if err != nil {
 		return false
@@ -374,4 +363,19 @@ func DockerImagesPreloaded(runner command.Runner, images []string) bool {
 		}
 	}
 	return true
+}
+
+func dockerBoundToContainerd(runner command.Runner) bool {
+	// NOTE: assumes systemd
+	rr, err := runner.RunCmd(exec.Command("sudo", "systemctl", "cat", "docker.service"))
+	if err != nil {
+		glog.Warningf("unable to check if docker is bound to containerd")
+		return false
+	}
+
+	if strings.Contains(rr.Stdout.String(), "\nBindsTo=containerd") {
+		return true
+	}
+
+	return false
 }

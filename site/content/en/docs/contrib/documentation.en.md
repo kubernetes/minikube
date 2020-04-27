@@ -3,6 +3,8 @@ linkTitle: "Documentation"
 title: "Contributing to minikube documentation"
 date: 2019-07-31
 weight: 2
+aliases:
+  - /docs/contribution-guidelines/
 ---
 
 minikube's documentation is in [Markdown](https://www.markdownguide.org/cheat-sheet/), and generated using the following tools:
@@ -11,6 +13,10 @@ minikube's documentation is in [Markdown](https://www.markdownguide.org/cheat-sh
 * [Docsy](https://www.docsy.dev)
 
 In production, the minikube website is served using [Netlify](https://netlify.com/)
+
+## Small or cosmetic contributions
+
+Use Github's repositories and markdown editor as described by [Kubernetes's general guideline for documentation contributing](https://kubernetes.io/docs/contribute/start/#submit-a-pull-request)
 
 ## Local documentation website
 

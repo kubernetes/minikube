@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // ContainerState is the run state of a container
@@ -131,13 +132,27 @@ type ListOptions struct {
 
 // New returns an appropriately configured runtime
 func New(c Config) (Manager, error) {
+	sm := sysinit.New(c.Runner)
+
 	switch c.Type {
 	case "", "docker":
-		return &Docker{Socket: c.Socket, Runner: c.Runner}, nil
+		return &Docker{Socket: c.Socket, Runner: c.Runner, Init: sm}, nil
 	case "crio", "cri-o":
-		return &CRIO{Socket: c.Socket, Runner: c.Runner, ImageRepository: c.ImageRepository, KubernetesVersion: c.KubernetesVersion}, nil
+		return &CRIO{
+			Socket:            c.Socket,
+			Runner:            c.Runner,
+			ImageRepository:   c.ImageRepository,
+			KubernetesVersion: c.KubernetesVersion,
+			Init:              sm,
+		}, nil
 	case "containerd":
-		return &Containerd{Socket: c.Socket, Runner: c.Runner, ImageRepository: c.ImageRepository, KubernetesVersion: c.KubernetesVersion}, nil
+		return &Containerd{
+			Socket:            c.Socket,
+			Runner:            c.Runner,
+			ImageRepository:   c.ImageRepository,
+			KubernetesVersion: c.KubernetesVersion,
+			Init:              sm,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
 	}
@@ -151,6 +166,7 @@ func ContainerStatusCommand() string {
 
 // disableOthers disables all other runtimes except for me.
 func disableOthers(me Manager, cr CommandRunner) error {
+
 	// valid values returned by manager.Name()
 	runtimes := []string{"containerd", "crio", "docker"}
 	for _, name := range runtimes {
@@ -163,13 +179,22 @@ func disableOthers(me Manager, cr CommandRunner) error {
 		if r.Name() == me.Name() {
 			continue
 		}
+
+		// Don't disable containerd if we are bound to it
+		if me.Name() == "Docker" && r.Name() == "containerd" && dockerBoundToContainerd(cr) {
+			glog.Infof("skipping containerd shutdown because we are bound to it")
+			continue
+		}
+
 		// runtime is already disabled, nothing to do.
 		if !r.Active() {
 			continue
 		}
+
 		if err = r.Disable(); err != nil {
 			glog.Warningf("disable failed: %v", err)
 		}
+
 		// Validate that the runtime really is offline - and that Active & Disable are properly written.
 		if r.Active() {
 			return fmt.Errorf("%s is still active", r.Name())
@@ -194,4 +219,15 @@ func enableIPForwarding(cr CommandRunner) error {
 		return errors.Wrapf(err, "ip_forward")
 	}
 	return nil
+}
+
+// ImagesPreloaded returns true if all images have been preloaded
+func ImagesPreloaded(containerRuntime string, runner command.Runner, images []string) bool {
+	if containerRuntime == "docker" {
+		return dockerImagesPreloaded(runner, images)
+	}
+	if containerRuntime == "containerd" {
+		return containerdImagesPreloaded(runner, images)
+	}
+	return false
 }

@@ -454,7 +454,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if !strings.HasSuffix(path, ".json") {
 			return nil
 		}
-		fmt.Printf("Writing to %s\n", filepath.Base(path))
+		fmt.Printf("Writing to %s", filepath.Base(path))
 		currentTranslations := make(map[string]interface{})
 		f, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -482,6 +482,16 @@ func writeStringsToFiles(e *state, output string) error {
 			}
 		}
 
+		t := 0 // translated
+		u := 0 // untranslated
+		for k := range e.translations {
+			if currentTranslations[k] != "" {
+				t++
+			} else {
+				u++
+			}
+		}
+
 		c, err := json.MarshalIndent(currentTranslations, "", "\t")
 		if err != nil {
 			return errors.Wrap(err, "marshalling translations")
@@ -490,10 +500,26 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "writing translation file")
 		}
+
+		fmt.Printf(" (%d translated, %d untranslated)\n", t, u)
 		return nil
 	})
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	c, err := json.MarshalIndent(e.translations, "", "\t")
+	if err != nil {
+		return errors.Wrap(err, "marshalling translations")
+	}
+	path := filepath.Join(output, "strings.txt")
+	err = lock.WriteFile(path, c, 0644)
+	if err != nil {
+		return errors.Wrap(err, "writing translation file")
+	}
+
+	return nil
 }
 
 // addParentFuncToList adds the current parent function to the list of functions to inspect more closely.

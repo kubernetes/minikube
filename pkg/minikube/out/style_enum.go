@@ -73,6 +73,7 @@ const (
 	Enabling
 	Shutdown
 	Pulling
+	HealthCheck
 	Verifying
 	VerifyingNoLine
 	Kubectl
@@ -91,4 +92,5 @@ const (
 	AddonEnable
 	AddonDisable
 	Shrug
+	New
 )

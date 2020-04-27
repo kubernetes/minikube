@@ -108,6 +108,12 @@ func TestAssetsFromDir(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			testDir, err := setupTestDir()
+			defer func() { //clean up tempdir
+				err := os.RemoveAll(testDir)
+				if err != nil {
+					t.Errorf("failed to clean up temp folder  %q", testDir)
+				}
+			}()
 			if err != nil {
 				t.Errorf("got unexpected error creating test dir: %v", err)
 				return
@@ -149,7 +155,7 @@ func TestAssetsFromDir(t *testing.T) {
 
 			got := make(map[string]string)
 			for _, actualFile := range actualFiles {
-				got[actualFile.GetAssetName()] = actualFile.GetTargetDir()
+				got[actualFile.GetSourcePath()] = actualFile.GetTargetDir()
 			}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("files differ: (-want +got)\n%s", diff)

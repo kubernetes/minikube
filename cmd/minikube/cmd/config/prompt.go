@@ -153,3 +153,23 @@ func posString(slice []string, element string) int {
 func containsString(slice []string, element string) bool {
 	return posString(slice, element) != -1
 }
+
+// AskForStaticValidatedValue asks for a single value to enter and check for valid input
+func AskForStaticValidatedValue(s string, validator func(s string) bool) string {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		response := getStaticValue(reader, s)
+
+		// Can't have zero length
+		if len(response) == 0 {
+			out.Err("--Error, please enter a value:")
+			continue
+		}
+		if !validator(response) {
+			out.Err("--Invalid input, please enter a value:")
+			continue
+		}
+		return response
+	}
+}

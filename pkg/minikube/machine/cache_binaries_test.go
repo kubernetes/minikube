@@ -89,7 +89,13 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
-	defer os.RemoveAll(minikubeHome)
+
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(minikubeHome)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", minikubeHome)
+		}
+	}()
 
 	var tc = []struct {
 		version, clusterBootstrapper string

@@ -60,7 +60,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/util"
-	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -144,17 +143,69 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
+	if !config.ProfileNameValid(ClusterFlagValue()) {
+		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
+		exit.UsageT("Only alphanumeric, dots, underscores and dashes '-' are permitted. Minimum 2 characters, starting by alphanumeric.")
+	}
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
 	validateSpecifiedDriver(existing)
-	ds := selectDriver(existing)
+	ds, alts, specified := selectDriver(existing)
+	starter, err := provisionWithDriver(cmd, ds, existing)
+	if err != nil {
+		if specified {
+			// If the user specified a driver, don't fallback to anything else
+			exit.WithError("error provisioning host", err)
+		} else {
+			success := false
+			// Walk down the rest of the options
+			for _, alt := range alts {
+				out.WarningT("Startup with {{.old_driver}} driver failed, trying with alternate driver {{.new_driver}}: {{.error}}", out.V{"old_driver": ds.Name, "new_driver": alt.Name, "error": err})
+				ds = alt
+				// Delete the existing cluster and try again with the next driver on the list
+				profile, err := config.LoadProfile(ClusterFlagValue())
+				if err != nil {
+					glog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
+				}
+
+				err = deleteProfile(profile)
+				if err != nil {
+					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
+				}
+				starter, err = provisionWithDriver(cmd, ds, existing)
+				if err != nil {
+					continue
+				} else {
+					// Success!
+					success = true
+					break
+				}
+			}
+			if !success {
+				exit.WithError("error provisioning host", err)
+			}
+		}
+	}
+
+	kubeconfig, err := startWithDriver(starter, existing)
+	if err != nil {
+		exit.WithError("failed to start node", err)
+	}
+
+	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
+		glog.Errorf("kubectl info: %v", err)
+	}
+
+}
+
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
 	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
-	err = autoSetDriverOptions(cmd, driverName)
+	err := autoSetDriverOptions(cmd, driverName)
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
 	}
@@ -170,19 +221,19 @@ func runStart(cmd *cobra.Command, args []string) {
 	k8sVersion := getKubernetesVersion(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
 	if err != nil {
-		exit.WithError("Failed to generate config", err)
+		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
 
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
 		out.T(out.DryRun, `dry-run validation complete!`)
-		return
+		os.Exit(0)
 	}
 
 	if driver.IsVM(driverName) {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
-			exit.WithError("Failed to cache ISO", err)
+			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
 		}
 		cc.MinikubeISO = url
 	}
@@ -201,9 +252,29 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubeconfig, err := node.Start(cc, n, existingAddons, true)
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true)
 	if err != nil {
-		kubeconfig = maybeDeleteAndRetry(cc, n, existingAddons, err)
+		return node.Starter{}, err
+	}
+
+	return node.Starter{
+		Runner:         mRunner,
+		PreExists:      preExists,
+		MachineAPI:     mAPI,
+		Host:           host,
+		ExistingAddons: existingAddons,
+		Cfg:            &cc,
+		Node:           &n,
+	}, nil
+}
+
+func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
+	kubeconfig, err := node.Start(starter, true)
+	if err != nil {
+		kubeconfig, err = maybeDeleteAndRetry(*starter.Cfg, *starter.Node, starter.ExistingAddons, err)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	numNodes := viper.GetInt(nodes)
@@ -211,7 +282,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		numNodes = len(existing.Nodes)
 	}
 	if numNodes > 1 {
-		if driver.BareMetal(driverName) {
+		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.WithCodeT(exit.Config, "The none driver is not compatible with multi-node clusters.")
 		} else {
 			for i := 1; i < numNodes; i++ {
@@ -220,20 +291,18 @@ func runStart(cmd *cobra.Command, args []string) {
 					Name:              nodeName,
 					Worker:            true,
 					ControlPlane:      false,
-					KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+					KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 				}
 				out.Ln("") // extra newline for clarity on the command line
-				err := node.Add(&cc, n)
+				err := node.Add(starter.Cfg, n)
 				if err != nil {
-					exit.WithError("adding node", err)
+					return nil, errors.Wrap(err, "adding node")
 				}
 			}
 		}
 	}
 
-	if err := showKubectlInfo(kubeconfig, cc.KubernetesConfig.KubernetesVersion, cc.Name); err != nil {
-		glog.Errorf("kubectl info: %v", err)
-	}
+	return kubeconfig, nil
 }
 
 func updateDriver(driverName string) {
@@ -303,7 +372,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	return nil
 }
 
-func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) *kubeconfig.Settings {
+func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
 	if viper.GetBool(deleteOnFailure) {
 		out.WarningT("Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
 		// Start failed, delete the cluster and try again
@@ -318,21 +387,35 @@ func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons 
 		}
 
 		var kubeconfig *kubeconfig.Settings
-		for _, v := range cc.Nodes {
-			k, err := node.Start(cc, v, existingAddons, v.ControlPlane)
-			if v.ControlPlane {
+		for _, n := range cc.Nodes {
+			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane)
+			s := node.Starter{
+				Runner:         r,
+				PreExists:      p,
+				MachineAPI:     m,
+				Host:           h,
+				Cfg:            &cc,
+				Node:           &n,
+				ExistingAddons: existingAddons,
+			}
+			if err != nil {
+				// Ok we failed again, let's bail
+				return nil, err
+			}
+
+			k, err := node.Start(s, n.ControlPlane)
+			if n.ControlPlane {
 				kubeconfig = k
 			}
 			if err != nil {
 				// Ok we failed again, let's bail
-				exit.WithError("Start failed after cluster deletion", err)
+				return nil, err
 			}
 		}
-		return kubeconfig
+		return kubeconfig, nil
 	}
 	// Don't delete the cluster unless they ask
-	exit.WithError("startup failed", originalErr)
-	return nil
+	return nil, errors.Wrap(originalErr, "startup failed")
 }
 
 func kubectlVersion(path string) (string, error) {
@@ -360,7 +443,7 @@ func kubectlVersion(path string) (string, error) {
 	return cv.ClientVersion.GitVersion, nil
 }
 
-func selectDriver(existing *config.ClusterConfig) registry.DriverState {
+func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState, bool) {
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 
@@ -369,7 +452,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		old := hostDriver(existing)
 		ds := driver.Status(old)
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
-		return ds
+		return ds, nil, true
 	}
 
 	// Default to looking at the new driver parameter
@@ -389,7 +472,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
-		return ds
+		return ds, nil, true
 	}
 
 	// Fallback to old driver parameter
@@ -399,7 +482,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
-		return ds
+		return ds, nil, true
 	}
 
 	choices := driver.Choices(viper.GetBool("vm"))
@@ -422,7 +505,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	} else {
 		out.T(out.Sparkle, `Automatically selected the {{.driver}} driver`, out.V{"driver": pick.String()})
 	}
-	return pick
+	return pick, alts, false
 }
 
 // hostDriver returns the actual driver used by a libmachine host, which can differ from our config
@@ -588,7 +671,7 @@ func validateUser(drvName string) {
 	useForce := viper.GetBool(force)
 
 	if driver.NeedsRoot(drvName) && u.Uid != "0" && !useForce {
-		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo minikube --driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
+		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo minikube start --driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
 	}
 
 	if driver.NeedsRoot(drvName) || u.Uid != "0" {
@@ -667,7 +750,7 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
 
 // validateMemorySize validates the memory size matches the minimum recommended
 func validateMemorySize() {
-	req, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	req, err := util.CalculateSizeInMB(viper.GetString(memory))
 	if err != nil {
 		exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 	}
@@ -703,7 +786,7 @@ func validateCPUCount(local bool) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
-		diskSizeMB, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
 			exit.WithCodeT(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
@@ -913,7 +996,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 
 	}
 	if defaultVersion.GT(nvs) {
-		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
+		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
 }

@@ -40,19 +40,28 @@ func isInBlock(ip string, block string) (bool, error) {
 		return false, fmt.Errorf("CIDR is nil")
 	}
 
+	if ip == block {
+		return true, nil
+	}
+
 	i := net.ParseIP(ip)
 	if i == nil {
 		return false, fmt.Errorf("parsed IP is nil")
 	}
-	_, b, err := net.ParseCIDR(block)
-	if err != nil {
-		return false, errors.Wrapf(err, "Error Parsing block %s", b)
+
+	// check the block if it's CIDR
+	if strings.Contains(block, "/") {
+		_, b, err := net.ParseCIDR(block)
+		if err != nil {
+			return false, errors.Wrapf(err, "Error Parsing block %s", b)
+		}
+
+		if b.Contains(i) {
+			return true, nil
+		}
 	}
 
-	if b.Contains(i) {
-		return true, nil
-	}
-	return false, errors.Wrapf(err, "Error ip not in block")
+	return false, errors.New("Error ip not in block")
 }
 
 // ExcludeIP takes ip or CIDR as string and excludes it from the http(s)_proxy
@@ -101,7 +110,11 @@ func checkEnv(ip string, env string) bool {
 	// Checks if included in IP ranges, i.e., 192.168.39.13/24
 	noProxyBlocks := strings.Split(v, ",")
 	for _, b := range noProxyBlocks {
-		if yes, _ := isInBlock(ip, b); yes {
+		yes, err := isInBlock(ip, b)
+		if err != nil {
+			glog.Warningf("fail to check proxy env: %v", err)
+		}
+		if yes {
 			return true
 		}
 	}

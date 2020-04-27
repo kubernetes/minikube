@@ -1,6 +1,11 @@
 ## Requirements
 
-VM running a systemd-based Linux distribution ([see #2704](https://github.com/kubernetes/minikube/issues/2704))
+A Linux VM with the following:
+
+* Docker
+* systemd (OpenRC based systems are also supported in v1.10+)
+
+This VM must also meet the[kubeadm requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 
 ## Usage
 

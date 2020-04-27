@@ -147,6 +147,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cname})
 		}
 
+		deletePossibleKicLeftOver(cname)
+
 		errs := DeleteProfiles([]*config.Profile{profile})
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
@@ -189,26 +191,42 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-func deleteProfileContainersAndVolumes(name string) {
+func deletePossibleKicLeftOver(name string) {
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
-	if errs != nil { // it will error if there is no container to delete
-		glog.Infof("error deleting containers for %s (might be okay):\n%v", name, errs)
-	}
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
-	if errs != nil { // it will not error if there is nothing to delete
-		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
-	}
+	for _, bin := range []string{oci.Docker, oci.Podman} {
+		cs, err := oci.ListContainersByLabel(bin, delLabel)
+		if err == nil && len(cs) > 0 {
+			for _, c := range cs {
+				out.T(out.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": name})
+				err := oci.DeleteContainer(bin, c)
+				if err != nil { // it will error if there is no container to delete
+					glog.Errorf("error deleting container %q. you might want to delete that manually :\n%v", name, err)
+				}
 
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
-	if len(errs) > 0 { // it will not error if there is nothing to delete
-		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
+			}
+		}
+
+		errs := oci.DeleteAllVolumesByLabel(bin, delLabel)
+		if errs != nil { // it will not error if there is nothing to delete
+			glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+		}
+
+		errs = oci.PruneAllVolumesByLabel(bin, delLabel)
+		if len(errs) > 0 { // it will not error if there is nothing to delete
+			glog.Warningf("error pruning volume (might be okay):\n%v", errs)
+		}
 	}
 }
 
 func deleteProfile(profile *config.Profile) error {
 	viper.Set(config.ProfileName, profile.Name)
-	deleteProfileContainersAndVolumes(profile.Name)
+	if profile.Config != nil {
+		// if driver is oci driver, delete containers and volumes
+		if driver.IsKIC(profile.Config.Driver) {
+			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+			deletePossibleKicLeftOver(profile.Name)
+		}
+	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -323,23 +341,24 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, n)
+	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
+	if err != nil {
+		return DeletionError{Err: fmt.Errorf("unable to load host: %v", err), Errtype: MissingCluster}
+	}
+
+	r, err := machine.CommandRunner(host)
+	if err != nil {
+		return DeletionError{Err: fmt.Errorf("unable to get command runner %v", err), Errtype: MissingCluster}
+	}
+
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, r)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
-	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
-	if err != nil {
-		exit.WithError("Error getting host", err)
-	}
-	r, err := machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
-	}
-
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
 	if err != nil {
-		exit.WithError("Failed runtime", err)
+		return DeletionError{Err: fmt.Errorf("unable to get runtime: %v", err), Errtype: Fatal}
 	}
 
 	// Unpause the cluster if necessary to avoid hung kubeadm
