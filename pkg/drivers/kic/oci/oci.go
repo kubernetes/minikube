@@ -470,6 +470,8 @@ func ContainerStatus(prefix string, ociBin string, name string, warnSlow ...bool
 	rr, err := runCmd(cmd, warnSlow...)
 	o := strings.TrimSpace(rr.Stdout.String())
 	switch o {
+	case "configured":
+		return state.Stopped, nil
 	case "running":
 		return state.Running, nil
 	case "exited":
