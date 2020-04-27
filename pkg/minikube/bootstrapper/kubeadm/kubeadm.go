@@ -226,7 +226,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 			glog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
 		}
 		// the overlay is required for containerd and cri-o runtime: see #7428
-		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
+		if config.MultiNode(cfg) || (driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker") {
 			if err := k.applyKICOverlay(cfg); err != nil {
 				glog.Errorf("failed to apply kic overlay: %v", err)
 			}
@@ -809,8 +809,13 @@ func kubectlPath(cfg config.ClusterConfig) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
 }
 
+func (k *Bootstrapper) ApplyCNI(cfg config.ClusterConfig) error {
+	return k.applyKICOverlay(cfg)
+}
+
 // applyKICOverlay applies the CNI plugin needed to make kic work
 func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
+	fmt.Println("APPLYING KIC OVERLAY")
 	b := bytes.Buffer{}
 	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
 		return err

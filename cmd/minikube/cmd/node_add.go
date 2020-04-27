@@ -61,6 +61,10 @@ var nodeAddCmd = &cobra.Command{
 			}
 		}
 
+		// Add CNI config if it's not already there
+		// We need to run kubeadm.init here as well
+		config.MultiNodeCNIConfig(cc)
+
 		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})
 	},
 }
