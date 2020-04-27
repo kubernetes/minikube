@@ -95,6 +95,8 @@ func status() registry.State {
 	o, err := cmd.Output()
 	output := string(o)
 	if err == nil {
+		glog.Infof("podman version: %s", output)
+
 		v, err := semver.Make(output)
 		if err != nil {
 			return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
