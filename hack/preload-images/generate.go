@@ -30,9 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
@@ -40,15 +38,9 @@ import (
 )
 
 func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string) error {
-	defer func() {
-		if err := deleteMinikube(); err != nil {
-			fmt.Println(err)
-		}
-	}()
-
 	driver := kic.NewDriver(kic.Config{
 		KubernetesVersion: kubernetesVersion,
-		ContainerRuntime:  driver.Docker,
+		ContainerRuntime:  containerRuntime,
 		OCIBinary:         oci.Docker,
 		MachineName:       profile,
 		ImageDigest:       kic.BaseImage,
@@ -80,7 +72,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	runner := command.NewKICRunner(profile, driver.OCIBinary)
 
 	// will need to do this to enable the container run-time service
-	sv, err := util.ParseKubernetesVersion(constants.DefaultKubernetesVersion)
+	sv, err := util.ParseKubernetesVersion(kubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse kubernetes version")
 	}
@@ -100,12 +92,12 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	}
 
 	for _, img := range imgs {
-		cmd := imagePullCommand(containerRuntime, img)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
 		pull := func() error {
+			cmd := imagePullCommand(containerRuntime, img)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 			if err := cmd.Run(); err != nil {
+				time.Sleep(time.Second) // to avoid error: : exec: already started
 				return errors.Wrapf(err, "pulling image %s", img)
 			}
 			return nil
@@ -182,7 +174,7 @@ func copyTarballToHost(tarballFilename string) error {
 }
 
 func deleteMinikube() error {
-	cmd := exec.Command(minikubePath, "delete", "-p", profile)
+	cmd := exec.Command(minikubePath, "delete", "-p", profile) // to avoid https://github.com/kubernetes/minikube/issues/7814
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }

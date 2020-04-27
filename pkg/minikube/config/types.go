@@ -78,19 +78,21 @@ type ClusterConfig struct {
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
-	KubernetesVersion string
-	ClusterName       string
-	APIServerName     string
-	APIServerNames    []string
-	APIServerIPs      []net.IP
-	DNSDomain         string
-	ContainerRuntime  string
-	CRISocket         string
-	NetworkPlugin     string
-	FeatureGates      string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
-	ServiceCIDR       string // the subnet which kubernetes services will be deployed to
-	ImageRepository   string
-	ExtraOptions      ExtraOptionSlice
+	KubernetesVersion   string
+	ClusterName         string
+	APIServerName       string
+	APIServerNames      []string
+	APIServerIPs        []net.IP
+	DNSDomain           string
+	ContainerRuntime    string
+	CRISocket           string
+	NetworkPlugin       string
+	FeatureGates        string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
+	ServiceCIDR         string // the subnet which kubernetes services will be deployed to
+	ImageRepository     string
+	LoadBalancerStartIP string // currently only used by MetalLB addon
+	LoadBalancerEndIP   string // currently only used by MetalLB addon
+	ExtraOptions        ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool

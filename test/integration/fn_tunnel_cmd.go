@@ -125,10 +125,10 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	want := "Welcome to nginx!"
-	if !strings.Contains(string(got), want) {
-		t.Errorf("expected body to contain %q, but got *%q*", want, got)
-	} else {
+	if strings.Contains(string(got), want) {
 		t.Logf("tunnel at %s is working!", url)
+	} else {
+		t.Errorf("expected body to contain %q, but got *%q*", want, got)
 	}
 
 	// Not all platforms support DNS forwarding
@@ -136,16 +136,19 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		return
 	}
 
-	url = "http://nginx-svc.default.svc.cluster.local"
+	// use FQDN to avoid extra DNS query lookup
+	url = "http://nginx-svc.default.svc.cluster.local."
 	if err = retry.Expo(fetch, 3*time.Second, Seconds(30), 10); err != nil {
 		t.Errorf("failed to hit nginx with DNS forwarded %q: %v", url, err)
+		// debug more information for: https://github.com/kubernetes/minikube/issues/7809
+		clusterLogs(t, profile)
 	}
 
 	want = "Welcome to nginx!"
-	if !strings.Contains(string(got), want) {
-		t.Errorf("expected body to contain %q, but got *%q*", want, got)
-	} else {
+	if strings.Contains(string(got), want) {
 		t.Logf("tunnel at %s is working!", url)
+	} else {
+		t.Errorf("expected body to contain %q, but got *%q*", want, got)
 	}
 
 }
