@@ -47,7 +47,7 @@ var nodeListCmd = &cobra.Command{
 
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
-			fmt.Printf("%s\n", machineName)
+			fmt.Printf("%s\t%s\n", machineName, n.IP)
 		}
 		os.Exit(0)
 	},
