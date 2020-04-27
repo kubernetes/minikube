@@ -22,6 +22,14 @@ import (
 	"github.com/blang/semver"
 )
 
+const (
+	// DefaultNetwork is the Docker default bridge network named "bridge"
+	// (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
+	DefaultNetwork = "bridge"
+	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
+	DefaultPodCIDR = "10.244.0.0/16"
+)
+
 // Profile represents a minikube profile
 type Profile struct {
 	Name   string

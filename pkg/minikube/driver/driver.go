@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -165,7 +164,7 @@ func FlagDefaults(name string) FlagHints {
 		fh.CacheImages = true
 		// only for kic, until other runtimes are available we auto-set containerd.
 		if name == Docker {
-			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
+			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", config.DefaultPodCIDR))
 		}
 		return fh
 	}
