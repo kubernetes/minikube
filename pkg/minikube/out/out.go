@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 // By design, this package uses global references to language and output objects, in preference
@@ -50,6 +51,9 @@ var (
 	// OverrideEnv is the environment variable used to override color/emoji usage
 	OverrideEnv = "MINIKUBE_IN_STYLE"
 )
+
+// MaxLogEntries controls the number of log entries to show for each source
+const MaxLogEntries = 3
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
 type fdWriter interface {
@@ -174,4 +178,30 @@ func wantsColor(fd uintptr) bool {
 	isT := isatty.IsTerminal(fd)
 	glog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
 	return isT
+}
+
+// LogEntries outputs an error along with any important log entries.
+func LogEntries(msg string, err error, entries map[string][]string) {
+	DisplayError(msg, err)
+
+	for name, lines := range entries {
+		T(FailureType, "Problems detected in {{.entry}}:", V{"entry": name})
+		if len(lines) > MaxLogEntries {
+			lines = lines[:MaxLogEntries]
+		}
+		for _, l := range lines {
+			T(LogEntry, l)
+		}
+	}
+}
+
+// DisplayError prints the error and displays the standard minikube error messaging
+func DisplayError(msg string, err error) {
+	// use Warning because Error will display a duplicate message to stderr
+	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
+	ErrT(Empty, "")
+	FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
+	ErrT(Empty, "")
+	ErrT(Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
+	ErrT(URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 }

@@ -19,19 +19,24 @@ package cruntime
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"path"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 const (
@@ -116,6 +121,7 @@ type Containerd struct {
 	Runner            CommandRunner
 	ImageRepository   string
 	KubernetesVersion semver.Version
+	Init              sysinit.Manager
 }
 
 // Name is a human readable name for containerd
@@ -158,9 +164,7 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "containerd")
-	_, err := r.Runner.RunCmd(c)
-	return err == nil
+	return r.Init.Active("containerd")
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
@@ -208,21 +212,14 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
+
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
-	c := exec.Command("sudo", "systemctl", "restart", "containerd")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "restart containerd")
-	}
-	return nil
+	return r.Init.Restart("containerd")
 }
 
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
-	c := exec.Command("sudo", "systemctl", "stop", "-f", "containerd")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "stop containerd")
-	}
-	return nil
+	return r.Init.ForceStop("containerd")
 }
 
 // ImageExists checks if an image exists, expected input format
@@ -317,5 +314,118 @@ func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
 	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
 		return nil
 	}
-	return fmt.Errorf("not yet implemented for %s", r.Name())
+
+	k8sVersion := cfg.KubernetesVersion
+	cRuntime := cfg.ContainerRuntime
+
+	// If images already exist, return
+	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
+	if err != nil {
+		return errors.Wrap(err, "getting images")
+	}
+	if containerdImagesPreloaded(r.Runner, images) {
+		glog.Info("Images already preloaded, skipping extraction")
+		return nil
+	}
+
+	tarballPath := download.TarballPath(k8sVersion, cRuntime)
+	targetDir := "/"
+	targetName := "preloaded.tar.lz4"
+	dest := path.Join(targetDir, targetName)
+
+	c := exec.Command("which", "lz4")
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return NewErrISOFeature("lz4")
+	}
+
+	// Copy over tarball into host
+	fa, err := assets.NewFileAsset(tarballPath, targetDir, targetName, "0644")
+	if err != nil {
+		return errors.Wrap(err, "getting file asset")
+	}
+	t := time.Now()
+	if err := r.Runner.Copy(fa); err != nil {
+		return errors.Wrap(err, "copying file")
+	}
+	glog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
+
+	t = time.Now()
+	// extract the tarball to /var in the VM
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xvf", dest)); err != nil {
+		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
+	}
+	glog.Infof("Took %f seconds t extract the tarball", time.Since(t).Seconds())
+
+	//  remove the tarball in the VM
+	if err := r.Runner.Remove(fa); err != nil {
+		glog.Infof("error removing tarball: %v", err)
+	}
+
+	return r.Restart()
+}
+
+// Restart restarts Docker on a host
+func (r *Containerd) Restart() error {
+	return r.Init.Restart("containerd")
+}
+
+// containerdImagesPreloaded returns true if all images have been preloaded
+func containerdImagesPreloaded(runner command.Runner, images []string) bool {
+	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
+	if err != nil {
+		return false
+	}
+	type containerdImages struct {
+		Images []struct {
+			ID          string      `json:"id"`
+			RepoTags    []string    `json:"repoTags"`
+			RepoDigests []string    `json:"repoDigests"`
+			Size        string      `json:"size"`
+			UID         interface{} `json:"uid"`
+			Username    string      `json:"username"`
+		} `json:"images"`
+	}
+
+	var jsonImages containerdImages
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
+	if err != nil {
+		glog.Errorf("failed to unmarshal images, will assume images are not preloaded")
+		return false
+	}
+
+	// Make sure images == imgs
+	for _, i := range images {
+		found := false
+		for _, ji := range jsonImages.Images {
+			for _, rt := range ji.RepoTags {
+				i = addRepoTagToImageName(i)
+				if i == rt {
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+
+		}
+		if !found {
+			glog.Infof("couldn't find preloaded image for %q. assuming images are not preloaded.", i)
+			return false
+		}
+	}
+	glog.Infof("all images are preloaded for containerd runtime.")
+	return true
+}
+
+// addRepoTagToImageName makes sure the image name has a repo tag in it.
+// in crictl images list have the repo tag prepended to them
+// for example "kubernetesui/dashboard:v2.0.0 will show up as "docker.io/kubernetesui/dashboard:v2.0.0"
+// warning this is only meant for kuberentes images where we know the GCR addreses have .io in them
+// not mean to be used for public images
+func addRepoTagToImageName(imgName string) string {
+	if !strings.Contains(imgName, ".io/") {
+		return "docker.io/" + imgName
+	} // else it already has repo name dont add anything
+	return imgName
 }

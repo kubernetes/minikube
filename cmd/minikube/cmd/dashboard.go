@@ -67,13 +67,14 @@ var dashboardCmd = &cobra.Command{
 		var err error
 
 		// Check dashboard status before enabling it
-		dashboardAddon := assets.Addons["dashboard"]
-		dashboardStatus, _ := dashboardAddon.IsEnabled(cname)
-		if !dashboardStatus {
+		addon := assets.Addons["dashboard"]
+		enabled := addon.IsEnabled(co.Config)
+
+		if !enabled {
 			// Send status messages to stderr for folks re-using this output.
 			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = addons.Set("dashboard", "true", cname)
+			err = addons.SetAndSave(cname, "dashboard", "true")
 			if err != nil {
 				exit.WithError("Unable to enable dashboard", err)
 			}
@@ -82,8 +83,9 @@ var dashboardCmd = &cobra.Command{
 		ns := "kubernetes-dashboard"
 		svc := "kubernetes-dashboard"
 		out.ErrT(out.Verifying, "Verifying dashboard health ...")
-		checkSVC := func() error { return service.CheckService(ns, svc) }
-		if err = retry.Expo(checkSVC, 1*time.Second, time.Minute*5); err != nil {
+		checkSVC := func() error { return service.CheckService(cname, ns, svc) }
+		// for slow machines or parallels in CI to avoid #7503
+		if err = retry.Expo(checkSVC, 100*time.Microsecond, time.Minute*10); err != nil {
 			exit.WithCodeT(exit.Unavailable, "dashboard service is not running: {{.error}}", out.V{"error": err})
 		}
 
@@ -96,7 +98,7 @@ var dashboardCmd = &cobra.Command{
 
 		out.ErrT(out.Verifying, "Verifying proxy health ...")
 		chkURL := func() error { return checkURL(url) }
-		if err = retry.Expo(chkURL, 1*time.Second, 3*time.Minute); err != nil {
+		if err = retry.Expo(chkURL, 100*time.Microsecond, 10*time.Minute); err != nil {
 			exit.WithCodeT(exit.Unavailable, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
 		}
 

@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
@@ -46,7 +47,10 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 }
 
 // configureMounts configures any requested filesystem mounts
-func configureMounts() {
+func configureMounts(wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
 	if !viper.GetBool(createMount) {
 		return
 	}

@@ -55,6 +55,11 @@ func getExtraOpts() []config.ExtraOption {
 			Key:       "dry-run",
 			Value:     "true",
 		},
+		config.ExtraOption{
+			Component: Kubeproxy,
+			Key:       "mode",
+			Value:     "iptables",
+		},
 	}
 }
 
@@ -70,7 +75,7 @@ func getExtraOptsPodCidr() []config.ExtraOption {
 
 func recentReleases() ([]string, error) {
 	// test the 6 most recent releases
-	versions := []string{"v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12", "v1.11"}
+	versions := []string{"v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
 	foundNewest := false
 	foundDefault := false
 

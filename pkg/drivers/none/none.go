@@ -31,7 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
-	"k8s.io/minikube/pkg/minikube/kubelet"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -142,12 +142,12 @@ func (d *Driver) GetState() (state.State, error) {
 		return state.Running, nil
 	}
 
-	return kverify.KubeletStatus(d.exec)
+	return kverify.KubeletStatus(d.exec), nil
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	if err := kubelet.ForceStop(d.exec); err != nil {
+	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 
@@ -211,9 +211,9 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	if err := kubelet.Stop(d.exec); err != nil {
+	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
 		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
-		if err := kubelet.ForceStop(d.exec); err != nil {
+		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}

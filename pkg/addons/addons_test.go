@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -59,47 +60,42 @@ func createTestProfile(t *testing.T) string {
 }
 
 func TestIsAddonAlreadySet(t *testing.T) {
-	profile := createTestProfile(t)
-	if err := Set("registry", "true", profile); err != nil {
+	cc := &config.ClusterConfig{Name: "test"}
+
+	if err := Set(cc, "registry", "true"); err != nil {
 		t.Errorf("unable to set registry true: %v", err)
 	}
-	enabled, err := assets.Addons["registry"].IsEnabled(profile)
-	if err != nil {
-		t.Errorf("registry: %v", err)
-	}
-	if !enabled {
+	if !assets.Addons["registry"].IsEnabled(cc) {
 		t.Errorf("expected registry to be enabled")
 	}
 
-	enabled, err = assets.Addons["ingress"].IsEnabled(profile)
-	if err != nil {
-		t.Errorf("ingress: %v", err)
-	}
-	if enabled {
+	if assets.Addons["ingress"].IsEnabled(cc) {
 		t.Errorf("expected ingress to not be enabled")
 	}
 
 }
 
 func TestDisableUnknownAddon(t *testing.T) {
-	profile := createTestProfile(t)
-	if err := Set("InvalidAddon", "false", profile); err == nil {
+	cc := &config.ClusterConfig{Name: "test"}
+
+	if err := Set(cc, "InvalidAddon", "false"); err == nil {
 		t.Fatalf("Disable did not return error for unknown addon")
 	}
 }
 
 func TestEnableUnknownAddon(t *testing.T) {
-	profile := createTestProfile(t)
-	if err := Set("InvalidAddon", "true", profile); err == nil {
+	cc := &config.ClusterConfig{Name: "test"}
+
+	if err := Set(cc, "InvalidAddon", "true"); err == nil {
 		t.Fatalf("Enable did not return error for unknown addon")
 	}
 }
 
-func TestEnableAndDisableAddon(t *testing.T) {
+func TestSetAndSave(t *testing.T) {
 	profile := createTestProfile(t)
 
 	// enable
-	if err := Set("dashboard", "true", profile); err != nil {
+	if err := SetAndSave(profile, "dashboard", "true"); err != nil {
 		t.Errorf("Disable returned unexpected error: " + err.Error())
 	}
 
@@ -112,7 +108,7 @@ func TestEnableAndDisableAddon(t *testing.T) {
 	}
 
 	// disable
-	if err := Set("dashboard", "false", profile); err != nil {
+	if err := SetAndSave(profile, "dashboard", "false"); err != nil {
 		t.Errorf("Disable returned unexpected error: " + err.Error())
 	}
 
@@ -126,14 +122,18 @@ func TestEnableAndDisableAddon(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
-	profile := createTestProfile(t)
-	Start(profile, map[string]bool{}, []string{"dashboard"})
-
-	enabled, err := assets.Addons["dashboard"].IsEnabled(profile)
-	if err != nil {
-		t.Errorf("dashboard: %v", err)
+	cc := &config.ClusterConfig{
+		Name:             "start",
+		CPUs:             2,
+		Memory:           2500,
+		KubernetesConfig: config.KubernetesConfig{},
 	}
-	if !enabled {
+
+	var wg sync.WaitGroup
+	Start(&wg, cc, map[string]bool{}, []string{"dashboard"})
+	wg.Wait()
+
+	if !assets.Addons["dashboard"].IsEnabled(cc) {
 		t.Errorf("expected dashboard to be enabled")
 	}
 }
