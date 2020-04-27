@@ -83,8 +83,10 @@ func status() registry.State {
 
 	// Quickly returns an error code if server is not running
 	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Version}}")
-	_, err = cmd.Output()
+	o, err := cmd.Output()
+	output := string(o)
 	if err == nil {
+		glog.Infof("docker version: %s", output)
 		return registry.State{Installed: true, Healthy: true}
 	}
 
