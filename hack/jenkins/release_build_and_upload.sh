@@ -38,6 +38,10 @@ grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
 # Force go packages to the Jekins home directory
 export GOPATH=$HOME/go
 
+# Verify ISO exists
+echo "Verifying ISO exists ..."
+make verify-iso
+
 # Build and upload
 env BUILD_IN_DOCKER=y \
   make -j 16 \

@@ -92,4 +92,5 @@ const (
 	AddonEnable
 	AddonDisable
 	Shrug
+	New
 )
