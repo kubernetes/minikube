@@ -137,7 +137,7 @@ func NeedsPortForward(name string) bool {
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
 func HasResourceLimits(name string) bool {
-	return !(name == None || name == Podman)
+	return name != None
 }
 
 // NeedsShutdown returns true if driver needs manual shutdown command before stopping.
