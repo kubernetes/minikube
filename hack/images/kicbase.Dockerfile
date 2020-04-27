@@ -17,15 +17,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm /etc/crictl.yaml
 
 # install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
-ARG CRIO_VERSION="1.17=1.17.3~2"
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \    
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
     apt-key add - < Release.key && apt-get update && \
-    apt-get install -y --no-install-recommends cri-o-${CRIO_VERSION}
+    apt-get install -y --no-install-recommends cri-o-1.17
 
 # install podman
-ARG PODMAN_VERSION=1.9.0~2
-RUN apt-get install -y --no-install-recommends podman=${PODMAN_VERSION}
+RUN apt-get install -y --no-install-recommends podman
+
+# install varlink
+RUN apt-get install -y --no-install-recommends varlink
+
 
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
