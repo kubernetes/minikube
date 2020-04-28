@@ -80,7 +80,7 @@ func trySSHPowerOff(h *host.Host) error {
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
 	// differnet for kic because RunSSHCommand is not implemented by kic
 	if driver.IsKIC(h.DriverName) {
-		err := oci.ShutDown("sudo", h.DriverName, h.Name)
+		err := oci.ShutDown(h.DriverName, h.Name)
 		glog.Infof("shutdown container: err=%v", err)
 	} else {
 		out, err := h.RunSSHCommand("sudo poweroff")

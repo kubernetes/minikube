@@ -41,7 +41,6 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	driver := kic.NewDriver(kic.Config{
 		KubernetesVersion: kubernetesVersion,
 		ContainerRuntime:  containerRuntime,
-		OCIPrefix:         oci.Env,
 		OCIBinary:         oci.Docker,
 		MachineName:       profile,
 		ImageDigest:       kic.BaseImage,
@@ -70,7 +69,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		imgs = append(imgs, kic.OverlayImage)
 	}
 
-	runner := command.NewKICRunner(profile, driver.OCIPrefix, driver.OCIBinary)
+	runner := command.NewKICRunner(profile, driver.OCIBinary)
 
 	// will need to do this to enable the container run-time service
 	sv, err := util.ParseKubernetesVersion(kubernetesVersion)

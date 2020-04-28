@@ -29,18 +29,18 @@ import (
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
-func DeleteAllVolumesByLabel(prefix string, ociBin string, label string, warnSlow ...bool) []error {
+func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
 	glog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
 
-	vs, err := allVolumesByLabel(prefix, ociBin, label)
+	vs, err := allVolumesByLabel(ociBin, label)
 
 	if err != nil {
 		return []error{fmt.Errorf("listing volumes by label %q: %v", label, err)}
 	}
 
 	for _, v := range vs {
-		if _, err := runCmd(exec.Command(prefix, ociBin, "volume", "rm", "--force", v), warnSlow...); err != nil {
+		if _, err := runCmd(exec.Command(ociBin, "volume", "rm", "--force", v), warnSlow...); err != nil {
 			deleteErrs = append(deleteErrs, fmt.Errorf("deleting %q", v))
 		}
 	}
@@ -51,10 +51,10 @@ func DeleteAllVolumesByLabel(prefix string, ociBin string, label string, warnSlo
 // PruneAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
 // example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
-func PruneAllVolumesByLabel(prefix string, ociBin string, label string, warnSlow ...bool) []error {
+func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
 	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
-	cmd := exec.Command(prefix, ociBin, "volume", "prune", "-f", "--filter", "label="+label)
+	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
 	if _, err := runCmd(cmd, warnSlow...); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s", label))
 	}
@@ -64,8 +64,8 @@ func PruneAllVolumesByLabel(prefix string, ociBin string, label string, warnSlow
 
 // allVolumesByLabel returns name of all docker volumes by a specific label
 // will not return error if there is no volume found.
-func allVolumesByLabel(prefix string, ociBin string, label string) ([]string, error) {
-	rr, err := runCmd(exec.Command(prefix, ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}"))
+func allVolumesByLabel(ociBin string, label string) ([]string, error) {
+	rr, err := runCmd(exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}"))
 	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
 	var vols []string
 	for s.Scan() {

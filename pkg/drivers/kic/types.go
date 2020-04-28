@@ -49,7 +49,6 @@ type Config struct {
 	CPU               int               // Number of CPU cores assigned to the container
 	Memory            int               // max memory in MB
 	StorePath         string            // libmachine store path
-	OCIPrefix         string            // prefix to use (env, sudo, ...)
 	OCIBinary         string            // oci tool to use (docker, podman,...)
 	ImageDigest       string            // image name with sha to use for the node
 	Mounts            []oci.Mount       // mounts
