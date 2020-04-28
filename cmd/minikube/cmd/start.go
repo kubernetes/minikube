@@ -738,7 +738,7 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
 	suggested := int(float32(sysLimit)/400.0) * 100
 
 	if nodes := viper.GetInt(nodes); nodes > 1 {
-		suggested = suggested / nodes
+		suggested /= nodes
 	}
 
 	if suggested > maximum {
