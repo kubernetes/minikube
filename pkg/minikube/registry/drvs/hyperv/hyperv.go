@@ -91,17 +91,19 @@ func status() registry.State {
 
 	cmd := exec.CommandContext(ctx, path, "@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent")
 	out, err := cmd.CombinedOutput()
-	if string(out) != "True\r\n" {
-		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
-		fixMessage := "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
 
-		// If timed out, prompt different error and suggestion messages
-		// See https://github.com/kubernetes/minikube/issues/6579
-		if ctx.Err() != nil {
-			errorMessage = fmt.Errorf("%s exited unexpectedly:\n%s", strings.Join(cmd.Args, " "), ctx.Err())
-			fixMessage = "If you have Hyper-V configured correctly, please try start again with `--force` specified"
-		}
+	if err != nil {
+		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
+		fixMessage := "Start PowerShell as an Administrator"
 		return registry.State{Installed: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
 	}
+
+	// Get-Wmiobject does not return an error code for false
+	if strings.TrimSpace(string(out)) != "True" {
+		errorMessage := fmt.Errorf("%s returned %q", strings.Join(cmd.Args, " "), out)
+		fixMessage := "Enable Hyper-V: Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
+		return registry.State{Installed: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
+	}
+
 	return registry.State{Installed: true, Healthy: true}
 }

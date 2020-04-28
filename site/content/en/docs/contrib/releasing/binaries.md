@@ -15,18 +15,10 @@ description: >
 
 ## Build a new ISO
 
-Major releases always get a new ISO. See [ISO release instructions]({{<ref "iso.md">}})
+* All non-patch releases require a new ISO to be built.
+* Patch releases (vx.x.1+) require a new ISO if the `deploy/iso` directory has seen changes since the previous release.
 
-## Update Makefile
-
-Edit the minikube `Makefile`, updating the version number values at the top:
-
-* `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD` as necessary
-* `ISO_VERSION` - defaults to MAJOR.MINOR.0 - update if point release requires a new ISO to be built.
-
-Make sure the integration tests run against this PR, once the new ISO is built. 
-
-You can merge this change at any time before the release, but often the Makefile change is merged the next step: Release notes.
+See [ISO release instructions]({{<ref "iso.md">}})
 
 ## Update Release Notes
 
@@ -36,19 +28,30 @@ Run the following script from your local upstream repo copy to generate updated 
 hack/release_notes.sh
 ```
 
-Paste the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/minikube/pull/3175) as an example. 
-
-You'll need to massage the output in a few key ways:
+Paste the output into CHANGELOG.md, sorting changes by importance to an end-user. If there are >8 changes, split them into *Improvements* and *Bug fixes*
 
 - The changelog should only contain user facing change. This means removing PR's for:
   - Documentation
   - Low-risk refactors
   - Test-only changes 
-- Sort the changes so that the ones users will want to know about the most appear first
 - Remove bots from the contributor list
 - Remove duplicated similar names from the contributor list
 
-Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/minikube/pull/3175) as an example. 
+You may merge this PR at any time, or combine it with a `Makefile` update PR.
+
+## Update Makefile
+
+Update the version numbers in  `Makefile`:
+
+* `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD`
+* `ISO_VERSION`:
+  - beta releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)`
+  - major/minor releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).0`
+  - if the ISO was updated, a patch release may use `v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)`
+
+{{% alert title="Warning" color="warning" %}}
+Merge this PR only if all non-experimental integration tests pass!
+{{% /alert %}}
 
 ## Tag the Release
 
