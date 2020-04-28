@@ -138,7 +138,9 @@ func SaveNode(cfg *ClusterConfig, node *Node) error {
 	}
 
 	if MultiNode(*cfg) {
-		MultiNodeCNIConfig(cfg)
+		if err := MultiNodeCNIConfig(cfg); err != nil {
+			return err
+		}
 	}
 
 	return SaveProfile(viper.GetString(ProfileName), cfg)
