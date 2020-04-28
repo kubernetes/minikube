@@ -242,7 +242,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	err = cr.Enable(disableOthers)
+	err = cr.Enable(disableOthers, viper.GetBool("force-systemd"))
 	if err != nil {
 		debug.PrintStack()
 		exit.WithError("Failed to enable container runtime", err)
