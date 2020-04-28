@@ -239,7 +239,8 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		disableOthers = false
 	}
 
-	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
+	// Preload is overly invasive for bare metal, and caching is not meaningful.
+	// KIC handles preload elsewhere.
 	if driver.IsVM(cc.Driver) {
 		if err := cr.Preload(cc.KubernetesConfig); err != nil {
 			switch err.(type) {
