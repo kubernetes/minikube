@@ -811,7 +811,6 @@ func kubectlPath(cfg config.ClusterConfig) string {
 
 // applyKICOverlay applies the CNI plugin needed to make kic work
 func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
-	fmt.Println("APPLY KIC OVERLAY")
 	b := bytes.Buffer{}
 	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
 		return err

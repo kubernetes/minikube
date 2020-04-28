@@ -205,7 +205,6 @@ func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *ClusterCo
 // MultiNodeCNIConfig add default CNI config needed for multinode clusters and saves off the config
 func MultiNodeCNIConfig(cc *ClusterConfig) error {
 	if cc.KubernetesConfig.ExtraOptions.Get("pod-network-cidr", "kubeadm") == "" {
-		fmt.Println("SETTING CNI CONFIG")
 		cc.KubernetesConfig.NetworkPlugin = "cni"
 		if err := cc.KubernetesConfig.ExtraOptions.Set(fmt.Sprintf("kubeadm.pod-network-cidr=%s", DefaultPodCIDR)); err != nil {
 			return err
