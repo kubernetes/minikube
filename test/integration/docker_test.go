@@ -63,3 +63,30 @@ func TestDockerFlags(t *testing.T) {
 		}
 	}
 }
+
+func TestForceSystemd(t *testing.T) {
+	if NoneDriver() {
+		t.Skip("skipping: none driver does not support ssh or bundle docker")
+	}
+	MaybeParallel(t)
+
+	profile := UniqueProfileName("force-systemd")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+	defer CleanupWithLogs(t, profile, cancel)
+
+	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
+	args := append([]string{"start", "-p", profile, "--force-systemd", "--alsologtostderr", "-v=5"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "docker info --format {{.CgroupDriver}}"))
+	if err != nil {
+		t.Errorf("failed to get docker cgroup driver. args %q: %v", rr.Command(), err)
+	}
+
+	if !strings.Contains(rr.Output(), "systemd") {
+		t.Fatalf("expected systemd cgroup driver, got: %v", rr.Output())
+	}
+}
