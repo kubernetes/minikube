@@ -715,7 +715,7 @@ func memoryLimits(drvName string) (int, int, error) {
 }
 
 // suggestMemoryAllocation calculates the default memory footprint in MB
-func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
+func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 	if mem := viper.GetInt(memory); mem != 0 {
 		return mem
 	}
@@ -737,7 +737,7 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
 	// Suggest 25% of RAM, rounded to nearest 100MB. Hyper-V requires an even number!
 	suggested := int(float32(sysLimit)/400.0) * 100
 
-	if nodes := viper.GetInt(nodes); nodes > 1 {
+	if nodes > 1 {
 		suggested /= nodes
 	}
 
