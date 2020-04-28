@@ -46,7 +46,6 @@ type Bootstrapper interface {
 	LogCommands(config.ClusterConfig, LogOptions) map[string]string
 	SetupCerts(config.KubernetesConfig, config.Node) error
 	GetAPIServerStatus(string, int) (string, error)
-	ApplyCNI(config.ClusterConfig) error
 }
 
 const (

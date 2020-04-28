@@ -169,10 +169,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
-
-		if err = cpBs.ApplyCNI(*starter.Cfg); err != nil {
-			return nil, errors.Wrap(err, "applying CNI")
-		}
 	}
 
 	wg.Wait()
