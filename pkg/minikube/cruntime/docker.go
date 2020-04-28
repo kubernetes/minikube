@@ -103,11 +103,18 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(disOthers bool) error {
+func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
 		}
+	}
+
+	if forceSystemd {
+		if err := r.forceSystemd(); err != nil {
+			return err
+		}
+		return r.Init.Restart("docker")
 	}
 
 	return r.Init.Start("docker")
@@ -272,6 +279,22 @@ func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
 // SystemLogCmd returns the command to retrieve system logs
 func (r *Docker) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
+}
+
+// ForceSystemd forces the docker daemon to use systemd as cgroup manager
+func (r *Docker) forceSystemd() error {
+	glog.Infof("Forcing docker to use systemd as cgroup manager...")
+	daemonConfig := `{
+"exec-opts": ["native.cgroupdriver=systemd"],
+"log-driver": "json-file",
+"log-opts": {
+	"max-size": "100m"
+},
+"storage-driver": "overlay2"
+}
+`
+	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
+	return r.Runner.Copy(ma)
 }
 
 // Preload preloads docker with k8s images:
