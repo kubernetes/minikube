@@ -543,7 +543,7 @@ var osProblems = map[string]match{
 	},
 	"JUJU_LOCK_DENIED": {
 		Regexp: re(`unable to open /tmp/juju.*: permission denied`),
-		Advice: "Run 'sudo sysctl fs.protected_regular=1', or try a driver which does not require root, such as '--driver=docker'",
+		Advice: "Run 'sudo sysctl fs.protected_regular=0', or try a driver which does not require root, such as '--driver=docker'",
 		GOOS:   []string{"linux"},
 		Issues: []int{6391},
 	},
