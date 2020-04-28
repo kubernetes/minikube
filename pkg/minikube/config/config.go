@@ -214,7 +214,7 @@ func MultiNodeCNIConfig(cc *ClusterConfig) error {
 	return nil
 }
 
-// MultiNode returns true if the cluster
+// MultiNode returns true if the cluster has multiple nodes or if the request is asking for multinode
 func MultiNode(cc ClusterConfig) bool {
 	if len(cc.Nodes) > 1 {
 		return true
