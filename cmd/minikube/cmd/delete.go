@@ -90,17 +90,17 @@ func init() {
 
 func deleteContainersAndVolumes() {
 	delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
-	errs := oci.DeleteContainersByLabel(oci.Env, oci.Docker, delLabel)
+	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
 	if len(errs) > 0 { // it will error if there is no container to delete
 		glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.DeleteAllVolumesByLabel(oci.Env, oci.Docker, delLabel)
+	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.PruneAllVolumesByLabel(oci.Env, oci.Docker, delLabel)
+	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
@@ -193,14 +193,12 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 
 func deletePossibleKicLeftOver(name string) {
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
-	prefixes := []string{oci.Env, oci.Sudo}
-	for i, bin := range []string{oci.Docker, oci.Podman} {
-		prefix := prefixes[i]
-		cs, err := oci.ListContainersByLabel(prefix, bin, delLabel)
+	for _, bin := range []string{oci.Docker, oci.Podman} {
+		cs, err := oci.ListContainersByLabel(bin, delLabel)
 		if err == nil && len(cs) > 0 {
 			for _, c := range cs {
 				out.T(out.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": name})
-				err := oci.DeleteContainer(prefix, bin, c)
+				err := oci.DeleteContainer(bin, c)
 				if err != nil { // it will error if there is no container to delete
 					glog.Errorf("error deleting container %q. you might want to delete that manually :\n%v", name, err)
 				}
@@ -208,12 +206,12 @@ func deletePossibleKicLeftOver(name string) {
 			}
 		}
 
-		errs := oci.DeleteAllVolumesByLabel(prefix, bin, delLabel)
+		errs := oci.DeleteAllVolumesByLabel(bin, delLabel)
 		if errs != nil { // it will not error if there is nothing to delete
 			glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
 		}
 
-		errs = oci.PruneAllVolumesByLabel(prefix, bin, delLabel)
+		errs = oci.PruneAllVolumesByLabel(bin, delLabel)
 		if len(errs) > 0 { // it will not error if there is nothing to delete
 			glog.Warningf("error pruning volume (might be okay):\n%v", errs)
 		}

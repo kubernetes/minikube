@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -63,8 +64,24 @@ func (rr RunResult) Output() string {
 	return sb.String()
 }
 
+// PrefixCmd adds any needed prefix (such as sudo) to the command
+func PrefixCmd(cmd *exec.Cmd) *exec.Cmd {
+	if cmd.Args[0] == Podman && runtime.GOOS == "linux" { // want sudo when not running podman-remote
+		cmdWithSudo := exec.Command("sudo", cmd.Args...)
+		cmdWithSudo.Env = cmd.Env
+		cmdWithSudo.Dir = cmd.Dir
+		cmdWithSudo.Stdin = cmd.Stdin
+		cmdWithSudo.Stdout = cmd.Stdout
+		cmdWithSudo.Stderr = cmd.Stderr
+		cmd = cmdWithSudo
+	}
+	return cmd
+}
+
 // runCmd runs a command exec.Command against docker daemon or podman
 func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
+	cmd = PrefixCmd(cmd)
+
 	warn := false
 	if len(warnSlow) > 0 {
 		warn = warnSlow[0]

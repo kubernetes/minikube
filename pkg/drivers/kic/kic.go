@@ -48,7 +48,6 @@ type Driver struct {
 	URL        string
 	exec       command.Runner
 	NodeConfig Config
-	OCIPrefix  string // env, sudo
 	OCIBinary  string // docker,podman
 }
 
@@ -59,9 +58,8 @@ func NewDriver(c Config) *Driver {
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		exec:       command.NewKICRunner(c.MachineName, c.OCIPrefix, c.OCIBinary),
+		exec:       command.NewKICRunner(c.MachineName, c.OCIBinary),
 		NodeConfig: c,
-		OCIPrefix:  c.OCIPrefix,
 		OCIBinary:  c.OCIBinary,
 	}
 	return d
@@ -78,7 +76,6 @@ func (d *Driver) Create() error {
 		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:          d.NodeConfig.Envs,
 		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
-		OCIPrefix:     d.NodeConfig.OCIPrefix,
 		OCIBinary:     d.NodeConfig.OCIBinary,
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
@@ -102,15 +99,15 @@ func (d *Driver) Create() error {
 		},
 	)
 
-	exists, err := oci.ContainerExists(d.OCIPrefix, d.OCIBinary, params.Name, true)
+	exists, err := oci.ContainerExists(d.OCIBinary, params.Name, true)
 	if err != nil {
 		glog.Warningf("failed to check if container already exists: %v", err)
 	}
 	if exists {
 		// if container was created by minikube it is safe to delete and recreate it.
-		if oci.IsCreatedByMinikube(d.OCIPrefix, d.OCIBinary, params.Name) {
+		if oci.IsCreatedByMinikube(d.OCIBinary, params.Name) {
 			glog.Info("Found already existing abandoned minikube container, will try to delete.")
-			if err := oci.DeleteContainer(d.OCIPrefix, d.OCIBinary, params.Name); err != nil {
+			if err := oci.DeleteContainer(d.OCIBinary, params.Name); err != nil {
 				glog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again: %v", params.Name, params.OCIBinary, err)
 			}
 		} else {
@@ -162,7 +159,7 @@ func (d *Driver) prepareSSH() error {
 		return errors.Wrap(err, "generate ssh key")
 	}
 
-	cmder := command.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIPrefix, d.NodeConfig.OCIBinary)
+	cmder := command.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIBinary)
 	f, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/", "authorized_keys", "0644")
 	if err != nil {
 		return errors.Wrap(err, "create pubkey assetfile ")
@@ -237,23 +234,23 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	return oci.ContainerStatus(d.OCIPrefix, d.OCIBinary, d.MachineName, true)
+	return oci.ContainerStatus(d.OCIBinary, d.MachineName, true)
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
 	// on init this doesn't get filled when called from cmd
-	d.exec = command.NewKICRunner(d.MachineName, d.OCIPrefix, d.OCIBinary)
+	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 
-	if err := oci.ShutDown(d.OCIPrefix, d.OCIBinary, d.MachineName); err != nil {
+	if err := oci.ShutDown(d.OCIBinary, d.MachineName); err != nil {
 		glog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
 	}
 
 	cr := command.NewExecRunner() // using exec runner for interacting with dameon.
-	if _, err := cr.RunCmd(exec.Command(d.NodeConfig.OCIPrefix, d.NodeConfig.OCIBinary, "kill", d.MachineName)); err != nil {
+	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName))); err != nil {
 		return errors.Wrapf(err, "killing %q", d.MachineName)
 	}
 	return nil
@@ -261,11 +258,11 @@ func (d *Driver) Kill() error {
 
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
-	if _, err := oci.ContainerID(d.OCIPrefix, d.OCIBinary, d.MachineName); err != nil {
+	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
 		glog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
 	}
 
-	if err := oci.DeleteContainer(d.NodeConfig.OCIPrefix, d.NodeConfig.OCIBinary, d.MachineName); err != nil {
+	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		if strings.Contains(err.Error(), "is already in progress") {
 			return errors.Wrap(err, "stuck delete")
 		}
@@ -276,7 +273,7 @@ func (d *Driver) Remove() error {
 	}
 
 	// check there be no container left after delete
-	if id, err := oci.ContainerID(d.OCIPrefix, d.OCIBinary, d.MachineName); err == nil && id != "" {
+	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
 		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
 	return nil
@@ -304,11 +301,11 @@ func (d *Driver) Restart() error {
 // Start an already created kic container
 func (d *Driver) Start() error {
 	cr := command.NewExecRunner() // using exec runner for interacting with docker/podman daemon
-	if _, err := cr.RunCmd(exec.Command(d.NodeConfig.OCIPrefix, d.NodeConfig.OCIBinary, "start", d.MachineName)); err != nil {
+	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName))); err != nil {
 		return errors.Wrap(err, "start")
 	}
 	checkRunning := func() error {
-		s, err := oci.ContainerStatus(d.NodeConfig.OCIPrefix, d.NodeConfig.OCIBinary, d.MachineName)
+		s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
 		if err != nil {
 			return err
 		}
@@ -328,7 +325,7 @@ func (d *Driver) Start() error {
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
 	// on init this doesn't get filled when called from cmd
-	d.exec = command.NewKICRunner(d.MachineName, d.OCIPrefix, d.OCIBinary)
+	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
 	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
@@ -363,7 +360,7 @@ func (d *Driver) Stop() error {
 		glog.Warningf("couldn't stop kube-apiserver proc: %v", err)
 	}
 
-	cmd := exec.Command(d.NodeConfig.OCIPrefix, d.NodeConfig.OCIBinary, "stop", d.MachineName)
+	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
 	}

@@ -35,12 +35,12 @@ import (
 
 // deleteOrphanedKIC attempts to delete an orphaned docker instance for machines without a config file
 // used as last effort clean up not returning errors, wont warn user.
-func deleteOrphanedKIC(prefix string, ociBin string, name string) {
+func deleteOrphanedKIC(ociBin string, name string) {
 	if !(ociBin == oci.Podman || ociBin == oci.Docker) {
 		return
 	}
 
-	_, err := oci.ContainerStatus(prefix, ociBin, name)
+	_, err := oci.ContainerStatus(ociBin, name)
 	if err != nil {
 		glog.Infof("couldn't inspect container %q before deleting: %v", name, err)
 		return
@@ -49,10 +49,10 @@ func deleteOrphanedKIC(prefix string, ociBin string, name string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := oci.ShutDown(prefix, ociBin, name); err != nil {
+	if err := oci.ShutDown(ociBin, name); err != nil {
 		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
-	cmd := exec.CommandContext(ctx, prefix, ociBin, "rm", "-f", "-v", name)
+	cmd := exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)
 	err = cmd.Run()
 	if err == nil {
 		glog.Infof("Found stale kic container and successfully cleaned it up!")
@@ -63,8 +63,8 @@ func deleteOrphanedKIC(prefix string, ociBin string, name string) {
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
 	if err != nil && host == nil {
-		deleteOrphanedKIC(oci.Env, oci.Docker, machineName)
-		deleteOrphanedKIC(oci.Sudo, oci.Podman, machineName)
+		deleteOrphanedKIC(oci.Docker, machineName)
+		deleteOrphanedKIC(oci.Podman, machineName)
 		// Keep going even if minikube does not know about the host
 	}
 
