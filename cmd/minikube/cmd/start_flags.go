@@ -220,7 +220,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			glog.Warningf("Unable to query memory limits: %v", err)
 		}
 
-		mem := suggestMemoryAllocation(sysLimit, containerLimit)
+		mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 		if cmd.Flags().Changed(memory) {
 			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
 			if err != nil {
