@@ -17,6 +17,10 @@ limitations under the License.
 package util
 
 import (
+	"io/ioutil"
+	"os"
+	"os/user"
+	"syscall"
 	"testing"
 
 	"github.com/blang/semver"
@@ -72,5 +76,121 @@ func TestParseKubernetesVersion(t *testing.T) {
 	}
 	if version.NE(semver.MustParse("1.8.0-alpha.5")) {
 		t.Errorf("Expected: %s, Actual:%s", "1.8.0-alpha.5", version)
+	}
+}
+
+func TestChownR(t *testing.T) {
+	testDir, err := ioutil.TempDir(os.TempDir(), "")
+	if nil != err {
+		return
+	}
+	_, err = os.Create(testDir + "/TestChownR")
+	if nil != err {
+		return
+	}
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(testDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", testDir)
+		}
+	}()
+
+	cases := []struct {
+		name          string
+		uid           int
+		gid           int
+		expectedError bool
+	}{
+		{
+			name:          "normal",
+			uid:           os.Getuid(),
+			gid:           os.Getgid(),
+			expectedError: false,
+		},
+		{
+			name:          "invalid uid",
+			uid:           2147483647,
+			gid:           os.Getgid(),
+			expectedError: true,
+		},
+		{
+			name:          "invalid gid",
+			uid:           os.Getuid(),
+			gid:           2147483647,
+			expectedError: true,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err = ChownR(testDir+"/TestChownR", c.uid, c.gid)
+			fileInfo, _ := os.Stat(testDir + "/TestChownR")
+			fileSys := fileInfo.Sys()
+			if (nil != err) != c.expectedError || ((false == c.expectedError) && (fileSys.(*syscall.Stat_t).Gid != uint32(c.gid) || fileSys.(*syscall.Stat_t).Uid != uint32(c.uid))) {
+				t.Errorf("expectedError: %v, got: %v", c.expectedError, err)
+			}
+		})
+	}
+}
+
+func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
+	testDir, err := ioutil.TempDir(os.TempDir(), "")
+	if nil != err {
+		return
+	}
+	_, err = os.Create(testDir + "/TestChownR")
+	if nil != err {
+		return
+	}
+
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(testDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", testDir)
+		}
+	}()
+
+	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
+		err = os.Setenv("CHANGE_MINIKUBE_NONE_USER", "1")
+		if nil != err {
+			t.Error("failed to set env: CHANGE_MINIKUBE_NONE_USER")
+		}
+	}
+
+	if os.Getenv("SUDO_USER") == "" {
+		user, err := user.Current()
+		if nil != err {
+			t.Error("fail to get user")
+		}
+		os.Setenv("SUDO_USER", user.Username)
+		err = os.Setenv("SUDO_USER", user.Username)
+		if nil != err {
+			t.Error("failed to set env: SUDO_USER")
+		}
+	}
+
+	cases := []struct {
+		name          string
+		dir           string
+		expectedError bool
+	}{
+		{
+			name:          "normal",
+			dir:           testDir,
+			expectedError: false,
+		},
+		{
+			name:          "invaild dir",
+			dir:           "./utils_test",
+			expectedError: true,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err = MaybeChownDirRecursiveToMinikubeUser(c.dir)
+			if (nil != err) != c.expectedError {
+				t.Errorf("expectedError: %v, got: %v", c.expectedError, err)
+			}
+		})
 	}
 }
