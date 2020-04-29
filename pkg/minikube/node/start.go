@@ -88,6 +88,14 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
+	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
+	hostIP, err := cluster.HostIP(starter.Host)
+	if err != nil {
+		glog.Errorf("Unable to get host IP: %v", err)
+	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
+		glog.Errorf("Unable to add host alias: %v", err)
+	}
+
 	var bs bootstrapper.Bootstrapper
 	var kcs *kubeconfig.Settings
 	if apiServer {

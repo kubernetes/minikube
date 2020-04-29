@@ -29,7 +29,7 @@ schedulerExtraArgs:
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
-controlPlaneEndpoint: 1.1.1.1:8443
+controlPlaneEndpoint: control-plane.minikube.internal:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
