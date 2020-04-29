@@ -285,6 +285,7 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.WithCodeT(exit.Config, "The none driver is not compatible with multi-node clusters.")
 		} else {
+			warnAboutMultiNode()
 			for i := 1; i < numNodes; i++ {
 				nodeName := node.Name(i + 1)
 				n := config.Node{
@@ -303,6 +304,10 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 	}
 
 	return kubeconfig, nil
+}
+
+func warnAboutMultiNode() {
+	out.T(out.Tip, "Multi-node clusters are currently experimental and might exhibit unintended behavior.\nTo track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
 func updateDriver(driverName string) {
