@@ -15,13 +15,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0=2.62.1-1 \
     && rm /etc/crictl.yaml
+
 # install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \    
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
     apt-key add - < Release.key && apt-get update && \
-    apt-get install -y --no-install-recommends cri-o-1.17=1.17.2~1
+    apt-get install -y --no-install-recommends cri-o-1.17
+
 # install podman
-RUN apt-get install -y --no-install-recommends podman=1.8.2~144
+RUN apt-get install -y --no-install-recommends podman
+
+# install varlink
+RUN apt-get install -y --no-install-recommends varlink
+
+
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
