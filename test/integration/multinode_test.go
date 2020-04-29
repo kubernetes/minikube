@@ -29,7 +29,6 @@ func TestMultiNode(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver does not support multinode")
 	}
-	MaybeParallel(t)
 
 	type validatorFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("multinode")
