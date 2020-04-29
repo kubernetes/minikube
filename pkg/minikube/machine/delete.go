@@ -42,7 +42,7 @@ func deleteOrphanedKIC(ociBin string, name string) {
 
 	_, err := oci.ContainerStatus(ociBin, name)
 	if err != nil {
-		glog.Infof("couldn't inspect container %q before deleting, %s-daemon might needs a restart!: %v", name, ociBin, err)
+		glog.Infof("couldn't inspect container %q before deleting: %v", name, err)
 		return
 	}
 	// allow no more than 5 seconds for delting the container

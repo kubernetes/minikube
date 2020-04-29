@@ -102,7 +102,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		NoTaintMaster:       false, // That does not work with k8s 1.12+
 		DNSDomain:           k8s.DNSDomain,
 		NodeIP:              n.IP,
-		ControlPlaneAddress: cp.IP,
+		ControlPlaneAddress: constants.ControlPlaneAlias,
 		KubeProxyOptions:    createKubeProxyOptions(k8s.ExtraOptions),
 	}
 
