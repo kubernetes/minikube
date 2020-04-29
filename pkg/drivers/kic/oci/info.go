@@ -216,15 +216,12 @@ type podmanSysInfo struct {
 // dockerSystemInfo returns docker system info --format '{{json .}}'
 func dockerSystemInfo() (dockerSysInfo, error) {
 	var ds dockerSysInfo
-
-	cmd := exec.Command(Docker, "system", "info", "--format", "{{json .}}")
-	out, err := cmd.CombinedOutput()
-
+	rr, err := runCmd(exec.Command(Docker, "system", "info", "--format", "{{json .}}"))
 	if err != nil {
 		return ds, errors.Wrap(err, "get docker system info")
 	}
 
-	if err := json.Unmarshal([]byte(strings.TrimSpace(string(out))), &ds); err != nil {
+	if err := json.Unmarshal([]byte(strings.TrimSpace(rr.Stdout.String())), &ds); err != nil {
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
 
@@ -234,12 +231,12 @@ func dockerSystemInfo() (dockerSysInfo, error) {
 // podmanSysInfo returns podman system info --format '{{json .}}'
 func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
-	cmd := exec.Command(Podman, "system", "info", "--format", "'{{json .}}'")
-	out, err := cmd.CombinedOutput()
+	rr, err := runCmd(exec.Command(Podman, "system", "info", "--format", "json"))
 	if err != nil {
 		return ps, errors.Wrap(err, "get podman system info")
 	}
-	if err := json.Unmarshal([]byte(strings.TrimSpace(string(out))), &ps); err != nil {
+
+	if err := json.Unmarshal([]byte(strings.TrimSpace(rr.Stdout.String())), &ps); err != nil {
 		return ps, errors.Wrapf(err, "unmarshal podman system info")
 	}
 	return ps, nil

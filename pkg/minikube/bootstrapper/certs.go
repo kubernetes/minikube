@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -190,7 +191,7 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 	apiServerIPs := append(
 		k8s.APIServerIPs,
 		[]net.IP{net.ParseIP(n.IP), serviceIP, net.ParseIP(oci.DefaultBindIPV4), net.ParseIP("10.0.0.1")}...)
-	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName)
+	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName, constants.ControlPlaneAlias)
 	apiServerAlternateNames := append(
 		apiServerNames,
 		util.GetAlternateDNS(k8s.DNSDomain)...)
