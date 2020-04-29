@@ -312,6 +312,10 @@ jobs:
       - name: Docker Info
         shell: bash
         run: |
+          curl -Lo check-config.sh https://github.com/moby/moby/blob/master/contrib/check-config.sh
+          chmod +x checl-config.sh
+          ./check-config.sh
+          echo "Checked config successfully"
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
