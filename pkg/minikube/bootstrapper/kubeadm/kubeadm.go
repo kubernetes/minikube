@@ -700,11 +700,6 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 
 // UpdateNode updates a node.
 func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
-	now := time.Now()
-	defer func() {
-		glog.Infof("reloadKubelet took %s", time.Since(now))
-	}()
-
 	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, n, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
@@ -750,6 +745,15 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	if err := copyFiles(k.c, files); err != nil {
 		return errors.Wrap(err, "copy")
+	}
+
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "control plane")
+	}
+
+	if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, net.ParseIP(cp.IP)); err != nil {
+		return errors.Wrap(err, "host alias")
 	}
 
 	if err := startKubeletIfRequired(k.c, sm); err != nil {
