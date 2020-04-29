@@ -71,7 +71,7 @@ var defaultClusterConfig = config.ClusterConfig{
 }
 
 func TestCreateHost(t *testing.T) {
-	download.Mock = true
+	download.EnableMock(true)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -116,7 +116,7 @@ func TestCreateHost(t *testing.T) {
 }
 
 func TestStartHostExists(t *testing.T) {
-	download.Mock = true
+	download.EnableMock(true)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -155,7 +155,7 @@ func TestStartHostExists(t *testing.T) {
 }
 
 func TestStartHostErrMachineNotExist(t *testing.T) {
-	download.Mock = true
+	download.EnableMock(true)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -202,7 +202,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 }
 
 func TestStartStoppedHost(t *testing.T) {
-	download.Mock = true
+	download.EnableMock(true)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -239,7 +239,7 @@ func TestStartStoppedHost(t *testing.T) {
 }
 
 func TestStartHost(t *testing.T) {
-	download.Mock = true
+	download.EnableMock(true)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -269,7 +269,7 @@ func TestStartHost(t *testing.T) {
 }
 
 func TestStartHostConfig(t *testing.T) {
-	download.Mock = true
+	download.EnableMock(true)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
