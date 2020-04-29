@@ -307,7 +307,7 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 }
 
 func warnAboutMultiNode() {
-	out.T(out.Tip, "Multi-node clusters are currently experimental and might exhibit unintended behavior.\nTo track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
+	out.WarningT("Multi-node clusters are currently experimental and might exhibit unintended behavior.\nTo track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
 func updateDriver(driverName string) {
