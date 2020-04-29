@@ -65,7 +65,7 @@ func validateMultiNodeStart(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Make sure minikube status shows 2 nodes
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -89,7 +89,7 @@ func validateAddNodeToMultiNode(ctx context.Context, t *testing.T, profile strin
 	}
 
 	// Make sure minikube status shows 3 nodes
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -121,7 +121,7 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 	}
 
 	// Make sure minikube status shows 2 running nodes and 1 stopped one
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil && rr.ExitCode != 7 {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -177,7 +177,7 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 	}
 
 	// Make sure status is back down to 2 hosts
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
