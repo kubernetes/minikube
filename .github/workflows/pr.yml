@@ -101,7 +101,7 @@ jobs:
           sudo apt-get install docker-ce docker-ce-cli containerd.io
           sudo docker run hello-world
           curl -Lo check-config.sh https://github.com/moby/moby/blob/master/contrib/check-config.sh
-          chmod +x checl-config.sh
+          chmod +x check-config.sh
           ./check-config.sh
           echo "Checked config successfully"
           echo "--------------------------"
@@ -218,7 +218,7 @@ jobs:
           sudo apt-get install docker-ce docker-ce-cli containerd.io
           sudo docker run hello-world
           curl -Lo check-config.sh https://github.com/moby/moby/blob/master/contrib/check-config.sh
-          chmod +x checl-config.sh
+          chmod +x check-config.sh
           ./check-config.sh
           echo "Checked config successfully"
           echo "--------------------------"
@@ -313,7 +313,7 @@ jobs:
         shell: bash
         run: |
           curl -Lo check-config.sh https://github.com/moby/moby/blob/master/contrib/check-config.sh
-          chmod +x checl-config.sh
+          chmod +x check-config.sh
           ./check-config.sh
           echo "Checked config successfully"
           echo "--------------------------"
@@ -425,7 +425,7 @@ jobs:
           sudo apt-get install docker-ce docker-ce-cli containerd.io
           sudo docker run hello-world
           curl -Lo check-config.sh https://github.com/moby/moby/blob/master/contrib/check-config.sh
-          chmod +x checl-config.sh
+          chmod +x check-config.sh
           ./check-config.sh
           echo "Checked config successfully"
           echo "--------------------------"
