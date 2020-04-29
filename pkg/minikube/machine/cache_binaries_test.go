@@ -83,7 +83,7 @@ func TestCopyBinary(t *testing.T) {
 }
 
 func TestCacheBinariesForBootstrapper(t *testing.T) {
-	download.Mock = true
+	download.EnableMock(true)
 
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)

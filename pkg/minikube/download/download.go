@@ -29,9 +29,13 @@ import (
 )
 
 var (
-	// Mock allows tests to toggle making actual HTTP downloads
-	Mock = false
+	mockMode = false
 )
+
+// EnableMock allows tests to selectively enable if downloads are mocked
+func EnableMock(b bool) {
+	mockMode = b
+}
 
 // download is a well-configured atomic download function
 func download(src string, dst string) error {
@@ -54,7 +58,7 @@ func download(src string, dst string) error {
 	}
 
 	// Don't bother with getter.MockGetter, as we don't provide a way to inspect the outcome
-	if Mock {
+	if mockMode {
 		glog.Infof("Mock download: %s -> %s", src, dst)
 		// Callers expect the file to exist
 		_, err := os.Create(dst)
@@ -62,7 +66,7 @@ func download(src string, dst string) error {
 	}
 
 	// Politely prevent tests from shooting themselves in the foot
-	if underTest() {
+	if withinUnitTest() {
 		return fmt.Errorf("unmocked download under test")
 	}
 
@@ -73,7 +77,12 @@ func download(src string, dst string) error {
 	return os.Rename(tmpDst, dst)
 }
 
-// detect if we are under test
-func underTest() bool {
+// withinUnitTset detects if we are in running within a unit-test
+func withinUnitTest() bool {
+	// Nope, it's the integration test
+	if flag.Lookup("minikube-start-args") != nil || strings.HasPrefix(filepath.Base(os.Args[0]), "e2e-") {
+		return false
+	}
+
 	return flag.Lookup("test.v") != nil || strings.HasSuffix(os.Args[0], "test")
 }
