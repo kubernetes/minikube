@@ -226,7 +226,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 			glog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
 		}
 		// the overlay is required for containerd and cri-o runtime: see #7428
-		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
+		if config.MultiNode(cfg) || (driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker") {
 			if err := k.applyKICOverlay(cfg); err != nil {
 				glog.Errorf("failed to apply kic overlay: %v", err)
 			}
