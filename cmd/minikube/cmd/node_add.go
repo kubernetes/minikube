@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -52,6 +53,11 @@ var nodeAddCmd = &cobra.Command{
 			Worker:            worker,
 			ControlPlane:      cp,
 			KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		}
+
+		// Make sure to decrease the default amount of memory we use per VM if this is the first worker node
+		if len(cc.Nodes) == 1 && viper.GetString(memory) == "" {
+			cc.Memory = 2200
 		}
 
 		if err := node.Add(cc, n); err != nil {
