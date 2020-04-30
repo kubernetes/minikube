@@ -62,9 +62,9 @@ func TestStartStop(t *testing.T) {
 			}},
 			{"containerd", constants.DefaultKubernetesVersion, []string{
 				"--container-runtime=containerd",
-				"--docker-opt",
-				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
+				"--network-plugin=cni",
+				"--enable-default-cni",
 			}},
 			{"crio", "v1.15.7", []string{
 				"--container-runtime=crio",
@@ -135,9 +135,6 @@ func TestStartStop(t *testing.T) {
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 				} else {
-					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(7)); err != nil {
-						t.Fatalf("failed waiting for pod 'busybox' post-stop-start: %v", err)
-					}
 					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
 						t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 					}
@@ -179,7 +176,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
 
 	// schedule a pod to assert persistence
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
