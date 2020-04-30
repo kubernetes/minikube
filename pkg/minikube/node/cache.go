@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -106,7 +107,14 @@ func beginDownloadKicArtifacts(g *errgroup.Group, driver string, cRuntime string
 			out.T(out.Pulling, "Pulling base image ...")
 			g.Go(func() error {
 				glog.Infof("Downloading %s to local daemon", baseImage)
-				return image.WriteImageToDaemon(baseImage)
+				err := image.WriteImageToDaemon(baseImage)
+				if err != nil {
+					// registry/driver package uses viper.Set
+					viper.Set("base-image", kic.BaseImageFallBack)
+					glog.Infof("failed to download %s will try to download the fallback image from %s", baseImage, kic.BaseImageFallBack)
+					return image.WriteImageToDaemon(kic.BaseImageFallBack)
+				}
+				return nil
 			})
 		}
 	} else {
