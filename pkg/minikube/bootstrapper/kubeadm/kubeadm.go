@@ -288,7 +288,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
 		glog.Infof("found existing configuration files, will attempt cluster restart")
-		rerr := k.restartCluster(cfg)
+		rerr := k.restartControlPlane(cfg)
 		if rerr == nil {
 			return nil
 		}
@@ -351,7 +351,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	out.T(out.HealthCheck, "Verifying Kubernetes components...")
 
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
+	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &n, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
 	}
@@ -468,7 +468,7 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	glog.Infof("restartCluster start")
 
 	start := time.Now()
@@ -497,7 +497,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "primary control plane")
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &cp, cfg.Driver)
+	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "control plane")
 	}
@@ -578,15 +578,18 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 }
 
 // JoinCluster adds a node to an existing cluster
-func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
+func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string, preExists bool) error {
 	start := time.Now()
 	glog.Infof("JoinCluster: %+v", cc)
 	defer func() {
 		glog.Infof("JoinCluster complete in %s", time.Since(start))
 	}()
 
+	if preExists {
+		return k.restartWorker(cc, joinCmd)
+	}
 	// Join the master by specifying its token
-	joinCmd = fmt.Sprintf("%s --v=10 --node-name=%s", joinCmd, driver.MachineName(cc, n))
+	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, driver.MachineName(cc, n))
 	out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 	if err != nil {
 		return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out)
@@ -599,8 +602,27 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	return nil
 }
 
-// GenerateToken creates a token and returns the appropriate kubeadm join command to run
-func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
+func (k *Bootstrapper) restartWorker(cc config.ClusterConfig, token string) error {
+	cp, err := config.PrimaryControlPlane(&cc)
+	if err != nil {
+		return errors.Wrap(err, "getting primary control plane")
+	}
+	host, _, port, err := driver.ControlPlaneEndpoint(&cc, &cp, cc.Driver)
+	if err != nil {
+		return errors.Wrap(err, "getting control plane endpoint")
+	}
+
+	cmd := fmt.Sprintf("%s join phase kubelet-start %s --token %s", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), net.JoinHostPort(host, strconv.Itoa(port)), token)
+	_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
+	if err != nil {
+		return errors.Wrap(err, "running join phase kubelet-start")
+	}
+	return nil
+}
+
+// GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
+func (k *Bootstrapper) GenerateToken(cc *config.ClusterConfig) (string, error) {
+	// If we're starting a new node, create a new token and return the full join command
 	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(tokenCmd)
 	if err != nil {
@@ -610,7 +632,7 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
-
+	fmt.Println(joinCmd)
 	return joinCmd, nil
 }
 
