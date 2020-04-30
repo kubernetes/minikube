@@ -27,9 +27,9 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default kubernetes version
-	DefaultKubernetesVersion = "v1.18.0"
+	DefaultKubernetesVersion = "v1.18.1"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
-	NewestKubernetesVersion = "v1.18.0"
+	NewestKubernetesVersion = "v1.18.1"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.12.0"
 	// DefaultClusterName is the default nane for the k8s cluster
