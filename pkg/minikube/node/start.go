@@ -169,12 +169,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
+		joinCmd, err := cpBs.GenerateToken(*starter.Cfg, starter.PreExists)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating join token")
 		}
 
-		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
+		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd, starter.PreExists); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
 	}
@@ -307,7 +307,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 }
 
 func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, h.DriverName)
+	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, h.DriverName)
 	if err != nil {
 		return "", err
 	}
