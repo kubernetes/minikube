@@ -131,6 +131,8 @@ If the `minikube tunnel` shuts down in an abrupt manner, it may leave orphaned n
 minikube tunnel --cleanup
 ````
 
+NOTE: `--cleanup` flag's default value is `true`.
+
 ### Avoiding password prompts
 
 Adding a route requires root privileges for the user, and thus there are differences in how to run `minikube tunnel` depending on the OS. If you want to avoid entering the root password, consider setting NOPASSWD for "ip" and "route" commands:
