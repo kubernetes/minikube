@@ -109,7 +109,8 @@ func beginDownloadKicArtifacts(g *errgroup.Group, driver string, cRuntime string
 				glog.Infof("Downloading %s to local daemon", baseImage)
 				err := image.WriteImageToDaemon(baseImage)
 				if err != nil {
-					// registry/driver package uses viper.Set
+					// TODO : remove this global set when this issue is closed
+					// https://github.com/kubernetes/minikube/issues/7944
 					viper.Set("base-image", kic.BaseImageFallBack)
 					glog.Infof("failed to download %s will try to download the fallback image from %s", baseImage, kic.BaseImageFallBack)
 					return image.WriteImageToDaemon(kic.BaseImageFallBack)
