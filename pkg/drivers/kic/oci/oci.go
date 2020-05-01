@@ -90,15 +90,12 @@ func DeleteContainer(ociBin string, name string) error {
 }
 
 // PrepareContainerNode sets up the container node before CreateContainerNode is called.
-// For the docker runtime, it creates a docker volume which will be mounted into kic
+// For the container runtime, it creates a volume which will be mounted into kic
 func PrepareContainerNode(p CreateParams) error {
-	if p.OCIBinary != Docker {
-		return nil
-	}
-	if err := createDockerVolume(p.Name, p.Name); err != nil {
+	if err := createVolume(p.OCIBinary, p.Name, p.Name); err != nil {
 		return errors.Wrapf(err, "creating volume for %s container", p.Name)
 	}
-	glog.Infof("Successfully created a docker volume %s", p.Name)
+	glog.Infof("Successfully created a %s volume %s", p.OCIBinary, p.Name)
 	return nil
 }
 
