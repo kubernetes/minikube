@@ -95,7 +95,7 @@ func TestVersionUpgrade(t *testing.T) {
 		t.Errorf("FAILED: status = %q; want = %q", got, state.Stopped.String())
 	}
 
-	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube HEAD with newest k8s version. args: %s : %v", rr.Command(), err)
@@ -121,13 +121,13 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	t.Logf("Attempting to downgrade Kubernetes (should fail)")
-	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	if rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), args...)); err == nil {
 		t.Fatalf("downgrading kubernetes should not be allowed. expected to see error but got %v for %q", err, rr.Command())
 	}
 
 	t.Logf("Attempting restart after unsuccessful downgrade")
-	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("start after failed upgrade: %v", err)
