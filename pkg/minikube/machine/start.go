@@ -19,6 +19,7 @@ package machine
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -32,6 +33,7 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -242,4 +244,19 @@ func showHostInfo(cfg config.ClusterConfig) {
 		return
 	}
 	out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
+}
+
+// AddHostAlias makes fine adjustments to pod resources that aren't possible via kubeadm config.
+func AddHostAlias(c command.Runner, name string, ip net.IP) error {
+	glog.Infof("checking")
+	record := fmt.Sprintf("%s\t%s", ip, name)
+	if _, err := c.RunCmd(exec.Command("grep", record+"$", "/etc/hosts")); err == nil {
+		return nil
+	}
+
+	script := fmt.Sprintf(`{ grep -v '\t%s$' /etc/hosts; echo "%s"; } > /tmp/h.$$; sudo cp /tmp/h.$$ /etc/hosts`, name, record)
+	if _, err := c.RunCmd(exec.Command("/bin/bash", "-c", script)); err != nil {
+		return errors.Wrap(err, "hosts update")
+	}
+	return nil
 }

@@ -108,6 +108,9 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	oc.Stdout = outb
 	oc.Stderr = errb
 
+	oc = oci.PrefixCmd(oc)
+	glog.Infof("Args: %v", oc.Args)
+
 	start := time.Now()
 
 	err := oc.Run()
@@ -199,14 +202,14 @@ func (k *kicRunner) chmod(dst string, perm string) error {
 
 // Podman cp command doesn't match docker and doesn't have -a
 func copyToPodman(src string, dest string) error {
-	if out, err := exec.Command(oci.Podman, "cp", src, dest).CombinedOutput(); err != nil {
+	if out, err := oci.PrefixCmd(exec.Command(oci.Podman, "cp", src, dest)).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "podman copy %s into %s, output: %s", src, dest, string(out))
 	}
 	return nil
 }
 
 func copyToDocker(src string, dest string) error {
-	if out, err := exec.Command(oci.Docker, "cp", "-a", src, dest).CombinedOutput(); err != nil {
+	if out, err := oci.PrefixCmd(exec.Command(oci.Docker, "cp", "-a", src, dest)).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "docker copy %s into %s, output: %s", src, dest, string(out))
 	}
 	return nil

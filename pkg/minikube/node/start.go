@@ -88,6 +88,14 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
+	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
+	hostIP, err := cluster.HostIP(starter.Host)
+	if err != nil {
+		glog.Errorf("Unable to get host IP: %v", err)
+	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
+		glog.Errorf("Unable to add host alias: %v", err)
+	}
+
 	var bs bootstrapper.Bootstrapper
 	var kcs *kubeconfig.Settings
 	if apiServer {
@@ -156,20 +164,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 
 		// Make sure to use the command runner for the control plane to generate the join token
-		cp, err := config.PrimaryControlPlane(starter.Cfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting primary control plane")
-		}
-		h, err := machine.LoadHost(starter.MachineAPI, driver.MachineName(*starter.Cfg, cp))
-		if err != nil {
-			return nil, errors.Wrap(err, "getting control plane host")
-		}
-		cpr, err := machine.CommandRunner(h)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting control plane command runner")
-		}
-
-		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, cpr)
+		cpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
@@ -201,7 +196,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (comman
 	}
 
 	if driver.IsKIC(cc.Driver) {
-		beginDownloadKicArtifacts(&kicGroup)
+		beginDownloadKicArtifacts(&kicGroup, cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 	}
 
 	if !driver.BareMetal(cc.Driver) {
@@ -209,7 +204,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (comman
 	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
+	// Hence, SaveProfile must be called before startHost, and again afterwards when we know the IP.
 	if err := config.SaveProfile(viper.GetString(config.ProfileName), cc); err != nil {
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
 	}
@@ -239,7 +234,8 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		disableOthers = false
 	}
 
-	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
+	// Preload is overly invasive for bare metal, and caching is not meaningful.
+	// KIC handles preload elsewhere.
 	if driver.IsVM(cc.Driver) {
 		if err := cr.Preload(cc.KubernetesConfig); err != nil {
 			switch err.(type) {
@@ -255,7 +251,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	err = cr.Enable(disableOthers)
+	err = cr.Enable(disableOthers, viper.GetBool("force-systemd"))
 	if err != nil {
 		debug.PrintStack()
 		exit.WithError("Failed to enable container runtime", err)

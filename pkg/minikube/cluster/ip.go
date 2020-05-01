@@ -30,8 +30,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
-// GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
-func GetVMHostIP(host *host.Host) (net.IP, error) {
+// HostIP gets the ip address to be used for mapping host -> VM and VM -> host
+func HostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
 	case driver.Docker:
 		return oci.RoutableHostIPFromInside(oci.Docker, host.Name)
@@ -72,13 +72,15 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error converting VM IP address to IPv4 address")
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
+	case driver.None:
+		return net.ParseIP("127.0.0.1"), nil
 	default:
-		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
+		return []byte{}, fmt.Errorf("HostIP not yet implemented for %q driver", host.DriverName)
 	}
 }
 
-// GetHostDriverIP gets the ip address of the current minikube cluster
-func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
+// DriverIP gets the ip address of the current minikube cluster
+func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	host, err := machine.LoadHost(api, machineName)
 	if err != nil {
 		return nil, err

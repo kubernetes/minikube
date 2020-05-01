@@ -23,16 +23,10 @@ import (
 )
 
 const (
-	// DefaultNetwork is the Docker default bridge network named "bridge"
-	// (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
-	DefaultNetwork = "bridge"
-	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
-	DefaultPodCIDR = "10.244.0.0/16"
-
 	// Version is the current version of kic
 	Version = "v0.0.10"
 	// SHA of the kic base image
-	baseImageSHA = "0c3666c7dacb3c7170a86b237d0d15d37afb5a6d2f0c45046546b5c09f40378c"
+	baseImageSHA = "f58e0c4662bac8a9b5dda7984b185bad8502ade5d9fa364bf2755d636ab51438"
 	// OverlayImage is the cni plugin used for overlay image, created by kind.
 	// CNI plugin image used for kic drivers created by kind.
 	OverlayImage = "kindest/kindnetd:0.5.4"

@@ -29,7 +29,6 @@ func TestMultiNode(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver does not support multinode")
 	}
-	MaybeParallel(t)
 
 	type validatorFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("multinode")
@@ -58,14 +57,14 @@ func TestMultiNode(t *testing.T) {
 
 func validateMultiNodeStart(ctx context.Context, t *testing.T, profile string) {
 	// Start a 2 node cluster with the --nodes param
-	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--nodes=2"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory=2200", "--nodes=2"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
 	}
 
 	// Make sure minikube status shows 2 nodes
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -89,7 +88,7 @@ func validateAddNodeToMultiNode(ctx context.Context, t *testing.T, profile strin
 	}
 
 	// Make sure minikube status shows 3 nodes
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -121,7 +120,7 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 	}
 
 	// Make sure minikube status shows 2 running nodes and 1 stopped one
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil && rr.ExitCode != 7 {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -177,7 +176,7 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 	}
 
 	// Make sure status is back down to 2 hosts
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
