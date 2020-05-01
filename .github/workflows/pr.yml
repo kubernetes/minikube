@@ -519,7 +519,7 @@ jobs:
       JOB_NAME: "functional_docker_windows"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: windows-2019-docker
+    runs-on: [self-hosted, Windows, X64, docker]
     steps:
       - name: Download Binaries
         uses: actions/download-artifact@v1
