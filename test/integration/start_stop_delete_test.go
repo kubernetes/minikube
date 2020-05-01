@@ -65,6 +65,7 @@ func TestStartStop(t *testing.T) {
 				"--apiserver-port=8444",
 				"--network-plugin=cni",
 				"--enable-default-cni",
+				"--extra-config=kubeadm.pod-network-cidr=10.244.0.0/16",
 			}},
 			{"crio", "v1.15.7", []string{
 				"--container-runtime=crio",

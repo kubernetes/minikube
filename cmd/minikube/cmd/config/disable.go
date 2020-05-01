@@ -18,7 +18,9 @@ package config
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -33,6 +35,12 @@ var addonsDisableCmd = &cobra.Command{
 		}
 
 		addon := args[0]
+		profile := viper.GetString(config.ProfileName)
+
+		// check addon status before enabling/disabling it
+		if addons.AlreadySet(addon, profile, false) {
+			out.T(out.AddonEnable, "The '{{.addonName}}' addon is already enabled", out.V{"addonName": addon})
+		}
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
 		if err != nil {
 			exit.WithError("disable failed", err)

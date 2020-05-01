@@ -130,14 +130,6 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	}
 	addon := assets.Addons[name]
 
-	// check addon status before enabling/disabling it
-	if isAddonAlreadySet(cc, addon, enable) {
-		glog.Warningf("addon %s should already be in state %v", name, val)
-		if !enable {
-			return nil
-		}
-	}
-
 	// to match both ingress and ingress-dns adons
 	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
 		exit.UsageT(`Due to {{.driver_name}} networking limitations on {{.os_name}}, {{.addon_name}} addon is not supported for this driver.
@@ -199,16 +191,23 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	return enableOrDisableAddonInternal(cc, addon, cmd, data, enable)
 }
 
-func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
-	enabled := addon.IsEnabled(cc)
+// AlreadySet returns true if the addons is already set
+func AlreadySet(addon, profile string, enable bool) bool {
+	a := assets.Addons[addon]
+	if a == nil {
+		return false
+	}
+	cc, err := config.Load(profile)
+	if err != nil {
+		return false
+	}
+	enabled := a.IsEnabled(cc)
 	if enabled && enable {
 		return true
 	}
-
 	if !enabled && !enable {
 		return true
 	}
-
 	return false
 }
 
