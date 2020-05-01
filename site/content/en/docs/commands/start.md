@@ -65,9 +65,9 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.10.0-beta.1.iso,https://github.com/kubernetes/minikube/releases/download/v1.10.0-beta.1/minikube-v1.10.0-beta.1.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.10.0-beta.1.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.10.0-beta.2.iso,https://github.com/kubernetes/minikube/releases/download/v1.10.0-beta.2/minikube-v1.10.0-beta.2.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.10.0-beta.2.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.18.0, 'latest' for v1.18.0). Defaults to 'stable'.
+      --kubernetes-version string         The kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.18.1, 'latest' for v1.18.1). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM network name. (kvm2 driver only) (default "default")

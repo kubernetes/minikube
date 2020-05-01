@@ -21,7 +21,7 @@ minikube tunnel [flags]
 ### Options
 
 ```
-  -c, --cleanup   call with cleanup=true to remove old tunnels
+  -c, --cleanup   call with cleanup=true to remove old tunnels (default true)
   -h, --help      help for tunnel
 ```
 
