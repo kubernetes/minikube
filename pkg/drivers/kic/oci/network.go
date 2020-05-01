@@ -31,14 +31,19 @@ import (
 // RoutableHostIPFromInside returns the ip/dns of the host that container lives on
 // is routable from inside the container
 func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, error) {
-	if ociBin != Docker {
-		return nil, fmt.Errorf("RoutableHostIPFromInside is currently only implemented for docker https://github.com/containers/libpod/issues/5205")
+	if ociBin == Docker {
+		if runtime.GOOS == "linux" {
+			return dockerGatewayIP()
+		}
+		// for windows and mac, the gateway ip is not routable so we use dns trick.
+		return digDNS(ociBin, containerName, "host.docker.internal")
 	}
+
 	if runtime.GOOS == "linux" {
-		return dockerGatewayIP()
+		return containerGatewayIP(ociBin, containerName)
 	}
-	// for windows and mac, the gateway ip is not routable so we use dns trick.
-	return digDNS(ociBin, containerName, "host.docker.internal")
+
+	return nil, fmt.Errorf("RoutableHostIPFromInside is currently only implemented for linux")
 }
 
 // digDNS will get the IP record for a dns
@@ -70,6 +75,17 @@ func dockerGatewayIP() (net.IP, error) {
 
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
 	glog.Infof("got host ip for mount in container by inspect docker network: %s", ip.String())
+	return ip, nil
+}
+
+// containerGatewayIP gets the default gateway ip for the container
+func containerGatewayIP(ociBin, containerName string) (net.IP, error) {
+	rr, err := runCmd(exec.Command(ociBin, "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
+	if err != nil {
+		return nil, errors.Wrapf(err, "inspect gateway")
+	}
+	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
+	glog.Infof("got host ip for mount in container by inspecting container: %s", ip.String())
 	return ip, nil
 }
 
