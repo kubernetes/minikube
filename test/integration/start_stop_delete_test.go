@@ -135,10 +135,8 @@ func TestStartStop(t *testing.T) {
 
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else {
-					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
-						t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
-					}
+				} else if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
+					t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 				}
 
 				got := Status(ctx, t, Target(), profile, "Host")
