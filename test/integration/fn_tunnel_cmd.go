@@ -178,6 +178,9 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	url = "http://" + domain
 	if err = retry.Expo(fetch, 3*time.Second, Seconds(30), 10); err != nil {
 		t.Errorf("failed to hit nginx with DNS forwarded %q: %v", url, err)
+		// debug more DNS setting information: https://github.com/kubernetes/minikube/issues/7809
+		rr, err = Run(t, exec.CommandContext(ctx, "scutil", "--dns"))
+		t.Logf("DNS Setting Detail: %s", rr.Stdout.String())
 	}
 
 	want = "Welcome to nginx!"
