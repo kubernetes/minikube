@@ -180,12 +180,13 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh.exe
           mkdir -p /usr/loca/bin
           install gopogh.exe /usr/local/bin/gopogh
+          docker info
+          go version
       - name: Run Integration Test
         continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
-          docker info
           cd minikube_binaries
           mkdir -p report
           mkdir -p testhome
