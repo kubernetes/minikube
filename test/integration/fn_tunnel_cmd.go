@@ -140,8 +140,6 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	url = "http://nginx-svc.default.svc.cluster.local."
 	if err = retry.Expo(fetch, 3*time.Second, Seconds(30), 10); err != nil {
 		t.Errorf("failed to hit nginx with DNS forwarded %q: %v", url, err)
-		// debug more information for: https://github.com/kubernetes/minikube/issues/7809
-		clusterLogs(t, profile)
 	}
 
 	want = "Welcome to nginx!"
