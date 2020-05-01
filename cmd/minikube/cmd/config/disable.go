@@ -39,7 +39,7 @@ var addonsDisableCmd = &cobra.Command{
 
 		// check addon status before enabling/disabling it
 		if addons.AlreadySet(addon, profile, false) {
-			out.T(out.AddonEnable, "The '{{.addonName}}' addon is already enabled", out.V{"addonName": addon})
+			out.T(out.AddonEnable, "The '{{.addonName}}' addon is already disabled", out.V{"addonName": addon})
 		}
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
 		if err != nil {
