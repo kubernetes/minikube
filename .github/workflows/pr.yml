@@ -178,8 +178,8 @@ jobs:
           choco install -y jq || true
           choco install -y golang || true
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh.exe
-          sudo mkdir -p /usr/loca/bin
-          sudo install gopogh.exe /usr/local/bin/gopogh
+          mkdir -p /usr/loca/bin
+          install gopogh.exe /usr/local/bin/gopogh
       - name: Run Integration Test
         continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
