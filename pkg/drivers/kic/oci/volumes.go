@@ -66,7 +66,7 @@ func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []err
 // allVolumesByLabel returns name of all docker volumes by a specific label
 // will not return error if there is no volume found.
 func allVolumesByLabel(ociBin string, label string) ([]string, error) {
-	rr, err := runCmd(exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}"))
+	rr, err := runCmd(exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "'{{.Name}}'"))
 	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
 	var vols []string
 	for s.Scan() {

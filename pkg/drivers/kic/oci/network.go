@@ -61,7 +61,7 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 // dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
 // gets the ip from user's host docker
 func dockerGatewayIP() (net.IP, error) {
-	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "'{{.ID}}'"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "get network bridge")
 	}
@@ -80,7 +80,7 @@ func dockerGatewayIP() (net.IP, error) {
 
 // containerGatewayIP gets the default gateway ip for the container
 func containerGatewayIP(ociBin, containerName string) (net.IP, error) {
-	rr, err := runCmd(exec.Command(ociBin, "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
+	rr, err := runCmd(exec.Command(ociBin, "inspect", "--format", "'{{.NetworkSettings.Gateway}}'", containerName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect gateway")
 	}
@@ -99,7 +99,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 
 	if ociBin == Podman {
 		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
-		rr, err = runCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID))
+		rr, err = runCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("'{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}'", fmt.Sprint(contPort)), ociID))
 		if err != nil {
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
@@ -132,7 +132,7 @@ func ContainerIPs(ociBin string, name string) (string, string, error) {
 // podmanConttainerIP returns ipv4, ipv6 of container or error
 func podmanConttainerIP(name string) (string, string, error) {
 	rr, err := runCmd(exec.Command(Podman, "inspect",
-		"-f", "{{.NetworkSettings.IPAddress}}",
+		"-f", "'{{.NetworkSettings.IPAddress}}'",
 		name))
 	if err != nil {
 		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
@@ -147,7 +147,7 @@ func podmanConttainerIP(name string) (string, string, error) {
 // dockerContainerIP returns ipv4, ipv6 of container or error
 func dockerContainerIP(name string) (string, string, error) {
 	// retrieve the IP address of the node using docker inspect
-	lines, err := inspect(Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	lines, err := inspect(Docker, name, "'{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}'")
 	if err != nil {
 		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
 	}
