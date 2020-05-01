@@ -180,6 +180,9 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to hit nginx with DNS forwarded %q: %v", url, err)
 		// debug more DNS setting information: https://github.com/kubernetes/minikube/issues/7809
 		rr, err = Run(t, exec.CommandContext(ctx, "scutil", "--dns"))
+		if err != nil {
+			t.Errorf("failed to check dns configuration: %v", err)
+		}
 		t.Logf("DNS Setting Detail: %s", rr.Stdout.String())
 	}
 
