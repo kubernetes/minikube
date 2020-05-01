@@ -56,8 +56,11 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		// Make sure to decrease the default amount of memory we use per VM if this is the first worker node
-		if len(cc.Nodes) == 1 && viper.GetString(memory) == "" {
-			cc.Memory = 2200
+		if len(cc.Nodes) == 1 {
+			warnAboutMultiNode()
+			if viper.GetString(memory) == "" {
+				cc.Memory = 2200
+			}
 		}
 
 		if err := node.Add(cc, n); err != nil {
