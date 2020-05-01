@@ -158,6 +158,7 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+  # running on a self-hosted VM provided by CNCF sig-windows. runs in a GitBash terminal for linux command format.
   functional_test_docker_windows:
     needs: [build_minikube]
     env:
@@ -174,8 +175,8 @@ jobs:
       - name: Install Dependencies
         shell: bash
         run: |
-          choco install -y jq
-          choco install -y golang
+          choco install -y jq || true
+          choco install -y golang || true
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh.exe
           sudo mkdir -p /usr/loca/bin
           sudo install gopogh.exe /usr/local/bin/gopogh
