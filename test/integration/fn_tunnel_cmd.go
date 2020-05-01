@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os/exec"
 	"path/filepath"
@@ -33,7 +34,9 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tunnel"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -120,6 +123,8 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
+
+	// Test.1 access through loadbalancer ingress IP
 	if err = retry.Expo(fetch, 3*time.Second, Minutes(2), 13); err != nil {
 		t.Errorf("failed to hit nginx at %q: %v", url, err)
 	}
@@ -136,8 +141,41 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		return
 	}
 
-	// use FQDN to avoid extra DNS query lookup
-	url = "http://nginx-svc.default.svc.cluster.local."
+	// Get kube-dns Cluster IP
+	c, err := config.Load(profile)
+	if err != nil {
+		t.Errorf("failed to load cluster config: %v", err)
+	}
+	_, ipNet, err := net.ParseCIDR(c.KubernetesConfig.ServiceCIDR)
+	if err != nil {
+		t.Errorf("failed to parse service CIDR: %v", err)
+	}
+	ip, err := util.GetDNSIP(ipNet.String())
+	if err != nil {
+		t.Errorf("failed to get kube-dns IP: %v", err)
+	}
+	dnsIP := "@" + ip.String()
+
+	// Test.2 DNS resolution (experimental): https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
+	// use absolute domain name to avoid extra DNS query lookup
+	domain := "nginx-svc.default.svc.cluster.local."
+	rr, err = Run(t, exec.CommandContext(ctx, "dig", "+time=5", "+tries=3", dnsIP, domain, "A"))
+	if err != nil {
+		t.Errorf("failed to resolve DNS name: %v", err)
+	}
+	if rr.Stderr.String() != "" {
+		t.Errorf("failed to resolve DNS name: %v", rr.Stderr.String())
+	}
+
+	want = "ANSWER: 1"
+	if strings.Contains(rr.Stdout.String(), want) {
+		t.Logf("DNS resolution for %s is working!", domain)
+	} else {
+		t.Errorf("expected body to contain %q, but got *%q*", want, rr.Stdout.String())
+	}
+
+	// Test.3 access through DNS resolution
+	url = "http://" + domain
 	if err = retry.Expo(fetch, 3*time.Second, Seconds(30), 10); err != nil {
 		t.Errorf("failed to hit nginx with DNS forwarded %q: %v", url, err)
 	}
