@@ -156,20 +156,30 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	dnsIP := "@" + ip.String()
 
-	// Test.2 DNS resolution (experimental): https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
+	// Test.2-1 DNS resolution by dig (experimental): https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
 	// use absolute domain name to avoid extra DNS query lookup
 	domain := "nginx-svc.default.svc.cluster.local."
 	rr, err = Run(t, exec.CommandContext(ctx, "dig", "+time=5", "+tries=3", dnsIP, domain, "A"))
 	if err != nil {
 		t.Errorf("failed to resolve DNS name: %v", err)
 	}
-	if rr.Stderr.String() != "" {
-		t.Errorf("failed to resolve DNS name: %v", rr.Stderr.String())
-	}
 
 	want = "ANSWER: 1"
 	if strings.Contains(rr.Stdout.String(), want) {
-		t.Logf("DNS resolution for %s is working!", domain)
+		t.Logf("DNS resolution by dig for %s is working!", domain)
+	} else {
+		t.Errorf("expected body to contain %q, but got *%q*", want, rr.Stdout.String())
+	}
+
+	// Test.2-2 DNS resolution by dscacheutil (experimental): https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
+	rr, err = Run(t, exec.CommandContext(ctx, "dscacheutil", "-q", "host", "-a", "name", domain))
+	if err != nil {
+		t.Errorf("failed to resolve DNS name: %v", err)
+	}
+
+	want = hostname
+	if strings.Contains(rr.Stdout.String(), want) {
+		t.Logf("DNS resolution by dscacheutil for %s is working!", domain)
 	} else {
 		t.Errorf("expected body to contain %q, but got *%q*", want, rr.Stdout.String())
 	}
@@ -178,12 +188,12 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	url = "http://" + domain
 	if err = retry.Expo(fetch, 3*time.Second, Seconds(30), 10); err != nil {
 		t.Errorf("failed to hit nginx with DNS forwarded %q: %v", url, err)
-		// debug more DNS setting information: https://github.com/kubernetes/minikube/issues/7809
-		rr, err = Run(t, exec.CommandContext(ctx, "scutil", "--dns"))
+		// debug: clear DNS cache: https://github.com/kubernetes/minikube/issues/7809
+		_, err = Run(t, exec.CommandContext(ctx, "dscacheutil", "-flushcache"))
 		if err != nil {
-			t.Errorf("failed to check dns configuration: %v", err)
+			t.Errorf("failed to clear DNS cache for macOS: %v", err)
 		}
-		t.Logf("DNS Setting Detail: %s", rr.Stdout.String())
+		t.Logf("cleared DNS cache for macOS")
 	}
 
 	want = "Welcome to nginx!"
