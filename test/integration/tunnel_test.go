@@ -61,14 +61,14 @@ func TestTunnel(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"Start", validateMinikubeStart},
-			{"StartTunnel", validateTunnelStart},
-			{"WaitService", validateServiceStable},
-			{"AccessDirect", validateAccessDirect},
-			{"DNSResolutionByDig", validateDNSDig},
-			{"DNSResolutionByDscacheutil", validateDNSDscacheutil},
-			{"AccessThroughDNS", validateAccessDNS},
-			{"DeleteTunnel", validateTunnelDelete},
+			{"StartWithProxy", validateStartWithProxy},             // Start cluster same as TestFunctional
+			{"StartTunnel", validateTunnelStart},                   // Start tunnel
+			{"WaitService", validateServiceStable},                 // Wait for service is stable
+			{"AccessDirect", validateAccessDirect},                 // Access test for loadbalancer IP
+			{"DNSResolutionByDig", validateDNSDig},                 // DNS forwarding test by dig
+			{"DNSResolutionByDscacheutil", validateDNSDscacheutil}, // DNS forwarding test by dscacheutil
+			{"AccessThroughDNS", validateAccessDNS},                // Access test for absolute dns name
+			{"DeleteTunnel", validateTunnelDelete},                 // Stop tunnel and delete cluster
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -115,17 +115,6 @@ func getKubeDNSIP(t *testing.T, profile string) string {
 	}
 
 	return ip.String()
-}
-
-// validateMinikubeStart starts minikube cluster
-func validateMinikubeStart(ctx context.Context, t *testing.T, profile string) {
-	checkRoutePassword(t)
-
-	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=all"}, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
-	}
 }
 
 // validateTunnelStart starts `minikube tunnel`
