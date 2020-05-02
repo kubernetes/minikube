@@ -124,7 +124,6 @@ func TestFunctional(t *testing.T) {
 			{"ServiceCmd", validateServiceCmd},
 			{"AddonsCmd", validateAddonsCmd},
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
-			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
