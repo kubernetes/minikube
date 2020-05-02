@@ -121,6 +121,8 @@ func CreateContainerNode(p CreateParams) error {
 		// logs,pods be stroed on  filesystem vs inside container,
 		// some k8s things want /lib/modules
 		"-v", "/lib/modules:/lib/modules:ro",
+		// https://github.com/moby/moby/issues/15973
+		"-v", "/sys:/sys:ro",
 		"--hostname", p.Name, // make hostname match container name
 		"--name", p.Name, // ... and set the container name
 		"--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"),
