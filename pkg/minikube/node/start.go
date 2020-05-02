@@ -169,7 +169,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(*starter.Cfg, starter.PreExists)
+		joinCmd, err := cpBs.GenerateToken(starter.Cfg, starter.Node)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating join token")
 		}

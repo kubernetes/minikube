@@ -278,7 +278,11 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 	}
 
 	numNodes := viper.GetInt(nodes)
-	if numNodes == 1 && existing != nil {
+	if existing != nil {
+		if numNodes > 1 {
+			// We ignore the --nodes parameter if we're restarting an existing cluster
+			out.WarningT(`The cluster {{.cluster}} already exists which means the --nodes parameter will be ignored. Use "minikube node add" to add nodes to an existing cluster.`, out.V{"cluster": existing.Name})
+		}
 		numNodes = len(existing.Nodes)
 	}
 	if numNodes > 1 {
@@ -294,7 +298,7 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 					KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 				}
 				out.Ln("") // extra newline for clarity on the command line
-				err := node.Add(starter.Cfg, n)
+				_, err := node.Add(starter.Cfg, n)
 				if err != nil {
 					return nil, errors.Wrap(err, "adding node")
 				}
