@@ -57,7 +57,6 @@ var tunnelCmd = &cobra.Command{
 			if err := manager.CleanupNotRunningTunnels(); err != nil {
 				glog.Errorf("error cleaning up: %s", err)
 			}
-			return
 		}
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
@@ -104,5 +103,5 @@ var tunnelCmd = &cobra.Command{
 }
 
 func init() {
-	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", false, "call with cleanup=true to remove old tunnels")
+	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", true, "call with cleanup=true to remove old tunnels")
 }
