@@ -75,7 +75,7 @@ func TestForceSystemd(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
-	args := append([]string{"start", "-p", profile, "--force-systemd", "--alsologtostderr", "-v=5"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=1800", "--force-systemd", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)

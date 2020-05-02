@@ -1,5 +1,45 @@
 # Release Notes
 
+## Version 1.10.0-beta.2 - 2020-04-29
+
+Improvements:
+
+* Upgrade default Kubernetes to v1.18.1 [#7714](https://github.com/kubernetes/minikube/pull/7714)
+* Automatically apply CNI on multinode clusters [#7930](https://github.com/kubernetes/minikube/pull/7930)
+* Add Metal LB addon [#7308](https://github.com/kubernetes/minikube/pull/7308)
+* Add `(host|control-plane).minikube.internal` to /etc/hosts [#7247](https://github.com/kubernetes/minikube/pull/7247)
+* Add "sudo" to podman calls [#7631](https://github.com/kubernetes/minikube/pull/7631)
+* Add list option for "minikube node" command [#7851](https://github.com/kubernetes/minikube/pull/7851)
+* Add option to force docker to use systemd as cgroup manager [#7815](https://github.com/kubernetes/minikube/pull/7815)
+* Improve auto-select memory for multinode clusters [#7928](https://github.com/kubernetes/minikube/pull/7928)
+* bump dashboard image v2.0.0 [#7849](https://github.com/kubernetes/minikube/pull/7849)
+* Upgrade docker driver base image to v0.0.10 [#7858](https://github.com/kubernetes/minikube/pull/7858)
+* docker-env: fall back to bash if can not detect shell. [#7887](https://github.com/kubernetes/minikube/pull/7887)
+
+Bug fixes:
+
+* docker/podman drivers: wait for service before open url [#7898](https://github.com/kubernetes/minikube/pull/7898)
+* addon registry-alias: change hosts update container image [#7864](https://github.com/kubernetes/minikube/pull/7864)
+* Fix sysctl fs.protected_regular=1 typo [#7882](https://github.com/kubernetes/minikube/pull/7882)
+* change emoji for:  notifying new kubernetes version is available [#7835](https://github.com/kubernetes/minikube/pull/7835)
+* contained cni: rename default cni file to have higher priority [#7875](https://github.com/kubernetes/minikube/pull/7875)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Kenta Iso
+- Marcin Niemira
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Radoslaw Smigielski
+- Sharif Elgamal
+- Thomas Strömberg
+- Tobias Klauser
+- Travis Mehlinger
+- Zhongcheng Lao
+- ZouYu
+- priyawadhwa
+
 ## Version 1.10.0-beta.1 - 2020-04-22
 
 Improvements:
