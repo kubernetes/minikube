@@ -10,8 +10,9 @@ aliases:
  - /docs/tasks/docker_daemon
 ---
 
+
 ## Comparison table for different methods 
-The best method to push your image to minikube depends on the container-runtime you built your cluster with (default docker).
+The best method to push your image to minikube depends on the container-runtime you built your cluster with (the default is docker).
 Here is a comparison table to help you choose:
 
 
@@ -29,7 +30,7 @@ Here is a comparison table to help you choose:
 
 ---
 
-## 1.Pushing directly to the in-cluster Docker daemon (docker-env)
+## 1. Pushing directly to the in-cluster Docker daemon (docker-env)
 When using a container or VM driver (all drivers except none), you can reuse the Docker daemon inside minikube cluster.
 this means you don't have to build on your host machine and push the image into a docker registry. You can just build inside the same docker daemon as minikube which speeds up local experiments.
 
@@ -41,7 +42,7 @@ eval $(minikube docker-env)
 
 now any 'docker' command you run in this current terminal will run against the docker inside minikube cluster.
 
-so if you do the following commands, it will show you the containers inside the minikube inside minikube's VM or Container.
+so if you do the following commands, it will show you the containers inside the minikube, inside minikube's VM or Container.
 
 ```shell
 docker ps
@@ -57,13 +58,13 @@ To verify your terminal is using minikuber's docker-env you can check the value 
 
 {{% pageinfo color="info" %}}
 Tip 1: 
-Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`) in your yaml file.otherwise Kubernetes won't use your locally build image and it will pull from the network.
+Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`) in your yaml file. Otherwise Kubernetes won't use your locally build image and it will pull from the network.
 {{% /pageinfo %}}
 
 {{% pageinfo color="info" %}}
 Tip 2: 
 Evaluating the docker-env is only valid for the current terminal.
-and by closing the terminal, you will go back to using your own system's docker daemon.
+By closing the terminal, you will go back to using your own system's docker daemon.
 {{% /pageinfo %}}
 
 {{% pageinfo color="info" %}}
@@ -92,14 +93,14 @@ If your image changes after your cached it, you need to do 'cache reload'.
 {{% /pageinfo %}}
 
 
-minikube refreshes the cache images on each start. however to reload all the cached images on demand run this command :
+minikube refreshes the cache images on each start. however to reload all the cached images on demand, run this command :
 ```shell
 minikube cache reload
 ```
 
 {{% pageinfo color="info" %}}
 Tip 2 :
-if you have multiple cluster, cache command will load the image for all of them.
+if you have multiple clusters, the cache command will load the image for all of them.
 {{% /pageinfo %}}
 
 
