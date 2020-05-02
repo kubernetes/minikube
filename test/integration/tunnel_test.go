@@ -52,8 +52,7 @@ var (
 func TestTunnel(t *testing.T) {
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("tunnel")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(20))
-	defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Serial tests
@@ -213,6 +212,12 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 	// Check if the nginx service can be accessed
 	if err := retry.Expo(fetch, 3*time.Second, Minutes(2), 13); err != nil {
 		t.Errorf("failed to hit nginx at %q: %v", url, err)
+
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Command(), err)
+		}
+		t.Logf("failed to kubectl get svc nginx-svc:\n%s", rr.Stdout)
 	}
 
 	want := "Welcome to nginx!"
@@ -296,12 +301,6 @@ func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
 	// Access nginx-svc through DNS resolution
 	if err := retry.Expo(fetch, 3*time.Second, Seconds(30), 10); err != nil {
 		t.Errorf("failed to hit nginx with DNS forwarded %q: %v", url, err)
-		// debug: clear DNS cache: https://github.com/kubernetes/minikube/issues/7809
-		_, err = Run(t, exec.CommandContext(ctx, "dscacheutil", "-flushcache"))
-		if err != nil {
-			t.Errorf("failed to clear DNS cache for macOS: %v", err)
-		}
-		t.Logf("cleared DNS cache for macOS")
 	}
 
 	want := "Welcome to nginx!"
