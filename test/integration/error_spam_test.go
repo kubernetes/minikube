@@ -32,6 +32,11 @@ var stderrWhitelist = []string{
 	`kubectl`,
 	// slow docker warning
 	`slow|long time|Restarting the docker service may improve`,
+	// don't care if we can't push images to other profiles
+	`cache_images.go:.*error getting status`,
+	// network flakiness on VirtualBox
+	// ! Unable to verify SSH connectivity: dial tcp 192.168.99.249:22: i/o timeout. Will retry...
+	`SSH.*i/o timeout.retry`,
 }
 
 // stderrWhitelistRe combines rootCauses into a single regex

@@ -26,7 +26,7 @@ apiServer:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
-controlPlaneEndpoint: 1.1.1.1:8443
+controlPlaneEndpoint: control-plane.minikube.internal:8443
 dns:
   type: CoreDNS
 etcd:
@@ -51,4 +51,5 @@ evictionHard:
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
+clusterCIDR: ""
 metricsBindAddress: 1.1.1.1:10249

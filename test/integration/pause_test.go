@@ -20,6 +20,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"os/exec"
 	"strings"
 	"testing"
@@ -45,6 +46,7 @@ func TestPause(t *testing.T) {
 			{"Unpause", validateUnpause},
 			{"PauseAgain", validatePause},
 			{"DeletePaused", validateDelete},
+			{"VerifyDeletedResources", validateVerifyDeleted},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -96,10 +98,51 @@ func validateUnpause(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateDelete(ctx context.Context, t *testing.T, profile string) {
-	// vervose logging because this might go wrong, if container get stuck
 	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to delete minikube with args: %q : %v", rr.Command(), err)
 	}
+}
+
+// make sure no left over left after deleting a profile such as containers or volumes
+func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+	if err != nil {
+		t.Errorf("failed to list profiles with json format after it was deleted. args %q: %v", rr.Command(), err)
+	}
+
+	var jsonObject map[string][]map[string]interface{}
+	if err := json.Unmarshal(rr.Stdout.Bytes(), &jsonObject); err != nil {
+		t.Errorf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
+	}
+	validProfiles := jsonObject["valid"]
+	profileExists := false
+	for _, profileObject := range validProfiles {
+		if profileObject["Name"] == profile {
+			profileExists = true
+			break
+		}
+	}
+	if profileExists {
+		t.Errorf("expected the deleted profile %q not to show up in profile list but it does! output: %s . args: %q", profile, rr.Stdout.String(), rr.Command())
+	}
+
+	if KicDriver() {
+		bin := "docker"
+		if PodmanDriver() {
+			bin = "podman"
+		}
+		rr, err := Run(t, exec.CommandContext(ctx, bin, "ps", "-a"))
+		if err == nil && strings.Contains(rr.Output(), profile) {
+			t.Errorf("expected container %q not to exist in output of %s but it does output: %s.", profile, rr.Command(), rr.Output())
+		}
+
+		rr, err = Run(t, exec.CommandContext(ctx, bin, "volume", "inspect", profile))
+		if err == nil {
+			t.Errorf("expected to see error and volume %q to not exist after deletion but got no error and this output: %s", rr.Command(), rr.Output())
+		}
+
+	}
+
 }

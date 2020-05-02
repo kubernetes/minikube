@@ -103,11 +103,18 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(disOthers bool) error {
+func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
 		}
+	}
+
+	if forceSystemd {
+		if err := r.forceSystemd(); err != nil {
+			return err
+		}
+		return r.Init.Restart("docker")
 	}
 
 	return r.Init.Start("docker")
@@ -274,6 +281,22 @@ func (r *Docker) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
 }
 
+// ForceSystemd forces the docker daemon to use systemd as cgroup manager
+func (r *Docker) forceSystemd() error {
+	glog.Infof("Forcing docker to use systemd as cgroup manager...")
+	daemonConfig := `{
+"exec-opts": ["native.cgroupdriver=systemd"],
+"log-driver": "json-file",
+"log-opts": {
+	"max-size": "100m"
+},
+"storage-driver": "overlay2"
+}
+`
+	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
+	return r.Runner.Copy(ma)
+}
+
 // Preload preloads docker with k8s images:
 // 1. Copy over the preloaded tarball into the VM
 // 2. Extract the preloaded tarball to the correct directory
@@ -290,7 +313,7 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
-	if DockerImagesPreloaded(r.Runner, images) {
+	if dockerImagesPreloaded(r.Runner, images) {
 		glog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
@@ -342,8 +365,8 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	return r.Restart()
 }
 
-// DockerImagesPreloaded returns true if all images have been preloaded
-func DockerImagesPreloaded(runner command.Runner, images []string) bool {
+// dockerImagesPreloaded returns true if all images have been preloaded
+func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
 	if err != nil {
 		return false

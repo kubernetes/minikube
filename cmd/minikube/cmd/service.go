@@ -80,11 +80,6 @@ var serviceCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		if driver.NeedsPortForward(co.Config.Driver) {
-			startKicServiceTunnel(svc, cname)
-			return
-		}
-
 		urls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			var s *service.SVCNotFoundError
@@ -93,6 +88,11 @@ var serviceCmd = &cobra.Command{
 You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
 			}
 			exit.WithError("Error opening service", err)
+		}
+
+		if driver.NeedsPortForward(co.Config.Driver) {
+			startKicServiceTunnel(svc, cname)
+			return
 		}
 
 		openURLs(svc, urls)

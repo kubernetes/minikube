@@ -63,7 +63,7 @@ type Manager interface {
 	// Version retrieves the current version of this runtime
 	Version() (string, error)
 	// Enable idempotently enables this runtime on a host
-	Enable(bool) error
+	Enable(bool, bool) error
 	// Disable idempotently disables this runtime on a host
 	Disable() error
 	// Active returns whether or not a runtime is active on a host
@@ -219,4 +219,15 @@ func enableIPForwarding(cr CommandRunner) error {
 		return errors.Wrapf(err, "ip_forward")
 	}
 	return nil
+}
+
+// ImagesPreloaded returns true if all images have been preloaded
+func ImagesPreloaded(containerRuntime string, runner command.Runner, images []string) bool {
+	if containerRuntime == "docker" {
+		return dockerImagesPreloaded(runner, images)
+	}
+	if containerRuntime == "containerd" {
+		return containerdImagesPreloaded(runner, images)
+	}
+	return false
 }

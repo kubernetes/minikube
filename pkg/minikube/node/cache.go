@@ -25,7 +25,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -43,7 +42,8 @@ const (
 
 // BeginCacheKubernetesImages caches images required for kubernetes version in the background
 func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
-	if download.PreloadExists(k8sVersion, cRuntime) {
+	// TODO: remove imageRepository check once #7695 is fixed
+	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime) {
 		glog.Info("Caching tarball of preloaded images")
 		err := download.Preload(k8sVersion, cRuntime)
 		if err == nil {
@@ -99,14 +99,20 @@ func doCacheBinaries(k8sVersion string) error {
 }
 
 // BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
-func beginDownloadKicArtifacts(g *errgroup.Group) {
-	glog.Info("Beginning downloading kic artifacts")
-	if !image.ExistsImageInDaemon(kic.BaseImage) {
-		out.T(out.Pulling, "Pulling base image ...")
-		g.Go(func() error {
-			glog.Infof("Downloading %s to local daemon", kic.BaseImage)
-			return image.WriteImageToDaemon(kic.BaseImage)
-		})
+func beginDownloadKicArtifacts(g *errgroup.Group, driver string, cRuntime string) {
+	glog.Infof("Beginning downloading kic artifacts for %s with %s", driver, cRuntime)
+	baseImage := viper.GetString("base-image")
+	if driver == "docker" {
+		if !image.ExistsImageInDaemon(baseImage) {
+			out.T(out.Pulling, "Pulling base image ...")
+			g.Go(func() error {
+				glog.Infof("Downloading %s to local daemon", baseImage)
+				return image.WriteImageToDaemon(baseImage)
+			})
+		}
+	} else {
+		// TODO: driver == "podman"
+		glog.Info("Driver isn't docker, skipping base-image download")
 	}
 }
 

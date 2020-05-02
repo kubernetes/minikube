@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -54,11 +55,25 @@ var nodeAddCmd = &cobra.Command{
 			KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		}
 
+		// Make sure to decrease the default amount of memory we use per VM if this is the first worker node
+		if len(cc.Nodes) == 1 {
+			warnAboutMultiNode()
+			if viper.GetString(memory) == "" {
+				cc.Memory = 2200
+			}
+		}
+
 		if err := node.Add(cc, n); err != nil {
 			_, err := maybeDeleteAndRetry(*cc, n, nil, err)
 			if err != nil {
 				exit.WithError("failed to add node", err)
 			}
+		}
+
+		// Add CNI config if it's not already there
+		// We need to run kubeadm.init here as well
+		if err := config.MultiNodeCNIConfig(cc); err != nil {
+			exit.WithError("failed to save config", err)
 		}
 
 		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})

@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -98,6 +99,8 @@ const (
 	nodes                   = "nodes"
 	preload                 = "preload"
 	deleteOnFailure         = "delete-on-failure"
+	forceSystemd            = "force-systemd"
+	kicBaseImage            = "base-image"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -118,6 +121,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
 	startCmd.Flags().StringSlice(isoURL, download.DefaultISOURLs(), "Locations to fetch the minikube ISO from.")
+	startCmd.Flags().String(kicBaseImage, kic.BaseImage, "The base image to use for docker/podman drivers. Intended for local development.")
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
@@ -135,6 +139,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
+	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -215,7 +220,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			glog.Warningf("Unable to query memory limits: %v", err)
 		}
 
-		mem := suggestMemoryAllocation(sysLimit, containerLimit)
+		mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 		if cmd.Flags().Changed(memory) {
 			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
 			if err != nil {
@@ -255,7 +260,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
 			found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)))
 			if err != nil {
-				exit.WithError("Failed to check main repository and mirrors for images for images", err)
+				exit.WithError("Failed to check main repository and mirrors for images", err)
 			}
 
 			if !found {
@@ -269,7 +274,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			repository = autoSelectedRepository
 		}
 
-		if cmd.Flags().Changed(imageRepository) {
+		if cmd.Flags().Changed(imageRepository) || cmd.Flags().Changed(imageMirrorCountry) {
 			out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 		}
 

@@ -60,7 +60,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/util"
-	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -286,6 +285,8 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.WithCodeT(exit.Config, "The none driver is not compatible with multi-node clusters.")
 		} else {
+			out.Ln("")
+			warnAboutMultiNode()
 			for i := 1; i < numNodes; i++ {
 				nodeName := node.Name(i + 1)
 				n := config.Node{
@@ -304,6 +305,10 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 	}
 
 	return kubeconfig, nil
+}
+
+func warnAboutMultiNode() {
+	out.WarningT("Multi-node clusters are currently experimental and might exhibit unintended behavior.\nTo track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
 func updateDriver(driverName string) {
@@ -716,7 +721,7 @@ func memoryLimits(drvName string) (int, int, error) {
 }
 
 // suggestMemoryAllocation calculates the default memory footprint in MB
-func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
+func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 	if mem := viper.GetInt(memory); mem != 0 {
 		return mem
 	}
@@ -738,6 +743,10 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
 	// Suggest 25% of RAM, rounded to nearest 100MB. Hyper-V requires an even number!
 	suggested := int(float32(sysLimit)/400.0) * 100
 
+	if nodes > 1 {
+		suggested /= nodes
+	}
+
 	if suggested > maximum {
 		return maximum
 	}
@@ -751,7 +760,7 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
 
 // validateMemorySize validates the memory size matches the minimum recommended
 func validateMemorySize() {
-	req, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	req, err := util.CalculateSizeInMB(viper.GetString(memory))
 	if err != nil {
 		exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 	}
@@ -787,7 +796,7 @@ func validateCPUCount(local bool) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
-		diskSizeMB, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
 			exit.WithCodeT(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
@@ -997,7 +1006,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 
 	}
 	if defaultVersion.GT(nvs) {
-		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
+		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
 }

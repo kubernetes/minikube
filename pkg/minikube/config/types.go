@@ -22,6 +22,14 @@ import (
 	"github.com/blang/semver"
 )
 
+const (
+	// DefaultNetwork is the Docker default bridge network named "bridge"
+	// (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
+	DefaultNetwork = "bridge"
+	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
+	DefaultPodCIDR = "10.244.0.0/16"
+)
+
 // Profile represents a minikube profile
 type Profile struct {
 	Name   string
@@ -70,19 +78,21 @@ type ClusterConfig struct {
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
-	KubernetesVersion string
-	ClusterName       string
-	APIServerName     string
-	APIServerNames    []string
-	APIServerIPs      []net.IP
-	DNSDomain         string
-	ContainerRuntime  string
-	CRISocket         string
-	NetworkPlugin     string
-	FeatureGates      string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
-	ServiceCIDR       string // the subnet which kubernetes services will be deployed to
-	ImageRepository   string
-	ExtraOptions      ExtraOptionSlice
+	KubernetesVersion   string
+	ClusterName         string
+	APIServerName       string
+	APIServerNames      []string
+	APIServerIPs        []net.IP
+	DNSDomain           string
+	ContainerRuntime    string
+	CRISocket           string
+	NetworkPlugin       string
+	FeatureGates        string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
+	ServiceCIDR         string // the subnet which kubernetes services will be deployed to
+	ImageRepository     string
+	LoadBalancerStartIP string // currently only used by MetalLB addon
+	LoadBalancerEndIP   string // currently only used by MetalLB addon
+	ExtraOptions        ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool

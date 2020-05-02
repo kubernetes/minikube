@@ -20,12 +20,13 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"os"
 	"os/exec"
+	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 const (
@@ -35,7 +36,7 @@ const (
 
 var (
 	dockerStorageDriver = "overlay2"
-	containerRuntimes   = []string{"docker"}
+	containerRuntimes   = []string{"docker", "containerd"}
 	k8sVersion          string
 	k8sVersions         []string
 )
@@ -50,14 +51,24 @@ func init() {
 }
 
 func main() {
+	defer func() {
+		if err := deleteMinikube(); err != nil {
+			fmt.Printf("error cleaning up minikube: %v \n", err)
+		}
+	}()
+
+	if err := deleteMinikube(); err != nil {
+		fmt.Printf("error cleaning up minikube at start up: %v \n", err)
+	}
+
 	if err := verifyDockerStorage(); err != nil {
-		exit.WithError("Docker storage type is incompatible: %v\n", err)
+		exit("Docker storage type is incompatible: %v \n", err)
 	}
 	if k8sVersions == nil {
 		var err error
 		k8sVersions, err = RecentK8sVersions()
 		if err != nil {
-			exit.WithError("Unable to get recent k8s versions: %v\n", err)
+			exit("Unable to get recent k8s versions: %v\n", err)
 		}
 	}
 
@@ -65,16 +76,21 @@ func main() {
 		for _, cr := range containerRuntimes {
 			tf := download.TarballName(kv, cr)
 			if download.PreloadExists(kv, cr) {
-				fmt.Printf("A preloaded tarball for k8s version %s already exists, skipping generation.\n", kv)
+				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
 				continue
 			}
-			fmt.Printf("A preloaded tarball for k8s version %s doesn't exist, generating now...\n", kv)
+			fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
 			if err := generateTarball(kv, cr, tf); err != nil {
-				exit.WithError(fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
+				exit(fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
 			}
 			if err := uploadTarball(tf); err != nil {
-				exit.WithError(fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
+				exit(fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
 			}
+
+			if err := deleteMinikube(); err != nil {
+				fmt.Printf("error cleaning up minikube before finishing up: %v\n", err)
+			}
+
 		}
 	}
 }
@@ -92,4 +108,13 @@ func verifyDockerStorage() error {
 		return fmt.Errorf("docker storage driver %s does not match requested %s", driver, dockerStorageDriver)
 	}
 	return nil
+}
+
+// exit will exit and clean up minikube
+func exit(msg string, err error) {
+	fmt.Printf("WithError(%s)=%v called from:\n%s", msg, err, debug.Stack())
+	if err := deleteMinikube(); err != nil {
+		fmt.Printf("error cleaning up minikube at start up: %v\n", err)
+	}
+	os.Exit(60)
 }

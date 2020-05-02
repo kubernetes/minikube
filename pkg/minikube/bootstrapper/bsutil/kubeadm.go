@@ -83,6 +83,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		NoTaintMaster       bool
 		NodeIP              string
 		ControlPlaneAddress string
+		KubeProxyOptions    map[string]string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -101,7 +102,8 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		NoTaintMaster:       false, // That does not work with k8s 1.12+
 		DNSDomain:           k8s.DNSDomain,
 		NodeIP:              n.IP,
-		ControlPlaneAddress: cp.IP,
+		ControlPlaneAddress: constants.ControlPlaneAlias,
+		KubeProxyOptions:    createKubeProxyOptions(k8s.ExtraOptions),
 	}
 
 	if k8s.ServiceCIDR != "" {
@@ -135,6 +137,7 @@ const (
 	Apiserver         = "apiserver"
 	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
+	Kubeproxy         = "kube-proxy"
 )
 
 // InvokeKubeadm returns the invocation command for Kubeadm

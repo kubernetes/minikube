@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -158,7 +159,11 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = driver.InstallOrUpdate("hyperkit", dir, newerVersion, true, true)
+		if err := exec.Command("sudo", "-n", "ls").Run(); err != nil {
+			t.Skipf("password required to execute 'ls', skipping remaining test: %v", err)
+		}
+
+		err = driver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}

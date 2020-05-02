@@ -104,12 +104,11 @@ var statusCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname)
 
-		var st *Status
-		var err error
+		var statuses []*Status
 		for _, n := range cc.Nodes {
 			glog.Infof("checking status of %s ...", n.Name)
 			machineName := driver.MachineName(*cc, n)
-			st, err = status(api, *cc, n)
+			st, err := status(api, *cc, n)
 			glog.Infof("%s status: %+v", machineName, st)
 
 			if err != nil {
@@ -118,36 +117,40 @@ var statusCmd = &cobra.Command{
 			if st.Host == Nonexistent {
 				glog.Errorf("The %q host does not exist!", machineName)
 			}
+			statuses = append(statuses, st)
+		}
 
-			switch strings.ToLower(output) {
-			case "text":
+		switch strings.ToLower(output) {
+		case "text":
+			for _, st := range statuses {
 				if err := statusText(st, os.Stdout); err != nil {
 					exit.WithError("status text failure", err)
 				}
-			case "json":
-				if err := statusJSON(st, os.Stdout); err != nil {
-					exit.WithError("status json failure", err)
-				}
-			default:
-				exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
 			}
+		case "json":
+			if err := statusJSON(statuses, os.Stdout); err != nil {
+				exit.WithError("status json failure", err)
+			}
+		default:
+			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
 		}
 
-		// TODO: Update for multi-node
-		os.Exit(exitCode(st))
+		os.Exit(exitCode(statuses))
 	},
 }
 
-func exitCode(st *Status) int {
+func exitCode(statuses []*Status) int {
 	c := 0
-	if st.Host != state.Running.String() {
-		c |= minikubeNotRunningStatusFlag
-	}
-	if (st.APIServer != state.Running.String() && st.APIServer != Irrelevant) || st.Kubelet != state.Running.String() {
-		c |= clusterNotRunningStatusFlag
-	}
-	if st.Kubeconfig != Configured && st.Kubeconfig != Irrelevant {
-		c |= k8sNotRunningStatusFlag
+	for _, st := range statuses {
+		if st.Host != state.Running.String() {
+			c |= minikubeNotRunningStatusFlag
+		}
+		if (st.APIServer != state.Running.String() && st.APIServer != Irrelevant) || st.Kubelet != state.Running.String() {
+			c |= clusterNotRunningStatusFlag
+		}
+		if st.Kubeconfig != Configured && st.Kubeconfig != Irrelevant {
+			c |= k8sNotRunningStatusFlag
+		}
 	}
 	return c
 }
@@ -188,7 +191,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 	}
 
 	// We have a fully operational host, now we can check for details
-	if _, err := cluster.GetHostDriverIP(api, name); err != nil {
+	if _, err := cluster.DriverIP(api, name); err != nil {
 		glog.Errorf("failed to get driver ip: %v", err)
 		st.Host = state.Error.String()
 		return st, err
@@ -270,8 +273,15 @@ func statusText(st *Status, w io.Writer) error {
 	return nil
 }
 
-func statusJSON(st *Status, w io.Writer) error {
-	js, err := json.Marshal(st)
+func statusJSON(st []*Status, w io.Writer) error {
+	var js []byte
+	var err error
+	// Keep backwards compat with single node clusters to not break anyone
+	if len(st) == 1 {
+		js, err = json.Marshal(st[0])
+	} else {
+		js, err = json.Marshal(st)
+	}
 	if err != nil {
 		return err
 	}
