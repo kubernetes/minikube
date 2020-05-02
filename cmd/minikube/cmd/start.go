@@ -289,8 +289,11 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.WithCodeT(exit.Config, "The none driver is not compatible with multi-node clusters.")
 		} else {
-			out.Ln("")
-			warnAboutMultiNode()
+			// Only warn users on first start.
+			if existing == nil {
+				out.Ln("")
+				warnAboutMultiNode()
+			}
 			for i := 1; i < numNodes; i++ {
 				nodeName := node.Name(i + 1)
 				n := config.Node{
