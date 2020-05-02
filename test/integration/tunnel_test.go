@@ -114,7 +114,7 @@ func getKubeDNSIP(t *testing.T, profile string) string {
 		t.Errorf("failed to get kube-dns IP: %v", err)
 	}
 
-	return "@" + ip.String()
+	return ip.String()
 }
 
 // validateMinikubeStart starts minikube cluster
@@ -234,7 +234,8 @@ func validateDNSDig(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
 	checkDNSForward(t)
 
-	dnsIP := getKubeDNSIP(t, profile)
+	ip := getKubeDNSIP(t, profile)
+	dnsIP := fmt.Sprintf("@%s", ip)
 
 	// Check if the dig DNS lookup works toward kube-dns IP
 	rr, err := Run(t, exec.CommandContext(ctx, "dig", "+time=5", "+tries=3", dnsIP, domain, "A"))
@@ -281,8 +282,30 @@ func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
 	got := []byte{}
 	url := fmt.Sprintf("http://%s", domain)
 
+	ip := getKubeDNSIP(t, profile)
+	dnsIP := fmt.Sprintf("%s:53", ip)
+
+	// Set kube-dns dial
+	kubeDNSDial := func(ctx context.Context, network, address string) (net.Conn, error) {
+		d := net.Dialer{}
+		return d.DialContext(ctx, "udp", dnsIP)
+	}
+
+	// Set kube-dns resolver
+	r := net.Resolver{
+		PreferGo: true,
+		Dial:     kubeDNSDial,
+	}
+	dialer := net.Dialer{Resolver: &r}
+
+	// Use kube-dns resolver
+	transport := &http.Transport{
+		Dial:        dialer.Dial,
+		DialContext: dialer.DialContext,
+	}
+
 	fetch := func() error {
-		h := &http.Client{Timeout: time.Second * 10}
+		h := &http.Client{Timeout: time.Second * 10, Transport: transport}
 		resp, err := h.Get(url)
 		if err != nil {
 			return &retry.RetriableError{Err: err}
