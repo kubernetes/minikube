@@ -19,34 +19,34 @@ package config
 import (
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func TestNotFound(t *testing.T) {
-	createTestConfig(t, "create")
+	path := createTestConfig(t)
+	// remove all temp dir
+	defer removeTempDir(t, path)
 	err := Set("nonexistent", "10")
 	if err == nil || err.Error() != "find settings for \"nonexistent\" value of \"10\": property name \"nonexistent\" not found" {
 		t.Fatalf("Set did not return error for unknown property: %+v", err)
 	}
-	// remove all temp dir
-	createTestConfig(t, "remove")
 }
 
 func TestSetNotAllowed(t *testing.T) {
-	createTestConfig(t, "create")
+	path := createTestConfig(t)
+	// remove all temp dir
+	defer removeTempDir(t, path)
 	err := Set("driver", "123456")
 	if err == nil || err.Error() != "run validations for \"driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
 		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
-	// remove all temp dir
-	createTestConfig(t, "remove")
 }
 
 func TestSetOK(t *testing.T) {
-	createTestConfig(t, "create")
+	path := createTestConfig(t)
+	defer removeTempDir(t, path)
 	err := Set("driver", "virtualbox")
 	defer func() {
 		err = Unset("driver")
@@ -66,19 +66,11 @@ func TestSetOK(t *testing.T) {
 	}
 }
 
-func createTestConfig(t *testing.T, status string) {
+func createTestConfig(t *testing.T) string {
 	t.Helper()
 	td, err := ioutil.TempDir("", "config")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
-	}
-	if strings.EqualFold(status, "remove") {
-		defer func() {
-			err := os.RemoveAll(td)
-			if err != nil {
-				t.Errorf("failed to clean up temp folder  %q", td)
-			}
-		}()
 	}
 
 	err = os.Setenv(localpath.MinikubeHome, td)
@@ -93,5 +85,14 @@ func createTestConfig(t *testing.T, status string) {
 
 	if err = os.MkdirAll(localpath.MakeMiniPath("profiles"), 0777); err != nil {
 		t.Fatalf("error creating temporary profiles directory: %+v", err)
+	}
+
+	return td
+}
+
+func removeTempDir(t *testing.T, path string) {
+	err := os.RemoveAll(path)
+	if err != nil {
+		t.Errorf("failed to creal up temp folder %q", path)
 	}
 }
