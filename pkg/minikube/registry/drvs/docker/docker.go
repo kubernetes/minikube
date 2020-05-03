@@ -26,7 +26,6 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/golang/glog"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -60,7 +59,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
-		ImageDigest:       viper.GetString("base-image"),
+		ImageDigest:       cc.KicBaseImage,
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Docker,
