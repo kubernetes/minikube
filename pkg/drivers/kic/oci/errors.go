@@ -18,4 +18,5 @@ package oci
 
 import "errors"
 
-var ErrWindowsContainers = errors.New("Docker daemon's container type is windows")
+// ErrWindowsContainers is thrown when docker been configured to run windows containers instead of Linux
+var ErrWindowsContainers = errors.New("docker container type is windows")
