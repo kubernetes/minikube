@@ -30,16 +30,18 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 ## Troubleshooting
 
-- On macOS or Windows, you may need to restart Docker for Desktop if a command gets hung
-
-- Run `--alsologtostderr -v=1` for extra debugging information
-
+[comment]: <> (this title is used in the docs links, don't change)
+### Verify Docker container type is Linux
 - On Windows, make sure Docker Desktop's container type setting is Linux and not windows. see docker docs on [switching container type](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers). 
 You can verify your Docker container type by running:
-```shell
- docker info --format '{{.OSType}}'
-```
+   ```shell
+   docker info --format '{{.OSType}}'
+   ```
 
+### Run with logs
+- Run `--alsologtostderr -v=1` for extra debugging information
+
+### Deploying MySql on a linux with AppArmor
 - On Linux, if you want to run MySQL pod, you need to disable AppArmor for mysql profile
 
    If your docker has [AppArmor](https://wiki.ubuntu.com/AppArmor) enabled, running mysql in privileged mode with docker driver will have the issue [#7401](https://github.com/kubernetes/minikube/issues/7401).
