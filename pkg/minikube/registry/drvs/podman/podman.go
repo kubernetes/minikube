@@ -29,7 +29,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/golang/glog"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -60,11 +59,10 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	baseImage := viper.GetString("base-image")
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
-		ImageDigest:       strings.Split(baseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
+		ImageDigest:       strings.Split(cc.KicBaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Podman,
