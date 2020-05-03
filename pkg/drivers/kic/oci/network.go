@@ -85,7 +85,6 @@ func containerGatewayIP(ociBin, containerName string) (net.IP, error) {
 		return nil, errors.Wrapf(err, "inspect gateway")
 	}
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
-	glog.Infof("got host ip for mount in container by inspecting container: %s", ip.String())
 	return ip, nil
 }
 
