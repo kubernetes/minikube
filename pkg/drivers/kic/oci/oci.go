@@ -111,7 +111,8 @@ func CreateContainerNode(p CreateParams) error {
 			return ErrWindowsContainers
 		}
 		if err != nil {
-			return err
+			glog.Warningf("error getting dameon info: %v", err)
+			return errors.Wrap(err, "daemon info")
 		}
 	}
 
