@@ -34,7 +34,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 - Run `--alsologtostderr -v=1` for extra debugging information
 
-- On Windows, make sure you Docker's container type is Linux and not windows. see docker docs on [switching container type](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers). 
+- On Windows, make sure Docker Desktop's container type setting is Linux and not windows. see docker docs on [switching container type](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers). 
 You can verify your Docker container type by running:
 ```shell
  docker info --format '{{.OSType}}'
