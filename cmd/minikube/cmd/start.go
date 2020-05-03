@@ -160,7 +160,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			out.ErrLn("")
 			out.ErrT(out.Conflict, "Your Docker Desktop container os type is Windows but Linux is required.")
 			out.T(out.Warning, "Please change Docker settings to use Linux containers instead of Windows containers.")
-			out.T(out.Documentation, "https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers")
+			out.T(out.Documentation, "https://minikube.sigs.k8s.io/docs/drivers/docker/#verify-docker-container-type-is-linux")
 			exit.UsageT(`You can verify your Docker container type by running:
 	{{.command}}
 		`, out.V{"command": "docker info --format '{{.OSType}}'"})
