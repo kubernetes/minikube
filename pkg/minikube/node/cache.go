@@ -100,19 +100,18 @@ func doCacheBinaries(k8sVersion string) error {
 }
 
 // BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
-func beginDownloadKicArtifacts(g *errgroup.Group, driver string, cRuntime string, baseImage string) {
-	glog.Infof("Beginning downloading kic artifacts for %s with %s", driver, cRuntime)
-	if driver == "docker" {
-		if !image.ExistsImageInDaemon(baseImage) {
+func beginDownloadKicArtifacts(g *errgroup.Group, cc *config.ClusterConfig) {
+	glog.Infof("Beginning downloading kic artifacts for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+	if cc.Driver == "docker" {
+		if !image.ExistsImageInDaemon(cc.KicBaseImage) {
 			out.T(out.Pulling, "Pulling base image ...")
 			g.Go(func() error {
-				glog.Infof("Downloading %s to local daemon", baseImage)
-				err := image.WriteImageToDaemon(baseImage)
+				glog.Infof("Downloading %s to local daemon", cc.KicBaseImage)
+				err := image.WriteImageToDaemon(cc.KicBaseImage)
 				if err != nil {
-					// TODO : remove this global set when this issue is closed
-					// https://github.com/kubernetes/minikube/issues/7944
-					viper.Set("base-image", kic.BaseImageFallBack)
-					glog.Infof("failed to download %s will try to download the fallback image from %s", baseImage, kic.BaseImageFallBack)
+					origImage := cc.KicBaseImage
+					cc.KicBaseImage = kic.BaseImageFallBack
+					glog.Infof("failed to download base image %q will try to download the fallback image %q instead.", origImage, kic.BaseImageFallBack)
 					return image.WriteImageToDaemon(kic.BaseImageFallBack)
 				}
 				return nil
