@@ -627,6 +627,20 @@ func (k *Bootstrapper) restartWorker(cc config.ClusterConfig, n config.Node) err
 	if err != nil {
 		return errors.Wrap(err, "running join phase kubelet-start")
 	}
+
+	// This can fail during upgrades if the old pods have not shut down yet
+	kubeletStatus := func() error {
+		st := kverify.KubeletStatus(k.c)
+		if st != state.Running {
+			return errors.New("kubelet not running")
+		}
+		return nil
+	}
+	if err = retry.Expo(kubeletStatus, 100*time.Microsecond, 30*time.Second); err != nil {
+		glog.Warningf("kubelet is not ready: %v", err)
+		return errors.Wrap(err, "kubelet")
+	}
+
 	return nil
 }
 
