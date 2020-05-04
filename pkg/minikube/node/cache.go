@@ -109,9 +109,8 @@ func beginDownloadKicArtifacts(g *errgroup.Group, cc *config.ClusterConfig) {
 				glog.Infof("Downloading %s to local daemon", cc.KicBaseImage)
 				err := image.WriteImageToDaemon(cc.KicBaseImage)
 				if err != nil {
-					origImage := cc.KicBaseImage
+					glog.Infof("failed to download base-image %q will try to download the fallback base-image %q instead.", cc.KicBaseImage, kic.BaseImageFallBack)
 					cc.KicBaseImage = kic.BaseImageFallBack
-					glog.Infof("failed to download base image %q will try to download the fallback image %q instead.", origImage, kic.BaseImageFallBack)
 					return image.WriteImageToDaemon(kic.BaseImageFallBack)
 				}
 				return nil
