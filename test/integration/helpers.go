@@ -202,10 +202,9 @@ func clusterLogs(t *testing.T, profile string) {
 		rr, err := Run(t, exec.Command("docker", "logs", "--details", profile))
 		if err != nil {
 			t.Logf("failed to get docker logs : %v", err)
-			return
+		} else {
+			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
 		}
-		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
-
 	}
 	st := Status(context.Background(), t, Target(), profile, "Host")
 	if st != state.Running.String() {
