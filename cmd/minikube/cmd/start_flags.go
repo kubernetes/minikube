@@ -283,6 +283,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			KeepContext:             viper.GetBool(keepContext),
 			EmbedCerts:              viper.GetBool(embedCerts),
 			MinikubeISO:             viper.GetString(isoURL),
+			KicBaseImage:            viper.GetString(kicBaseImage),
 			Memory:                  mem,
 			CPUs:                    viper.GetInt(cpus),
 			DiskSize:                diskSize,
@@ -541,6 +542,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(waitComponents) {
 		existing.VerifyComponents = interpretWaitFlag(*cmd)
+	}
+
+	if cmd.Flags().Changed(kicBaseImage) {
+		existing.KicBaseImage = viper.GetString(kicBaseImage)
 	}
 
 	return *existing
