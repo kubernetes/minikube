@@ -79,19 +79,19 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 
 // ExtractTarballToVolume runs a docker image imageName which extracts the tarball at tarballPath
 // to the volume named volumeName
-func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
-	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
+func ExtractTarballToVolume(ociBin string, tarballPath, volumeName, imageName string) error {
+	cmd := exec.Command(ociBin, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
 	if _, err := runCmd(cmd); err != nil {
 		return err
 	}
 	return nil
 }
 
-// createDockerVolume creates a docker volume to be attached to the container with correct labels and prefixes based on profile name
+// createVolume creates a volume to be attached to the container with correct labels and prefixes based on profile name
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
-func createDockerVolume(profile string, nodeName string) error {
-	if _, err := runCmd(exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))); err != nil {
+func createVolume(ociBin string, profile string, nodeName string) error {
+	if _, err := runCmd(exec.Command(ociBin, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))); err != nil {
 		return err
 	}
 	return nil
