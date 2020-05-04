@@ -104,6 +104,18 @@ func PrepareContainerNode(p CreateParams) error {
 
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
+	// on windows os, if docker desktop is using Windows Containers. Exit early with error
+	if p.OCIBinary == Docker && runtime.GOOS == "windows" {
+		info, err := DaemonInfo(p.OCIBinary)
+		if info.OSType == "windows" {
+			return ErrWindowsContainers
+		}
+		if err != nil {
+			glog.Warningf("error getting dameon info: %v", err)
+			return errors.Wrap(err, "daemon info")
+		}
+	}
+
 	runArgs := []string{
 		"-d", // run the container detached
 		"-t", // allocate a tty for entrypoint logs
