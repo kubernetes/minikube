@@ -161,6 +161,12 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 3 {
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
 	}
+
+	// Make sure kubectl can connect correctly
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
+	if err != nil {
+		t.Fatalf("failed to kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
 }
 
 func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile string) {
