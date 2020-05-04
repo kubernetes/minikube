@@ -86,7 +86,13 @@ jobs:
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
-          docker info || true
+          sudo cat /lib/modules/$(uname -r)/modules.builtin 
+          echo "--------------------------"
+          sudo modprobe overlay
+          echo "--------------------------"
+          sudo cat /lib/modules/$(uname -r)/modules.builtin 
+          echo "--------------------------"
+          sudo modprobe overlay
           echo "--------------------------"
           docker system df || true
           echo "--------------------------"
@@ -182,7 +188,13 @@ jobs:
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
-          docker info || true
+          sudo cat /lib/modules/$(uname -r)/modules.builtin 
+          echo "--------------------------"
+          sudo modprobe overlay
+          echo "--------------------------"
+          sudo cat /lib/modules/$(uname -r)/modules.builtin 
+          echo "--------------------------"
+          sudo modprobe overlay
           echo "--------------------------"
           docker system df || true
           echo "--------------------------"
@@ -273,8 +285,15 @@ jobs:
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
-          docker info || true
+          sudo cat /lib/modules/$(uname -r)/modules.builtin 
           echo "--------------------------"
+          sudo modprobe overlay
+          echo "--------------------------"
+          sudo cat /lib/modules/$(uname -r)/modules.builtin 
+          echo "--------------------------"
+          sudo modprobe overlay
+          echo "--------------------------"
+
           docker system df || true
           echo "--------------------------"
           docker system info || true
@@ -364,8 +383,15 @@ jobs:
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
-          docker info || true
+          sudo cat /lib/modules/$(uname -r)/modules.builtin 
           echo "--------------------------"
+          sudo modprobe overlay
+          echo "--------------------------"
+          sudo cat /lib/modules/$(uname -r)/modules.builtin 
+          echo "--------------------------"
+          sudo modprobe overlay
+          echo "--------------------------"
+
           docker system df || true
           echo "--------------------------"
           docker system info || true
