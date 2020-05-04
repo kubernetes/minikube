@@ -40,9 +40,10 @@ type Profile struct {
 // ClusterConfig contains the parameters used to start a cluster.
 type ClusterConfig struct {
 	Name                    string
-	KeepContext             bool // used by start and profile command to or not to switch kubectl's current context
-	EmbedCerts              bool // used by kubeconfig.Setup
-	MinikubeISO             string
+	KeepContext             bool   // used by start and profile command to or not to switch kubectl's current context
+	EmbedCerts              bool   // used by kubeconfig.Setup
+	MinikubeISO             string // ISO used for VM-drivers.
+	KicBaseImage            string // base-image used for docker/podman drivers.
 	Memory                  int
 	CPUs                    int
 	DiskSize                int
