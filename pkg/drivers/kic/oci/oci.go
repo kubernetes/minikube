@@ -239,7 +239,7 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 	args := []string{"run"}
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
-	if ociBin == Podman {
+	if ociBin == Podman && runtime.GOOS == "linux" {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
@@ -260,7 +260,7 @@ func StartContainer(ociBin string, container string) error {
 	args := []string{"start"}
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
-	if ociBin == Podman {
+	if ociBin == Podman && runtime.GOOS == "linux" {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
