@@ -131,7 +131,10 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	if warn {
 		if elapsed > warnTime {
 			out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
-			out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+			// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
+			if cmd.Args[0] != "sudo" {
+				out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+			}
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
