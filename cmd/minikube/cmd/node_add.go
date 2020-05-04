@@ -84,7 +84,10 @@ var nodeAddCmd = &cobra.Command{
 		if err != nil {
 			glog.Warningf("failed to get control plane bootstrapper: %v", err)
 		} else {
-			bs.StartCluster(*cc)
+			err := bs.StartCluster(*cc)
+			if err != nil {
+				glog.Warningf("failed to restart cluster: %v", err)
+			}
 		}
 
 		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})
