@@ -80,9 +80,13 @@ func status() registry.State {
 	defer cancel()
 
 	// Quickly returns an error code if server is not running
-	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Version}}")
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
 	o, err := cmd.Output()
 	output := string(o)
+	if strings.Contains(output, "windows-") {
+		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
+
+	}
 	if err == nil {
 		glog.Infof("docker version: %s", output)
 		return registry.State{Installed: true, Healthy: true}

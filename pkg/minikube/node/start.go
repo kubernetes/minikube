@@ -36,6 +36,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -356,7 +357,6 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 	if err == nil {
 		return host, exists, nil
 	}
-	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
 
 	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
 	if !exists {
@@ -366,6 +366,13 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 		}
 	}
 
+	// don't try to re-create if container type is windows.
+	if errors.Is(err, oci.ErrWindowsContainers) {
+		glog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
+		return host, exists, err
+	}
+
+	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
 	// Try again, but just once to avoid making the logs overly confusing
 	time.Sleep(5 * time.Second)
 

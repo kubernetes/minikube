@@ -27,8 +27,9 @@ import (
 
 // SysInfo Info represents common system Information between docker and podman that minikube cares
 type SysInfo struct {
-	CPUs        int   // CPUs is Number of CPUs
-	TotalMemory int64 // TotalMemory Total available ram
+	CPUs        int    // CPUs is Number of CPUs
+	TotalMemory int64  // TotalMemory Total available ram
+	OSType      string // container's OsType (windows or linux)
 }
 
 // DaemonInfo returns common docker/podman daemon system info that minikube cares about
@@ -38,11 +39,13 @@ func DaemonInfo(ociBin string) (SysInfo, error) {
 		p, err := podmanSystemInfo()
 		info.CPUs = p.Host.Cpus
 		info.TotalMemory = p.Host.MemTotal
+		info.OSType = p.Host.Os
 		return info, err
 	}
 	d, err := dockerSystemInfo()
 	info.CPUs = d.NCPU
 	info.TotalMemory = d.MemTotal
+	info.OSType = d.OSType
 	return info, err
 }
 
