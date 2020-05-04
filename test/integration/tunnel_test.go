@@ -238,6 +238,13 @@ func validateDNSDig(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("DNS resolution by dig for %s is working!", domain)
 	} else {
 		t.Errorf("expected body to contain %q, but got *%q*", want, rr.Stdout.String())
+
+		// debug DNS configuration
+		rr, err := Run(t, exec.CommandContext(ctx, "scutil", "--dns"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Command(), err)
+		}
+		t.Logf("debug for DNS configuration:\n%s", rr.Stdout.String())
 	}
 }
 
