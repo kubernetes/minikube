@@ -199,7 +199,7 @@ func clusterLogs(t *testing.T, profile string) {
 
 	if DockerDriver() {
 		t.Logf("======>  post-mortem[%s]: docker logs <======", t.Name())
-		rr, err := Run(t, exec.Command("docker", "logs", profile))
+		rr, err := Run(t, exec.Command("docker", "logs", "--details", profile))
 		if err != nil {
 			t.Logf("failed to get docker logs : %v", err)
 			return
