@@ -70,11 +70,14 @@ func validateStartNoReset(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
+		clusterLogs(t, profile)
 		t.Fatalf("failed to second start a running minikube with args: %q : %v", rr.Command(), err)
+
 	}
 	if !NoneDriver() {
 		softLog := "The running cluster does not need a reset"
 		if !strings.Contains(rr.Output(), softLog) {
+			clusterLogs(t, profile)
 			t.Errorf("expected the second start log outputs to include %q but got: %s", softLog, rr.Output())
 		}
 	}

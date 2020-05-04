@@ -195,13 +195,23 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 
 // clusterLogs shows logs for debugging a failed cluster
 func clusterLogs(t *testing.T, profile string) {
+	t.Logf("-----------------------post-mortem--------------------------------")
+
+	if DockerDriver() {
+		t.Logf("======>  post-mortem[%s]: docker logs <======", t.Name())
+		rr, err := Run(t, exec.Command("docker", "logs", profile))
+		if err != nil {
+			t.Logf("failed to get docker logs : %v", err)
+			return
+		}
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
+
+	}
 	st := Status(context.Background(), t, Target(), profile, "Host")
 	if st != state.Running.String() {
 		t.Logf("%q host is not running, skipping log retrieval (state=%q)", profile, st)
 		return
 	}
-
-	t.Logf("-----------------------post-mortem--------------------------------")
 	t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
 	t.Logf("======>  post-mortem[%s]: minikube logs <======", t.Name())
 
