@@ -254,6 +254,25 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 	return nil
 }
 
+// StartContainer starts a container with "docker/podman start"
+func StartContainer(ociBin string, container string) error {
+	// construct the actual docker start argv
+	args := []string{"start"}
+
+	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
+	if ociBin == Podman {
+		args = append(args, "--cgroup-manager", "cgroupfs")
+	}
+
+	args = append(args, container)
+
+	if err := PrefixCmd(exec.Command(ociBin, args...)).Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ContainerID returns id of a container name
 func ContainerID(ociBin string, nameOrID string) (string, error) {
 	rr, err := runCmd(exec.Command(ociBin, "inspect", "-f", "{{.Id}}", nameOrID))
