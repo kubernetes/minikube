@@ -139,14 +139,11 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 }
 
 func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile string) {
-	// TODO (#7496): remove skip once restarts work
-	t.Skip("Restarting nodes is broken :(")
-
 	// Grab the stopped node
 	name := "m03"
 
 	// Start the node back up
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", name))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", name, "--alsologtostderr"))
 	if err != nil {
 		t.Errorf("node start returned an error. args %q: %v", rr.Command(), err)
 	}
