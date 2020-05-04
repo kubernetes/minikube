@@ -156,6 +156,15 @@ func runStart(cmd *cobra.Command, args []string) {
 	ds, alts, specified := selectDriver(existing)
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
+		if errors.Is(err, oci.ErrWindowsContainers) {
+			out.ErrLn("")
+			out.ErrT(out.Conflict, "Your Docker Desktop container os type is Windows but Linux is required.")
+			out.T(out.Warning, "Please change Docker settings to use Linux containers instead of Windows containers.")
+			out.T(out.Documentation, "https://minikube.sigs.k8s.io/docs/drivers/docker/#verify-docker-container-type-is-linux")
+			exit.UsageT(`You can verify your Docker container type by running:
+	{{.command}}
+		`, out.V{"command": "docker info --format '{{.OSType}}'"})
+		}
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
 			exit.WithError("error provisioning host", err)

@@ -26,7 +26,6 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/golang/glog"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -60,7 +59,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
-		ImageDigest:       viper.GetString("base-image"),
+		ImageDigest:       cc.KicBaseImage,
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Docker,
@@ -81,9 +80,13 @@ func status() registry.State {
 	defer cancel()
 
 	// Quickly returns an error code if server is not running
-	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Version}}")
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
 	o, err := cmd.Output()
 	output := string(o)
+	if strings.Contains(output, "windows-") {
+		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
+
+	}
 	if err == nil {
 		glog.Infof("docker version: %s", output)
 		return registry.State{Installed: true, Healthy: true}
