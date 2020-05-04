@@ -61,7 +61,10 @@ func TestErrorSpam(t *testing.T) {
 		t.Errorf("%q failed: %v", rr.Command(), err)
 	}
 
-	for _, line := range strings.Split(rr.Stderr.String(), "\n") {
+	stdout := rr.Stdout.String()
+	stderr := rr.Stderr.String()
+
+	for _, line := range strings.Split(stderr, "\n") {
 		if strings.HasPrefix(line, "E") {
 			t.Errorf("unexpected error log: %q", line)
 			continue
@@ -77,12 +80,17 @@ func TestErrorSpam(t *testing.T) {
 		}
 	}
 
-	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
+	for _, line := range strings.Split(stdout, "\n") {
 		keywords := []string{"error", "fail", "warning", "conflict"}
 		for _, keyword := range keywords {
 			if strings.Contains(line, keyword) {
 				t.Errorf("unexpected %q in stdout: %q", keyword, line)
 			}
 		}
+	}
+
+	if t.Failed() {
+		t.Logf("minikube stdout:\n%s", stdout)
+		t.Logf("minikube stderr:\n%s", stderr)
 	}
 }
