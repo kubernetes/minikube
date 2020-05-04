@@ -106,6 +106,7 @@ func beginDownloadKicArtifacts(g *errgroup.Group, cc *config.ClusterConfig) {
 		if !image.ExistsImageInDaemon(cc.KicBaseImage) {
 			out.T(out.Pulling, "Pulling base image ...")
 			g.Go(func() error {
+				// TODO #8004 : make base-image respect --image-repository
 				glog.Infof("Downloading %s to local daemon", cc.KicBaseImage)
 				err := image.WriteImageToDaemon(cc.KicBaseImage)
 				if err != nil {
