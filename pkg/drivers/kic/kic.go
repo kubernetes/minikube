@@ -299,8 +299,7 @@ func (d *Driver) Restart() error {
 
 // Start an already created kic container
 func (d *Driver) Start() error {
-	cr := command.NewExecRunner() // using exec runner for interacting with docker/podman daemon
-	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName))); err != nil {
+	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		return errors.Wrap(err, "start")
 	}
 	checkRunning := func() error {
