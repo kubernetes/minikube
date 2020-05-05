@@ -48,12 +48,10 @@ var (
 	domain   = "nginx-svc.default.svc.cluster.local."
 )
 
-// TestTunnel are functionality `minikube tunnel` tests which can safely share a profile in serial
-func TestTunnel(t *testing.T) {
+func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
+	ctx, cancel := context.WithTimeout(ctx, Minutes(20))
 	type validateFunc func(context.Context, *testing.T, string)
-	profile := UniqueProfileName("tunnel")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-	defer CleanupWithLogs(t, profile, cancel)
+	defer cancel()
 
 	// Serial tests
 	t.Run("serial", func(t *testing.T) {
@@ -61,7 +59,6 @@ func TestTunnel(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"StartWithProxy", validateStartWithProxy},             // Start cluster same as TestFunctional
 			{"StartTunnel", validateTunnelStart},                   // Start tunnel
 			{"WaitService", validateServiceStable},                 // Wait for service is stable
 			{"AccessDirect", validateAccessDirect},                 // Access test for loadbalancer IP
@@ -330,16 +327,9 @@ func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateTunnelDelete stops `minikube tunnel` and deletes minikube cluster
+// validateTunnelDelete stops `minikube tunnel`
 func validateTunnelDelete(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
 	// Stop tunnel
 	tunnelSession.Stop(t)
-
-	// Delete cluster
-	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Errorf("failed to delete minikube with args: %q : %v", rr.Command(), err)
-	}
 }
