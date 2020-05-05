@@ -91,18 +91,29 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get kubernetes client: %v", client)
 	}
 
-	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", Minutes(6)); err != nil {
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", Minutes(6)); err != nil {
 		t.Errorf("failed waiting for ingress-controller deployment to stabilize: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=nginx-ingress-controller", Minutes(12)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=ingress-nginx", Minutes(12)); err != nil {
 		t.Fatalf("failed waititing for nginx-ingress-controller : %v", err)
 	}
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml")))
-	if err != nil {
-		t.Errorf("failed to kubectl replace nginx-ing. args %q. %v", rr.Command(), err)
+	createIngress := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml")))
+		if err != nil {
+			return err
+		}
+		if rr.Stderr.String() != "" {
+			t.Logf("%v: unexpected stderr: %s (may be temproary)", rr.Command(), rr.Stderr)
+		}
+		return nil
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
+
+	if err := retry.Expo(createIngress, 1*time.Second, Seconds(90)); err != nil {
+		t.Errorf("failed to create ingress: %v", err)
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
 	if err != nil {
 		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Command(), err)
 	}
