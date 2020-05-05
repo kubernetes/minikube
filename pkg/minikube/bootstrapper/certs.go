@@ -47,7 +47,7 @@ import (
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) ([]assets.CopyableFile, error) {
+func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node, keepContext bool) ([]assets.CopyableFile, error) {
 	localPath := localpath.Profile(k8s.ClusterName)
 	glog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
 
@@ -99,7 +99,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		ClientCertificate:    path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.crt"),
 		ClientKey:            path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.key"),
 		CertificateAuthority: path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
-		KeepContext:          false,
+		KeepContext:          keepContext,
 	}
 
 	kubeCfg := api.NewConfig()

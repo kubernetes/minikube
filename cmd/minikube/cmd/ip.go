@@ -29,6 +29,8 @@ var ipCmd = &cobra.Command{
 	Long:  `Retrieves the IP address of the running cluster, and writes it to STDOUT.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		co := mustload.Running(ClusterFlagValue())
-		out.Ln(co.CP.IP.String())
+		for _, n := range co.Config.Nodes {
+			out.Ln(n.IP)
+		}
 	},
 }
