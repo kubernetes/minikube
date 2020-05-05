@@ -125,9 +125,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node); err != nil {
+		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node, starter.PreExists); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
+
 	}
 
 	var wg sync.WaitGroup
@@ -153,12 +154,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 
-		// TODO: existing cluster should wait for health #7597
-		if !starter.PreExists {
-			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
-				return nil, errors.Wrap(err, "Wait failed")
-			}
+		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
+			return nil, errors.Wrap(err, "Wait failed")
 		}
+
 	} else {
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
 			return nil, errors.Wrap(err, "Updating node")
@@ -277,7 +276,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		exit.WithError("Failed to update cluster", err)
 	}
 
-	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
+	if err := bs.SetupCerts(cfg.KubernetesConfig, n, false); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
 
