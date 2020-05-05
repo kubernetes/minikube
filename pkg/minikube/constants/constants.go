@@ -65,6 +65,8 @@ const (
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
+	// MinikubeForceSystemdEnv is used to force systemd as cgroup manager for the container runtime
+	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
 )
 
 var (
