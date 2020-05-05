@@ -115,22 +115,27 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	want := "Welcome to nginx!"
+	addr := "http://127.0.0.1/"
 	checkIngress := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
 		if err != nil {
 			return err
 		}
+
+		stderr := rr.Stderr.String()
 		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s (may be temproary)", rr.Command(), rr.Stderr)
+			t.Logf("debug: unexpected stderr for %v:\n%s", rr.Command(), stderr)
 		}
-		if !strings.Contains(rr.Stdout.String(), want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
+
+		stdout := rr.Stdout.String()
+		if !strings.Contains(stdout, want) {
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), stdout, want)
 		}
 		return nil
 	}
 
 	if err := retry.Expo(checkIngress, 500*time.Millisecond, Seconds(90)); err != nil {
-		t.Errorf("failed to get response from ngninx ingress on 127.0.0.1:80: %v", err)
+		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1"))
