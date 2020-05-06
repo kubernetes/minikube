@@ -20,6 +20,7 @@ package kverify
 import (
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os/exec"
@@ -172,7 +173,7 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 		if strings.Contains(rr.Stderr.String(), "freezer.state: No such file or directory\n") {
 			glog.Infof("unable to get freezer state (might be okay and be related to #770): %s", rr.Stderr.String())
 		} else {
-			glog.Warningf("unable to get freezer state : %s", rr.Stderr.String())
+			glog.Warningf("unable to get freezer state: %s", rr.Stderr.String())
 		}
 
 		return apiServerHealthz(hostname, port)
@@ -202,13 +203,16 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 		glog.Infof("stopped: %s: %v", url, err)
 		return state.Stopped, nil
 	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	glog.Infof("%s returned %d:\n%s", url, resp.StatusCode, body)
 	if resp.StatusCode == http.StatusUnauthorized {
-		glog.Errorf("%s returned code %d (unauthorized). Please ensure that your apiserver authorization settings make sense!", url, resp.StatusCode)
-		return state.Error, nil
+		return state.Error, fmt.Errorf("%s returned code %d (unauthorized). Check your apiserver authorization settings:\n%s", url, resp.StatusCode, body)
 	}
 	if resp.StatusCode != http.StatusOK {
-		glog.Warningf("%s response: %v %+v", url, err, resp)
-		return state.Error, nil
+		return state.Error, fmt.Errorf("%s returned error %d:\n%s", url, resp.StatusCode, body)
 	}
 	return state.Running, nil
 }

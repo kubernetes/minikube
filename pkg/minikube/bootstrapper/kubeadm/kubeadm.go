@@ -145,11 +145,16 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) error {
 		"/etc/kubernetes/scheduler.conf",
 	}
 
-	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(cp.IP, strconv.Itoa(cp.Port)))
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(constants.ControlPlaneAlias, strconv.Itoa(cp.Port)))
 	for _, path := range paths {
-		_, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("grep %s %s || sudo rm -f %s", endpoint, path, path)))
+		_, err := k.c.RunCmd(exec.Command("sudo", "grep", endpoint, path))
 		if err != nil {
-			return err
+			glog.Infof("%q may not be in %s - will remove: %v", endpoint, path, err)
+
+			_, err := k.c.RunCmd(exec.Command("sudo", "rm", "-f", path))
+			if err != nil {
+				glog.Errorf("rm failed: %v", err)
+			}
 		}
 	}
 	return nil
@@ -292,6 +297,8 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		if rerr == nil {
 			return nil
 		}
+
+		panic(fmt.Sprintf("FAILED: %v", rerr))
 		out.ErrT(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			glog.Warningf("delete failed: %v", err)
@@ -435,35 +442,35 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	return waitErr
 }
 
-// needsReset returns whether or not the cluster needs to be reconfigured
-func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client *kubernetes.Clientset, version string) bool {
+// needsReconfigure returns whether or not the cluster needs to be reconfigured
+func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, client *kubernetes.Clientset, version string) bool {
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
-		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
+		glog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
 		return true
 	}
 
 	st, err := kverify.APIServerStatus(k.c, hostname, port)
 	if err != nil {
-		glog.Infof("needs reset: apiserver error: %v", err)
+		glog.Infof("needs reconfigure: apiserver error: %v", err)
 		return true
 	}
 
 	if st != state.Running {
-		glog.Infof("needs reset: apiserver in state %s", st)
+		glog.Infof("needs reconfigure: apiserver in state %s", st)
 		return true
 	}
 
 	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
-		glog.Infof("needs reset: %v", err)
+		glog.Infof("needs reconfigure: %v", err)
 		return true
 	}
 
 	if err := kverify.APIServerVersionMatch(client, version); err != nil {
-		glog.Infof("needs reset: %v", err)
+		glog.Infof("needs reconfigure: %v", err)
 		return true
 	}
-	// to be used in the ingeration test to verify it wont reset.
-	glog.Infof("The running cluster does not need a reset. hostname: %s", hostname)
+
+	glog.Infof("The running cluster does not need reconfiguration. hostname: %s", hostname)
 	return false
 }
 
@@ -509,7 +516,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 
 	// If the cluster is running, check if we have any work to do.
 	conf := bsutil.KubeadmYamlPath
-	if !k.needsReset(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
+	if !k.needsReconfigure(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
 		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
 	}
@@ -530,12 +537,15 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, conf),
 	}
 
-	glog.Infof("resetting cluster from %s", conf)
+	glog.Infof("reconfiguring cluster from %s", conf)
 	// Run commands one at a time so that it is easier to root cause failures.
 	for _, c := range cmds {
-		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c))
-		if err != nil {
-			return errors.Wrap(err, "run")
+		if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c)); err != nil {
+			glog.Errorf("%s failed - will try once more: %v", c, err)
+
+			if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c)); err != nil {
+				return errors.Wrap(err, "run")
+			}
 		}
 	}
 
