@@ -24,7 +24,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -51,10 +50,11 @@ func runStop(cmd *cobra.Command, args []string) {
 	defer api.Close()
 
 	for _, n := range cc.Nodes {
-		nonexistent := stop(api, *cc, n)
+		machineName := driver.MachineName(*cc, n)
+		nonexistent := stop(api, machineName)
 
 		if !nonexistent {
-			out.T(out.Stopped, `Node "{{.node_name}}" stopped.`, out.V{"node_name": n.Name})
+			out.T(out.Stopped, `Node "{{.node_name}}" stopped.`, out.V{"node_name": machineName})
 		}
 	}
 
@@ -67,9 +67,8 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 }
 
-func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool {
+func stop(api libmachine.API, machineName string) bool {
 	nonexistent := false
-	machineName := driver.MachineName(cluster, n)
 
 	tryStop := func() (err error) {
 		err = machine.StopHost(api, machineName)
