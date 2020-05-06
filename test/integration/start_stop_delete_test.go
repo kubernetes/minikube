@@ -108,6 +108,8 @@ func TestStartStop(t *testing.T) {
 						{"EnableAddonAfterStop", validateEnableAddonAfterStop},
 						{"SecondStart", validateSecondStart},
 						{"AppExistsAfterStop", validateAppExistsAfterStop},
+						{"AddonExistAfterStop", validateAddonAfterStop},
+
 						{"VerifyKubernetesImages", validateKubernetesImages},
 						{"Pause", validatePauseAfterSart},
 					}
@@ -248,13 +250,22 @@ func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcNa
 
 }
 
+// validateAppExistsAfterStop verifies that a user's app will not vanish after a minikube stop
 func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 	} else {
-		if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(7)); err != nil {
-			t.Fatalf("failed waiting for pod 'busybox' post-stop-start: %v", err)
+		if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
+			t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 		}
+	}
+}
+
+// validateAddonAfterStop validates that an addon which was enabled when minikube is stopped will be enabled and working..
+func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	if strings.Contains(tcName, "cni") {
+		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+	} else {
 		if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
 			t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 		}
