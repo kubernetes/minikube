@@ -41,7 +41,7 @@ func TestPause(t *testing.T) {
 			validator validateFunc
 		}{
 			{"Start", validateFreshStart},
-			{"SecondStartNoReset", validateStartNoReset},
+			{"SecondStartNoReconfiguration", validateStartNoReconfigure},
 			{"Pause", validatePause},
 			{"Unpause", validateUnpause},
 			{"PauseAgain", validatePause},
