@@ -206,6 +206,9 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		glog.Warningf("unable to read response body: %s", err)
+	}
 
 	glog.Infof("%s returned %d:\n%s", url, resp.StatusCode, body)
 	if resp.StatusCode == http.StatusUnauthorized {
