@@ -298,7 +298,6 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 			return nil
 		}
 
-		panic(fmt.Sprintf("FAILED: %v", rerr))
 		out.ErrT(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			glog.Warningf("delete failed: %v", err)
