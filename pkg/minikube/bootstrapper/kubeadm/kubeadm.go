@@ -133,16 +133,25 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 
 // clearStaleConfigs clears configurations which may have stale IP addresses
 func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) error {
-	cp, err := config.PrimaryControlPlane(&cfg)
-	if err != nil {
-		return err
-	}
-
+	// These are the files that kubeadm will reject stale versions of
 	paths := []string{
 		"/etc/kubernetes/admin.conf",
 		"/etc/kubernetes/kubelet.conf",
 		"/etc/kubernetes/controller-manager.conf",
 		"/etc/kubernetes/scheduler.conf",
+	}
+
+	args := append([]string{"ls", "-la"}, paths...)
+	rr, err := k.c.RunCmd(exec.Command("sudo", args...))
+	if err != nil {
+		glog.Infof("config check failed, skipping stale config cleanup: %v", err)
+		return nil
+	}
+	glog.Infof("found existing configuration files:\n%s\n", rr.Stdout.String())
+
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return err
 	}
 
 	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(constants.ControlPlaneAlias, strconv.Itoa(cp.Port)))
@@ -469,7 +478,8 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 		return true
 	}
 
-	glog.Infof("The running cluster does not need reconfiguration. hostname: %s", hostname)
+	// DANGER: This log message is hard-coded in an integration test!
+	glog.Infof("The running cluster does not require reconfiguration: %s", hostname)
 	return false
 }
 
@@ -829,7 +839,7 @@ func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
 		return err
 	}
 
-	ko := path.Join(vmpath.GuestEphemeralDir, fmt.Sprintf("kic_overlay.yaml"))
+	ko := path.Join(vmpath.GuestEphemeralDir, "kic_overlay.yaml")
 	f := assets.NewMemoryAssetTarget(b.Bytes(), ko, "0644")
 
 	if err := k.c.Copy(f); err != nil {
@@ -899,7 +909,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
 		// Error from server (AlreadyExists): clusterrolebindings.rbac.authorization.k8s.io "minikube-rbac" already exists
-		if strings.Contains(rr.Output(), fmt.Sprintf("Error from server (AlreadyExists)")) {
+		if strings.Contains(rr.Output(), "Error from server (AlreadyExists)") {
 			glog.Infof("rbac %q already exists not need to re-create.", rbacName)
 			return nil
 		}
