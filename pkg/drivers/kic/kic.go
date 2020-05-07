@@ -294,6 +294,10 @@ func (d *Driver) Restart() error {
 	if err = d.Start(); err != nil {
 		return fmt.Errorf("start during restart %v", err)
 	}
+	cr := command.NewExecRunner() // using exec runner for interacting with docker/podman daemon
+	if _, err := cr.RunCmd(exec.Command("sudo", "systemctl", "restart", "kubelet")); err != nil {
+		return errors.Wrap(err, "restarting kubelet")
+	}
 	return nil
 
 }
