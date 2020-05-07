@@ -1,18 +1,18 @@
 ---
 title: "cache"
 description: >
-  Add or delete an image from the local cache.
+  Add, delete, or push a local image into minikube
 ---
 
 
 
 ## minikube cache
 
-Add or delete an image from the local cache.
+Add, delete, or push a local image into minikube
 
 ### Synopsis
 
-Add or delete an image from the local cache.
+Add, delete, or push a local image into minikube
 
 ### Options
 
@@ -24,7 +24,7 @@ Add or delete an image from the local cache.
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
@@ -56,7 +56,7 @@ minikube cache add [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
@@ -88,7 +88,7 @@ minikube cache delete [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
@@ -121,7 +121,7 @@ minikube cache help [command] [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
@@ -155,7 +155,7 @@ minikube cache list [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
@@ -187,7 +187,7 @@ minikube cache reload [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
