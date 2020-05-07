@@ -181,20 +181,31 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	if starter.PreExists && driver.IsKIC(starter.Host.DriverName) {
-		// we need to restart kubelet to ensure that it picks up the correct node ip
-		// there seems to be a race condition between when the ip is updated
-		// on node restarts and kubelet starting up
-		glog.Infof("Restarting kubelet...")
-		if err := sysinit.New(starter.Runner).Restart("kubelet"); err != nil {
-			return nil, errors.Wrap(err, "restarting kubelet")
-		}
+	if err := restartKubeletIfNeeded(starter); err != nil {
+		return nil, errors.Wrap(err, "restarting kubelet")
 	}
 
 	wg.Wait()
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+func restartKubeletIfNeeded(starter Starter) error {
+	if !starter.PreExists {
+		return nil
+	}
+	if !driver.IsKIC(starter.Host.DriverName) {
+		return nil
+	}
+	// on soft start and kic, we need to restart kubelet to ensure that it picks up the correct node ip
+	// there seems to be a race condition between when the ip is updated
+	// on node restarts and kubelet starting up
+	glog.Infof("Restarting kubelet...")
+	if err := sysinit.New(starter.Runner).Restart("kubelet"); err != nil {
+		return errors.Wrap(err, "restarting kubelet")
+	}
+	return nil
 }
 
 // Provision provisions the machine/container for the node
