@@ -36,7 +36,7 @@ const (
 	None = "none"
 )
 
-// IsKIC checks if the driver is a kubernetes in container
+// IsKIC checks if the driver is a Kubernetes in container
 func IsKIC(name string) bool {
 	return name == Docker || name == Podman
 }

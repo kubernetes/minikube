@@ -30,7 +30,7 @@ import (
 var nodeListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List nodes.",
-	Long:  "List existing Minikube nodes.",
+	Long:  "List existing minikube nodes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
 			exit.UsageT("Usage: minikube node list")
@@ -40,7 +40,7 @@ var nodeListCmd = &cobra.Command{
 		_, cc := mustload.Partial(cname)
 
 		if len(cc.Nodes) < 1 {
-			glog.Warningf("Did not found any Minikube node.")
+			glog.Warningf("Did not found any minikube node.")
 		} else {
 			glog.Infof("%v", cc.Nodes)
 		}

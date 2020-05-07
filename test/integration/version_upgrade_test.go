@@ -123,7 +123,7 @@ func TestVersionUpgrade(t *testing.T) {
 	t.Logf("Attempting to downgrade Kubernetes (should fail)")
 	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	if rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), args...)); err == nil {
-		t.Fatalf("downgrading kubernetes should not be allowed. expected to see error but got %v for %q", err, rr.Command())
+		t.Fatalf("downgrading Kubernetes should not be allowed. expected to see error but got %v for %q", err, rr.Command())
 	}
 
 	t.Logf("Attempting restart after unsuccessful downgrade")

@@ -122,7 +122,7 @@ func isDockerActive(r command.Runner) bool {
 // dockerEnvCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
-	Short: "Sets up docker env variables; similar to '$(docker-machine env)'",
+	Short: "Configure environment to use minikube's Docker daemon",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()

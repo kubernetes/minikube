@@ -1,18 +1,18 @@
 ---
 title: "start"
 description: >
-  Starts a local kubernetes cluster
+  Starts a local Kubernetes cluster
 ---
 
 
 
 ## minikube start
 
-Starts a local kubernetes cluster
+Starts a local Kubernetes cluster
 
 ### Synopsis
 
-Starts a local kubernetes cluster
+Starts a local Kubernetes cluster
 
 ```
 minikube start [flags]
@@ -35,12 +35,12 @@ minikube start [flags]
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
       --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors
       --disk-size string                  Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g). (default "20000mb")
-      --dns-domain string                 The cluster dns domain name used in the kubernetes cluster (default "cluster.local")
+      --dns-domain string                 The cluster dns domain name used in the Kubernetes cluster (default "cluster.local")
       --dns-proxy                         Enable proxy for NAT DNS requests (virtualbox driver only)
       --docker-env stringArray            Environment variables to pass to the Docker daemon. (format: key=value)
       --docker-opt stringArray            Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
       --download-only                     If true, only download and cache files for later use - don't install or start anything.
-      --driver string                     Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.
+      --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
       --dry-run                           dry-run mode. Validates configuration, but does not mutate system state
       --embed-certs                       if true, will embed the certs in kubeconfig.
       --enable-default-cni                Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with "--network-plugin=cni".
@@ -67,7 +67,7 @@ minikube start [flags]
       --interactive                       Allow user prompts for more information (default true)
       --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.10.0-beta.2.iso,https://github.com/kubernetes/minikube/releases/download/v1.10.0-beta.2/minikube-v1.10.0-beta.2.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.10.0-beta.2.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.18.1, 'latest' for v1.18.1). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.18.1, 'latest' for v1.18.1). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM network name. (kvm2 driver only) (default "default")
@@ -88,7 +88,7 @@ minikube start [flags]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers
       --vm-driver driver                  DEPRECATED, use driver instead.
-      --wait strings                      comma separated list of kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
+      --wait strings                      comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
       --wait-timeout duration             max time to wait per Kubernetes core services to be healthy. (default 6m0s)
 ```
 
@@ -96,7 +96,7 @@ minikube start [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
