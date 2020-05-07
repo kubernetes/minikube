@@ -103,7 +103,7 @@ func createExternalSSHClient(d drivers.Driver) (*ssh.ExternalClient, error) {
 // podmanEnvCmd represents the podman-env command
 var podmanEnvCmd = &cobra.Command{
 	Use:   "podman-env",
-	Short: "Sets up podman env variables; similar to '$(podman-machine env)'",
+	Short: "Configure environment to use minikube's Podman daemon",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
