@@ -196,7 +196,9 @@ func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcNam
 >>>>>>> break down test strat stop to sub tests
 
 func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
-	testPodScheduling(ctx, t, profile)
+	if !strings.Contains(tcName, "cni") {
+		testPodScheduling(ctx, t, profile)
+	}
 }
 
 func validateStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
