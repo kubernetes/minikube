@@ -38,21 +38,19 @@ kind: Ingress
 metadata:
   name: example-ingress
   namespace: kube-system
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
   rules:
     - host: hello-john.test
       http:
         paths:
-          - path: /|/(.+)
+          - path: /
             backend:
               serviceName: hello-world-app
               servicePort: 80
     - host: hello-jane.test
       http:
         paths:
-          - path: /|/(.+)
+          - path: /
             backend:
               serviceName: hello-world-app
               servicePort: 80
