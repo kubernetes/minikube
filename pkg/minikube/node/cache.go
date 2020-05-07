@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -99,14 +100,21 @@ func doCacheBinaries(k8sVersion string) error {
 }
 
 // BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
-func beginDownloadKicArtifacts(g *errgroup.Group, driver string, cRuntime string, baseImage string) {
-	glog.Infof("Beginning downloading kic artifacts for %s with %s", driver, cRuntime)
-	if driver == "docker" {
-		if !image.ExistsImageInDaemon(baseImage) {
+func beginDownloadKicArtifacts(g *errgroup.Group, cc *config.ClusterConfig) {
+	glog.Infof("Beginning downloading kic artifacts for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+	if cc.Driver == "docker" {
+		if !image.ExistsImageInDaemon(cc.KicBaseImage) {
 			out.T(out.Pulling, "Pulling base image ...")
 			g.Go(func() error {
-				glog.Infof("Downloading %s to local daemon", baseImage)
-				return image.WriteImageToDaemon(baseImage)
+				// TODO #8004 : make base-image respect --image-repository
+				glog.Infof("Downloading %s to local daemon", cc.KicBaseImage)
+				err := image.WriteImageToDaemon(cc.KicBaseImage)
+				if err != nil {
+					glog.Infof("failed to download base-image %q will try to download the fallback base-image %q instead.", cc.KicBaseImage, kic.BaseImageFallBack)
+					cc.KicBaseImage = kic.BaseImageFallBack
+					return image.WriteImageToDaemon(kic.BaseImageFallBack)
+				}
+				return nil
 			})
 		}
 	} else {
