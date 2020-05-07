@@ -125,7 +125,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node, starter.PreExists); err != nil {
+		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node, true); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 
