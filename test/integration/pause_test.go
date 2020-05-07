@@ -41,7 +41,7 @@ func TestPause(t *testing.T) {
 			validator validateFunc
 		}{
 			{"Start", validateFreshStart},
-			{"SecondStartNoReset", validateStartNoReset},
+			{"SecondStartNoReconfiguration", validateStartNoReconfigure},
 			{"Pause", validatePause},
 			{"Unpause", validateUnpause},
 			{"PauseAgain", validatePause},
@@ -65,22 +65,22 @@ func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateStartNoReset validates that starting a running cluster won't invoke a reset
-func validateStartNoReset(ctx context.Context, t *testing.T, profile string) {
+// validateStartNoReconfigure validates that starting a running cluster does not invoke reconfiguration
+func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		defer clusterLogs(t, profile)
 		t.Fatalf("failed to second start a running minikube with args: %q : %v", rr.Command(), err)
 	}
+
 	if !NoneDriver() {
-		softLog := "The running cluster does not need a reset"
+		softLog := "The running cluster does not require reconfiguration"
 		if !strings.Contains(rr.Output(), softLog) {
 			defer clusterLogs(t, profile)
-			t.Errorf("expected the second start log outputs to include %q but got: %s", softLog, rr.Output())
+			t.Errorf("expected the second start log output to include %q but got: %s", softLog, rr.Output())
 		}
 	}
-
 }
 
 func validatePause(ctx context.Context, t *testing.T, profile string) {
