@@ -59,7 +59,7 @@ var viperWhiteList = []string{
 var RootCmd = &cobra.Command{
 	Use:   "minikube",
 	Short: "minikube quickly sets up a local Kubernetes cluster",
-	Long:  `minikube is a tool that provisions and manages local Kubernetes clusters optimized for development workflows.`,
+	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
