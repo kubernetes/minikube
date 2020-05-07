@@ -88,7 +88,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client: %v", client)
+		t.Fatalf("failed to get Kubernetes client: %v", client)
 	}
 
 	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", Minutes(6)); err != nil {
@@ -158,7 +158,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client for %s : %v", profile, err)
+		t.Fatalf("failed to get Kubernetes client for %s : %v", profile, err)
 	}
 
 	start := time.Now()
@@ -232,7 +232,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile string) {
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client for %s: %v", profile, err)
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
 	}
 
 	start := time.Now()
@@ -274,7 +274,7 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) {
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client for %s: %v", profile, err)
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
 	}
 
 	start := time.Now()

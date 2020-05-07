@@ -66,7 +66,7 @@ import (
 // Bootstrapper is a bootstrapper using kubeadm
 type Bootstrapper struct {
 	c           command.Runner
-	k8sClient   *kubernetes.Clientset // kubernetes client used to verify pods inside cluster
+	k8sClient   *kubernetes.Clientset // Kubernetes client used to verify pods inside cluster
 	contextName string
 }
 
@@ -172,7 +172,7 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) error {
 func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "parsing kubernetes version")
+		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	extraFlags := bsutil.CreateFlagsFromExtraArgs(cfg.KubernetesConfig.ExtraOptions)
@@ -197,7 +197,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	skipSystemVerification := false
 	// Allow older kubeadm versions to function with newer Docker releases.
 	if version.LT(semver.MustParse("1.13.0")) {
-		glog.Infof("ignoring SystemVerification for kubeadm because of old kubernetes version %v", version)
+		glog.Infof("ignoring SystemVerification for kubeadm because of old Kubernetes version %v", version)
 		skipSystemVerification = true
 	}
 	if driver.BareMetal(cfg.Driver) && r.Name() == "Docker" {
@@ -494,7 +494,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 
 	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "parsing kubernetes version")
+		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	phase := "alpha"
@@ -642,7 +642,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "parsing kubernetes version")
+		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	ka := bsutil.InvokeKubeadm(k8s.KubernetesVersion)
@@ -870,7 +870,7 @@ func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
 // applyNodeLabels applies minikube labels to all the nodes
 func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	// time cluster was created. time format is based on ISO 8601 (RFC 3339)
-	// converting - and : to _ because of kubernetes label restriction
+	// converting - and : to _ because of Kubernetes label restriction
 	createdAtLbl := "minikube.k8s.io/updated_at=" + time.Now().Format("2006_01_02T15_04_05_0700")
 	verLbl := "minikube.k8s.io/version=" + version.GetVersion()
 	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()

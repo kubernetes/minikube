@@ -42,7 +42,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&k8sVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
+	flag.StringVar(&k8sVersion, "kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
 	flag.Parse()
 	if k8sVersion != "" {
 		k8sVersions = append(k8sVersions, k8sVersion)

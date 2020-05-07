@@ -50,9 +50,9 @@ type Config struct {
 	OCIBinary         string            // oci tool to use (docker, podman,...)
 	ImageDigest       string            // image name with sha to use for the node
 	Mounts            []oci.Mount       // mounts
-	APIServerPort     int               // kubernetes api server port inside the container
+	APIServerPort     int               // Kubernetes api server port inside the container
 	PortMappings      []oci.PortMapping // container port mappings
 	Envs              map[string]string // key,value of environment variables passed to the node
-	KubernetesVersion string            // kubernetes version to install
+	KubernetesVersion string            // Kubernetes version to install
 	ContainerRuntime  string            // container runtime kic is running
 }

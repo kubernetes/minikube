@@ -59,7 +59,7 @@ func ClientConfig(context string) (*rest.Config, error) {
 	return c, nil
 }
 
-// Client gets the kubernetes client for a kubectl context name
+// Client gets the Kubernetes client for a kubectl context name
 func Client(context string) (*kubernetes.Clientset, error) {
 	c, err := ClientConfig(context)
 	if err != nil {
