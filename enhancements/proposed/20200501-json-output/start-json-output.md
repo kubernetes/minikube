@@ -37,7 +37,29 @@ This allows end users to see clear, and ideally actionable, error messages when 
 
 *   Improving error handling in minikube; this is just about how we output errors to users
 
-## Design Details
+## Expected Output
+
+### Stderr
+
+If minikube fails, and an actionable error message exists, the following JSON will be printed to stderr:
+
+```json
+{
+  "ID": "KVM_UNAVAILABLE",
+  "Err": {},
+  "Advice": "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
+  "URL": "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
+  "Issues": [
+    2991
+  ],
+  "ShowIssueLink": false
+}
+```
+
+### Stdout
+
+
+## Implementation Details
 Users can specify JSON output on minikube start via a flag:
 
 ```
