@@ -132,7 +132,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client for %q: %v", profile, err)
+		t.Fatalf("failed to get Kubernetes client for %q: %v", profile, err)
 	}
 
 	// Start the "nginx" pod.

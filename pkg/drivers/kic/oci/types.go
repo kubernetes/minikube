@@ -41,7 +41,7 @@ type CreateParams struct {
 	NodeLabel     string            // label the nodes so we can clean up by node name
 	Role          string            // currently only role supported is control-plane
 	Mounts        []Mount           // volume mounts
-	APIServerPort int               // kubernetes api server port
+	APIServerPort int               // Kubernetes api server port
 	PortMappings  []PortMapping     // ports to map to container from host
 	CPUs          string            // number of cpu cores assign to container
 	Memory        string            // memory (mbs) to assign to the container
