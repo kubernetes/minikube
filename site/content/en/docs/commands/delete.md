@@ -1,18 +1,18 @@
 ---
 title: "delete"
 description: >
-  Deletes a local kubernetes cluster
+  Deletes a local Kubernetes cluster
 ---
 
 
 
 ## minikube delete
 
-Deletes a local kubernetes cluster
+Deletes a local Kubernetes cluster
 
 ### Synopsis
 
-Deletes a local kubernetes cluster. This command deletes the VM, and removes all
+Deletes a local Kubernetes cluster. This command deletes the VM, and removes all
 associated files.
 
 ```
@@ -31,7 +31,7 @@ minikube delete [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
