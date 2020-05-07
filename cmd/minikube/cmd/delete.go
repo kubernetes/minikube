@@ -165,7 +165,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 
 		if orphan {
-			// TODO: generalize for non-KIC drivers
+			// TODO: generalize for non-KIC drivers: #8040
 			deletePossibleKicLeftOver(cname, driver.Docker)
 		}
 	}
@@ -207,7 +207,7 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-// TODO: remove and/or move to delete package.
+// TODO: remove and/or move to delete package: #8040
 func deletePossibleKicLeftOver(cname string, driverName string) {
 	glog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
 
