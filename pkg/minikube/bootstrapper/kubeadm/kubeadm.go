@@ -812,11 +812,8 @@ func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
 
 	checkCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("pgrep kubelet && diff -u %s %s.new && diff -u %s %s.new", svc, svc, conf, conf))
 	if _, err := runner.RunCmd(checkCmd); err == nil {
-		// we need to restart kubelet to ensure that it picks up the correct node ip
-		// there seems to be a race condition between when the ip is updated
-		// on node restarts and kubelet starting up
-		glog.Infof("Restarting kubelet...")
-		return sysinit.New(runner).Restart("kubelet")
+		glog.Infof("kubelet is already running with the right configs")
+		return nil
 	}
 
 	startCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cp %s.new %s && sudo cp %s.new %s", svc, svc, conf, conf))
