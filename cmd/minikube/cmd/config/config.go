@@ -177,7 +177,7 @@ var settings = []Setting{
 // ConfigCmd represents the config command
 var ConfigCmd = &cobra.Command{
 	Use:   "config SUBCOMMAND [flags]",
-	Short: "Modify minikube config",
+	Short: "Modify persistent configuration values",
 	Long: `config modifies minikube config files using subcommands like "minikube config set driver kvm"
 Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {

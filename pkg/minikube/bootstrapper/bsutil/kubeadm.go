@@ -41,7 +41,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	k8s := cc.KubernetesConfig
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing kubernetes version")
+		return nil, errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	// parses a map of the feature gates for kubeadm and component

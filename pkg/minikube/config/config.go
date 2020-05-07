@@ -149,17 +149,17 @@ func encode(w io.Writer, m MinikubeConfig) error {
 	return err
 }
 
-// Load loads the kubernetes and machine config for the current machine
+// Load loads the Kubernetes and machine config for the current machine
 func Load(profile string) (*ClusterConfig, error) {
 	return DefaultLoader.LoadConfigFromFile(profile)
 }
 
-// Write writes the kubernetes and machine config for the current machine
+// Write writes the Kubernetes and machine config for the current machine
 func Write(profile string, cc *ClusterConfig) error {
 	return DefaultLoader.WriteConfigToFile(profile, cc)
 }
 
-// Loader loads the kubernetes and machine config based on the machine profile name
+// Loader loads the Kubernetes and machine config based on the machine profile name
 type Loader interface {
 	LoadConfigFromFile(profile string, miniHome ...string) (*ClusterConfig, error)
 	WriteConfigToFile(profileName string, cc *ClusterConfig, miniHome ...string) error

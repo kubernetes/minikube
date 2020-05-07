@@ -69,7 +69,7 @@ const boilerPlate = `
 
 var completionCmd = &cobra.Command{
 	Use:   "completion SHELL",
-	Short: "Outputs minikube shell completion for the given shell (bash, zsh or fish)",
+	Short: "Generate command completion for a shell",
 	Long:  longDescription,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {

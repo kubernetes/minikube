@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package kverify verifies a running kubernetes cluster is healthy
+// Package kverify verifies a running Kubernetes cluster is healthy
 package kverify
 
 import (

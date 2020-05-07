@@ -83,8 +83,8 @@ func init() {
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Starts a local kubernetes cluster",
-	Long:  "Starts a local kubernetes cluster",
+	Short: "Starts a local Kubernetes cluster",
+	Long:  "Starts a local Kubernetes cluster",
 	Run:   runStart,
 }
 
@@ -443,7 +443,7 @@ func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons 
 func kubectlVersion(path string) (string, error) {
 	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
 	if err != nil {
-		// really old kubernetes clients did not have the --output parameter
+		// really old Kubernetes clients did not have the --output parameter
 		b, err := exec.Command(path, "version", "--client", "--short").Output()
 		if err != nil {
 			return "", errors.Wrap(err, "exec")
@@ -846,7 +846,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
 		}
 
-		// conntrack is required starting with kubernetes 1.18, include the release candidates for completion
+		// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
 		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {

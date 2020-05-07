@@ -33,7 +33,7 @@ type LogOptions struct {
 	Follow bool
 }
 
-// Bootstrapper contains all the methods needed to bootstrap a kubernetes cluster
+// Bootstrapper contains all the methods needed to bootstrap a Kubernetes cluster
 type Bootstrapper interface {
 	StartCluster(config.ClusterConfig) error
 	UpdateCluster(config.ClusterConfig) error

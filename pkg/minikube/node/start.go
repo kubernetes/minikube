@@ -75,14 +75,14 @@ type Starter struct {
 	ExistingAddons map[string]bool
 }
 
-// Start spins up a guest and starts the kubernetes node.
+// Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
 	sv, err := util.ParseKubernetesVersion(starter.Node.KubernetesVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse kubernetes version")
+		return nil, errors.Wrap(err, "Failed to parse Kubernetes version")
 	}
 
 	// configure the runtime (docker, containerd, crio)
