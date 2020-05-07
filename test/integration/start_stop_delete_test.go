@@ -107,8 +107,8 @@ func TestStartStop(t *testing.T) {
 						{"Stop", validateStop},
 						{"EnableAddonAfterStop", validateEnableAddonAfterStop},
 						{"SecondStart", validateSecondStart},
-						{"AppExistsAfterStop", validateAppExistsAfterStop},
-						{"AddonExistAfterStop", validateAddonAfterStop},
+						{"UserAppExistsAfterStop", validateAppExistsAfterStop},
+						{"AddonExistsAfterStop", validateAddonAfterStop},
 						{"VerifyKubernetesImages", validateKubernetesImages},
 						{"Pause", validatePauseAfterSart},
 					}
