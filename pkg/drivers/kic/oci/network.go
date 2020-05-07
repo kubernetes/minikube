@@ -61,7 +61,7 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 // dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
 // gets the ip from user's host docker
 func dockerGatewayIP() (net.IP, error) {
-	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=^bridge$", "--format", "{{.ID}}"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "get network bridge")
 	}
