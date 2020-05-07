@@ -196,7 +196,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (comman
 	}
 
 	if driver.IsKIC(cc.Driver) {
-		beginDownloadKicArtifacts(&kicGroup, cc.Driver, cc.KubernetesConfig.ContainerRuntime, cc.KicBaseImage)
+		beginDownloadKicArtifacts(&kicGroup, cc)
 	}
 
 	if !driver.BareMetal(cc.Driver) {
@@ -251,13 +251,17 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	err = cr.Enable(disableOthers, viper.GetBool("force-systemd"))
+	err = cr.Enable(disableOthers, forceSystemd())
 	if err != nil {
 		debug.PrintStack()
 		exit.WithError("Failed to enable container runtime", err)
 	}
 
 	return cr
+}
+
+func forceSystemd() bool {
+	return viper.GetBool("force-systemd") || os.Getenv(constants.MinikubeForceSystemdEnv) == "true"
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
