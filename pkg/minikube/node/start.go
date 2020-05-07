@@ -53,6 +53,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -177,6 +178,16 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
+		}
+	}
+
+	if starter.PreExists {
+		// we need to restart kubelet to ensure that it picks up the correct node ip
+		// there seems to be a race condition between when the ip is updated
+		// on node restarts and kubelet starting up
+		glog.Infof("Restarting kubelet...")
+		if err := sysinit.New(starter.Runner).Restart("kubelet"); err != nil {
+			return nil, errors.Wrap(err, "restarting kubelet")
 		}
 	}
 
