@@ -181,7 +181,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	if starter.PreExists {
+	if starter.PreExists && driver.IsKIC(starter.Host.DriverName) {
 		// we need to restart kubelet to ensure that it picks up the correct node ip
 		// there seems to be a race condition between when the ip is updated
 		// on node restarts and kubelet starting up
