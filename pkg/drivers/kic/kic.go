@@ -294,6 +294,10 @@ func (d *Driver) Restart() error {
 	if err = d.Start(); err != nil {
 		return fmt.Errorf("start during restart %v", err)
 	}
+	// we need to restart kubelet to ensure that it picks up the correct node ip
+	// there seems to be a race condition between when the ip is updated
+	// on node restarts and kubelet starting up
+	glog.Infof("Restarting kubelet...")
 	cr := command.NewExecRunner() // using exec runner for interacting with docker/podman daemon
 	if _, err := cr.RunCmd(exec.Command("sudo", "systemctl", "restart", "kubelet")); err != nil {
 		return errors.Wrap(err, "restarting kubelet")
