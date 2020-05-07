@@ -51,8 +51,8 @@ var (
 // dashboardCmd represents the dashboard command
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
-	Short: "Access the kubernetes dashboard running within the minikube cluster",
-	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
+	Short: "Access the Kubernetes dashboard running within the minikube cluster",
+	Long:  `Access the Kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)

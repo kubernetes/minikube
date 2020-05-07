@@ -27,7 +27,7 @@ import (
 // updateContextCmd represents the update-context command
 var updateContextCmd = &cobra.Command{
 	Use:   "update-context",
-	Short: "Verify the IP address of the running cluster in kubeconfig.",
+	Short: "Update kubeconfig in case of an IP or port change",
 	Long: `Retrieves the IP address of the running cluster, checks it
 			with IP in kubeconfig, and corrects kubeconfig if incorrect.`,
 	Run: func(cmd *cobra.Command, args []string) {

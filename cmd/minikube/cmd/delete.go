@@ -51,8 +51,8 @@ var purge bool
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Deletes a local kubernetes cluster",
-	Long: `Deletes a local kubernetes cluster. This command deletes the VM, and removes all
+	Short: "Deletes a local Kubernetes cluster",
+	Long: `Deletes a local Kubernetes cluster. This command deletes the VM, and removes all
 associated files.`,
 	Run: runDelete,
 }

@@ -90,7 +90,7 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 	return nil
 }
 
-// ParseKubernetesVersion parses the kubernetes version
+// ParseKubernetesVersion parses the Kubernetes version
 func ParseKubernetesVersion(version string) (semver.Version, error) {
 	return semver.Make(version[1:])
 }
