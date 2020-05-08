@@ -87,7 +87,7 @@ func TestStartStop(t *testing.T) {
 
 				profile := UniqueProfileName(tc.name)
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer CleanupWithLogs(t, profile, cancel)
+				defer Cleanup(t, profile, cancel)
 
 				waitFlag := "--wait=true"
 				if strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
@@ -176,6 +176,8 @@ func TestStartStop(t *testing.T) {
 
 // testPodScheduling asserts that this configuration can schedule new pods
 func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	t.Helper()
 
 	// schedule a pod to assert persistence
@@ -211,6 +213,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 // testPulledImages asserts that this configuration pulls only expected images
 func testPulledImages(ctx context.Context, t *testing.T, profile string, version string) {
 	t.Helper()
+	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
 	if err != nil {
@@ -254,6 +257,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 // testPause asserts that this configuration can be paused and unpaused
 func testPause(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
+	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "pause", "-p", profile, "--alsologtostderr", "-v=1"))
 	if err != nil {
