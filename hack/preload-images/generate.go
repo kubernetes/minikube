@@ -74,7 +74,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	// will need to do this to enable the container run-time service
 	sv, err := util.ParseKubernetesVersion(kubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "Failed to parse kubernetes version")
+		return errors.Wrap(err, "Failed to parse Kubernetes version")
 	}
 
 	co := cruntime.Config{

@@ -33,8 +33,8 @@ import (
 // kubectlCmd represents the kubectl command
 var kubectlCmd = &cobra.Command{
 	Use:   "kubectl",
-	Short: "Run kubectl",
-	Long: `Run the kubernetes client, download it if necessary. Remember -- after kubectl!
+	Short: "Run a kubectl binary matching the cluster version",
+	Long: `Run the Kubernetes client, download it if necessary. Remember -- after kubectl!
 
 Examples:
 minikube kubectl -- --help

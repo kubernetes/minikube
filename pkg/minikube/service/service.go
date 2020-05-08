@@ -48,7 +48,7 @@ const (
 	DefaultInterval = 1
 )
 
-// K8sClient represents a kubernetes client
+// K8sClient represents a Kubernetes client
 type K8sClient interface {
 	GetCoreClient(string) (typed_core.CoreV1Interface, error)
 }
@@ -197,7 +197,7 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 func CheckService(cname string, namespace string, service string) error {
 	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
-		return errors.Wrap(err, "Error getting kubernetes client")
+		return errors.Wrap(err, "Error getting Kubernetes client")
 	}
 
 	svc, err := client.Services(namespace).Get(service, meta.GetOptions{})

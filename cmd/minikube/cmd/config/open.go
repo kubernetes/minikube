@@ -94,7 +94,7 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 			}
 
 			if len(urlString) != 0 {
-				out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+				out.T(out.Celebrate, "Opening Kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
 				for _, url := range urlString {
 					if err := browser.OpenURL(url); err != nil {
 						exit.WithError(fmt.Sprintf("browser failed to open url %s", url), err)
@@ -106,7 +106,7 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 }
 
 func init() {
-	addonsOpenCmd.Flags().BoolVar(&addonsURLMode, "url", false, "Display the kubernetes addons URL in the CLI instead of opening it in the default browser")
+	addonsOpenCmd.Flags().BoolVar(&addonsURLMode, "url", false, "Display the Kubernetes addons URL in the CLI instead of opening it in the default browser")
 	addonsOpenCmd.Flags().BoolVar(&https, "https", false, "Open the addons URL with https instead of http")
 	addonsOpenCmd.Flags().IntVar(&wait, "wait", service.DefaultWait, "Amount of time to wait for service in seconds")
 	addonsOpenCmd.Flags().IntVar(&interval, "interval", service.DefaultInterval, "The time interval for each check that wait performs in seconds")

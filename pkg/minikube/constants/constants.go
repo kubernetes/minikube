@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	// DefaultKubernetesVersion is the default kubernetes version
+	// DefaultKubernetesVersion is the default Kubernetes version
 	DefaultKubernetesVersion = "v1.18.1"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	NewestKubernetesVersion = "v1.18.1"
@@ -83,7 +83,7 @@ var (
 	// DockerDaemonEnvs is list of docker-daemon related environment variables.
 	DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}
 
-	// DefaultMinipath is the default Minikube path (under the home directory)
+	// DefaultMinipath is the default minikube path (under the home directory)
 	DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 	// KubeconfigEnvVar is the env var to check for the Kubernetes client config
@@ -102,7 +102,7 @@ var (
 	// ImageCacheDir is the path to the image cache directory
 	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
-	// DefaultNamespaces are kubernetes namespaces used by minikube, including addons
+	// DefaultNamespaces are Kubernetes namespaces used by minikube, including addons
 	DefaultNamespaces = []string{
 		"kube-system",
 		"kubernetes-dashboard",
