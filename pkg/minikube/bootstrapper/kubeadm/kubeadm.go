@@ -775,11 +775,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "host alias")
 	}
 
-	if err := startKubelet(k.c, sm); err != nil {
-		return errors.Wrap(err, "reload")
-	}
-
-	return nil
+	return sm.Start("kubelet")
 }
 
 func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
@@ -799,23 +795,6 @@ func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
 		}
 	}
 	return nil
-}
-
-func startKubelet(runner command.Runner, sm sysinit.Manager) error {
-	now := time.Now()
-	defer func() {
-		glog.Infof("reloadKubelet took %s", time.Since(now))
-	}()
-
-	svc := bsutil.KubeletServiceFile
-	conf := bsutil.KubeletSystemdConfFile
-
-	startCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cp %s.new %s && sudo cp %s.new %s", svc, svc, conf, conf))
-	if _, err := runner.RunCmd(startCmd); err != nil {
-		return errors.Wrap(err, "starting kubelet")
-	}
-
-	return sm.Start("kubelet")
 }
 
 // kubectlPath returns the path to the kubelet
