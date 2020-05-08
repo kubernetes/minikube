@@ -205,6 +205,13 @@ func restartKubeletIfNeeded(starter Starter) error {
 	if err := sysinit.New(starter.Runner).Restart("kubelet"); err != nil {
 		return errors.Wrap(err, "restarting kubelet")
 	}
+	cp, err := config.PrimaryControlPlane(starter.Cfg)
+	if err != nil {
+		return errors.Wrap(err, "control plane")
+	}
+	if err := machine.AddHostAlias(starter.Runner, constants.ControlPlaneAlias, net.ParseIP(cp.IP)); err != nil {
+		return errors.Wrap(err, "adding host alias")
+	}
 	return nil
 }
 
