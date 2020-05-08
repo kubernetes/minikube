@@ -35,7 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-// KubernetesContainerPrefix is the prefix of each kubernetes container
+// KubernetesContainerPrefix is the prefix of each Kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
 // ErrISOFeature is the error returned when disk image is missing features

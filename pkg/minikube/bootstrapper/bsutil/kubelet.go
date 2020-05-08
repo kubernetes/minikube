@@ -35,7 +35,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	k8s := mc.KubernetesConfig
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing kubernetes version")
+		return nil, errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	extraOpts, err := extraConfigForComponent(Kubelet, k8s.ExtraOptions, version)

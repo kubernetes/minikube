@@ -1,14 +1,14 @@
 ---
 title: "logs"
 description: >
-  Gets the logs of the running instance, used for debugging minikube, not user code.
+  Returns logs to debug a local Kubernetes cluster
 ---
 
 
 
 ## minikube logs
 
-Gets the logs of the running instance, used for debugging minikube, not user code.
+Returns logs to debug a local Kubernetes cluster
 
 ### Synopsis
 
@@ -32,7 +32,7 @@ minikube logs [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files

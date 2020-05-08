@@ -75,7 +75,7 @@ func CACert() string {
 	return filepath.Join(MiniPath(), "ca.crt")
 }
 
-// MachinePath returns the Minikube machine path of a machine
+// MachinePath returns the minikube machine path of a machine
 func MachinePath(machine string, miniHome ...string) string {
 	miniPath := MiniPath()
 	if len(miniHome) > 0 {

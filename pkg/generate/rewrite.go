@@ -35,7 +35,7 @@ func rewriteFlags(command *cobra.Command) error {
 	rewrites := map[string][]rewrite{
 		"start": []rewrite{{
 			flag:  "driver",
-			usage: "Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.",
+			usage: "Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.",
 		}, {
 			flag:  "mount-string",
 			usage: "The argument to pass the minikube mount command on start.",
