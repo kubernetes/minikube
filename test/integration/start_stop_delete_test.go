@@ -71,9 +71,6 @@ func TestStartStop(t *testing.T) {
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
-			{"docker", constants.DefaultKubernetesVersion, []string{
-				"--container-runtime=docker",
-			}},
 			{"embed-certs", constants.DefaultKubernetesVersion, []string{
 				"--embed-certs",
 			}},
