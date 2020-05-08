@@ -744,8 +744,8 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	files := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"),
-		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile+".new", "0644"),
-		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile+".new", "0644"),
+		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile, "0644"),
+		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile, "0644"),
 	}
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin
