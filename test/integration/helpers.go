@@ -186,26 +186,32 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	}
 
 	t.Logf("*** %s FAILED at %s", t.Name(), time.Now())
-
-	if *postMortemLogs {
-		clusterLogs(t, profile)
-	}
+	PostMortemLogs(t, profile)
 	Cleanup(t, profile, cancel)
 }
 
-// clusterLogs shows logs for debugging a failed cluster
-func clusterLogs(t *testing.T, profile string) {
+// PostMortemLogs shows logs for debugging a failed cluster
+func PostMortemLogs(t *testing.T, profile string) {
+	if !t.Failed() {
+		return
+	}
+
+	if !*postMortemLogs {
+		t.Logf("post-mortem logs disabled, oh-well!")
+	}
+
 	t.Logf("-----------------------post-mortem--------------------------------")
 
 	if DockerDriver() {
-		t.Logf("======>  post-mortem[%s]: docker logs <======", t.Name())
-		rr, err := Run(t, exec.Command("docker", "logs", "--details", profile))
+		t.Logf("======>  post-mortem[%s]: docker inpect <======", t.Name())
+		rr, err := Run(t, exec.Command("docker", "inspect", profile))
 		if err != nil {
-			t.Logf("failed to get docker logs : %v", err)
+			t.Logf("failed to get docker inspect: %v", err)
 		} else {
 			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
 		}
 	}
+
 	st := Status(context.Background(), t, Target(), profile, "Host")
 	if st != state.Running.String() {
 		t.Logf("%q host is not running, skipping log retrieval (state=%q)", profile, st)
@@ -214,19 +220,12 @@ func clusterLogs(t *testing.T, profile string) {
 	t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
 	t.Logf("======>  post-mortem[%s]: minikube logs <======", t.Name())
 
-	rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
+	rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "25"))
 	if err != nil {
 		t.Logf("failed logs error: %v", err)
 		return
 	}
 	t.Logf("%s logs: %s", t.Name(), rr.Output())
-
-	t.Logf("======> post-mortem[%s]: disk usage <======", t.Name())
-	rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo df -h /var/lib/docker/overlay2 /var /;sudo du -hs /var/lib/docker/overlay2"))
-	if err != nil {
-		t.Logf("failed df error: %v", err)
-	}
-	t.Logf("%s df: %s", t.Name(), rr.Stdout)
 
 	st = Status(context.Background(), t, Target(), profile, "APIServer")
 	if st != state.Running.String() {
@@ -234,29 +233,24 @@ func clusterLogs(t *testing.T, profile string) {
 		return
 	}
 
-	t.Logf("======> post-mortem[%s]: get pods <======", t.Name())
-	rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
+	// Get non-running pods. NOTE: This does not yet contain pods which are "running", but not "ready"
+	rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-o=jsonpath={.items[*].metadata.name}", "-A", "--field-selector=status.phase!=Running"))
+	if rerr != nil {
+		t.Logf("%s: %v", rr.Command(), rerr)
+		return
+	}
+	notRunning := strings.Split(rr.Stdout.String(), " ")
+	t.Logf("non-running pods: %s", strings.Join(notRunning, " "))
+
+	t.Logf("======> post-mortem[%s]: describe non-running pods <======", t.Name())
+
+	args := append([]string{"--context", profile, "describe", "pod"}, notRunning...)
+	rr, rerr = Run(t, exec.Command("kubectl", args...))
 	if rerr != nil {
 		t.Logf("%s: %v", rr.Command(), rerr)
 		return
 	}
 	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
-
-	t.Logf("======> post-mortem[%s]: describe node <======", t.Name())
-	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "node"))
-	if err != nil {
-		t.Logf("%s: %v", rr.Command(), err)
-	} else {
-		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
-	}
-
-	t.Logf("======> post-mortem[%s]: describe pods <======", t.Name())
-	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "po", "-A"))
-	if err != nil {
-		t.Logf("%s: %v", rr.Command(), err)
-	} else {
-		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
-	}
 
 	t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
 	t.Logf("---------------------/post-mortem---------------------------------")

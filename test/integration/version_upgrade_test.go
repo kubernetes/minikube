@@ -68,7 +68,7 @@ func TestVersionUpgrade(t *testing.T) {
 	// Assert that --iso-url works without a sha checksum, and that we can upgrade from old ISO's
 	// Some day, this will break an implicit assumption that a tool is available in the ISO :)
 	oldISO := "https://storage.googleapis.com/minikube/iso/integration-test.iso"
-	args := append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--iso-url=%s", oldISO), fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--iso-url=%s", oldISO), fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr"}, StartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
@@ -121,7 +121,7 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	t.Logf("Attempting to downgrade Kubernetes (should fail)")
-	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion)}, StartArgs()...)
 	if rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), args...)); err == nil {
 		t.Fatalf("downgrading Kubernetes should not be allowed. expected to see error but got %v for %q", err, rr.Command())
 	}
