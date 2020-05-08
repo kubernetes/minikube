@@ -438,7 +438,7 @@ func trySSH(h *host.Host, ip string) error {
 		d := net.Dialer{Timeout: 3 * time.Second}
 		conn, err := d.Dial("tcp", sshAddr)
 		if err != nil {
-			out.WarningT("Unable to verify SSH connectivity: {{.error}}. Will retry...", out.V{"error": err})
+			glog.Warningf("dial failed (will retry): %v", err)
 			return err
 		}
 		_ = conn.Close()
