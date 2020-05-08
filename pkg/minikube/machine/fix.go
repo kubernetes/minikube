@@ -117,7 +117,7 @@ func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node
 			glog.Infof("Sleeping 1 second for extra luck!")
 			time.Sleep(1 * time.Second)
 
-			h, err = createHost(api, cc, n)
+			h, err = createHost(api, &cc, &n)
 			if err != nil {
 				return nil, errors.Wrap(err, "recreate")
 			}
