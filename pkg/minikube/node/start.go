@@ -53,7 +53,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
-	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -76,14 +75,14 @@ type Starter struct {
 	ExistingAddons map[string]bool
 }
 
-// Start spins up a guest and starts the kubernetes node.
+// Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
 	sv, err := util.ParseKubernetesVersion(starter.Node.KubernetesVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse kubernetes version")
+		return nil, errors.Wrap(err, "Failed to parse Kubernetes version")
 	}
 
 	// configure the runtime (docker, containerd, crio)
@@ -181,38 +180,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	if err := restartKubeletIfNeeded(starter); err != nil {
-		return nil, errors.Wrap(err, "restarting kubelet")
-	}
-
 	wg.Wait()
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
-}
-
-func restartKubeletIfNeeded(starter Starter) error {
-	if !starter.PreExists {
-		return nil
-	}
-	if !driver.IsKIC(starter.Host.DriverName) {
-		return nil
-	}
-	// on soft start and kic, we need to restart kubelet to ensure that it picks up the correct node ip
-	// there seems to be a race condition between when the ip is updated
-	// on node restarts and kubelet starting up
-	glog.Infof("Restarting kubelet...")
-	if err := sysinit.New(starter.Runner).Restart("kubelet"); err != nil {
-		return errors.Wrap(err, "restarting kubelet")
-	}
-	cp, err := config.PrimaryControlPlane(starter.Cfg)
-	if err != nil {
-		return errors.Wrap(err, "control plane")
-	}
-	if err := machine.AddHostAlias(starter.Runner, constants.ControlPlaneAlias, net.ParseIP(cp.IP)); err != nil {
-		return errors.Wrap(err, "adding host alias")
-	}
-	return nil
 }
 
 // Provision provisions the machine/container for the node
@@ -467,7 +438,7 @@ func trySSH(h *host.Host, ip string) error {
 		d := net.Dialer{Timeout: 3 * time.Second}
 		conn, err := d.Dial("tcp", sshAddr)
 		if err != nil {
-			out.WarningT("Unable to verify SSH connectivity: {{.error}}. Will retry...", out.V{"error": err})
+			glog.Warningf("dial failed (will retry): %v", err)
 			return err
 		}
 		_ = conn.Close()
