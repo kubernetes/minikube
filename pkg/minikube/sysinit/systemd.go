@@ -18,6 +18,7 @@ limitations under the License.
 package sysinit
 
 import (
+	"errors"
 	"os/exec"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -53,6 +54,9 @@ func (s *Systemd) Disable(svc string) error {
 
 // Enable enables a service
 func (s *Systemd) Enable(svc string) error {
+	if svc == "kubelet" {
+		return errors.New("please don't enable kubelet as it creates a race condition; if it starts on systemd boot it will pick up /etc/hosts before we have time to configure /etc/hosts")
+	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "enable", svc))
 	return err
 }
