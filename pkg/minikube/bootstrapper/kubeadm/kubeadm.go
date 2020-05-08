@@ -542,6 +542,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	cmds := []string{
 		fmt.Sprintf("%s phase certs all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, conf),
+		fmt.Sprintf("sudo systemctl restart kubelet"),
 		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, conf),
 		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, conf),
 	}
