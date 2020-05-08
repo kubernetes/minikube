@@ -344,13 +344,6 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 		out.FailureT("Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
 
-	// Save IP to config file for subsequent use
-	node.IP = ip
-	err = config.SaveNode(cfg, node)
-	if err != nil {
-		return runner, preExists, m, host, errors.Wrap(err, "saving node")
-	}
-
 	return runner, preExists, m, host, err
 }
 

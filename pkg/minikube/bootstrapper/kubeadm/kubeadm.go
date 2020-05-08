@@ -295,6 +295,8 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
+	fmt.Printf("%+v", cfg)
+
 	// Before we start, ensure that no paused components are lurking around
 	if err := k.unpause(cfg); err != nil {
 		glog.Warningf("unpause failed: %v", err)
