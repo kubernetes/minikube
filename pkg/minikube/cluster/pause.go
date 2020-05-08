@@ -96,9 +96,6 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 	}
 
 	sm := sysinit.New(r)
-	if err := sm.Enable("kubelet"); err != nil {
-		return ids, errors.Wrap(err, "kubelet enable")
-	}
 
 	if err := sm.Start("kubelet"); err != nil {
 		return ids, errors.Wrap(err, "kubelet start")
