@@ -315,12 +315,16 @@ func (d *Driver) Start() error {
 		}
 		glog.Infof("container %q state is running.", d.MachineName)
 
-		if !sysinit.New(kicRunner).Active("sshd") {
-			glog.Infof("sshd service is not up for %s. will try to start and retry.", d.MachineName)
-			if err := sysinit.New(kicRunner).Start("sshd"); err != nil {
-				return fmt.Errorf("failed to start sshd service %v", err)
+		// ensure SSHD service is up after container is started.
+		checkSSH := func() error {
+			if !sysinit.New(kicRunner).Active("sshd") {
+				return fmt.Errorf("SSHD service is not up %v", err)
 			}
-			return fmt.Errorf("failed to start sshd service %v", err)
+			return nil
+		}
+
+		if err := retry.Expo(checkSSH, 500*time.Microsecond, time.Second*30); err != nil {
+			return errors.Wrap(err, "ssh service")
 		}
 		return nil
 	}
