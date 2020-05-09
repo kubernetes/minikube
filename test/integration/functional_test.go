@@ -714,6 +714,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
 	}
 
+	// Test --https --url mode
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node"))
 	if err != nil {
 		t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
@@ -721,9 +722,10 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	if rr.Stderr.String() != "" {
 		t.Errorf("expected stderr to be empty but got *%q* . args %q", rr.Stderr, rr.Command())
 	}
-	endpoint := strings.TrimSpace(rr.Stdout.String())
 
+	endpoint := strings.TrimSpace(rr.Stdout.String())
 	t.Logf("found endpoint: %s", endpoint)
+
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		t.Fatalf("failed to parse service url endpoint %q: %v", endpoint, err)
