@@ -90,26 +90,26 @@ func init() {
 }
 
 // shotgun cleanup to delete orphaned docker container data
-func deleteContainersAndVolumes() {
-	if _, err := exec.LookPath(oci.Docker); err != nil {
-		glog.Infof("skipping deleteContainersAndVolumes for %s: %v", oci.Docker, err)
+func deleteContainersAndVolumes(ociBin string) {
+	if _, err := exec.LookPath(ociBin); err != nil {
+		glog.Infof("skipping deleteContainersAndVolumes for %s: %v", ociBin, err)
 		return
 	}
 
 	glog.Infof("deleting containers and volumes ...")
 
 	delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
+	errs := oci.DeleteContainersByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will error if there is no container to delete
 		glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+	errs = oci.DeleteAllVolumesByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	errs = oci.PruneAllVolumesByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
@@ -137,7 +137,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if deleteAll {
-		deleteContainersAndVolumes()
+		deleteContainersAndVolumes(oci.Docker)
+		deleteContainersAndVolumes(oci.Podman)
 
 		errs := DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
