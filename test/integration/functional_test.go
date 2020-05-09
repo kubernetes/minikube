@@ -665,6 +665,30 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
+	defer func() {
+		if t.Failed() {
+			t.Logf("service test failed - dumping debug information")
+
+			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node pod describe:\n%s", rr.Stdout)
+
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=hello-node"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node logs:\n%s", rr.Stdout)
+
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "svc", "hello-node"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node svc describe:\n%s", rr.Stdout)
+		}
+	}()
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.4"))
 	if err != nil {
 		t.Logf("%q failed: %v (may not be an error).", rr.Command(), err)
@@ -686,7 +710,6 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
 	}
 
-	// If a port forward is needed, --url mode blocks
 	if NeedsPortForward() {
 		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
 	}
@@ -710,7 +733,6 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Test --format=IP
-
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}"))
 	if err != nil {
 		t.Errorf("failed to get service url with custom format. args %q: %v", rr.Command(), err)
@@ -726,21 +748,43 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	endpoint = strings.TrimSpace(rr.Stdout.String())
+	t.Logf("found endpoint for hello-node: %s", endpoint)
+
 	u, err = url.Parse(endpoint)
 	if err != nil {
 		t.Fatalf("failed to parse %q: %v", endpoint, err)
 	}
+
 	if u.Scheme != "http" {
 		t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
 	}
 
-	t.Logf("url: %s", endpoint)
-	resp, err := retryablehttp.Get(endpoint)
-	if err != nil {
-		t.Fatalf("get failed: %v\nresp: %v", err, resp)
+	t.Logf("Attempting to fetch %s ...", endpoint)
+
+	fetch := func() error {
+		resp, err := http.Get(endpoint)
+		if err != nil {
+			t.Logf("error fetching %s: %v", endpoint, err)
+			return err
+		}
+
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Logf("error reading body from %s: %v", endpoint, err)
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Logf("%s: unexpected status code %d - body:\n%s", endpoint, resp.StatusCode, body)
+		} else {
+			t.Logf("%s: success! body:\n%s", endpoint, body)
+		}
+		return nil
 	}
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status code for %q to be -%q- but got *%q*", endpoint, http.StatusOK, resp.StatusCode)
+
+	if err = retry.Expo(fetch, 1*time.Second, Seconds(30)); err != nil {
+		t.Errorf("failed to fetch %s: %v", endpoint, err)
 	}
 }
 
