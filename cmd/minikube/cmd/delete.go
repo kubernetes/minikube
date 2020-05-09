@@ -109,6 +109,11 @@ func deleteContainersAndVolumes(ociBin string) {
 		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
 
+	if ociBin == oci.Podman {
+		// podman prune does not support --filter
+		return
+	}
+
 	errs = oci.PruneAllVolumesByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
@@ -244,6 +249,11 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	errs := oci.DeleteAllVolumesByLabel(bin, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
 		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+	}
+
+	if bin == oci.Podman {
+		// podman prune does not support --filter
+		return
 	}
 
 	errs = oci.PruneAllVolumesByLabel(bin, delLabel)
