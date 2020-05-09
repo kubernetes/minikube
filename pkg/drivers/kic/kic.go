@@ -303,6 +303,7 @@ func (d *Driver) Start() error {
 	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName))); err != nil {
 		return errors.Wrap(err, "start")
 	}
+	kicRunner := command.NewKICRunner(d.MachineName, d.OCIBinary)
 	checkRunning := func() error {
 		s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
 		if err != nil {
@@ -312,6 +313,14 @@ func (d *Driver) Start() error {
 			return fmt.Errorf("expected container state be running but got %q", s)
 		}
 		glog.Infof("container %q state is running.", d.MachineName)
+
+		if !sysinit.New(kicRunner).Active("sshd") {
+			glog.Infof("sshd service is not up for %s. will try to start and retry.", d.MachineName)
+			if err := sysinit.New(kicRunner).Start("sshd"); err != nil {
+				return fmt.Errorf("failed to start sshd service %v", err)
+			}
+			return fmt.Errorf("failed to start sshd service %v", err)
+		}
 		return nil
 	}
 
