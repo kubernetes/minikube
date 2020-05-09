@@ -295,7 +295,6 @@ func (d *Driver) Restart() error {
 		return fmt.Errorf("start during restart %v", err)
 	}
 	return nil
-
 }
 
 // Start an already created kic container
