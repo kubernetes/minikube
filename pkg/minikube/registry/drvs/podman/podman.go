@@ -74,6 +74,10 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 func status() registry.State {
 	docURL := "https://minikube.sigs.k8s.io/docs/drivers/podman/"
+	if runtime.GOARCH != "amd64" {
+		return registry.State{Error: fmt.Errorf("podman driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
+	}
+
 	podman, err := exec.LookPath(oci.Podman)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Podman", Doc: docURL}
