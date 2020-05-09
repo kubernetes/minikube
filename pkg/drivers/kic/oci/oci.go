@@ -268,7 +268,7 @@ func StartContainer(ociBin string, container string) error {
 
 	args = append(args, container)
 
-	if err := PrefixCmd(exec.Command(ociBin, args...)).Run(); err != nil {
+	if _, err := runCmd(exec.Command(ociBin, args...)); err != nil {
 		return err
 	}
 
