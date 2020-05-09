@@ -87,7 +87,7 @@ func TestStartStop(t *testing.T) {
 
 				profile := UniqueProfileName(tc.name)
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer Cleanup(t, profile, cancel)
+				defer CleanupWithLogs(t, profile, cancel)
 
 				waitFlag := "--wait=true"
 				if strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
@@ -109,21 +109,21 @@ func TestStartStop(t *testing.T) {
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
 				if err != nil {
-					t.Errorf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
+					t.Fatalf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
 				}
 
 				// The none driver never really stops
 				if !NoneDriver() {
 					got := Status(ctx, t, Target(), profile, "Host")
 					if got != state.Stopped.String() {
-						t.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
+						t.Fatalf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
 					}
 				}
 
 				// Enable an addon to assert it comes up afterwards
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
 				if err != nil {
-					t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
+					t.Fatalf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 				}
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -145,7 +145,7 @@ func TestStartStop(t *testing.T) {
 
 				got := Status(ctx, t, Target(), profile, "Host")
 				if got != state.Running.String() {
-					t.Errorf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
+					t.Fatalf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
 				}
 
 				if !NoneDriver() {
