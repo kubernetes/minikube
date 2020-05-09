@@ -168,6 +168,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if orphan {
 			// TODO: generalize for non-KIC drivers: #8040
 			deletePossibleKicLeftOver(cname, driver.Docker)
+			deletePossibleKicLeftOver(cname, driver.Podman)
 		}
 	}
 
@@ -210,8 +211,6 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 
 // TODO: remove and/or move to delete package: #8040
 func deletePossibleKicLeftOver(cname string, driverName string) {
-	glog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
-
 	bin := ""
 	switch driverName {
 	case driver.Docker:
@@ -221,6 +220,13 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	default:
 		return
 	}
+
+	if _, err := exec.LookPath(bin); err != nil {
+		glog.Infof("skipping deletePossibleKicLeftOver for %s: %v", bin, err)
+		return
+	}
+
+	glog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
 
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
 	cs, err := oci.ListContainersByLabel(bin, delLabel)
