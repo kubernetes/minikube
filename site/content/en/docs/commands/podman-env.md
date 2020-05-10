@@ -1,14 +1,14 @@
 ---
 title: "podman-env"
 description: >
-  Configure environment to use minikube's Podman daemon
+  Configure environment to use minikube's Podman service
 ---
 
 
 
 ## minikube podman-env
 
-Configure environment to use minikube's Podman daemon
+Configure environment to use minikube's Podman service
 
 ### Synopsis
 
