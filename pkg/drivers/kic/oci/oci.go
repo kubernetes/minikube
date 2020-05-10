@@ -465,6 +465,24 @@ func PointToHostDockerDaemon() error {
 	return nil
 }
 
+// PointToHostPodman will unset env variables that point to podman inside minikube
+func PointToHostPodman() error {
+	p := os.Getenv(constants.MinikubeActivePodmanEnv)
+	if p != "" {
+		glog.Infof("shell is pointing to podman inside minikube. will unset to use host")
+	}
+
+	for i := range constants.PodmanRemoteEnvs {
+		e := constants.PodmanRemoteEnvs[i]
+		err := os.Setenv(e, "")
+		if err != nil {
+			return errors.Wrapf(err, "resetting %s env", e)
+		}
+
+	}
+	return nil
+}
+
 // ContainerRunning returns running state of a container
 func ContainerRunning(ociBin string, name string, warnSlow ...bool) (bool, error) {
 	rr, err := runCmd(exec.Command(ociBin, "inspect", name, "--format={{.State.Running}}"), warnSlow...)
