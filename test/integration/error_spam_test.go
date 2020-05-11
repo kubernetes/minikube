@@ -34,6 +34,8 @@ var stderrWhitelist = []string{
 	`slow|long time|Restarting the docker service may improve`,
 	// don't care if we can't push images to other profiles
 	`cache_images.go:.*error getting status`,
+	// don't care if we can't push images to other profiles which are deleted.
+	`cache_images.go:.*Failed to load profile`,
 }
 
 // stderrWhitelistRe combines rootCauses into a single regex
