@@ -105,6 +105,10 @@ func Execute() {
 		glog.Errorf("oci env: %v", err)
 	}
 
+	if err := oci.PointToHostPodman(); err != nil {
+		glog.Errorf("oci env: %v", err)
+	}
+
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
 		os.Exit(exit.BadUsage)

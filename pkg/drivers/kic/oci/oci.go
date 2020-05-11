@@ -239,13 +239,34 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 	args := []string{"run"}
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
-	if ociBin == Podman {
+	// only add when running locally (linux), when running remotely it needs to be configured on server in libpod.conf
+	if ociBin == Podman && runtime.GOOS == "linux" {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
 	args = append(args, runArgs...)
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
+
+	if _, err := runCmd(exec.Command(ociBin, args...)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// StartContainer starts a container with "docker/podman start"
+func StartContainer(ociBin string, container string) error {
+	// construct the actual docker start argv
+	args := []string{"start"}
+
+	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
+	// only add when running locally (linux), when running remotely it needs to be configured on server in libpod.conf
+	if ociBin == Podman && runtime.GOOS == "linux" {
+		args = append(args, "--cgroup-manager", "cgroupfs")
+	}
+
+	args = append(args, container)
 
 	if _, err := runCmd(exec.Command(ociBin, args...)); err != nil {
 		return err
@@ -456,6 +477,24 @@ func PointToHostDockerDaemon() error {
 
 	for i := range constants.DockerDaemonEnvs {
 		e := constants.DockerDaemonEnvs[i]
+		err := os.Setenv(e, "")
+		if err != nil {
+			return errors.Wrapf(err, "resetting %s env", e)
+		}
+
+	}
+	return nil
+}
+
+// PointToHostPodman will unset env variables that point to podman inside minikube
+func PointToHostPodman() error {
+	p := os.Getenv(constants.MinikubeActivePodmanEnv)
+	if p != "" {
+		glog.Infof("shell is pointing to podman inside minikube. will unset to use host")
+	}
+
+	for i := range constants.PodmanRemoteEnvs {
+		e := constants.PodmanRemoteEnvs[i]
 		err := os.Setenv(e, "")
 		if err != nil {
 			return errors.Wrapf(err, "resetting %s env", e)

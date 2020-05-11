@@ -65,6 +65,9 @@ const (
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
+	// MinikubeActivePodmanEnv holds the podman service that the user's shell is pointing at
+	// value would be profile or empty if pointing to the user's host.
+	MinikubeActivePodmanEnv = "MINIKUBE_ACTIVE_PODMAN"
 	// MinikubeForceSystemdEnv is used to force systemd as cgroup manager for the container runtime
 	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
 )
@@ -82,6 +85,8 @@ var (
 
 	// DockerDaemonEnvs is list of docker-daemon related environment variables.
 	DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}
+	// PodmanRemoteEnvs is list of podman-remote related environment variables.
+	PodmanRemoteEnvs = [1]string{PodmanVarlinkBridgeEnv}
 
 	// DefaultMinipath is the default minikube path (under the home directory)
 	DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")

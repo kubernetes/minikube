@@ -803,8 +803,8 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	files := []assets.CopyableFile{
-		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile+".new", "0644"),
-		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile+".new", "0644"),
+		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile, "0644"),
+		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile, "0644"),
 	}
 
 	if n.ControlPlane {
@@ -839,11 +839,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "host alias")
 	}
 
-	if err := startKubeletIfRequired(k.c, sm); err != nil {
-		return errors.Wrap(err, "reload")
-	}
-
-	return nil
+	return sm.Start("kubelet")
 }
 
 func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
@@ -863,32 +859,6 @@ func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
 		}
 	}
 	return nil
-}
-
-func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
-	now := time.Now()
-	defer func() {
-		glog.Infof("reloadKubelet took %s", time.Since(now))
-	}()
-
-	svc := bsutil.KubeletServiceFile
-	conf := bsutil.KubeletSystemdConfFile
-
-	checkCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("pgrep kubelet && diff -u %s %s.new && diff -u %s %s.new", svc, svc, conf, conf))
-	if _, err := runner.RunCmd(checkCmd); err == nil {
-		glog.Infof("kubelet is already running with the right configs")
-		return nil
-	}
-
-	startCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cp %s.new %s && sudo cp %s.new %s", svc, svc, conf, conf))
-	if _, err := runner.RunCmd(startCmd); err != nil {
-		return errors.Wrap(err, "starting kubelet")
-	}
-
-	if err := sm.Enable("kubelet"); err != nil {
-		return err
-	}
-	return sm.Start("kubelet")
 }
 
 // kubectlPath returns the path to the kubelet
