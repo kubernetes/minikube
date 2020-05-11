@@ -15,8 +15,8 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 10
-VERSION_BUILD ?= 0-beta.2
-RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+VERSION_BUILD ?= 0
+RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).0
 VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
