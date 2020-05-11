@@ -15,8 +15,8 @@ The podman driver is another kubernetes in container driver for minikube. simila
 
 ## Requirements
 
-- amd64 system 
 - Install [Podman](https://podman.io/getting-started/installation) 
+- amd64 system 
 
 ## Try it with CRI-O container runtime.
 
