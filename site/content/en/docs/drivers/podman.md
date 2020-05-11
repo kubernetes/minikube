@@ -27,4 +27,5 @@ minikube start --driver=podman --container-runtime=cri-o
 {{% readfile file="/docs/drivers/includes/podman_usage.inc" %}}
 
 ## Known Issues
-- Podman driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/" >}} 
+
+- Podman driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/_index.md" >}}) 
