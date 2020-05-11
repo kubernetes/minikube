@@ -72,7 +72,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 func status() registry.State {
 	docURL := "https://minikube.sigs.k8s.io/docs/drivers/docker/"
 	if runtime.GOARCH != "amd64" {
-		return registry.State{Error: fmt.Errorf("doker driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
+		return registry.State{Error: fmt.Errorf("docker driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
 	}
 
 	_, err := exec.LookPath(oci.Docker)
