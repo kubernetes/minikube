@@ -109,21 +109,21 @@ func TestStartStop(t *testing.T) {
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
 				if err != nil {
-					t.Errorf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
+					t.Fatalf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
 				}
 
 				// The none driver never really stops
 				if !NoneDriver() {
 					got := Status(ctx, t, Target(), profile, "Host")
 					if got != state.Stopped.String() {
-						t.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
+						t.Fatalf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
 					}
 				}
 
 				// Enable an addon to assert it comes up afterwards
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
 				if err != nil {
-					t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
+					t.Fatalf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 				}
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -145,7 +145,7 @@ func TestStartStop(t *testing.T) {
 
 				got := Status(ctx, t, Target(), profile, "Host")
 				if got != state.Running.String() {
-					t.Errorf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
+					t.Fatalf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
 				}
 
 				if !NoneDriver() {
@@ -176,6 +176,8 @@ func TestStartStop(t *testing.T) {
 
 // testPodScheduling asserts that this configuration can schedule new pods
 func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	t.Helper()
 
 	// schedule a pod to assert persistence
@@ -211,6 +213,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 // testPulledImages asserts that this configuration pulls only expected images
 func testPulledImages(ctx context.Context, t *testing.T, profile string, version string) {
 	t.Helper()
+	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
 	if err != nil {
@@ -254,6 +257,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 // testPause asserts that this configuration can be paused and unpaused
 func testPause(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
+	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "pause", "-p", profile, "--alsologtostderr", "-v=1"))
 	if err != nil {

@@ -78,7 +78,7 @@ func TestFunctional(t *testing.T) {
 			t.Logf("unable to remove %q: %v", p, err)
 		}
 
-		CleanupWithLogs(t, profile, cancel)
+		Cleanup(t, profile, cancel)
 	}()
 
 	// Serial tests
@@ -145,6 +145,8 @@ func TestFunctional(t *testing.T) {
 
 // validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
 func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
 	if err != nil {
 		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Command(), err)
@@ -159,6 +161,8 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	mctx, cancel := context.WithTimeout(ctx, Seconds(13))
 	defer cancel()
 	// we should be able to get minikube status with a bash which evaled docker-env
@@ -188,6 +192,8 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	srv, err := startHTTPProxy(t)
 	if err != nil {
 		t.Fatalf("failed to set up the test proxy: %s", err)
@@ -219,6 +225,8 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
 func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	start := time.Now()
 	// the test before this had been start with --apiserver-port=8441
 	beforeCfg, err := config.LoadProfile(profile)
@@ -250,6 +258,8 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
 func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "config", "current-context"))
 	if err != nil {
 		t.Errorf("failed to get current-context. args %q : %v", rr.Command(), err)
@@ -261,6 +271,8 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubectlGetPods asserts that `kubectl get pod -A` returns non-zero content
 func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A"))
 	if err != nil {
 		t.Errorf("failed to get kubectl pods: args %q : %v", rr.Command(), err)
@@ -275,6 +287,8 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 
 // validateMinikubeKubectl validates that the `minikube kubectl` command returns content
 func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	// Must set the profile so that it knows what version of Kubernetes to use
 	kubectlArgs := []string{"-p", profile, "kubectl", "--", "--context", profile, "get", "pods"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), kubectlArgs...))
@@ -285,6 +299,8 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
@@ -310,6 +326,8 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 }
 
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
 		t.Errorf("failed to run minikube status. args %q : %v", rr.Command(), err)
@@ -352,6 +370,8 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateDashboardCmd asserts that the dashboard command works
 func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -391,6 +411,8 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateDNS asserts that all Kubernetes DNS is healthy
 func validateDNS(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 	if err != nil {
 		t.Fatalf("failed to kubectl replace busybox : args %q: %v", rr.Command(), err)
@@ -424,7 +446,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	defer cancel()
 
 	// Too little memory!
-	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgs()...)
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
@@ -445,6 +467,8 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 
 // validateCacheCmd tests functionality of cache command (cache add, delete, list)
 func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
@@ -639,6 +663,8 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceCmd asserts basic "service" command functionality
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	defer func() {
 		if t.Failed() {
 			t.Logf("service test failed - dumping debug information")
@@ -684,11 +710,6 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "hello-node"))
-	if err != nil {
-		t.Logf("%q failed: %v (may not be an error)", rr.Command(), err)
-	}
-
 	if NeedsPortForward() {
 		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
 	}
@@ -703,12 +724,14 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	endpoint := strings.TrimSpace(rr.Stdout.String())
+	t.Logf("found endpoint: %s", endpoint)
+
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		t.Fatalf("failed to parse service url endpoint %q: %v", endpoint, err)
 	}
 	if u.Scheme != "https" {
-		t.Errorf("expected scheme to be 'https' but got %q", u.Scheme)
+		t.Errorf("expected scheme for %s to be 'https' but got %q", endpoint, u.Scheme)
 	}
 
 	// Test --format=IP
@@ -720,6 +743,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service --format={{.IP}}' output to be -%q- but got *%q* . args %q.", u.Hostname(), rr.Stdout.String(), rr.Command())
 	}
 
+	// Test a regular URL
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url"))
 	if err != nil {
 		t.Errorf("failed to get service url. args: %q: %v", rr.Command(), err)
@@ -736,9 +760,6 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	if u.Scheme != "http" {
 		t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
 	}
-
-	c := retryablehttp.NewClient()
-	c.Logger = &logAdapter{t: t}
 
 	t.Logf("Attempting to fetch %s ...", endpoint)
 
@@ -769,14 +790,10 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-type logAdapter struct{ t *testing.T }
-
-func (l *logAdapter) Printf(s string, args ...interface{}) {
-	l.t.Logf(s, args...)
-}
-
 // validateAddonsCmd asserts basic "addon" command functionality
 func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	// Table output
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list"))
 	if err != nil {
@@ -802,6 +819,8 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateSSHCmd asserts basic "ssh" command functionality
 func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
@@ -817,6 +836,8 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
 	if err != nil {
 		t.Fatalf("failed to kubectl replace mysql: args %q failed: %v", rr.Command(), err)
@@ -905,6 +926,8 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 
 // validateFileSync to check existence of the test file
 func validateFileSync(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
@@ -930,6 +953,8 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 
 // validateCertSync to check existence of the test certificate
 func validateCertSync(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
@@ -963,6 +988,8 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 
 // validateUpdateContextCmd asserts basic "update-context" command functionality
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
 	if err != nil {
 		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
