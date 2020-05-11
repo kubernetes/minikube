@@ -19,7 +19,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 ## Known Issues
 
-- Docker driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/" >}} 
+- Docker driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/docker" >}} 
 
 - On macOS, containers might get hung and require a restart of Docker for Desktop. See [docker/for-mac#1835](https://github.com/docker/for-mac/issues/1835)
 
