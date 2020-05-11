@@ -23,11 +23,6 @@ Improvements:
 * podman-env: add PointToHost function for podman driver [#8062](https://github.com/kubernetes/minikube/pull/8062)
 * virtualbox: Quiet initial ssh timeout warning [#8027](https://github.com/kubernetes/minikube/pull/8027)
 * update ingress-nginx addon version [#7997](https://github.com/kubernetes/minikube/pull/7997)
-* docs: podman-remote is also called podman [#8064](https://github.com/kubernetes/minikube/pull/8064)
-* docs: document CPUs requirements [#8049](https://github.com/kubernetes/minikube/pull/8049)
-* cocs: add instructions to  upgrade hyperkit [#7860](https://github.com/kubernetes/minikube/pull/7860)
-* release: Upload cross tars to google storage for release [#7991](https://github.com/kubernetes/minikube/pull/7991)
-* release: Add unversioned package paths to avoid updating upstream docs each release [#7971](https://github.com/kubernetes/minikube/pull/7971)
 * config: Add base image to the cluster config [#7985](https://github.com/kubernetes/minikube/pull/7985)
 
 Bug Fixes:
