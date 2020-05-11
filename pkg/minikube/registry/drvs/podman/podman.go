@@ -90,7 +90,7 @@ func status() registry.State {
 	cmd := exec.CommandContext(ctx, oci.Podman, "version", "--format", "{{.Server.Version}}")
 	// Run with sudo on linux (local), otherwise podman-remote (as podman)
 	if runtime.GOOS == "linux" {
-		cmd = exec.CommandContext(ctx, "sudo", "-n", oci.Podman, "version", "--format", "{{.Version}}")
+		cmd = exec.CommandContext(ctx, "sudo", "-k", "-n", oci.Podman, "version", "--format", "{{.Version}}")
 		cmd.Env = append(os.Environ(), "LANG=C", "LC_ALL=C") // sudo is localized
 	}
 	o, err := cmd.Output()
