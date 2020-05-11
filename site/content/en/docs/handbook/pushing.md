@@ -124,20 +124,53 @@ For more information, see:
 
 ---
 
-## 3. Pushing directly to in-cluster CRIO. (podman-env)
+## 3. Pushing directly to in-cluster CRI-O. (podman-env)
 
-This is simmilar to docker-env but only for cri-o runtime.
-To push directly to CRIO, configure podman client on your mac/linux host using the podman-env command in your shell:
+This is similar to docker-env but only for CRI-O runtime.
+To push directly to CRI-O, configure podman client on your host using the podman-env command in your shell:
 
 ```shell
 eval $(minikube podman-env)
 ```
 
-You should now be able to use podman on the command line on your host mac/linux machine talking to the podman service inside the minikube VM:
+You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
+
+{{% tabs %}}
+{{% tab "Linux" %}}
 
 ```shell
 podman-remote help
 ```
+
+{{% pageinfo color="info" %}}
+Note: On Linux the remote client is called "podman-remote", while the local program is called "podman".
+{{% /pageinfo %}}
+
+{{% /tab %}}
+{{% tab "macOS" %}}
+
+```shell
+podman help
+```
+
+{{% pageinfo color="info" %}}
+Note: On macOS the remote client is called "podman", since there is no local "podman" program available.
+{{% /pageinfo %}}
+
+{{% /tab %}}
+{{% tab "Windows" %}}
+
+```shell
+podman help
+```
+
+{{% pageinfo color="info" %}}
+Note: On Windows the remote client is called "podman", since there is no local "podman" program available.
+{{% /pageinfo %}}
+
+{{% /tab %}}
+{{% /tabs %}}
+
 
 Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`), as otherwise Kubernetes won't use images you built locally.
 

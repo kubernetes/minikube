@@ -32,7 +32,7 @@ func TestPause(t *testing.T) {
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("pause")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
-	defer CleanupWithLogs(t, profile, cancel)
+	defer Cleanup(t, profile, cancel)
 
 	// Serial tests
 	t.Run("serial", func(t *testing.T) {
@@ -52,12 +52,17 @@ func TestPause(t *testing.T) {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
+				if t.Failed() && *postMortemLogs {
+					PostMortemLogs(t, profile)
+				}
 			})
 		}
 	})
 }
 
 func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=all"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -67,23 +72,25 @@ func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
 
 // validateStartNoReconfigure validates that starting a running cluster does not invoke reconfiguration
 func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile string) {
-	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=5"}
+	defer PostMortemLogs(t, profile)
+
+	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=1"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		defer clusterLogs(t, profile)
 		t.Fatalf("failed to second start a running minikube with args: %q : %v", rr.Command(), err)
 	}
 
 	if !NoneDriver() {
 		softLog := "The running cluster does not require reconfiguration"
 		if !strings.Contains(rr.Output(), softLog) {
-			defer clusterLogs(t, profile)
 			t.Errorf("expected the second start log output to include %q but got: %s", softLog, rr.Output())
 		}
 	}
 }
 
 func validatePause(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	args := []string{"pause", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -92,6 +99,8 @@ func validatePause(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateUnpause(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	args := []string{"unpause", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -100,6 +109,8 @@ func validateUnpause(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateDelete(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -109,6 +120,8 @@ func validateDelete(ctx context.Context, t *testing.T, profile string) {
 
 // make sure no left over left after deleting a profile such as containers or volumes
 func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 	if err != nil {
 		t.Errorf("failed to list profiles with json format after it was deleted. args %q: %v", rr.Command(), err)

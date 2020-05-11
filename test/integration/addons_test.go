@@ -38,9 +38,9 @@ import (
 func TestAddons(t *testing.T) {
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-	defer CleanupWithLogs(t, profile, cancel)
+	defer Cleanup(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
@@ -82,6 +82,8 @@ func TestAddons(t *testing.T) {
 }
 
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
@@ -156,6 +158,8 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	client, err := kapi.Client(profile)
 	if err != nil {
 		t.Fatalf("failed to get Kubernetes client for %s : %v", profile, err)
@@ -230,6 +234,8 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	client, err := kapi.Client(profile)
 	if err != nil {
 		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
@@ -272,6 +278,8 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 }
 
 func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	client, err := kapi.Client(profile)
 	if err != nil {
 		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
