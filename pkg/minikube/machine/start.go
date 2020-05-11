@@ -61,8 +61,8 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
-	machineName := driver.MachineName(cfg, n)
+func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
+	machineName := driver.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(machineName)
@@ -81,7 +81,7 @@ func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*ho
 	}
 	if !exists {
 		glog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
-		h, err := createHost(api, &cfg, &n)
+		h, err := createHost(api, cfg, n)
 		return h, exists, err
 	}
 	glog.Infoln("Skipping create...Using existing machine configuration")
@@ -153,7 +153,6 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	}
 	// Save IP to config file for subsequent use
 	ip, err := h.Driver.GetIP()
-	fmt.Printf("NEW IP = %s\n", ip)
 	if err != nil {
 		return h, err
 	}
