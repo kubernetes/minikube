@@ -24,7 +24,9 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -202,8 +204,27 @@ func (k *kicRunner) chmod(dst string, perm string) error {
 
 // Podman cp command doesn't match docker and doesn't have -a
 func copyToPodman(src string, dest string) error {
-	if out, err := oci.PrefixCmd(exec.Command(oci.Podman, "cp", src, dest)).CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "podman copy %s into %s, output: %s", src, dest, string(out))
+	if runtime.GOOS == "linux" {
+		cmd := oci.PrefixCmd(exec.Command(oci.Podman, "cp", src, dest))
+		glog.Infof("Run: %v", cmd)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "podman copy %s into %s, output: %s", src, dest, string(out))
+		}
+	} else {
+		file, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		parts := strings.Split(dest, ":")
+		container := parts[0]
+		path := parts[1]
+		cmd := exec.Command(oci.Podman, "exec", "-i", container, "tee", path)
+		cmd.Stdin = file
+		glog.Infof("Run: %v", cmd)
+		if err := cmd.Run(); err != nil {
+			return errors.Wrapf(err, "podman copy %s into %s", src, dest)
+		}
 	}
 	return nil
 }
