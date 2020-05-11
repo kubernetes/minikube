@@ -13,12 +13,10 @@ This driver is experimental and in active development. Help wanted!
 
 The podman driver is another kubernetes in container driver for minikube. similar to [docker](https://minikube.sigs.k8s.io/Drivers/docker/) driver. The podman driver is  experimental, and only supported on Linux and macOS (with a remote podman server).
 
-
-
 ## Requirements
+
 - amd64 system 
 - Install [Podman](https://podman.io/getting-started/installation) 
-
 
 ## Try it with CRI-O container runtime.
 
