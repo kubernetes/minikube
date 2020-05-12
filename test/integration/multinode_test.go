@@ -143,7 +143,7 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	name := "m03"
 
 	// Start the node back up
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", name, "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", name))
 	if err != nil {
 		t.Errorf("node start returned an error. args %q: %v", rr.Command(), err)
 	}

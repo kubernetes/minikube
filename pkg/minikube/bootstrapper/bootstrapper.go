@@ -44,7 +44,7 @@ type Bootstrapper interface {
 	GenerateToken(*config.ClusterConfig, *config.Node) (string, error)
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(config.ClusterConfig, LogOptions) map[string]string
-	SetupCerts(config.KubernetesConfig, config.Node, bool) error
+	SetupCerts(config.KubernetesConfig, config.Node) error
 	GetAPIServerStatus(string, int) (string, error)
 }
 

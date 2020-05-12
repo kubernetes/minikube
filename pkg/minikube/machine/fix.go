@@ -147,6 +147,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 	if err := api.Save(h); err != nil {
 		return h, errors.Wrap(err, "save")
 	}
+
 	return h, nil
 }
 

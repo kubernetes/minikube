@@ -57,7 +57,7 @@ func TestSetupCerts(t *testing.T) {
 	f := command.NewFakeCommandRunner()
 	f.SetCommandToOutput(expected)
 
-	_, err := SetupCerts(f, k8s, config.Node{}, false)
+	_, err := SetupCerts(f, k8s, config.Node{})
 	if err != nil {
 		t.Fatalf("Error starting cluster: %v", err)
 	}
