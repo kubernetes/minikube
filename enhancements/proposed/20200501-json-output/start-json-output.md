@@ -1,6 +1,6 @@
 # Add JSON Output to Minikube Start
 
-* First proposed: May 1, 2020
+* First proposed: May 12, 2020
 * Authors: Priya Wadhwa (@priyawadhwa)
 
 ## Reviewer Priorities
@@ -20,7 +20,12 @@ This proposal discusses adding JSON output to `minikube start`.
 This feature will allow tools that rely on minikube, such as IDE extensions, to better parse errors and progress logs from `minikube start`.
 This allows end users to see clear, and ideally actionable, error messages when minikube breaks.
 
+Minikube has the following to communicate information to users:
+1. Logs via glog (sent to stderr on `minikube start`)
+1. Outputs representing a step (sent to stdout on `minikube start`, e.g. "Preparing Kubernetes...")
+1. Outputs which don't represent a step. This can be an unexpected warning message or an `option`.
 
+This proposal focuses **only** on converting outputs representing clear steps in `minikube start` to JSON (option 2), and making sure error code typically sent to stderr is parsable.
 
 ## Goals
 
@@ -29,15 +34,23 @@ This allows end users to see clear, and ideally actionable, error messages when 
 *   In case of a panic, default to sending all logs to stderr so that the user can see all logs
 
 ### Stdout
-*   Progress is communicated with the total numbers of steps and the current step the user is on
-*   An encoded step name, like `pull_images`, would be useful here
+*   Progress of each step of `minikube start` is communicated in JSON and includes:
+  1. A name for the current step (e.g. `Preparing Kubernetes`)
+  1. The number of the current step
+  1. The expected total number of steps
+*   Progress of artifacts as they are being downloaded is communicated in JSON
+
 
 
 ## Non-Goals
 
+*   Change the way we handle logs via glog
+*   Change the way we handle non-steps to stdout (Warnings, etc.)
 *   Improving error handling in minikube; this is just about how we output errors to users
 
 ## Expected Output
+
+Users can specify JSON output via a `--output json` flag. 
 
 ### Stderr
 
@@ -57,6 +70,53 @@ If minikube fails, and an actionable error message exists, the following JSON wi
 ```
 
 ### Stdout
+If `--output json` is specified, each step of `minikube start` will be output as JSON:
+
+```json
+{
+  "Name": "Selecting Driver",
+  "Message": "✨  Using the hyperkit driver based on user configuration\n",
+  "TotalSteps": 9,
+  "CurrentStep": 2,
+  "Type": "Log"
+}
+```
+
+and each update on a downloaded artifact will be output as:
+
+```json
+{
+  "Type": "Download",
+  "Artifact": "preload.tar.gz",
+  "Progress": "10%"
+}
+```
+
+`minikube start` output would look something like this:
+
+```
+$ minikube start
+{"Name":"Minikube Version","Message":"😄  minikube v1.10.0-beta.2 on Darwin 10.14.6\n","TotalSteps":9,"CurrentStep":1, "Type":"Log"}
+{"Name":"Selecting Driver","Message":"✨  Using the hyperkit driver based on user configuration\n","TotalSteps":9,"CurrentStep":2,"Type":"Log"}
+{"Name":"Starting Control Plane","Message":"👍  Starting node minikube in cluster minikube\n","TotalSteps":9,"CurrentStep":3,"Type":"Log"}
+{"Name":"Download Necessary Artifacts","Message":"💾  Downloading Kubernetes v1.18.1 preload ...\n","TotalSteps":9,"CurrentStep":4,"Type":"Log"}
+  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "10%"}
+  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "61%"}
+  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "73%"}
+  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "87%"}
+  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "100%"}
+{"Name":"Creating Node","Message":"🔥  Creating hyperkit VM (CPUs=2, Memory=6000MB, Disk=20000MB) ...\n","TotalSteps":9,"CurrentStep":5,"Type":"Log"}
+{"Name":"Preparing Kubernetes","Message":"🐳  Preparing Kubernetes v1.18.1 on Docker 19.03.8 ...\n","TotalSteps":9,"CurrentStep":6,"Type":"Log"}
+{"Name":"Verifying Kubernetes","Message":"🔎  Verifying Kubernetes components...\n","TotalSteps":9,"CurrentStep":7,"Type":"Log"}
+{"Name":"Enabling Addons","Message":"🌟  Enabled addons: default-storageclass, storage-provisioner\n","TotalSteps":9,"CurrentStep":7,"Type":"Log"}
+{"Name":"Done","Message":"🏄  Done! kubectl is now configured to use \"minikube\"\n","TotalSteps":9,"CurrentStep":9,"Type":"Log"}
+```
+
+This way, clients can parse the output as it is logged and know the following:
+1. What the type of step is (Log vs Download)
+1. What step we are currently on
+1. The total number of steps
+1. The specific message related to that step
 
 
 ## Implementation Details
@@ -67,7 +127,7 @@ minikube start --output json
 ```
 
 ### Stderr
-Logs can be sent to stderr as usual.
+glog logs can be sent to stderr as usual.
 In addition, we will output error code from [err_map.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/problem/err_map.go) as a parsable JSON message to stderr.
 
 This will be done by adding the following function to the `out` package:
@@ -76,95 +136,39 @@ This will be done by adding the following function to the `out` package:
 func DisplayErrorJSON(out io.Writer, p *problem.Problem)
 ```
 
-which will print the JSON encoding of `p` to `out`.
+which will print the JSON encoding of `p` to `out` (in this case, stderr).
 
-If JSON output is specified, and minikube finds an applicable error message in `err_map.go`, then we can call `DisplayErrorJSON` when handling the error in the [WithError](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/exit/exit.go#L57) function:
 
-```go
-// WithError outputs an error and exits.
-func WithError(msg string, err error) {
-	...
-	p := problem.FromError(err, runtime.GOOS)
-	if p != nil {
-        WithProblem(msg, err, p)
-        // Add this function here (this is just pseudocode)
-        if json {
-            out.DisplayErrorJSON(os.Stderr, p)
-        }
-	}
-    ...
-}
-```
+### Stdout - Log Steps
+Since we need to approximate the total number of steps before minikube starts, we need to know the general steps we expect to execute before starting.
 
-#### Testing Plan
-This feature will be covered by unit tests exclusively.
-If a problem is found, and json is specified, then we just want to make sure that the JSON output is parsable.
+I propose creating a registry of logs, which is prefilled with all expected steps.
 
-### Stdout
-As mentioned above, the requirements for stdout are:
-1. Steps are numbered, and the total number of steps is known
-1. Steps have a helpful name
+The registry will be prefilled with the following steps:
 
-First, we'll need some way of distinguishing between logs.
-Each log has three components:
-1. The message itself 
-1. The emoji associated with the log (StyleEnum)
-1. Whether the log is of type Log, Warning, or Error
+* "Minikube Version"
+* "Selecting Driver"
+*	"Starting Control Plane"
+*	"Download Necessary Artifacts"
+*	"Creating Node"
+*	"Preparing Kubernetes"
+*	"Verifying Kubernetes"
+*	"Enabling Addons"
+*	"Done"
+
+
+When a log is called in the code, it will be associated with one of the above steps.
+
+This will allow us to determine which number step we are currently on, and include that information in the output.
+
+_Note: We may skip steps depending on the user's existing setup. For example, we may not need to "Verify Kubernetes" on a soft start. The current step/total step numbers will only be approximations_
+
+
+This log would be printed at the correct time later in the code by calling a new function, similar to `out.T`:
 
 ```go
-type Log struct {
-	LogType // Will be either Log, Warning or Error
-	style   StyleEnum
-	message string
-}
+func Step(stepName string, style StyleEnum, format string, a ...V)
 ```
-
-
-We also need to know the total number of steps before minikube starts.
-For that to be possible, we need to know all of the logs we will print before starting.
-
-I propose creating a registry of logs, which is prefilled with all necessary logs before we start minikube.
-The registry would look like this:
-
-```go
-// Registry holds all user-facing logs
-type Registry struct {
-	// maps the name of the log to a Log type
-	Logs  map[string]Log
-	Index int
-}
-```
-
-at the beginning of `minikube start`, we would initialize a `Registry` type in the `out` package, which would exist as a global variable.
-All logs would be added to the registry at this time via `Register`:
-
-```go
-// Register registers a log
-func Register(name string, style StyleEnum, message string, logType LogType) {
-	registry.Logs[name] = log{
-		style:   style,
-		message: message,
-		LogType: logType,
-	}
-}
-```
-
-and before starting minikube we would run `initializeRegistry()`, which will register all logs we expect to output:
-
-```go
-func initializeRegistry()
-    Register("select_driver", out.Sparkle, `Using the {{.driver}} driver based on existing profile`, Log)
-    // Add all other logs here as well
-
-```
-
-This log would be printed at the correct time later in the code by calling:
-
-```go
-func Print(name string, a ...V)
-```
-
-which would find the correct log in the registry and apply the template to it.
 
 In the code itself, this means that this line, which currently looks like this:
 
@@ -175,25 +179,62 @@ out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out
 would now be:
 
 ```go
-out.T("select_driver", out.V{"driver": ds.String()})
+out.Step(out.CreateDriver, out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 ```
 
-We can use the `Index` field in `Registry` to track which number log we are currently at. 
-Since logs have been pre-registered, we know what the total number of expected logs is.
+`out.Step` will be responsible for applying the passed in template, and printing out a JSON encoded version of the step if `--output json` is specified:
 
-Similarly to stderr, if the JSON flag is specified, we will print the JSON encoding of the `Log` struct to stdout instead of the expected log in `out.T`, `out.Warning` and `out.Err`.
+```json
+{
+  "Name": "Selecting Driver",
+  "Message": "✨  Using the hyperkit driver based on user configuration\n",
+  "TotalSteps": 9,
+  "CurrentStep": 2,
+  "Type": "Log"
+}
+```
+
+### Stdout - Download Steps
+
+To communicate progress on artifacts as they're being downloaded, we want JSON output that looks something like this during download:
+
+```json
+{
+  "Type": "Download",
+  "Artifact": "preload.tar.gz",
+  "Progress": "10%"
+}
+```
+
+minikube uses the [go-getter](github.com/hashicorp/go-getter) library to download artifacts (preloaded tarballs, ISOs, etc).
+Currently, minikube passes in a [DefaultProgressBar](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/download/download.go#L48) to this library, which is used to communicate download progress to the user.
+
+Instead of passing in `DefaultProgressBar` we should be able to write our own object, something like `JSONOutput`, which will print the current progress of the download in the JSON format specified above instead of showing a progress bar in the terminal.
 
 
 #### Testing Plan
-Both unit tests and integration tests will be required to test this feature.
+Both unit tests and integration tests will be required to test these features feature.
 
 Unit tests will cover:
 1. That the JSON output is correct and parsable
+1. That errors are sent to stderr correctly and are parsable
 
 Integration tests will cover:
-1. That all output to stdout is in JSON, ensuring that all user-facing logs have been registered
+1. That in the following cases, if `--output json` is specfied, all logs are in JSON format:
+  * Clean start, with no downloaded artifacts
+  * Soft start
+  * Restart
    
 
 ## Alternatives Considered
 
-I haven't been able to think of an alternate way to do this just yet.
+### Cloud Events
+
+I briefly looked into using [Cloud Events](https://github.com/cloudevents/spec) to send events to clients, specifically looking at the [Go SDK](https://github.com/cloudevents/sdk-go.
+
+Pros:
+* Standardized way of sending events
+* Supported by CNCF
+
+Cons
+* Having minikube set up an HTTP server adds extra complexity to this proposal. If clients can instead parse JSON info from stdout/stderr then that would be the simplest solution. 
