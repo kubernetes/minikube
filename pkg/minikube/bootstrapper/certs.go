@@ -56,9 +56,12 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		return nil, errors.Wrap(err, "shared CA certs")
 	}
 
-	xfer, err := generateProfileCerts(k8s, n, ccs)
-	if err != nil {
-		return nil, errors.Wrap(err, "profile certs")
+	var xfer []string
+	if n.ControlPlane {
+		xfer, err = generateProfileCerts(k8s, n, ccs)
+		if err != nil {
+			return nil, errors.Wrap(err, "profile certs")
+		}
 	}
 
 	xfer = append(xfer, ccs.caCert)
