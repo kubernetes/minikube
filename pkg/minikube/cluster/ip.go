@@ -55,10 +55,12 @@ func HostIP(host *host.Host) (net.IP, error) {
 		}
 		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
 		iface := re.FindStringSubmatch(string(out))[1]
-		ip, err := getIPForInterface(iface)
-		if err != nil {
+		ipOut, ipErr := exec.Command(driver.VBoxManagePath(), "list", "hostonlyifs").Output()
+		if ipErr != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
+		ipRe := regexp.MustCompile(`(?s)Name:\s*` + iface + `.+?IPAddress:\s*(\S+)`)
+		ip := ipRe.FindStringSubmatch(string(ipOut))[1]
 		return ip, nil
 	case driver.HyperKit:
 		return net.ParseIP("192.168.64.1"), nil
