@@ -1,78 +1,103 @@
 ---
 title: "Addons"
-date: 2019-07-31
 weight: 4
 description: >
   How to develop minikube addons
 ---
 
-## Testing Addon changes
+## Creating a new addon
 
-Build the minikube binary:
+To create an addon, first fork the minikube repository, and check out your fork:
 
-```shell
-make
+`git clone git@github.com:<username>/minikube.git`
+
+Then go into the source directory:
+
+`cd minikube`
+
+Create a subdirectory:
+
+`mkdir deploy/addons/<addon name>`
+
+Add your manifest YAML's to the directory you have created:
+
+`cp *.yaml deploy/addons/<addon name>`
+
+To make the addon appear in `minikube addons list`, add it to `pkg/addons/config.go`. Here is the entry used by the `registry` addon, which will work for any addon which does not require custom code:
+
+```go
+  {
+    name:      "registry",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 ```
 
-Apply addon from your newly built minikube binary:
+Then, add into `pkg/minikube/assets/addons.go` the list of files to copy into the cluster, including manifests. Here is the entry used by the `registry` addon:
 
-```shell
-./out/minikube addons enable
+```go
+	"registry": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/registry/registry-rc.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-rc.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry/registry-svc.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-svc.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry/registry-proxy.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-proxy.yaml",
+			"0640",
+			false),
+  }, false, "registry"),
 ```
 
-## Adding a New Addon
+The `MustBinAsset` arguments are:
 
-To add a new addon to minikube the following steps are required:
+* source filename
+* destination directory (typically `vmpath.GuestAddonsDir`)
+* destination filename
+* permissions (typically `0640`)
+* boolean value representing if template substitution is required (often `false`)
 
-* For the new addon's .yaml file(s):
-  * Put the required .yaml files for the addon in the `minikube/deploy/addons` directory.
-  * Add the `kubernetes.io/minikube-addons: <NEW_ADDON_NAME>` label to each piece of the addon (ReplicationController, Service, etc.)
-  * Also, the `addonmanager.kubernetes.io/mode` annotation is needed so that your resources are picked up by the `addon-manager`.
-  * In order to have `minikube addons open <NEW_ADDON_NAME>` work properly, the `kubernetes.io/minikube-addons-endpoint: <NEW_ADDON_NAME>` label must be added to the appropriate endpoint service (what the user would want to open/interact with).  This service must be of type NodePort.
+The boolean value on the last line is whether the addon should be enabled by default. This should always be `false`.
 
-* To add the addon into minikube commands/VM:
-  * Add the addon with appropriate fields filled into the `Addon` dictionary, see this [commit](https://github.com/kubernetes/minikube/commit/41998bdad0a5543d6b15b86b0862233e3204fab6#diff-e2da306d559e3f019987acc38431a3e8R133) and example.
+To see other examples, see the [addons commit history](https://github.com/kubernetes/minikube/commits/master/deploy/addons) for other recent examples.
 
-  ```go
-  // cmd/minikube/cmd/config/config.go
-  var settings = []Setting{
-    ...,
-    // add other addon setting
-    {
-      name:        "efk",
-      set:         SetBool,
-      validations: []setFn{IsValidAddon},
-      callbacks:   []setFn{EnableOrDisableAddon},
-    },
-  }
-  ```
+## "addons open" support
 
-  * Add the addon to settings list, see this [commit](https://github.com/kubernetes/minikube/commit/41998bdad0a5543d6b15b86b0862233e3204fab6#diff-07ad0c54f98b231e68537d908a214659R89) and example.
+If your addon contains a NodePort Service, please add the `kubernetes.io/minikube-addons-endpoint: <addon name>` label, which is used by the  `minikube addons open` command:
 
-  ```go
-  // pkg/minikube/assets/addons.go
-  var Addons = map[string]*Addon{
-    ...,
-    // add other addon asset
-    "efk": NewAddon([]*BinAsset{
-      MustBinAsset(
-        "deploy/addons/efk/efk-configmap.yaml",
-        guestAddonsDir,
-        "efk-configmap.yaml",
-        "0640", 
-        false),
-      MustBinAsset(
-        "deploy/addons/efk/efk-rc.yaml",
-        guestAddonsDir,
-        "efk-rc.yaml",
-        "0640", 
-        false),
-      MustBinAsset(
-        "deploy/addons/efk/efk-svc.yaml",
-        guestAddonsDir,
-        "efk-svc.yaml",
-        "0640",
-        false),
-    }, false, "efk"),
-  }
-  ```
+```
+apiVersion: v1
+kind: Service
+metadata:
+ labels:
+    kubernetes.io/minikube-addons-endpoint: <addon name>
+```
+
+NOTE: `minikube addons open` currently only works for the `kube-system` namespace: [#8089](https://github.com/kubernetes/minikube/issues/8089).
+
+## Testing addon changes
+
+Rebuild the minikube binary and apply the addon with extra logging enabled:
+
+```shell
+make && ./out/minikube addons enable <addon name> --alsologtostderr
+```
+
+Please note that you must run `make` each time you change your YAML files. To disable the addon when new changes are made, run:
+
+```shell
+./out/minikube addons disable <addon name> --alsologtostderr
+```
+
+## Sending out your PR
+
+Once you have tested your addon, click on [new pull request](https://github.com/kubernetes/minikube/compare) to send us your PR!
