@@ -61,7 +61,7 @@ func HostIP(host *host.Host) (net.IP, error) {
 		}
 		ipRe := regexp.MustCompile(`(?s)Name:\s*` + iface + `.+?IPAddress:\s*(\S+)`)
 		ip := ipRe.FindStringSubmatch(string(ipOut))[1]
-		return ip, nil
+		return net.ParseIP(ip), nil
 	case driver.HyperKit:
 		return net.ParseIP("192.168.64.1"), nil
 	case driver.VMware:
