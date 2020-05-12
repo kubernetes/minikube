@@ -1,5 +1,53 @@
 # Release Notes
 
+## Version 1.10.0 - 2020-05-11
+
+Features:
+
+* Add new env variable `MINIKUBE_FORCE_SYSTEMD` to configure force-systemd [#8010](https://github.com/kubernetes/minikube/pull/8010)
+* docker/podman: add alternative repository for base image in github packages [#7943](https://github.com/kubernetes/minikube/pull/7943)
+
+
+Improvements:
+
+* tunnel: change to clean up by default [#7946](https://github.com/kubernetes/minikube/pull/7946)
+* docker/podman warn about non-amd64 archs [#8053](https://github.com/kubernetes/minikube/pull/8053)
+* docker: Detect windows container and exit with instructions [#7984](https://github.com/kubernetes/minikube/pull/7984)
+* make `minikube help` output consistent [#8036](https://github.com/kubernetes/minikube/pull/8036)
+* podman: Use noninteractive sudo when running podman [#7959](https://github.com/kubernetes/minikube/pull/7959)
+* podman: Wrap the start command with cgroup manager too [#8001](https://github.com/kubernetes/minikube/pull/8001)
+* podman: implement copy for podman-remote [#8060](https://github.com/kubernetes/minikube/pull/8060)
+* podman: Don't run the extraction tar container for podman [#8057](https://github.com/kubernetes/minikube/pull/8057)
+* podman: disable selinux labels when extracting the tarball (permissions error) [#8017](https://github.com/kubernetes/minikube/pull/8017)
+* podman: Get the gateway by inspecting container network [#7962](https://github.com/kubernetes/minikube/pull/7962)
+* podman-env: add PointToHost function for podman driver [#8062](https://github.com/kubernetes/minikube/pull/8062)
+* virtualbox: Quiet initial ssh timeout warning [#8027](https://github.com/kubernetes/minikube/pull/8027)
+* update ingress-nginx addon version [#7997](https://github.com/kubernetes/minikube/pull/7997)
+* config: Add base image to the cluster config [#7985](https://github.com/kubernetes/minikube/pull/7985)
+
+Bug Fixes:
+
+* wait to add aliases to /etc/hosts before starting kubelet [#8035](https://github.com/kubernetes/minikube/pull/8035)
+* fix missing node name in minikube stop output [#8023](https://github.com/kubernetes/minikube/pull/8023)
+* addons: fix initial retry delay, double maximum limit [#7999](https://github.com/kubernetes/minikube/pull/7999)
+* restart: validate configs with new hostname, add logging [#8022](https://github.com/kubernetes/minikube/pull/8022)
+* assign proper internal IPs for nodes [#8018](https://github.com/kubernetes/minikube/pull/8018)
+* use the correct binary for unpacking the preload [#7961](https://github.com/kubernetes/minikube/pull/7961)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Giacomo Mr. Wolf Furlan
+- Kenta Iso
+- Manuel Alejandro de Brito Fontes
+- Medya Ghazizadeh
+- Noah Spahn
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- anencore94
+
+
 ## Version 1.10.0-beta.2 - 2020-04-29
 
 Improvements:
