@@ -49,6 +49,8 @@ var nodeStopCmd = &cobra.Command{
 		if err != nil {
 			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})
 		}
+
+		out.T(out.Stopped, "Successfully stopped node {{.name}}", out.V{"name": name})
 	},
 }
 
