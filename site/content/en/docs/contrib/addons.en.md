@@ -28,33 +28,33 @@ To make the addon appear in `minikube addons list`, add it to `pkg/addons/config
 ```go
   {
     name:      "registry",
-		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
-	},
+    set:       SetBool,
+    callbacks: []setFn{enableOrDisableAddon},
+  },
 ```
 
 Then, add into `pkg/minikube/assets/addons.go` the list of files to copy into the cluster, including manifests. Here is the entry used by the `registry` addon:
 
 ```go
-	"registry": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/registry/registry-rc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"registry-rc.yaml",
-			"0640",
-			false),
-		MustBinAsset(
-			"deploy/addons/registry/registry-svc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"registry-svc.yaml",
-			"0640",
-			false),
-		MustBinAsset(
-			"deploy/addons/registry/registry-proxy.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"registry-proxy.yaml",
-			"0640",
-			false),
+  "registry": NewAddon([]*BinAsset{
+    MustBinAsset(
+      "deploy/addons/registry/registry-rc.yaml.tmpl",
+      vmpath.GuestAddonsDir,
+      "registry-rc.yaml",
+      "0640",
+      false),
+    MustBinAsset(
+      "deploy/addons/registry/registry-svc.yaml.tmpl",
+      vmpath.GuestAddonsDir,
+      "registry-svc.yaml",
+      "0640",
+      false),
+    MustBinAsset(
+      "deploy/addons/registry/registry-proxy.yaml.tmpl",
+      vmpath.GuestAddonsDir,
+      "registry-proxy.yaml",
+      "0640",
+      false),
   }, false, "registry"),
 ```
 
@@ -74,7 +74,7 @@ To see other examples, see the [addons commit history](https://github.com/kubern
 
 If your addon contains a NodePort Service, please add the `kubernetes.io/minikube-addons-endpoint: <addon name>` label, which is used by the  `minikube addons open` command:
 
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
