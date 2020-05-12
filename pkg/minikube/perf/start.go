@@ -43,12 +43,12 @@ func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary
 
 func collectResults(ctx context.Context, binaries []*Binary) (*resultManager, error) {
 	rm := newResultManager()
-	for r := 0; r < runs; r++ {
-		log.Printf("Executing run %d/%d...", r, runs)
+	for run := 0; run < runs; run++ {
+		log.Printf("Executing run %d/%d...", run, runs)
 		for _, binary := range binaries {
 			r, err := timeMinikubeStart(ctx, binary)
 			if err != nil {
-				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary)
+				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
 			rm.addResult(binary, r)
 		}

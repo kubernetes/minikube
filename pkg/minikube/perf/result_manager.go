@@ -107,10 +107,12 @@ func (rm *resultManager) summarizeTimesPerLog(binaries []*Binary) {
 		t.Append(v)
 	}
 	fmt.Println("Averages Time Per Log")
-	fmt.Println("<details>\n")
+	fmt.Println("<details>")
+	fmt.Println()
 	fmt.Println("```")
 	t.Render() // Send output
-	fmt.Println("```\n")
+	fmt.Println("```")
+	fmt.Println()
 	fmt.Println("</details>")
 }
 
