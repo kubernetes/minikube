@@ -348,7 +348,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	if driver.BareMetal(cc.Driver) {
 		kubeNodeName = "m01"
 	}
-	return createNode(cc, kubeNodeName)
+	return createNode(cc, kubeNodeName, existing)
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start

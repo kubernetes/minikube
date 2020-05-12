@@ -623,10 +623,6 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 
 func (k *Bootstrapper) restartWorker(cc config.ClusterConfig, n config.Node) error {
 
-	if kverify.KubeletStatus(k.c) == state.Running {
-		return nil
-	}
-
 	if err := k.clearStaleConfigs(cc); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
 	}
@@ -640,11 +636,12 @@ func (k *Bootstrapper) restartWorker(cc config.ClusterConfig, n config.Node) err
 		return errors.Wrap(err, "getting control plane endpoint")
 	}
 
-	// Make sure to account for if n.Token doesn't exist for older configs
 	cmd := fmt.Sprintf("%s join phase kubelet-start %s --token %s --discovery-token-unsafe-skip-ca-verification", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), net.JoinHostPort(host, strconv.Itoa(port)), n.Token)
 	_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
 	if err != nil {
-		return errors.Wrap(err, "running join phase kubelet-start")
+		if !strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
+			return errors.Wrap(err, "running join phase kubelet-start")
+		}
 	}
 
 	// This can fail during upgrades if the old pods have not shut down yet
@@ -665,6 +662,10 @@ func (k *Bootstrapper) restartWorker(cc config.ClusterConfig, n config.Node) err
 
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
 func (k *Bootstrapper) GenerateToken(cc *config.ClusterConfig, n *config.Node) (string, error) {
+	if n.Token != "" {
+		return "", nil
+	}
+
 	// Generate the token so we can store it
 	genTokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token generate", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(genTokenCmd)
@@ -739,8 +740,8 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 }
 
 // SetupCerts sets up certificates within the cluster.
-func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node, keepContext bool) error {
-	_, err := bootstrapper.SetupCerts(k.c, k8s, n, keepContext)
+func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) error {
+	_, err := bootstrapper.SetupCerts(k.c, k8s, n)
 	return err
 }
 

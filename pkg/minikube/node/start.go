@@ -124,7 +124,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node, true); err != nil {
+		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 
@@ -163,14 +163,17 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 
 		// Make sure to use the command runner for the control plane to generate the join token
-		cpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
-		if err != nil {
-			return nil, errors.Wrap(err, "getting control plane bootstrapper")
-		}
+		var joinCmd string
+		if !starter.PreExists || starter.Node.Token == "" {
+			cpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
+			if err != nil {
+				return nil, errors.Wrap(err, "getting control plane bootstrapper")
+			}
 
-		joinCmd, err := cpBs.GenerateToken(starter.Cfg, starter.Node)
-		if err != nil {
-			return nil, errors.Wrap(err, "generating join token")
+			joinCmd, err = cpBs.GenerateToken(starter.Cfg, starter.Node)
+			if err != nil {
+				return nil, errors.Wrap(err, "generating join token")
+			}
 		}
 
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd, starter.PreExists); err != nil {
@@ -278,7 +281,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		exit.WithError("Failed to update cluster", err)
 	}
 
-	if err := bs.SetupCerts(cfg.KubernetesConfig, n, false); err != nil {
+	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
 
