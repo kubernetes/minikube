@@ -82,12 +82,6 @@ This file is used for auto-update notifications, but is not active until release
 
 minikube-bot will send out a PR to update the release checksums at the top of `deploy/minikube/releases.json`. You should merge this PR.
 
-## Update documentation link
-
-Update `latest_release` in `site/config.toml`
-
-example: https://github.com/kubernetes/minikube/pull/5413
-
 ## Package managers which include minikube
 
 These are downstream packages that are being maintained by others and how to upgrade them to make sure they have the latest versions
