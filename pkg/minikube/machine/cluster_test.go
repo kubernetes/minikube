@@ -339,7 +339,7 @@ func TestDeleteHost(t *testing.T) {
 	cc := defaultClusterConfig
 	cc.Name = viper.GetString("profile")
 
-	if err := DeleteHost(api, driver.MachineName(cc, config.Node{Name: "minikube"})); err != nil {
+	if err := DeleteHost(api, driver.MachineName(cc, config.Node{Name: "minikube"}), false); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
@@ -355,7 +355,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	d := &tests.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"})); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"}), false); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -368,7 +368,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"})); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"}), false); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -383,7 +383,7 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"})); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"}), false); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
