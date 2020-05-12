@@ -879,8 +879,6 @@ func validateRegistryMirror() {
 
 func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
-	var cp config.Node
-	var err error
 	if existing == nil {
 		cp := config.Node{
 			Port:              cc.KubernetesConfig.NodePort,
@@ -890,13 +888,14 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 			Worker:            true,
 		}
 		cc.Nodes = []config.Node{cp}
-	} else {
-		cp, err = config.PrimaryControlPlane(existing)
-		if err != nil {
-			return cc, config.Node{}, err
-		}
-		cc.Nodes = existing.Nodes
+		return cc, cp, nil
 	}
+	cp, err := config.PrimaryControlPlane(existing)
+	if err != nil {
+		return cc, config.Node{}, err
+	}
+	cc.Nodes = existing.Nodes
+
 	return cc, cp, nil
 }
 
