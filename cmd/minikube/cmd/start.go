@@ -877,16 +877,26 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
-	cp := config.Node{
-		Port:              cc.KubernetesConfig.NodePort,
-		KubernetesVersion: getKubernetesVersion(&cc),
-		Name:              kubeNodeName,
-		ControlPlane:      true,
-		Worker:            true,
+	var cp config.Node
+	var err error
+	if existing == nil {
+		cp := config.Node{
+			Port:              cc.KubernetesConfig.NodePort,
+			KubernetesVersion: getKubernetesVersion(&cc),
+			Name:              kubeNodeName,
+			ControlPlane:      true,
+			Worker:            true,
+		}
+		cc.Nodes = []config.Node{cp}
+	} else {
+		cp, err = config.PrimaryControlPlane(existing)
+		if err != nil {
+			return cc, config.Node{}, err
+		}
+		cc.Nodes = existing.Nodes
 	}
-	cc.Nodes = []config.Node{cp}
 	return cc, cp, nil
 }
 
