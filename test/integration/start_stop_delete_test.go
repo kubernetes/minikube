@@ -82,7 +82,7 @@ func TestStartStop(t *testing.T) {
 				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer CleanupWithLogs(t, profile, cancel)
+				defer Cleanup(t, profile, cancel)
 				type validateStartStopFunc func(context.Context, *testing.T, string, string, string, []string)
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
@@ -137,89 +137,38 @@ func TestStartStop(t *testing.T) {
 						}
 					}
 
-<<<<<<< HEAD
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
-				if err != nil {
-					t.Fatalf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
-				}
-||||||| merged common ancestors
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
-				if err != nil {
-					t.Errorf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
-				}
-=======
 				})
->>>>>>> break down test strat stop to sub tests
 
-<<<<<<< HEAD
-				// The none driver never really stops
-				if !NoneDriver() {
-					got := Status(ctx, t, Target(), profile, "Host")
-					if got != state.Stopped.String() {
-						t.Fatalf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
-					}
-				}
-||||||| merged common ancestors
-				// The none driver never really stops
-				if !NoneDriver() {
-					got := Status(ctx, t, Target(), profile, "Host")
-					if got != state.Stopped.String() {
-						t.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
-					}
-				}
-=======
 			})
 		}
 	})
 }
->>>>>>> break down test strat stop to sub tests
 
-<<<<<<< HEAD
-				// Enable an addon to assert it comes up afterwards
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
-				if err != nil {
-					t.Fatalf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
-				}
-||||||| merged common ancestors
-				// Enable an addon to assert it comes up afterwards
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
-				if err != nil {
-					t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
-				}
-=======
 func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed starting minikube -first start-. args %q: %v", rr.Command(), err)
 	}
 }
->>>>>>> break down test strat stop to sub tests
 
 func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	if !strings.Contains(tcName, "cni") {
 		testPodScheduling(ctx, t, profile)
 	}
 }
 
 func validateStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
 	if err != nil {
-		t.Errorf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
 	}
 }
 
-<<<<<<< HEAD
-				got := Status(ctx, t, Target(), profile, "Host")
-				if got != state.Running.String() {
-					t.Fatalf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
-				}
-||||||| merged common ancestors
-				got := Status(ctx, t, Target(), profile, "Host")
-				if got != state.Running.String() {
-					t.Errorf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
-				}
-=======
 func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	// The none driver never really stops
 	if !NoneDriver() {
 		got := Status(ctx, t, Target(), profile, "Host")
@@ -227,7 +176,6 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 			t.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
 		}
 	}
->>>>>>> break down test strat stop to sub tests
 
 	// Enable an addon to assert it comes up afterwards
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
@@ -238,6 +186,7 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 }
 
 func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		// Explicit fatal so that failures don't move directly to deletion
@@ -253,30 +202,34 @@ func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcNa
 
 // validateAppExistsAfterStop verifies that a user's app will not vanish after a minikube stop
 func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 	} else if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
-		t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
+		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 	}
 
 }
 
 // validateAddonAfterStop validates that an addon which was enabled when minikube is stopped will be enabled and working..
 func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 	} else if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
-		t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
+		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 	}
 }
 
 func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	if !NoneDriver() {
 		testPulledImages(ctx, t, profile, tcVersion)
 	}
 }
 
 func validatePauseAfterSart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
 	testPause(ctx, t, profile)
 }
 
