@@ -17,21 +17,20 @@ Please leave the above text in your proposal as instructions to the reader.
 ## Summary
 
 This proposal discusses adding JSON output to `minikube start`. 
-This feature will allow tools that rely on minikube, such as IDE extensions, to better parse errors and progress logs from `minikube start`.
+This feature will allow tools that rely on minikube, such as IDE extensions, to better parse errors and progress logs from STDOUT and STDERR on `minikube start`.
 This allows end users to see clear, and ideally actionable, error messages when minikube breaks.
 
-Minikube has the following to communicate information to users:
+Minikube currently communicates state to users via:
 1. Logs via glog (sent to stderr on `minikube start`)
-1. Outputs representing a step (sent to stdout on `minikube start`, e.g. "Preparing Kubernetes...")
-1. Outputs which don't represent a step. This can be an unexpected warning message or an `option`.
+1. Logs to stdout which represent a step on `minikube start` (e.g. "Preparing Kubernetes...")
+1. Logs to stdout which don't represent a step on `minikube start`. This can be an unexpected warning message or an `option`.
 
-This proposal focuses **only** on converting outputs representing clear steps in `minikube start` to JSON (option 2), and making sure error code typically sent to stderr is parsable.
+This proposal focuses **only** on converting outputs representing clear steps in `minikube start` to JSON (option 2), and making sure error code sent to stderr is parsable.
 
 ## Goals
 
 ### Stderr
 *   Error code from [err_map.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/problem/err_map.go) is parsable from stderr
-*   In case of a panic, default to sending all logs to stderr so that the user can see all logs
 
 ### Stdout
 *   Progress of each step of `minikube start` is communicated in JSON and includes:
@@ -96,20 +95,20 @@ and each update on a downloaded artifact will be output as:
 
 ```
 $ minikube start
-{"Name":"Minikube Version","Message":"😄  minikube v1.10.0-beta.2 on Darwin 10.14.6\n","TotalSteps":9,"CurrentStep":1, "Type":"Log"}
-{"Name":"Selecting Driver","Message":"✨  Using the hyperkit driver based on user configuration\n","TotalSteps":9,"CurrentStep":2,"Type":"Log"}
-{"Name":"Starting Control Plane","Message":"👍  Starting node minikube in cluster minikube\n","TotalSteps":9,"CurrentStep":3,"Type":"Log"}
-{"Name":"Download Necessary Artifacts","Message":"💾  Downloading Kubernetes v1.18.1 preload ...\n","TotalSteps":9,"CurrentStep":4,"Type":"Log"}
+{"Name":"Minikube Version","Message":"minikube v1.10.0-beta.2 on Darwin 10.14.6","TotalSteps":9,"CurrentStep":1, "Type":"Log"}
+{"Name":"Selecting Driver","Message":"Using the hyperkit driver,"TotalSteps":9,"CurrentStep":2,"Type":"Log"}
+{"Name":"Starting Control Plane","Message":"Starting node minikube in cluster minikube","TotalSteps":9,"CurrentStep":3,"Type":"Log"}
+{"Name":"Download Necessary Artifacts","Message":"Downloading Kubernetes v1.18.1 preload","TotalSteps":9,"CurrentStep":4,"Type":"Log"}
   {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "10%"}
   {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "61%"}
   {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "73%"}
   {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "87%"}
   {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "100%"}
-{"Name":"Creating Node","Message":"🔥  Creating hyperkit VM (CPUs=2, Memory=6000MB, Disk=20000MB) ...\n","TotalSteps":9,"CurrentStep":5,"Type":"Log"}
-{"Name":"Preparing Kubernetes","Message":"🐳  Preparing Kubernetes v1.18.1 on Docker 19.03.8 ...\n","TotalSteps":9,"CurrentStep":6,"Type":"Log"}
-{"Name":"Verifying Kubernetes","Message":"🔎  Verifying Kubernetes components...\n","TotalSteps":9,"CurrentStep":7,"Type":"Log"}
-{"Name":"Enabling Addons","Message":"🌟  Enabled addons: default-storageclass, storage-provisioner\n","TotalSteps":9,"CurrentStep":7,"Type":"Log"}
-{"Name":"Done","Message":"🏄  Done! kubectl is now configured to use \"minikube\"\n","TotalSteps":9,"CurrentStep":9,"Type":"Log"}
+{"Name":"Creating Node","Message":"Creating hyperkit VM","TotalSteps":9,"CurrentStep":5,"Type":"Log"}
+{"Name":"Preparing Kubernetes","Message":"Preparing Kubernetes v1.18.1 on Docker 19.03.8","TotalSteps":9,"CurrentStep":6,"Type":"Log"}
+{"Name":"Verifying Kubernetes","Message":"🔎  Verifying Kubernetes components","TotalSteps":9,"CurrentStep":7,"Type":"Log"}
+{"Name":"Enabling Addons","Message":"🌟  Enabled addons: default-storageclass, storage-provisioner","TotalSteps":9,"CurrentStep":7,"Type":"Log"}
+{"Name":"Done","Message":"🏄  Done! kubectl is now configured to use \"minikube\"","TotalSteps":9,"CurrentStep":9,"Type":"Log"}
 ```
 
 This way, clients can parse the output as it is logged and know the following:
@@ -120,11 +119,6 @@ This way, clients can parse the output as it is logged and know the following:
 
 
 ## Implementation Details
-Users can specify JSON output on minikube start via a flag:
-
-```
-minikube start --output json
-```
 
 ### Stderr
 glog logs can be sent to stderr as usual.
@@ -142,9 +136,7 @@ which will print the JSON encoding of `p` to `out` (in this case, stderr).
 ### Stdout - Log Steps
 Since we need to approximate the total number of steps before minikube starts, we need to know the general steps we expect to execute before starting.
 
-I propose creating a registry of logs, which is prefilled with all expected steps.
-
-The registry will be prefilled with the following steps:
+I propose creating a registry of logs, which is prefilled with the following steps:
 
 * "Minikube Version"
 * "Selecting Driver"
@@ -155,7 +147,6 @@ The registry will be prefilled with the following steps:
 *	"Verifying Kubernetes"
 *	"Enabling Addons"
 *	"Done"
-
 
 When a log is called in the code, it will be associated with one of the above steps.
 
@@ -216,11 +207,11 @@ Instead of passing in `DefaultProgressBar` we should be able to write our own ob
 Both unit tests and integration tests will be required to test these features feature.
 
 Unit tests will cover:
-1. That the JSON output is correct and parsable
+1. That the JSON output of output steps, both type `Log` and type `Download`, is correct and parsable
 1. That errors are sent to stderr correctly and are parsable
 
 Integration tests will cover:
-1. That in the following cases, if `--output json` is specfied, all logs are in JSON format:
+1. That in the following cases, if `--output json` is specfied, all logs are correctly in JSON format:
   * Clean start, with no downloaded artifacts
   * Soft start
   * Restart
@@ -230,11 +221,11 @@ Integration tests will cover:
 
 ### Cloud Events
 
-I briefly looked into using [Cloud Events](https://github.com/cloudevents/spec) to send events to clients, specifically looking at the [Go SDK](https://github.com/cloudevents/sdk-go.
+I briefly looked into using [Cloud Events](https://github.com/cloudevents/spec) to send events to clients, specifically looking at the [Go SDK](https://github.com/cloudevents/sdk-go).
 
 Pros:
 * Standardized way of sending events
 * Supported by CNCF
 
-Cons
+Cons:
 * Having minikube set up an HTTP server adds extra complexity to this proposal. If clients can instead parse JSON info from stdout/stderr then that would be the simplest solution. 
