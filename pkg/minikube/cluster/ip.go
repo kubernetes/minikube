@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"reflect"
 	"regexp"
 
 	"github.com/docker/machine/libmachine"
@@ -40,9 +41,18 @@ func HostIP(host *host.Host) (net.IP, error) {
 	case driver.KVM2:
 		return net.ParseIP("192.168.39.1"), nil
 	case driver.HyperV:
-		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
-		// TODO(aprindle) Change this to deserialize the driver instead
-		hypervVirtualSwitch := re.FindStringSubmatch(string(host.RawDriver))[1]
+		v := reflect.ValueOf(host.Driver).Elem()
+		var hypervVirtualSwitch string
+		// We don't have direct access to hyperv.Driver so use reflection to retrieve the virtual switch name
+		for i := 0; i < v.NumField(); i++ {
+			if v.Type().Field(i).Name == "VSwitch" {
+				hypervVirtualSwitch = v.Field(i).Interface().(string)
+				break
+			}
+		}
+		if hypervVirtualSwitch == "" {
+			return nil, errors.New("No virtual switch found")
+		}
 		ip, err := getIPForInterface(fmt.Sprintf("vEthernet (%s)", hypervVirtualSwitch))
 		if err != nil {
 			return []byte{}, errors.Wrap(err, fmt.Sprintf("ip for interface (%s)", hypervVirtualSwitch))
@@ -55,11 +65,13 @@ func HostIP(host *host.Host) (net.IP, error) {
 		}
 		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
 		iface := re.FindStringSubmatch(string(out))[1]
-		ip, err := getIPForInterface(iface)
+		ipList, err := exec.Command(driver.VBoxManagePath(), "list", "hostonlyifs").Output()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
-		return ip, nil
+		re = regexp.MustCompile(`(?s)Name:\s*` + iface + `.+IPAddress:\s*(\S+)`)
+		ip := re.FindStringSubmatch(string(ipList))[1]
+		return net.ParseIP(ip), nil
 	case driver.HyperKit:
 		return net.ParseIP("192.168.64.1"), nil
 	case driver.VMware:
