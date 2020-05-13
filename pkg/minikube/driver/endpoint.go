@@ -24,8 +24,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// ControlPaneEndpoint returns the location where callers can reach this cluster
-func ControlPaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName string) (string, net.IP, int, error) {
+// ControlPlaneEndpoint returns the location where callers can reach this cluster
+func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName string) (string, net.IP, int, error) {
 	if NeedsPortForward(driverName) {
 		port, err := oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
 		hostname := oci.DefaultBindIPV4
