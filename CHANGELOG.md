@@ -6,6 +6,7 @@ Bug fixes:
 
 * virtualbox: fix IP address retrieval [#8106](https://github.com/kubernetes/minikube/pull/8106)
 * hyperv: fix virtual switch bug [#8103](https://github.com/kubernetes/minikube/pull/8103)
+* Bump Default Kubernetes version v1.18.2 and update newest [8099](https://github.com/kubernetes/minikube/pull/8099)
 
 Huge thank you for this release towards our contributors: 
 
