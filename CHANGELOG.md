@@ -1,5 +1,19 @@
 # Release Notes
 
+## Version 1.10.1 - 2020-05-12
+
+Bug fixes:
+
+* virtualbox: fix IP address retrieval [#8106](https://github.com/kubernetes/minikube/pull/8106)
+* hyperv: fix virtual switch bug [#8103](https://github.com/kubernetes/minikube/pull/8103)
+
+Huge thank you for this release towards our contributors: 
+
+- cprogrammer1994
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Thomas Strömberg
+
 ## Version 1.10.0 - 2020-05-11
 
 Features:
