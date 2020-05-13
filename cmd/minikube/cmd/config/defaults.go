@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var configDefaultsCommand = &cobra.Command{
@@ -54,7 +55,7 @@ func listDefaults(property string) error {
 	}
 	defaults := setting.validDefaults()
 	for _, d := range defaults {
-		fmt.Printf("* %s\n", d)
+		out.Ln("* %s", d)
 	}
 	return nil
 }
