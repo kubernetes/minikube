@@ -134,4 +134,9 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableAddon},
 	},
+	{
+		name:      "ambassador",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 }
