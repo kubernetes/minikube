@@ -36,15 +36,15 @@ For Linux users, we provide 3 easy download options:
 ### Debian package
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< latest >}}-0_amd64.deb
-sudo dpkg -i minikube_{{< latest >}}-0_amd64.deb
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+sudo dpkg -i minikube_latest_amd64.deb
 ```
 
 ### RPM package
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-{{< latest >}}-0.x86_64.rpm
-sudo rpm -ivh minikube-{{< latest >}}-0.x86_64.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
+sudo rpm -ivh minikube-latest.x86_64.rpm
 ```
 
 {{% /tab %}}

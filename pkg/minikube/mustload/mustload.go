@@ -119,7 +119,7 @@ func Running(name string) ClusterController {
 		exit.WithError("Unable to get command runner", err)
 	}
 
-	hostname, ip, port, err := driver.ControlPaneEndpoint(cc, &cp, host.DriverName)
+	hostname, ip, port, err := driver.ControlPlaneEndpoint(cc, &cp, host.DriverName)
 	if err != nil {
 		exit.WithError("Unable to get forwarded endpoint", err)
 	}
