@@ -69,14 +69,6 @@ func TestFunctional(t *testing.T) {
 		if err := os.Remove(p); err != nil {
 			t.Logf("unable to remove %q: %v", p, err)
 		}
-		p = localTestCertPath()
-		if err := os.Remove(p); err != nil {
-			t.Logf("unable to remove %q: %v", p, err)
-		}
-		p = localEmptyCertPath()
-		if err := os.Remove(p); err != nil {
-			t.Logf("unable to remove %q: %v", p, err)
-		}
 
 		Cleanup(t, profile, cancel)
 	}()
