@@ -23,40 +23,81 @@ This allows end users to see clear, and ideally actionable, error messages when 
 Minikube currently communicates state to users via:
 1. Logs via glog (sent to stderr on `minikube start`)
 1. Logs to stdout which represent a step on `minikube start` (e.g. "Preparing Kubernetes...")
-1. Logs to stdout which don't represent a step on `minikube start`. This can be an unexpected warning message or an `option`.
+1. Logs to stdout which don't represent a step on `minikube start`. This can be an unexpected Warning message.
+1. Actionable error messages sent to stdout and stderr if minikube detects an issue
 
-This proposal focuses **only** on converting outputs representing clear steps in `minikube start` to JSON (option 2), and making sure error code sent to stderr is parsable.
+This proposal focuses on converting steps 2-4 to JSON.
 
 ## Goals
 
-### Stderr
-*   Error code from [err_map.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/problem/err_map.go) is parsable from stderr
-
-### Stdout
-*   Progress of each step of `minikube start` is communicated in JSON and includes:
+*   All output to stdout is JSON parsable
+*   Progress of each step of `minikube start` includes:
   1. A name for the current step (e.g. `Preparing Kubernetes`)
   1. The number of the current step
   1. The expected total number of steps
-*   Progress of artifacts as they are being downloaded is communicated in JSON
-
+*   Progress of artifacts as they are being downloaded
+*   Unexpected output, like `Warnings`
+*   Actionable error messages, which minikube already sends to stdout/stderr, are now parsable (these are the errors from [err_map.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/problem/err_map.go))
 
 
 ## Non-Goals
 
 *   Change the way we handle logs via glog
-*   Change the way we handle non-steps to stdout (Warnings, etc.)
 *   Improving error handling in minikube; this is just about how we output errors to users
 
 ## Expected Output
 
 Users can specify JSON output via a `--output json` flag. 
 
-### Stderr
+There are four types of logs that will be output to stdout, which will be identified by the `Type` field in JSON:
 
-If minikube fails, and an actionable error message exists, the following JSON will be printed to stderr:
+1. **Type: Log** These are regular steps during minikube start, and will include a name, message, and the current step number
+1. **Type: Download** This type will be used while downloading artifacts. It will include the artifact name, download progress percentage, and the step number it is associated with.
+1. **Type: Warning** These are unexpected warnings that come up during `minikube start`
+1. **Type: Error** These are actionable error messages minikube outputs if it detects an error
+
+
+The JSON structs for each type will look like this:
+
+
+**Type: Log**
 
 ```json
 {
+  "Name": "Selecting Driver",
+  "Message": "Using the hyperkit driver based on user configuration\n",
+  "TotalSteps": 9,
+  "CurrentStep": 2,
+  "Type": "Log"
+}
+```
+
+**Type: Download**
+
+```json
+{
+  "Type": "Download",
+  "Artifact": "preload.tar.gz",
+  "Progress": "10%",
+  "CurrentStep": 4,
+  "TotalSteps": 9,
+}
+```
+
+**Type: Warning**
+```json
+{
+  "Message": "Something seems to be wrong....",
+  "Type": "Warning"
+}
+```
+
+**Type: Error**
+In the case of actionable error message:
+
+```json
+{
+  "Type": "Error",
   "ID": "KVM_UNAVAILABLE",
   "Err": {},
   "Advice": "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
@@ -68,72 +109,35 @@ If minikube fails, and an actionable error message exists, the following JSON wi
 }
 ```
 
-### Stdout
-If `--output json` is specified, each step of `minikube start` will be output as JSON:
+In the case of an unactionable error message, set the message as whatever error was returned:
 
 ```json
 {
-  "Name": "Selecting Driver",
-  "Message": "✨  Using the hyperkit driver based on user configuration\n",
-  "TotalSteps": 9,
-  "CurrentStep": 2,
-  "Type": "Log"
+  "Message": "error provisioning host: Failed to start host: there was an unexpected & unactionable error",
+  "Type": "Error"
 }
 ```
 
-and each update on a downloaded artifact will be output as:
-
-```json
-{
-  "Type": "Download",
-  "Artifact": "preload.tar.gz",
-  "Progress": "10%"
-}
-```
 
 `minikube start` output would look something like this:
 
 ```
 $ minikube start
-{"Name":"Minikube Version","Message":"minikube v1.10.0-beta.2 on Darwin 10.14.6","TotalSteps":9,"CurrentStep":1, "Type":"Log"}
-{"Name":"Selecting Driver","Message":"Using the hyperkit driver,"TotalSteps":9,"CurrentStep":2,"Type":"Log"}
+{"Name":"Minikube Version","Message":"minikube v1.10.0-beta.2 on Darwin 10.14.6","TotalSteps":9,"CurrentStep":1,"Type":"Log"}
+{"Name":"Selecting Driver","Message":"Using the hyperkit driver based on existing profile","TotalSteps":9,"CurrentStep":2,"Type":"Log"}
 {"Name":"Starting Control Plane","Message":"Starting node minikube in cluster minikube","TotalSteps":9,"CurrentStep":3,"Type":"Log"}
-{"Name":"Download Necessary Artifacts","Message":"Downloading Kubernetes v1.18.1 preload","TotalSteps":9,"CurrentStep":4,"Type":"Log"}
-  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "10%"}
-  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "61%"}
-  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "73%"}
-  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "87%"}
-  {"Type":"Download", "Artifact":"preload.tar.gz", "Progress": "100%"}
-{"Name":"Creating Node","Message":"Creating hyperkit VM","TotalSteps":9,"CurrentStep":5,"Type":"Log"}
-{"Name":"Preparing Kubernetes","Message":"Preparing Kubernetes v1.18.1 on Docker 19.03.8","TotalSteps":9,"CurrentStep":6,"Type":"Log"}
-{"Name":"Verifying Kubernetes","Message":"🔎  Verifying Kubernetes components","TotalSteps":9,"CurrentStep":7,"Type":"Log"}
-{"Name":"Enabling Addons","Message":"🌟  Enabled addons: default-storageclass, storage-provisioner","TotalSteps":9,"CurrentStep":7,"Type":"Log"}
-{"Name":"Done","Message":"🏄  Done! kubectl is now configured to use \"minikube\"","TotalSteps":9,"CurrentStep":9,"Type":"Log"}
+{"Name":"","Message":"Something seems to be wrong....","TotalSteps":0,"CurrentStep":0,"Type":"Warning"}
+{"ID":"NON_C_DRIVE","Err":{},"Advice":"Run minikube from the C: drive.","URL":"","Issues":[1574],"ShowIssueLink":false,"Type":"Error"}
 ```
 
-This way, clients can parse the output as it is logged and know the following:
-1. What the type of step is (Log vs Download)
-1. What step we are currently on
-1. The total number of steps
-1. The specific message related to that step
+In this sample, the first three steps are successful steps (Type: Log).
+The fourth step is a warning that something seems to be wrong (Type: Warning).
+The fifth step is a sample actionable error message (Type: Error).
 
 
 ## Implementation Details
 
-### Stderr
-glog logs can be sent to stderr as usual.
-In addition, we will output error code from [err_map.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/problem/err_map.go) as a parsable JSON message to stderr.
-
-This will be done by adding the following function to the `out` package:
-
-```go
-func DisplayErrorJSON(out io.Writer, p *problem.Problem)
-```
-
-which will print the JSON encoding of `p` to `out` (in this case, stderr).
-
-
-### Stdout - Log Steps
+### Type: Log Steps
 Since we need to approximate the total number of steps before minikube starts, we need to know the general steps we expect to execute before starting.
 
 I propose creating a registry of logs, which is prefilled with the following steps:
@@ -152,7 +156,7 @@ When a log is called in the code, it will be associated with one of the above st
 
 This will allow us to determine which number step we are currently on, and include that information in the output.
 
-_Note: We may skip steps depending on the user's existing setup. For example, we may not need to "Verify Kubernetes" on a soft start. The current step/total step numbers will only be approximations_
+_Note: We may skip steps depending on the user's existing setup. For example, we may not need to "Verify Kubernetes" on a soft start. Though current step may jump from Step 5 to Step 8, the total number of expected steps will not change._
 
 
 This log would be printed at the correct time later in the code by calling a new function, similar to `out.T`:
@@ -173,19 +177,9 @@ would now be:
 out.Step(out.CreateDriver, out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 ```
 
-`out.Step` will be responsible for applying the passed in template, and printing out a JSON encoded version of the step if `--output json` is specified:
+`out.Step` will be responsible for applying the passed in template, and printing out a JSON encoded version of the step.
 
-```json
-{
-  "Name": "Selecting Driver",
-  "Message": "✨  Using the hyperkit driver based on user configuration\n",
-  "TotalSteps": 9,
-  "CurrentStep": 2,
-  "Type": "Log"
-}
-```
-
-### Stdout - Download Steps
+### Type: Download Steps
 
 To communicate progress on artifacts as they're being downloaded, we want JSON output that looks something like this during download:
 
@@ -193,7 +187,8 @@ To communicate progress on artifacts as they're being downloaded, we want JSON o
 {
   "Type": "Download",
   "Artifact": "preload.tar.gz",
-  "Progress": "10%"
+  "Progress": "10%",
+  "CurrentStep": 4,
 }
 ```
 
@@ -204,17 +199,16 @@ Instead of passing in `DefaultProgressBar` we should be able to write our own ob
 
 
 #### Testing Plan
-Both unit tests and integration tests will be required to test these features feature.
-
 Unit tests will cover:
-1. That the JSON output of output steps, both type `Log` and type `Download`, is correct and parsable
-1. That errors are sent to stderr correctly and are parsable
+1. That the JSON output of each type of step is correct and parsable
 
 Integration tests will cover:
-1. That in the following cases, if `--output json` is specfied, all logs are correctly in JSON format:
+1. That in the following cases, if `--output json` is specfied, all logs to stdout are correctly in JSON format:
   * Clean start, with no downloaded artifacts
   * Soft start
   * Restart
+  * Force an error
+  * Force a warning (can use an old --kubernetes-version)
    
 
 ## Alternatives Considered
