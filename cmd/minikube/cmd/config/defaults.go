@@ -17,10 +17,11 @@ limitations under the License.
 package config
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -41,19 +42,34 @@ Acceptable fields: ` + "\n\n" + fieldsWithDefaults(),
 		}
 
 		property := args[0]
-		return listDefaults(property)
+		defaults, err := getDefaults(property)
+		if err != nil {
+			return err
+		}
+		return printDefaults(defaults)
 	},
 }
 
-func listDefaults(property string) error {
+func getDefaults(property string) ([]string, error) {
 	setting, err := findSetting(property)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if setting.validDefaults == nil {
-		return fmt.Errorf("%s is not a valid option for the `defaults` command; to see valid options run `minikube config defaults -h`", property)
+		return nil, fmt.Errorf("%s is not a valid option for the `defaults` command; to see valid options run `minikube config defaults -h`", property)
 	}
-	defaults := setting.validDefaults()
+	return setting.validDefaults(), nil
+}
+
+func printDefaults(defaults []string) error {
+	if output == "json" {
+		encoding, err := json.Marshal(defaults)
+		if err != nil {
+			return errors.Wrap(err, "encoding json")
+		}
+		out.Ln(string(encoding))
+		return nil
+	}
 	for _, d := range defaults {
 		out.Ln("* %s", d)
 	}
@@ -71,5 +87,6 @@ func fieldsWithDefaults() string {
 }
 
 func init() {
+	configDefaultsCommand.Flags().StringVar(&output, "output", "", "Output format. Accepted values: [json]")
 	ConfigCmd.AddCommand(configDefaultsCommand)
 }
