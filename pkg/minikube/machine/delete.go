@@ -60,7 +60,7 @@ func deleteOrphanedKIC(ociBin string, name string) {
 }
 
 // DeleteHost deletes the host VM.
-// deleteAbandoned will will try to delete the machine even if there is no minikube config for it.
+// deleteAbandoned will try to delete the machine even if there is no minikube config for it.
 func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool) error {
 	delAbandoned := true
 	if len(deleteAbandoned) > 0 {
