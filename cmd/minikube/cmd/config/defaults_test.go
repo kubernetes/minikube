@@ -17,15 +17,13 @@ limitations under the License.
 package config
 
 import (
-	"strings"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/tests"
-
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-func TestListDefaults(t *testing.T) {
+func TestGetDefaults(t *testing.T) {
 	tcs := []struct {
 		property         string
 		expectedContents string
@@ -33,7 +31,7 @@ func TestListDefaults(t *testing.T) {
 	}{
 		{
 			property:         "driver",
-			expectedContents: "* docker\n*",
+			expectedContents: "docker",
 		}, {
 			property:  "invalid",
 			shouldErr: true,
@@ -41,18 +39,52 @@ func TestListDefaults(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.property, func(t *testing.T) {
-			f := tests.NewFakeFile()
-			out.SetOutFile(f)
-			err := listDefaults(tc.property)
+			defaults, err := getDefaults(tc.property)
 			if err != nil && !tc.shouldErr {
 				t.Fatalf("test shouldn't have failed, error listing defaults: %v", err)
 			}
 			if err == nil && tc.shouldErr {
 				t.Fatal("test should have failed but did not")
 			}
-			actual := f.String()
-			if !strings.Contains(actual, tc.expectedContents) {
-				t.Fatalf("actual contents don't contain expected contents. Actual: %v\nExpected: %v\n", actual, tc.expectedContents)
+			if tc.shouldErr {
+				return
+			}
+			for _, d := range defaults {
+				if d == tc.expectedContents {
+					return
+				}
+			}
+			t.Fatalf("defaults didn't contain expected default. Actual: %v\nExpected: %v\n", defaults, tc.expectedContents)
+		})
+	}
+}
+
+func TestPrintDefaults(t *testing.T) {
+	defaults := []string{"a", "b", "c"}
+	tcs := []struct {
+		description string
+		format      string
+		expected    string
+	}{
+		{
+			description: "print to stdout",
+			expected:    "* a\n* b\n* c\n",
+		}, {
+			description: "print in json",
+			format:      "json",
+			expected:    "[\"a\",\"b\",\"c\"]\n",
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.description, func(t *testing.T) {
+			output = tc.format
+			f := tests.NewFakeFile()
+			out.SetOutFile(f)
+			if err := printDefaults(defaults); err != nil {
+				t.Fatalf("error printing defaults: %v", err)
+			}
+			if f.String() != tc.expected {
+				t.Fatalf("Expected: %v\n Actual: %v\n", tc.expected, f.String())
 			}
 		})
 	}
