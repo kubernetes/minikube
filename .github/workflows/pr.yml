@@ -64,9 +64,9 @@ jobs:
           New-Item -Force -Path "report" -ItemType Directory
           New-Item -Force -Path "testhome" -ItemType Directory
           $START_TIME=(GET-DATE)
-          $env:KUBECONFIG="$pwd.Path\testhome\kubeconfig"
-          $env:MINIKUBE_HOME="$pwd.Path\testhome"
-          ./e2e-windows-amd64.exe -minikube-start-args="--driver=docker" -test.timeout=35m -test.v -test.run TestFunctional -binary="./minikube-windows-amd64.exe" > ./report/testout.txt 2>&1
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=35m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" > ./report/testout.txt 2>&1
           $END_TIME=(GET-DATE)
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
           $MINS=($DURATION.TotalMinutes)
