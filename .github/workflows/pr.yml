@@ -75,7 +75,7 @@ jobs:
         shell: powershell
         run: |
           cd minikube_binaries         
-          $STAT=(docker run --rm -it -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
+          $STAT=(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
           echo status: ${STAT}
           $FailNum=(echo $STAT | jq '.NumberOfFail')
           $TestsNum=(echo $STAT | jq '.NumberOfTests')
