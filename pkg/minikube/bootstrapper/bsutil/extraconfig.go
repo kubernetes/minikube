@@ -136,7 +136,7 @@ func newComponentOptions(opts config.ExtraOptionSlice, version semver.Version, f
 	var kubeadmExtraArgs []componentOptions
 	for _, extraOpt := range opts {
 		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
-			return nil, fmt.Errorf("unknown component %q. valid components are: %v", componentToKubeadmConfigKey, componentToKubeadmConfigKey)
+			return nil, fmt.Errorf("unknown component %q. valid components are: %v", extraOpt.Component, componentToKubeadmConfigKey)
 		}
 	}
 
