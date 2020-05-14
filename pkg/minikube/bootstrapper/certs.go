@@ -56,12 +56,9 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		return nil, errors.Wrap(err, "shared CA certs")
 	}
 
-	var xfer []string
-	if n.ControlPlane {
-		xfer, err = generateProfileCerts(k8s, n, ccs)
-		if err != nil {
-			return nil, errors.Wrap(err, "profile certs")
-		}
+	xfer, err := generateProfileCerts(k8s, n, ccs)
+	if err != nil {
+		return nil, errors.Wrap(err, "profile certs")
 	}
 
 	xfer = append(xfer, ccs.caCert)
@@ -184,6 +181,12 @@ func generateSharedCACerts() (CACerts, error) {
 
 // generateProfileCerts generates profile certs for a profile
 func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACerts) ([]string, error) {
+
+	// Only generate these certs for the api server
+	if !n.ControlPlane {
+		return []string{}, nil
+	}
+
 	profilePath := localpath.Profile(k8s.ClusterName)
 
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
