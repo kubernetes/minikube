@@ -75,12 +75,11 @@ jobs:
         shell: powershell
         run: |
           cd minikube_binaries         
-          $STAT=(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
+          echo ::set-env name=STAT::(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
           echo status: ${STAT}
           $FailNum=(echo $STAT | jq '.NumberOfFail')
           $TestsNum=(echo $STAT | jq '.NumberOfTests')
           echo ::set-env name=GOPOGH_RESULT::"$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
-          echo ::set-env name=STAT::${STAT}
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_windows
@@ -88,13 +87,14 @@ jobs:
       - name: The End Result - functional on docker windows
         shell: powershell
         run: |
-          echo $GOPOGH_RESULT
-          $numFail=(echo $STAT | jq '.NumberOfFail')
+          echo ${GOPOGH_RESULT}
+          echo ${STAT}
+          $numFail=(echo ${STAT} | jq '.NumberOfFail')
           echo "----------------$numFail Failures----------------------------"
-          echo $STAT | jq '.FailedTests'
+          echo ${STAT} | jq '.FailedTests'
           echo "-------------------------------------------------------"
-          $numPass=(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          $numPass=(echo ${STAT} | jq '.NumberOfPass')
+          echo "*** ${numPass} Passed ***"
           If ($numFail -gt 0) {exit 2}  Else {echo 'success'}
           If ($numPass -eq 0) {exit 2}
   # After all integration tests finished
