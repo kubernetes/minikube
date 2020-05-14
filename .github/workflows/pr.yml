@@ -64,20 +64,21 @@ jobs:
           New-Item -Path "report" -ItemType Directory
           New-Item -Path "testhome" -ItemType Directory
           $START_TIME=(GET-DATE)
-          $env:KUBECONFIG="$pwd.Path/testhome/kubeconfig"
-          $env:MINIKUBE_HOME="$pwd.Path/testhome"
-          ./e2e-windows-amd64.exe -minikube-start-args=--driver=docker -test.timeout=35m -test.v -test.run TestFunctional -binary=./minikube-windows-amd64.exe > ./report/testout.txt 2>&1
+          $env:KUBECONFIG="$pwd.Path\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="$pwd.Path\testhome"
+          ./e2e-windows-amd64.exe -minikube-start-args="--driver=docker" -test.timeout=35m -test.v -test.run TestFunctional -binary="./minikube-windows-amd64.exe" > ./report/testout.txt 2>&1
           $END_TIME=(GET-DATE)
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
           $MINS=($DURATION.TotalMinutes)
           $TIME_ELAPSED="$MINS mins"
+          cat ./report/testout.txt
           $env:TIME_ELAPSED=$TIME_ELAPSED
           echo ::set-env name=TIME_ELAPSED::$TIME_ELAPSED
       - name: Generate HTML Report
         shell: powershell
         run: |
           cd minikube_binaries
-          go tool test2json -t < ./report/testout.txt > ./report/testout.json
+          go tool test2json -t  (Get-Content -Path ./report/testout.txt) > ./report/testout.json 2>&1
           STAT=(gopogh -in ./report/testout.json -out ./report/testout.html -name "$JOB_NAME $GITHUB_REF" -repo "$GITHUB_REPOSITORY"  -details "$GITHUB_SHA")
           echo status: ${STAT}
           FailNum=(echo $STAT | jq '.NumberOfFail')
