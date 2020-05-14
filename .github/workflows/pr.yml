@@ -55,7 +55,7 @@ jobs:
           choco install -y jq || true
           choco install -y golang || true
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh.exe
-          move gopogh.exe C:\ProgramData\chocolatey\bin
+          mv gopogh.exe C:\ProgramData\chocolatey\bin
           docker info
           go version
       - name: Run Integration Test
