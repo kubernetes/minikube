@@ -146,10 +146,41 @@ func TestStartStop(t *testing.T) {
 
 func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
+	defer additionalLogs(ctx, t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed starting minikube -first start-. args %q: %v", rr.Command(), err)
 	}
+}
+
+func additionalLogs(ctx context.Context, t *testing.T, profile string) {
+	if !t.Failed() {
+		return
+	}
+	t.Logf("-----------------------additional logs--------------------------------")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), []string{"ip", "-p", profile}...))
+	if err != nil {
+		t.Logf("error: %q: %v", rr.Command(), err)
+	}
+	t.Log(rr.Output())
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), []string{"ssh", "-p", profile, "--", "cat", "/etc/hosts"}...))
+	if err != nil {
+		t.Logf("error: %q: %v", rr.Command(), err)
+	}
+	t.Log(rr.Output())
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), []string{"ssh", "-p", profile, "--", "docker", "images"}...))
+	if err != nil {
+		t.Logf("error: %q: %v", rr.Command(), err)
+	}
+	t.Log(rr.Output())
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), []string{"kubectl", "-p", profile, "--", "logs", fmt.Sprintf("kube-controller-manager-%s", profile), "-n", "kube-system"}...))
+	if err != nil {
+		t.Logf("error: %q: %v", rr.Command(), err)
+	}
+	t.Log(rr.Output())
+	t.Logf("-----------------------end additional logs--------------------------------")
 }
 
 func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
