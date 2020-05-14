@@ -32,9 +32,9 @@ This proposal focuses on converting steps 2-4 to JSON.
 
 *   All output to stdout is JSON parsable
 *   Progress of each step of `minikube start` includes:
-  1. A name for the current step (e.g. `Preparing Kubernetes`)
-  1. The number of the current step
-  1. The expected total number of steps
+    * A name for the current step (e.g. `Preparing Kubernetes`)
+    * The number of the current step
+    * The expected total number of steps
 *   Progress of artifacts as they are being downloaded
 *   Unexpected output, like `Warnings`
 *   Actionable error messages, which minikube already sends to stdout/stderr, are now parsable (these are the errors from [err_map.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/problem/err_map.go))
@@ -54,7 +54,7 @@ There are four types of logs that will be output to stdout, which will be identi
 1. **Type: Log** These are regular steps during minikube start, and will include a name, message, and the current step number
 1. **Type: Download** This type will be used while downloading artifacts. It will include the artifact name, download progress percentage, and the step number it is associated with.
 1. **Type: Warning** These are unexpected warnings that come up during `minikube start`
-1. **Type: Error** These are actionable error messages minikube outputs if it detects an error
+1. **Type: Error** These are error messages minikube outputs if it detects an error. Sometimes, these error messages include actionable advice.
 
 
 The JSON structs for each type will look like this:
@@ -196,6 +196,10 @@ minikube uses the [go-getter](github.com/hashicorp/go-getter) library to downloa
 Currently, minikube passes in a [DefaultProgressBar](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/download/download.go#L48) to this library, which is used to communicate download progress to the user.
 
 Instead of passing in `DefaultProgressBar` we should be able to write our own object, something like `JSONOutput`, which will print the current progress of the download in the JSON format specified above instead of showing a progress bar in the terminal.
+
+### Type: Warning & Error Steps
+
+If `--output json` is specified, this should be as simple as including code in `out.WarningT` and `out.ErrT` which will convert to JSON and then print the associated log.
 
 
 #### Testing Plan
