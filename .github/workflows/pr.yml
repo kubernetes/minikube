@@ -166,7 +166,7 @@ jobs:
       JOB_NAME: "functional_docker_windows"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: [self-hosted, Windows, X64, docker, GitBash]
+    runs-on: [self-hosted, Windows, X64]
     steps:
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -178,56 +178,55 @@ jobs:
           choco install -y jq || true
           choco install -y golang || true
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh.exe
-          mkdir -p /usr/loca/bin
-          install gopogh.exe /usr/local/bin/gopogh
+          move gopogh.exe C:\ProgramData\chocolatey\bin
           docker info
           go version
       - name: Run Integration Test
         continue-on-error: true
-        # bash {0} to allow test to continue to next step. in case of
-        shell: bash {0}
+        shell: powershell
         run: |
           cd minikube_binaries
-          mkdir -p report
-          mkdir -p testhome
-          chmod a+x e2e-*
-          chmod a+x minikube-*
-          START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-windows-amd64.exe -minikube-start-args=--driver=docker -test.timeout=35m -test.v -test.run TestFunctional -binary=./minikube-windows-amd64.exe 2>&1 | tee ./report/testout.txt
-          END_TIME=$(date -u +%s)
-          TIME_ELAPSED=$(($END_TIME-$START_TIME))
-          min=$((${TIME_ELAPSED}/60))
-          sec=$((${TIME_ELAPSED}%60))
-          TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          New-Item -Path "report" -ItemType Directory
+          New-Item -Path "testhome" -ItemType Directory
+          START_TIME=(GET-DATE)
+          $env:KUBECONFIG="$pwd.Path/testhome/kubeconfig"
+          $env:MINIKUBE_HOME="$pwd.Path/testhome"
+          ./e2e-windows-amd64.exe -minikube-start-args=--driver=docker -test.timeout=35m -test.v -test.run TestFunctional -binary=./minikube-windows-amd64.exe > ./report/testout.txt 2>&1
+          $END_TIME=(GET-DATE)
+          $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+          $MINS=($DURATION.TotalMinutes)
+          $TIME_ELAPSED="$MINS mins"
+          $env:TIME_ELAPSED=$TIME_ELAPSED
+          echo ::set-env name=TIME_ELAPSED::$TIME_ELAPSED
       - name: Generate HTML Report
-        shell: bash
+        shell: powershell
         run: |
           cd minikube_binaries
-          export PATH=${PATH}:`go env GOPATH`/bin
-          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json
+          STAT=(gopogh -in ./report/testout.json -out ./report/testout.html -name "$JOB_NAME $GITHUB_REF" -repo "$GITHUB_REPOSITORY"  -details "$GITHUB_SHA")
           echo status: ${STAT}
-          FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')
-          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
+          FailNum=(echo $STAT | jq '.NumberOfFail')
+          TestsNum=(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
+          $env:GOPOGH_RESULT=$GOPOGH_RESULT
+          echo ::set-env name=GOPOGH_RESULT::$GOPOGH_RESULT
+          $env:STAT=$STAT
           echo ::set-env name=STAT::${STAT}
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_windows
           path: minikube_binaries/report
       - name: The End Result - functional on docker windows
-        shell: bash
+        shell: powershell
         run: |
-          echo ${GOPOGH_RESULT}
-          numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
+          echo $GOPOGH_RESULT
+          numFail=(echo $STAT | jq '.NumberOfFail')
+          echo "----------------$numFail Failures----------------------------"
+          echo $STAT | jq '.FailedTests'
           echo "-------------------------------------------------------"
-          numPass=$(echo $STAT | jq '.NumberOfPass')
+          numPass=(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
-          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          If ($numFail -gt 0) {exit 2}  Else {echo 'success'}
   addons_certs_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
