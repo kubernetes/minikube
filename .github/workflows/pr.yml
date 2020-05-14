@@ -61,8 +61,8 @@ jobs:
         shell: powershell
         run: |
           cd minikube_binaries
-          New-Item -Path "report" -ItemType Directory
-          New-Item -Path "testhome" -ItemType Directory
+          New-Item -Force -Path "report" -ItemType Directory
+          New-Item -Force -Path "testhome" -ItemType Directory
           $START_TIME=(GET-DATE)
           $env:KUBECONFIG="$pwd.Path\testhome\kubeconfig"
           $env:MINIKUBE_HOME="$pwd.Path\testhome"
