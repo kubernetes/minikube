@@ -63,7 +63,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=35m --test.v --test.run=TestFunctional --json --binary="./minikube-windows-amd64.exe" > ./report/testout.json 2>&1
+          ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=35m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" > ./report/testout.txt 2>&1
           $END_TIME=(GET-DATE)
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
           $MINS=($DURATION.TotalMinutes)
@@ -75,6 +75,7 @@ jobs:
         shell: powershell
         run: |
           cd minikube_binaries
+          Get-Content -Path "./report/testout.txt" | go tool test2json -t > ./report/testout.json 2>&1
           $STAT=(gopogh -in ./report/testout.json -out ./report/testout.html -name "$JOB_NAME $GITHUB_REF" -repo "$GITHUB_REPOSITORY"  -details "$GITHUB_SHA")
           echo status: ${STAT}
           $FailNum=(echo $STAT | jq '.NumberOfFail')
@@ -83,6 +84,18 @@ jobs:
           $env:GOPOGH_RESULT=$GOPOGH_RESULT
           echo ::set-env name=GOPOGH_RESULT::$GOPOGH_RESULT
           $env:STAT=$STAT
+          echo ::set-env name=STAT::${STAT}
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}
       - uses: actions/upload-artifact@v1
         with:
@@ -96,9 +109,10 @@ jobs:
           echo "----------------$numFail Failures----------------------------"
           echo $STAT | jq '.FailedTests'
           echo "-------------------------------------------------------"
-          numPass=(echo $STAT | jq '.NumberOfPass')
+          $numPass=(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           If ($numFail -gt 0) {exit 2}  Else {echo 'success'}
+          If ($numPass -eq 0) {exit 2}
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
