@@ -74,9 +74,8 @@ jobs:
       - name: Generate HTML Report
         shell: powershell
         run: |
-          cd minikube_binaries
-          Get-Content -Path "./report/testout.txt" | go tool test2json -t |  % { [System.Text.RegularExpressions.Regex]::Unescape($_) } > ./report/testout.json 2>&1
-          $STAT=(gopogh -in ./report/testout.json -out ./report/testout.html -name "$JOB_NAME $GITHUB_REF" -repo "$GITHUB_REPOSITORY"  -details "$GITHUB_SHA")
+          cd minikube_binaries         
+          $STAT=(docker run  -it -v ${PWD)\report:/data  medyagh/gopogh:latest ./text2html.sh)
           echo status: ${STAT}
           $FailNum=(echo $STAT | jq '.NumberOfFail')
           $TestsNum=(echo $STAT | jq '.NumberOfTests')
