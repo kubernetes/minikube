@@ -884,7 +884,6 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 		if err != nil {
 			return cc, config.Node{}, err
 		}
-		cc.Nodes = existing.Nodes
 
 		fmt.Printf("EXISTING cc: %+v\n", cc)
 		fmt.Printf("EXISTING cp: %+v\n", cp)

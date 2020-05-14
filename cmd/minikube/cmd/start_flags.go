@@ -356,20 +356,23 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to supress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
 	validateFlags(cmd, existing.Driver)
 
+	// Make a copy of existing to avoid making changes to the struct passed by reference
+	cc := *existing
+
 	if cmd.Flags().Changed(containerRuntime) {
-		existing.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
+		cc.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
 	}
 
 	if cmd.Flags().Changed(keepContext) {
-		existing.KeepContext = viper.GetBool(keepContext)
+		cc.KeepContext = viper.GetBool(keepContext)
 	}
 
 	if cmd.Flags().Changed(embedCerts) {
-		existing.EmbedCerts = viper.GetBool(embedCerts)
+		cc.EmbedCerts = viper.GetBool(embedCerts)
 	}
 
 	if cmd.Flags().Changed(isoURL) {
-		existing.MinikubeISO = viper.GetString(isoURL)
+		cc.MinikubeISO = viper.GetString(isoURL)
 	}
 
 	if cmd.Flags().Changed(memory) {
@@ -401,95 +404,95 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	if cmd.Flags().Changed(vpnkitSock) {
-		existing.HyperkitVpnKitSock = viper.GetString(vpnkitSock)
+		cc.HyperkitVpnKitSock = viper.GetString(vpnkitSock)
 	}
 
 	if cmd.Flags().Changed(vsockPorts) {
-		existing.HyperkitVSockPorts = viper.GetStringSlice(vsockPorts)
+		cc.HyperkitVSockPorts = viper.GetStringSlice(vsockPorts)
 	}
 
 	if cmd.Flags().Changed(nfsShare) {
-		existing.NFSShare = viper.GetStringSlice(nfsShare)
+		cc.NFSShare = viper.GetStringSlice(nfsShare)
 	}
 
 	if cmd.Flags().Changed(nfsSharesRoot) {
-		existing.NFSSharesRoot = viper.GetString(nfsSharesRoot)
+		cc.NFSSharesRoot = viper.GetString(nfsSharesRoot)
 	}
 
 	if cmd.Flags().Changed(hostOnlyCIDR) {
-		existing.HostOnlyCIDR = viper.GetString(hostOnlyCIDR)
+		cc.HostOnlyCIDR = viper.GetString(hostOnlyCIDR)
 	}
 
 	if cmd.Flags().Changed(hypervVirtualSwitch) {
-		existing.HypervVirtualSwitch = viper.GetString(hypervVirtualSwitch)
+		cc.HypervVirtualSwitch = viper.GetString(hypervVirtualSwitch)
 	}
 
 	if cmd.Flags().Changed(hypervUseExternalSwitch) {
-		existing.HypervUseExternalSwitch = viper.GetBool(hypervUseExternalSwitch)
+		cc.HypervUseExternalSwitch = viper.GetBool(hypervUseExternalSwitch)
 	}
 
 	if cmd.Flags().Changed(hypervExternalAdapter) {
-		existing.HypervExternalAdapter = viper.GetString(hypervExternalAdapter)
+		cc.HypervExternalAdapter = viper.GetString(hypervExternalAdapter)
 	}
 
 	if cmd.Flags().Changed(kvmNetwork) {
-		existing.KVMNetwork = viper.GetString(kvmNetwork)
+		cc.KVMNetwork = viper.GetString(kvmNetwork)
 	}
 
 	if cmd.Flags().Changed(kvmQemuURI) {
-		existing.KVMQemuURI = viper.GetString(kvmQemuURI)
+		cc.KVMQemuURI = viper.GetString(kvmQemuURI)
 	}
 
 	if cmd.Flags().Changed(kvmGPU) {
-		existing.KVMGPU = viper.GetBool(kvmGPU)
+		cc.KVMGPU = viper.GetBool(kvmGPU)
 	}
 
 	if cmd.Flags().Changed(kvmHidden) {
-		existing.KVMHidden = viper.GetBool(kvmHidden)
+		cc.KVMHidden = viper.GetBool(kvmHidden)
 	}
 
 	if cmd.Flags().Changed(disableDriverMounts) {
-		existing.DisableDriverMounts = viper.GetBool(disableDriverMounts)
+		cc.DisableDriverMounts = viper.GetBool(disableDriverMounts)
 	}
 
 	if cmd.Flags().Changed(uuid) {
-		existing.UUID = viper.GetString(uuid)
+		cc.UUID = viper.GetString(uuid)
 	}
 
 	if cmd.Flags().Changed(noVTXCheck) {
-		existing.NoVTXCheck = viper.GetBool(noVTXCheck)
+		cc.NoVTXCheck = viper.GetBool(noVTXCheck)
 	}
 
 	if cmd.Flags().Changed(dnsProxy) {
-		existing.DNSProxy = viper.GetBool(dnsProxy)
+		cc.DNSProxy = viper.GetBool(dnsProxy)
 	}
 
 	if cmd.Flags().Changed(hostDNSResolver) {
-		existing.HostDNSResolver = viper.GetBool(hostDNSResolver)
+		cc.HostDNSResolver = viper.GetBool(hostDNSResolver)
 	}
 
 	if cmd.Flags().Changed(hostOnlyNicType) {
-		existing.HostOnlyNicType = viper.GetString(hostOnlyNicType)
+		cc.HostOnlyNicType = viper.GetString(hostOnlyNicType)
 	}
 
 	if cmd.Flags().Changed(natNicType) {
-		existing.NatNicType = viper.GetString(natNicType)
+		cc.NatNicType = viper.GetString(natNicType)
 	}
 
 	if cmd.Flags().Changed(kubernetesVersion) {
-		existing.KubernetesConfig.KubernetesVersion = viper.GetString(kubernetesVersion)
+		cc.KubernetesConfig.KubernetesVersion = viper.GetString(kubernetesVersion)
 	}
 
 	if cmd.Flags().Changed(apiServerName) {
-		existing.KubernetesConfig.APIServerName = viper.GetString(apiServerName)
+		cc.KubernetesConfig.APIServerName = viper.GetString(apiServerName)
 	}
 
 	if cmd.Flags().Changed("apiserver-names") {
-		existing.KubernetesConfig.APIServerNames = viper.GetStringSlice("apiserver-names")
+		cc.KubernetesConfig.APIServerNames = viper.GetStringSlice("apiserver-names")
 	}
 
 	if cmd.Flags().Changed(apiServerPort) {
-		existing.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
+		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
 	}
 
 	// pre minikube 1.9.2 cc.KubernetesConfig.NodePort was not populated.
@@ -497,58 +500,58 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	// one in cc.KubernetesConfig.NodePort and one in cc.Nodes.Port
 	// this makes sure api server port not be set as 0!
 	if existing.KubernetesConfig.NodePort == 0 {
-		existing.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
+		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
 	}
 
 	if cmd.Flags().Changed(dnsDomain) {
-		existing.KubernetesConfig.DNSDomain = viper.GetString(dnsDomain)
+		cc.KubernetesConfig.DNSDomain = viper.GetString(dnsDomain)
 	}
 
 	if cmd.Flags().Changed(featureGates) {
-		existing.KubernetesConfig.FeatureGates = viper.GetString(featureGates)
+		cc.KubernetesConfig.FeatureGates = viper.GetString(featureGates)
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
-		existing.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
+		cc.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
 	}
 
 	if cmd.Flags().Changed(criSocket) {
-		existing.KubernetesConfig.CRISocket = viper.GetString(criSocket)
+		cc.KubernetesConfig.CRISocket = viper.GetString(criSocket)
 	}
 
 	if cmd.Flags().Changed(criSocket) {
-		existing.KubernetesConfig.NetworkPlugin = viper.GetString(criSocket)
+		cc.KubernetesConfig.NetworkPlugin = viper.GetString(criSocket)
 	}
 
 	if cmd.Flags().Changed(networkPlugin) {
-		existing.KubernetesConfig.NetworkPlugin = viper.GetString(networkPlugin)
+		cc.KubernetesConfig.NetworkPlugin = viper.GetString(networkPlugin)
 	}
 
 	if cmd.Flags().Changed(serviceCIDR) {
-		existing.KubernetesConfig.ServiceCIDR = viper.GetString(serviceCIDR)
+		cc.KubernetesConfig.ServiceCIDR = viper.GetString(serviceCIDR)
 	}
 
 	if cmd.Flags().Changed(cacheImages) {
-		existing.KubernetesConfig.ShouldLoadCachedImages = viper.GetBool(cacheImages)
+		cc.KubernetesConfig.ShouldLoadCachedImages = viper.GetBool(cacheImages)
 	}
 
 	if cmd.Flags().Changed(imageRepository) {
-		existing.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
+		cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 	}
 
 	if cmd.Flags().Changed(enableDefaultCNI) {
-		existing.KubernetesConfig.EnableDefaultCNI = viper.GetBool(enableDefaultCNI)
+		cc.KubernetesConfig.EnableDefaultCNI = viper.GetBool(enableDefaultCNI)
 	}
 
 	if cmd.Flags().Changed(waitComponents) {
-		existing.VerifyComponents = interpretWaitFlag(*cmd)
+		cc.VerifyComponents = interpretWaitFlag(*cmd)
 	}
 
 	if cmd.Flags().Changed(kicBaseImage) {
-		existing.KicBaseImage = viper.GetString(kicBaseImage)
+		cc.KicBaseImage = viper.GetString(kicBaseImage)
 	}
 
-	return *existing
+	return cc
 }
 
 // interpretWaitFlag interprets the wait flag and respects the legacy minikube users
