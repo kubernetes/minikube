@@ -18,8 +18,6 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
-          make minikube-linux-amd64
-          make e2e-linux-amd64
           make out/minikube-windows-amd64.exe
           make out/e2e-windows-amd64.exe
           cp -r test/integration/testdata ./out
@@ -65,7 +63,7 @@ jobs:
           cd minikube_binaries
           New-Item -Path "report" -ItemType Directory
           New-Item -Path "testhome" -ItemType Directory
-          START_TIME=(GET-DATE)
+          $START_TIME=(GET-DATE)
           $env:KUBECONFIG="$pwd.Path/testhome/kubeconfig"
           $env:MINIKUBE_HOME="$pwd.Path/testhome"
           ./e2e-windows-amd64.exe -minikube-start-args=--driver=docker -test.timeout=35m -test.v -test.run TestFunctional -binary=./minikube-windows-amd64.exe > ./report/testout.txt 2>&1
