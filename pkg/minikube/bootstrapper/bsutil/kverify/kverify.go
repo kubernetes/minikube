@@ -31,7 +31,7 @@ const (
 	SystemPodsWaitKey = "system_pods"
 	// DefaultSAWaitKey is the name used in the flags for default service account
 	DefaultSAWaitKey = "default_sa"
-	// AppsRunning is the name used in the flags for waiting for k8s-apps to be running
+	// AppsRunningKey is the name used in the flags for waiting for k8s-apps to be running
 	AppsRunningKey = "apps_running"
 	// NodeReadyKey is the name used in the flags for waiting for the node status to be ready
 	NodeReadyKey = "node_ready"
