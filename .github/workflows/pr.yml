@@ -79,11 +79,11 @@ jobs:
         run: |
           cd minikube_binaries
           go tool test2json -t  (Get-Content -Path ./report/testout.txt) > ./report/testout.json 2>&1
-          STAT=(gopogh -in ./report/testout.json -out ./report/testout.html -name "$JOB_NAME $GITHUB_REF" -repo "$GITHUB_REPOSITORY"  -details "$GITHUB_SHA")
+          $STAT=(gopogh -in ./report/testout.json -out ./report/testout.html -name "$JOB_NAME $GITHUB_REF" -repo "$GITHUB_REPOSITORY"  -details "$GITHUB_SHA")
           echo status: ${STAT}
           FailNum=(echo $STAT | jq '.NumberOfFail')
           TestsNum=(echo $STAT | jq '.NumberOfTests')
-          GOPOGH_RESULT="$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
+          $GOPOGH_RESULT="$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
           $env:GOPOGH_RESULT=$GOPOGH_RESULT
           echo ::set-env name=GOPOGH_RESULT::$GOPOGH_RESULT
           $env:STAT=$STAT
