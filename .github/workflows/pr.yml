@@ -47,13 +47,9 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
-      - name: Install Dependencies
-        shell: bash
+      - name: info
+        shell: powershell
         run: |
-          choco install -y jq || true
-          choco install -y golang || true
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh.exe
-          mv gopogh.exe C:\ProgramData\chocolatey\bin
           docker info
           go version
       - name: Run Integration Test
@@ -66,6 +62,7 @@ jobs:
           $START_TIME=(GET-DATE)
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
+          $ErrorActionPreference = "SilentlyContinue"
           ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=35m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" > ./report/testout.txt 2>&1
           $END_TIME=(GET-DATE)
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -81,8 +78,8 @@ jobs:
           go tool test2json -t  (Get-Content -Path ./report/testout.txt) > ./report/testout.json 2>&1
           $STAT=(gopogh -in ./report/testout.json -out ./report/testout.html -name "$JOB_NAME $GITHUB_REF" -repo "$GITHUB_REPOSITORY"  -details "$GITHUB_SHA")
           echo status: ${STAT}
-          FailNum=(echo $STAT | jq '.NumberOfFail')
-          TestsNum=(echo $STAT | jq '.NumberOfTests')
+          $FailNum=(echo $STAT | jq '.NumberOfFail')
+          $TestsNum=(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
           $env:GOPOGH_RESULT=$GOPOGH_RESULT
           echo ::set-env name=GOPOGH_RESULT::$GOPOGH_RESULT
