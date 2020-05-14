@@ -75,7 +75,7 @@ jobs:
         shell: powershell
         run: |
           cd minikube_binaries
-          Get-Content -Path "./report/testout.txt" | go tool test2json -t > ./report/testout.json 2>&1
+          Get-Content -Path "./report/testout.txt" | go tool test2json -t |  % { [System.Text.RegularExpressions.Regex]::Unescape($_) } > ./report/testout.json 2>&1
           $STAT=(gopogh -in ./report/testout.json -out ./report/testout.html -name "$JOB_NAME $GITHUB_REF" -repo "$GITHUB_REPOSITORY"  -details "$GITHUB_SHA")
           echo status: ${STAT}
           $FailNum=(echo $STAT | jq '.NumberOfFail')
@@ -84,18 +84,6 @@ jobs:
           $env:GOPOGH_RESULT=$GOPOGH_RESULT
           echo ::set-env name=GOPOGH_RESULT::$GOPOGH_RESULT
           $env:STAT=$STAT
-          echo ::set-env name=STAT::${STAT}
-      - name: Generate HTML Report
-        shell: bash
-        run: |
-          cd minikube_binaries
-          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
-          echo status: ${STAT}
-          FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')
-          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}
       - uses: actions/upload-artifact@v1
         with:
