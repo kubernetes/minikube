@@ -64,7 +64,10 @@ jobs:
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
+          pwd
+          ls
           cd minikube_binaries
+          ls
           mkdir -p report
           rm -rf testhome || true
           mkdir -p testhome
