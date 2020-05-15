@@ -8,12 +8,15 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
-  # Runs before all other jobs
-  # builds the minikube binaries
-  build_minikube:
-    runs-on: ubuntu-18.04
+  trying:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "functional_docker_windows"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+    runs-on: [self-hosted, Windows, X64]
     steps:
-      - uses: actions/checkout@v2
       - name: step1
         shell: powershell
         run: |
@@ -37,6 +40,13 @@ jobs:
           echo "-----"
           echo $env:ex4
           echo "-----"
+  # Runs before all other jobs
+  # builds the minikube binaries
+  build_minikube:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
