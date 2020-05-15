@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// Binary holds a minikube binary
 type Binary struct {
 	path string
 	pr   int
