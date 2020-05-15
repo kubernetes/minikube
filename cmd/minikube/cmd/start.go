@@ -881,8 +881,14 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 	// Create the initial node, which will necessarily be a control plane
 	if existing != nil {
 		cp, err := config.PrimaryControlPlane(existing)
+		cp.KubernetesVersion = getKubernetesVersion(&cc)
 		if err != nil {
 			return cc, config.Node{}, err
+		}
+
+		for _, n := range existing.Nodes {
+			n.KubernetesVersion = getKubernetesVersion(&cc)
+			cc.Nodes = append(cc.Nodes, n)
 		}
 
 		return cc, cp, nil

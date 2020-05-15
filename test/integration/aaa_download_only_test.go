@@ -30,6 +30,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -57,15 +58,12 @@ func TestDownloadOnly(t *testing.T) {
 				t.Run(v, func(t *testing.T) {
 					defer PostMortemLogs(t, profile)
 
-					// Explicitly does not pass StartArgs() to test driver default
 					// --force to avoid uid check
 					args := append([]string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v), fmt.Sprintf("--container-runtime=%s", r)}, StartArgs()...)
 
 					// Preserve the initial run-result for debugging
 					if rrr == nil {
 						rrr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
-						t.Logf("STDOUT: %s\n", rrr.Stdout.String())
-						t.Logf("STDERR: %s\n", rrr.Stderr.String())
 					} else {
 						_, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 					}
@@ -76,6 +74,7 @@ func TestDownloadOnly(t *testing.T) {
 
 					// skip for none, as none driver does not have preload feature.
 					if !NoneDriver() {
+						viper.Set("preload", true)
 						if download.PreloadExists(v, r) {
 							// Just make sure the tarball path exists
 							if _, err := os.Stat(download.TarballPath(v, r)); err != nil {
