@@ -22,20 +22,14 @@ jobs:
           echo hello
           $o1=docker info
           $env:e1=$o1
-          echo ::set-env name=ex1::$o1
           echo "::set-env name=ex2::$o1"
-          echo ::set-env name=ex3::${o1}
           echo "::set-env name=ex4::${o1}"
       - name: step2
         shell: powershell
         run: |
           echo "hello again"
           echo "-----"
-          echo $env:ex1
-          echo "-----"
           echo $env:ex2
-          echo "-----"
-          echo $env:ex3
           echo "-----"
           echo $env:ex4
           echo "-----"
