@@ -134,17 +134,17 @@ func defaultOptionsForComponentAndVersion(component string, version semver.Versi
 // newComponentOptions creates a new componentOptions
 func newComponentOptions(opts config.ExtraOptionSlice, version semver.Version, featureGates string, cp config.Node) ([]componentOptions, error) {
 	var kubeadmExtraArgs []componentOptions
-	for _, extraOpt := range opts {
-		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
-			return nil, fmt.Errorf("unknown component %q. valid components are: %v", extraOpt.Component, componentToKubeadmConfigKey)
-		}
-	}
-
 	keys := []string{}
 	for k := range componentToKubeadmConfigKey {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+
+	for _, extraOpt := range opts {
+		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
+			return nil, fmt.Errorf("unknown component %q. valid components are: %v", extraOpt.Component, keys)
+		}
+	}
 
 	for _, component := range keys {
 		kubeadmComponentKey := componentToKubeadmConfigKey[component]
