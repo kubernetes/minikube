@@ -52,28 +52,44 @@ jobs:
           docker info
           go version
       - name: Run Integration Test
-        continue-on-error: true
-        shell: bash
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
         run: |
           cd minikube_binaries
-          New-Item -Force -Path "report" -ItemType Directory
-          New-Item -Force -Path "testhome" -ItemType Directory
-          $START_TIME=(GET-DATE)
-          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
-          $env:MINIKUBE_HOME="${pwd}\testhome"
-          $ErrorActionPreference = "SilentlyContinue"
-          ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=35m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
-          $END_TIME=(GET-DATE)
-          echo $END_TIME
-          $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
-          echo $DURATION
-          $MINS=($DURATION.TotalMinutes)
-          echo $MINS
-          $T_ELAPSED="$MINS mins"
-          echo "----"
-          echo $T_ELAPSED
-          echo "----"
-          echo "::set-env name=TIME_ELAPSED::$TIME_ELAPSED"
+          mkdir -p report
+          mkdir -p testhome
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-windows-amd64.exe -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-windows-amd64.exe 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+      # - name: Run Integration Test in powershell
+      #   continue-on-error: true
+      #   shell: powershell
+      #   run: |
+      #     cd minikube_binaries
+      #     New-Item -Force -Path "report" -ItemType Directory
+      #     New-Item -Force -Path "testhome" -ItemType Directory
+      #     $START_TIME=(GET-DATE)
+      #     $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+      #     $env:MINIKUBE_HOME="${pwd}\testhome"
+      #     $ErrorActionPreference = "SilentlyContinue"
+      #     ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=35m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+      #     $END_TIME=(GET-DATE)
+      #     echo $END_TIME
+      #     $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+      #     echo $DURATION
+      #     $MINS=($DURATION.TotalMinutes)
+      #     echo $MINS
+      #     $T_ELAPSED="$MINS mins"
+      #     echo "----"
+      #     echo $T_ELAPSED
+      #     echo "----"
+      #     echo "::set-env name=TIME_ELAPSED::$TIME_ELAPSED"
       - name: Generate HTML Report
         shell: powershell
         run: |
