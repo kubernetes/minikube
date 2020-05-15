@@ -96,7 +96,7 @@ jobs:
         run: |
           echo $ENV:GOPOGH_RESULT
           echo $ENV:STATUS
-          $numFail=(echo $ENV:STATUS} | jq '.NumberOfFail')
+          $numFail=(echo $ENV:STATUS | jq '.NumberOfFail')
           echo "----------------$numFail Failures----------------------------"
           echo $ENV:STATUS | jq '.FailedTests'
           echo "-------------------------------------------------------"
