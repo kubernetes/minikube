@@ -79,6 +79,7 @@ jobs:
       - name: Generate HTML Report
         shell: powershell
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
           $ST=(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
           $FailNum=(echo $ST | jq '.NumberOfFail')
