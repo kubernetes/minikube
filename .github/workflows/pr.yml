@@ -14,6 +14,29 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - name: step1
+        shell: powershell
+        run: |
+          echo hello
+          $o1=docker info
+          $env:e1=$o1
+          echo ::set-env name=ex1::$o1
+          echo "::set-env name=ex2::$o1"
+          echo ::set-env name=ex3::${o1}
+          echo "::set-env name=ex4::${o1}"
+      - name: step2
+        shell: powershell
+        run: |
+          echo "hello again"
+          echo "-----"
+          echo $env:ex1
+          echo "-----"
+          echo $env:ex2
+          echo "-----"
+          echo $env:ex3
+          echo "-----"
+          echo $env:ex4
+          echo "-----"
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -65,21 +88,24 @@ jobs:
           $ErrorActionPreference = "SilentlyContinue"
           ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=35m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
           $END_TIME=(GET-DATE)
+          echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+          echo $DURATION
           $MINS=($DURATION.TotalMinutes)
-          $TIME_ELAPSED="$MINS mins"
+          echo $MINS
+          $env:TIME_ELAPSED="$MINS mins"
+          echo $env:TIME_ELAPSED
           cat ./report/testout.txt
-          $env:TIME_ELAPSED=$TIME_ELAPSED
           echo ::set-env name=TIME_ELAPSED::$TIME_ELAPSED
       - name: Generate HTML Report
         shell: powershell
         run: |
-          cd minikube_binaries         
-          echo ::set-env name=STAT::(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
-          echo status: ${STAT}
+          cd minikube_binaries
+          $STAT=(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
+          echo status: $ENV:SATAT
           $FailNum=(echo $STAT | jq '.NumberOfFail')
           $TestsNum=(echo $STAT | jq '.NumberOfTests')
-          echo ::set-env name=GOPOGH_RESULT::"$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
+          echo ::set-env name=GOPOGH_RESULT::"${JOB_NAME{} : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_windows
