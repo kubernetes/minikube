@@ -45,12 +45,7 @@ func TestStartStop(t *testing.T) {
 			args    []string
 		}{
 			{"old-k8s-version", constants.OldestKubernetesVersion, []string{
-				// default is the network created by libvirt, if we change the name minikube won't boot
-				// because the given network doesn't exist
-				"--kvm-network=default",
-				"--kvm-qemu-uri=qemu:///system",
-				"--disable-driver-mounts",
-				"--keep-context=false",
+
 				"--container-runtime=docker",
 			}},
 			{"newest-cni", constants.NewestKubernetesVersion, []string{
@@ -175,7 +170,7 @@ func additionalLogs(ctx context.Context, t *testing.T, profile string) {
 	}
 	t.Log(rr.Output())
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), []string{"kubectl", "-p", profile, "--", "get", "po", "-A"}...))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), []string{"kubectl", "-p", profile, "--", "get", "po", "--all-namespaces"}...))
 	if err != nil {
 		t.Logf("error: %q: %v", rr.Command(), err)
 	}
