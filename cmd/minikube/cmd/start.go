@@ -886,10 +886,12 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 			return cc, config.Node{}, err
 		}
 
+		nodes := []config.Node{}
 		for _, n := range existing.Nodes {
 			n.KubernetesVersion = getKubernetesVersion(&cc)
-			cc.Nodes = append(cc.Nodes, n)
+			nodes = append(nodes, n)
 		}
+		cc.Nodes = nodes
 
 		return cc, cp, nil
 	}
