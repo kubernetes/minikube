@@ -327,7 +327,6 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Custom format
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
-	t.Logf("CUSTOM: %s\n", rr.Stdout.String())
 	if err != nil {
 		t.Errorf("failed to run minikube status with custom format: args %q: %v", rr.Command(te), err)
 	}
@@ -339,7 +338,6 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Json output
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-o", "json"))
-	t.Logf("JSON: %s\n", rr.Stdout.String())
 	if err != nil {
 		t.Errorf("failed to run minikube status with json output. args %q : %v", rr.Command(), err)
 	}
