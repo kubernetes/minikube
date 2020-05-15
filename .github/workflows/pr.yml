@@ -58,6 +58,7 @@ jobs:
         run: |
           cd minikube_binaries
           mkdir -p report
+          rm -rf testhome || true
           mkdir -p testhome
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-windows-amd64.exe -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-windows-amd64.exe 2>&1 | tee ./report/testout.txt
