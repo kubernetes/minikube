@@ -42,6 +42,14 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: [self-hosted, Windows, X64]
     steps:
+      - name: Clean up
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          ls -lah
+          rm -rf minkube-binaries || true
+          ls -lah 
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
