@@ -27,9 +27,9 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.18.1"
+	DefaultKubernetesVersion = "v1.18.2"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
-	NewestKubernetesVersion = "v1.18.1"
+	NewestKubernetesVersion = "v1.18.3-beta.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.12.0"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -51,7 +51,7 @@ const (
 	DefaultServiceCIDR = "10.96.0.0/12"
 	// HostAlias is a DNS alias to the the container/VM host IP
 	HostAlias = "host.minikube.internal"
-	// ControlPaneAlias is a DNS alias pointing to the apiserver frontend
+	// ControlPlaneAlias is a DNS alias pointing to the apiserver frontend
 	ControlPlaneAlias = "control-plane.minikube.internal"
 
 	// DockerHostEnv is used for docker daemon settings

@@ -67,7 +67,7 @@ func (rr RunResult) Output() string {
 // PrefixCmd adds any needed prefix (such as sudo) to the command
 func PrefixCmd(cmd *exec.Cmd) *exec.Cmd {
 	if cmd.Args[0] == Podman && runtime.GOOS == "linux" { // want sudo when not running podman-remote
-		cmdWithSudo := exec.Command("sudo", cmd.Args...)
+		cmdWithSudo := exec.Command("sudo", append([]string{"-n"}, cmd.Args...)...)
 		cmdWithSudo.Env = cmd.Env
 		cmdWithSudo.Dir = cmd.Dir
 		cmdWithSudo.Stdin = cmd.Stdin

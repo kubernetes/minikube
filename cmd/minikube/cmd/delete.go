@@ -90,26 +90,31 @@ func init() {
 }
 
 // shotgun cleanup to delete orphaned docker container data
-func deleteContainersAndVolumes() {
-	if _, err := exec.LookPath(oci.Docker); err != nil {
-		glog.Infof("skipping deleteContainersAndVolumes for %s: %v", oci.Docker, err)
+func deleteContainersAndVolumes(ociBin string) {
+	if _, err := exec.LookPath(ociBin); err != nil {
+		glog.Infof("skipping deleteContainersAndVolumes for %s: %v", ociBin, err)
 		return
 	}
 
 	glog.Infof("deleting containers and volumes ...")
 
 	delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
+	errs := oci.DeleteContainersByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will error if there is no container to delete
 		glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+	errs = oci.DeleteAllVolumesByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	if ociBin == oci.Podman {
+		// podman prune does not support --filter
+		return
+	}
+
+	errs = oci.PruneAllVolumesByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
@@ -137,7 +142,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if deleteAll {
-		deleteContainersAndVolumes()
+		deleteContainersAndVolumes(oci.Docker)
+		deleteContainersAndVolumes(oci.Podman)
 
 		errs := DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
@@ -167,6 +173,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if orphan {
 			// TODO: generalize for non-KIC drivers: #8040
 			deletePossibleKicLeftOver(cname, driver.Docker)
+			deletePossibleKicLeftOver(cname, driver.Podman)
 		}
 	}
 
@@ -209,8 +216,6 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 
 // TODO: remove and/or move to delete package: #8040
 func deletePossibleKicLeftOver(cname string, driverName string) {
-	glog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
-
 	bin := ""
 	switch driverName {
 	case driver.Docker:
@@ -220,6 +225,13 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	default:
 		return
 	}
+
+	if _, err := exec.LookPath(bin); err != nil {
+		glog.Infof("skipping deletePossibleKicLeftOver for %s: %v", bin, err)
+		return
+	}
+
+	glog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
 
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
 	cs, err := oci.ListContainersByLabel(bin, delLabel)
@@ -237,6 +249,11 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	errs := oci.DeleteAllVolumesByLabel(bin, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
 		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+	}
+
+	if bin == oci.Podman {
+		// podman prune does not support --filter
+		return
 	}
 
 	errs = oci.PruneAllVolumesByLabel(bin, delLabel)
