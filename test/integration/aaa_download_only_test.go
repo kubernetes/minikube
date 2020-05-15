@@ -64,6 +64,8 @@ func TestDownloadOnly(t *testing.T) {
 					// Preserve the initial run-result for debugging
 					if rrr == nil {
 						rrr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+						t.Logf("STDOUT: %s\n", rrr.Stdout.String())
+						t.Logf("STDERR: %s\n", rrr.Stderr.String())
 					} else {
 						_, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 					}
@@ -74,7 +76,6 @@ func TestDownloadOnly(t *testing.T) {
 
 					// skip for none, as none driver does not have preload feature.
 					if !NoneDriver() {
-						t.Logf("------------>version = %s, runtime = %s<-------------\n", v, r)
 						if download.PreloadExists(v, r) {
 							// Just make sure the tarball path exists
 							if _, err := os.Stat(download.TarballPath(v, r)); err != nil {
