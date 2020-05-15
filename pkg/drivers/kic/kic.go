@@ -68,6 +68,7 @@ func NewDriver(c Config) *Driver {
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	params := oci.CreateParams{
+		Mounts:        d.NodeConfig.Mounts,
 		Name:          d.NodeConfig.MachineName,
 		Image:         d.NodeConfig.ImageDigest,
 		ClusterLabel:  oci.ProfileLabelKey + "=" + d.MachineName,
