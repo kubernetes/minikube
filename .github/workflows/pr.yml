@@ -81,7 +81,7 @@ jobs:
         run: |
           $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
-          $ST=(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
+          $ST=(docker run --rm -e NAME="${JOB_NAME} ${GITHUB_REF}" -e REPO="${GITHUB_REPOSITORY}" -e DETAILS="${GITHUB_SHA}" -v ${PWD}\report:/data medyagh/gopogh:v0.1.21 ./text2html.sh)
           $FailNum=(echo $ST | jq '.NumberOfFail')
           $TestsNum=(echo $ST | jq '.NumberOfTests')
           $GRESULT="$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
