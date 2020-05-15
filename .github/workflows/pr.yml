@@ -9,7 +9,6 @@ env:
   GOPROXY: https://proxy.golang.org
 jobs:
   trying:
-    needs: [build_minikube]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_docker_windows"
