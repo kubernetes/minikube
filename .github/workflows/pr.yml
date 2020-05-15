@@ -96,19 +96,21 @@ jobs:
           echo $DURATION
           $MINS=($DURATION.TotalMinutes)
           echo $MINS
-          $env:TIME_ELAPSED="$MINS mins"
-          echo $env:TIME_ELAPSED
-          cat ./report/testout.txt
-          echo ::set-env name=TIME_ELAPSED::$TIME_ELAPSED
+          $T_ELAPSED="$MINS mins"
+          echo "----"
+          echo $T_ELAPSED
+          echo "----"
+          echo "::set-env name=TIME_ELAPSED::$TIME_ELAPSED"
       - name: Generate HTML Report
         shell: powershell
         run: |
           cd minikube_binaries
-          $STAT=(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
-          echo status: $ENV:SATAT
-          $FailNum=(echo $STAT | jq '.NumberOfFail')
-          $TestsNum=(echo $STAT | jq '.NumberOfTests')
-          echo ::set-env name=GOPOGH_RESULT::"${JOB_NAME{} : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
+          $ST=(docker run --rm -v ${PWD}\report:/data medyagh/gopogh:latest ./text2html.sh)
+          $FailNum=(echo $ST | jq '.NumberOfFail')
+          $TestsNum=(echo $ST | jq '.NumberOfTests')
+          $GRESULT="$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
+          echo ::set-env name=GOPOGH_RESULT::$GRESULT
+          echo ::set-env name=STATUS::$ST
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_windows
@@ -117,12 +119,12 @@ jobs:
         shell: powershell
         run: |
           echo ${GOPOGH_RESULT}
-          echo ${STAT}
-          $numFail=(echo ${STAT} | jq '.NumberOfFail')
+          echo ${STATUS}
+          $numFail=(echo ${STATUS} | jq '.NumberOfFail')
           echo "----------------$numFail Failures----------------------------"
-          echo ${STAT} | jq '.FailedTests'
+          echo ${STATUS} | jq '.FailedTests'
           echo "-------------------------------------------------------"
-          $numPass=(echo ${STAT} | jq '.NumberOfPass')
+          $numPass=(echo ${STATUS} | jq '.NumberOfPass')
           echo "*** ${numPass} Passed ***"
           If ($numFail -gt 0) {exit 2}  Else {echo 'success'}
           If ($numPass -eq 0) {exit 2}
