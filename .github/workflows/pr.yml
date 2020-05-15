@@ -93,13 +93,13 @@ jobs:
       - name: The End Result - functional on docker windows
         shell: powershell
         run: |
-          echo ${GOPOGH_RESULT}
-          echo ${STATUS}
-          $numFail=(echo ${STATUS} | jq '.NumberOfFail')
+          echo $ENV:GOPOGH_RESULT
+          echo $ENV:STATUS
+          $numFail=(echo $ENV:STATUS} | jq '.NumberOfFail')
           echo "----------------$numFail Failures----------------------------"
-          echo ${STATUS} | jq '.FailedTests'
+          echo $ENV:STATUS | jq '.FailedTests'
           echo "-------------------------------------------------------"
-          $numPass=(echo ${STATUS} | jq '.NumberOfPass')
+          $numPass=(echo $ENV:STATUS | jq '.NumberOfPass')
           echo "*** ${numPass} Passed ***"
           If ($numFail -gt 0) {exit 2}  Else {echo 'success'}
           If ($numPass -eq 0) {exit 2}
