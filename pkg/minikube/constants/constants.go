@@ -51,7 +51,7 @@ const (
 	DefaultServiceCIDR = "10.96.0.0/12"
 	// HostAlias is a DNS alias to the the container/VM host IP
 	HostAlias = "host.minikube.internal"
-	// ControlPaneAlias is a DNS alias pointing to the apiserver frontend
+	// ControlPlaneAlias is a DNS alias pointing to the apiserver frontend
 	ControlPlaneAlias = "control-plane.minikube.internal"
 
 	// DockerHostEnv is used for docker daemon settings

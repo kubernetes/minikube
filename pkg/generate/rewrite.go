@@ -33,7 +33,7 @@ type rewrite struct {
 // outputs possible drivers for the operating system
 func rewriteFlags(command *cobra.Command) error {
 	rewrites := map[string][]rewrite{
-		"start": []rewrite{{
+		"start": {{
 			flag:  "driver",
 			usage: "Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.",
 		}, {
