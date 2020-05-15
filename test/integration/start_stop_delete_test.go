@@ -175,6 +175,12 @@ func additionalLogs(ctx context.Context, t *testing.T, profile string) {
 	}
 	t.Log(rr.Output())
 
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), []string{"kubectl", "-p", profile, "--", "get", "po", "-A"}...))
+	if err != nil {
+		t.Logf("error: %q: %v", rr.Command(), err)
+	}
+	t.Log(rr.Output())
+
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), []string{"kubectl", "-p", profile, "--", "logs", fmt.Sprintf("kube-controller-manager-%s", profile), "-n", "kube-system"}...))
 	if err != nil {
 		t.Logf("error: %q: %v", rr.Command(), err)
