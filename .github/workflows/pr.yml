@@ -8,31 +8,6 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
-  trying:
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "functional_docker_windows"
-      GOPOGH_RESULT: ""
-      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: [self-hosted, Windows, X64]
-    steps:
-      - name: step1
-        shell: powershell
-        run: |
-          echo hello
-          $o1=docker info
-          $env:e1=$o1
-          echo "::set-env name=ex2::$o1"
-          echo "::set-env name=ex4::${o1}"
-      - name: step2
-        shell: powershell
-        run: |
-          echo "hello again"
-          echo "-----"
-          echo $env:ex2
-          echo "-----"
-          echo $env:ex4
-          echo "-----"
   # Runs before all other jobs
   # builds the minikube binaries
   build_minikube:
