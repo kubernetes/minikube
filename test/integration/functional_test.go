@@ -328,7 +328,7 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	// Custom format
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
 	if err != nil {
-		t.Errorf("failed to run minikube status with custom format: args %q: %v", rr.Command(), err)
+		t.Errorf("failed to run minikube status with custom format: args %q: %v", rr.Command(te), err)
 	}
 	re := `host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubeconfig:([A-z]+)`
 	match, _ := regexp.MatchString(re, rr.Stdout.String())
