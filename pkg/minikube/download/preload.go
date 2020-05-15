@@ -85,6 +85,7 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 		return false
 	}
 
+	// TODO (#8166): Get rid of the need for this and viper at all
 	force := false
 	if len(forcePreload) > 0 {
 		force = forcePreload[0]
