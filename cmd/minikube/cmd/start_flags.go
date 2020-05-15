@@ -101,6 +101,8 @@ const (
 	deleteOnFailure         = "delete-on-failure"
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
+
+	dockerVolume = "docker-volume"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -190,6 +192,10 @@ func initDriverFlags() {
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (hyperv driver only)")
 	startCmd.Flags().Bool(hypervUseExternalSwitch, false, "Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)")
 	startCmd.Flags().String(hypervExternalAdapter, "", "External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)")
+
+	// docker
+	// TODO: beter description
+	startCmd.Flags().StringSlice(dockerVolume, []string{}, "Volumes to mount into from host into minikube")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -296,6 +302,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			DockerOpt:               config.DockerOpt,
 			InsecureRegistry:        insecureRegistry,
 			RegistryMirror:          registryMirror,
+			DockerVolume:            viper.GetStringSlice(dockerVolume),
 			HostOnlyCIDR:            viper.GetString(hostOnlyCIDR),
 			HypervVirtualSwitch:     viper.GetString(hypervVirtualSwitch),
 			HypervUseExternalSwitch: viper.GetBool(hypervUseExternalSwitch),
