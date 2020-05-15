@@ -19,6 +19,7 @@ jobs:
       - name: Build Binaries
         run: |
           make cross
+          make e2e-cross
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
