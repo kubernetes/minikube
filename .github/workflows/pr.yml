@@ -14,13 +14,11 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
         run: |
-          make out/minikube-windows-amd64.exe
-          make out/e2e-windows-amd64.exe
+          make cross
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
