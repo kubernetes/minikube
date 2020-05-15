@@ -117,8 +117,6 @@ jobs:
       - name: The End Result - functional on docker windows
         shell: powershell
         run: |
-          echo $ENV:GOPOGH_RESULT
-          echo $ENV:STATUS
           $numFail=(echo $ENV:STATUS | jq '.NumberOfFail')
           echo "----------------$numFail Failures----------------------------"
           echo $ENV:STATUS | jq '.FailedTests'
@@ -145,8 +143,7 @@ jobs:
         run: |
           mkdir -p all_reports
           ls -lah
-          cp -r ./functional_test_docker_windows ./all_reports/
-          
+          cp -r ./functional_test_docker_windows ./all_reports/          
       - uses: actions/upload-artifact@v1
         with:
           name: all_reports
