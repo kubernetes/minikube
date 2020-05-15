@@ -48,7 +48,7 @@ jobs:
         shell: bash {0}
         run: |
           ls -lah
-          rm -rf minkube-binaries || true
+          rm -rf minikube-binaries || true
           ls -lah 
       - name: Download Binaries
         uses: actions/download-artifact@v1
