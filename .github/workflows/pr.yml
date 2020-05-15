@@ -53,7 +53,7 @@ jobs:
           go version
       - name: Run Integration Test
         continue-on-error: true
-        shell: powershell
+        shell: bash
         run: |
           cd minikube_binaries
           New-Item -Force -Path "report" -ItemType Directory
