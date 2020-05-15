@@ -30,7 +30,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -74,8 +73,7 @@ func TestDownloadOnly(t *testing.T) {
 
 					// skip for none, as none driver does not have preload feature.
 					if !NoneDriver() {
-						viper.Set("preload", true)
-						if download.PreloadExists(v, r) {
+						if download.PreloadExists(v, r, true) {
 							// Just make sure the tarball path exists
 							if _, err := os.Stat(download.TarballPath(v, r)); err != nil {
 								t.Errorf("failed to verify preloaded tarball file exists: %v", err)

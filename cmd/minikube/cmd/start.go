@@ -886,6 +886,8 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 			return cc, config.Node{}, err
 		}
 
+		// Make sure that existing nodes honor if KubernetesVersion gets specified on restart
+		// KubernetesVersion is the only attribute that the user can override in the Node object
 		for _, n := range existing.Nodes {
 			n.KubernetesVersion = getKubernetesVersion(&cc)
 			cc.Nodes = append(cc.Nodes, n)
