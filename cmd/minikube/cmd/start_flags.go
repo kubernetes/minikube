@@ -101,8 +101,7 @@ const (
 	deleteOnFailure         = "delete-on-failure"
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
-
-	dockerVolume = "docker-volume"
+	dockerVolume            = "docker-volume"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -194,8 +193,7 @@ func initDriverFlags() {
 	startCmd.Flags().String(hypervExternalAdapter, "", "External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)")
 
 	// docker
-	// TODO: beter description
-	startCmd.Flags().StringSlice(dockerVolume, []string{}, "Volumes to mount into from host into minikube")
+	startCmd.Flags().StringSlice(dockerVolume, []string{}, "Volumes to mount from host into the minikube container on start. (format: [host-src:]container-dest[:<options>], the comma-delimited options are [rw|ro], [Z], [srhared|rslave|rprivate]) (docker driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start

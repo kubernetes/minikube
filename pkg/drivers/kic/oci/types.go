@@ -133,12 +133,12 @@ func ParseMountString(spec string) (m Mount, err error) {
 	case 2:
 		m.HostPath, m.ContainerPath = fields[0], fields[1]
 		if !filepath.IsAbs(m.ContainerPath) {
-			err = fmt.Errorf("'%s' container path must be absolute.", m.ContainerPath)
+			err = fmt.Errorf("'%s' container path must be absolute", m.ContainerPath)
 		}
 	default:
 		err = errors.New("spec must be in form: <host path>:<container path>[:<options>]")
 	}
-	return
+	return m, err
 }
 
 // PortMapping specifies a host port mapped into a container port.
