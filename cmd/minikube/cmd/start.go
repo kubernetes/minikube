@@ -386,7 +386,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
-		out.WarningT("{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
+		out.WarningT("{{.path}} is version {{.client_version}}, which may be incompatible with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
 		out.ErrT(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
 			out.V{"path": path, "client_version": client})
@@ -850,7 +850,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {
-				exit.WithCodeT(exit.Config, "Sorry, Kubernetes v{{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
+				exit.WithCodeT(exit.Config, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
 			}
 		}
 	}
@@ -1013,26 +1013,26 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		}
 
 		suggestedName := old.Name + "2"
-		out.T(out.Conflict, "You have selected Kubernetes v{{.new}}, but the existing cluster is running Kubernetes v{{.old}}", out.V{"new": nvs, "old": ovs, "profile": profileArg})
+		out.T(out.Conflict, "You have selected Kubernetes {{.new}}, but the existing cluster is running Kubernetes {{.old}}", out.V{"new": nvs, "old": ovs, "profile": profileArg})
 		exit.WithCodeT(exit.Config, `Non-destructive downgrades are not supported, but you can proceed with one of the following options:
 
-  1) Recreate the cluster with Kubernetes v{{.new}}, by running:
+  1) Recreate the cluster with Kubernetes {{.new}}, by running:
 
     minikube delete{{.profile}}
-    minikube start{{.profile}} --kubernetes-version={{.new}}
+    minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.new}}
 
-  2) Create a second cluster with Kubernetes v{{.new}}, by running:
+  2) Create a second cluster with Kubernetes {{.new}}, by running:
 
-    minikube start -p {{.suggestedName}} --kubernetes-version={{.new}}
+    minikube start -p {{.suggestedName}} --kubernetes-version={{.prefix}}{{.new}}
 
-  3) Use the existing cluster at version Kubernetes v{{.old}}, by running:
+  3) Use the existing cluster at version Kubernetes {{.old}}, by running:
 
-    minikube start{{.profile}} --kubernetes-version={{.old}}
-`, out.V{"new": nvs, "old": ovs, "profile": profileArg, "suggestedName": suggestedName})
+    minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.old}}
+    `, out.V{"prefix": version.VersionPrefix, "new": nvs, "old": ovs, "profile": profileArg, "suggestedName": suggestedName})
 
 	}
 	if defaultVersion.GT(nvs) {
-		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
+		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 	return nv
 }

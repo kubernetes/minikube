@@ -56,7 +56,7 @@ make checksum
 
 # unversioned names to avoid updating upstream Kubernetes documentation each release
 cp "out/minikube_${DEB_VERSION}-0_amd64.deb" out/minikube_latest_amd64.deb
-cp "out/minikube-${RPM_VERSION}-0.x86_64.rpm" out/minikube_latest.x86_64.rpm
+cp "out/minikube-${RPM_VERSION}-0.x86_64.rpm" out/minikube-latest.x86_64.rpm
 
 gsutil -m cp out/* "gs://$BUCKET/releases/$TAGNAME/"
 
