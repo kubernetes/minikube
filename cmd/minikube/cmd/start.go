@@ -885,8 +885,6 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 			return cc, config.Node{}, err
 		}
 
-		fmt.Printf("EXISTING cc: %+v\n", cc)
-		fmt.Printf("EXISTING cp: %+v\n", cp)
 		return cc, cp, nil
 	}
 
@@ -898,8 +896,6 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 		Worker:            true,
 	}
 	cc.Nodes = []config.Node{cp}
-	fmt.Printf("NEW cc: %+v\n", cc)
-	fmt.Printf("NEW cp: %+v\n", cp)
 	return cc, cp, nil
 }
 
