@@ -34,14 +34,14 @@ const (
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.ClusterConfig, n config.Node) error {
+func Add(cc *config.ClusterConfig, n config.Node) (Starter, error) {
 	if err := config.SaveNode(cc, &n); err != nil {
-		return errors.Wrap(err, "save node")
+		return Starter{}, errors.Wrap(err, "save node")
 	}
 
 	r, p, m, h, err := Provision(cc, &n, false)
 	if err != nil {
-		return err
+		return Starter{}, err
 	}
 	s := Starter{
 		Runner:         r,
@@ -54,7 +54,7 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 	}
 
 	_, err = Start(s, false)
-	return err
+	return s, err
 }
 
 // Delete stops and deletes the given node from the given cluster
