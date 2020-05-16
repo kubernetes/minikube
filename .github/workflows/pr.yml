@@ -42,7 +42,7 @@ jobs:
       JOB_NAME: "functional_docker_windows"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, windows-10]
     steps:
       - name: Clean up
         continue-on-error: false
