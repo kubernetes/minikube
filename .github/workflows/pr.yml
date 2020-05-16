@@ -18,9 +18,8 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
+          make windows
           make e2e-windows-amd64.exe
-          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe
-          mv minikube-windows-amd64.exe ./out/
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
@@ -120,17 +119,17 @@ jobs:
         with:
           name: functional_docker_windows
           path: minikube_binaries/report
-      - name: The End Result - functional on docker windows
-        shell: powershell
+      - name: The End Result functional_test_docker_windows
+        shell: bash
         run: |
-          $numFail=(echo $ENV:STATUS | jq '.NumberOfFail')
-          echo "----------------$numFail Failures----------------------------"
-          echo $ENV:STATUS | jq '.FailedTests'
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          echo "----------------${numFail} Failures----------------------------"
+          echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
-          $numPass=(echo $ENV:STATUS | jq '.NumberOfPass')
-          echo "*** ${numPass} Passed ***"
-          If ($numFail -gt 0) {exit 2}  Else {echo 'success'}
-          If ($numPass -eq 0) {exit 2}
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*** $numPass Passed ***"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
