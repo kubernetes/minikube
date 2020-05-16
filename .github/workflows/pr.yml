@@ -19,6 +19,7 @@ jobs:
       - name: Build Binaries
         run: |
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe
+          mv minikube-windows-amd64.exe ./out
           make e2e-cross
           cp -r test/integration/testdata ./out
           whoami
