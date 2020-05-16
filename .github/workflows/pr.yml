@@ -104,16 +104,16 @@ jobs:
       #     echo "----"
       #     echo "::set-env name=TIME_ELAPSED::$TIME_ELAPSED"
       - name: Generate HTML Report
-        shell: powershell
+        shell: bash
         run: |
-          $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
-          $ST=(docker run --rm -e NAME="${JOB_NAME} ${GITHUB_REF}" -e REPO="${GITHUB_REPOSITORY}" -e DETAILS="${GITHUB_SHA}" -v ${PWD}\report:/data medyagh/gopogh:v0.1.23 ./text2html.sh)
+          $ST=$(docker run --rm -e NAME="${JOB_NAME} ${GITHUB_REF}" -e REPO="${GITHUB_REPOSITORY}" -e DETAILS="${GITHUB_SHA}" -v ${PWD}\report:/data medyagh/gopogh:v0.1.23 ./text2html.sh || true)
+          $ST=$(docker run --rm -e NAME="${JOB_NAME} ${GITHUB_REF}" -e REPO="${GITHUB_REPOSITORY}" -e DETAILS="${GITHUB_SHA}" -v $(pwd)/report:/data medyagh/gopogh:v0.1.23 ./text2html.sh || true)
           $FailNum=(echo $ST | jq '.NumberOfFail')
           $TestsNum=(echo $ST | jq '.NumberOfTests')
-          $GRESULT="$JOB_NAME : completed with $FailNum / $TestsNum failures in $TIME_ELAPSED"
-          echo "::set-env name=GOPOGH_RESULT::$GRESULT"
-          echo "::set-env name=STATUS::$ST"
+          $GRESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "::set-env name=GOPOGH_RESULT::${GRESULT}"
+          echo "::set-env name=STATUS::${ST}"
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_windows
