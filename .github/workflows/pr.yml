@@ -20,7 +20,7 @@ jobs:
         run: |
           make e2e-cross
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe
-          mv minikube-windows-amd64.exe ./out
+          mv minikube-windows-amd64.exe ./out/
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
