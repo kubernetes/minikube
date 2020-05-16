@@ -114,8 +114,8 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
-          echo "::set-env name=STAT::${STAT}"
+          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
+          echo ::set-env name=STAT::${STAT}
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_windows
