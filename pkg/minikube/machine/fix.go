@@ -48,14 +48,14 @@ const (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
+func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*host.Host, error) {
 	start := time.Now()
 	glog.Infof("fixHost starting: %s", n.Name)
 	defer func() {
 		glog.Infof("fixHost completed within %s", time.Since(start))
 	}()
 
-	h, err := api.Load(driver.MachineName(cc, n))
+	h, err := api.Load(driver.MachineName(*cc, *n))
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
@@ -72,7 +72,7 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 
 	// Avoid reprovisioning "none" driver because provision.Detect requires SSH
 	if !driver.BareMetal(h.Driver.DriverName()) {
-		e := engineOptions(cc)
+		e := engineOptions(*cc)
 		h.HostOptions.EngineOptions.Env = e.Env
 		err = provisionDockerMachine(h)
 		if err != nil {
@@ -84,7 +84,7 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return h, nil
 	}
 
-	if err := postStartSetup(h, cc); err != nil {
+	if err := postStartSetup(h, *cc); err != nil {
 		return h, errors.Wrap(err, "post-start")
 	}
 
@@ -96,8 +96,8 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 	return h, ensureSyncedGuestClock(h, driverName)
 }
 
-func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) (*host.Host, error) {
-	machineName := driver.MachineName(cc, n)
+func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.Node, h *host.Host) (*host.Host, error) {
+	machineName := driver.MachineName(*cc, *n)
 	machineType := driver.MachineType(cc.Driver)
 	recreated := false
 	s, serr := h.Driver.GetState()
@@ -112,7 +112,7 @@ func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node
 
 		if !me || err == constants.ErrMachineMissing {
 			out.T(out.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
-			demolish(api, cc, n, h)
+			demolish(api, *cc, *n, h)
 
 			glog.Infof("Sleeping 1 second for extra luck!")
 			time.Sleep(1 * time.Second)
