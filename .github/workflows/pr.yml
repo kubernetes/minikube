@@ -18,7 +18,7 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
-          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 sudo install minikube-windows-amd64.exe
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe
           make e2e-cross
           cp -r test/integration/testdata ./out
           whoami
