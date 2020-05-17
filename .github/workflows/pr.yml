@@ -38,7 +38,7 @@ jobs:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_docker_windows"
+      JOB_NAME: "functional_test_docker_windows"
       GOPOGH_RESULT: ""
     runs-on: [self-hosted, windows-10-ent]
     steps:
@@ -54,30 +54,13 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
-      - name: info
+      - name: Info
         shell: powershell
         run: |
           docker info
-      # - name: Run Integration Test
-      #   continue-on-error: false
-      #   # bash {0} to allow test to continue to next step. in case of
-      #   shell: bash {0}
-      #   run: |
-      #     pwd
-      #     ls
-      #     cd minikube_binaries
-      #     ls
-      #     mkdir -p report
-      #     rm -rf testhome || true
-      #     mkdir -p testhome
-      #     START_TIME=$(date -u +%s)
-      #     KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-windows-amd64.exe -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-windows-amd64.exe 2>&1 | tee ./report/testout.txt
-      #     END_TIME=$(date -u +%s)
-      #     TIME_ELAPSED=$(($END_TIME-$START_TIME))
-      #     min=$((${TIME_ELAPSED}/60))
-      #     sec=$((${TIME_ELAPSED}%60))
-      #     TIME_ELAPSED="${min} min $sec seconds "
-      #     echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          docker ps
+          docker volume ls
+          echo $env:computername
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -116,7 +99,7 @@ jobs:
           echo ::set-env name=STAT::${STAT}
       - uses: actions/upload-artifact@v1
         with:
-          name: functional_docker_windows
+          name: functional_test_docker_windows
           path: minikube_binaries/report
       - name: The End Result functional_test_docker_windows
         shell: bash
@@ -135,7 +118,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "functional_test_hyperv_windows"
       GOPOGH_RESULT: ""
-    runs-on: [self-hosted, windows-10-ent]
+    runs-on: [self-hosted, windows-10-ent, 16CPUs]
     steps:
       - name: Clean up
         continue-on-error: false
@@ -149,6 +132,10 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
+      - name: Info
+        shell: powershell
+        run: |
+          echo $env:computername
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -219,7 +206,7 @@ jobs:
         run: |
           mkdir -p all_reports
           ls -lah
-          cp -r ./functional_docker_windows ./all_reports/
+          cp -r ./functional_test_docker_windows ./all_reports/
           cp -r ./functional_test_hyperv_windows ./all_reports/          
       - uses: actions/upload-artifact@v1
         with:
