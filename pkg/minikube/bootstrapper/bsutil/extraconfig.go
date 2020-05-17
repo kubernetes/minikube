@@ -95,6 +95,21 @@ func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 	return convertToFlags(kubeadmExtraOpts)
 }
 
+// FindInvalidExtraConfigFlags returns all invalid 'extra-config' options
+func FindInvalidExtraConfigFlags(opts config.ExtraOptionSlice) []string {
+	invalidOptsMap := make(map[string]struct{})
+	var invalidOpts []string
+	for _, extraOpt := range opts {
+		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
+			if _, ok := invalidOptsMap[extraOpt.Component]; !ok {
+				invalidOpts = append(invalidOpts, extraOpt.Component)
+				invalidOptsMap[extraOpt.Component] = struct{}{}
+			}
+		}
+	}
+	return invalidOpts
+}
+
 // extraConfigForComponent generates a map of flagname-value pairs for a k8s
 // component.
 func extraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
@@ -133,20 +148,12 @@ func defaultOptionsForComponentAndVersion(component string, version semver.Versi
 
 // newComponentOptions creates a new componentOptions
 func newComponentOptions(opts config.ExtraOptionSlice, version semver.Version, featureGates string, cp config.Node) ([]componentOptions, error) {
+	if invalidOpts := FindInvalidExtraConfigFlags(opts); invalidOpts != nil {
+		return nil, fmt.Errorf("unknown components %v. valid components are: %v", invalidOpts, KubeadmExtraConfigOpts)
+	}
+
 	var kubeadmExtraArgs []componentOptions
-	keys := []string{}
-	for k := range componentToKubeadmConfigKey {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, extraOpt := range opts {
-		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
-			return nil, fmt.Errorf("unknown component %q. valid components are: %v", extraOpt.Component, keys)
-		}
-	}
-
-	for _, component := range keys {
+	for _, component := range KubeadmExtraConfigOpts {
 		kubeadmComponentKey := componentToKubeadmConfigKey[component]
 		if kubeadmComponentKey == "" {
 			continue
