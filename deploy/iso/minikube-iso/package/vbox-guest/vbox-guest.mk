@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-VBOX_GUEST_VERSION = 5.2.32
+VBOX_GUEST_VERSION = 5.2.42
 VBOX_GUEST_SITE = http://download.virtualbox.org/virtualbox/$(VBOX_GUEST_VERSION)
 VBOX_GUEST_LICENSE = GPLv2
 VBOX_GUEST_LICENSE_FILES = COPYING
