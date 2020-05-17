@@ -40,7 +40,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "functional_test_docker_windows"
       GOPOGH_RESULT: ""
-    runs-on: [self-hosted, windows-10-ent]
+    runs-on: [self-hosted, windows-10-ent, 8CPUs]
     steps:
       - name: Clean up
         continue-on-error: false
