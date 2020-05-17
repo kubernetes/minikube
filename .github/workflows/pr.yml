@@ -40,7 +40,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "functional_docker_windows"
       GOPOGH_RESULT: ""
-    runs-on: [self-hosted, windows-10-ent, ram-16gb]
+    runs-on: [self-hosted, windows-10-ent]
     steps:
       - name: Clean up
         continue-on-error: false
@@ -129,6 +129,77 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+  functional_test_hyperv_windows:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "functional_test_hyperv_windows"
+      GOPOGH_RESULT: ""
+    runs-on: [self-hosted, windows-10-ent]
+    steps:
+      - name: Clean up
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          ls -lah
+          rm -rf minikube_binaries || true
+          ls -lah 
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+      - name: Run Integration Test in powershell
+        continue-on-error: true
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          New-Item -Force -Path "report" -ItemType Directory
+          New-Item -Force -Path "testhome" -ItemType Directory
+          $START_TIME=(GET-DATE)
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          $ErrorActionPreference = "SilentlyContinue"
+          ./e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=35m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+          $END_TIME=(GET-DATE)
+          echo $END_TIME
+          $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+          echo $DURATION
+          $SECS=($DURATION.TotalSeconds)
+          $MINS=($DURATION.TotalMinutes)
+          $T_ELAPSED="$MINS m $SECS s"
+          echo "----"
+          echo $T_ELAPSED
+          echo "----"
+          echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
+          echo ::set-env name=STAT::${STAT}
+      - uses: actions/upload-artifact@v1
+        with:
+          name: functional_test_hyperv_windows
+          path: minikube_binaries/report
+      - name: The End Result functional_test_hyperv_windows
+        shell: bash
+        run: |
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          echo "----------------${numFail} Failures----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*** $numPass Passed ***"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
@@ -136,6 +207,7 @@ jobs:
     needs:
       [
         functional_test_docker_windows,
+        functional_test_hyperv_windows,
       ]
     runs-on: ubuntu-18.04
     steps:
@@ -147,7 +219,8 @@ jobs:
         run: |
           mkdir -p all_reports
           ls -lah
-          cp -r ./functional_test_docker_windows ./all_reports/          
+          cp -r ./functional_docker_windows ./all_reports/
+          cp -r ./functional_test_hyperv_windows ./all_reports/          
       - uses: actions/upload-artifact@v1
         with:
           name: all_reports
