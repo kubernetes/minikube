@@ -203,7 +203,7 @@ func PostMortemLogs(t *testing.T, profile string) {
 	t.Logf("-----------------------post-mortem--------------------------------")
 
 	if DockerDriver() {
-		t.Logf("======>  post-mortem[%s]: docker inpect <======", t.Name())
+		t.Logf("======>  post-mortem[%s]: docker inspect <======", t.Name())
 		rr, err := Run(t, exec.Command("docker", "inspect", profile))
 		if err != nil {
 			t.Logf("failed to get docker inspect: %v", err)
