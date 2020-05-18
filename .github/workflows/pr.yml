@@ -158,6 +158,97 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+  functional_test_docker_windows:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "functional_test_docker_windows"
+      GOPOGH_RESULT: ""
+      STAT: ""
+    runs-on: [self-hosted, windows-10-ent, 8CPUs]
+    steps:
+      - name: Clean up
+        continue-on-error: true
+        shell: powershell
+        run: |
+          echo $env:computerName
+          ls 
+          $ErrorActionPreference = "SilentlyContinue"
+          Remove-Item minikube_binaries -Force -Recurse
+          ls  
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+      - name: Info
+        shell: powershell
+        run: |
+          echo $env:computername
+          echo "------------------------"
+          docker info
+          echo "------------------------"
+          docker volume ls
+          echo "------------------------"
+      - name: Run Integration Test in powershell
+        continue-on-error: true
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          New-Item -Force -Path "report" -ItemType Directory
+          New-Item -Force -Path "testhome" -ItemType Directory
+          $START_TIME=(GET-DATE)
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          $ErrorActionPreference = "SilentlyContinue"
+          ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=13m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+          $END_TIME=(GET-DATE)
+          echo $END_TIME
+          $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+          echo $DURATION
+          $SECS=($DURATION.TotalSeconds)
+          $MINS=($DURATION.TotalMinutes)
+          $T_ELAPSED="$MINS m $SECS s"
+          echo "----"
+          echo $T_ELAPSED
+          echo "----"
+          echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
+      - name: Generate HTML Report
+        continue-on-error: true
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          Get-Content .\report\testout.txt | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
+          $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${Env:JOB_NAME} ${Env:GITHUB_REF}" -repo "${Env:GITHUB_REPOSITORY}"  -details "${Env:GITHUB_SHA}")
+          echo status: ${STAT}
+          $FailNum=$(echo $STAT | jq '.NumberOfFail')
+          $TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
+          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
+          echo "::set-env name=STAT::${STAT}"
+          echo ${GOPOGH_RESULT}
+          $numFail=(echo $STAT | jq '.NumberOfFail')
+          $failedTests=( echo $STAT | jq '.FailedTests')
+          echo "----------------${numFail} Failures----------------------------"
+          echo $failedTest
+          echo "-------------------------------------------------------"
+          $numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*** $numPass Passed ***"
+      - uses: actions/upload-artifact@v1
+        with:
+          name: functional_test_docker_windows
+          path: minikube_binaries/report
+      - name: The End Result functional_test_docker_windows
+        shell: powershell
+        run: |
+          $numFail=(echo $Env:STAT | jq '.NumberOfFail')
+          $failedTests=( echo $Env:STAT | jq '.FailedTests')
+          echo "----------------${numFail} Failures----------------------------"
+          echo $failedTests
+          echo "-------------------------------------------------------"
+          $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
+          echo "*** $numPass Passed ***"
+          If ($numFail -ge 0){ exit 2 } else { echo "goodjob" }
+          If ($numPass -eq 0){ exit 2 }
   addons_certs_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
