@@ -223,15 +223,15 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed minikube start. args %q: %v", rr.Command(), err)
 	}
 
-	// want := "Found network options:"
-	// if !strings.Contains(rr.Stdout.String(), want) {
-	// 	t.Errorf("start stdout=%s, want: *%s*", rr.Stdout.String(), want)
-	// }
+	want := "Found network options:"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("start stdout=%s, want: *%s*", rr.Stdout.String(), want)
+	}
 
-	// want = "You appear to be using a proxy"
-	// if !strings.Contains(rr.Stderr.String(), want) {
-	// 	t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
-	// }
+	want = "You appear to be using a proxy"
+	if !strings.Contains(rr.Stderr.String(), want) {
+		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
+	}
 }
 
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
