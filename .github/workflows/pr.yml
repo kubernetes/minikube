@@ -62,7 +62,6 @@ jobs:
           docker info
           docker ps
           docker volume ls
-
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -87,7 +86,7 @@ jobs:
           echo "----"
           echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
       - name: Generate HTML Report
-        shell: bash
+        shell: bash {0}
         run: |
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
