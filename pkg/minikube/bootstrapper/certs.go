@@ -181,6 +181,12 @@ func generateSharedCACerts() (CACerts, error) {
 
 // generateProfileCerts generates profile certs for a profile
 func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACerts) ([]string, error) {
+
+	// Only generate these certs for the api server
+	if !n.ControlPlane {
+		return []string{}, nil
+	}
+
 	profilePath := localpath.Profile(k8s.ClusterName)
 
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
