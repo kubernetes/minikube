@@ -158,7 +158,12 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
 	// we should be able to get minikube status with a bash which evaled docker-env
-	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) ; "+Target()+" status -p "+profile)
+	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+	if runtime.GOOS == "windows" { // testing against powershell
+		//	& .\minikube-windows-amd64 -p minikube docker-env | Invoke-Expression ; docker images
+		c = exec.CommandContext(mctx, "&", Target(), "-p ", profile, "docker-env", "|", "Invoke-Expression;", Target(), "status", "-p", "profile")
+	}
+
 	rr, err := Run(t, c)
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("Exceeded the 30 seconds deadline to run: %q", rr.Command())
