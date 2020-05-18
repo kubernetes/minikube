@@ -218,7 +218,7 @@ For more information on the `docker build` command, read the [Docker documentati
 For Podman, use:
 
 ```shell
-sudo -E podman build
+sudo podman build
 ```
 
 For more information on the `podman build` command, read the [Podman documentation](https://github.com/containers/libpod/blob/master/docs/source/markdown/podman-build.1.md) (podman.io).
