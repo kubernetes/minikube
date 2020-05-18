@@ -44,12 +44,13 @@ jobs:
     steps:
       - name: Clean up
         continue-on-error: false
-        # bash {0} to allow test to continue to next step. in case of
-        shell: bash {0}
+        shell: powershell
         run: |
-          ls -lah
-          rm -rf minikube_binaries || true
-          ls -lah 
+          echo $computername
+          ls
+          $ErrorActionPreference = "SilentlyContinue"
+          Remove-Item -Force minikube_binaries 
+          ls
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -57,10 +58,11 @@ jobs:
       - name: Info
         shell: powershell
         run: |
+          echo $env:computername
           docker info
           docker ps
           docker volume ls
-          echo $env:computername
+
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell

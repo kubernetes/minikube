@@ -158,7 +158,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	mctx, cancel := context.WithTimeout(ctx, Seconds(13))
 	defer cancel()
 	// we should be able to get minikube status with a bash which evaled docker-env
-	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) ; "+Target()+" status -p "+profile)
 	rr, err := Run(t, c)
 	if err != nil {
 		t.Fatalf("failed to do minikube status after eval-ing docker-env %s", err)
