@@ -161,7 +161,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		c = exec.CommandContext(mctx, "&", Target(), "-p ", profile, "docker-env", "|", "Invoke-Expression;", Target(), "status", "-p", "profile")
 	}
 
-	t.Logf("About to run the command: %q", rr.Command())
+	t.Logf("About to run the command: %q", c.Args)
 	rr, err := Run(t, c)
 	t.Logf("Ran the command: %v", err)
 	if ctx.Err() == context.DeadlineExceeded {
@@ -888,8 +888,14 @@ func localEmptyCertPath() string {
 // Copy extra file into minikube home folder for file sync test
 func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	p := localSyncTestPath()
-	t.Logf("local sync path: %s", p)
-	err := copy.Copy("./testdata/sync.test", p)
+	curDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current directory: %v", err)
+	}
+
+	dataPath := filepath.Join(curDir, "testdata", "sync.test")
+	t.Logf("local sync path: copying %q to %q", dataPath, p)
+	err = copy.Copy("./testdata/sync.test", p)
 	if err != nil {
 		t.Fatalf("failed to copy ./testdata/sync.test: %v", err)
 	}
