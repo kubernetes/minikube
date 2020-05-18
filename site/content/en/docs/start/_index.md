@@ -56,6 +56,12 @@ If the [Brew Package Manager](https://brew.sh/) installed:
 brew install minikube
 ```
 
+If `which minikube` fails after installation via brew, you may have to link the binary:
+
+```
+brew link minikube
+```
+
 Otherwise, download minikube directly:
 
 ```shell
