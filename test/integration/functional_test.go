@@ -83,7 +83,7 @@ func TestFunctional(t *testing.T) {
 			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
 			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didnt change.
 			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
-			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
+			{"KubectlGetPods", validateKubectlGetPods},      // Make sure kubectl is returning pods
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 		}
@@ -229,7 +229,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
 	}
 
-	softStartArgs := []string{"start", "-p", profile}
+	softStartArgs := []string{"start", "-p", profile, "--wait=all"}
 	c := exec.CommandContext(ctx, Target(), softStartArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
