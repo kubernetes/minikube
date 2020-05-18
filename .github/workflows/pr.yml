@@ -43,13 +43,13 @@ jobs:
     runs-on: [self-hosted, windows-10-ent, 8CPUs]
     steps:
       - name: Clean up
-        continue-on-error: false
-        # bash {0} to allow test to continue to next step. in case of
-        shell: bash {0}
+        continue-on-error: true
+        shell: powershell
         run: |
-          ls -lah
-          rm -rf minikube_binaries || true
-          ls -lah 
+          ls 
+          $ErrorActionPreference = "SilentlyContinue"
+          Remove-Item -Force minikube_binaries
+          ls  
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -82,33 +82,51 @@ jobs:
           echo "----"
           echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
       - name: Generate HTML Report
-        shell: bash
+        continue-on-error: true
+        shell: powershell
         run: |
           cd minikube_binaries
-          export PATH=${PATH}:`go env GOPATH`/bin
-          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          Get-Content .\report\testout.txt | go tool test2json -t > .\report\testout.json
+          $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")
           echo status: ${STAT}
-          FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')
-          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          $FailNum=$(echo $STAT | jq '.NumberOfFail')
+          $TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
+          echo "::set-env name=STAT::${STAT}"
+          echo ${GOPOGH_RESULT}
+          $numFail=(echo $STAT | jq '.NumberOfFail')
+          $failedTests=( echo $STAT | jq '.FailedTests')
+          echo "----------------${numFail} Failures----------------------------"
+          echo $failedTest
+          echo "-------------------------------------------------------"
+          $numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*** $numPass Passed ***"
       - uses: actions/upload-artifact@v1
         with:
           name: functional_test_docker_windows
           path: minikube_binaries/report
       - name: The End Result functional_test_docker_windows
-        shell: bash
+        shell: powershell
         run: |
+          echo "================"
           echo ${GOPOGH_RESULT}
-          numFail=$(echo $STAT | jq '.NumberOfFail')
+          echo "================"
+          echo $Env:GOPOGH_RESULT
+          echo "================"
+          echo ${STAT}
+          echo "================"
+          echo $Env:STAT
+          echo "================"
+          $numFail=(echo $Env:STAT | jq '.NumberOfFail')
+          $failedTests=( echo $Env:STAT | jq '.FailedTests')
           echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
+          echo $failedTest
           echo "-------------------------------------------------------"
-          numPass=$(echo $STAT | jq '.NumberOfPass')
+          $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
-          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          If ($numFail -ge 0){ exit 2 } else { echo "goodjob" }
+          If ($numPass -eq 0){ exit 2 }
   functional_test_hyperv_windows:
     needs: [build_minikube]
     env:
