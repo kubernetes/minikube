@@ -251,6 +251,7 @@ jobs:
           echo "*** $numPass Passed ***"
           If ($numFail -ge 0){ exit 2 } else { echo "goodjob" }
           If ($numPass -eq 0){ exit 2 }
+
   addons_certs_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
