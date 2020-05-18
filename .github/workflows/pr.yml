@@ -716,6 +716,8 @@ jobs:
           cp -r ./multinode_pause_tests_docker_ubuntu ./all_reports/
           cp -r ./preload_docker_flags_tests_docker_ubuntu ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
+          cp -r ./functional_test_docker_windows ./all_reports/
+          cp -r ./functional_test_hyperv_windows ./all_reports/
       - uses: actions/upload-artifact@v1
         with:
           name: all_reports
