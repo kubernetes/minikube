@@ -73,7 +73,6 @@ var nodeStartCmd = &cobra.Command{
 				exit.WithError("failed to start node", err)
 			}
 		}
-
 		out.T(out.Happy, "Successfully started node {{.name}}!", out.V{"name": machineName})
 	},
 }
