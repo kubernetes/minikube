@@ -116,19 +116,10 @@ jobs:
       - name: The End Result functional_test_docker_windows
         shell: powershell
         run: |
-          echo "================"
-          echo ${GOPOGH_RESULT}
-          echo "================"
-          echo $Env:GOPOGH_RESULT
-          echo "================"
-          echo ${STAT}
-          echo "================"
-          echo $Env:STAT
-          echo "================"
           $numFail=(echo $Env:STAT | jq '.NumberOfFail')
           $failedTests=( echo $Env:STAT | jq '.FailedTests')
           echo "----------------${numFail} Failures----------------------------"
-          echo $failedTest
+          echo $failedTests
           echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
@@ -143,13 +134,14 @@ jobs:
     runs-on: [self-hosted, windows-10-ent, 16CPUs]
     steps:
       - name: Clean up
-        continue-on-error: false
-        # bash {0} to allow test to continue to next step. in case of
-        shell: bash {0}
+        continue-on-error: true
+        shell: powershell
         run: |
-          ls -lah
-          rm -rf minikube_binaries || true
-          ls -lah 
+          echo $env:computerName
+          ls 
+          $ErrorActionPreference = "SilentlyContinue"
+          Remove-Item minikube_binaries -Force -Recurse
+          ls  
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -158,6 +150,7 @@ jobs:
         shell: powershell
         run: |
           echo $env:computername
+          Get-WmiObject -class Win32_ComputerSystem
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -182,33 +175,42 @@ jobs:
           echo "----"
           echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
       - name: Generate HTML Report
-        shell: bash
+        continue-on-error: true
+        shell: powershell
         run: |
           cd minikube_binaries
-          export PATH=${PATH}:`go env GOPATH`/bin
-          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          Get-Content .\report\testout.txt | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
+          $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${Env:JOB_NAME} ${Env:GITHUB_REF}" -repo "${Env:GITHUB_REPOSITORY}"  -details "${Env:GITHUB_SHA}")
           echo status: ${STAT}
-          FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')
-          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          $FailNum=$(echo $STAT | jq '.NumberOfFail')
+          $TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
+          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
+          echo "::set-env name=STAT::${STAT}"
+          echo ${GOPOGH_RESULT}
+          $numFail=(echo $STAT | jq '.NumberOfFail')
+          $failedTests=( echo $STAT | jq '.FailedTests')
+          echo "----------------${numFail} Failures----------------------------"
+          echo $failedTest
+          echo "-------------------------------------------------------"
+          $numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*** $numPass Passed ***"
       - uses: actions/upload-artifact@v1
         with:
           name: functional_test_hyperv_windows
           path: minikube_binaries/report
       - name: The End Result functional_test_hyperv_windows
-        shell: bash
+        shell: powershell
         run: |
-          echo ${GOPOGH_RESULT}
-          numFail=$(echo $STAT | jq '.NumberOfFail')
+          $numFail=(echo $Env:STAT | jq '.NumberOfFail')
+          $failedTests=( echo $Env:STAT | jq '.FailedTests')
           echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
+          echo $failedTests
           echo "-------------------------------------------------------"
-          numPass=$(echo $STAT | jq '.NumberOfPass')
+          $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
-          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          If ($numFail -ge 0){ exit 2 } else { echo "goodjob" }
+          If ($numPass -eq 0){ exit 2 }
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
@@ -229,7 +231,7 @@ jobs:
           mkdir -p all_reports
           ls -lah
           cp -r ./functional_test_docker_windows ./all_reports/
-          cp -r ./functional_test_hyperv_windows ./all_reports/          
+          cp -r ./functional_test_hyperv_windows ./all_reports/
       - uses: actions/upload-artifact@v1
         with:
           name: all_reports
