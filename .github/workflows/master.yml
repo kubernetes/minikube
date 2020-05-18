@@ -22,6 +22,8 @@ jobs:
         run: |
           make minikube-linux-amd64
           make e2e-linux-amd64
+          make windows
+          make e2e-windows-amd64.exe
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
