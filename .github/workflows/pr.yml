@@ -43,14 +43,13 @@ jobs:
     runs-on: [self-hosted, windows-10-ent, 8CPUs]
     steps:
       - name: Clean up
-        continue-on-error: true
-        shell: powershell
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
         run: |
-          echo $computername
-          ls
-          $ErrorActionPreference = "SilentlyContinue"
-          Remove-Item -Force minikube_binaries 
-          ls
+          ls -lah
+          rm -rf minikube_binaries || true
+          ls -lah 
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -59,9 +58,6 @@ jobs:
         shell: powershell
         run: |
           echo $env:computername
-          docker info
-          docker ps
-          docker volume ls
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -86,9 +82,10 @@ jobs:
           echo "----"
           echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
       - name: Generate HTML Report
-        shell: bash {0}
+        shell: bash
         run: |
           cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
           STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}

@@ -151,7 +151,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
+	t.Logf("Inside validateDockerEnv")
 	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
 	// we should be able to get minikube status with a bash which evaled docker-env
@@ -161,7 +161,9 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		c = exec.CommandContext(mctx, "&", Target(), "-p ", profile, "docker-env", "|", "Invoke-Expression;", Target(), "status", "-p", "profile")
 	}
 
+	t.Logf("About to run the command: %q", rr.Command())
 	rr, err := Run(t, c)
+	t.Logf("Ran the command: %v", err)
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("Exceeded the 30 seconds deadline to run: %q", rr.Command())
 	}
