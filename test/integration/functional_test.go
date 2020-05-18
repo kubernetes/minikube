@@ -42,11 +42,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"
 
-	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
-	"github.com/phayes/freeport"
-	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
 )
 
@@ -158,7 +155,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
 	// we should be able to get minikube status with a bash which evaled docker-env
-	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 	if runtime.GOOS == "windows" { // testing against powershell
 		//	& .\minikube-windows-amd64 -p minikube docker-env | Invoke-Expression ; docker images
 		c = exec.CommandContext(mctx, "&", Target(), "-p ", profile, "docker-env", "|", "Invoke-Expression;", Target(), "status", "-p", "profile")
@@ -1005,19 +1002,19 @@ func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string)
 }
 
 // startHTTPProxy runs a local http proxy and sets the env vars for it.
-func startHTTPProxy(t *testing.T) (*http.Server, error) {
-	port, err := freeport.GetFreePort()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get an open port")
-	}
+// func startHTTPProxy(t *testing.T) (*http.Server, error) {
+// 	port, err := freeport.GetFreePort()
+// 	if err != nil {
+// 		return nil, errors.Wrap(err, "Failed to get an open port")
+// 	}
 
-	addr := fmt.Sprintf("localhost:%d", port)
-	proxy := goproxy.NewProxyHttpServer()
-	srv := &http.Server{Addr: addr, Handler: proxy}
-	go func(s *http.Server, t *testing.T) {
-		if err := s.ListenAndServe(); err != http.ErrServerClosed {
-			t.Errorf("Failed to start http server for proxy mock")
-		}
-	}(srv, t)
-	return srv, nil
-}
+// 	addr := fmt.Sprintf("localhost:%d", port)
+// 	proxy := goproxy.NewProxyHttpServer()
+// 	srv := &http.Server{Addr: addr, Handler: proxy}
+// 	go func(s *http.Server, t *testing.T) {
+// 		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+// 			t.Errorf("Failed to start http server for proxy mock")
+// 		}
+// 	}(srv, t)
+// 	return srv, nil
+// }
