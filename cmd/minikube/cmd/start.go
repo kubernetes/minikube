@@ -877,8 +877,27 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
+	if existing != nil {
+		cp, err := config.PrimaryControlPlane(existing)
+		cp.KubernetesVersion = getKubernetesVersion(&cc)
+		if err != nil {
+			return cc, config.Node{}, err
+		}
+
+		// Make sure that existing nodes honor if KubernetesVersion gets specified on restart
+		// KubernetesVersion is the only attribute that the user can override in the Node object
+		nodes := []config.Node{}
+		for _, n := range existing.Nodes {
+			n.KubernetesVersion = getKubernetesVersion(&cc)
+			nodes = append(nodes, n)
+		}
+		cc.Nodes = nodes
+
+		return cc, cp, nil
+	}
+
 	cp := config.Node{
 		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: getKubernetesVersion(&cc),
