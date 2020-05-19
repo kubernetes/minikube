@@ -290,7 +290,7 @@ func TestStartHostConfig(t *testing.T) {
 
 	for i := range h.HostOptions.EngineOptions.Env {
 		if h.HostOptions.EngineOptions.Env[i] != cfg.DockerEnv[i] {
-			t.Fatalf("Docker env variables were not set! got %+v but want %+v",h.HostOptions.EngineOptions.Env,cfg.DockerEnv)
+			t.Fatalf("Docker env variables were not set! got %+v but want %+v", h.HostOptions.EngineOptions.Env, cfg.DockerEnv)
 		}
 	}
 
