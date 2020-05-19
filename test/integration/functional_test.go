@@ -38,7 +38,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"
@@ -294,37 +293,27 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	f := func() (bool, error) {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
-		if err != nil {
-			t.Logf("failed to get components. args %q: %v", rr.Command(), err)
-			return false, nil
-		}
-		cs := api.ComponentStatusList{}
-		d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
-		if err := d.Decode(&cs); err != nil {
-			t.Logf("failed to decode kubectl json output: args %q : %v", rr.Command(), err)
-			return false, nil
-		}
-
-		for _, i := range cs.Items {
-			status := api.ConditionFalse
-			for _, c := range i.Conditions {
-				if c.Type != api.ComponentHealthy {
-					continue
-				}
-				status = c.Status
-			}
-			if status != api.ConditionTrue {
-				t.Logf("unexpected status: %v - item: %+v", status, i)
-				return false, nil
-			}
-		}
-		return true, nil
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
+	if err != nil {
+		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
+	}
+	cs := api.ComponentStatusList{}
+	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
+	if err := d.Decode(&cs); err != nil {
+		t.Fatalf("failed to decode kubectl json output: args %q : %v", rr.Command(), err)
 	}
 
-	if err := wait.PollImmediate(10*time.Second, 40*time.Second, f); err != nil {
-		t.Fatalf("error: %v", err)
+	for _, i := range cs.Items {
+		status := api.ConditionFalse
+		for _, c := range i.Conditions {
+			if c.Type != api.ComponentHealthy {
+				continue
+			}
+			status = c.Status
+		}
+		if status != api.ConditionTrue {
+			t.Errorf("unexpected status: %v - item: %+v", status, i)
+		}
 	}
 }
 
