@@ -153,11 +153,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 
-		// TODO: existing cluster should wait for health #7597
-		if !starter.PreExists {
-			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
-				return nil, errors.Wrap(err, "Wait failed")
-			}
+		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
+			return nil, errors.Wrap(err, "Wait failed")
 		}
 	} else {
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
