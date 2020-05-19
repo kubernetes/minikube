@@ -17,12 +17,15 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	libprovision "github.com/docker/machine/libmachine/provision"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/provision"
 )
@@ -107,4 +110,19 @@ func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
 	default:
 		return provision.NewBuildrootProvisioner(h.Driver), nil
 	}
+}
+
+func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *config.Node) error {
+	if err := api.Save(h); err != nil {
+		return errors.Wrap(err, "save")
+	}
+
+	// Save IP to config file for subsequent use
+	ip, err := h.Driver.GetIP()
+	if err != nil {
+		return err
+	}
+	n.IP = ip
+	fmt.Printf("SAVING NEW IP HERE: %s\n", ip)
+	return config.SaveNode(cfg, n)
 }

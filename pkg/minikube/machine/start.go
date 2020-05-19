@@ -148,18 +148,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if err := api.Save(h); err != nil {
-		return nil, errors.Wrap(err, "save")
-	}
-
-	// Save IP to config file for subsequent use
-	ip, err := h.Driver.GetIP()
-	if err != nil {
-		return h, err
-	}
-	n.IP = ip
-	err = config.SaveNode(cfg, n)
-	if err != nil {
+	if err := saveHost(api, h, cfg, n); err != nil {
 		return h, err
 	}
 
