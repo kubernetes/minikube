@@ -17,7 +17,6 @@ limitations under the License.
 package machine
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -112,6 +111,7 @@ func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
 	}
 }
 
+// saveHost is a wrapper around libmachine's Save function to proactively update the node's IP whenever a host is saved
 func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *config.Node) error {
 	if err := api.Save(h); err != nil {
 		return errors.Wrap(err, "save")
@@ -123,6 +123,5 @@ func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *co
 		return err
 	}
 	n.IP = ip
-	fmt.Printf("SAVING NEW IP HERE: %s\n", ip)
 	return config.SaveNode(cfg, n)
 }
