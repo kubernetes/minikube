@@ -144,8 +144,8 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 	if err := h.Driver.Start(); err != nil {
 		return h, errors.Wrap(err, "driver start")
 	}
-	if err := api.Save(h); err != nil {
-		return h, errors.Wrap(err, "save")
+	if err := saveHost(api, h, cc, n); err != nil {
+		return h, err
 	}
 
 	return h, nil
