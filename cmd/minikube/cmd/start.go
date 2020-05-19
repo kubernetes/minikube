@@ -56,7 +56,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/util"
@@ -907,24 +906,6 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 	}
 	cc.Nodes = []config.Node{cp}
 	return cc, cp, nil
-}
-
-// setDockerProxy sets the proxy environment variables in the docker environment.
-func setDockerProxy() {
-	for _, k := range proxy.EnvVars {
-		if v := os.Getenv(k); v != "" {
-			// convert https_proxy to HTTPS_PROXY for linux
-			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
-			k = strings.ToUpper(k)
-			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-				if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
-					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
-					continue
-				}
-			}
-			config.DockerEnv = append(config.DockerEnv, fmt.Sprintf("%s=%s", k, v))
-		}
-	}
 }
 
 // autoSetDriverOptions sets the options needed for specific driver automatically.
