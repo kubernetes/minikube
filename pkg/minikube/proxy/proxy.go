@@ -26,6 +26,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // EnvVars are variables we plumb through to the underlying container runtime
@@ -148,4 +150,23 @@ func UpdateTransport(cfg *rest.Config) *rest.Config {
 		return rt
 	}
 	return cfg
+}
+
+// SetDockerEnv sets the proxy environment variables in the docker environment.
+func SetDockerEnv() []string {
+	for _, k := range EnvVars {
+		if v := os.Getenv(k); v != "" {
+			// convert https_proxy to HTTPS_PROXY for linux
+			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
+			k = strings.ToUpper(k)
+			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
+				if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
+					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
+					continue
+				}
+			}
+			config.DockerEnv = append(config.DockerEnv, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+	return config.DockerEnv
 }

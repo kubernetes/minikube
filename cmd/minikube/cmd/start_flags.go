@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -341,7 +342,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	// Feed Docker our host proxy environment by default, so that it can pull images
 	// doing this for both new config and existing, in case proxy changed since previous start
 	if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
-		setDockerProxy()
+		proxy.SetDockerEnv()
 	}
 
 	var kubeNodeName string

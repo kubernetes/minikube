@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/lock"
@@ -89,9 +90,28 @@ func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*ho
 	return h, exists, err
 }
 
+// engineOptions returns docker engine options for the dockerd running inside minikube
 func engineOptions(cfg config.ClusterConfig) *engine.Options {
+	// get docker env from user's proxy settings
+	dockerEnv := proxy.SetDockerEnv()
+	// get docker env from user specifiec config
+	dockerEnv = append(dockerEnv, cfg.DockerEnv...)
+
+	// remove duplicates
+	seen := map[string]bool{}
+	uniqueEnvs := []string{}
+	for e := range dockerEnv {
+		if !seen[dockerEnv[e]] {
+			seen[dockerEnv[e]] = true
+			uniqueEnvs = append(uniqueEnvs, dockerEnv[e])
+		}
+	}
+
+	// config.DockerEnv is a global so we update that one too
+	config.DockerEnv = uniqueEnvs
+
 	o := engine.Options{
-		Env:              cfg.DockerEnv,
+		Env:              uniqueEnvs,
 		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, cfg.InsecureRegistry...),
 		RegistryMirror:   cfg.RegistryMirror,
 		ArbitraryFlags:   cfg.DockerOpt,
