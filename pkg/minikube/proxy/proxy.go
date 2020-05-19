@@ -168,5 +168,17 @@ func SetDockerEnv() []string {
 			config.DockerEnv = append(config.DockerEnv, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
+
+	// remove duplicates
+	seen := map[string]bool{}
+	uniqueEnvs := []string{}
+	for e := range config.DockerEnv {
+		if !seen[config.DockerEnv[e]] {
+			seen[config.DockerEnv[e]] = true
+			uniqueEnvs = append(uniqueEnvs, config.DockerEnv[e])
+		}
+	}
+	config.DockerEnv = uniqueEnvs
+
 	return config.DockerEnv
 }

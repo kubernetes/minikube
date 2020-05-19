@@ -341,7 +341,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 	// Feed Docker our host proxy environment by default, so that it can pull images
 	// doing this for both new config and existing, in case proxy changed since previous start
-	if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
+	if _, ok := r.(*cruntime.Docker); ok {
 		proxy.SetDockerEnv()
 	}
 
