@@ -107,9 +107,6 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 		}
 	}
 
-	// config.DockerEnv is a global so we update that one too
-	config.DockerEnv = uniqueEnvs
-
 	o := engine.Options{
 		Env:              uniqueEnvs,
 		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, cfg.InsecureRegistry...),
