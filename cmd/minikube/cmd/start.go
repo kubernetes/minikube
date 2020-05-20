@@ -123,7 +123,7 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
-	displayHappyBirthday("Thomas")
+	displayHappyBirthday("Thomas", "May", 20)
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
@@ -1022,12 +1022,12 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	return nv
 }
 
-func displayHappyBirthday(name string) {
+func displayHappyBirthday(name string, birthMonth string, birthday int) {
 	_, month, day := time.Now().Date()
-	if month.String() == "May" && day == 20 {
+	if month.String() == birthMonth && day == birthday {
 		out.T(exit.Config, fmt.Sprintf(`
 Dear %s
-minikube noticed it, is your birthday, please take a day off the comptuer. unplug and enjoy !
+minikube noticed, it is your birthday, please take a day off the comptuer. unplug and enjoy !
 
 		_________
 		/ ======= \
@@ -1041,7 +1041,7 @@ minikube noticed it, is your birthday, please take a day off the comptuer. unplu
 	 / ::::::::::::: \                  =D-'
 	(_________________)
 	
-if you don't take advice from an acsii computer, please listen to Omar Khayam:
+If you don't take advice from an acsii computer, please listen to Omar Khayam:
 	Khayam if you are drinking wine, enjoy it!
 	if you are sitting with a beautiful moonlike face, enjoy it!
 	if in the end everhthing goes to nothing,
