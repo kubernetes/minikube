@@ -140,8 +140,8 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 
 func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile string) {
 	// TODO (#7496): remove skip once restarts work
-	t.Skip("Restarting nodes is broken :(")
-
+    t.Skip("Restarting nodes is broken :(")
+	
 	// Grab the stopped node
 	name := "m03"
 
@@ -187,6 +187,13 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
+	}
+
+	if DockerDriver() {
+		rr, err := Run(t, exec.Command("docker", "volume", "ls"))
+		if strings.Contains(rr.Stdout.String(), fmt.Sprintf("%s-%s", profile, name) {
+			t.Errorf("docker volume was not properly deleted: %s", rr.Stdout.String())
+		}
 	}
 
 }
