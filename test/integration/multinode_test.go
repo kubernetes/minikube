@@ -20,6 +20,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -140,8 +141,8 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 
 func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile string) {
 	// TODO (#7496): remove skip once restarts work
-    t.Skip("Restarting nodes is broken :(")
-	
+	t.Skip("Restarting nodes is broken :(")
+
 	// Grab the stopped node
 	name := "m03"
 
@@ -191,7 +192,10 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 
 	if DockerDriver() {
 		rr, err := Run(t, exec.Command("docker", "volume", "ls"))
-		if strings.Contains(rr.Stdout.String(), fmt.Sprintf("%s-%s", profile, name) {
+		if err != nil {
+			t.Errorf("failed to run %q : %v", rr.Command(), err)
+		}
+		if strings.Contains(rr.Stdout.String(), fmt.Sprintf("%s-%s", profile, name)) {
 			t.Errorf("docker volume was not properly deleted: %s", rr.Stdout.String())
 		}
 	}
