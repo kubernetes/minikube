@@ -140,6 +140,16 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 }
 
 func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile string) {
+	if DockerDriver() {
+		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}")
+		if err != nil {
+			t.Fatalf("docker is broken: %v", err)
+		}
+		if strings.Contains(rr.Stdout.String(), "azure") {
+			t.Skip("kic containers are not supported on docker's azure")
+		}
+	}
+	
 	// Grab the stopped node
 	name := "m03"
 
