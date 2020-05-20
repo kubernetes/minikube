@@ -20,6 +20,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -187,6 +188,16 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
+	}
+
+	if DockerDriver() {
+		rr, err := Run(t, exec.Command("docker", "volume", "ls"))
+		if err != nil {
+			t.Errorf("failed to run %q : %v", rr.Command(), err)
+		}
+		if strings.Contains(rr.Stdout.String(), fmt.Sprintf("%s-%s", profile, name)) {
+			t.Errorf("docker volume was not properly deleted: %s", rr.Stdout.String())
+		}
 	}
 
 }
