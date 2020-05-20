@@ -627,17 +627,8 @@ func (k *Bootstrapper) restartWorker(cc config.ClusterConfig, n config.Node) err
 		return errors.Wrap(err, "clearing stale configs")
 	}
 
-	cp, err := config.PrimaryControlPlane(&cc)
-	if err != nil {
-		return errors.Wrap(err, "getting primary control plane")
-	}
-	host, _, port, err := driver.ControlPlaneEndpoint(&cc, &cp, cc.Driver)
-	if err != nil {
-		return errors.Wrap(err, "getting control plane endpoint")
-	}
-
-	cmd := fmt.Sprintf("%s join phase kubelet-start %s --token %s --discovery-token-unsafe-skip-ca-verification", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), net.JoinHostPort(host, strconv.Itoa(port)), n.Token)
-	_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
+	cmd := fmt.Sprintf("%s join phase kubelet-start %s --token %s --discovery-token-unsafe-skip-ca-verification", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), net.JoinHostPort(constants.ControlPlaneAlias, strconv.Itoa(constants.APIServerPort)), n.Token)
+	_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
 	if err != nil {
 		if !strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
 			return errors.Wrap(err, "running join phase kubelet-start")
