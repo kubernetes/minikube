@@ -322,7 +322,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists, err = startHost(m, *cfg, *node)
+	host, preExists, err = startHost(m, cfg, node)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
 	}
@@ -342,18 +342,11 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 		out.FailureT("Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
 
-	// Save IP to config file for subsequent use
-	node.IP = ip
-	err = config.SaveNode(cfg, node)
-	if err != nil {
-		return runner, preExists, m, host, errors.Wrap(err, "saving node")
-	}
-
 	return runner, preExists, m, host, err
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
+func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
 		return host, exists, nil
@@ -361,7 +354,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 
 	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
 	if !exists {
-		err := machine.DeleteHost(api, driver.MachineName(cc, n))
+		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
 		if err != nil {
 			glog.Warningf("delete host: %v", err)
 		}
