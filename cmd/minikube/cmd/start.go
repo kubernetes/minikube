@@ -27,6 +27,7 @@ import (
 	"os/user"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/ssh"
@@ -122,6 +123,7 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
+	displayHappyBirthday("Thomas")
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
@@ -1018,4 +1020,35 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
+}
+
+func displayHappyBirthday(name string) {
+	_, month, day := time.Now().Date()
+	if month.String() == "May" && day == 20 {
+		out.T(exit.Config, fmt.Sprintf(`
+Dear %s
+minikube noticed it, is your birthday, please take a day off the comptuer. unplug and enjoy !
+
+		_________
+		/ ======= \
+	   / __________\
+	  | ___________ |
+	  | | -       | |
+	  | |         | |
+	  | |_________| |________________________
+	  \=____________/   %s      )
+	  / """"""""""" \                       /
+	 / ::::::::::::: \                  =D-'
+	(_________________)
+	
+if you don't take advice from an acsii computer, please listen to Omar Khayam:
+	Khayam if you are drinking wine, enjoy it!
+	if you are sitting with a beautiful moonlike face, enjoy it!
+	if in the end everhthing goes to nothing,
+	image you are nothing !
+	now that you are not nothing, enjoy it!
+	`, name, name))
+
+	}
+
 }
