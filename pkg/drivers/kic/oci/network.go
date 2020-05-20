@@ -105,7 +105,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 		}
 	} else {
 		rr, err = runCmd(exec.Command(ociBin, "inspect", ociID))
-		fmt.Println(rr.Stdout.String())
+		fmt.Println(rr.Stderr.String())
 		if err != nil {
 			fmt.Println(err.Error())
 		}
