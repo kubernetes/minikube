@@ -18,7 +18,6 @@ package image
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -129,13 +128,11 @@ func WriteImageToDaemon(img string) error {
 	//
 	// https://github.com/google/go-containerregistry/pull/702
 
-	fmt.Println("---------------pulling image----------------")
 	glog.V(3).Infof("Pulling image %v", ref)
 
 	// Pull digest
 	cmd := exec.Command("docker", "pull", "--quiet", img)
 	if _, err := cmd.Output(); err != nil {
-		fmt.Printf("---------------ERROR pulling image----------------: %v", err)
 		return errors.Wrap(err, "pulling remote image")
 	}
 
