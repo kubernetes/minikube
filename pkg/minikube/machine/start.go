@@ -62,8 +62,8 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
-	machineName := driver.MachineName(cfg, n)
+func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
+	machineName := driver.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(machineName)
@@ -117,7 +117,7 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	return &o
 }
 
-func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
+func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, error) {
 	glog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
@@ -130,12 +130,12 @@ func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*h
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	showHostInfo(cfg)
+	showHostInfo(*cfg)
 	def := registry.Driver(cfg.Driver)
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.Driver)
 	}
-	dd, err := def.Config(cfg, n)
+	dd, err := def.Config(*cfg, *n)
 	if err != nil {
 		return nil, errors.Wrap(err, "config")
 	}
@@ -151,7 +151,7 @@ func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*h
 
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
-	h.HostOptions.EngineOptions = engineOptions(cfg)
+	h.HostOptions.EngineOptions = engineOptions(*cfg)
 
 	cstart := time.Now()
 	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
@@ -161,13 +161,14 @@ func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*h
 	}
 	glog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
 
-	if err := postStartSetup(h, cfg); err != nil {
+	if err := postStartSetup(h, *cfg); err != nil {
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if err := api.Save(h); err != nil {
-		return nil, errors.Wrap(err, "save")
+	if err := saveHost(api, h, cfg, n); err != nil {
+		return h, err
 	}
+
 	return h, nil
 }
 
