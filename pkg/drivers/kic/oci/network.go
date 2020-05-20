@@ -104,6 +104,8 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
 	} else {
+		rr, err = runCmd(exec.Command(ociBin, "inspect", ociID))
+		fmt.Println(rr.Stdout.String())
 		rr, err = runCmd(exec.Command(ociBin, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID))
 		if err != nil {
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
