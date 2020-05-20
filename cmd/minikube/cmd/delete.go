@@ -271,7 +271,10 @@ func deleteProfile(profile *config.Profile) error {
 		// if driver is oci driver, delete containers and volumes
 		if driver.IsKIC(profile.Config.Driver) {
 			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
-			deletePossibleKicLeftOver(profile.Name, profile.Config.Driver)
+			for _, n := range profile.Config.Nodes {
+				machineName := driver.MachineName(*profile.Config, n)
+				deletePossibleKicLeftOver(machineName, profile.Config.Driver)
+			}
 		}
 	} else {
 		glog.Infof("%s has no configuration, will try to make it work anyways", profile.Name)

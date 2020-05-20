@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/lock"
@@ -61,8 +62,8 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
-	machineName := driver.MachineName(cfg, n)
+func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
+	machineName := driver.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(machineName)
@@ -89,9 +90,25 @@ func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*ho
 	return h, exists, err
 }
 
+// engineOptions returns docker engine options for the dockerd running inside minikube
 func engineOptions(cfg config.ClusterConfig) *engine.Options {
+	// get docker env from user's proxy settings
+	dockerEnv := proxy.SetDockerEnv()
+	// get docker env from user specifiec config
+	dockerEnv = append(dockerEnv, cfg.DockerEnv...)
+
+	// remove duplicates
+	seen := map[string]bool{}
+	uniqueEnvs := []string{}
+	for e := range dockerEnv {
+		if !seen[dockerEnv[e]] {
+			seen[dockerEnv[e]] = true
+			uniqueEnvs = append(uniqueEnvs, dockerEnv[e])
+		}
+	}
+
 	o := engine.Options{
-		Env:              cfg.DockerEnv,
+		Env:              uniqueEnvs,
 		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, cfg.InsecureRegistry...),
 		RegistryMirror:   cfg.RegistryMirror,
 		ArbitraryFlags:   cfg.DockerOpt,
@@ -100,7 +117,7 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	return &o
 }
 
-func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
+func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, error) {
 	glog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
@@ -113,12 +130,12 @@ func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*h
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	showHostInfo(cfg)
+	showHostInfo(*cfg)
 	def := registry.Driver(cfg.Driver)
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.Driver)
 	}
-	dd, err := def.Config(cfg, n)
+	dd, err := def.Config(*cfg, *n)
 	if err != nil {
 		return nil, errors.Wrap(err, "config")
 	}
@@ -134,7 +151,7 @@ func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*h
 
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
-	h.HostOptions.EngineOptions = engineOptions(cfg)
+	h.HostOptions.EngineOptions = engineOptions(*cfg)
 
 	cstart := time.Now()
 	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
@@ -144,13 +161,14 @@ func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*h
 	}
 	glog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
 
-	if err := postStartSetup(h, cfg); err != nil {
+	if err := postStartSetup(h, *cfg); err != nil {
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if err := api.Save(h); err != nil {
-		return nil, errors.Wrap(err, "save")
+	if err := saveHost(api, h, cfg, n); err != nil {
+		return h, err
 	}
+
 	return h, nil
 }
 
