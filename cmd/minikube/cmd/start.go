@@ -312,7 +312,7 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 					KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 				}
 				out.Ln("") // extra newline for clarity on the command line
-				_, err := node.Add(starter.Cfg, n)
+				err := node.Add(starter.Cfg, n)
 				if err != nil {
 					return nil, errors.Wrap(err, "adding node")
 				}
