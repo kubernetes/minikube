@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
@@ -38,8 +39,14 @@ var nodeDeleteCmd = &cobra.Command{
 		co := mustload.Healthy(ClusterFlagValue())
 		out.T(out.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
 
-		if err := node.Delete(*co.Config, name); err != nil {
+		n, err := node.Delete(*co.Config, name)
+		if err != nil {
 			exit.WithError("deleting node", err)
+		}
+
+		if driver.IsKIC(co.Config.Driver) {
+			machineName := driver.MachineName(*co.Config, *n)
+			deletePossibleKicLeftOver(machineName, co.Config.Driver)
 		}
 
 		out.T(out.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})
