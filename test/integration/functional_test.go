@@ -44,7 +44,6 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/otiai10/copy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
@@ -883,17 +882,27 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("failed to get current directory: %v", err)
 	}
-	err = copy.Copy(filepath.Join(cwd, "testdata", "sync.test"), p)
+	syncFilePath := filepath.Join(cwd, "testdata", "sync.test")
+	syncFile, err := ioutil.ReadFile(syncFilePath)
 	if err != nil {
-		t.Fatalf("failed to copy ./testdata/sync.test: %v", err)
+		t.Fatalf("failed to read %s: %v", syncFilePath, err)
+	}
+	err = ioutil.WriteFile(p, syncFile, 0644)
+	if err != nil {
+		t.Fatalf("failed to write to %s: %v", p, err)
 	}
 
-	testPem := "./testdata/minikube_test.pem"
+	testPem := filepath.Join(cwd, "testdata", "minikube_test.pem")
 
 	// Write to a temp file for an atomic write
 	tmpPem := localTestCertPath() + ".pem"
-	if err := copy.Copy(testPem, tmpPem); err != nil {
-		t.Fatalf("failed to copy %s: %v", testPem, err)
+	pem, err := ioutil.ReadFile(testPem)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", testPem, err)
+	}
+	err = ioutil.WriteFile(tmpPem, pem, 0644)
+	if err != nil {
+		t.Fatalf("failed to write to %s: %v", tmpPem, err)
 	}
 
 	if err := os.Rename(tmpPem, localTestCertPath()); err != nil {
