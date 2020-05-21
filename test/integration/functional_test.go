@@ -879,7 +879,11 @@ func localEmptyCertPath() string {
 func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
-	err := copy.Copy("./testdata/sync.test", p)
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current directory: %v", err)
+	}
+	err = copy.Copy(filepath.Join(cwd, "testdata", "sync.test"), p)
 	if err != nil {
 		t.Fatalf("failed to copy ./testdata/sync.test: %v", err)
 	}
