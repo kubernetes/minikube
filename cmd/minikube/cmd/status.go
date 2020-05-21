@@ -107,7 +107,7 @@ var statusCmd = &cobra.Command{
 
 		var statuses []*Status
 
-		if nodeName != "" || statusFormat != defaultStatusFormat {
+		if nodeName != "" || statusFormat != defaultStatusFormat && len(cc.Nodes) > 1 {
 			n, _, err := node.Retrieve(*cc, nodeName)
 			if err != nil {
 				exit.WithError("retrieving node", err)
