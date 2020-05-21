@@ -103,6 +103,14 @@ func WriteImageToDaemon(img string) error {
 	glog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref)
 	if err != nil {
+		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
+			ErrGithubNeedsLogin = errors.New(err.Error())
+			return ErrGithubNeedsLogin
+		} else if strings.Contains(err.Error(), "UNAUTHORIZED") {
+			ErrNeedsLogin = errors.New(err.Error())
+			return ErrNeedsLogin
+		}
+
 		return errors.Wrap(err, "getting remote image")
 	}
 	tag, err := name.NewTag(strings.Split(img, "@")[0])
