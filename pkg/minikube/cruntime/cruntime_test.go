@@ -267,6 +267,16 @@ func (f *FakeRunner) dockerRm(args []string) (string, error) {
 	return "", nil
 }
 
+func (f *FakeRunner) dockerInspect(args []string) (string, error) {
+	if args[1] == "--format" && args[2] == "{{.Id}}" {
+		if args[3] == "missing" {
+			return "", &exec.ExitError{Stderr: []byte("Error: No such object: missing")}
+		}
+		return "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
+	}
+	return "", nil
+}
+
 // docker is a fake implementation of docker
 func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	switch cmd := args[0]; cmd {
@@ -285,14 +295,13 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 			return "18.06.2-ce", nil
 		}
 
-	case "inspect":
-
-		if args[1] == "--format" && args[2] == "{{.Id}}" {
-			if args[3] == "missing" {
-				return "", &exec.ExitError{Stderr: []byte("Error: No such object: missing")}
-			}
-			return "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
+	case "image":
+		if args[1] == "inspect" {
+			return f.dockerInspect(args[1:])
 		}
+
+	case "inspect":
+		return f.dockerInspect(args)
 
 	case "info":
 
@@ -309,9 +318,9 @@ func (f *FakeRunner) podman(args []string, _ bool) (string, error) {
 	case "--version":
 		return "podman version 1.6.4", nil
 
-	case "inspect":
+	case "image":
 
-		if args[1] == "--format" && args[2] == "{{.Id}}" {
+		if args[1] == "inspect" && args[2] == "--format" && args[3] == "{{.Id}}" {
 			if args[3] == "missing" {
 				return "", &exec.ExitError{Stderr: []byte("Error: error getting image \"missing\": unable to find a name and tag match for missing in repotags: no such image")}
 			}
