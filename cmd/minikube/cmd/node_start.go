@@ -40,7 +40,7 @@ var nodeStartCmd = &cobra.Command{
 		api, cc := mustload.Partial(ClusterFlagValue())
 		name := args[0]
 
-		n, _, err := node.Retrieve(cc, name)
+		n, _, err := node.Retrieve(*cc, name)
 		if err != nil {
 			exit.WithError("retrieving node", err)
 		}
