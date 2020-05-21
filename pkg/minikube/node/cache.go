@@ -130,12 +130,14 @@ func waitDownloadKicArtifacts(g *errgroup.Group) {
 		if err != nil {
 			if errors.Is(err, image.ErrGithubNeedsLogin) {
 				glog.Warningf("Error downloading kic artifacts: %v", err)
-				out.T(out.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": strings.Split(kic.BaseImage, "@")[0]})
-				out.WarningT("In order to use the fall back image, you need to log into to the github packages registry")
-				out.T(out.Documentation, "https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages")
+				out.ErrT(out.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": strings.Split(kic.BaseImage, "@")[0]})
+				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
+				out.T(out.Documentation, `Please visit the following link for documentation around this: 
+	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages
+`)
 			}
 			if errors.Is(err, image.ErrGithubNeedsLogin) || errors.Is(err, image.ErrNeedsLogin) {
-				exit.UsageT(`Please either authenticate the registry or use --base-image option to use a different registry.`)
+				exit.UsageT(`Please either authenticate to the registry or use --base-image flag to use a different registry.`)
 			} else {
 				glog.Errorln("Error downloading kic artifacts: ", err)
 			}
