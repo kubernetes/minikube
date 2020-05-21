@@ -24,8 +24,10 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -120,6 +122,12 @@ func isDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
+func restartOrExitDaemon(bin string, name string, runner command.Runner) {
+	if err := sysinit.New(runner).Restart(bin); err != nil {
+		exit.WithCodeT(exit.Unavailable, `The {{.service_name}} service within '{{.name}}' is not active`, out.V{"name": name, "service_name": bin})
+	}
+}
+
 // dockerEnvCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
@@ -137,16 +145,6 @@ var dockerEnvCmd = &cobra.Command{
 		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
 			exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
-		}
-
-		// on minikube stop, or computer restart the IP might change.
-		// reloads the certs to prevent #8185
-		if err := sysinit.New(co.CP.Runner).Restart("docker"); err != nil {
-			glog.Warningf("failed to start the dockerd withhin %q minikube node: %v", cname, err)
-		}
-
-		if ok := isDockerActive(co.CP.Runner); !ok {
-			exit.WithCodeT(exit.Unavailable, `The docker service within '{{.name}}' is not active`, out.V{"name": cname})
 		}
 
 		sh := shell.EnvConfig{
@@ -177,6 +175,26 @@ var dockerEnvCmd = &cobra.Command{
 			if err != nil {
 				exit.WithError("Error detecting shell", err)
 			}
+		}
+
+		if ok := isDockerActive(co.CP.Runner); !ok {
+			glog.Warningf("dockerd is not avtive will try to restart it...")
+			restartOrExitDaemon("docker", cname, co.CP.Runner)
+		}
+
+		out, err := tryConnectivity("docker", ec)
+		if err != nil { // docker might be up but been loaded with wrong certs/config
+			if strings.Contains(err.Error(), "x509: certificate is valid") {
+				glog.Infof("dockerd inside minkube is loaded with old certs with wrong IP. output: %s error: %v", string(out), err)
+			} else {
+				glog.Warningf("couldn't connect to docker inside minikube. output: %s error: %v", string(out), err)
+			}
+			// on minikube stop, or computer restart the IP might change.
+			// reloads the certs to prevent #8185
+			glog.Infof("will try to restart dockerd service...")
+			restartOrExitDaemon("docker", cname, co.CP.Runner)
+			// TODO: use kverify to wait for apisefver instead #8241
+			time.Sleep(time.Second * 3)
 		}
 
 		if dockerUnset {
@@ -243,6 +261,23 @@ func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	}
 
 	return env
+}
+
+// dockerEnvVarsList gets the necessary docker env variables to allow the use of minikube's docker daemon to be used in a exec.Command
+func dockerEnvVarsList(ec DockerEnvConfig) []string {
+	return []string{
+		fmt.Sprintf("%s=%s", constants.DockerTLSVerifyEnv, "1"),
+		fmt.Sprintf("%s=%s", constants.DockerHostEnv, dockerURL(ec.hostIP, ec.port)),
+		fmt.Sprintf("%s=%s", constants.DockerCertPathEnv, ec.certsDir),
+		fmt.Sprintf("%s=%s", constants.MinikubeActiveDockerdEnv, ec.profile),
+	}
+}
+
+// tryConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
+func tryConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
+	c := exec.Command(bin, "version", "--format={{.Server}}")
+	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
+	return c.CombinedOutput()
 }
 
 func init() {

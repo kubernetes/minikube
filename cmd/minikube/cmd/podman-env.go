@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
@@ -35,9 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
-	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
-	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 var podmanEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv, constants.MinikubeActivePodmanEnv)
@@ -118,14 +117,25 @@ var podmanEnvCmd = &cobra.Command{
 			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
 		}
 
-		// on minikube stop, or computer restart the IP might change.
-		// reloads the certs to prevent #8185
-		if err := sysinit.New(co.CP.Runner).Restart("podman"); err != nil {
-			glog.Warningf("error starting the podman withhin %q minikube node: %v", cname, err)
+		if ok := isPodmanAvailable(co.CP.Runner); !ok {
+			glog.Warningf("podman service inside minikube is not active will try to restart it...")
+			restartOrExitDaemon("podman", cname, co.CP.Runner)
 		}
 
-		if ok := isPodmanAvailable(co.CP.Runner); !ok {
-			exit.WithCodeT(exit.Unavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
+		out, err := tryConnectivity("docker", ec)
+		if err != nil { // docker might be up but been loaded with wrong certs/config
+			if strings.Contains(err.Error(), "x509: certificate is valid") {
+				glog.Infof("dockerd inside minkube is loaded with old certs with wrong IP. output: %s error: %v", string(out), err)
+			} else {
+				glog.Warningf("couldn't connect to docker inside minikube. output: %s error: %v", string(out), err)
+			}
+			// on minikube stop, or computer restart the IP might change.
+			// reloads the certs to prevent #8185
+			glog.Infof("will try to restart dockerd service...")
+			restartOrExitDaemon("docker", cname, co.CP.Runner)
+			// temp fix we add Wait for apiserver
+			// TODO: use kverify to wait for apisefver instead #8241
+			time.Sleep(time.Second * 3)
 		}
 
 		client, err := createExternalSSHClient(co.CP.Host.Driver)
