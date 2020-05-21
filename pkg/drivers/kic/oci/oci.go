@@ -277,7 +277,7 @@ func StartContainer(ociBin string, container string) error {
 
 // ContainerID returns id of a container name
 func ContainerID(ociBin string, nameOrID string) (string, error) {
-	rr, err := runCmd(exec.Command(ociBin, "inspect", "-f", "{{.Id}}", nameOrID))
+	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "-f", "{{.Id}}", nameOrID))
 	if err != nil { // don't return error if not found, only return empty string
 		if strings.Contains(rr.Stdout.String(), "Error: No such object:") || strings.Contains(rr.Stdout.String(), "unable to find") {
 			err = nil
@@ -307,7 +307,7 @@ func ContainerExists(ociBin string, name string, warnSlow ...bool) (bool, error)
 // IsCreatedByMinikube returns true if the container was created by minikube
 // with default assumption that it is not created by minikube when we don't know for sure
 func IsCreatedByMinikube(ociBin string, nameOrID string) bool {
-	rr, err := runCmd(exec.Command(ociBin, "inspect", nameOrID, "--format", "{{.Config.Labels}}"))
+	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", nameOrID, "--format", "{{.Config.Labels}}"))
 	if err != nil {
 		return false
 	}
@@ -326,7 +326,7 @@ func ListOwnedContainers(ociBin string) ([]string, error) {
 
 // inspect return low-level information on containers
 func inspect(ociBin string, containerNameOrID, format string) ([]string, error) {
-	cmd := exec.Command(ociBin, "inspect",
+	cmd := exec.Command(ociBin, "container", "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
 	var buff bytes.Buffer
@@ -506,7 +506,7 @@ func PointToHostPodman() error {
 
 // ContainerRunning returns running state of a container
 func ContainerRunning(ociBin string, name string, warnSlow ...bool) (bool, error) {
-	rr, err := runCmd(exec.Command(ociBin, "inspect", name, "--format={{.State.Running}}"), warnSlow...)
+	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", name, "--format={{.State.Running}}"), warnSlow...)
 	if err != nil {
 		return false, err
 	}
@@ -515,7 +515,7 @@ func ContainerRunning(ociBin string, name string, warnSlow ...bool) (bool, error
 
 // ContainerStatus returns status of a container running,exited,...
 func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State, error) {
-	cmd := exec.Command(ociBin, "inspect", name, "--format={{.State.Status}}")
+	cmd := exec.Command(ociBin, "container", "inspect", name, "--format={{.State.Status}}")
 	rr, err := runCmd(cmd, warnSlow...)
 	o := strings.TrimSpace(rr.Stdout.String())
 	switch o {
