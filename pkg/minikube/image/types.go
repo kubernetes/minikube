@@ -16,7 +16,7 @@ limitations under the License.
 
 package image
 
-// ErrNeedsLogin is thrown when regsitery needs login (a general)
+// ErrNeedsLogin is thrown when regsitry needs login (a general)
 var ErrNeedsLogin error
 
 // ErrGithubNeedsLogin is thrown when user needs to login to github to use the fall back image

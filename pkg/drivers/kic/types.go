@@ -34,7 +34,7 @@ const (
 
 var (
 	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
-	BaseImage = fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s@sha256:%s", Version, baseImageSHA)
+	BaseImage = fmt.Sprintf("gcr.io/k8s-minikube/kicbase1:%s@sha256:%s", Version, baseImageSHA)
 	// BaseImageFallBack the fall back of BaseImage in case gcr.io is not available. stored in github packages https://github.com/kubernetes/minikube/packages/206071
 	// github packages docker does _NOT_ support pulling by sha as mentioned in the docs:
 	// https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages
