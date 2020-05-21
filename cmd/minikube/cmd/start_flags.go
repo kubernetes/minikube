@@ -479,7 +479,14 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	if cmd.Flags().Changed(kubernetesVersion) {
-		cc.KubernetesConfig.KubernetesVersion = viper.GetString(kubernetesVersion)
+		switch viper.GetString(kubernetesVersion) {
+		case "latest":
+			existing.KubernetesConfig.KubernetesVersion = constants.NewestKubernetesVersion
+		case "stable":
+			existing.KubernetesConfig.KubernetesVersion = constants.DefaultKubernetesVersion
+		default:
+			existing.KubernetesConfig.KubernetesVersion = viper.GetString(kubernetesVersion)
+		}
 	}
 
 	if cmd.Flags().Changed(apiServerName) {
