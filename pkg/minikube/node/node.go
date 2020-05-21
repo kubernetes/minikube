@@ -19,6 +19,7 @@ package node
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -88,6 +89,7 @@ func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
 
 		// Accept full machine name as well as just node name
 		if driver.MachineName(cc, n) == name {
+			glog.Infof("Couldn't find node name %s, but found it as a machine name, returning it anyway.", name)
 			return &n, i, nil
 		}
 	}
