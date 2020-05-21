@@ -59,7 +59,7 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 
 // Delete stops and deletes the given node from the given cluster
 func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, index, err := Retrieve(&cc, name)
+	n, index, err := Retrieve(cc, name)
 	if err != nil {
 		return n, errors.Wrap(err, "retrieve")
 	}
@@ -79,9 +79,15 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 }
 
 // Retrieve finds the node by name in the given cluster
-func Retrieve(cc *config.ClusterConfig, name string) (*config.Node, int, error) {
+func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
+
 	for i, n := range cc.Nodes {
 		if n.Name == name {
+			return &n, i, nil
+		}
+
+		// Accept full machine name as well as just node name
+		if driver.MachineName(cc, n) == name {
 			return &n, i, nil
 		}
 	}
