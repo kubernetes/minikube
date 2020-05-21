@@ -28,6 +28,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -36,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 var podmanEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv, constants.MinikubeActivePodmanEnv)
@@ -114,6 +116,12 @@ var podmanEnvCmd = &cobra.Command{
 
 		if driverName == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
+		}
+
+		// on minikube stop, or computer restart the IP might change.
+		// reloads the certs to prevent #8185
+		if err := sysinit.New(co.CP.Runner).Restart("podman"); err != nil {
+			glog.Warningf("error starting the podman withhin %q minikube node: %v", cname, err)
 		}
 
 		if ok := isPodmanAvailable(co.CP.Runner); !ok {

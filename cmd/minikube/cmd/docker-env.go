@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -136,6 +137,12 @@ var dockerEnvCmd = &cobra.Command{
 		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
 			exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
+		}
+
+		// on minikube stop, or computer restart the IP might change.
+		// reloads the certs to prevent #8185
+		if err := sysinit.New(co.CP.Runner).Restart("docker"); err != nil {
+			glog.Warningf("failed to start the dockerd withhin %q minikube node: %v", cname, err)
 		}
 
 		if ok := isDockerActive(co.CP.Runner); !ok {
