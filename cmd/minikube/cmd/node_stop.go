@@ -38,7 +38,7 @@ var nodeStopCmd = &cobra.Command{
 		name := args[0]
 		api, cc := mustload.Partial(ClusterFlagValue())
 
-		n, _, err := node.Retrieve(cc, name)
+		n, _, err := node.Retrieve(*cc, name)
 		if err != nil {
 			exit.WithError("retrieving node", err)
 		}

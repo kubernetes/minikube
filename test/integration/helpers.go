@@ -191,13 +191,14 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 }
 
 // PostMortemLogs shows logs for debugging a failed cluster
-func PostMortemLogs(t *testing.T, profile string) {
+func PostMortemLogs(t *testing.T, profile string, node ...string) {
 	if !t.Failed() {
 		return
 	}
 
 	if !*postMortemLogs {
-		t.Logf("post-mortem logs disabled, oh-well!")
+		t.Logf("post-mortem logs disabled, oh well!")
+		return
 	}
 
 	t.Logf("-----------------------post-mortem--------------------------------")
@@ -355,7 +356,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 }
 
 // Status returns a minikube component status as a string
-func Status(ctx context.Context, t *testing.T, path string, profile string, key string) string {
+func Status(ctx context.Context, t *testing.T, path string, profile string, key string, node ...string) string {
 	t.Helper()
 	// Reminder of useful keys: "Host", "Kubelet", "APIServer"
 	rr, err := Run(t, exec.CommandContext(ctx, path, "status", fmt.Sprintf("--format={{.%s}}", key), "-p", profile))
