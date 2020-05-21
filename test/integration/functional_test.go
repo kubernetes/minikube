@@ -934,6 +934,9 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("Test reached context deadline.")
+	}
 	got := rr.Stdout.String()
 	t.Logf("file sync test content: %s", got)
 
@@ -972,6 +975,9 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", vp)))
 		if err != nil {
 			t.Errorf("failed to check existence of %q inside minikube. args %q: %v", vp, rr.Command(), err)
+		}
+		if ctx.Err() == context.DeadlineExceeded {
+			t.Errorf("Test reached context deadline.")
 		}
 
 		// Strip carriage returned by ssh
