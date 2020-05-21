@@ -50,6 +50,7 @@ func TestMultiNode(t *testing.T) {
 		for _, tc := range tests {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
+				defer PostMortemLogs(t, profile)
 				tc.validator(ctx, t, profile)
 			})
 		}
