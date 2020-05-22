@@ -211,7 +211,7 @@ func ClusterFlagValue() string {
 
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
 func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
-	cc := config.ClusterConfig{}
+	var cc config.ClusterConfig
 	if existing != nil { // create profile config first time
 		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
@@ -242,10 +242,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
 		}
 
-		if cmd.Flags().Changed(imageRepository) {
-			cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
-		}
-
 		// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
 		selectedEnableDefaultCNI := viper.GetBool(enableDefaultCNI)
 		selectedNetworkPlugin := viper.GetString(networkPlugin)
@@ -258,7 +254,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 		repository := viper.GetString(imageRepository)
 		mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
-		if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
+		if strings.ToLower(repository) == "auto" || (mirrorCountry != "" && repository == "") {
 			found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)))
 			if err != nil {
 				exit.WithError("Failed to check main repository and mirrors for images", err)
