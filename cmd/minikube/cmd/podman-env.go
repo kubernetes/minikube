@@ -122,22 +122,6 @@ var podmanEnvCmd = &cobra.Command{
 			restartOrExitDaemon("podman", cname, co.CP.Runner)
 		}
 
-		out, err := tryConnectivity("docker", ec)
-		if err != nil { // docker might be up but been loaded with wrong certs/config
-			if strings.Contains(err.Error(), "x509: certificate is valid") {
-				glog.Infof("dockerd inside minkube is loaded with old certs with wrong IP. output: %s error: %v", string(out), err)
-			} else {
-				glog.Warningf("couldn't connect to docker inside minikube. output: %s error: %v", string(out), err)
-			}
-			// on minikube stop, or computer restart the IP might change.
-			// reloads the certs to prevent #8185
-			glog.Infof("will try to restart dockerd service...")
-			restartOrExitDaemon("docker", cname, co.CP.Runner)
-			// temp fix we add Wait for apiserver
-			// TODO: use kverify to wait for apisefver instead #8241
-			time.Sleep(time.Second * 3)
-		}
-
 		client, err := createExternalSSHClient(co.CP.Host.Driver)
 		if err != nil {
 			exit.WithError("Error getting ssh client", err)
@@ -158,6 +142,22 @@ var podmanEnvCmd = &cobra.Command{
 			if err != nil {
 				exit.WithError("Error detecting shell", err)
 			}
+		}
+
+		out, err := tryPodmanConnectivity(ec)
+		if err != nil { // docker might be up but been loaded with wrong certs/config
+			if strings.Contains(err.Error(), "x509: certificate is valid") {
+				glog.Infof("dockerd inside minkube is loaded with old certs with wrong IP. output: %s error: %v", string(out), err)
+			} else {
+				glog.Warningf("couldn't connect to docker inside minikube. output: %s error: %v", string(out), err)
+			}
+			// on minikube stop, or computer restart the IP might change.
+			// reloads the certs to prevent #8185
+			glog.Infof("will try to restart dockerd service...")
+			restartOrExitDaemon("docker", cname, co.CP.Runner)
+			// temp fix we add Wait for apiserver
+			// TODO: use kverify to wait for apisefver instead #8241
+			time.Sleep(time.Second * 3)
 		}
 
 		if podmanUnset {
@@ -216,4 +216,19 @@ func podmanEnvVars(ec PodmanEnvConfig) map[string]string {
 func init() {
 	podmanEnvCmd.Flags().StringVar(&shell.ForceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
 	podmanEnvCmd.Flags().BoolVarP(&podmanUnset, "unset", "u", false, "Unset variables instead of setting them")
+}
+
+// dpodmanEnvVarsList gets the necessary env variables to allow the use of minikube's podman daemon to be used in a exec.Command
+func podmanEnvVarsList(ec PodmanEnvConfig) []string {
+	return []string{
+		fmt.Sprintf("%s=%s", constants.PodmanVarlinkBridgeEnv, podmanBridge(ec.client)),
+		fmt.Sprintf("%s=%s", constants.MinikubeActivePodmanEnv, ec.profile),
+	}
+}
+
+// tryPodmanConnectivity will try to connect to podman-env from user's POV to detect the problem if it needs reset or not
+func tryPodmanConnectivity(ec PodmanEnvConfig) ([]byte, error) {
+	c := exec.Command("podman", "version", "--format={{.Server}}")
+	c.Env = append(os.Environ(), podmanEnvVarsList(ec)...)
+	return c.CombinedOutput()
 }
