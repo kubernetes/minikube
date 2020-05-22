@@ -151,6 +151,11 @@ var dockerEnvCmd = &cobra.Command{
 			Shell: shell.ForceShell,
 		}
 
+		if ok := isDockerActive(co.CP.Runner); !ok {
+			glog.Warningf("dockerd is not avtive will try to restart it...")
+			restartOrExitDaemon("docker", cname, co.CP.Runner)
+		}
+
 		var err error
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
@@ -177,12 +182,7 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		if ok := isDockerActive(co.CP.Runner); !ok {
-			glog.Warningf("dockerd is not avtive will try to restart it...")
-			restartOrExitDaemon("docker", cname, co.CP.Runner)
-		}
-
-		out, err := tryConnectivity("docker", ec)
+		out, err := tryDockerConnectivity("docker", ec)
 		if err != nil { // docker might be up but been loaded with wrong certs/config
 			if strings.Contains(err.Error(), "x509: certificate is valid") {
 				glog.Infof("dockerd inside minkube is loaded with old certs with wrong IP. output: %s error: %v", string(out), err)
@@ -273,8 +273,8 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 	}
 }
 
-// tryConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
-func tryConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
+// tryDockerConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
+func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
 	return c.CombinedOutput()
