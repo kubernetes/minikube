@@ -1,8 +1,8 @@
 ARG COMMIT_SHA
-# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile
-# which is an ubuntu 19.10 with an entry-point that helps running systemd
+# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/fd49040097d0bf9d27f3d6a76aa4359227121950/images/base/Dockerfile
+# which is an ubuntu 20.04 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
-FROM kindest/base:v20200317-92225082 as base
+FROM kindest/base:v20200513-fd490400 as base
 USER root
 # specify version of everything explicitly using 'apt-cache policy'
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm /etc/crictl.yaml
 
 # install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
-RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \    
-    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
+RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && apt-get update && \
     apt-get install -y --no-install-recommends cri-o-1.17
 
