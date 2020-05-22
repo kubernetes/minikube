@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/node"
 )
 
 var statusFormat string
@@ -91,10 +92,10 @@ kubelet: {{.Kubelet}}
 // statusCmd represents the status command
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Gets the status of a local kubernetes cluster",
-	Long: `Gets the status of a local kubernetes cluster.
-	Exit status contains the status of minikube's VM, cluster and kubernetes encoded on it's bits in this order from right to left.
-	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for kubernetes NOK)`,
+	Short: "Gets the status of a local Kubernetes cluster",
+	Long: `Gets the status of a local Kubernetes cluster.
+	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
+	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if output != "text" && statusFormat != defaultStatusFormat {
@@ -105,19 +106,33 @@ var statusCmd = &cobra.Command{
 		api, cc := mustload.Partial(cname)
 
 		var statuses []*Status
-		for _, n := range cc.Nodes {
-			glog.Infof("checking status of %s ...", n.Name)
-			machineName := driver.MachineName(*cc, n)
-			st, err := status(api, *cc, n)
-			glog.Infof("%s status: %+v", machineName, st)
 
+		if nodeName != "" || statusFormat != defaultStatusFormat && len(cc.Nodes) > 1 {
+			n, _, err := node.Retrieve(*cc, nodeName)
+			if err != nil {
+				exit.WithError("retrieving node", err)
+			}
+
+			st, err := status(api, *cc, *n)
 			if err != nil {
 				glog.Errorf("status error: %v", err)
 			}
-			if st.Host == Nonexistent {
-				glog.Errorf("The %q host does not exist!", machineName)
-			}
 			statuses = append(statuses, st)
+		} else {
+			for _, n := range cc.Nodes {
+				glog.Infof("checking status of %s ...", n.Name)
+				machineName := driver.MachineName(*cc, n)
+				st, err := status(api, *cc, n)
+				glog.Infof("%s status: %+v", machineName, st)
+
+				if err != nil {
+					glog.Errorf("status error: %v", err)
+				}
+				if st.Host == Nonexistent {
+					glog.Errorf("The %q host does not exist!", machineName)
+				}
+				statuses = append(statuses, st)
+			}
 		}
 
 		switch strings.ToLower(output) {
@@ -191,7 +206,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 	}
 
 	// We have a fully operational host, now we can check for details
-	if _, err := cluster.GetHostDriverIP(api, name); err != nil {
+	if _, err := cluster.DriverIP(api, name); err != nil {
 		glog.Errorf("failed to get driver ip: %v", err)
 		st.Host = state.Error.String()
 		return st, err
@@ -222,7 +237,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 		return st, nil
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, host.DriverName)
+	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
 	if err != nil {
 		glog.Errorf("forwarded endpoint: %v", err)
 		st.Kubeconfig = Misconfigured
@@ -253,6 +268,7 @@ func init() {
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
 	statusCmd.Flags().StringVarP(&output, "output", "o", "text",
 		`minikube status --output OUTPUT. json, text`)
+	statusCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.")
 }
 
 func statusText(st *Status, w io.Writer) error {

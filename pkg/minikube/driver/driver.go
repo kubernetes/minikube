@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -103,7 +102,7 @@ func MachineType(name string) string {
 	return "bare metal machine"
 }
 
-// IsKIC checks if the driver is a kubernetes in container
+// IsKIC checks if the driver is a Kubernetes in container
 func IsKIC(name string) bool {
 	return name == Docker || name == Podman
 }
@@ -128,7 +127,7 @@ func BareMetal(name string) bool {
 
 // NeedsRoot returns true if driver needs to run with root privileges
 func NeedsRoot(name string) bool {
-	return name == None || name == Podman
+	return name == None
 }
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
@@ -139,7 +138,7 @@ func NeedsPortForward(name string) bool {
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
 func HasResourceLimits(name string) bool {
-	return !(name == None || name == Podman)
+	return name != None
 }
 
 // NeedsShutdown returns true if driver needs manual shutdown command before stopping.
@@ -165,9 +164,8 @@ func FlagDefaults(name string) FlagHints {
 	fh := FlagHints{}
 	if name != None {
 		fh.CacheImages = true
-		// only for kic, till other run-times are available we auto-set containerd.
 		if name == Docker {
-			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
+			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", config.DefaultPodCIDR))
 		}
 		return fh
 	}

@@ -68,7 +68,7 @@ func TestVersionUpgrade(t *testing.T) {
 	// Assert that --iso-url works without a sha checksum, and that we can upgrade from old ISO's
 	// Some day, this will break an implicit assumption that a tool is available in the ISO :)
 	oldISO := "https://storage.googleapis.com/minikube/iso/integration-test.iso"
-	args := append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--iso-url=%s", oldISO), fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--iso-url=%s", oldISO), fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr"}, StartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
@@ -95,7 +95,7 @@ func TestVersionUpgrade(t *testing.T) {
 		t.Errorf("FAILED: status = %q; want = %q", got, state.Stopped.String())
 	}
 
-	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube HEAD with newest k8s version. args: %s : %v", rr.Command(), err)
@@ -121,13 +121,13 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	t.Logf("Attempting to downgrade Kubernetes (should fail)")
-	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion)}, StartArgs()...)
 	if rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), args...)); err == nil {
-		t.Fatalf("downgrading kubernetes should not be allowed. expected to see error but got %v for %q", err, rr.Command())
+		t.Fatalf("downgrading Kubernetes should not be allowed. expected to see error but got %v for %q", err, rr.Command())
 	}
 
 	t.Logf("Attempting restart after unsuccessful downgrade")
-	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("start after failed upgrade: %v", err)

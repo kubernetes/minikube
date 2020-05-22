@@ -10,8 +10,9 @@ aliases:
  - /docs/tasks/docker_daemon
 ---
 
+
 ## Comparison table for different methods 
-The best method to push your image to minikube depends on the container-runtime you built your cluster with (default docker).
+The best method to push your image to minikube depends on the container-runtime you built your cluster with (the default is docker).
 Here is a comparison table to help you choose:
 
 
@@ -29,7 +30,7 @@ Here is a comparison table to help you choose:
 
 ---
 
-## 1.Pushing directly to the in-cluster Docker daemon (docker-env)
+## 1. Pushing directly to the in-cluster Docker daemon (docker-env)
 When using a container or VM driver (all drivers except none), you can reuse the Docker daemon inside minikube cluster.
 this means you don't have to build on your host machine and push the image into a docker registry. You can just build inside the same docker daemon as minikube which speeds up local experiments.
 
@@ -41,7 +42,7 @@ eval $(minikube docker-env)
 
 now any 'docker' command you run in this current terminal will run against the docker inside minikube cluster.
 
-so if you do the following commands, it will show you the containers inside the minikube inside minikube's VM or Container.
+so if you do the following commands, it will show you the containers inside the minikube, inside minikube's VM or Container.
 
 ```shell
 docker ps
@@ -57,13 +58,13 @@ To verify your terminal is using minikuber's docker-env you can check the value 
 
 {{% pageinfo color="info" %}}
 Tip 1: 
-Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`) in your yaml file.otherwise Kubernetes won't use your locally build image and it will pull from the network.
+Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`) in your yaml file. Otherwise Kubernetes won't use your locally build image and it will pull from the network.
 {{% /pageinfo %}}
 
 {{% pageinfo color="info" %}}
 Tip 2: 
 Evaluating the docker-env is only valid for the current terminal.
-and by closing the terminal, you will go back to using your own system's docker daemon.
+By closing the terminal, you will go back to using your own system's docker daemon.
 {{% /pageinfo %}}
 
 {{% pageinfo color="info" %}}
@@ -92,14 +93,14 @@ If your image changes after your cached it, you need to do 'cache reload'.
 {{% /pageinfo %}}
 
 
-minikube refreshes the cache images on each start. however to reload all the cached images on demand run this command :
+minikube refreshes the cache images on each start. however to reload all the cached images on demand, run this command :
 ```shell
 minikube cache reload
 ```
 
 {{% pageinfo color="info" %}}
 Tip 2 :
-if you have multiple cluster, cache command will load the image for all of them.
+if you have multiple clusters, the cache command will load the image for all of them.
 {{% /pageinfo %}}
 
 
@@ -123,20 +124,53 @@ For more information, see:
 
 ---
 
-## 3. Pushing directly to in-cluster CRIO. (podman-env)
+## 3. Pushing directly to in-cluster CRI-O. (podman-env)
 
-This is simmilar to docker-env but only for cri-o runtime.
-To push directly to CRIO, configure podman client on your mac/linux host using the podman-env command in your shell:
+This is similar to docker-env but only for CRI-O runtime.
+To push directly to CRI-O, configure podman client on your host using the podman-env command in your shell:
 
 ```shell
 eval $(minikube podman-env)
 ```
 
-You should now be able to use podman on the command line on your host mac/linux machine talking to the podman service inside the minikube VM:
+You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
+
+{{% tabs %}}
+{{% tab "Linux" %}}
 
 ```shell
 podman-remote help
 ```
+
+{{% pageinfo color="info" %}}
+Note: On Linux the remote client is called "podman-remote", while the local program is called "podman".
+{{% /pageinfo %}}
+
+{{% /tab %}}
+{{% tab "macOS" %}}
+
+```shell
+podman help
+```
+
+{{% pageinfo color="info" %}}
+Note: On macOS the remote client is called "podman", since there is no local "podman" program available.
+{{% /pageinfo %}}
+
+{{% /tab %}}
+{{% tab "Windows" %}}
+
+```shell
+podman help
+```
+
+{{% pageinfo color="info" %}}
+Note: On Windows the remote client is called "podman", since there is no local "podman" program available.
+{{% /pageinfo %}}
+
+{{% /tab %}}
+{{% /tabs %}}
+
 
 Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`), as otherwise Kubernetes won't use images you built locally.
 
@@ -184,7 +218,7 @@ For more information on the `docker build` command, read the [Docker documentati
 For Podman, use:
 
 ```shell
-sudo -E podman build
+sudo podman build
 ```
 
 For more information on the `podman build` command, read the [Podman documentation](https://github.com/containers/libpod/blob/master/docs/source/markdown/podman-build.1.md) (podman.io).

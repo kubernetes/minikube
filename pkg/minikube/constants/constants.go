@@ -26,10 +26,10 @@ import (
 )
 
 const (
-	// DefaultKubernetesVersion is the default kubernetes version
-	DefaultKubernetesVersion = "v1.18.0"
+	// DefaultKubernetesVersion is the default Kubernetes version
+	DefaultKubernetesVersion = "v1.18.2"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
-	NewestKubernetesVersion = "v1.18.0"
+	NewestKubernetesVersion = "v1.18.3-beta.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.12.0"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -49,6 +49,10 @@ const (
 	ClusterDNSDomain = "cluster.local"
 	// DefaultServiceCIDR is The CIDR to be used for service cluster IPs
 	DefaultServiceCIDR = "10.96.0.0/12"
+	// HostAlias is a DNS alias to the the container/VM host IP
+	HostAlias = "host.minikube.internal"
+	// ControlPlaneAlias is a DNS alias pointing to the apiserver frontend
+	ControlPlaneAlias = "control-plane.minikube.internal"
 
 	// DockerHostEnv is used for docker daemon settings
 	DockerHostEnv = "DOCKER_HOST"
@@ -61,6 +65,11 @@ const (
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
+	// MinikubeActivePodmanEnv holds the podman service that the user's shell is pointing at
+	// value would be profile or empty if pointing to the user's host.
+	MinikubeActivePodmanEnv = "MINIKUBE_ACTIVE_PODMAN"
+	// MinikubeForceSystemdEnv is used to force systemd as cgroup manager for the container runtime
+	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
 )
 
 var (
@@ -76,8 +85,10 @@ var (
 
 	// DockerDaemonEnvs is list of docker-daemon related environment variables.
 	DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}
+	// PodmanRemoteEnvs is list of podman-remote related environment variables.
+	PodmanRemoteEnvs = [1]string{PodmanVarlinkBridgeEnv}
 
-	// DefaultMinipath is the default Minikube path (under the home directory)
+	// DefaultMinipath is the default minikube path (under the home directory)
 	DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 	// KubeconfigEnvVar is the env var to check for the Kubernetes client config
@@ -96,7 +107,7 @@ var (
 	// ImageCacheDir is the path to the image cache directory
 	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
-	// DefaultNamespaces are kubernetes namespaces used by minikube, including addons
+	// DefaultNamespaces are Kubernetes namespaces used by minikube, including addons
 	DefaultNamespaces = []string{
 		"kube-system",
 		"kubernetes-dashboard",

@@ -19,6 +19,8 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 ## Known Issues
 
+- Docker driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/_index.md" >}}) 
+
 - On macOS, containers might get hung and require a restart of Docker for Desktop. See [docker/for-mac#1835](https://github.com/docker/for-mac/issues/1835)
 
 - The `ingress`, `ingress-dns` and `registry` addons are currently only supported on Linux. See [#7332](https://github.com/kubernetes/minikube/issues/7332) and [#7535](https://github.com/kubernetes/minikube/issues/7535)
@@ -27,12 +29,22 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
    `sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd`.
 
-
 ## Troubleshooting
 
-- On macOS or Windows, you may need to restart Docker for Desktop if a command gets hung
+[comment]: <> (this title is used in the docs links, don't change)
+### Verify Docker container type is Linux
+
+- On Windows, make sure Docker Desktop's container type setting is Linux and not windows. see docker docs on [switching container type](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers). 
+You can verify your Docker container type by running:
+   ```shell
+   docker info --format '{{.OSType}}'
+   ```
+
+### Run with logs
 
 - Run `--alsologtostderr -v=1` for extra debugging information
+
+### Deploying MySql on a linux with AppArmor
 
 - On Linux, if you want to run MySQL pod, you need to disable AppArmor for mysql profile
 

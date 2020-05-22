@@ -21,8 +21,6 @@ import (
 	"os"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
-	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -35,25 +33,10 @@ func driverWithChecksumURL(name string, v semver.Version) string {
 // Driver downloads an arbitrary driver
 func Driver(name string, destination string, v semver.Version) error {
 	out.T(out.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": name})
-
-	tmpDst := destination + ".download"
-
-	url := driverWithChecksumURL(name, v)
-	client := &getter.Client{
-		Src:     url,
-		Dst:     tmpDst,
-		Mode:    getter.ClientModeFile,
-		Options: []getter.ClientOption{getter.WithProgress(DefaultProgressBar)},
+	if err := download(driverWithChecksumURL(name, v), destination); err != nil {
+		return errors.Wrap(err, "download")
 	}
 
-	glog.Infof("Downloading: %+v", client)
-	if err := client.Get(); err != nil {
-		return errors.Wrapf(err, "download failed: %s", url)
-	}
 	// Give downloaded drivers a baseline decent file permission
-	err := os.Chmod(tmpDst, 0755)
-	if err != nil {
-		return err
-	}
-	return os.Rename(tmpDst, destination)
+	return os.Chmod(destination, 0755)
 }

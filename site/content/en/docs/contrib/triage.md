@@ -8,7 +8,7 @@ description: >
 ---
 
 Community triage takes place **every Wednesday** from **11AM-12PM PST**.
-Zoom link: https://zoom.us/j/5042173647
+Hangouts link: https://meet.google.com/ikf-fvrs-eer
 
 All community members are welcome and encouraged to join and help us triage minikube!
 

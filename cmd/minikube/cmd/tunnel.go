@@ -42,7 +42,7 @@ var cleanup bool
 // tunnelCmd represents the tunnel command
 var tunnelCmd = &cobra.Command{
 	Use:   "tunnel",
-	Short: "tunnel makes services of type LoadBalancer accessible on localhost",
+	Short: "Connect to LoadBalancer services",
 	Long:  `tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		RootCmd.PersistentPreRun(cmd, args)
@@ -57,7 +57,6 @@ var tunnelCmd = &cobra.Command{
 			if err := manager.CleanupNotRunningTunnels(); err != nil {
 				glog.Errorf("error cleaning up: %s", err)
 			}
-			return
 		}
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
@@ -104,5 +103,5 @@ var tunnelCmd = &cobra.Command{
 }
 
 func init() {
-	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", false, "call with cleanup=true to remove old tunnels")
+	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", true, "call with cleanup=true to remove old tunnels")
 }

@@ -49,14 +49,14 @@ const (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
+func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*host.Host, error) {
 	start := time.Now()
 	glog.Infof("fixHost starting: %s", n.Name)
 	defer func() {
 		glog.Infof("fixHost completed within %s", time.Since(start))
 	}()
 
-	h, err := api.Load(driver.MachineName(cc, n))
+	h, err := api.Load(driver.MachineName(*cc, *n))
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
@@ -73,7 +73,7 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 
 	// Avoid reprovisioning "none" driver because provision.Detect requires SSH
 	if !driver.BareMetal(h.Driver.DriverName()) {
-		e := engineOptions(cc)
+		e := engineOptions(*cc)
 		h.HostOptions.EngineOptions.Env = e.Env
 		err = provisionDockerMachine(h)
 		if err != nil {
@@ -85,7 +85,7 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return h, nil
 	}
 
-	if err := postStartSetup(h, cc); err != nil {
+	if err := postStartSetup(h, *cc); err != nil {
 		return h, errors.Wrap(err, "post-start")
 	}
 
@@ -103,8 +103,8 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 	return h, ensureSyncedGuestClock(h, driverName)
 }
 
-func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) (*host.Host, error) {
-	machineName := driver.MachineName(cc, n)
+func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.Node, h *host.Host) (*host.Host, error) {
+	machineName := driver.MachineName(*cc, *n)
 	machineType := driver.MachineType(cc.Driver)
 	recreated := false
 	s, serr := h.Driver.GetState()
@@ -119,7 +119,7 @@ func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node
 
 		if !me || err == constants.ErrMachineMissing {
 			out.T(out.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
-			demolish(api, cc, n, h)
+			demolish(api, *cc, *n, h)
 
 			glog.Infof("Sleeping 1 second for extra luck!")
 			time.Sleep(1 * time.Second)
@@ -152,8 +152,8 @@ func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node
 		if err := h.Driver.Start(); err != nil {
 			return h, errors.Wrap(err, "driver start")
 		}
-		if err := api.Save(h); err != nil {
-			return h, errors.Wrap(err, "save")
+		if err := saveHost(api, h, cc, n); err != nil {
+			return h, err
 		}
 	} else {
 		if s == state.Running {
@@ -171,17 +171,25 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	if !driver.IsKIC(drver) {
 		return
 	}
-	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
-	if p == "" {
-		return
-	}
-	out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
-	// TODO: refactor docker-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
-	out.WarningT(`Please re-eval your docker-env, To ensure your environment variables have updated ports: 
+	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
+		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
+		// TODO: refactor docker-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
+		out.WarningT(`Please re-eval your docker-env, To ensure your environment variables have updated ports:
 
 	'minikube -p {{.profile_name}} docker-env'
 
 	`, out.V{"profile_name": name})
+	}
+	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
+		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
+		// TODO: refactor podman-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
+		out.WarningT(`Please re-eval your podman-env, To ensure your environment variables have updated ports:
+
+	'minikube -p {{.profile_name}} podman-env'
+
+	`, out.V{"profile_name": name})
+	}
+
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync

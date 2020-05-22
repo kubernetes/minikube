@@ -1,18 +1,18 @@
 ---
 title: "service"
 description: >
-  Gets the kubernetes URL(s) for the specified service in your local cluster
+  Returns a URL to connect to a service
 ---
 
 
 
 ## minikube service
 
-Gets the kubernetes URL(s) for the specified service in your local cluster
+Returns a URL to connect to a service
 
 ### Synopsis
 
-Gets the kubernetes URL(s) for the specified service in your local cluster. In the case of multiple URLs they will be printed one at a time.
+Returns the Kubernetes URL for a service in your local cluster. In the case of multiple URLs they will be printed one at a time.
 
 ```
 minikube service [flags] SERVICE
@@ -26,7 +26,7 @@ minikube service [flags] SERVICE
       --https              Open the service URL with https instead of http
       --interval int       The initial time interval for each check that wait performs in seconds (default 1)
   -n, --namespace string   The service namespace (default "default")
-      --url                Display the kubernetes service URL in the CLI instead of opening it in the default browser
+      --url                Display the Kubernetes service URL in the CLI instead of opening it in the default browser
       --wait int           Amount of time to wait for a service in seconds (default 2)
 ```
 
@@ -34,7 +34,7 @@ minikube service [flags] SERVICE
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
@@ -67,7 +67,7 @@ minikube service help [command] [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --format string                    Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
@@ -101,7 +101,7 @@ minikube service list [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --format string                    Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory

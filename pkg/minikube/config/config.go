@@ -24,6 +24,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -148,17 +149,17 @@ func encode(w io.Writer, m MinikubeConfig) error {
 	return err
 }
 
-// Load loads the kubernetes and machine config for the current machine
+// Load loads the Kubernetes and machine config for the current machine
 func Load(profile string) (*ClusterConfig, error) {
 	return DefaultLoader.LoadConfigFromFile(profile)
 }
 
-// Write writes the kubernetes and machine config for the current machine
+// Write writes the Kubernetes and machine config for the current machine
 func Write(profile string, cc *ClusterConfig) error {
 	return DefaultLoader.WriteConfigToFile(profile, cc)
 }
 
-// Loader loads the kubernetes and machine config based on the machine profile name
+// Loader loads the Kubernetes and machine config based on the machine profile name
 type Loader interface {
 	LoadConfigFromFile(profile string, miniHome ...string) (*ClusterConfig, error)
 	WriteConfigToFile(profileName string, cc *ClusterConfig, miniHome ...string) error
@@ -199,4 +200,29 @@ func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *ClusterCo
 		return err
 	}
 	return ioutil.WriteFile(path, contents, 0644)
+}
+
+// MultiNodeCNIConfig add default CNI config needed for multinode clusters and saves off the config
+func MultiNodeCNIConfig(cc *ClusterConfig) error {
+	if cc.KubernetesConfig.ExtraOptions.Get("pod-network-cidr", "kubeadm") == "" {
+		cc.KubernetesConfig.NetworkPlugin = "cni"
+		if err := cc.KubernetesConfig.ExtraOptions.Set(fmt.Sprintf("kubeadm.pod-network-cidr=%s", DefaultPodCIDR)); err != nil {
+			return err
+		}
+		return SaveProfile(cc.Name, cc)
+	}
+	return nil
+}
+
+// MultiNode returns true if the cluster has multiple nodes or if the request is asking for multinode
+func MultiNode(cc ClusterConfig) bool {
+	if len(cc.Nodes) > 1 {
+		return true
+	}
+
+	if viper.GetInt("nodes") > 1 {
+		return true
+	}
+
+	return false
 }

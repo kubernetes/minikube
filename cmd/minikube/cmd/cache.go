@@ -31,8 +31,8 @@ const cacheImageConfigKey = "cache"
 // cacheCmd represents the cache command
 var cacheCmd = &cobra.Command{
 	Use:   "cache",
-	Short: "Add or delete an image from the local cache.",
-	Long:  "Add or delete an image from the local cache.",
+	Short: "Add, delete, or push a local image into minikube",
+	Long:  "Add, delete, or push a local image into minikube",
 }
 
 // addCacheCmd represents the cache add command

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -63,8 +64,24 @@ func (rr RunResult) Output() string {
 	return sb.String()
 }
 
+// PrefixCmd adds any needed prefix (such as sudo) to the command
+func PrefixCmd(cmd *exec.Cmd) *exec.Cmd {
+	if cmd.Args[0] == Podman && runtime.GOOS == "linux" { // want sudo when not running podman-remote
+		cmdWithSudo := exec.Command("sudo", append([]string{"-n"}, cmd.Args...)...)
+		cmdWithSudo.Env = cmd.Env
+		cmdWithSudo.Dir = cmd.Dir
+		cmdWithSudo.Stdin = cmd.Stdin
+		cmdWithSudo.Stdout = cmd.Stdout
+		cmdWithSudo.Stderr = cmd.Stderr
+		cmd = cmdWithSudo
+	}
+	return cmd
+}
+
 // runCmd runs a command exec.Command against docker daemon or podman
 func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
+	cmd = PrefixCmd(cmd)
+
 	warn := false
 	if len(warnSlow) > 0 {
 		warn = warnSlow[0]
@@ -114,7 +131,10 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	if warn {
 		if elapsed > warnTime {
 			out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
-			out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+			// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
+			if cmd.Args[0] != "sudo" {
+				out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+			}
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {

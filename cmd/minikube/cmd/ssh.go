@@ -38,7 +38,7 @@ var (
 // sshCmd represents the docker-ssh command
 var sshCmd = &cobra.Command{
 	Use:   "ssh",
-	Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
+	Short: "Log into the minikube environment (for debugging)",
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
@@ -52,7 +52,7 @@ var sshCmd = &cobra.Command{
 		if nodeName == "" {
 			n = co.CP.Node
 		} else {
-			n, _, err = node.Retrieve(co.Config, nodeName)
+			n, _, err = node.Retrieve(*co.Config, nodeName)
 			if err != nil {
 				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
 			}

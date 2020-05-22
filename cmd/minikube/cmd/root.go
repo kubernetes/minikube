@@ -58,8 +58,8 @@ var viperWhiteList = []string{
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "minikube",
-	Short: "Minikube is a tool for managing local Kubernetes clusters.",
-	Long:  `Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.`,
+	Short: "minikube quickly sets up a local Kubernetes cluster",
+	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
@@ -102,6 +102,10 @@ func Execute() {
 
 	// Universally ensure that we never speak to the wrong DOCKER_HOST
 	if err := oci.PointToHostDockerDaemon(); err != nil {
+		glog.Errorf("oci env: %v", err)
+	}
+
+	if err := oci.PointToHostPodman(); err != nil {
 		glog.Errorf("oci env: %v", err)
 	}
 
@@ -163,7 +167,7 @@ func setFlagsUsingViper() {
 func init() {
 	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
-	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
+	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 
 	groups := templates.CommandGroups{
 		{

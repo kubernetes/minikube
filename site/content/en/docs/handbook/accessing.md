@@ -123,6 +123,8 @@ Each service will get its own external ip.
 
 If you are on macOS, the tunnel command also allows DNS resolution for Kubernetes services from the host.
 
+NOTE: docker driver doesn't suport DNS resolution
+
 ### Cleaning up orphaned routes
 
 If the `minikube tunnel` shuts down in an abrupt manner, it may leave orphaned network routes on your system. If this happens, the ~/.minikube/tunnels.json file will contain an entry for that tunnel. To remove orphaned routes, run:
@@ -130,6 +132,8 @@ If the `minikube tunnel` shuts down in an abrupt manner, it may leave orphaned n
 ````shell
 minikube tunnel --cleanup
 ````
+
+NOTE: `--cleanup` flag's default value is `true`.
 
 ### Avoiding password prompts
 

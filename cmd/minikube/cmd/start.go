@@ -56,7 +56,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/util"
@@ -83,8 +82,8 @@ func init() {
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Starts a local kubernetes cluster",
-	Long:  "Starts a local kubernetes cluster",
+	Short: "Starts a local Kubernetes cluster",
+	Long:  "Starts a local Kubernetes cluster",
 	Run:   runStart,
 }
 
@@ -156,6 +155,15 @@ func runStart(cmd *cobra.Command, args []string) {
 	ds, alts, specified := selectDriver(existing)
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
+		if errors.Is(err, oci.ErrWindowsContainers) {
+			out.ErrLn("")
+			out.ErrT(out.Conflict, "Your Docker Desktop container os type is Windows but Linux is required.")
+			out.T(out.Warning, "Please change Docker settings to use Linux containers instead of Windows containers.")
+			out.T(out.Documentation, "https://minikube.sigs.k8s.io/docs/drivers/docker/#verify-docker-container-type-is-linux")
+			exit.UsageT(`You can verify your Docker container type by running:
+	{{.command}}
+		`, out.V{"command": "docker info --format '{{.OSType}}'"})
+		}
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
 			exit.WithError("error provisioning host", err)
@@ -285,6 +293,8 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.WithCodeT(exit.Config, "The none driver is not compatible with multi-node clusters.")
 		} else {
+			out.Ln("")
+			warnAboutMultiNode()
 			for i := 1; i < numNodes; i++ {
 				nodeName := node.Name(i + 1)
 				n := config.Node{
@@ -303,6 +313,11 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 	}
 
 	return kubeconfig, nil
+}
+
+func warnAboutMultiNode() {
+	out.WarningT("Multi-node clusters are currently experimental and might exhibit unintended behavior.")
+	out.T(out.Documentation, "To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
 func updateDriver(driverName string) {
@@ -364,7 +379,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
-		out.WarningT("{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
+		out.WarningT("{{.path}} is version {{.client_version}}, which may be incompatible with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
 		out.ErrT(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
 			out.V{"path": path, "client_version": client})
@@ -421,7 +436,7 @@ func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons 
 func kubectlVersion(path string) (string, error) {
 	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
 	if err != nil {
-		// really old kubernetes clients did not have the --output parameter
+		// really old Kubernetes clients did not have the --output parameter
 		b, err := exec.Command(path, "version", "--client", "--short").Output()
 		if err != nil {
 			return "", errors.Wrap(err, "exec")
@@ -715,7 +730,7 @@ func memoryLimits(drvName string) (int, int, error) {
 }
 
 // suggestMemoryAllocation calculates the default memory footprint in MB
-func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
+func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 	if mem := viper.GetInt(memory); mem != 0 {
 		return mem
 	}
@@ -736,6 +751,10 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
 
 	// Suggest 25% of RAM, rounded to nearest 100MB. Hyper-V requires an even number!
 	suggested := int(float32(sysLimit)/400.0) * 100
+
+	if nodes > 1 {
+		suggested /= nodes
+	}
 
 	if suggested > maximum {
 		return maximum
@@ -820,11 +839,11 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
 		}
 
-		// conntrack is required starting with kubernetes 1.18, include the release candidates for completion
+		// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
 		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {
-				exit.WithCodeT(exit.Config, "Sorry, Kubernetes v{{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
+				exit.WithCodeT(exit.Config, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
 			}
 		}
 	}
@@ -858,8 +877,27 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
+	if existing != nil {
+		cp, err := config.PrimaryControlPlane(existing)
+		cp.KubernetesVersion = getKubernetesVersion(&cc)
+		if err != nil {
+			return cc, config.Node{}, err
+		}
+
+		// Make sure that existing nodes honor if KubernetesVersion gets specified on restart
+		// KubernetesVersion is the only attribute that the user can override in the Node object
+		nodes := []config.Node{}
+		for _, n := range existing.Nodes {
+			n.KubernetesVersion = getKubernetesVersion(&cc)
+			nodes = append(nodes, n)
+		}
+		cc.Nodes = nodes
+
+		return cc, cp, nil
+	}
+
 	cp := config.Node{
 		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: getKubernetesVersion(&cc),
@@ -869,24 +907,6 @@ func createNode(cc config.ClusterConfig, kubeNodeName string) (config.ClusterCon
 	}
 	cc.Nodes = []config.Node{cp}
 	return cc, cp, nil
-}
-
-// setDockerProxy sets the proxy environment variables in the docker environment.
-func setDockerProxy() {
-	for _, k := range proxy.EnvVars {
-		if v := os.Getenv(k); v != "" {
-			// convert https_proxy to HTTPS_PROXY for linux
-			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
-			k = strings.ToUpper(k)
-			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-				if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
-					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
-					continue
-				}
-			}
-			config.DockerEnv = append(config.DockerEnv, fmt.Sprintf("%s=%s", k, v))
-		}
-	}
 }
 
 // autoSetDriverOptions sets the options needed for specific driver automatically.
@@ -977,26 +997,26 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		}
 
 		suggestedName := old.Name + "2"
-		out.T(out.Conflict, "You have selected Kubernetes v{{.new}}, but the existing cluster is running Kubernetes v{{.old}}", out.V{"new": nvs, "old": ovs, "profile": profileArg})
+		out.T(out.Conflict, "You have selected Kubernetes {{.new}}, but the existing cluster is running Kubernetes {{.old}}", out.V{"new": nvs, "old": ovs, "profile": profileArg})
 		exit.WithCodeT(exit.Config, `Non-destructive downgrades are not supported, but you can proceed with one of the following options:
 
-  1) Recreate the cluster with Kubernetes v{{.new}}, by running:
+  1) Recreate the cluster with Kubernetes {{.new}}, by running:
 
     minikube delete{{.profile}}
-    minikube start{{.profile}} --kubernetes-version={{.new}}
+    minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.new}}
 
-  2) Create a second cluster with Kubernetes v{{.new}}, by running:
+  2) Create a second cluster with Kubernetes {{.new}}, by running:
 
-    minikube start -p {{.suggestedName}} --kubernetes-version={{.new}}
+    minikube start -p {{.suggestedName}} --kubernetes-version={{.prefix}}{{.new}}
 
-  3) Use the existing cluster at version Kubernetes v{{.old}}, by running:
+  3) Use the existing cluster at version Kubernetes {{.old}}, by running:
 
-    minikube start{{.profile}} --kubernetes-version={{.old}}
-`, out.V{"new": nvs, "old": ovs, "profile": profileArg, "suggestedName": suggestedName})
+    minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.old}}
+    `, out.V{"prefix": version.VersionPrefix, "new": nvs, "old": ovs, "profile": profileArg, "suggestedName": suggestedName})
 
 	}
 	if defaultVersion.GT(nvs) {
-		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
+		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 	return nv
 }

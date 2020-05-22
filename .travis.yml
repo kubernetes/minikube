@@ -33,8 +33,6 @@ matrix:
       script: make
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-travisBuddy:
-    regex: (FAIL:|\.go:\d+:|^panic:|failed$)
 notifications:
   webhooks:
     urls:

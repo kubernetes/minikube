@@ -13,6 +13,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 ## What you’ll need
 
+* 2 CPUs or more
 * 2GB of free memory
 * 20GB of free disk space
 * Internet connection
@@ -35,15 +36,15 @@ For Linux users, we provide 3 easy download options:
 ### Debian package
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< latest >}}-0_amd64.deb
-sudo dpkg -i minikube_{{< latest >}}-0_amd64.deb
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+sudo dpkg -i minikube_latest_amd64.deb
 ```
 
 ### RPM package
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-{{< latest >}}-0.x86_64.rpm
-sudo rpm -ivh minikube-{{< latest >}}-0.x86_64.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
+sudo rpm -ivh minikube-latest.x86_64.rpm
 ```
 
 {{% /tab %}}
@@ -53,6 +54,13 @@ If the [Brew Package Manager](https://brew.sh/) installed:
 
 ```shell
 brew install minikube
+```
+
+If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
+
+```
+brew cask remove minikube
+brew link minikube
 ```
 
 Otherwise, download minikube directly:

@@ -122,22 +122,27 @@ func (d *Driver) Create() error {
 	}
 
 	var waitForPreload sync.WaitGroup
-	waitForPreload.Add(1)
-	go func() {
-		defer waitForPreload.Done()
-		// If preload doesn't exist, don't bother extracting tarball to volume
-		if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
-			return
-		}
-		t := time.Now()
-		glog.Infof("Starting extracting preloaded images to volume ...")
-		// Extract preloaded images to container
-		if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
-			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
-		} else {
-			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
-		}
-	}()
+	if d.NodeConfig.OCIBinary == oci.Docker {
+		waitForPreload.Add(1)
+		go func() {
+			defer waitForPreload.Done()
+			// If preload doesn't exist, don't bother extracting tarball to volume
+			if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
+				return
+			}
+			t := time.Now()
+			glog.Infof("Starting extracting preloaded images to volume ...")
+			// Extract preloaded images to container
+			if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
+				glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
+			} else {
+				glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+			}
+		}()
+	} else {
+		// driver == "podman"
+		glog.Info("Driver isn't docker, skipping extracting preloaded images")
+	}
 
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
@@ -250,7 +255,7 @@ func (d *Driver) Kill() error {
 	}
 
 	cr := command.NewExecRunner() // using exec runner for interacting with dameon.
-	if _, err := cr.RunCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)); err != nil {
+	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName))); err != nil {
 		return errors.Wrapf(err, "killing %q", d.MachineName)
 	}
 	return nil
@@ -295,13 +300,11 @@ func (d *Driver) Restart() error {
 		return fmt.Errorf("start during restart %v", err)
 	}
 	return nil
-
 }
 
 // Start an already created kic container
 func (d *Driver) Start() error {
-	cr := command.NewExecRunner() // using exec runner for interacting with docker/podman daemon
-	if _, err := cr.RunCmd(exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName)); err != nil {
+	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		return errors.Wrap(err, "start")
 	}
 	checkRunning := func() error {

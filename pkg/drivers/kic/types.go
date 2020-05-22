@@ -23,16 +23,10 @@ import (
 )
 
 const (
-	// DefaultNetwork is the Docker default bridge network named "bridge"
-	// (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
-	DefaultNetwork = "bridge"
-	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
-	DefaultPodCIDR = "10.244.0.0/16"
-
 	// Version is the current version of kic
-	Version = "v0.0.9"
+	Version = "v0.0.10"
 	// SHA of the kic base image
-	baseImageSHA = "82a826cc03c3e59ead5969b8020ca138de98f366c1907293df91fc57205dbb53"
+	baseImageSHA = "f58e0c4662bac8a9b5dda7984b185bad8502ade5d9fa364bf2755d636ab51438"
 	// OverlayImage is the cni plugin used for overlay image, created by kind.
 	// CNI plugin image used for kic drivers created by kind.
 	OverlayImage = "kindest/kindnetd:0.5.4"
@@ -41,6 +35,10 @@ const (
 var (
 	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
 	BaseImage = fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s@sha256:%s", Version, baseImageSHA)
+	// BaseImageFallBack the fall back of BaseImage in case gcr.io is not available. stored in github packages https://github.com/kubernetes/minikube/packages/206071
+	// github packages docker does _NOT_ support pulling by sha as mentioned in the docs:
+	// https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages
+	BaseImageFallBack = fmt.Sprintf("docker.pkg.github.com/kubernetes/minikube/kicbase:%s", Version)
 )
 
 // Config is configuration for the kic driver used by registry
@@ -52,9 +50,9 @@ type Config struct {
 	OCIBinary         string            // oci tool to use (docker, podman,...)
 	ImageDigest       string            // image name with sha to use for the node
 	Mounts            []oci.Mount       // mounts
-	APIServerPort     int               // kubernetes api server port inside the container
+	APIServerPort     int               // Kubernetes api server port inside the container
 	PortMappings      []oci.PortMapping // container port mappings
 	Envs              map[string]string // key,value of environment variables passed to the node
-	KubernetesVersion string            // kubernetes version to install
+	KubernetesVersion string            // Kubernetes version to install
 	ContainerRuntime  string            // container runtime kic is running
 }

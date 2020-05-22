@@ -106,7 +106,7 @@ var mountCmd = &cobra.Command{
 		var ip net.IP
 		var err error
 		if mountIP == "" {
-			ip, err = cluster.GetVMHostIP(co.CP.Host)
+			ip, err = cluster.HostIP(co.CP.Host)
 			if err != nil {
 				exit.WithError("Error getting the host IP address to use from within the VM", err)
 			}

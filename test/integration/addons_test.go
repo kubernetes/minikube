@@ -38,9 +38,9 @@ import (
 func TestAddons(t *testing.T) {
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-	defer CleanupWithLogs(t, profile, cancel)
+	defer Cleanup(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
@@ -82,27 +82,40 @@ func TestAddons(t *testing.T) {
 }
 
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client: %v", client)
+		t.Fatalf("failed to get Kubernetes client: %v", client)
 	}
 
-	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", Minutes(6)); err != nil {
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", Minutes(6)); err != nil {
 		t.Errorf("failed waiting for ingress-controller deployment to stabilize: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=nginx-ingress-controller", Minutes(12)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=ingress-nginx", Minutes(12)); err != nil {
 		t.Fatalf("failed waititing for nginx-ingress-controller : %v", err)
 	}
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml")))
-	if err != nil {
-		t.Errorf("failed to kubectl replace nginx-ing. args %q. %v", rr.Command(), err)
+	createIngress := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml")))
+		if err != nil {
+			return err
+		}
+		if rr.Stderr.String() != "" {
+			t.Logf("%v: unexpected stderr: %s (may be temproary)", rr.Command(), rr.Stderr)
+		}
+		return nil
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
+
+	if err := retry.Expo(createIngress, 1*time.Second, Seconds(90)); err != nil {
+		t.Errorf("failed to create ingress: %v", err)
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
 	if err != nil {
 		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Command(), err)
 	}
@@ -115,22 +128,27 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	want := "Welcome to nginx!"
+	addr := "http://127.0.0.1/"
 	checkIngress := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
 		if err != nil {
 			return err
 		}
+
+		stderr := rr.Stderr.String()
 		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s (may be temproary)", rr.Command(), rr.Stderr)
+			t.Logf("debug: unexpected stderr for %v:\n%s", rr.Command(), stderr)
 		}
-		if !strings.Contains(rr.Stdout.String(), want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
+
+		stdout := rr.Stdout.String()
+		if !strings.Contains(stdout, want) {
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), stdout, want)
 		}
 		return nil
 	}
 
 	if err := retry.Expo(checkIngress, 500*time.Millisecond, Seconds(90)); err != nil {
-		t.Errorf("failed to get response from ngninx ingress on 127.0.0.1:80: %v", err)
+		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1"))
@@ -140,9 +158,11 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client for %s : %v", profile, err)
+		t.Fatalf("failed to get Kubernetes client for %s : %v", profile, err)
 	}
 
 	start := time.Now()
@@ -214,9 +234,11 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client for %s: %v", profile, err)
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
 	}
 
 	start := time.Now()
@@ -256,9 +278,11 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 }
 
 func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("failed to get kubernetes client for %s: %v", profile, err)
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
 	}
 
 	start := time.Now()

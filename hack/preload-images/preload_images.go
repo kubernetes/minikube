@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 )
 
@@ -42,7 +43,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&k8sVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
+	flag.StringVar(&k8sVersion, "kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
 	flag.Parse()
 	if k8sVersion != "" {
 		k8sVersions = append(k8sVersions, k8sVersion)
@@ -71,6 +72,8 @@ func main() {
 			exit("Unable to get recent k8s versions: %v\n", err)
 		}
 	}
+
+	k8sVersions = append(k8sVersions, constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion, constants.OldestKubernetesVersion)
 
 	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
