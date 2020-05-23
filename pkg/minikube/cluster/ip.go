@@ -73,14 +73,14 @@ func HostIP(host *host.Host) (net.IP, error) {
 		ip := re.FindStringSubmatch(string(ipList))[1]
 		return net.ParseIP(ip), nil
 	case driver.Parallels:
-		cmd := "prlsrvctl"
-		var cmdPath string
-		if fullPath, err := exec.LookPath(cmd); err != nil {
-			cmdPath = fullPath
+		bin := "prlsrvctl"
+		var binPath string
+		if fullPath, err := exec.LookPath(bin); err != nil {
+			binPath = fullPath
 		} else {
-			cmdPath = cmd
+			binPath = bin
 		}
-		out, err := exec.Command(cmdPath, "net", "info", "Shared").Output()
+		out, err := exec.Command(binPath, "net", "info", "Shared").Output()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error reading the info of Parallels Shared network interface")
 		}
