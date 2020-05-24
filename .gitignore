@@ -51,3 +51,5 @@ test/integration/testdata/minikube-linux-amd64-latest-stable
 /site/resources
 /_gen
 
+#slowjam
+stack.log

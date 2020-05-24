@@ -23,6 +23,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"time"
 
 	// initflag must be imported before any other minikube pkg.
 	// Fix for https://github.com/kubernetes/minikube/issues/4866
@@ -32,6 +33,7 @@ import (
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
 
 	mlog "github.com/docker/machine/libmachine/log"
+	"github.com/google/slowjam/pkg/stacklog"
 
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
@@ -43,6 +45,7 @@ import (
 )
 
 const minikubeEnableProfile = "MINIKUBE_ENABLE_PROFILING"
+const minikubeEnableSlowJam = "MINIKUBE_ENABLE_SLOWJAM"
 
 var (
 	// This regex is intentionally very specific, it's supposed to surface
@@ -58,6 +61,17 @@ func main() {
 	if os.Getenv(minikubeEnableProfile) == "1" {
 		defer profile.Start(profile.TraceProfile).Stop()
 	}
+
+	if os.Getenv(minikubeEnableSlowJam) == "1" {
+		p := profile.Start(profile.TraceProfile, profile.NoShutdownHook)
+		defer p.Stop()
+		s, err := stacklog.Start(stacklog.Config{Path: "stack.log", Poll: 50 * time.Millisecond})
+		if err != nil {
+			panic("unable to log stacks")
+		}
+		defer s.Stop()
+	}
+
 	if os.Getenv(constants.IsMinikubeChildProcess) == "" {
 		machine.StartDriver()
 	}
