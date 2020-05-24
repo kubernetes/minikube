@@ -155,7 +155,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
+	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
 	var rr *RunResult
 	var err error
@@ -167,6 +167,9 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		// we should be able to get minikube status with a bash which evaled docker-env
 		rr, err = Run(t, c)
 	}
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Logf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+	}
 	if err != nil {
 		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
 	}
@@ -174,7 +177,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
 
-	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
+	mctx, cancel = context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
@@ -183,6 +186,10 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
 		rr, err = Run(t, c)
+	}
+
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Logf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
 	}
 
 	if err != nil {
