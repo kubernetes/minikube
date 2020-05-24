@@ -157,11 +157,18 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 
 	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
 	defer cancel()
-	// we should be able to get minikube status with a bash which evaled docker-env
-	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
-	rr, err := Run(t, c)
+	var rr *RunResult
+	var err error
+	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
+		c := exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
+		rr, err = Run(t, c, true) // golang exec powershell needs some tricks !
+	} else {
+		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+		// we should be able to get minikube status with a bash which evaled docker-env
+		rr, err = Run(t, c)
+	}
 	if err != nil {
-		t.Fatalf("failed to do minikube status after eval-ing docker-env %s", err)
+		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
 	}
 	if !strings.Contains(rr.Output(), "Running") {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
@@ -170,11 +177,11 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
-	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
-		c = exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
-		rr, err = Run(t, c, true)
+	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
+		c := exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
+		rr, err = Run(t, c, true) // golang exec powershell needs some tricks !
 	} else {
-		c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
+		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
 		rr, err = Run(t, c)
 	}
 
