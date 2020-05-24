@@ -873,7 +873,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	// validate kubeadm extra args
-	if invalidOpts := bsutil.FindInvalidExtraConfigFlags(config.ExtraOptions); invalidOpts != nil {
+	if invalidOpts := bsutil.FindInvalidExtraConfigFlags(config.ExtraOptions); len(invalidOpts) > 0 {
 		out.ErrT(
 			out.Warning,
 			"These --extra-config parameters are invalid: {{.invalid_extra_opts}}",
