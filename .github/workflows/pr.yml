@@ -75,13 +75,20 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
-      - name: Run minikube star with slowjam
+      - name: Run minikube start with slowjam
         shell: bash
         run: |
           cd minikube_binaries
           mkdir -p slowjam_report
+          chmod a+x minikube-*
           MINIKUBE_ENABLE_SLOWJAM=1 ./minikube-linux-amd64 start --driver=docker || true
+      - name: Generate slowjam report
+        shell: bash
+        run: |          
+          cd minikube_binaries
+          go get -u github.com/medyagh/slowjam/cmd/timeline2html
           cp stack.log slowjam_report
+          timeline2html ./stack.log
           cp slowjam_simple.html slowjam_report
           cp slowjam_full.html slowjam_report
       - uses: actions/upload-artifact@v1
