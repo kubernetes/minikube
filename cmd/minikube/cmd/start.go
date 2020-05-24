@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+    "context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -49,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+    "k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -58,6 +60,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
+	"k8s.io/minikube/pkg/minikube/tunnel"
+	// "k8s.io/minikube/pkg/minikube/tunnel/kic"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -206,6 +210,46 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
+
+    // Start Tunnel
+
+	out.T(out.Ready, `DEBUG "{{.name}}"`, out.V{"name": withTunnel})
+    if viper.GetBool(withTunnel) {
+		manager := tunnel.NewManager()
+		cname := ClusterFlagValue()
+		co := mustload.Healthy(cname)
+
+        glog.Info("Checking for tunnels to cleanup...")
+        if err := manager.CleanupNotRunningTunnels(); err != nil {
+            glog.Errorf("error cleaning up: %s", err)
+        }
+
+		clientset, err := kapi.Client(cname)
+		if err != nil {
+			// exit.WithError()
+		    glog.Errorf("error creating clientset", err)
+		}
+
+		// ctx, cancel := context.WithCancel(context.Background())
+		ctx, _ := context.WithCancel(context.Background())
+
+        done, err := manager.StartTunnel(
+		// _, err := manager.StartTunnel(
+            ctx,
+            cname,
+            co.API,
+            config.DefaultLoader,
+            clientset.CoreV1(),
+            )
+
+		if err != nil {
+		    glog.Errorf("error creating tunnel", err)
+		}
+
+		out.T(out.Ready, `Done! tunnel is up and running for "{{.name}}"`, out.V{"name": starter.Cfg.Name})
+
+		<-done
+    }
 
 }
 
