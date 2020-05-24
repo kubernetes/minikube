@@ -88,6 +88,7 @@ jobs:
         shell: bash
         run: |          
           cd minikube_binaries
+          export PATH=$PATH:$(go env GOPATH)/bin
           go get -u github.com/medyagh/slowjam/cmd/timeline2html
           cp stack.log slowjam_report
           timeline2html ./stack.log
