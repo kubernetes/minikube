@@ -170,8 +170,14 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
-	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
-	rr, err = Run(t, c)
+	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
+		c = exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
+		rr, err = Run(t, c, true)
+	} else {
+		c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
+		rr, err = Run(t, c)
+	}
+
 	if err != nil {
 		t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
 	}

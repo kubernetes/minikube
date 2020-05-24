@@ -86,16 +86,33 @@ func (rr RunResult) Output() string {
 }
 
 // Run is a test helper to log a command being executed \_(ツ)_/¯
-func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
+func Run(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*RunResult, error) {
 	t.Helper()
-	rr := &RunResult{Args: cmd.Args}
+	isPowershell := false
+	if len(powershell) > 0 {
+		isPowershell = powershell[0]
+	}
+
+	newCmd := cmd
+	if isPowershell {
+		psBin, err := exec.LookPath("powershell.exe")
+		if err != nil {
+			return &RunResult{}, err
+		}
+		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
+		newCmd = exec.Command(psBin, args...)
+
+	}
+
+	rr := &RunResult{Args: newCmd.Args}
+
 	t.Logf("(dbg) Run:  %v", rr.Command())
 
 	var outb, errb bytes.Buffer
-	cmd.Stdout, rr.Stdout = &outb, &outb
-	cmd.Stderr, rr.Stderr = &errb, &errb
+	newCmd.Stdout, rr.Stdout = &outb, &outb
+	newCmd.Stderr, rr.Stderr = &errb, &errb
 	start := time.Now()
-	err := cmd.Run()
+	err := newCmd.Run()
 	elapsed := time.Since(start)
 	if err == nil {
 		// Reduce log spam
@@ -446,4 +463,15 @@ func killProcessFamily(t *testing.T, pid int) {
 			continue
 		}
 	}
+}
+
+func RunPowershellCmd(args ...string) (string, error) {
+	psBin, err := exec.LookPath("powershell.exe")
+	if err != nil {
+		return "", err
+	}
+	args = append([]string{"-NoProfile", "-NonInteractive"}, args...)
+	cmd := exec.Command(psBin, args...)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
 }
