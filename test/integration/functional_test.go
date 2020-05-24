@@ -155,7 +155,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	mctx, cancel := context.WithTimeout(ctx, Seconds(13))
+	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
 	defer cancel()
 	// we should be able to get minikube status with a bash which evaled docker-env
 	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
