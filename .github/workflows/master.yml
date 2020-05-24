@@ -83,6 +83,11 @@ jobs:
           cd minikube_binaries
           mkdir -p slowjam_report
           MINIKUBE_ENABLE_SLOWJAM=1 ./minikube-linux-amd64 start --driver=docker || true
+      - name: Generate slowjam timeline report
+        shell: bash
+        run: |
+          go get -u 
+          cp stack.log slowjam_report
           cp slowjam_simple.html slowjam_report
           cp slowjam_full.html slowjam_report
       - uses: actions/upload-artifact@v1

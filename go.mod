@@ -29,7 +29,6 @@ require (
 	github.com/google/go-containerregistry v0.0.0-20200131185320-aec8da010de2
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/martian v2.1.1-0.20190517191504-25dcb96d9e51+incompatible // indirect
-	github.com/google/slowjam v0.0.0-20200423205752-d32c9a66cc0c
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.5.4
@@ -51,6 +50,7 @@ require (
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
 	github.com/mattn/go-isatty v0.0.12
+	github.com/medyagh/slowjam v0.0.0-20200524060630-f393c1bef1b9
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
 	github.com/olekukonko/tablewriter v0.0.4

@@ -33,7 +33,7 @@ import (
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
 
 	mlog "github.com/docker/machine/libmachine/log"
-	"github.com/google/slowjam/pkg/stacklog"
+	"github.com/medyagh/slowjam/pkg/stacklog"
 
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
