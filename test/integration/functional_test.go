@@ -836,12 +836,11 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
-	want := profile+"\n"
+	want := profile + "\n"
 	var rr *RunResult
 	var err error
 	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
-		minikube ssh --% "echo $(pwd)"
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "--%", "cat /etc/hostname", true)
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "--%", "cat /etc/hostname"), true)
 	} else {
 		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
 	}
