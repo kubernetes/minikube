@@ -837,7 +837,17 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 	want := "hello\n"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
+	var rr *RunResult
+	var err error
+	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")), true)
+	} else {
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
+	}
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Logf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+
 	if err != nil {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
