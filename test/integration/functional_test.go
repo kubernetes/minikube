@@ -840,7 +840,11 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	var rr *RunResult
 	var err error
 	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "--%", "cat /etc/hostname"), true)
+		cmd := exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "--%", "cat /etc/hostname")
+		t.Logf("about to run %s: ", cmd.Args)
+		rr, err = Run(t, cmd, true)
+		t.Logf("rr is  %+v: \n", rr)
+		t.Logf("err is  %v: \n", err)
 	} else {
 		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
 	}
