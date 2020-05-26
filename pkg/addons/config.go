@@ -101,7 +101,11 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableAddon},
 	},
-
+	{
+		name:      "olm",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 	{
 		name:      "registry",
 		set:       SetBool,
