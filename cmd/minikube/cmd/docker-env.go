@@ -122,7 +122,7 @@ func isDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
-func restartOrExitDaemon(bin string, name string, runner command.Runner) {
+func mustRestartDaemon(bin string, name string, runner command.Runner) {
 	if err := sysinit.New(runner).Restart(bin); err != nil {
 		exit.WithCodeT(exit.Unavailable, `The {{.service_name}} service within '{{.name}}' is not active`, out.V{"name": name, "service_name": bin})
 	}
@@ -152,8 +152,8 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if ok := isDockerActive(co.CP.Runner); !ok {
-			glog.Warningf("dockerd is not avtive will try to restart it...")
-			restartOrExitDaemon("docker", cname, co.CP.Runner)
+			glog.Warningf("dockerd is not active will try to restart it...")
+			mustRestartDaemon("docker", cname, co.CP.Runner)
 		}
 
 		var err error
@@ -184,16 +184,12 @@ var dockerEnvCmd = &cobra.Command{
 
 		out, err := tryDockerConnectivity("docker", ec)
 		if err != nil { // docker might be up but been loaded with wrong certs/config
-			if strings.Contains(err.Error(), "x509: certificate is valid") {
-				glog.Infof("dockerd inside minkube is loaded with old certs with wrong IP. output: %s error: %v", string(out), err)
-			} else {
-				glog.Warningf("couldn't connect to docker inside minikube. output: %s error: %v", string(out), err)
-			}
-			// on minikube stop, or computer restart the IP might change.
-			// reloads the certs to prevent #8185
+			glog.Warningf("couldn't connect to docker inside minikube. output: %s error: %v", string(out), err)
+			// to fix issues like this #8185
 			glog.Infof("will try to restart dockerd service...")
-			restartOrExitDaemon("docker", cname, co.CP.Runner)
-			// TODO: use kverify to wait for apisefver instead #8241
+			mustRestartDaemon("docker", cname, co.CP.Runner)
+			// TODO #8241: use kverify to wait for apisefver instead
+			// waiting for the basics like api-server to come up
 			time.Sleep(time.Second * 3)
 		}
 
