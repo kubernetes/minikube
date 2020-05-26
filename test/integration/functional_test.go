@@ -514,6 +514,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		t.Run("verify_cache_inside_node", func(t *testing.T) {
+			if runtime.GOOS == "windows" {
+				t.Skipf("skipping: skipping for now")
+			}
+
 			var rr *RunResult
 			var err error
 			if runtime.GOOS == "windows" {
@@ -532,6 +536,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
+			if runtime.GOOS == "windows" {
+				t.Skipf("skipping: skipping for now")
+			}
+
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
 			var rr *RunResult
