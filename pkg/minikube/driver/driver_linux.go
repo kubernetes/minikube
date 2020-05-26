@@ -23,7 +23,6 @@ import (
 // supportedDrivers is a list of supported drivers on Linux.
 var supportedDrivers = []string{
 	VirtualBox,
-	Parallels,
 	VMwareFusion,
 	KVM2,
 	VMware,
