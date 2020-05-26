@@ -70,11 +70,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { //nol
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
 	var ss *StartSession
-	if runtime.GOOS == "windows" {
-		ss, err = Start(t, exec.CommandContext(mctx, Target(), args...), true)
-	} else {
-		ss, err = Start(t, exec.CommandContext(mctx, Target(), args...))
-	}
+	ss, err = Start(t, exec.CommandContext(mctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%v failed: %v", args, err)
 	}
@@ -84,11 +80,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { //nol
 		var err error
 		if t.Failed() {
 			t.Logf("%q failed, getting debug info...", t.Name())
-			if runtime.GOOS == "windows" {
-				rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"), true)
-			} else {
-				rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"))
-			}
+			rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"))
 			if err != nil {
 				t.Logf("debugging command %q failed : %v", rr.Command(), err)
 			} else {
@@ -97,11 +89,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { //nol
 		}
 
 		// Cleanup in advance of future tests
-		if runtime.GOOS == "windows" {
-			rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p"), true)
-		} else {
-			rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p"))
-		}
+		rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p"))
 		if err != nil {
 			t.Logf("%q: %v", rr.Command(), err)
 		}

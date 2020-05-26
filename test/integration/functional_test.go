@@ -161,7 +161,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	var err error
 	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
 		c := exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
-		rr, err = Run(t, c, true) // golang exec powershell needs some tricks !
+		rr, err = Run(t, c) // golang exec powershell needs some tricks !
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 		// we should be able to get minikube status with a bash which evaled docker-env
@@ -182,7 +182,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
 		c := exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
-		rr, err = Run(t, c, true) // golang exec powershell needs some tricks !
+		rr, err = Run(t, c) // golang exec powershell needs some tricks !
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
 		rr, err = Run(t, c)
@@ -520,12 +520,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 			var rr *RunResult
 			var err error
-			if runtime.GOOS == "windows" {
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo crictl images"), true)
-			} else {
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
-			}
-
+			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
@@ -544,11 +539,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			// deleting image inside minikube node manually
 			var rr *RunResult
 			var err error
-			if runtime.GOOS == "windows" {
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo docker rmi "+img), true) // for some reason crictl rmi doesn't work
-			} else {
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
-			}
+			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
 
 			if err != nil {
 				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
@@ -864,7 +855,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
 		cmd := exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "\"cat /etc/hostname\"")
 		t.Logf("about to run %s: ", cmd.Args)
-		rr, err = Run(t, cmd, true)
+		rr, err = Run(t, cmd)
 		t.Logf("rr is  %+v: \n", rr)
 		t.Logf("err is  %v: \n", err)
 	} else {
