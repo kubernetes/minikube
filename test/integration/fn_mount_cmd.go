@@ -43,7 +43,7 @@ const (
 	createdByPodRemovedByTest = "created-by-pod-removed-by-test"
 )
 
-func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
+func validateMountCmd(ctx context.Context, t *testing.T, profile string) { //nolint cyclomatic complexity 33 of func `validateMountCmd` is high (> 30
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
 	}
@@ -66,7 +66,6 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
 	var ss *StartSession
-	var err error
 	if runtime.GOOS == "windows" {
 		ss, err = Start(t, exec.CommandContext(ctx, Target(), args...), true)
 	} else {
