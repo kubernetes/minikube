@@ -29,11 +29,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/process"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,25 +88,22 @@ func (rr RunResult) Output() string {
 }
 
 // Run is a test helper to log a command being executed \_(ツ)_/¯
-func Run(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*RunResult, error) {
+func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 	t.Helper()
-	isPowershell := false
-	if len(powershell) > 0 {
-		isPowershell = powershell[0]
-	}
 
-	newCmd := cmd
-	if isPowershell {
+	var newCmd *exec.Cmd
+	if runtime.GOOS == "windows" {
 		psBin, err := exec.LookPath("powershell.exe")
 		if err != nil {
-			return &RunResult{}, err
+			return &RunResult{}, errors.Wrapf(err, "lookup powershell")
 		}
 		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
-
+	} else {
+		newCmd = cmd
 	}
 
-	rr := &RunResult{Args: newCmd.Args}
+	rr := &RunResult{Args: cmd.Args}
 
 	t.Logf("(dbg) Run:  %v", rr.Command())
 
@@ -136,30 +135,27 @@ type StartSession struct {
 }
 
 // Start starts a process in the background, streaming output
-func Start(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*StartSession, error) {
+func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
 	t.Helper()
 	t.Logf("(dbg) daemon: %v", cmd.Args)
 
-	isPowershell := false
-	if len(powershell) > 0 {
-		isPowershell = powershell[0]
-	}
-
-	newCmd := cmd
-	if isPowershell {
+	var newCmd *exec.Cmd
+	if runtime.GOOS == "windows" {
 		psBin, err := exec.LookPath("powershell.exe")
 		if err != nil {
-			return nil, err
+			return &StartSession{}, errors.Wrapf(err, "lookup powershell")
 		}
 		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
+	} else {
+		newCmd = cmd
 	}
 
 	stdoutPipe, err := newCmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("stdout pipe failed: %v %v", newCmd.Args, err)
 	}
-	stderrPipe, err := cmd.StderrPipe()
+	stderrPipe, err := newCmd.StderrPipe()
 	if err != nil {
 		t.Fatalf("stderr pipe failed: %v %v", newCmd.Args, err)
 	}
