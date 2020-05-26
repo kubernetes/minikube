@@ -51,6 +51,10 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { //nol
 		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")
 	}
 
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping: mount broken on windows: https://github.com/kubernetes/minikube/issues/8271")
+	}
+
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	defer func() { //clean up tempdir
 		err := os.RemoveAll(tempDir)
@@ -62,14 +66,14 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { //nol
 		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, Minutes(10))
+	mctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
 	var ss *StartSession
 	if runtime.GOOS == "windows" {
-		ss, err = Start(t, exec.CommandContext(ctx, Target(), args...), true)
+		ss, err = Start(t, exec.CommandContext(mctx, Target(), args...), true)
 	} else {
-		ss, err = Start(t, exec.CommandContext(ctx, Target(), args...))
+		ss, err = Start(t, exec.CommandContext(mctx, Target(), args...))
 	}
 	if err != nil {
 		t.Fatalf("%v failed: %v", args, err)
