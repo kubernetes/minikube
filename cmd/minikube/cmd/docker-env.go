@@ -184,9 +184,8 @@ var dockerEnvCmd = &cobra.Command{
 
 		out, err := tryDockerConnectivity("docker", ec)
 		if err != nil { // docker might be up but been loaded with wrong certs/config
-			glog.Warningf("couldn't connect to docker inside minikube. output: %s error: %v", string(out), err)
 			// to fix issues like this #8185
-			glog.Infof("will try to restart dockerd service...")
+			glog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
 			mustRestartDocker(cname, co.CP.Runner)
 			// TODO #8241: use kverify to wait for apisefver instead
 			// waiting for the basics like api-server to come up
