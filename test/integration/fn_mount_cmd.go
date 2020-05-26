@@ -65,15 +65,27 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
-	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
+	var ss *StartSession
+	var err error
+	if runtime.GOOS == "windows" {
+		ss, err = Start(t, exec.CommandContext(ctx, Target(), args...), true)
+	} else {
+		ss, err = Start(t, exec.CommandContext(ctx, Target(), args...))
+	}
 	if err != nil {
 		t.Fatalf("%v failed: %v", args, err)
 	}
 
 	defer func() {
+		var rr *RunResult
+		var err error
 		if t.Failed() {
 			t.Logf("%q failed, getting debug info...", t.Name())
-			rr, err := Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"))
+			if runtime.GOOS == "windows" {
+				rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"), true)
+			} else {
+				rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"))
+			}
 			if err != nil {
 				t.Logf("debugging command %q failed : %v", rr.Command(), err)
 			} else {
@@ -82,7 +94,11 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Cleanup in advance of future tests
-		rr, err := Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p"))
+		if runtime.GOOS == "windows" {
+			rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p"), true)
+		} else {
+			rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p"))
+		}
 		if err != nil {
 			t.Logf("%q: %v", rr.Command(), err)
 		}
