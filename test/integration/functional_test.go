@@ -514,7 +514,14 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		t.Run("verify_cache_inside_node", func(t *testing.T) {
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
+			var rr *RunResult
+			var err error
+			if runtime.GOOS == "windows" {
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"), true)
+			} else {
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
+			}
+
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
@@ -527,7 +534,14 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img)) // for some reason crictl rmi doesn't work
+			var rr *RunResult
+			var err error
+			if runtime.GOOS == "windows" {
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img), true) // for some reason crictl rmi doesn't work
+			} else {
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
+			}
+
 			if err != nil {
 				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
 			}
