@@ -99,6 +99,9 @@ func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 		}
 		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
+		newCmd.Stdout = cmd.Stdout
+		newCmd.Stderr = cmd.Stderr
+		newCmd.Env = cmd.Env
 	} else {
 		newCmd = cmd
 	}
@@ -147,6 +150,9 @@ func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
 		}
 		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
+		newCmd.Stdout = cmd.Stdout
+		newCmd.Stderr = cmd.Stderr
+		newCmd.Env = cmd.Env
 	} else {
 		newCmd = cmd
 	}
