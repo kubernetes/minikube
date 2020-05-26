@@ -35,7 +35,7 @@ func createTestProfile(t *testing.T, status bool) string {
 		t.Fatalf("tempdir: %v", err)
 	}
 	// if status is false it will remove all tmp dirs
-	if (!status) {
+	if !status {
 		defer func() {
 			err := os.RemoveAll(td)
 			if err != nil {
