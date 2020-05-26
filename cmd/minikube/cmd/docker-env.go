@@ -122,9 +122,9 @@ func isDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
-func mustRestartDaemon(bin string, name string, runner command.Runner) {
-	if err := sysinit.New(runner).Restart(bin); err != nil {
-		exit.WithCodeT(exit.Unavailable, `The {{.service_name}} service within '{{.name}}' is not active`, out.V{"name": name, "service_name": bin})
+func mustRestartDocker(name string, runner command.Runner) {
+	if err := sysinit.New(runner).Restart("docker"); err != nil {
+		exit.WithCodeT(exit.Unavailable, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
 	}
 }
 
@@ -153,7 +153,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		if ok := isDockerActive(co.CP.Runner); !ok {
 			glog.Warningf("dockerd is not active will try to restart it...")
-			mustRestartDaemon("docker", cname, co.CP.Runner)
+			mustRestartDocker(cname, co.CP.Runner)
 		}
 
 		var err error
@@ -187,7 +187,7 @@ var dockerEnvCmd = &cobra.Command{
 			glog.Warningf("couldn't connect to docker inside minikube. output: %s error: %v", string(out), err)
 			// to fix issues like this #8185
 			glog.Infof("will try to restart dockerd service...")
-			mustRestartDaemon("docker", cname, co.CP.Runner)
+			mustRestartDocker(cname, co.CP.Runner)
 			// TODO #8241: use kverify to wait for apisefver instead
 			// waiting for the basics like api-server to come up
 			time.Sleep(time.Second * 3)
