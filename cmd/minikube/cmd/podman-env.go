@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
@@ -113,6 +114,10 @@ var podmanEnvCmd = &cobra.Command{
 
 		if driverName == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
+		}
+
+		if ok := isPodmanAvailable(co.CP.Runner); !ok {
+			exit.WithCodeT(exit.Unavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
 
 		client, err := createExternalSSHClient(co.CP.Host.Driver)
