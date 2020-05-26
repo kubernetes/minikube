@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 
@@ -29,13 +28,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-func createTestProfile(t *testing.T, status string) string {
+func createTestProfile(t *testing.T, status bool) string {
 	t.Helper()
 	td, err := ioutil.TempDir("", "profile")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
-	if strings.EqualFold(status, "remove") {
+	// if status is false it will remove all tmp dirs
+	if (!status) {
 		defer func() {
 			err := os.RemoveAll(td)
 			if err != nil {
@@ -101,7 +101,7 @@ func TestEnableUnknownAddon(t *testing.T) {
 }
 
 func TestSetAndSave(t *testing.T) {
-	profile := createTestProfile(t, "create")
+	profile := createTestProfile(t, true)
 
 	// enable
 	if err := SetAndSave(profile, "dashboard", "true"); err != nil {
@@ -130,7 +130,7 @@ func TestSetAndSave(t *testing.T) {
 	}
 
 	// remove all temp dir
-	createTestProfile(t, "remove")
+	createTestProfile(t, false)
 }
 
 func TestStart(t *testing.T) {
