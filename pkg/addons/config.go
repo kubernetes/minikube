@@ -83,6 +83,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
+		name:      "kubevirt",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
+	{
 		name: "logviewer",
 		set:  SetBool,
 	},

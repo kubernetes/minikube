@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: kube-system
+  name: kubevirt-scripts
+  labels:
+    kubernetes.io/minikube-addons: kubevirt
+    addonmanager.kubernetes.io/mode: Reconcile
+data:
+  uninstall.sh: |
+    #!/bin/bash
+
+    kubectl delete -f /manifests/kubevirt.yaml
+
+    kubectl delete -f /manifests/kubevirt-base.yaml
+
+  install.sh: |
+    #!/bin/bash
+
+    export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases | grep tag_name | grep -v -- - | sort -V | tail -1 | awk -F':' '{print $2}' | sed 's/,//' | xargs)
+    echo $KUBEVIRT_VERSION
+
+    curl -Ls "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml" -o /manifests/kubevirt-base.yaml
+
+    kubectl create -f /manifests/kubevirt-base.yaml
+
+    EMULATION=$(egrep 'svm|vmx' /proc/cpuinfo)
+    if [ -z "$EMULATION" ]; then
+      echo "use emulation"
+      kubectl create configmap kubevirt-config -n kubevirt --from-literal debug.useEmulation=true
+    fi;
+
+    curl -sL "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-cr.yaml" -o /manifests/kubevirt.yaml
+
+    kubectl create -f /manifests/kubevirt.yaml
+
+    sleep infinity
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    kubernetes.io/minikube-addons: kubevirt
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: kubevirt-install-manager
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - /bin/bash
+    - -c
+    - /kubevirt-scripts/install.sh
+    image: bitnami/kubectl:1.17
+    imagePullPolicy: IfNotPresent
+    name: kubevirt-provisioner
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - /bin/bash
+          - -c
+          - /kubevirt-scripts/uninstall.sh
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /manifests
+      name: tmp
+    - mountPath: /kubevirt-scripts
+      name: kubevirt-scripts
+  terminationGracePeriodSeconds: 60
+  volumes:
+  - name: tmp
+    emptyDir: {}
+  - name: kubevirt-scripts
+    configMap:
+      defaultMode: 0777
+      name: kubevirt-scripts

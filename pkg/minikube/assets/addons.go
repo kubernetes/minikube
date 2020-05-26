@@ -189,6 +189,14 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "istio"),
+	"kubevirt": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/kubevirt/pod.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"pod.yaml",
+			"0640",
+			false),
+	}, false, "kubevirt"),
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
