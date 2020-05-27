@@ -859,7 +859,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	var rr *RunResult
 	var err error
 	if runtime.GOOS == "windows" {
-		rr, err = Run(t, exec.CommandContext(ctx, Target()+" -p "+profile+" ssh pwd"), true)
+		rr, err = Run(t, exec.CommandContext(ctx, Target()+" -p "+profile+" ssh", "pwd"), true)
 	} else {
 		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
 	}
@@ -879,7 +879,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	want = profile + "\n"
 
 	if runtime.GOOS == "windows" {
-		rr, err = Run(t, exec.CommandContext(ctx, Target()+" -p "+profile+" ssh cat /etc/hostname"), true)
+		rr, err = Run(t, exec.CommandContext(ctx, Target()+" -p "+profile+" ssh", "cat /etc/hostname"), true)
 	} else {
 		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
 	}
