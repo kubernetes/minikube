@@ -36,15 +36,15 @@ import (
 func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	ctx, cancel := context.WithTimeout(ctx, Minutes(10))
+	mctx, cancel := context.WithTimeout(ctx, Minutes(10))
 	defer cancel()
 
-	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", Minutes(4)); err != nil {
+	if _, err := PodWait(mctx, t, profile, "kube-system", "integration-test=storage-provisioner", Minutes(4)); err != nil {
 		t.Fatalf("failed waiting for storage-provisioner: %v", err)
 	}
 
 	checkStorageClass := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "storageclass", "-o=json"))
+		rr, err := Run(t, exec.CommandContext(mctx, "kubectl", "--context", profile, "get", "storageclass", "-o=json"))
 		if err != nil {
 			return err
 		}
@@ -64,13 +64,13 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	// Now create a testpvc
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "pvc.yaml")))
+	rr, err := Run(t, exec.CommandContext(mctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "pvc.yaml")))
 	if err != nil {
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
 
 	checkStoragePhase := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", "testpvc", "-o=json"))
+		rr, err := Run(t, exec.CommandContext(mctx, "kubectl", "--context", profile, "get", "pvc", "testpvc", "-o=json"))
 		if err != nil {
 			return err
 		}
