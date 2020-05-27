@@ -122,6 +122,7 @@ type StartSession struct {
 func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
 	t.Helper()
 	t.Logf("(dbg) daemon: %v", cmd.Args)
+
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("stdout pipe failed: %v %v", cmd.Args, err)
