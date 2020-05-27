@@ -100,7 +100,7 @@ func Run(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*RunResult, error) {
 		if err != nil {
 			return &RunResult{}, errors.Wrapf(err, "lookup powershell")
 		}
-		args := append([]string{"-NoProfile"}, cmd.Args...)
+		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
 		newCmd.Stdout = cmd.Stdout
 		newCmd.Stderr = cmd.Stderr
