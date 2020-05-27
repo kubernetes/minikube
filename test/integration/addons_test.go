@@ -331,6 +331,9 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 }
 
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("Skipping none driver, olm addon is not supported on none driver")
+	}
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)
