@@ -208,6 +208,15 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 }
 
 func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
+	if DockerDriver() {
+		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
+		if err != nil {
+			t.Fatalf("docker is broken: %v", err)
+		}
+		if strings.Contains(rr.Stdout.String(), "azure") {
+			t.Skip("kic containers are not supported on docker's azure")
+		}
+	}
 	// Restart a full cluster with minikube start
 	startArgs := append([]string{"start", "-p", profile}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
