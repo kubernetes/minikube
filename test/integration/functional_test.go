@@ -855,7 +855,15 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 	want := "/home/docker\n"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
+
+	var rr *RunResult
+	var err error
+	if runtime.GOOS == "windows" {
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"), true)
+	} else {
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
+	}
+
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
@@ -870,7 +878,11 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 	want = profile + "\n"
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
+	if runtime.GOOS == "windows" {
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"), true)
+	} else {
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
+	}
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
