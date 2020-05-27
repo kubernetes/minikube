@@ -56,7 +56,7 @@ func TestAddons(t *testing.T) {
 			{"Ingress", validateIngressAddon},
 			{"MetricsServer", validateMetricsServerAddon},
 			{"HelmTiller", validateHelmTillerAddon},
-			{"Olm", validateOlmAddon}
+			{"Olm", validateOlmAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
