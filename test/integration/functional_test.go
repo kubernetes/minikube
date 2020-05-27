@@ -339,9 +339,6 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-	if runtime.GOOS == "windows" {
-		t.Skipf("skipping windows")
-	}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
 		t.Errorf("failed to run minikube status. args %q : %v", rr.Command(), err)
@@ -519,13 +516,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		t.Run("verify_cache_inside_node", func(t *testing.T) {
-			if runtime.GOOS == "windows" {
-				t.Skipf("skipping: skipping for now")
-			}
-
-			var rr *RunResult
-			var err error
-			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
@@ -536,15 +527,9 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
-			if runtime.GOOS == "windows" {
-				t.Skipf("skipping: skipping for now")
-			}
-
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
-			var rr *RunResult
-			var err error
-			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
 
 			if err != nil {
 				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
@@ -856,13 +841,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	want := "/home/docker\n"
 
-	var rr *RunResult
-	var err error
-	if runtime.GOOS == "windows" {
-		rr, err = Run(t, exec.CommandContext(ctx, Target()+" -p "+profile+" ssh", "pwd"), true)
-	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
-	}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
 
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
@@ -876,6 +855,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 
+	// testing hostname as well
 	want = profile + "\n"
 
 	if runtime.GOOS == "windows" {
