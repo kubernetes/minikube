@@ -154,21 +154,20 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
 	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
 	var rr *RunResult
 	var err error
-	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
+	if runtime.GOOS == "windows" {
 		c := exec.CommandContext(mctx, Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
-		rr, err = Run(t, c, true) // golang exec powershell needs some tricks !
+		rr, err = Run(t, c, true)
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 		// we should be able to get minikube status with a bash which evaled docker-env
 		rr, err = Run(t, c)
 	}
-	if ctx.Err() == context.DeadlineExceeded {
-		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
 	}
 	if err != nil {
 		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
@@ -182,13 +181,13 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
 		c := exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
-		rr, err = Run(t, c, true) // golang exec powershell needs some tricks !
+		rr, err = Run(t, c, true)
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
 		rr, err = Run(t, c)
 	}
 
-	if ctx.Err() == context.DeadlineExceeded {
+	if mctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
 	}
 
@@ -836,31 +835,27 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
-	want := "/home/docker\n"
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
+	want = "hello" + "\n"
 
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "echo hello"))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
-
 	if err != nil {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
-
 	if rr.Stdout.String() != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 
-	// testing hostname as well
+	// testing hostname as well because testing something like "minikube ssh echo" could be confusing
+	// because it  is not clear if echo was run inside minikube on the powershell
+	// so better to test somethign inside minikube, that is meaningful per profile
+	// in this case /etc/hostname is same as the profile name
 	want = profile + "\n"
-
-	if runtime.GOOS == "windows" {
-		rr, err = Run(t, exec.CommandContext(ctx, Target()+" -p "+profile+" ssh", "cat /etc/hostname"), true)
-	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
-	}
-	if ctx.Err() == context.DeadlineExceeded {
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
+	if mctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
 

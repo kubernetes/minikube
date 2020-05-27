@@ -34,7 +34,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/process"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,12 +95,8 @@ func Run(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*RunResult, error) {
 
 	var newCmd *exec.Cmd
 	if runInPowershell {
-		psBin, err := exec.LookPath("powershell.exe")
-		if err != nil {
-			return &RunResult{}, errors.Wrapf(err, "lookup powershell")
-		}
 		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
-		newCmd = exec.Command(psBin, args...)
+		newCmd = exec.Command("powershell.exe", args...)
 		newCmd.Stdout = cmd.Stdout
 		newCmd.Stderr = cmd.Stderr
 		newCmd.Env = cmd.Env
@@ -152,12 +147,8 @@ func Start(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*StartSession, erro
 	t.Logf("(dbg) daemon: %v", cmd.Args)
 	var newCmd *exec.Cmd
 	if runInPowershell {
-		psBin, err := exec.LookPath("powershell.exe")
-		if err != nil {
-			return &StartSession{}, errors.Wrapf(err, "lookup powershell")
-		}
 		args := append([]string{"-NoProfile"}, cmd.Args...)
-		newCmd = exec.Command(psBin, args...)
+		newCmd = exec.Command("powershell.exe", args...)
 		newCmd.Stdout = cmd.Stdout
 		newCmd.Stderr = cmd.Stderr
 		newCmd.Env = cmd.Env
@@ -488,15 +479,4 @@ func killProcessFamily(t *testing.T, pid int) {
 			continue
 		}
 	}
-}
-
-func RunPowershellCmd(args ...string) (string, error) {
-	psBin, err := exec.LookPath("powershell.exe")
-	if err != nil {
-		return "", err
-	}
-	args = append([]string{"-NoProfile", "-NonInteractive"}, args...)
-	cmd := exec.Command(psBin, args...)
-	out, err := cmd.CombinedOutput()
-	return string(out), err
 }
