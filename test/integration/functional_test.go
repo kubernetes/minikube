@@ -973,10 +973,6 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 
-	if runtime.GOOS == "windows" {
-		t.Skipf("skipping for windows for now :(")
-	}
-
 	vp := vmSyncTestPath()
 	t.Logf("Checking for existence of %s within VM", vp)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", vp)))
@@ -1002,10 +998,6 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
-	}
-
-	if runtime.GOOS == "windows" {
-		t.Skipf("skipping for windows for now :(")
 	}
 
 	want, err := ioutil.ReadFile("./testdata/minikube_test.pem")
