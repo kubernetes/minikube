@@ -597,7 +597,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 }
 
 // JoinCluster adds a node to an existing cluster
-func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string, preExists bool) error {
+func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
 	start := time.Now()
 	glog.Infof("JoinCluster: %+v", cc)
 	defer func() {
@@ -633,7 +633,7 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 }
 
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
-func (k *Bootstrapper) GenerateToken(cc *config.ClusterConfig, n *config.Node) (string, error) {
+func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	// Take that generated token and use it to get a kubeadm join command
 	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(tokenCmd)
@@ -648,11 +648,6 @@ func (k *Bootstrapper) GenerateToken(cc *config.ClusterConfig, n *config.Node) (
 		joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, cc.KubernetesConfig.CRISocket)
 	}
 
-	// Save the new token for later use
-	err = config.SaveNode(cc, n)
-	if err != nil {
-		return joinCmd, errors.Wrap(err, "saving node")
-	}
 	return joinCmd, nil
 }
 

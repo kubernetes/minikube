@@ -168,12 +168,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(starter.Cfg, starter.Node)
+		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating join token")
 		}
 
-		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd, starter.PreExists); err != nil {
+		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
 	}
