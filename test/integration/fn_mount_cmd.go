@@ -62,7 +62,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}
 
-	mctx, cancel := context.WithTimeout(ctx, Minutes(3))
+	mctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(mctx, Target(), args...))
