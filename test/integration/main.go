@@ -40,6 +40,12 @@ var timeOutMultiplier = flag.Float64("timeout-multiplier", 1, "multiply the time
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
 
+// Node names are consistent, let's store these for easy access later
+const (
+	SecondNodeName = "m02"
+	ThirdNodeName  = "m03"
+)
+
 // TestMain is the test main
 func TestMain(m *testing.M) {
 	flag.Parse()

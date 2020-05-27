@@ -56,7 +56,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/util"
@@ -317,7 +316,8 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 }
 
 func warnAboutMultiNode() {
-	out.WarningT("Multi-node clusters are currently experimental and might exhibit unintended behavior.\nTo track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
+	out.WarningT("Multi-node clusters are currently experimental and might exhibit unintended behavior.")
+	out.T(out.Documentation, "To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
 func updateDriver(driverName string) {
@@ -877,8 +877,27 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
+	if existing != nil {
+		cp, err := config.PrimaryControlPlane(existing)
+		cp.KubernetesVersion = getKubernetesVersion(&cc)
+		if err != nil {
+			return cc, config.Node{}, err
+		}
+
+		// Make sure that existing nodes honor if KubernetesVersion gets specified on restart
+		// KubernetesVersion is the only attribute that the user can override in the Node object
+		nodes := []config.Node{}
+		for _, n := range existing.Nodes {
+			n.KubernetesVersion = getKubernetesVersion(&cc)
+			nodes = append(nodes, n)
+		}
+		cc.Nodes = nodes
+
+		return cc, cp, nil
+	}
+
 	cp := config.Node{
 		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: getKubernetesVersion(&cc),
@@ -888,24 +907,6 @@ func createNode(cc config.ClusterConfig, kubeNodeName string) (config.ClusterCon
 	}
 	cc.Nodes = []config.Node{cp}
 	return cc, cp, nil
-}
-
-// setDockerProxy sets the proxy environment variables in the docker environment.
-func setDockerProxy() {
-	for _, k := range proxy.EnvVars {
-		if v := os.Getenv(k); v != "" {
-			// convert https_proxy to HTTPS_PROXY for linux
-			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
-			k = strings.ToUpper(k)
-			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-				if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
-					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
-					continue
-				}
-			}
-			config.DockerEnv = append(config.DockerEnv, fmt.Sprintf("%s=%s", k, v))
-		}
-	}
 }
 
 // autoSetDriverOptions sets the options needed for specific driver automatically.

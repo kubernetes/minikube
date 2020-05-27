@@ -52,7 +52,7 @@ var sshCmd = &cobra.Command{
 		if nodeName == "" {
 			n = co.CP.Node
 		} else {
-			n, _, err = node.Retrieve(co.Config, nodeName)
+			n, _, err = node.Retrieve(*co.Config, nodeName)
 			if err != nil {
 				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
 			}

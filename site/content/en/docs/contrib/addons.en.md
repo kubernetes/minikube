@@ -89,7 +89,7 @@ NOTE: `minikube addons open` currently only works for the `kube-system` namespac
 Rebuild the minikube binary and apply the addon with extra logging enabled:
 
 ```shell
-make && ./out/minikube addons enable <addon name> --alsologtostderr
+make && make test && ./out/minikube addons enable <addon name> --alsologtostderr
 ```
 
 Please note that you must run `make` each time you change your YAML files. To disable the addon when new changes are made, run:
