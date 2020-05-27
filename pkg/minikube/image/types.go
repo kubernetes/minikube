@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,28 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package driver
+package image
 
-import (
-	"os/exec"
-)
+// ErrNeedsLogin is thrown when registry needs login (a general error)
+var ErrNeedsLogin error
 
-// supportedDrivers is a list of supported drivers on Linux.
-var supportedDrivers = []string{
-	VirtualBox,
-	VMwareFusion,
-	KVM2,
-	VMware,
-	None,
-	Docker,
-	Podman,
-}
-
-// VBoxManagePath returns the path to the VBoxManage command
-func VBoxManagePath() string {
-	cmd := "VBoxManage"
-	if path, err := exec.LookPath(cmd); err == nil {
-		return path
-	}
-	return cmd
-}
+// ErrGithubNeedsLogin is thrown when user needs to login specifically to github packages)
+var ErrGithubNeedsLogin error

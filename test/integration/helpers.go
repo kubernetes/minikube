@@ -191,66 +191,83 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 }
 
 // PostMortemLogs shows logs for debugging a failed cluster
-func PostMortemLogs(t *testing.T, profile string) {
+func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 	if !t.Failed() {
 		return
 	}
 
 	if !*postMortemLogs {
-		t.Logf("post-mortem logs disabled, oh-well!")
+		t.Logf("post-mortem logs disabled, oh well!")
+		return
+	}
+
+	m := false
+	if len(multinode) > 0 {
+		m = multinode[0]
+	}
+
+	nodes := []string{profile}
+	if m {
+		nodes = append(nodes, SecondNodeName, ThirdNodeName)
 	}
 
 	t.Logf("-----------------------post-mortem--------------------------------")
 
-	if DockerDriver() {
-		t.Logf("======>  post-mortem[%s]: docker inpect <======", t.Name())
-		rr, err := Run(t, exec.Command("docker", "inspect", profile))
-		if err != nil {
-			t.Logf("failed to get docker inspect: %v", err)
-		} else {
-			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
+	for _, n := range nodes {
+		machine := profile
+		if n != profile {
+			machine = fmt.Sprintf("%s-%s", profile, n)
 		}
-	}
+		if DockerDriver() {
+			t.Logf("======>  post-mortem[%s]: docker inspect <======", t.Name())
+			rr, err := Run(t, exec.Command("docker", "inspect", machine))
+			if err != nil {
+				t.Logf("failed to get docker inspect: %v", err)
+			} else {
+				t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
+			}
+		}
 
-	st := Status(context.Background(), t, Target(), profile, "Host")
-	if st != state.Running.String() {
-		t.Logf("%q host is not running, skipping log retrieval (state=%q)", profile, st)
-		return
-	}
-	t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
-	t.Logf("======>  post-mortem[%s]: minikube logs <======", t.Name())
+		st := Status(context.Background(), t, Target(), profile, "Host", n)
+		if st != state.Running.String() {
+			t.Logf("%q host is not running, skipping log retrieval (state=%q)", profile, st)
+			return
+		}
+		t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
+		t.Logf("======>  post-mortem[%s]: minikube logs <======", t.Name())
 
-	rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "25"))
-	if err != nil {
-		t.Logf("failed logs error: %v", err)
-		return
-	}
-	t.Logf("%s logs: %s", t.Name(), rr.Output())
+		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "25"))
+		if err != nil {
+			t.Logf("failed logs error: %v", err)
+			return
+		}
+		t.Logf("%s logs: %s", t.Name(), rr.Output())
 
-	st = Status(context.Background(), t, Target(), profile, "APIServer")
-	if st != state.Running.String() {
-		t.Logf("%q apiserver is not running, skipping kubectl commands (state=%q)", profile, st)
-		return
-	}
+		st = Status(context.Background(), t, Target(), profile, "APIServer", n)
+		if st != state.Running.String() {
+			t.Logf("%q apiserver is not running, skipping kubectl commands (state=%q)", profile, st)
+			return
+		}
 
-	// Get non-running pods. NOTE: This does not yet contain pods which are "running", but not "ready"
-	rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-o=jsonpath={.items[*].metadata.name}", "-A", "--field-selector=status.phase!=Running"))
-	if rerr != nil {
-		t.Logf("%s: %v", rr.Command(), rerr)
-		return
-	}
-	notRunning := strings.Split(rr.Stdout.String(), " ")
-	t.Logf("non-running pods: %s", strings.Join(notRunning, " "))
+		// Get non-running pods. NOTE: This does not yet contain pods which are "running", but not "ready"
+		rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-o=jsonpath={.items[*].metadata.name}", "-A", "--field-selector=status.phase!=Running"))
+		if rerr != nil {
+			t.Logf("%s: %v", rr.Command(), rerr)
+			return
+		}
+		notRunning := strings.Split(rr.Stdout.String(), " ")
+		t.Logf("non-running pods: %s", strings.Join(notRunning, " "))
 
-	t.Logf("======> post-mortem[%s]: describe non-running pods <======", t.Name())
+		t.Logf("======> post-mortem[%s]: describe non-running pods <======", t.Name())
 
-	args := append([]string{"--context", profile, "describe", "pod"}, notRunning...)
-	rr, rerr = Run(t, exec.Command("kubectl", args...))
-	if rerr != nil {
-		t.Logf("%s: %v", rr.Command(), rerr)
-		return
+		args := append([]string{"--context", profile, "describe", "pod"}, notRunning...)
+		rr, rerr = Run(t, exec.Command("kubectl", args...))
+		if rerr != nil {
+			t.Logf("%s: %v", rr.Command(), rerr)
+			return
+		}
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
 	}
-	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
 
 	t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
 	t.Logf("---------------------/post-mortem---------------------------------")
@@ -355,10 +372,10 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 }
 
 // Status returns a minikube component status as a string
-func Status(ctx context.Context, t *testing.T, path string, profile string, key string) string {
+func Status(ctx context.Context, t *testing.T, path string, profile string, key string, node string) string {
 	t.Helper()
 	// Reminder of useful keys: "Host", "Kubelet", "APIServer"
-	rr, err := Run(t, exec.CommandContext(ctx, path, "status", fmt.Sprintf("--format={{.%s}}", key), "-p", profile))
+	rr, err := Run(t, exec.CommandContext(ctx, path, "status", fmt.Sprintf("--format={{.%s}}", key), "-p", profile, "-n", node))
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}
@@ -368,7 +385,7 @@ func Status(ctx context.Context, t *testing.T, path string, profile string, key 
 // showPodLogs logs debug info for pods
 func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, names []string) {
 	t.Helper()
-	st := Status(context.Background(), t, Target(), profile, "APIServer")
+	st := Status(context.Background(), t, Target(), profile, "APIServer", profile)
 	if st != state.Running.String() {
 		t.Logf("%q apiserver is not running, skipping kubectl commands (state=%q)", profile, st)
 		return

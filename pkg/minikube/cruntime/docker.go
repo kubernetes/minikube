@@ -133,7 +133,7 @@ func (r *Docker) Disable() error {
 // ImageExists checks if an image exists
 func (r *Docker) ImageExists(name string, sha string) bool {
 	// expected output looks like [SHA_ALGO:SHA]
-	c := exec.Command("docker", "inspect", "--format", "{{.Id}}", name)
+	c := exec.Command("docker", "image", "inspect", "--format", "{{.Id}}", name)
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return false

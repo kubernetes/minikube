@@ -22,6 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -32,21 +33,23 @@ type setFn func(string, string) error
 
 // Setting represents a setting
 type Setting struct {
-	name        string
-	set         func(config.MinikubeConfig, string, string) error
-	setMap      func(config.MinikubeConfig, string, map[string]interface{}) error
-	validations []setFn
-	callbacks   []setFn
+	name          string
+	set           func(config.MinikubeConfig, string, string) error
+	setMap        func(config.MinikubeConfig, string, map[string]interface{}) error
+	validDefaults func() []string
+	validations   []setFn
+	callbacks     []setFn
 }
 
 // These are all the settings that are configurable
 // and their validation and callback fn run on Set
 var settings = []Setting{
 	{
-		name:        "driver",
-		set:         SetString,
-		validations: []setFn{IsValidDriver},
-		callbacks:   []setFn{RequiresRestartMsg},
+		name:          "driver",
+		set:           SetString,
+		validDefaults: driver.SupportedDrivers,
+		validations:   []setFn{IsValidDriver},
+		callbacks:     []setFn{RequiresRestartMsg},
 	},
 	{
 		name:        "vm-driver",

@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -39,14 +40,15 @@ var nodeStartCmd = &cobra.Command{
 		api, cc := mustload.Partial(ClusterFlagValue())
 		name := args[0]
 
-		if machine.IsRunning(api, name) {
-			out.T(out.Check, "{{.name}} is already running", out.V{"name": name})
-			os.Exit(0)
-		}
-
-		n, _, err := node.Retrieve(cc, name)
+		n, _, err := node.Retrieve(*cc, name)
 		if err != nil {
 			exit.WithError("retrieving node", err)
+		}
+
+		machineName := driver.MachineName(*cc, *n)
+		if machine.IsRunning(api, machineName) {
+			out.T(out.Check, "{{.name}} is already running", out.V{"name": name})
+			os.Exit(0)
 		}
 
 		r, p, m, h, err := node.Provision(cc, n, false)
@@ -71,6 +73,7 @@ var nodeStartCmd = &cobra.Command{
 				exit.WithError("failed to start node", err)
 			}
 		}
+		out.T(out.Happy, "Successfully started node {{.name}}!", out.V{"name": machineName})
 	},
 }
 

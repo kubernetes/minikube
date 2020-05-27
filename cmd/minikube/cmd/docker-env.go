@@ -24,9 +24,11 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -119,6 +121,12 @@ func isDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
+func mustRestartDocker(name string, runner command.Runner) {
+	if err := sysinit.New(runner).Restart("docker"); err != nil {
+		exit.WithCodeT(exit.Unavailable, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+	}
+}
+
 // dockerEnvCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
@@ -138,12 +146,13 @@ var dockerEnvCmd = &cobra.Command{
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
-		if ok := isDockerActive(co.CP.Runner); !ok {
-			exit.WithCodeT(exit.Unavailable, `The docker service within '{{.name}}' is not active`, out.V{"name": cname})
-		}
-
 		sh := shell.EnvConfig{
 			Shell: shell.ForceShell,
+		}
+
+		if ok := isDockerActive(co.CP.Runner); !ok {
+			glog.Warningf("dockerd is not active will try to restart it...")
+			mustRestartDocker(cname, co.CP.Runner)
 		}
 
 		var err error
@@ -170,6 +179,13 @@ var dockerEnvCmd = &cobra.Command{
 			if err != nil {
 				exit.WithError("Error detecting shell", err)
 			}
+		}
+
+		out, err := tryDockerConnectivity("docker", ec)
+		if err != nil { // docker might be up but been loaded with wrong certs/config
+			// to fix issues like this #8185
+			glog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
+			mustRestartDocker(cname, co.CP.Runner)
 		}
 
 		if dockerUnset {
@@ -236,6 +252,23 @@ func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	}
 
 	return env
+}
+
+// dockerEnvVarsList gets the necessary docker env variables to allow the use of minikube's docker daemon to be used in a exec.Command
+func dockerEnvVarsList(ec DockerEnvConfig) []string {
+	return []string{
+		fmt.Sprintf("%s=%s", constants.DockerTLSVerifyEnv, "1"),
+		fmt.Sprintf("%s=%s", constants.DockerHostEnv, dockerURL(ec.hostIP, ec.port)),
+		fmt.Sprintf("%s=%s", constants.DockerCertPathEnv, ec.certsDir),
+		fmt.Sprintf("%s=%s", constants.MinikubeActiveDockerdEnv, ec.profile),
+	}
+}
+
+// tryDockerConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
+func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
+	c := exec.Command(bin, "version", "--format={{.Server}}")
+	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
+	return c.CombinedOutput()
 }
 
 func init() {

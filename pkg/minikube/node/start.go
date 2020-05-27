@@ -153,11 +153,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 
-		// TODO: existing cluster should wait for health #7597
-		if !starter.PreExists {
-			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
-				return nil, errors.Wrap(err, "Wait failed")
-			}
+		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
+			return nil, errors.Wrap(err, "Wait failed")
 		}
 	} else {
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
@@ -325,7 +322,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists, err = startHost(m, *cfg, *node)
+	host, preExists, err = startHost(m, cfg, node)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
 	}
@@ -345,18 +342,11 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 		out.FailureT("Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
 
-	// Save IP to config file for subsequent use
-	node.IP = ip
-	err = config.SaveNode(cfg, node)
-	if err != nil {
-		return runner, preExists, m, host, errors.Wrap(err, "saving node")
-	}
-
 	return runner, preExists, m, host, err
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
+func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
 		return host, exists, nil
@@ -364,7 +354,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 
 	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
 	if !exists {
-		err := machine.DeleteHost(api, driver.MachineName(cc, n))
+		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
 		if err != nil {
 			glog.Warningf("delete host: %v", err)
 		}
@@ -410,7 +400,8 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
 			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
-				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details", out.V{"ip_address": ip, "documentation_url": "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"})
+				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).", out.V{"ip_address": ip})
+				out.T(out.Documentation, "Please see {{.documentation_url}} for more details", out.V{"documentation_url": "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"})
 				warnedOnce = true
 			}
 		}
