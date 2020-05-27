@@ -97,7 +97,7 @@ func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 		if err != nil {
 			return &RunResult{}, errors.Wrapf(err, "lookup powershell")
 		}
-		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
+		args := append([]string{"-NoProfile", "-NonInteractive", "--%"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
 		newCmd.Stdout = cmd.Stdout
 		newCmd.Stderr = cmd.Stderr
@@ -106,7 +106,7 @@ func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 		newCmd = cmd
 	}
 
-	rr := &RunResult{Args: cmd.Args}
+	rr := &RunResult{Args: newCmd.Args}
 
 	t.Logf("(dbg) Run:  %v", rr.Command())
 
@@ -148,7 +148,7 @@ func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
 		if err != nil {
 			return &StartSession{}, errors.Wrapf(err, "lookup powershell")
 		}
-		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
+		args := append([]string{"-NoProfile", "-NonInteractive", "--%"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
 		newCmd.Stdout = cmd.Stdout
 		newCmd.Stderr = cmd.Stderr
