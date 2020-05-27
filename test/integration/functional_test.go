@@ -159,8 +159,8 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	var rr *RunResult
 	var err error
 	if runtime.GOOS == "windows" {
-		c := exec.CommandContext(mctx, Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
-		rr, err = RunInPowershell(t, c)
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
+		rr, err = Run(t, c)
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 		// we should be able to get minikube status with a bash which evaled docker-env
@@ -180,8 +180,8 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
-		c := exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
-		rr, err = RunInPowershell(t, c)
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
+		rr, err = Run(t, c)
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
 		rr, err = Run(t, c)
