@@ -847,7 +847,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
 	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
-	if rr.Stdout.String() != want {
+	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 
