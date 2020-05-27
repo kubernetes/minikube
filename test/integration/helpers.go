@@ -112,40 +112,6 @@ func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 	return rr, err
 }
 
-// RunInPowershell is a test helper to log a command being executed in powershell \_(ツ)_/¯
-func RunInPowershell(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
-	t.Helper()
-	var newCmd *exec.Cmd
-	args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
-	newCmd = exec.Command("powershell.exe", args...)
-	newCmd.Stdout = cmd.Stdout
-	newCmd.Stderr = cmd.Stderr
-	newCmd.Env = cmd.Env
-
-	rr := &RunResult{Args: newCmd.Args}
-
-	t.Logf("(dbg) Run:  %v", rr.Command())
-
-	var outb, errb bytes.Buffer
-	newCmd.Stdout, rr.Stdout = &outb, &outb
-	newCmd.Stderr, rr.Stderr = &errb, &errb
-	start := time.Now()
-	err := newCmd.Run()
-	elapsed := time.Since(start)
-
-	if err == nil {
-		if elapsed > (1 * time.Second) {
-			t.Logf("(dbg) Done: %v: (%s)", rr.Command(), elapsed)
-		}
-	} else {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			rr.ExitCode = exitError.ExitCode()
-		}
-		t.Logf("(dbg) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
-	}
-	return rr, err
-}
-
 // StartSession stores the result of an cmd.Start call
 type StartSession struct {
 	Stdout *bufio.Reader
@@ -156,34 +122,18 @@ type StartSession struct {
 // Start starts a process in the background, streaming output
 func Start(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*StartSession, error) {
 	t.Helper()
-	runInPowershell := false
-	if len(powershell) > 0 {
-		runInPowershell = powershell[0]
-	}
-
 	t.Logf("(dbg) daemon: %v", cmd.Args)
-	var newCmd *exec.Cmd
-	if runInPowershell {
-		args := append([]string{"-NoProfile"}, cmd.Args...)
-		newCmd = exec.Command("powershell.exe", args...)
-		newCmd.Stdout = cmd.Stdout
-		newCmd.Stderr = cmd.Stderr
-		newCmd.Env = cmd.Env
-	} else {
-		newCmd = cmd
-	}
-
-	stdoutPipe, err := newCmd.StdoutPipe()
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("stdout pipe failed: %v %v", newCmd.Args, err)
 	}
-	stderrPipe, err := newCmd.StderrPipe()
+	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		t.Fatalf("stderr pipe failed: %v %v", newCmd.Args, err)
 	}
 
-	sr := &StartSession{Stdout: bufio.NewReader(stdoutPipe), Stderr: bufio.NewReader(stderrPipe), cmd: newCmd}
-	return sr, newCmd.Start()
+	sr := &StartSession{Stdout: bufio.NewReader(stdoutPipe), Stderr: bufio.NewReader(stderrPipe), cmd: cmd}
+	return sr, cmd.Start()
 }
 
 // Stop stops the started process
