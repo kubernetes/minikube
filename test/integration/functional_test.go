@@ -817,7 +817,12 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 	want := "hello\n"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
+
+	for _, x := range os.Environ() {
+		t.Logf("%s", x)
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "--alsologtostderr", "-v=2", "ssh", fmt.Sprintf("echo hello")))
 	if err != nil {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
