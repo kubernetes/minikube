@@ -49,7 +49,7 @@ var (
 )
 
 func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
-	mctx, cancel := context.WithTimeout(ctx, Minutes(5))
+	ctx, cancel := context.WithTimeout(ctx, Minutes(5))
 	type validateFunc func(context.Context, *testing.T, string)
 	defer cancel()
 
@@ -70,7 +70,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		for _, tc := range tests {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
-				tc.validator(mctx, t, profile)
+				tc.validator(ctx, t, profile)
 			})
 		}
 	})
