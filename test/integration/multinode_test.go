@@ -192,7 +192,7 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
-	// Make sure minikube status shows 3 stopped nodes
+	// Make sure minikube status shows 2 stopped nodes
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil && rr.ExitCode != 7 {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
@@ -224,7 +224,7 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
 	}
 
-	// Make sure minikube status shows 3 running nodes
+	// Make sure minikube status shows 2 running nodes
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
