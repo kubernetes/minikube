@@ -117,7 +117,6 @@ func getKubeDNSIP(t *testing.T, profile string) string {
 // validateTunnelStart starts `minikube tunnel`
 func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
-
 	args := []string{"-p", profile, "tunnel", "--alsologtostderr"}
 	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
