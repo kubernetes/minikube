@@ -112,7 +112,6 @@ type Node struct {
 	KubernetesVersion string
 	ControlPlane      bool
 	Worker            bool
-	Token             string
 }
 
 // VersionedExtraOption holds information on flags to apply to a specific range

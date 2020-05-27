@@ -163,17 +163,14 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 
 		// Make sure to use the command runner for the control plane to generate the join token
-		var joinCmd string
-		if !starter.PreExists || starter.Node.Token == "" {
-			cpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
-			if err != nil {
-				return nil, errors.Wrap(err, "getting control plane bootstrapper")
-			}
+		cpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
+		if err != nil {
+			return nil, errors.Wrap(err, "getting control plane bootstrapper")
+		}
 
-			joinCmd, err = cpBs.GenerateToken(starter.Cfg, starter.Node)
-			if err != nil {
-				return nil, errors.Wrap(err, "generating join token")
-			}
+		joinCmd, err := cpBs.GenerateToken(starter.Cfg, starter.Node)
+		if err != nil {
+			return nil, errors.Wrap(err, "generating join token")
 		}
 
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd, starter.PreExists); err != nil {

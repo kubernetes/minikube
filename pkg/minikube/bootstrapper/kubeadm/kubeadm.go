@@ -604,14 +604,25 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 		glog.Infof("JoinCluster complete in %s", time.Since(start))
 	}()
 
-	if preExists {
-		return k.restartWorker(cc, n)
-	}
 	// Join the master by specifying its token
 	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, driver.MachineName(cc, n))
-	out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
-	if err != nil {
-		return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out)
+
+	join := func() error {
+		// reset first to clear any possibly existing state
+		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))))
+		if err != nil {
+			glog.Infof("kubeadm reset failed, continuing anyway: %v", err)
+		}
+
+		out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
+		if err != nil {
+			return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
+		}
+		return nil
+	}
+
+	if err := retry.Expo(join, 10*time.Second, 1*time.Minute); err != nil {
+		return errors.Wrap(err, "joining cp")
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
@@ -621,54 +632,11 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	return nil
 }
 
-func (k *Bootstrapper) restartWorker(cc config.ClusterConfig, n config.Node) error {
-
-	if err := k.clearStaleConfigs(cc); err != nil {
-		return errors.Wrap(err, "clearing stale configs")
-	}
-
-	cmd := fmt.Sprintf("%s join phase kubelet-start %s --token %s --discovery-token-unsafe-skip-ca-verification", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), net.JoinHostPort(constants.ControlPlaneAlias, strconv.Itoa(constants.APIServerPort)), n.Token)
-	_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
-	if err != nil {
-		if !strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
-			return errors.Wrap(err, "running join phase kubelet-start")
-		}
-	}
-
-	// This can fail during upgrades if the old pods have not shut down yet
-	kubeletStatus := func() error {
-		st := kverify.KubeletStatus(k.c)
-		if st != state.Running {
-			return errors.New("kubelet not running")
-		}
-		return nil
-	}
-	if err = retry.Expo(kubeletStatus, 100*time.Microsecond, 30*time.Second); err != nil {
-		glog.Warningf("kubelet is not ready: %v", err)
-		return errors.Wrap(err, "kubelet")
-	}
-
-	return nil
-}
-
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
 func (k *Bootstrapper) GenerateToken(cc *config.ClusterConfig, n *config.Node) (string, error) {
-	if n.Token != "" {
-		return "", nil
-	}
-
-	// Generate the token so we can store it
-	genTokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token generate", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
-	r, err := k.c.RunCmd(genTokenCmd)
-	if err != nil {
-		return "", errors.Wrap(err, "generating bootstrap token")
-	}
-	token := strings.TrimSpace(r.Stdout.String())
-	n.Token = token
-
 	// Take that generated token and use it to get a kubeadm join command
-	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create %s --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), token))
-	r, err = k.c.RunCmd(tokenCmd)
+	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
+	r, err := k.c.RunCmd(tokenCmd)
 	if err != nil {
 		return "", errors.Wrap(err, "generating join command")
 	}
@@ -676,6 +644,9 @@ func (k *Bootstrapper) GenerateToken(cc *config.ClusterConfig, n *config.Node) (
 	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
+	if cc.KubernetesConfig.CRISocket != "" {
+		joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, cc.KubernetesConfig.CRISocket)
+	}
 
 	// Save the new token for later use
 	err = config.SaveNode(cc, n)
@@ -806,7 +777,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin
 	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
-	if cfg.KubernetesConfig.EnableDefaultCNI {
+	if cfg.KubernetesConfig.EnableDefaultCNI && !config.MultiNode(cfg) {
 		files = append(files, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), bsutil.DefaultCNIConfigPath, "0644"))
 	}
 

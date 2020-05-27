@@ -196,8 +196,8 @@ func CacheAndLoadImages(images []string) error {
 
 			status, err := Status(api, m)
 			if err != nil {
-				glog.Warningf("error getting status for %s: %v", pName, err)
-				failed = append(failed, pName)
+				glog.Warningf("error getting status for %s: %v", m, err)
+				failed = append(failed, m)
 				continue
 			}
 
@@ -205,7 +205,7 @@ func CacheAndLoadImages(images []string) error {
 				h, err := api.Load(m)
 				if err != nil {
 					glog.Warningf("Failed to load machine %q: %v", m, err)
-					failed = append(failed, pName)
+					failed = append(failed, m)
 					continue
 				}
 				cr, err := CommandRunner(h)
@@ -214,10 +214,10 @@ func CacheAndLoadImages(images []string) error {
 				}
 				err = LoadImages(c, cr, images, constants.ImageCacheDir)
 				if err != nil {
-					failed = append(failed, pName)
+					failed = append(failed, m)
 					glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
 				}
-				succeeded = append(succeeded, pName)
+				succeeded = append(succeeded, m)
 			}
 		}
 	}
