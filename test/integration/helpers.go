@@ -125,11 +125,11 @@ func Start(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*StartSession, erro
 	t.Logf("(dbg) daemon: %v", cmd.Args)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		t.Fatalf("stdout pipe failed: %v %v", newCmd.Args, err)
+		t.Fatalf("stdout pipe failed: %v %v", cmd.Args, err)
 	}
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		t.Fatalf("stderr pipe failed: %v %v", newCmd.Args, err)
+		t.Fatalf("stderr pipe failed: %v %v", cmd.Args, err)
 	}
 
 	sr := &StartSession{Stdout: bufio.NewReader(stdoutPipe), Stderr: bufio.NewReader(stderrPipe), cmd: cmd}
