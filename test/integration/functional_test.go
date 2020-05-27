@@ -168,7 +168,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		rr, err = Run(t, c)
 	}
 	if ctx.Err() == context.DeadlineExceeded {
-		t.Logf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
 	}
 	if err != nil {
 		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
@@ -189,7 +189,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
-		t.Logf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
 	}
 
 	if err != nil {
@@ -854,9 +854,32 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
-	want := profile + "\n"
+	want := "/home/docker\n"
 	var rr *RunResult
 	var err error
+
+	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
+		cmd := exec.CommandContext(ctx, Target()+" -p "+profile+" ssh "+"pwd")
+		t.Logf("about to run %s: ", cmd.Args)
+		rr, err = Run(t, cmd)
+		t.Logf("rr is  %+v: \n", rr)
+		t.Logf("err is  %v: \n", err)
+	} else {
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
+	}
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+
+	if err != nil {
+		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
+	}
+	if rr.Stdout.String() != want {
+		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
+	}
+
+	want := profile + "\n"
+
 	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
 		cmd := exec.CommandContext(ctx, Target()+" -p "+profile+" ssh "+"\"cat /etc/hostname\"")
 		t.Logf("about to run %s: ", cmd.Args)
@@ -867,7 +890,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
 	}
 	if ctx.Err() == context.DeadlineExceeded {
-		t.Logf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
 
 	if err != nil {
