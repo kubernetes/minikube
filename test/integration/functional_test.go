@@ -160,7 +160,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	var err error
 	if runtime.GOOS == "windows" {
 		c := exec.CommandContext(mctx, Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
-		rr, err = Run(t, c, true)
+		rr, err = RunInPowershell(t, c)
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 		// we should be able to get minikube status with a bash which evaled docker-env
@@ -181,7 +181,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
 		c := exec.CommandContext(mctx, Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
-		rr, err = Run(t, c, true)
+		rr, err = RunInPowershell(t, c)
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
 		rr, err = Run(t, c)
@@ -831,15 +831,16 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 // validateSSHCmd asserts basic "ssh" command functionality
 func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
+	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
+	defer cancel()
 
-	want = "hello" + "\n"
+	want := "hello\n"
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "echo hello"))
-	if ctx.Err() == context.DeadlineExceeded {
+	rr, err := Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "echo hello"))
+	if mctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
 	if err != nil {
@@ -851,10 +852,10 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// testing hostname as well because testing something like "minikube ssh echo" could be confusing
 	// because it  is not clear if echo was run inside minikube on the powershell
-	// so better to test somethign inside minikube, that is meaningful per profile
+	// so better to test something inside minikube, that is meaningful per profile
 	// in this case /etc/hostname is same as the profile name
 	want = profile + "\n"
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
+	rr, err = Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
 	if mctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
