@@ -89,7 +89,6 @@ func (rr RunResult) Output() string {
 func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 	t.Helper()
 	rr := &RunResult{Args: cmd.Args}
-
 	t.Logf("(dbg) Run:  %v", rr.Command())
 
 	var outb, errb bytes.Buffer
@@ -120,7 +119,7 @@ type StartSession struct {
 }
 
 // Start starts a process in the background, streaming output
-func Start(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*StartSession, error) {
+func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
 	t.Helper()
 	t.Logf("(dbg) daemon: %v", cmd.Args)
 	stdoutPipe, err := cmd.StdoutPipe()
