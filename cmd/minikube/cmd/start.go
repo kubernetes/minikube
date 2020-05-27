@@ -301,19 +301,29 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 			if existing == nil {
 				out.Ln("")
 				warnAboutMultiNode()
-			}
-			for i := 1; i < numNodes; i++ {
-				nodeName := node.Name(i + 1)
-				n := config.Node{
-					Name:              nodeName,
-					Worker:            true,
-					ControlPlane:      false,
-					KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
+
+				for i := 1; i < numNodes; i++ {
+					nodeName := node.Name(i + 1)
+					n := config.Node{
+						Name:              nodeName,
+						Worker:            true,
+						ControlPlane:      false,
+						KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
+					}
+					out.Ln("") // extra newline for clarity on the command line
+					err := node.Add(starter.Cfg, n)
+					if err != nil {
+						return nil, errors.Wrap(err, "adding node")
+					}
 				}
-				out.Ln("") // extra newline for clarity on the command line
-				err := node.Add(starter.Cfg, n)
-				if err != nil {
-					return nil, errors.Wrap(err, "adding node")
+			} else {
+				for _, n := range existing.Nodes {
+					if !n.ControlPlane {
+						err := node.Add(starter.Cfg, n)
+						if err != nil {
+							return nil, errors.Wrap(err, "adding node")
+						}
+					}
 				}
 			}
 		}
