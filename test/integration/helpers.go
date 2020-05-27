@@ -86,23 +86,41 @@ func (rr RunResult) Output() string {
 }
 
 // Run is a test helper to log a command being executed \_(ツ)_/¯
-func Run(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*RunResult, error) {
+func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 	t.Helper()
-	runInPowershell := false
-	if len(powershell) > 0 {
-		runInPowershell = powershell[0]
-	}
+	rr := &RunResult{Args: cmd.Args}
 
-	var newCmd *exec.Cmd
-	if runInPowershell {
-		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
-		newCmd = exec.Command("powershell.exe", args...)
-		newCmd.Stdout = cmd.Stdout
-		newCmd.Stderr = cmd.Stderr
-		newCmd.Env = cmd.Env
+	t.Logf("(dbg) Run:  %v", rr.Command())
+
+	var outb, errb bytes.Buffer
+	cmd.Stdout, rr.Stdout = &outb, &outb
+	cmd.Stderr, rr.Stderr = &errb, &errb
+	start := time.Now()
+	err := cmd.Run()
+	elapsed := time.Since(start)
+	if err == nil {
+		// Reduce log spam
+		if elapsed > (1 * time.Second) {
+			t.Logf("(dbg) Done: %v: (%s)", rr.Command(), elapsed)
+		}
 	} else {
-		newCmd = cmd
+		if exitError, ok := err.(*exec.ExitError); ok {
+			rr.ExitCode = exitError.ExitCode()
+		}
+		t.Logf("(dbg) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
 	}
+	return rr, err
+}
+
+// RunInPowershell is a test helper to log a command being executed in powershell \_(ツ)_/¯
+func RunInPowershell(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
+	t.Helper()
+	var newCmd *exec.Cmd
+	args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
+	newCmd = exec.Command("powershell.exe", args...)
+	newCmd.Stdout = cmd.Stdout
+	newCmd.Stderr = cmd.Stderr
+	newCmd.Env = cmd.Env
 
 	rr := &RunResult{Args: newCmd.Args}
 
@@ -114,12 +132,11 @@ func Run(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*RunResult, error) {
 	start := time.Now()
 	err := newCmd.Run()
 	elapsed := time.Since(start)
+
 	if err == nil {
-		// Reduce log spam
-		// TODO:medygh bring this back
-		// if elapsed > (1 * time.Second) {
-		t.Logf("(dbg) Done: %v: (%s)", rr.Command(), elapsed)
-		// }
+		if elapsed > (1 * time.Second) {
+			t.Logf("(dbg) Done: %v: (%s)", rr.Command(), elapsed)
+		}
 	} else {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
