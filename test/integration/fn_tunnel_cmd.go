@@ -128,6 +128,9 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP
 func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
+	if runtime.GOOS == "windows" {
+		t.Skipf("skipping for now")
+	}
 
 	client, err := kapi.Client(profile)
 	if err != nil {
@@ -172,6 +175,11 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 
 // validateAccessDirect validates if the test service can be accessed with LoadBalancer IP from host
 func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
+	checkRoutePassword(t)
+	if runtime.GOOS == "windows" {
+		t.Skipf("skipping for now")
+	}
+
 	checkRoutePassword(t)
 
 	got := []byte{}

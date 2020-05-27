@@ -339,7 +339,9 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
+	if runtime.GOOS == "windows" {
+		t.Skipf("skipping windows")
+	}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
 		t.Errorf("failed to run minikube status. args %q : %v", rr.Command(), err)
@@ -453,6 +455,9 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
 func validateDryRun(ctx context.Context, t *testing.T, profile string) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping windows for now")
+	}
 	// dry-run mode should always be able to finish quickly (<5s)
 	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
 	defer cancel()
