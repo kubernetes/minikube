@@ -878,7 +878,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 
-	want := profile + "\n"
+	want = profile + "\n"
 
 	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
 		cmd := exec.CommandContext(ctx, Target()+" -p "+profile+" ssh "+"\"cat /etc/hostname\"")
