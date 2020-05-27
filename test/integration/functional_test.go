@@ -452,9 +452,6 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
 func validateDryRun(ctx context.Context, t *testing.T, profile string) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping windows for now")
-	}
 	// dry-run mode should always be able to finish quickly (<5s)
 	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
 	defer cancel()
