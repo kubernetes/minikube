@@ -161,7 +161,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	var err error
 	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
 		c := exec.CommandContext(mctx, Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
-		rr, err = Run(t, c) // golang exec powershell needs some tricks !
+		rr, err = Run(t, c, true) // golang exec powershell needs some tricks !
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 		// we should be able to get minikube status with a bash which evaled docker-env
@@ -855,18 +855,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 	want := "/home/docker\n"
-	var rr *RunResult
-	var err error
-
-	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
-		cmd := exec.CommandContext(ctx, Target()+" -p "+profile+" ssh "+"pwd")
-		t.Logf("about to run %s: ", cmd.Args)
-		rr, err = Run(t, cmd)
-		t.Logf("rr is  %+v: \n", rr)
-		t.Logf("err is  %v: \n", err)
-	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
-	}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pwd"))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
@@ -874,21 +863,14 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
+
 	if rr.Stdout.String() != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 
 	want = profile + "\n"
 
-	if runtime.GOOS == "windows" { // golang exec powershell needs some tricks !
-		cmd := exec.CommandContext(ctx, Target()+" -p "+profile+" ssh "+"\"cat /etc/hostname\"")
-		t.Logf("about to run %s: ", cmd.Args)
-		rr, err = Run(t, cmd)
-		t.Logf("rr is  %+v: \n", rr)
-		t.Logf("err is  %v: \n", err)
-	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
-	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}

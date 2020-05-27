@@ -29,7 +29,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -88,16 +87,20 @@ func (rr RunResult) Output() string {
 }
 
 // Run is a test helper to log a command being executed \_(ツ)_/¯
-func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
+func Run(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*RunResult, error) {
 	t.Helper()
+	runInPowershell := false
+	if len(powershell) > 0 {
+		runInPowershell = powershell[0]
+	}
 
 	var newCmd *exec.Cmd
-	if runtime.GOOS == "windows" {
+	if runInPowershell {
 		psBin, err := exec.LookPath("powershell.exe")
 		if err != nil {
 			return &RunResult{}, errors.Wrapf(err, "lookup powershell")
 		}
-		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
+		args := append([]string{"-NoProfile"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
 		newCmd.Stdout = cmd.Stdout
 		newCmd.Stderr = cmd.Stderr
@@ -118,9 +121,10 @@ func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 	elapsed := time.Since(start)
 	if err == nil {
 		// Reduce log spam
-		if elapsed > (1 * time.Second) {
-			t.Logf("(dbg) Done: %v: (%s)", rr.Command(), elapsed)
-		}
+		// TODO:medygh bring this back
+		// if elapsed > (1 * time.Second) {
+		t.Logf("(dbg) Done: %v: (%s)", rr.Command(), elapsed)
+		// }
 	} else {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
@@ -138,17 +142,21 @@ type StartSession struct {
 }
 
 // Start starts a process in the background, streaming output
-func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
+func Start(t *testing.T, cmd *exec.Cmd, powershell ...bool) (*StartSession, error) {
 	t.Helper()
-	t.Logf("(dbg) daemon: %v", cmd.Args)
+	runInPowershell := false
+	if len(powershell) > 0 {
+		runInPowershell = powershell[0]
+	}
 
+	t.Logf("(dbg) daemon: %v", cmd.Args)
 	var newCmd *exec.Cmd
-	if runtime.GOOS == "windows" {
+	if runInPowershell {
 		psBin, err := exec.LookPath("powershell.exe")
 		if err != nil {
 			return &StartSession{}, errors.Wrapf(err, "lookup powershell")
 		}
-		args := append([]string{"-NoProfile", "-NonInteractive"}, cmd.Args...)
+		args := append([]string{"-NoProfile"}, cmd.Args...)
 		newCmd = exec.Command(psBin, args...)
 		newCmd.Stdout = cmd.Stdout
 		newCmd.Stderr = cmd.Stderr
