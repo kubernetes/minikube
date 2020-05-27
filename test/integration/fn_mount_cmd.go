@@ -51,7 +51,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { //nol
 		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")
 	}
 
-	t.Logf("runtime is %q", runtime.GOOS)
+	t.Logf("runtime is %q\n", runtime.GOOS)
 
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping: mount broken on windows: https://github.com/kubernetes/minikube/issues/8271")
