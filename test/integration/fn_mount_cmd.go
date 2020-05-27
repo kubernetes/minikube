@@ -62,10 +62,10 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}
 
-	mctx, cancel := context.WithTimeout(ctx, Minutes(10))
+	ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
-	ss, err := Start(t, exec.CommandContext(mctx, Target(), args...))
+	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%v failed: %v", args, err)
 	}
@@ -107,7 +107,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Block until the mount succeeds to avoid file race
 	checkMount := func() error {
-		_, err := Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p"))
+		_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p"))
 		return err
 	}
 
@@ -121,7 +121,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Assert that we can access the mount without an error. Display for debugging.
-	rr, err := Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "--", "ls", "-la", guestMount))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "--", "ls", "-la", guestMount))
 	if err != nil {
 		t.Fatalf("failed verifying accessing to the mount. args %q : %v", rr.Command(), err)
 	}
@@ -129,7 +129,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Assert that the mount contains our unique test marker, as opposed to a stale mount
 	tp := filepath.Join("/mount-9p", testMarker)
-	rr, err = Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "cat", tp))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat", tp))
 	if err != nil {
 		t.Fatalf("failed to verify the mount contains unique test marked: args %q: %v", rr.Command(), err)
 	}
@@ -140,12 +140,12 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Start the "busybox-mount" pod.
-	rr, err = Run(t, exec.CommandContext(mctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
 	if err != nil {
 		t.Fatalf("failed to 'kubectl replace' for busybox-mount-test. args %q : %v", rr.Command(), err)
 	}
 
-	if _, err := PodWait(mctx, t, profile, "default", "integration-test=busybox-mount", Minutes(4)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", Minutes(4)); err != nil {
 		t.Fatalf("failed waiting for busybox-mount pod: %v", err)
 	}
 
@@ -161,7 +161,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
-	rr, err = Run(t, exec.CommandContext(mctx, "kubectl", "--context", profile, "logs", "busybox-mount"))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "busybox-mount"))
 	if err != nil {
 		t.Errorf("failed to get kubectl logs for busybox-mount. args %q : %v", rr.Command(), err)
 	}
