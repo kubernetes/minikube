@@ -40,7 +40,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
@@ -56,6 +56,7 @@ func TestAddons(t *testing.T) {
 			{"Ingress", validateIngressAddon},
 			{"MetricsServer", validateMetricsServerAddon},
 			{"HelmTiller", validateHelmTillerAddon},
+			{"Olm", validateOlmAddon}
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -326,49 +327,6 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "helm-tiller", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed disabling helm-tiller addon. arg %q.s %v", rr.Command(), err)
-	}
-}
-
-func TestOlmAddon(t *testing.T) {
-	profile := UniqueProfileName("addons")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-	defer Cleanup(t, profile, cancel)
-
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=olm"}, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-
-	// Parallelized tests
-	t.Run("parallel", func(t *testing.T) {
-		tests := []struct {
-			name      string
-			validator validateFunc
-		}{
-			{"Olm", validateOlmAddon},
-		}
-		for _, tc := range tests {
-			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
-				MaybeParallel(t)
-				tc.validator(ctx, t, profile)
-			})
-		}
-	})
-
-	// Assert that disable/enable works offline
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to stop minikube. args %q : %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
 	}
 }
 
