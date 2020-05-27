@@ -19,7 +19,6 @@ package cmd
 import (
 	"os"
 
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/spf13/cobra"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -58,13 +57,7 @@ var sshCmd = &cobra.Command{
 			}
 		}
 
-		if nativeSSHClient {
-			ssh.SetDefaultClient(ssh.Native)
-		} else {
-			ssh.SetDefaultClient(ssh.External)
-		}
-
-		err = machine.CreateSSHShell(co.API, *co.Config, *n, args)
+		err = machine.CreateSSHShell(co.API, *co.Config, *n, args, nativeSSHClient)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
