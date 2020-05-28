@@ -302,7 +302,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
 		glog.Infof("found existing configuration files, will attempt cluster restart")
-		rerr := k.restartCluster(cfg)
+		rerr := k.restartControlPlane(cfg)
 		if rerr == nil {
 			return nil
 		}
@@ -484,7 +484,7 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	glog.Infof("restartCluster start")
 
 	start := time.Now()
@@ -605,10 +605,24 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	}()
 
 	// Join the master by specifying its token
-	joinCmd = fmt.Sprintf("%s --v=10 --node-name=%s", joinCmd, driver.MachineName(cc, n))
-	out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
-	if err != nil {
-		return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out)
+	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, driver.MachineName(cc, n))
+
+	join := func() error {
+		// reset first to clear any possibly existing state
+		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))))
+		if err != nil {
+			glog.Infof("kubeadm reset failed, continuing anyway: %v", err)
+		}
+
+		out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
+		if err != nil {
+			return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
+		}
+		return nil
+	}
+
+	if err := retry.Expo(join, 10*time.Second, 1*time.Minute); err != nil {
+		return errors.Wrap(err, "joining cp")
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
@@ -618,17 +632,21 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	return nil
 }
 
-// GenerateToken creates a token and returns the appropriate kubeadm join command to run
+// GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
 func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
+	// Take that generated token and use it to get a kubeadm join command
 	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(tokenCmd)
 	if err != nil {
-		return "", errors.Wrap(err, "generating bootstrap token")
+		return "", errors.Wrap(err, "generating join command")
 	}
 
 	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
+	if cc.KubernetesConfig.CRISocket != "" {
+		joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, cc.KubernetesConfig.CRISocket)
+	}
 
 	return joinCmd, nil
 }
@@ -743,14 +761,18 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	files := []assets.CopyableFile{
-		assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"),
 		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile, "0644"),
 		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile, "0644"),
 	}
+
+	if n.ControlPlane {
+		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"))
+	}
+
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin
 	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
-	if cfg.KubernetesConfig.EnableDefaultCNI {
+	if cfg.KubernetesConfig.EnableDefaultCNI && !config.MultiNode(cfg) {
 		files = append(files, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), bsutil.DefaultCNIConfigPath, "0644"))
 	}
 

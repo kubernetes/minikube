@@ -46,6 +46,8 @@ func TestMultiNode(t *testing.T) {
 			{"StopNode", validateStopRunningNode},
 			{"StartAfterStop", validateStartNodeAfterStop},
 			{"DeleteNode", validateDeleteNodeFromMultiNode},
+			{"StopMultiNode", validateStopMultiNodeCluster},
+			{"RestartMultiNode", validateRestartMultiNodeCluster},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -138,12 +140,20 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 }
 
 func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile string) {
-	// TODO (#7496): remove skip once restarts work
-	t.Skip("Restarting nodes is broken :(")
+	if DockerDriver() {
+		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
+		if err != nil {
+			t.Fatalf("docker is broken: %v", err)
+		}
+		if strings.Contains(rr.Stdout.String(), "azure") {
+			t.Skip("kic containers are not supported on docker's azure")
+		}
+	}
 
 	// Start the node back up
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", ThirdNodeName))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", ThirdNodeName, "--alsologtostderr"))
 	if err != nil {
+		t.Logf(rr.Stderr.String())
 		t.Errorf("node start returned an error. args %q: %v", rr.Command(), err)
 	}
 
@@ -158,6 +168,73 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	}
 
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 3 {
+		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
+	}
+
+	// Make sure kubectl can connect correctly
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
+	if err != nil {
+		t.Fatalf("failed to kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
+}
+
+func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
+	// Run minikube node stop on that node
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "stop"))
+	if err != nil {
+		t.Errorf("node stop returned an error. args %q: %v", rr.Command(), err)
+	}
+
+	// Run status to see the stopped hosts
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	// Exit code 7 means one host is stopped, which we are expecting
+	if err != nil && rr.ExitCode != 7 {
+		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
+	}
+
+	// Make sure minikube status shows 2 stopped nodes
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
+	if err != nil && rr.ExitCode != 7 {
+		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
+	}
+
+	if strings.Count(rr.Stdout.String(), "host: Stopped") != 2 {
+		t.Errorf("incorrect number of stopped hosts: args %q: %v", rr.Command(), rr.Stdout.String())
+	}
+
+	if strings.Count(rr.Stdout.String(), "kubelet: Stopped") != 2 {
+		t.Errorf("incorrect number of stopped kubelets: args %q: %v", rr.Command(), rr.Stdout.String())
+	}
+}
+
+func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
+	if DockerDriver() {
+		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
+		if err != nil {
+			t.Fatalf("docker is broken: %v", err)
+		}
+		if strings.Contains(rr.Stdout.String(), "azure") {
+			t.Skip("kic containers are not supported on docker's azure")
+		}
+	}
+	// Restart a full cluster with minikube start
+	startArgs := append([]string{"start", "-p", profile}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err != nil {
+		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
+	}
+
+	// Make sure minikube status shows 2 running nodes
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
+	if err != nil {
+		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
+	}
+
+	if strings.Count(rr.Stdout.String(), "host: Running") != 2 {
+		t.Errorf("status says both hosts are not running: args %q: %v", rr.Command(), rr.Stdout.String())
+	}
+
+	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
 	}
 }

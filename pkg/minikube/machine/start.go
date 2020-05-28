@@ -168,7 +168,6 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	if err := saveHost(api, h, cfg, n); err != nil {
 		return h, err
 	}
-
 	return h, nil
 }
 
