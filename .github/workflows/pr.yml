@@ -180,7 +180,7 @@ jobs:
           $env:MINIKUBE_HOME="${pwd}\testhome"
           .\minikube-windows-amd64.exe delete --all --purge
           Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
-            C:\var\jenkins\workspace\Hyper-V_Windows_integration\out\minikube-windows-amd64.exe delete -p $_.Name
+            .\minikube-windows-amd64.exe delete -p $_.Name
             Suspend-VM $_.Name
             Stop-VM $_.Name -Force
             Remove-VM $_.Name -Force
@@ -282,7 +282,7 @@ jobs:
           $env:MINIKUBE_HOME="${pwd}\testhome"
           .\minikube-windows-amd64.exe delete --all --purge
           Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
-            C:\var\jenkins\workspace\Hyper-V_Windows_integration\out\minikube-windows-amd64.exe delete -p $_.Name
+            minikube-windows-amd64.exe delete -p $_.Name
             Suspend-VM $_.Name
             Stop-VM $_.Name -Force
             Remove-VM $_.Name -Force
