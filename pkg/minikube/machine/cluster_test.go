@@ -454,7 +454,7 @@ func TestCreateSSHShell(t *testing.T) {
 	cc.Name = viper.GetString("profile")
 
 	cliArgs := []string{"exit"}
-	if err := CreateSSHShell(api, cc, config.Node{Name: "minikube"}, cliArgs); err != nil {
+	if err := CreateSSHShell(api, cc, config.Node{Name: "minikube"}, cliArgs, true); err != nil {
 		t.Fatalf("Error running ssh command: %v", err)
 	}
 

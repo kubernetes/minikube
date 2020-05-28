@@ -837,7 +837,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
 	defer cancel()
 
-	want := "hello\n"
+	want := "hello"
 
 	rr, err := Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "echo hello"))
 	if mctx.Err() == context.DeadlineExceeded {
@@ -846,7 +846,8 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
-	if rr.Stdout.String() != want {
+	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
+	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 
@@ -854,7 +855,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	// because it  is not clear if echo was run inside minikube on the powershell
 	// so better to test something inside minikube, that is meaningful per profile
 	// in this case /etc/hostname is same as the profile name
-	want = profile + "\n"
+	want = profile
 	rr, err = Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
 	if mctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
@@ -863,7 +864,8 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
-	if rr.Stdout.String() != want {
+	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
+	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 }
