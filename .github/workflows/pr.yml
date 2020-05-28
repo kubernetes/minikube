@@ -240,6 +240,7 @@ jobs:
       - name: The End Result functional_test_docker_windows
         shell: powershell
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           $numFail=(echo $Env:STAT | jq '.NumberOfFail')
           $failedTests=( echo $Env:STAT | jq '.FailedTests')
           echo "----------------${numFail} Failures----------------------------"
@@ -327,6 +328,7 @@ jobs:
       - name: The End Result functional_test_hyperv_windows
         shell: powershell
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           $numFail=(echo $Env:STAT | jq '.NumberOfFail')
           $failedTests=( echo $Env:STAT | jq '.FailedTests')
           echo "----------------${numFail} Failures----------------------------"
