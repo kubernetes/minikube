@@ -79,10 +79,6 @@ func TestStartStop(t *testing.T) {
 		for _, tc := range tests {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
-				// See https://github.com/kubernetes/minikube/issues/8048#issuecomment-635504092
-				if tc.name == "old-k8s-version" && KVMDriver() {
-					t.Skip()
-				}
 				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
