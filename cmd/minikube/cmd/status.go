@@ -232,7 +232,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 	glog.Infof("%s kubelet status = %s", name, stk)
 	st.Kubelet = stk.String()
 
-	// Early exit for regular nodes
+	// Early exit for worker nodes
 	if !controlPlane {
 		return st, nil
 	}

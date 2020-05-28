@@ -21,7 +21,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -128,6 +127,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
+
 	}
 
 	var wg sync.WaitGroup
@@ -156,6 +156,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 			return nil, errors.Wrap(err, "Wait failed")
 		}
+
 	} else {
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
 			return nil, errors.Wrap(err, "Updating node")
@@ -251,7 +252,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 
 	err = cr.Enable(disableOthers, forceSystemd())
 	if err != nil {
-		debug.PrintStack()
 		exit.WithError("Failed to enable container runtime", err)
 	}
 

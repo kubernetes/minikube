@@ -105,7 +105,7 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 	}
 
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, healthz); err != nil {
-		return fmt.Errorf("apiserver healthz never reported healthy")
+		return fmt.Errorf("apiserver healthz never reported healthy: %v", err)
 	}
 
 	vcheck := func() (bool, error) {
