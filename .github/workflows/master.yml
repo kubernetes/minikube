@@ -242,7 +242,6 @@ jobs:
       - name: The End Result functional_test_docker_windows
         shell: powershell
         run: |
-          $ErrorActionPreference = "SilentlyContinue"
           $numFail=(echo $Env:STAT | jq '.NumberOfFail')
           $failedTests=( echo $Env:STAT | jq '.FailedTests')
           echo "----------------${numFail} Failures----------------------------"
@@ -250,7 +249,7 @@ jobs:
           echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
-          If ($numFail -ge 0){ exit 2 } 
+          If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
   functional_test_hyperv_windows:
@@ -330,7 +329,6 @@ jobs:
       - name: The End Result functional_test_hyperv_windows
         shell: powershell
         run: |
-          $ErrorActionPreference = "SilentlyContinue"
           $numFail=(echo $Env:STAT | jq '.NumberOfFail')
           $failedTests=( echo $Env:STAT | jq '.FailedTests')
           echo "----------------${numFail} Failures----------------------------"
@@ -338,7 +336,7 @@ jobs:
           echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
-          If ($numFail -ge 0){ exit 2 } 
+          If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
   addons_certs_tests_docker_ubuntu:
