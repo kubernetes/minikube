@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
         - name: dashboard-metrics-scraper
-          image: kubernetesui/metrics-scraper:v1.0.2
+          image: kubernetesui/metrics-scraper:v1.0.4
           ports:
             - containerPort: 8000
               protocol: TCP
@@ -73,7 +73,7 @@ metadata:
   labels:
     k8s-app: kubernetes-dashboard
     kubernetes.io/minikube-addons: dashboard
-    addonmanager.kubernetes.io/mode: Reconcile    
+    addonmanager.kubernetes.io/mode: Reconcile
   name: kubernetes-dashboard
   namespace: kubernetes-dashboard
 spec:
@@ -90,7 +90,7 @@ spec:
       containers:
         - name: kubernetes-dashboard
           # WARNING: This must match pkg/minikube/bootstrapper/images/images.go
-          image: kubernetesui/dashboard:v2.0.0
+          image: kubernetesui/dashboard:v2.0.1
           ports:
             - containerPort: 9090
               protocol: TCP
