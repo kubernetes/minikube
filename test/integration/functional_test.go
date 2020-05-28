@@ -242,7 +242,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	// the test before this had been start with --apiserver-port=8441
 	beforeCfg, err := config.LoadProfile(profile)
 	if err != nil {
-		t.Errorf("error reading cluster config before soft start: %v", err)
+		t.Fatalf("error reading cluster config before soft start: %v", err)
 	}
 	if beforeCfg.Config.KubernetesConfig.NodePort != apiPortTest {
 		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
