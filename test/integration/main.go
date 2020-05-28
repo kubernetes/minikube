@@ -75,11 +75,6 @@ func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
-// KVMDriver returns whether or not this test is using the KVM driver
-func KVMDriver() bool {
-	return strings.Contains(*startArgs, "--driver=kvm") || strings.Contains(*startArgs, "--vm-driver=kvm")
-}
-
 // DockerDriver returns whether or not this test is using the docker or podman driver
 func DockerDriver() bool {
 	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker")
