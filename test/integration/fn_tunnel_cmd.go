@@ -173,6 +173,10 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 
 // validateAccessDirect validates if the test service can be accessed with LoadBalancer IP from host
 func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping: mount broken on windows: https://github.com/kubernetes/minikube/issues/8304")
+	}
+
 	checkRoutePassword(t)
 
 	got := []byte{}
