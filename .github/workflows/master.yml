@@ -176,6 +176,17 @@ jobs:
           echo $env:computerName
           ls 
           $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          .\minikube-windows-amd64.exe delete --all --purge
+          Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
+            minikube-windows-amd64.exe delete -p $_.Name
+            Suspend-VM $_.Name
+            Stop-VM $_.Name -Force
+            Remove-VM $_.Name -Force
+          }
           Remove-Item minikube_binaries -Force -Recurse
           ls  
       - name: Download Binaries
@@ -267,6 +278,17 @@ jobs:
           echo $env:computerName
           ls 
           $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          .\minikube-windows-amd64.exe delete --all --purge
+          Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
+            minikube-windows-amd64.exe delete -p $_.Name
+            Suspend-VM $_.Name
+            Stop-VM $_.Name -Force
+            Remove-VM $_.Name -Force
+          }
           Remove-Item minikube_binaries -Force -Recurse
           ls  
       - name: Download Binaries
