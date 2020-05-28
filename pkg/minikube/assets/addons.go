@@ -383,6 +383,26 @@ var Addons = map[string]*Addon{
 			"0640",
 			true),
 	}, false, "metallb"),
+	"ambassador": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/ambassador/ambassador-operator-crds.yaml",
+			vmpath.GuestAddonsDir,
+			"ambassador-operator-crds.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/ambassador/ambassador-operator.yaml",
+			vmpath.GuestAddonsDir,
+			"ambassador-operator.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/ambassador/ambassadorinstallation.yaml",
+			vmpath.GuestAddonsDir,
+			"ambassadorinstallation.yaml.yaml",
+			"0640",
+			false),
+	}, false, "ambassador"),
 }
 
 // GenerateTemplateData generates template data for template assets
