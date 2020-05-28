@@ -246,12 +246,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		cc.MinikubeISO = url
 	}
 
-	if viper.GetBool(nativeSSH) {
-		ssh.SetDefaultClient(ssh.Native)
-	} else {
-		ssh.SetDefaultClient(ssh.External)
-	}
-
 	var existingAddons map[string]bool
 	if viper.GetBool(installAddons) {
 		existingAddons = map[string]bool{}
@@ -263,6 +257,12 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true)
 	if err != nil {
 		return node.Starter{}, err
+	}
+
+	if viper.GetBool(nativeSSH) {
+		ssh.SetDefaultClient(ssh.Native)
+	} else {
+		ssh.SetDefaultClient(ssh.External)
 	}
 
 	return node.Starter{
