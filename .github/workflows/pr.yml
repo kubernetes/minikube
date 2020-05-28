@@ -247,8 +247,9 @@ jobs:
           echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
-          If ($numFail -ge 0){ exit 2 } else { echo "goodjob" }
+          If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
+          If ($numFail -eq 0){ exit 0 }
   functional_test_hyperv_windows:
     needs: [build_minikube]
     env:
@@ -286,7 +287,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          ./e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=13m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+          ./e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=13m -timeout-multiplier=1.5 --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -333,8 +334,9 @@ jobs:
           echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
-          If ($numFail -ge 0){ exit 2 } else { echo "goodjob" }
+          If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
+          If ($numFail -eq 0){ exit 0 }
   addons_certs_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
