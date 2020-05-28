@@ -43,12 +43,16 @@ const (
 	createdByPodRemovedByTest = "created-by-pod-removed-by-test"
 )
 
-func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
+func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // nolint: cyclomatic complexity 31
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
 	}
 	if HyperVDriver() {
 		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")
+	}
+
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping: mount broken on windows: https://github.com/kubernetes/minikube/issues/8303")
 	}
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
