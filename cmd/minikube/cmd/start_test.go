@@ -98,6 +98,11 @@ func TestMirrorCountry(t *testing.T) {
 			mirrorCountry:   "",
 		},
 		{
+			description:     "image-repository none, image-mirror-country china",
+			imageRepository: "",
+			mirrorCountry:   "cn",
+		},
+		{
 			description:     "image-repository auto, image-mirror-country none",
 			imageRepository: "auto",
 			mirrorCountry:   "",
@@ -105,6 +110,16 @@ func TestMirrorCountry(t *testing.T) {
 		{
 			description:     "image-repository auto, image-mirror-country china",
 			imageRepository: "auto",
+			mirrorCountry:   "cn",
+		},
+		{
+			description:     "image-repository registry.test.com, image-mirror-country none",
+			imageRepository: "registry.test.com",
+			mirrorCountry:   "",
+		},
+		{
+			description:     "image-repository registry.test.com, image-mirror-country china",
+			imageRepository: "registry.test.com",
 			mirrorCountry:   "cn",
 		},
 	}
