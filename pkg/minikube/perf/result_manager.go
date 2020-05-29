@@ -64,8 +64,10 @@ func (rm *resultManager) averageTime(binary *Binary) float64 {
 	return average(times)
 }
 
-func (rm *resultManager) summarizeResults(binaries []*Binary) {
+func (rm *resultManager) summarizeResults(binaries []*Binary, driver string) {
 	// print total and average times
+	fmt.Printf("**%s Driver**\n", driver)
+
 	for _, b := range binaries {
 		fmt.Printf("Times for %s: %v\n", b.Name(), rm.totalTimes(b))
 		fmt.Printf("Average time for %s: %v\n\n", b.Name(), rm.averageTime(b))
