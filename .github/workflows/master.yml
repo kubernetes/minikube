@@ -187,6 +187,7 @@ jobs:
             Stop-VM $_.Name -Force
             Remove-VM $_.Name -Force
           }
+          cd ..
           Remove-Item minikube_binaries -Force -Recurse
           ls  
       - name: Download Binaries
@@ -289,6 +290,7 @@ jobs:
             Stop-VM $_.Name -Force
             Remove-VM $_.Name -Force
           }
+          cd ..
           Remove-Item minikube_binaries -Force -Recurse
           ls  
       - name: Download Binaries
