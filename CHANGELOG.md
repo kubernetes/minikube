@@ -13,6 +13,7 @@ Features:
 
 Minor Improvements:
 
+* docker/podman drivers: add fall back image in docker hub [#8320](https://github.com/kubernetes/minikube/pull/8320)
 * multinode: copy apiserver certs only to control plane [#8092](https://github.com/kubernetes/minikube/pull/8092)
 * parallels driver: add HostIP implementation [#8259](https://github.com/kubernetes/minikube/pull/8259)
 * docker-env: restart dockerd inside minikube on failure [#8239](https://github.com/kubernetes/minikube/pull/8239)
