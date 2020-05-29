@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 
@@ -41,6 +42,10 @@ var rootCmd = &cobra.Command{
 		}
 		return perf.CompareMinikubeStart(context.Background(), os.Stdout, binaries)
 	},
+}
+
+func init() {
+	flag.Parse()
 }
 
 func validateArgs(args []string) error {
