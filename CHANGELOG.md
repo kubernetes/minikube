@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.11.0 - 2020-05-28
+## Version 1.11.0 - 2020-05-29
 
 Features:
 
