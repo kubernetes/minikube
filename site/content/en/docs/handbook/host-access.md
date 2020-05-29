@@ -7,36 +7,37 @@ description: >
 aliases:
   - docs/tasks/accessing-host-resources/
 ---
-
-{{% pageinfo %}}
-This has only been tested on VirtualBox and Hyperkit. Instructions may differ for other VM drivers.
-{{% /pageinfo %}}
-
 ### Prerequisites
 
 The service running on your host must either be bound to all IP's (0.0.0.0) and interfaces, or to the IP and interface your VM is bridged against. If the service is bound only to localhost (127.0.0.1), this will not work.
 
-### Getting the bridge IP
+### host.minikube.internal
 
-To access a resource, such as a MySQL service running on your host, from inside of a pod, the key information you need is the correct target IP to use.
-
-```shell
-minikube ssh "route -n | grep ^0.0.0.0 | awk '{ print \$2 }'"
-```
-
-Example output:
-
-```
-10.0.2.2
-```
-
-This is the IP your pods can connect to in order to access services running on the host.
+To make it easier to access your host, minikube v1.10 adds a hostname entry `host.minikube.internal` to `/etc/hosts`. The IP which `host.minikube.internal` resolves to is different across drivers, and may be different across clusters.
 
 ### Validating connectivity
 
-```shell
-minikube ssh
-telnet <ip> <port>
+You can use `minikube ssh` to confirm connectivity:
+
 ```
+                         _             _            
+            _         _ ( )           ( )           
+  ___ ___  (_)  ___  (_)| |/')  _   _ | |_      __  
+/' _ ` _ `\| |/' _ `\| || , <  ( ) ( )| '_`\  /'__`\
+| ( ) ( ) || || ( ) || || |\`\ | (_) || |_) )(  ___/
+(_) (_) (_)(_)(_) (_)(_)(_) (_)`\___/'(_,__/'`\____)
+
+$ ping host.minikube.internal 
+PING host.minikube.internal (192.168.64.1): 56 data bytes
+64 bytes from 192.168.64.1: seq=0 ttl=64 time=0.225 ms
+```
+
+To test connectivity to a specific TCP service listening on your host, use `telnet <ip> <port>`. Here are how to interpret the different messages:
+
+* `<nothing>`: You are connected! Hit Ctrl-D to get back to a shell prompt.
+* `Connection refused`: the service is not listening on the port, at least not across all interfaces
+* `Connection closed by foreign host`: the service is listening, but decided that your telnet client did not meet the protocol handshake requirements. Using a real client will likely work.
+
+
 
 If you press enter, you may see an interesting string or error message pop up. This means that the connection is working.
