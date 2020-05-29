@@ -43,7 +43,7 @@ const (
 	createdByPodRemovedByTest = "created-by-pod-removed-by-test"
 )
 
-func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // nolint: cyclomatic complexity 31
+func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // nolint
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
 	}
