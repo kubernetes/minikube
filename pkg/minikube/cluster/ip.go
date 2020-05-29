@@ -86,6 +86,8 @@ func HostIP(host *host.Host) (net.IP, error) {
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	case driver.None:
 		return net.ParseIP("127.0.0.1"), nil
+	case driver.Parallels:
+		return net.ParseIP("10.211.55.2"), nil
 	default:
 		return []byte{}, fmt.Errorf("HostIP not yet implemented for %q driver", host.DriverName)
 	}
