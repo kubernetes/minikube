@@ -69,8 +69,12 @@ func (rm *resultManager) summarizeResults(binaries []*Binary, driver string) {
 	fmt.Printf("**%s Driver**\n", driver)
 
 	for _, b := range binaries {
-		fmt.Printf("Times for %s: %v\n", b.Name(), rm.totalTimes(b))
-		fmt.Printf("Average time for %s: %v\n\n", b.Name(), rm.averageTime(b))
+		fmt.Printf("Times for %s: ", b.Name())
+		for _, tt := range rm.totalTimes(b) {
+			fmt.Printf("%.1fs ", tt)
+		}
+		fmt.Println()
+		fmt.Printf("Average time for %s: %.1fs\n\n", b.Name(), rm.averageTime(b))
 	}
 
 	// print out summary per log
@@ -98,7 +102,7 @@ func (rm *resultManager) summarizeTimesPerLog(binaries []*Binary) {
 			if index == -1 {
 				continue
 			}
-			table[index][i+1] = fmt.Sprintf("%f", time)
+			table[index][i+1] = fmt.Sprintf("%.1fs", time)
 		}
 	}
 
