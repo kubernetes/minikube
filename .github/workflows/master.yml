@@ -311,7 +311,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          ./e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=13m --timeout-multiplier=1.5 --test.v --test.run="TestFunctional" --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+          ./e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=13m --timeout-multiplier=2 --test.v --test.run="TestFunctional" --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
