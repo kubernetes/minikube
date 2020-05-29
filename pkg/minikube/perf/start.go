@@ -38,7 +38,8 @@ func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary
 	for _, d := range drivers {
 		rm, err := collectResults(ctx, binaries, d)
 		if err != nil {
-			log.Printf("error collecting results for %s driver: %v", d, err)
+			fmt.Printf("**%s Driver**\n", d)
+			fmt.Printf("error collecting results for %s driver: %v\n", d, err)
 			continue
 		}
 		rm.summarizeResults(binaries, d)
@@ -50,7 +51,7 @@ func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary
 func collectResults(ctx context.Context, binaries []*Binary, driver string) (*resultManager, error) {
 	rm := newResultManager()
 	for run := 0; run < runs; run++ {
-		log.Printf("Executing run %d/%d...", run, runs)
+		log.Printf("Executing run %d/%d...", run+1, runs)
 		for _, binary := range binaries {
 			r, err := timeMinikubeStart(ctx, binary, driver)
 			if err != nil {
