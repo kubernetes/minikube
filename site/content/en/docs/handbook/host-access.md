@@ -32,12 +32,8 @@ PING host.minikube.internal (192.168.64.1): 56 data bytes
 64 bytes from 192.168.64.1: seq=0 ttl=64 time=0.225 ms
 ```
 
-To test connectivity to a specific TCP service listening on your host, use `telnet <ip> <port>`. Here are how to interpret the different messages:
+To test connectivity to a specific TCP service listening on your host, use `telnet host.minikube.internal <port>`. Here are how to interpret the different messages:
 
 * `<nothing>`: You are connected! Hit Ctrl-D to get back to a shell prompt.
 * `Connection refused`: the service is not listening on the port, at least not across all interfaces
 * `Connection closed by foreign host`: the service is listening, but decided that your telnet client did not meet the protocol handshake requirements. Using a real client will likely work.
-
-
-
-If you press enter, you may see an interesting string or error message pop up. This means that the connection is working.
