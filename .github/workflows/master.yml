@@ -176,6 +176,18 @@ jobs:
           echo $env:computerName
           ls 
           $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          .\minikube-windows-amd64.exe delete --all --purge
+          Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
+            minikube-windows-amd64.exe delete -p $_.Name
+            Suspend-VM $_.Name
+            Stop-VM $_.Name -Force
+            Remove-VM $_.Name -Force
+          }
+          cd ..
           Remove-Item minikube_binaries -Force -Recurse
           ls  
       - name: Download Binaries
@@ -202,7 +214,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          ./e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=13m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=13m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" 2>&1 | Out-File -FilePath .\report\testout.txt -Encoding ASCII
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -267,6 +279,18 @@ jobs:
           echo $env:computerName
           ls 
           $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          .\minikube-windows-amd64.exe delete --all --purge
+          Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
+            minikube-windows-amd64.exe delete -p $_.Name
+            Suspend-VM $_.Name
+            Stop-VM $_.Name -Force
+            Remove-VM $_.Name -Force
+          }
+          cd ..
           Remove-Item minikube_binaries -Force -Recurse
           ls  
       - name: Download Binaries
@@ -289,7 +313,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          ./e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=13m -timeout-multiplier=1.5 --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=16m --timeout-multiplier=3 --test.v --test.run="TestFunctional" --binary="./minikube-windows-amd64.exe"  2>&1 | Out-File -FilePath .\report\testout.txt -Encoding ASCII
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
