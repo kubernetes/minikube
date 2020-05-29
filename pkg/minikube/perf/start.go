@@ -18,6 +18,7 @@ package perf
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -28,25 +29,30 @@ import (
 
 const (
 	// runs is the number of times each binary will be timed for 'minikube start'
-	runs = 1
+	runs = 3
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
 func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
-	rm, err := collectResults(ctx, binaries)
-	if err != nil {
-		return errors.Wrapf(err, "collecting results")
+	drivers := []string{"kvm2", "docker"}
+	for _, d := range drivers {
+		rm, err := collectResults(ctx, binaries, d)
+		if err != nil {
+			log.Printf("error collecting results for %s driver: %v", d, err)
+			continue
+		}
+		rm.summarizeResults(binaries, d)
+		fmt.Println()
 	}
-	rm.summarizeResults(binaries)
 	return nil
 }
 
-func collectResults(ctx context.Context, binaries []*Binary) (*resultManager, error) {
+func collectResults(ctx context.Context, binaries []*Binary, driver string) (*resultManager, error) {
 	rm := newResultManager()
 	for run := 0; run < runs; run++ {
 		log.Printf("Executing run %d/%d...", run, runs)
 		for _, binary := range binaries {
-			r, err := timeMinikubeStart(ctx, binary)
+			r, err := timeMinikubeStart(ctx, binary, driver)
 			if err != nil {
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
@@ -66,8 +72,8 @@ func average(nums []float64) float64 {
 
 // timeMinikubeStart returns the time it takes to execute `minikube start`
 // It deletes the VM after `minikube start`.
-func timeMinikubeStart(ctx context.Context, binary *Binary) (*result, error) {
-	startCmd := exec.CommandContext(ctx, binary.path, "start")
+func timeMinikubeStart(ctx context.Context, binary *Binary, driver string) (*result, error) {
+	startCmd := exec.CommandContext(ctx, binary.path, "start", fmt.Sprintf("--driver=%s", driver))
 	startCmd.Stderr = os.Stderr
 
 	deleteCmd := exec.CommandContext(ctx, binary.path, "delete")
