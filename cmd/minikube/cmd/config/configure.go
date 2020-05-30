@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 )
@@ -35,6 +36,8 @@ var addonsConfigureCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.UsageT("usage: minikube addons configure ADDON_NAME")
 		}
+
+		mustload.Partial(ClusterFlagValue())
 
 		addon := args[0]
 		// allows for additional prompting of information when enabling addons
