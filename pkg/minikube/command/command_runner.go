@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -39,7 +40,7 @@ var (
 	OutPrefix = "> "
 
 	// Mutex protects teePrefix from writing to same log buffer parallelly
-	logMutex &sync.Mutex
+	logMutex = &sync.Mutex{}
 )
 
 // RunResult holds the results of a Runner
