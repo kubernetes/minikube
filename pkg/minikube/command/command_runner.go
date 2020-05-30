@@ -37,6 +37,9 @@ var (
 
 	// OutPrefix notes output
 	OutPrefix = "> "
+
+	// Mutex protects teePrefix from writing to same log buffer parallelly
+	logMutex &sync.Mutex
 )
 
 // RunResult holds the results of a Runner
@@ -88,6 +91,9 @@ func (rr RunResult) Output() string {
 
 // teePrefix copies bytes from a reader to writer, logging each new line.
 func teePrefix(prefix string, r io.Reader, w io.Writer, logger func(format string, args ...interface{})) error {
+	logMutex.Lock()
+	defer logMutex.Unlock()
+
 	scanner := bufio.NewScanner(r)
 	scanner.Split(bufio.ScanBytes)
 	var line bytes.Buffer
