@@ -50,14 +50,6 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 	// Kubeconfig args
 	config.NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
 	config.NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
-	{
-		Option: config.ExtraOption{
-			Component: Kubelet,
-			Key:       "require-kubeconfig",
-			Value:     "true",
-		},
-		LessThanOrEqual: semver.MustParse("1.9.10"),
-	},
 
 	// System pods args
 	config.NewUnversionedOption(Kubelet, "pod-manifest-path", vmpath.GuestManifestsDir),
@@ -98,14 +90,5 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 			Value:     strings.Join(util.DefaultV114AdmissionControllers, ","),
 		},
 		GreaterThanOrEqual: semver.MustParse("1.14.0-alpha.0"),
-	},
-
-	{
-		Option: config.ExtraOption{
-			Component: Kubelet,
-			Key:       "cadvisor-port",
-			Value:     "0",
-		},
-		LessThanOrEqual: semver.MustParse("1.11.1000"),
 	},
 }
