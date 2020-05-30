@@ -28,48 +28,63 @@ import (
 	"github.com/docker/machine/libmachine/shell"
 )
 
-var shellConfigMap = map[string]map[string]string{
-	"fish": {
-		"Prefix":      "set -gx ",
-		"Suffix":      "\";\n", // semi-colon required for fish 2.7
-		"Delimiter":   " \"",
-		"UnsetPrefix": "set -e ",
-		"UnsetSuffix": ";\n",
+type shellData struct {
+	Prefix         string
+	Suffix         string
+	Delimiter      string
+	UnsetPrefix    string
+	UnsetSuffix    string
+	UnsetDelimiter string
+}
+
+var shellConfigMap = map[string]shellData{
+	"fish": shellData{
+		"set -gx ",
+		"\";\n",
+		" \"",
+		"set -e ",
+		";\n",
+		" \"",
 	},
-	"powershell": {
-		"Prefix":      "$Env:",
-		"Suffix":      "\"\n",
-		"Delimiter":   " = \"",
-		"UnsetPrefix": `Remove-Item Env:\\`,
-		"UnsetSuffix": "\n",
+	"powershell": shellData{
+		"$Env:",
+		"\"\n",
+		" = \"",
+		`Remove-Item Env:\\`,
+		"\n",
+		" = \"",
 	},
-	"cmd": {
-		"Prefix":      "SET ",
-		"Suffix":      "\n",
-		"Delimiter":   "=",
-		"UnsetPrefix": "SET ",
-		"UnsetSuffix": "\n",
-		"setDelim":    "=",
+	"cmd": shellData{
+		"SET ",
+		"\n",
+		"=",
+		"SET ",
+		"\n",
+		"=",
 	},
-	"emacs": {
-		"Prefix":      "(setenv \"",
-		"Suffix":      "\")\n",
-		"Delimiter":   "\" \"",
-		"UnsetPrefix": "(setenv \"",
-		"UnsetSuffix": ")\n",
-		"UnsetDelim":  "\" nil",
+	"emacs": shellData{
+		"(setenv \"",
+		"\")\n",
+		"\" \"",
+		"(setenv \"",
+		")\n",
+		"\" nil",
 	},
-	"bash": {
-		"Prefix":      "export ",
-		"Suffix":      "\"\n",
-		"Delimiter":   "=\"",
-		"UnsetPrefix": "unset ",
-		"UnsetSuffix": "\n",
+	"bash": shellData{
+		"export ",
+		"\"\n",
+		"=\"",
+		"unset ",
+		"\n",
+		"=\"",
 	},
-	"none": {
-		"Prefix":    "",
-		"Suffix":    "\n",
-		"Delimiter": "=",
+	"none": shellData{
+		"",
+		"\n",
+		"=",
+		"",
+		"\n",
+		"=",
 	},
 }
 
@@ -127,7 +142,7 @@ func CfgSet(ec EnvConfig, plz, cmd string) *Config {
 		shellKey = "bash"
 	}
 	shellParams := shellConfigMap[shellKey]
-	s.Suffix, s.Prefix, s.Delimiter = shellParams["Suffix"], shellParams["Prefix"], shellParams["Delimiter"]
+	s.Suffix, s.Prefix, s.Delimiter = shellParams.Suffix, shellParams.Prefix, shellParams.Delimiter
 
 	if shellKey != "none" {
 		s.UsageHint = generateUsageHint(ec.Shell, plz, cmd)
@@ -151,16 +166,22 @@ func SetScript(ec EnvConfig, w io.Writer, envTmpl string, data interface{}) erro
 func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	var sb strings.Builder
 	shCfg := shellConfigMap[ec.Shell]
-	pfx, sfx, delim := shCfg["Prefix"], shCfg["Suffix"], shCfg["Delimiter"]
+	pfx, sfx, delim := shCfg.UnsetPrefix, shCfg.UnsetSuffix, shCfg.UnsetDelimiter
 	switch ec.Shell {
 	case "cmd", "emacs", "fish":
 		for _, v := range vars {
-			sb.WriteString(fmt.Sprintf("%s%s%s%s", pfx, v, delim, sfx))
+			if _, err := sb.WriteString(fmt.Sprintf("%s%s%s%s", pfx, v, delim, sfx)); err != nil {
+				return err
+			}
 		}
 	case "powershell":
-		sb.WriteString(fmt.Sprintf("%s%s%s", pfx, strings.Join(vars, " Env:\\\\"), sfx))
+		if _, err := sb.WriteString(fmt.Sprintf("%s%s%s", pfx, strings.Join(vars, " Env:\\\\"), sfx)); err != nil {
+			return err
+		}
 	default:
-		sb.WriteString(fmt.Sprintf("%s%s%s", pfx, strings.Join(vars, " "), sfx))
+		if _, err := sb.WriteString(fmt.Sprintf("%s%s%s", pfx, strings.Join(vars, " "), sfx)); err != nil {
+			return err
+		}
 	}
 	_, err := w.Write([]byte(sb.String()))
 	return err
