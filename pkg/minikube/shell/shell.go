@@ -48,9 +48,9 @@ var shellConfigMap = map[string]shellData{
 		UnsetDelimiter: "",
 		usageHint: func(s ...interface{}) string {
 			return fmt.Sprintf(`
-			# %s
-			# %s | source
-			`, s...)
+# %s
+# %s | source
+`, s...)
 		},
 	},
 	"powershell": shellData{
@@ -62,8 +62,8 @@ var shellConfigMap = map[string]shellData{
 		"",
 		func(s ...interface{}) string {
 			return fmt.Sprintf(`# %s
-			# & %s | Invoke-Expression
-			`, s...)
+# & %s | Invoke-Expression
+`, s...)
 		},
 	},
 	"cmd": shellData{
@@ -75,8 +75,8 @@ var shellConfigMap = map[string]shellData{
 		"=",
 		func(s ...interface{}) string {
 			return fmt.Sprintf(`REM %s
-			REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
-			`, s...)
+REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
+`, s...)
 		},
 	},
 	"emacs": shellData{
@@ -88,8 +88,8 @@ var shellConfigMap = map[string]shellData{
 		"\" nil",
 		func(s ...interface{}) string {
 			return fmt.Sprintf(`;; %s
-			;; (with-temp-buffer (shell-command "%s" (current-buffer)) (eval-buffer))
-			`, s...)
+;; (with-temp-buffer (shell-command "%s" (current-buffer)) (eval-buffer))
+`, s...)
 		},
 	},
 	"bash": shellData{
@@ -101,9 +101,9 @@ var shellConfigMap = map[string]shellData{
 		"",
 		func(s ...interface{}) string {
 			return fmt.Sprintf(`
-			# %s
-			# eval $(%s)
-			`, s...)
+# %s
+# eval $(%s)
+`, s...)
 		},
 	},
 	"none": shellData{
@@ -114,7 +114,10 @@ var shellConfigMap = map[string]shellData{
 		"\n",
 		"=",
 		func(s ...interface{}) string {
-			return ""
+			return fmt.Sprintf(`
+# %s
+# eval $(%s)
+`, s...)
 		},
 	},
 }
@@ -149,18 +152,14 @@ func generateUsageHint(sh, usgPlz, usgCmd string) string {
 
 // CfgSet generates context variables for shell
 func CfgSet(ec EnvConfig, plz, cmd string) *Config {
-
-	shellKey, s := ec.Shell, &Config{}
-
-	shellCfg, ok := shellConfigMap[shellKey]
+	shellCfg, ok := shellConfigMap[ec.Shell]
 	if !ok {
 		shellCfg = defaultShell
 	}
-	s.Suffix, s.Prefix, s.Delimiter = shellCfg.Suffix, shellCfg.Prefix, shellCfg.Delimiter
 
-	if shellKey != "none" {
-		s.UsageHint = generateUsageHint(ec.Shell, plz, cmd)
-	}
+	s := &Config{}
+	s.Suffix, s.Prefix, s.Delimiter = shellCfg.Suffix, shellCfg.Prefix, shellCfg.Delimiter
+	s.UsageHint = generateUsageHint(ec.Shell, plz, cmd)
 
 	return s
 }

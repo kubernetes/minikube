@@ -24,18 +24,30 @@ import (
 
 func TestGenerateUsageHint(t *testing.T) {
 	var testCases = []struct {
-		shellType, hintContains string
+		shellType, expected string
 	}{
-		{"", "eval"},
-		{"powershell", "Invoke-Expression"},
-		{"bash", "eval"},
+		{"", `# foo
+# eval $(bar)`},
+		{"powershell", `# foo
+# & bar | Invoke-Expression`},
+		{"bash", `# foo
+# eval $(bar)`},
+		{"powershell", `# foo
+# & bar | Invoke-Expression`},
+		{"emacs", `;; foo
+;; (with-temp-buffer (shell-command "bar" (current-buffer)) (eval-buffer))`},
+		{"fish", `# foo
+# bar | source`},
+		{"none", `# foo
+# eval $(bar)`},
 	}
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.shellType, func(t *testing.T) {
-			hint := generateUsageHint(tc.shellType, "foo", "bar")
-			if !strings.Contains(hint, tc.hintContains) {
-				t.Errorf("Hint doesn't contain expected string. Expected to find '%v' in '%v'", tc.hintContains, hint)
+			got := strings.TrimSpace(generateUsageHint(tc.shellType, "foo", "bar"))
+			expected := strings.TrimSpace(tc.expected)
+			if got != expected {
+				t.Errorf("Expected '%v' but got '%v'", expected, got)
 			}
 		})
 	}
@@ -74,13 +86,16 @@ func TestUnsetScript(t *testing.T) {
 		ec       EnvConfig
 		expected string
 	}{
-		{[]string{"baz"}, EnvConfig{""}, `unset baz`},
-		{[]string{"baz"}, EnvConfig{"bash"}, `unset baz`},
-		{[]string{"baz"}, EnvConfig{"powershell"}, `Remove-Item Env:\\baz`},
-		{[]string{"baz"}, EnvConfig{"cmd"}, `SET baz=`},
-		{[]string{"baz"}, EnvConfig{"fish"}, `set -e baz;`},
-		{[]string{"baz"}, EnvConfig{"emacs"}, `(setenv "baz" nil)`},
-		{[]string{"baz"}, EnvConfig{"none"}, `baz`},
+		{[]string{"baz", "bar"}, EnvConfig{""}, `unset baz bar`},
+		{[]string{"baz", "bar"}, EnvConfig{"bash"}, `unset baz bar`},
+		{[]string{"baz", "bar"}, EnvConfig{"powershell"}, `Remove-Item Env:\\baz Env:\\bar`},
+		{[]string{"baz", "bar"}, EnvConfig{"cmd"}, `SET baz=
+SET bar=`},
+		{[]string{"baz", "bar"}, EnvConfig{"fish"}, `set -e baz;
+set -e bar;`},
+		{[]string{"baz", "bar"}, EnvConfig{"emacs"}, `(setenv "baz" nil)
+(setenv "bar" nil)`},
+		{[]string{"baz", "bar"}, EnvConfig{"none"}, `baz bar`},
 	}
 	for _, tc := range testCases {
 		tc := tc
@@ -102,7 +117,7 @@ func TestUnsetScript(t *testing.T) {
 
 func TestDetect(t *testing.T) {
 	if s, err := Detect(); err != nil {
-		t.Fatalf("unexpected error: '%v' during shell detection", err)
+		t.Fatalf("unexpected error: '%v' during shell detection. Returned shell: %s", err, s)
 	} else if s == "" {
 		t.Fatalf("Detected shell expected to be non empty string")
 	}
@@ -116,5 +131,8 @@ func TestSetScript(t *testing.T) {
 	}
 	if w.String() != "foo" {
 		t.Fatalf("Expected foo writed by SetScript, but got '%v'", w.String())
+	}
+	if ec.Shell == "" {
+		t.Fatalf("Expected no empty shell")
 	}
 }
