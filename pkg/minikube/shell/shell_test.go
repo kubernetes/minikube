@@ -18,6 +18,7 @@ package shell
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 )
@@ -116,6 +117,7 @@ set -e bar;`},
 }
 
 func TestDetect(t *testing.T) {
+	os.Setenv("SHELL", "bash")
 	if s, err := Detect(); err != nil {
 		t.Fatalf("unexpected error: '%v' during shell detection. Returned shell: %s", err, s)
 	} else if s == "" {
