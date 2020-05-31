@@ -1,5 +1,53 @@
 # Release Notes
 
+## Version 1.11.0 - 2020-05-29
+
+Features:
+
+* add 'defaults' sub-command to `minikube config` [#8143](https://github.com/kubernetes/minikube/pull/8143)
+* addons: add OLM addon [#8129](https://github.com/kubernetes/minikube/pull/8129)
+* addons:: Add Ambassador Ingress controller addon [#8161](https://github.com/kubernetes/minikube/pull/8161)
+* bump oldest k8s version supported to 1.13 [#8154](https://github.com/kubernetes/minikube/pull/8154)
+* bump default kubernetes version to 1.18.3 [#8307](https://github.com/kubernetes/minikube/pull/8307)
+* Bump helm-tiller 2.16.7 and promote tiller ClusterRoleBinding to v1 [#8174](https://github.com/kubernetes/minikube/pull/8174)
+
+Minor Improvements:
+
+* docker/podman drivers: add fall back image in docker hub [#8320](https://github.com/kubernetes/minikube/pull/8320)
+* docker/podman drivers: exit with usage when need login to registry [#8225](https://github.com/kubernetes/minikube/pull/8225)
+* multinode: copy apiserver certs only to control plane [#8092](https://github.com/kubernetes/minikube/pull/8092)
+* docker-env: restart dockerd inside minikube on failure [#8239](https://github.com/kubernetes/minikube/pull/8239)
+* wait for kubernetes components on soft start [#8199](https://github.com/kubernetes/minikube/pull/8199)
+* improve minikube status display for one node [#8238](https://github.com/kubernetes/minikube/pull/8238)
+* improve solution message for wrong kuberentes-version format [#8118](https://github.com/kubernetes/minikube/pull/8118)
+
+Bug fixes:
+
+* fix HTTP_PROXY env not being passed to docker engine [#8198](https://github.com/kubernetes/minikube/pull/8198)
+* honor --image-repository even if --image-mirror-country is set [#8249](https://github.com/kubernetes/minikube/pull/8249)
+* parallels driver: fix HostIP implementation [#8259](https://github.com/kubernetes/minikube/pull/8259)
+* addon registry: avoid getting stuck on registry port 443 [#8208](https://github.com/kubernetes/minikube/pull/8208)
+* respect native-ssh param properly [#8290](https://github.com/kubernetes/minikube/pull/8290)
+* fixed parsing kubernetes version for keywords "latest" or "stable" [#8230](https://github.com/kubernetes/minikube/pull/8230)
+* multinode: make sure multinode clusters survive restarts [#7973](https://github.com/kubernetes/minikube/pull/7973)
+* multinode: delete docker volumes when deleting a  node [#8224](https://github.com/kubernetes/minikube/pull/8224)
+* multinode: delete worker volumes for docker driver [#8216](https://github.com/kubernetes/minikube/pull/8216)
+* multinode: recreate existing control plane node correctly [#8095](https://github.com/kubernetes/minikube/pull/8095)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Kenta Iso
+- Medya Ghazizadeh
+- Mikhail Zholobov
+- Natale Vinto
+- Nicola Ferraro
+- Priya Wadhwa
+- RA489
+- Sharif Elgamal
+- Shubham
+- kadern0
+
 ## Version 1.10.1 - 2020-05-12
 
 Bug fixes:
