@@ -43,20 +43,26 @@ func TestGenerateUsageHint(t *testing.T) {
 
 func TestCfgSet(t *testing.T) {
 	var testCases = []struct {
-		plz, cmd       string
-		ec             EnvConfig
-		suffixContains string
+		plz, cmd string
+		ec       EnvConfig
+		expected string
 	}{
-		{"", "eval", EnvConfig{"bash"}, "\n"},
-		{"", "eval", EnvConfig{""}, "\n"},
-		{"", "eval", EnvConfig{"fish"}, "\n"},
+		{"", "eval", EnvConfig{""}, `"`},
+		{"", "eval", EnvConfig{"bash"}, `"`},
+		{"", "eval", EnvConfig{"powershell"}, `"`},
+		{"", "eval", EnvConfig{"cmd"}, ``},
+		{"", "eval", EnvConfig{"emacs"}, `")`},
+		{"", "eval", EnvConfig{"none"}, ``},
+		{"", "eval", EnvConfig{"fish"}, `";`},
 	}
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.ec.Shell, func(t *testing.T) {
 			conf := CfgSet(tc.ec, tc.plz, tc.cmd)
-			if !strings.Contains(conf.Suffix, tc.suffixContains) {
-				t.Errorf("Suffix doesn't contain expected string. Expected to find '%v' in '%v'", tc.suffixContains, conf.Suffix)
+			expected := strings.TrimSpace(tc.expected)
+			got := strings.TrimSpace(conf.Suffix)
+			if expected != got {
+				t.Errorf("Expected suffix '%v' but got '%v'", expected, got)
 			}
 		})
 	}
@@ -68,9 +74,13 @@ func TestUnsetScript(t *testing.T) {
 		ec       EnvConfig
 		expected string
 	}{
-		{[]string{"foo"}, EnvConfig{"bash"}, `unset foo`},
-		{[]string{"bar"}, EnvConfig{"powershell"}, `Remove-Item Env:\\bar`},
+		{[]string{"baz"}, EnvConfig{""}, `unset baz`},
+		{[]string{"baz"}, EnvConfig{"bash"}, `unset baz`},
+		{[]string{"baz"}, EnvConfig{"powershell"}, `Remove-Item Env:\\baz`},
 		{[]string{"baz"}, EnvConfig{"cmd"}, `SET baz=`},
+		{[]string{"baz"}, EnvConfig{"fish"}, `set -e baz;`},
+		{[]string{"baz"}, EnvConfig{"emacs"}, `(setenv "baz" nil)`},
+		{[]string{"baz"}, EnvConfig{"none"}, `baz`},
 	}
 	for _, tc := range testCases {
 		tc := tc
@@ -80,8 +90,9 @@ func TestUnsetScript(t *testing.T) {
 			if err := UnsetScript(tc.ec, &b, tc.vars); err != nil {
 				t.Fatalf("Unexpected error when unseting script happen: %v", err)
 			} else {
-				writtenMessage := strings.Trim(b.String(), " \t\n")
-				if writtenMessage != tc.expected {
+				writtenMessage := strings.TrimSpace(b.String())
+				expected := strings.TrimSpace(tc.expected)
+				if writtenMessage != expected {
 					t.Fatalf("Unset script failed. Expected written '%v' but got '%v' ", tc.expected, writtenMessage)
 				}
 			}
