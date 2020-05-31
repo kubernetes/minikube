@@ -35,16 +35,23 @@ type shellData struct {
 	UnsetPrefix    string
 	UnsetSuffix    string
 	UnsetDelimiter string
+	usageHint      func(s ...interface{}) string
 }
 
 var shellConfigMap = map[string]shellData{
 	"fish": shellData{
-		"set -gx ",
-		"\";\n",
-		" \"",
-		"set -e ",
-		";\n",
-		"",
+		Prefix:         "set -gx ",
+		Suffix:         "\";\n",
+		Delimiter:      " \"",
+		UnsetPrefix:    "set -e ",
+		UnsetSuffix:    ";\n",
+		UnsetDelimiter: "",
+		usageHint: func(s ...interface{}) string {
+			return fmt.Sprintf(`
+			# %s
+			# %s | source
+			`, s...)
+		},
 	},
 	"powershell": shellData{
 		"$Env:",
@@ -53,6 +60,11 @@ var shellConfigMap = map[string]shellData{
 		`Remove-Item Env:\\`,
 		"\n",
 		"",
+		func(s ...interface{}) string {
+			return fmt.Sprintf(`# %s
+			# & %s | Invoke-Expression
+			`, s...)
+		},
 	},
 	"cmd": shellData{
 		"SET ",
@@ -61,6 +73,11 @@ var shellConfigMap = map[string]shellData{
 		"SET ",
 		"\n",
 		"=",
+		func(s ...interface{}) string {
+			return fmt.Sprintf(`REM %s
+			REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
+			`, s...)
+		},
 	},
 	"emacs": shellData{
 		"(setenv \"",
@@ -69,6 +86,11 @@ var shellConfigMap = map[string]shellData{
 		"(setenv \"",
 		")\n",
 		"\" nil",
+		func(s ...interface{}) string {
+			return fmt.Sprintf(`;; %s
+			;; (with-temp-buffer (shell-command "%s" (current-buffer)) (eval-buffer))
+			`, s...)
+		},
 	},
 	"bash": shellData{
 		"export ",
@@ -77,6 +99,12 @@ var shellConfigMap = map[string]shellData{
 		"unset ",
 		"\n",
 		"",
+		func(s ...interface{}) string {
+			return fmt.Sprintf(`
+			# %s
+			# eval $(%s)
+			`, s...)
+		},
 	},
 	"": shellData{ // same as bash
 		"export ",
@@ -85,6 +113,12 @@ var shellConfigMap = map[string]shellData{
 		"unset ",
 		"\n",
 		"",
+		func(s ...interface{}) string {
+			return fmt.Sprintf(`
+			# %s
+			# eval $(%s)
+			`, s...)
+		},
 	},
 	"none": shellData{
 		"",
@@ -93,6 +127,9 @@ var shellConfigMap = map[string]shellData{
 		"",
 		"\n",
 		"=",
+		func(s ...interface{}) string {
+			return ""
+		},
 	},
 }
 
@@ -115,31 +152,8 @@ func Detect() (string, error) {
 }
 
 func generateUsageHint(sh, usgPlz, usgCmd string) string {
-	var usageHintMap = map[string]string{
-		"bash": fmt.Sprintf(`
-# %s
-# eval $(%s)
-`, usgPlz, usgCmd),
-		"fish": fmt.Sprintf(`
-# %s
-# %s | source
-`, usgPlz, usgCmd),
-		"powershell": fmt.Sprintf(`# %s
-# & %s | Invoke-Expression
-`, usgPlz, usgCmd),
-		"cmd": fmt.Sprintf(`REM %s
-REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
-`, usgPlz, usgCmd),
-		"emacs": fmt.Sprintf(`;; %s
-;; (with-temp-buffer (shell-command "%s" (current-buffer)) (eval-buffer))
-`, usgPlz, usgCmd),
-	}
-
-	hint, ok := usageHintMap[sh]
-	if !ok {
-		return usageHintMap["bash"]
-	}
-	return hint
+	usageHintFn := shellConfigMap[sh].usageHint
+	return usageHintFn(usgPlz, usgCmd)
 }
 
 // CfgSet generates context variables for shell
