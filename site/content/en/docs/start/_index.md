@@ -69,6 +69,10 @@ Otherwise, download minikube directly:
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
 sudo install minikube-darwin-amd64 /usr/local/bin/minikube
 ```
+Install conntrack to run k8s v1.18 and above with --driver=none
+```shell
+apt-get install conntrack -y
+```
 
 {{% /tab %}}
 {{% tab "Windows" %}}
