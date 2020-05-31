@@ -106,20 +106,6 @@ var shellConfigMap = map[string]shellData{
 			`, s...)
 		},
 	},
-	"": shellData{ // same as bash
-		"export ",
-		"\"\n",
-		"=\"",
-		"unset ",
-		"\n",
-		"",
-		func(s ...interface{}) string {
-			return fmt.Sprintf(`
-			# %s
-			# eval $(%s)
-			`, s...)
-		},
-	},
 	"none": shellData{
 		"",
 		"\n",
@@ -132,6 +118,8 @@ var shellConfigMap = map[string]shellData{
 		},
 	},
 }
+
+var defaultShell shellData = shellConfigMap["bash"]
 
 // Config represents the shell config
 type Config struct {
@@ -152,19 +140,23 @@ func Detect() (string, error) {
 }
 
 func generateUsageHint(sh, usgPlz, usgCmd string) string {
-	usageHintFn := shellConfigMap[sh].usageHint
-	return usageHintFn(usgPlz, usgCmd)
+	shellCfg, ok := shellConfigMap[sh]
+	if !ok {
+		shellCfg = defaultShell
+	}
+	return shellCfg.usageHint(usgPlz, usgCmd)
 }
 
 // CfgSet generates context variables for shell
 func CfgSet(ec EnvConfig, plz, cmd string) *Config {
 
 	shellKey, s := ec.Shell, &Config{}
-	if _, ok := shellConfigMap[shellKey]; !ok {
-		shellKey = "bash"
+
+	shellCfg, ok := shellConfigMap[shellKey]
+	if !ok {
+		shellCfg = defaultShell
 	}
-	shellParams := shellConfigMap[shellKey]
-	s.Suffix, s.Prefix, s.Delimiter = shellParams.Suffix, shellParams.Prefix, shellParams.Delimiter
+	s.Suffix, s.Prefix, s.Delimiter = shellCfg.Suffix, shellCfg.Prefix, shellCfg.Delimiter
 
 	if shellKey != "none" {
 		s.UsageHint = generateUsageHint(ec.Shell, plz, cmd)
@@ -187,7 +179,10 @@ func SetScript(ec EnvConfig, w io.Writer, envTmpl string, data interface{}) erro
 // UnsetScript writes out a shell-compatible unset script
 func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	var sb strings.Builder
-	shCfg := shellConfigMap[ec.Shell]
+	shCfg, ok := shellConfigMap[ec.Shell]
+	if !ok {
+		shCfg = defaultShell
+	}
 	pfx, sfx, delim := shCfg.UnsetPrefix, shCfg.UnsetSuffix, shCfg.UnsetDelimiter
 	switch ec.Shell {
 	case "cmd", "emacs", "fish":
