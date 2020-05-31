@@ -44,7 +44,7 @@ var shellConfigMap = map[string]shellData{
 		" \"",
 		"set -e ",
 		";\n",
-		" \"",
+		"",
 	},
 	"powershell": shellData{
 		"$Env:",
@@ -52,7 +52,7 @@ var shellConfigMap = map[string]shellData{
 		" = \"",
 		`Remove-Item Env:\\`,
 		"\n",
-		" = \"",
+		"",
 	},
 	"cmd": shellData{
 		"SET ",
@@ -76,7 +76,15 @@ var shellConfigMap = map[string]shellData{
 		"=\"",
 		"unset ",
 		"\n",
+		"",
+	},
+	"": shellData{ // same as bash
+		"export ",
+		"\"\n",
 		"=\"",
+		"unset ",
+		"\n",
+		"",
 	},
 	"none": shellData{
 		"",

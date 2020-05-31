@@ -93,7 +93,7 @@ func TestUnsetScript(t *testing.T) {
 				writtenMessage := strings.TrimSpace(b.String())
 				expected := strings.TrimSpace(tc.expected)
 				if writtenMessage != expected {
-					t.Fatalf("Unset script failed. Expected written '%v' but got '%v' ", tc.expected, writtenMessage)
+					t.Fatalf("Expected '%v' but got '%v' ", tc.expected, writtenMessage)
 				}
 			}
 		})
