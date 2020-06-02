@@ -17,14 +17,15 @@ To install and start a minikube cluster, add the following step to your [github 
       uses: medyagh/setup-minikube@master
 ```
 
-for more information checkout github actions marketplace :[setup-minikube](https://github.com/marketplace/actions/setup-minikube).
+for more information see github actions marketplace [setup-minikube]( https://github.com/marketplace/actions/setup-minikube).
 
 ## Example: build image & deploy to minikube on each PR
 
 Requirements:
 
 - a valid Dockerfile
-- a valid deployment.yaml to deploy image to kubernetes (make sure image pull policy is set to never see [bellow](/#deployment.yaml used in the example) for example)
+- a valid [deployment.yaml](/#example deployment yaml) to deploy image to kubernetes 
+- in your deployment.yaml make sure the is set to `imagePullPolicy: Never`
 
 Steps:
 
@@ -59,7 +60,7 @@ Steps:
           minikube service list
           minikube service example --url
           echo "------------------opening the service------------------"
-          curl $(minikube service example --url)/version
+          curl $(minikube service example --url)
   ```
 
 In this example, the above workflow yaml, will do the following steps on each coming PR:
@@ -71,7 +72,7 @@ In this example, the above workflow yaml, will do the following steps on each co
 5. Apply the yaml deployment yaml file minikube
 6. Check the service been created in minikube
 
-### deployment.yaml used in the example
+### example deployment yaml
 
   ```yaml
   apiVersion: apps/v1
