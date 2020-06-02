@@ -25,27 +25,28 @@ import (
 
 func TestGenerateUsageHint(t *testing.T) {
 	var testCases = []struct {
-		shellType, expected string
+		ec       EnvConfig
+		expected string
 	}{
-		{"", `# foo
+		{EnvConfig{""}, `# foo
 # eval $(bar)`},
-		{"powershell", `# foo
+		{EnvConfig{"powershell"}, `# foo
 # & bar | Invoke-Expression`},
-		{"bash", `# foo
+		{EnvConfig{"bash"}, `# foo
 # eval $(bar)`},
-		{"powershell", `# foo
+		{EnvConfig{"powershell"}, `# foo
 # & bar | Invoke-Expression`},
-		{"emacs", `;; foo
+		{EnvConfig{"emacs"}, `;; foo
 ;; (with-temp-buffer (shell-command "bar" (current-buffer)) (eval-buffer))`},
-		{"fish", `# foo
+		{EnvConfig{"fish"}, `# foo
 # bar | source`},
-		{"none", `# foo
+		{EnvConfig{"none"}, `# foo
 # eval $(bar)`},
 	}
 	for _, tc := range testCases {
 		tc := tc
-		t.Run(tc.shellType, func(t *testing.T) {
-			got := strings.TrimSpace(generateUsageHint(tc.shellType, "foo", "bar"))
+		t.Run(tc.ec.Shell, func(t *testing.T) {
+			got := strings.TrimSpace(generateUsageHint(tc.ec, "foo", "bar"))
 			expected := strings.TrimSpace(tc.expected)
 			if got != expected {
 				t.Errorf("Expected '%v' but got '%v'", expected, got)
