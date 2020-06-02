@@ -142,25 +142,25 @@ func Detect() (string, error) {
 	return shell.Detect()
 }
 
-func getShell(name string) shellData {
-	shell, ok := shellConfigMap[name]
+func (c EnvConfig) getShell() shellData {
+	shell, ok := shellConfigMap[c.Shell]
 	if !ok {
 		shell = defaultShell
 	}
 	return shell
 }
 
-func generateUsageHint(sh, usgPlz, usgCmd string) string {
-	shellCfg := getShell(sh)
+func generateUsageHint(ec EnvConfig, usgPlz, usgCmd string) string {
+	shellCfg := ec.getShell()
 	return shellCfg.usageHint(usgPlz, usgCmd)
 }
 
 // CfgSet generates context variables for shell
 func CfgSet(ec EnvConfig, plz, cmd string) *Config {
-	shellCfg := getShell(ec.Shell)
+	shellCfg := ec.getShell()
 	s := &Config{}
 	s.Suffix, s.Prefix, s.Delimiter = shellCfg.suffix, shellCfg.prefix, shellCfg.delimiter
-	s.UsageHint = generateUsageHint(ec.Shell, plz, cmd)
+	s.UsageHint = generateUsageHint(ec, plz, cmd)
 
 	return s
 }
@@ -179,7 +179,7 @@ func SetScript(ec EnvConfig, w io.Writer, envTmpl string, data interface{}) erro
 // UnsetScript writes out a shell-compatible unset script
 func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	var sb strings.Builder
-	shellCfg := getShell(ec.Shell)
+	shellCfg := ec.getShell()
 	pfx, sfx, delim := shellCfg.unsetPrefix, shellCfg.unsetSuffix, shellCfg.unsetDelimiter
 	switch ec.Shell {
 	case "cmd", "emacs", "fish":
