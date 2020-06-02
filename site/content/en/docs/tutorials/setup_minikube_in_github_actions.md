@@ -19,8 +19,7 @@ To install and start a minikube cluster, add the following step to your [github 
 
 for more information checkout github actions marketplace :[setup-minikube](https://github.com/marketplace/actions/setup-minikube).
 
-
-## Full example: build image and deploy to minikube on each PR
+## Example: build image & deploy to minikube on each PR
 
 Requirements:
 
