@@ -22,12 +22,14 @@ To install and start a minikube cluster, add the following step to your [github 
 
 ## Full example: build image and deploy to minikube on each PR
 
-Required :
+Requirements:
 
 - a valid Dockerfile
 - a valid deployment.yaml  (make sure image pull policy is set to never see bellow for example
 
-- Copy the yaml to `.github/workflows/pr.yml` in your github repo.
+Steps:
+
+- Copy the wokryaml to `.github/workflows/pr.yml` in your github repo.
 - Make a PR to your repo and see the result in github actions.
 
 ```yaml
