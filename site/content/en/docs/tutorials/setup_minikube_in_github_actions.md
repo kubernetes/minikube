@@ -4,18 +4,18 @@ linkTitle: "minikube in github actions"
 weight: 1
 date: 2020-06-02
 description: >
-  How to use minikube in github actions for testing your app?
+  How to use minikube in github actions for testing your app
 ---
 
 To install and start a minikube cluster, add the following step to your [github action workflow](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow).
 
 
-```yaml
-    steps:
-    - name: start minikube
-      id: minikube
-      uses: medyagh/setup-minikube@master
-```
+  ```yaml
+      steps:
+      - name: start minikube
+        id: minikube
+        uses: medyagh/setup-minikube@master
+  ```
 
 for more information see github actions marketplace [setup-minikube]( https://github.com/marketplace/actions/setup-minikube).
 
@@ -24,7 +24,7 @@ for more information see github actions marketplace [setup-minikube]( https://gi
 Requirements:
 
 - a valid Dockerfile
-- a valid `deployment.yaml` file with `imagePullPolicy: Never` see bellow for an example
+- a valid `deployment.yaml` file with `imagePullPolicy: Never` see below for an example
 
 Create workflow:
 
@@ -68,7 +68,7 @@ The above example workflow yaml, will do the following steps on each coming PR:
 2. Installs & starts minikube
 3. Tries out the cluster just by running `kubectl` command
 4. Build the docker image using minikube's docker-env feature
-5. Apply the yaml deployment yaml file minikube
+5. Apply the deployment yaml file minikube
 6. Check the service been created in minikube
 
 ### Example minikube deployment yaml with a service
