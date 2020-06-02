@@ -24,7 +24,7 @@ for more information see github actions marketplace [setup-minikube]( https://gi
 Requirements:
 
 - a valid Dockerfile
-- a valid [deployment.yaml](/#example deployment yaml) to deploy image to kubernetes 
+- a valid [deployment.yaml](/#example-deployment-yaml) to deploy image to kubernetes 
 - in your deployment.yaml make sure the is set to `imagePullPolicy: Never`
 
 Steps:
