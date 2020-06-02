@@ -7,11 +7,8 @@ description: >
   How to use minikube in github actions for testing your app?
 ---
 
-### How to run minikube in github acitons ?
-
-you can add [setup-minikube](https://github.com/marketplace/actions/setup-minikube) as a step in your workflow.
-
 To install and start a minikube cluster, add the following step to your [github action workflow](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow).
+
 
 ```yaml
     steps:
@@ -19,6 +16,9 @@ To install and start a minikube cluster, add the following step to your [github 
       id: minikube
       uses: medyagh/setup-minikube@master
 ```
+
+for more information checkout github actions marketplace :[setup-minikube](https://github.com/marketplace/actions/setup-minikube).
+
 
 ## Full example: build image and deploy to minikube on each PR
 
