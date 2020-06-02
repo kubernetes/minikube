@@ -5,7 +5,13 @@ A Linux VM with the following:
 * Docker
 * systemd (OpenRC based systems are also supported in v1.10+)
 
-This VM must also meet the[kubeadm requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
+This VM must also meet the [kubeadm requirements.](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
+
+Kubernetes v1.18+ needs conntract to be installed on debian based machines.
+
+```shell
+    sudo apt-get install conntrack -y
+```
 
 ## Usage
 
