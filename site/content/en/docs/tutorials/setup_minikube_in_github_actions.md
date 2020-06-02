@@ -24,12 +24,11 @@ for more information see github actions marketplace [setup-minikube]( https://gi
 Requirements:
 
 - a valid Dockerfile
-- a valid [deployment.yaml](/#example-deployment-yaml) to deploy image to kubernetes 
-- in your deployment.yaml make sure the is set to `imagePullPolicy: Never`
+- a valid `deployment.yaml` file with `imagePullPolicy: Never` see bellow for an example
 
-Steps:
+Create workflow:
 
-- Create a workflow yaml in your github repo in `.github/workflows/pr.yml`
+- copy this yaml to your workflow file for example in `.github/workflows/pr.yml`:
 
   ```yaml
   name: CI
@@ -63,7 +62,7 @@ Steps:
           curl $(minikube service example --url)
   ```
 
-In this example, the above workflow yaml, will do the following steps on each coming PR:
+The above example workflow yaml, will do the following steps on each coming PR:
 
 1. Checks out the the source code
 2. Installs & starts minikube
@@ -72,7 +71,7 @@ In this example, the above workflow yaml, will do the following steps on each co
 5. Apply the yaml deployment yaml file minikube
 6. Check the service been created in minikube
 
-### example deployment yaml
+### Example minikube deployment yaml with a service
 
   ```yaml
   apiVersion: apps/v1
