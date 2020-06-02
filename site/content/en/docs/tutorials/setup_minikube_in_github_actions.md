@@ -73,44 +73,44 @@ In this example, the above workflow yaml, will do the following steps on each co
 
 ### deployment.yaml used in the example
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-    name: example
-spec:
-    selector:
-        matchLabels:
-            app: example
-    replicas: 2
-    template:
-        metadata:
-            labels:
-                app: example
-        spec:
-            containers:
-                - name: example-api
-                  imagePullPolicy: Never
-                  image: local/example:latest
-                  resources:
-                      limits:
-                          cpu: 50m
-                          memory: 100Mi
-                      requests:
-                          cpu: 25m
-                          memory: 10Mi
-                  ports:
-                      - containerPort: 8080
----
-apiVersion: v1
-kind: Service
-metadata:
-    name: example
-spec:
-    type: NodePort
-    selector:
-        app: example
-    ports:
-        - port: 8080
-          targetPort: 8080
-```
+  ```yaml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+      name: example
+  spec:
+      selector:
+          matchLabels:
+              app: example
+      replicas: 2
+      template:
+          metadata:
+              labels:
+                  app: example
+          spec:
+              containers:
+                  - name: example-api
+                    imagePullPolicy: Never
+                    image: local/example:latest
+                    resources:
+                        limits:
+                            cpu: 50m
+                            memory: 100Mi
+                        requests:
+                            cpu: 25m
+                            memory: 10Mi
+                    ports:
+                        - containerPort: 8080
+  ---
+  apiVersion: v1
+  kind: Service
+  metadata:
+      name: example
+  spec:
+      type: NodePort
+      selector:
+          app: example
+      ports:
+          - port: 8080
+            targetPort: 8080
+  ```
