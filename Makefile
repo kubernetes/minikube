@@ -672,3 +672,16 @@ help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
 	@printf "\033[1m--------------------------------------\033[21m\n"
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+
+out/metadata-server:
+	CGO_ENABLED=0 GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/metadata-server/server.go
+
+.PHONY: metadata-server-image
+metadata-server-image: out/metadata-server ## Build metadata-server docker image
+	docker build -t $(REGISTRY)/metadata-server -f deploy/metadata-server/Dockerfile  .
+
+
+.PHONY: push-metadata-server-image
+push-metadata-server-image: metadata-server-image ## Push metadata-server docker image using gcloud
+	gcloud docker -- push $(REGISTRY)/metadata-server

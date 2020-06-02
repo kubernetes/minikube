@@ -403,6 +403,26 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "ambassador"),
+	"metadata": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/metadata/metadata-ns.yaml",
+			vmpath.GuestAddonsDir,
+			"metadata-ns.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/metadata/metadata-deployment.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"metadata-deployment.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/metadata/metadata-service.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"metadata-service.yaml",
+			"0640",
+			false),
+	}, false, "metadata"),
 }
 
 // GenerateTemplateData generates template data for template assets
