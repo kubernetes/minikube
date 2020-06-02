@@ -1,10 +1,10 @@
 ---
-title: "use minikube as CI testing in github actions"
+title: "Setup minikube as CI step in github actions"
 linkTitle: "minikube in github actions"
 weight: 1
 date: 2020-06-02
 description: >
-  How to use minikube in github actions for testing ?
+  How to use minikube in github actions for testing your app?
 ---
 
 ### How to run minikube in github acitons ?
