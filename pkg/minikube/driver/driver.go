@@ -131,7 +131,12 @@ func NeedsRoot(name string) bool {
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
 	// Docker for Desktop
-	return IsKIC(name) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows")
+	return IsKIC(name) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows" || isMicrosoftWSL())
+}
+
+// isMicrosoftWSL will return true if process is running in WSL in windows
+func isMicrosoftWSL() bool {
+	return os.Getenv("WSL_DISTRO_NAME") != ""
 }
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
