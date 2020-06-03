@@ -78,8 +78,11 @@ var dockerEnvCmd = &cobra.Command{
 			glog.Warningf("dockerd is not active will try to restart it...")
 			mustRestartDocker(cname, co.CP.Runner)
 		}
-		// FIXME
-		sh,_ := shell.GetShell("")
+		sh, err := shell.GetShell("")
+		if err != nil {
+			exit.WithError("Error detecting shell", err)
+		}
+
 		dockerenv.MaybeRestartDocker(cname, co.CP.Runner)
 
 		var err error
@@ -101,13 +104,6 @@ var dockerEnvCmd = &cobra.Command{
 			NoProxy:   noProxy,
 		}
 
-		if ec.Shell == "" {
-			ec.Shell, err = shell.Detect()
-			if err != nil {
-				exit.WithError("Error detecting shell", err)
-			}
-		}
-
 		out, err := dockerenv.TryDockerConnectivity("docker", ec)
 		if err != nil { // docker might be up but been loaded with wrong certs/config
 			// to fix issues like this #8185
@@ -115,9 +111,6 @@ var dockerEnvCmd = &cobra.Command{
 			dockerenv.MustRestartDocker(cname, co.CP.Runner)
 		}
 
-<<<<<<< HEAD
-		if err := dockerSetScript(ec, os.Stdout); err != nil {
-=======
 		if dockerUnset {
 			if err := dockerenv.UnsetScript(ec, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
@@ -126,7 +119,6 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if err := dockerenv.SetScript(ec, os.Stdout); err != nil {
->>>>>>> create new pkg and start refactor of cmd
 			exit.WithError("Error generating set output", err)
 		}
 	},

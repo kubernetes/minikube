@@ -24,6 +24,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+type FakeNoProxyGetter struct {
+	NoProxyVar   string
+	NoProxyValue string
+}
+
 func newFakeClient() *ssh.ExternalClient {
 	return &ssh.ExternalClient{
 		BaseArgs:   []string{"root@host"},
@@ -33,16 +38,16 @@ func newFakeClient() *ssh.ExternalClient {
 
 func TestGeneratePodmanScripts(t *testing.T) {
 	var tests = []struct {
-		shell         string
-		config        PodmanEnvConfig
-		noProxyGetter *FakeNoProxyGetter
-		wantSet       string
-		wantUnset     string
+		shell  string
+		config PodmanEnvConfig
+		//	noProxyGetter *FakeNoProxyGetter
+		wantSet   string
+		wantUnset string
 	}{
 		{
 			"bash",
 			PodmanEnvConfig{profile: "bash", driver: "kvm2", client: newFakeClient()},
-			nil,
+			//	nil,
 			`export PODMAN_VARLINK_BRIDGE="/usr/bin/ssh root@host -- sudo varlink -A \'podman varlink \\\$VARLINK_ADDRESS\' bridge"
 export MINIKUBE_ACTIVE_PODMAN="bash"
 
@@ -56,7 +61,7 @@ export MINIKUBE_ACTIVE_PODMAN="bash"
 	for _, tc := range tests {
 		t.Run(tc.config.profile, func(t *testing.T) {
 			tc.config.EnvConfig.Shell = tc.shell
-			defaultNoProxyGetter = tc.noProxyGetter
+			//	defaultNoProxyGetter = tc.noProxyGetter
 			var b []byte
 			buf := bytes.NewBuffer(b)
 			if err := podmanSetScript(tc.config, buf); err != nil {
