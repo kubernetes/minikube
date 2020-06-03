@@ -37,8 +37,6 @@ var addonsConfigureCmd = &cobra.Command{
 			exit.UsageT("usage: minikube addons configure ADDON_NAME")
 		}
 
-		mustload.Partial(ClusterFlagValue())
-
 		addon := args[0]
 		// allows for additional prompting of information when enabling addons
 		switch addon {
@@ -191,10 +189,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 		case "metallb":
 			profile := ClusterFlagValue()
-			cfg, err := config.Load(profile)
-			if err != nil {
-				out.ErrT(out.FatalType, "Failed to load config {{.profile}}", out.V{"profile": profile})
-			}
+			_, cfg := mustload.Partial(profile)
 
 			validator := func(s string) bool {
 				return net.ParseIP(s) != nil
@@ -208,8 +203,7 @@ var addonsConfigureCmd = &cobra.Command{
 				cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
 			}
 
-			err = config.SaveProfile(profile, cfg)
-			if err != nil {
+			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(out.FatalType, "Failed to save config {{.profile}}", out.V{"profile": profile})
 			}
 
