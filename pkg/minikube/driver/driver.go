@@ -136,7 +136,7 @@ func NeedsPortForward(name string) bool {
 
 // isMicrosoftWSL will return true if process is running in WSL in windows
 // checking for WSL env var based on this https://github.com/microsoft/WSL/issues/423#issuecomment-608237689
-// also based on https://github.com/microsoft/vscode/blob/master/resources/win32/bin/code.sh#L24
+// also based on https://github.com/microsoft/vscode/blob/90a39ba0d49d75e9a4d7e62a6121ad946ecebc58/resources/win32/bin/code.sh#L24
 func isMicrosoftWSL() bool {
 	return os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSLPATH") != "" || os.Getenv("WSLENV") != ""
 }
