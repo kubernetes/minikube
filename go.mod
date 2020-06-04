@@ -25,10 +25,11 @@ require (
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/google/go-cmp v0.3.2-0.20191028172631-481baca67f93
+	github.com/google/go-cmp v0.4.0
 	github.com/google/go-containerregistry v0.0.0-20200131185320-aec8da010de2
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/martian v2.1.1-0.20190517191504-25dcb96d9e51+incompatible // indirect
+	github.com/google/slowjam v0.0.0-20200530021616-df27e642fe7b
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.5.4
@@ -49,7 +50,7 @@ require (
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
-	github.com/mattn/go-isatty v0.0.11
+	github.com/mattn/go-isatty v0.0.12
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
 	github.com/olekukonko/tablewriter v0.0.4
@@ -81,7 +82,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9
+	golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae
 	golang.org/x/text v0.3.2
 	google.golang.org/api v0.9.0
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
@@ -104,6 +105,7 @@ replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200323212942-41eb826190d8
+	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.0.0-20200329163843-4f5ebd05922c
 	github.com/hashicorp/go-getter => github.com/afbjorklund/go-getter v1.4.1-0.20190910175809-eb9f6c26742c
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v0.0.0-20191231050035-015626177a97
 	k8s.io/api => k8s.io/api v0.17.3
