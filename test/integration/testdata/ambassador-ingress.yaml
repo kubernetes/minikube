@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: ambassador
+  name: test-ambassador-ingress
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /hello/
+            backend:
+              serviceName: hello-minikube
+              servicePort: 8080

@@ -415,7 +415,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/ambassador/ambassadorinstallation.yaml",
 			vmpath.GuestAddonsDir,
-			"ambassadorinstallation.yaml.yaml",
+			"ambassadorinstallation.yaml",
 			"0640",
 			false),
 	}, false, "ambassador"),

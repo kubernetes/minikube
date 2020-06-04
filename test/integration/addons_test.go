@@ -40,7 +40,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm", "--addons=ambassador"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
@@ -57,6 +57,7 @@ func TestAddons(t *testing.T) {
 			{"MetricsServer", validateMetricsServerAddon},
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
+			{"Ambassador", validateAmbassadorAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -98,7 +99,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed waiting for ingress-controller deployment to stabilize: %v", err)
 	}
 	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=ingress-nginx", Minutes(12)); err != nil {
-		t.Fatalf("failed waititing for nginx-ingress-controller : %v", err)
+		t.Fatalf("failed waiting for nginx-ingress-controller : %v", err)
 	}
 
 	createIngress := func() error {
@@ -155,6 +156,79 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed to disable ingress addon. args %q : %v", rr.Command(), err)
+	}
+}
+
+func validateAmbassadorAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client: %v", client)
+	}
+
+	// Let's wait for the operator to come up
+	if err := kapi.WaitForDeploymentToStabilize(client, "ambassador", "ambassador-operator", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for ambassador-operator deployment to stabilize: %v", err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "ambassador", "getambassador.io/installer=operator", Minutes(12)); err != nil {
+		t.Errorf("failed waiting for ambassador pods : %v", err)
+	}
+
+	// Let's wait for the operator to spin up Ambassador pods
+	if err := kapi.WaitForDeploymentToStabilize(client, "ambassador", "ambassador", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for ambassador deployment to stabilize: %v", err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "ambassador", "app.kubernetes.io/name=ambassador", Minutes(12)); err != nil {
+		t.Errorf("failed waiting for ambassador pods : %v", err)
+	}
+
+	// Create echoserver for testing ingress
+	deploymentName := "hello-minikube"
+	rrDeployment, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", deploymentName, "--image=k8s.gcr.io/echoserver:1.4"))
+	if err != nil {
+		t.Errorf("failed to create echoserver deployment, args %q. %v", rrDeployment.Command(), err)
+	}
+
+	rrService, err := Run(t, exec.CommandContext(ctx, "kubectl", "expose", "deployment", deploymentName, "--port=8080"))
+	if err != nil {
+		t.Errorf("failed to expose echoserver deployment, args %q. %v", rrService.Command(), err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-minikube", Minutes(4)); err != nil {
+		t.Errorf("failed waiting for echoserver pod: %v", err)
+	}
+
+	// Create an ingress resource
+	rrIngress, err := Run(t, exec.CommandContext(ctx, "kubectl", "apply", "-f", filepath.Join(*testdataDir, "ambassador-ingress.yaml")))
+	if err != nil {
+		t.Errorf("failed to create ingress, args %q. %v", rrIngress.Command(), err)
+	}
+
+	checkAmbassadorIngress := func() error {
+		rrStatus, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "ambassador-test", "--restart=Never", "--image=busybox", "-i", "--", "sh", "-c", "wget --spider -S http://ambassador.ambassador.svc.cluster.local/hello/"))
+		if err != nil {
+			t.Errorf("failed to hit ambassador.ambassador.svc.cluster.local/hello/, args %q failed: %v", rrStatus.Command(), err)
+			return err
+		}
+
+		stderr := rrStatus.Stderr.String()
+		if stderr != "" {
+			t.Errorf("debug: unexpected stderr for %v:\n%s", rrStatus.Command(), stderr)
+		}
+
+		want := "HTTP/1.1 200 OK"
+		stdout := rrStatus.Stdout.String()
+		if !strings.Contains(stdout, want) {
+			t.Errorf("expected curl response be %q, but got *%s*", want, stdout)
+		}
+		return nil
+	}
+
+	if err := retry.Expo(checkAmbassadorIngress, 500*time.Millisecond, Seconds(90)); err != nil {
+		t.Errorf("failed to get expected response: %v", err)
 	}
 }
 

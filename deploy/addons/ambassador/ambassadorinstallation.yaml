@@ -7,3 +7,5 @@ spec:
   installOSS: true
   helmValues:
     deploymentTool: amb-oper-minikube
+    deploymentStrategy:
+      type: Recreate
