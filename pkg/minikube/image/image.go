@@ -135,6 +135,12 @@ func WriteImageToDaemon(img string) error {
 	return nil
 }
 
+// Tarball writes the img to a tarball in the minikube cache
+func Tarball(img string) error {
+
+	return nil
+}
+
 func retrieveImage(ref name.Reference) (v1.Image, error) {
 	glog.Infof("retrieving image: %+v", ref)
 	img, err := daemon.Image(ref)
