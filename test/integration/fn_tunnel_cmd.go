@@ -49,6 +49,9 @@ var (
 )
 
 func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
+	if HyperVDriver() {
+		t.Skipf("skipping tunnel for hyperv driver")
+	}
 	ctx, cancel := context.WithTimeout(ctx, Minutes(20))
 	type validateFunc func(context.Context, *testing.T, string)
 	defer cancel()
