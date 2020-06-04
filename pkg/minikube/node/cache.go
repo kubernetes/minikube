@@ -126,6 +126,11 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 		}()
 		for _, img := range append([]string{cc.KicBaseImage}, kic.FallbackImages...) {
+			if err := image.LoadFromTarball(img); err == nil {
+				glog.Infof("successfully loaded %s from cached tarball", img)
+				finalImg = img
+				return nil
+			}
 			glog.Infof("Downloading %s to local daemon", img)
 			err := image.WriteImageToDaemon(img)
 			if err == nil {
@@ -134,7 +139,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				return nil
 			}
 			if downloadOnly {
-				if err := image.Tarball(img); err == nil {
+				if err := image.SaveToDir([]string{img}, constants.ImageCacheDir); err == nil {
 					glog.Infof("successfully saved %s as a tarball", img)
 					finalImg = img
 					return nil

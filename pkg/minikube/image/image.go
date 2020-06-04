@@ -34,8 +34,10 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 var defaultPlatform = v1.Platform{
@@ -94,6 +96,24 @@ func ExistsImageInDaemon(img string) bool {
 	return false
 }
 
+// LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
+func LoadFromTarball(img string) error {
+	p := filepath.Join(constants.ImageCacheDir, img)
+	p = localpath.SanitizeCacheDir(p)
+
+	tag, err := name.NewTag(img)
+	if err != nil {
+		return errors.Wrap(err, "tag")
+	}
+
+	i, err := tarball.ImageFromPath(p, &tag)
+	_, err = daemon.Write(tag, i)
+	if err != nil {
+		return errors.Wrap(err, "writing daemon image")
+	}
+	return nil
+}
+
 // Tag returns just the image with the tag
 // eg image:tag@sha256:digest -> image:tag if there is an associated tag
 // if not possible, just return the initial img
@@ -131,12 +151,6 @@ func WriteImageToDaemon(img string) error {
 	if err != nil {
 		return errors.Wrap(err, "writing daemon image")
 	}
-
-	return nil
-}
-
-// Tarball writes the img to a tarball in the minikube cache
-func Tarball(img string) error {
 
 	return nil
 }
