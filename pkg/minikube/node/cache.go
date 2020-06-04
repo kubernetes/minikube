@@ -17,6 +17,7 @@ limitations under the License.
 package node
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -77,7 +78,7 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 		exit.WithError("Failed to cache kubectl", err)
 	}
 	waitCacheRequiredImages(cacheGroup)
-	waitDownloadKicArtifacts(kicGroup)
+	waitDownloadKicBaseImage(kicGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.WithError("Failed to cache images to tar", err)
 	}
@@ -100,36 +101,41 @@ func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
-// BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
-func beginDownloadKicArtifacts(g *errgroup.Group, cc *config.ClusterConfig) {
-	glog.Infof("Beginning downloading kic artifacts for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-	if cc.Driver == "docker" {
-		if !image.ExistsImageInDaemon(cc.KicBaseImage) {
-			out.T(out.Pulling, "Pulling base image ...")
-			g.Go(func() error {
-				// TODO #8004 : make base-image respect --image-repository
-				glog.Infof("Downloading %s to local daemon", cc.KicBaseImage)
-				err := image.WriteImageToDaemon(cc.KicBaseImage)
-				if err != nil {
-					glog.Infof("failed to download base-image %q will try to download the fallback base-image %q instead.", cc.KicBaseImage, kic.BaseImageFallBack1)
-					cc.KicBaseImage = kic.BaseImageFallBack1
-					if err := image.WriteImageToDaemon(kic.BaseImageFallBack1); err != nil {
-						cc.KicBaseImage = kic.BaseImageFallBack2
-						glog.Infof("failed to docker hub base-image %q will try to download the github packages base-image %q instead.", cc.KicBaseImage, kic.BaseImageFallBack2)
-						return image.WriteImageToDaemon(kic.BaseImageFallBack2)
-					}
-				}
-				return nil
-			})
-		}
-	} else {
+// beginDownloadKicBaseImage downloads the kic image
+func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig) {
+	if cc.Driver != "docker" {
 		// TODO: driver == "podman"
-		glog.Info("Driver isn't docker, skipping base-image download")
+		glog.Info("Driver isn't docker, skipping base image download")
+		return
 	}
+	if image.ExistsImageInDaemon(cc.KicBaseImage) {
+		glog.Infof("%s exists in daemon, skipping pull", cc.KicBaseImage)
+		return
+	}
+
+	glog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+	out.T(out.Pulling, "Pulling base image ...")
+	g.Go(func() error {
+		// TODO #8004 : make base-image respect --image-repository
+		for _, img := range append([]string{cc.KicBaseImage}, kic.FallbackImages...) {
+			glog.Infof("Downloading %s to local daemon", img)
+			err := image.WriteImageToDaemon(img)
+			if err == nil {
+				if img != cc.KicBaseImage {
+					out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s\n minikube will use %s as a fallback image", cc.KicBaseImage, img, img))
+					cc.KicBaseImage = img
+				}
+				glog.Infof("successfully downloaded %s", img)
+				return nil
+			}
+			glog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
+		}
+		return fmt.Errorf("failed to download kic base image or any fallback image")
+	})
 }
 
-// WaitDownloadKicArtifacts blocks until the required artifacts for KIC are downloaded.
-func waitDownloadKicArtifacts(g *errgroup.Group) {
+// waitDownloadKicBaseImage blocks until the base image for KIC is downloaded.
+func waitDownloadKicBaseImage(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
 		if err != nil {
 			if errors.Is(err, image.ErrGithubNeedsLogin) {
