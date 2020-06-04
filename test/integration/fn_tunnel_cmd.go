@@ -128,6 +128,9 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP
 func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
+	if HyperVDriver() {
+		t.Skipf("skipping service test for hyperv driver ")
+	}
 	checkRoutePassword(t)
 
 	client, err := kapi.Client(profile)
