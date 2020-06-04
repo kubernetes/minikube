@@ -113,27 +113,10 @@ func WriteImageToDaemon(img string) error {
 
 		return errors.Wrap(err, "getting remote image")
 	}
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	glog.V(3).Infof("Writing image %v", ref)
+	_, err = daemon.Write(ref, i)
 	if err != nil {
-		return errors.Wrap(err, "getting tag")
-	}
-	glog.V(3).Infof("Writing image %v", tag)
-	_, err = daemon.Write(tag, i)
-	if err != nil {
-		return errors.Wrap(err, "writing image")
-	}
-
-	//TODO: Make pkg/v1/daemon accept Ref too
-	//      Only added it to pkg/v1/tarball
-	//
-	// https://github.com/google/go-containerregistry/pull/702
-
-	glog.V(3).Infof("Pulling image %v", ref)
-
-	// Pull digest
-	cmd := exec.Command("docker", "pull", "--quiet", img)
-	if _, err := cmd.Output(); err != nil {
-		return errors.Wrap(err, "pulling remote image")
+		return errors.Wrap(err, "writing daemon image")
 	}
 
 	return nil
