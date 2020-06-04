@@ -122,7 +122,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig) {
 			err := image.WriteImageToDaemon(img)
 			if err == nil {
 				if img != cc.KicBaseImage {
-					out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s\n minikube will use %s as a fallback image", cc.KicBaseImage, img, img))
+					out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s\n minikube will use %s as a fallback image", image.Tag(cc.KicBaseImage), image.Tag(img), image.Tag(img)))
 					cc.KicBaseImage = img
 				}
 				glog.Infof("successfully downloaded %s", img)
