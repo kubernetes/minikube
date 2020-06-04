@@ -13,7 +13,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
-func EnableOrDisable(name, val, profile string) error {
+func EnableOrDisable(cc *config.ClusterConfig, name string, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -46,7 +46,7 @@ func disableAddon() error {
 }
 
 func restartCoreDNS() error {
-	client, err := kapi.Client(viper.GetString(config.MachineProfile))
+	client, err := kapi.Client(viper.GetString(config.ProfileName))
 	if err != nil {
 		return err
 	}
