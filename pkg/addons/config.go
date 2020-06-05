@@ -88,8 +88,9 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
-		name: "logviewer",
-		set:  SetBool,
+		name:      "logviewer",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "metrics-server",
