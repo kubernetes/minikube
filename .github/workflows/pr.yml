@@ -212,7 +212,8 @@ jobs:
           (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
-          Remove-Item "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe"
+          $DockerKubectl = "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe"
+          if (Test-Path $DockerKubectl) {  Remove-Item $DockerKubectl}
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
