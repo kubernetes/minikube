@@ -872,9 +872,6 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
-	if HyperVDriver() {
-		t.Skipf("skipping mysql for hyperv driver")
-	}
 	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
