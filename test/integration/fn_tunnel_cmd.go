@@ -152,8 +152,10 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		// Wait until the nginx-svc has a loadbalancer ingress IP
 		err = wait.PollImmediate(3*time.Second, Minutes(4), func() (bool, error) {
 			cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
+			// https://kubernetes.io/docs/reference/kubectl/jsonpath/
+			// On Windows, you must use a single quote or escaped double quote around any literals in the template.
 			if runtime.GOOS == "windows" {
-				cmd = exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "kubectl --context "+profile+" get svc nginx-svc -o jsonpath={.status.loadBalancer.ingress[0].ip}")
+				cmd = exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "kubectl --context "+profile+" get svc nginx-svc -o jsonpath=\"{.status.loadBalancer.ingress[0].ip}\"")
 			}
 			rr, err := Run(t, cmd)
 			if err != nil {
