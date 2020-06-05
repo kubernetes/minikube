@@ -49,9 +49,6 @@ var (
 )
 
 func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
-	if HyperVDriver() {
-		t.Skipf("skipping tunnel for hyperv driver")
-	}
 	ctx, cancel := context.WithTimeout(ctx, Minutes(20))
 	type validateFunc func(context.Context, *testing.T, string)
 	defer cancel()
@@ -119,9 +116,6 @@ func getKubeDNSIP(t *testing.T, profile string) string {
 
 // validateTunnelStart starts `minikube tunnel`
 func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
-	if HyperVDriver() {
-		t.Skipf("skipping tunnel for hyperv driver")
-	}
 	checkRoutePassword(t)
 
 	args := []string{"-p", profile, "tunnel", "--alsologtostderr"}
@@ -134,9 +128,6 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP
 func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
-	if HyperVDriver() {
-		t.Skipf("skipping service test for hyperv driver ")
-	}
 	checkRoutePassword(t)
 
 	client, err := kapi.Client(profile)
@@ -342,9 +333,6 @@ func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
 
 // validateTunnelDelete stops `minikube tunnel`
 func validateTunnelDelete(ctx context.Context, t *testing.T, profile string) {
-	if HyperVDriver() {
-		t.Skipf("skipping tunnel for hyperv driver")
-	}
 	checkRoutePassword(t)
 	// Stop tunnel
 	tunnelSession.Stop(t)

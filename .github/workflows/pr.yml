@@ -201,6 +201,12 @@ jobs:
           echo "------------------------"
           docker volume ls
           echo "------------------------"
+      - name: Install Gopogh
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          Invoke-WebRequest -Uri "https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe" -OutFile 'C:\ProgramData\chocolatey\bin\gopogh.exe'
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -269,7 +275,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "functional_test_hyperv_windows"
       GOPOGH_RESULT: ""
-    runs-on: [self-hosted, windows-10-ent, Standard_D16s_v3]
+    runs-on: [self-hosted, windows-10-ent, Standard_D16s_v3, hyperv]
     steps:
       - name: Clean up
         continue-on-error: true
@@ -303,6 +309,12 @@ jobs:
           ls 
           echo $env:computername
           Get-WmiObject -class Win32_ComputerSystem
+      - name: Install Gopogh
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          Invoke-WebRequest -Uri "https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe" -OutFile 'C:\ProgramData\chocolatey\bin\gopogh.exe'
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
