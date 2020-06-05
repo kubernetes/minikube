@@ -209,7 +209,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
-          Invoke-WebRequest -Uri "https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe" -OutFile 'C:\ProgramData\chocolatey\bin\gopogh.exe'
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
       - name: Run Integration Test in powershell
@@ -319,7 +319,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
-          Invoke-WebRequest -Uri "https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe" -OutFile 'C:\ProgramData\chocolatey\bin\gopogh.exe'
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
       - name: Run Integration Test in powershell
