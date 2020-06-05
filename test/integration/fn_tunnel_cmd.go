@@ -148,32 +148,37 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 	}
 
-	// Wait until the nginx-svc has a loadbalancer ingress IP
-	err = wait.PollImmediate(1*time.Second, Minutes(4), func() (bool, error) {
-		cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
-		rr, err := Run(t, cmd)
+	t.Run("WaitForExternalIP", func(t *testing.T) {
+		// Wait until the nginx-svc has a loadbalancer ingress IP
+		err = wait.PollImmediate(3*time.Second, Minutes(4), func() (bool, error) {
+			cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
+			if runtime.GOOS == "windows" {
+				cmd = exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "kubectl --context "+profile+" get svc nginx-svc -o jsonpath={.status.loadBalancer.ingress[0].ip}")
+			}
+			rr, err := Run(t, cmd)
+			if err != nil {
+				return false, err
+			}
+			if len(rr.Stdout.String()) > 0 {
+				hostname = rr.Stdout.String()
+				return true, nil
+			}
+			return false, nil
+		})
 		if err != nil {
-			return false, err
-		}
-		if len(rr.Stdout.String()) > 0 {
-			hostname = rr.Stdout.String()
-			return true, nil
-		}
-		return false, nil
-	})
-	if err != nil {
-		t.Errorf("nginx-svc svc.status.loadBalancer.ingress never got an IP: %v", err)
-		cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc")
-		if runtime.GOOS == "windows" {
-			cmd = exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "kubectl --context "+profile+" get svc nginx-svc")
-		}
+			t.Errorf("nginx-svc svc.status.loadBalancer.ingress never got an IP: %v", err)
+			cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc")
+			if runtime.GOOS == "windows" {
+				cmd = exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "kubectl --context "+profile+" get svc nginx-svc")
+			}
 
-		rr, err := Run(t, cmd)
-		if err != nil {
-			t.Errorf("%s failed: %v", rr.Command(), err)
+			rr, err := Run(t, cmd)
+			if err != nil {
+				t.Errorf("%s failed: %v", rr.Command(), err)
+			}
+			t.Logf("failed to kubectl get svc nginx-svc:\n%s", rr.Output())
 		}
-		t.Logf("failed to kubectl get svc nginx-svc:\n%s", rr.Stdout)
-	}
+	})
 }
 
 // validateAccessDirect validates if the test service can be accessed with LoadBalancer IP from host
