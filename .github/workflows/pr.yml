@@ -158,6 +158,9 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_test_docker_windows:
     needs: [build_minikube]
     env:
@@ -201,12 +204,14 @@ jobs:
           echo "------------------------"
           docker volume ls
           echo "------------------------"
-      - name: Install Gopogh
+      - name: Install tools
         continue-on-error: true
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
           Invoke-WebRequest -Uri "https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe" -OutFile 'C:\ProgramData\chocolatey\bin\gopogh.exe'
+          choco install -y kubernetes-cli
+          choco install -y jq
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -309,12 +314,14 @@ jobs:
           ls 
           echo $env:computername
           Get-WmiObject -class Win32_ComputerSystem
-      - name: Install Gopogh
+      - name: Install tools
         continue-on-error: true
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
           Invoke-WebRequest -Uri "https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe" -OutFile 'C:\ProgramData\chocolatey\bin\gopogh.exe'
+          choco install -y kubernetes-cli
+          choco install -y jq
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -375,7 +382,7 @@ jobs:
           echo "*** $numPass Passed ***"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
-          If ($numPass -lt 30){ exit 2 }
+          If ($numPass -lt 32){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
   addons_certs_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
@@ -468,6 +475,9 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi          
   multinode_pause_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
@@ -559,6 +569,9 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi             
   preload_docker_flags_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
@@ -731,6 +744,9 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 27 ];then echo "*** Failed to pass at least 27 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
