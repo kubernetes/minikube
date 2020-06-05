@@ -165,7 +165,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		return false, nil
 	})
 	if err != nil {
-		t.Errorf("nginx-svc svc.status.loadBalancer.ingress never got an IP")
+		t.Errorf("nginx-svc svc.status.loadBalancer.ingress never got an IP: %v", err)
 		cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc")
 		if runtime.GOOS == "windows" {
 			cmd = exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "kubectl --context "+profile+" get svc nginx-svc")
