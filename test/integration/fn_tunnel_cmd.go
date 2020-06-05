@@ -148,16 +148,13 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 	}
 
-	t.Run("WaitForExternalIP", func(t *testing.T) {
+	t.Run("IngressIP", func(t *testing.T) {
+		if HyperVDriver() {
+			t.Skip("The test WaitService/IngressIP is broken on hyperv https://github.com/kubernetes/minikube/issues/8381")
+		}
 		// Wait until the nginx-svc has a loadbalancer ingress IP
-		err = wait.PollImmediate(3*time.Second, Minutes(4), func() (bool, error) {
-			cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
-			// https://kubernetes.io/docs/reference/kubectl/jsonpath/
-			// On Windows, you must use a single quote or escaped double quote around any literals in the template.
-			if runtime.GOOS == "windows" {
-				cmd = exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "kubectl --context "+profile+" get svc nginx-svc -o jsonpath=\"{.status.loadBalancer.ingress[0].ip}\"")
-			}
-			rr, err := Run(t, cmd)
+		err = wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
+			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 			if err != nil {
 				return false, err
 			}
@@ -169,12 +166,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		})
 		if err != nil {
 			t.Errorf("nginx-svc svc.status.loadBalancer.ingress never got an IP: %v", err)
-			cmd := exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc")
-			if runtime.GOOS == "windows" {
-				cmd = exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "kubectl --context "+profile+" get svc nginx-svc")
-			}
-
-			rr, err := Run(t, cmd)
+			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc"))
 			if err != nil {
 				t.Errorf("%s failed: %v", rr.Command(), err)
 			}
