@@ -106,7 +106,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -213,7 +213,7 @@ jobs:
           (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
-          if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') {  Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe'};
+          if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -422,7 +422,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -516,7 +516,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -610,7 +610,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -696,7 +696,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.19/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
