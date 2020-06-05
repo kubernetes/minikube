@@ -125,7 +125,7 @@ jobs:
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -160,6 +160,9 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_test_docker_windows:
     needs: [build_minikube]
     env:
@@ -189,7 +192,7 @@ jobs:
           }
           cd ..
           Remove-Item minikube_binaries -Force -Recurse
-          ls  
+          ls
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -203,6 +206,14 @@ jobs:
           echo "------------------------"
           docker volume ls
           echo "------------------------"
+      - name: Install tools
+        continue-on-error: true
+        shell: powershell
+        run: |
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          choco install -y kubernetes-cli
+          choco install -y jq
+          if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') {  Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe'};
       - name: Run Integration Test in powershell
         continue-on-error: true
         shell: powershell
@@ -214,7 +225,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=13m --test.v --test.run=TestFunctional --binary="./minikube-windows-amd64.exe" 2>&1 | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=10m --timeout-multiplier=1 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -231,7 +242,7 @@ jobs:
         shell: powershell
         run: |
           cd minikube_binaries
-          Get-Content .\report\testout.txt | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
+          Get-Content .\report\testout.txt -Encoding ASCII  | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
           $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${Env:JOB_NAME} ${Env:GITHUB_REF}" -repo "${Env:GITHUB_REPOSITORY}"  -details "${Env:GITHUB_SHA}")
           echo status: ${STAT}
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
@@ -263,6 +274,7 @@ jobs:
           echo "*** $numPass Passed ***"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
+          If ($numPass -lt 33){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
   functional_test_hyperv_windows:
     needs: [build_minikube]
@@ -270,7 +282,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "functional_test_hyperv_windows"
       GOPOGH_RESULT: ""
-    runs-on: [self-hosted, windows-10-ent, 16CPUs]
+    runs-on: [self-hosted, windows-10-ent, Standard_D16s_v3, hyperv]
     steps:
       - name: Clean up
         continue-on-error: true
@@ -292,7 +304,7 @@ jobs:
           }
           cd ..
           Remove-Item minikube_binaries -Force -Recurse
-          ls  
+          ls
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -313,7 +325,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=16m --timeout-multiplier=3 --test.v --test.run="TestFunctional" --binary="./minikube-windows-amd64.exe"  2>&1 | Out-File -FilePath .\report\testout.txt -Encoding ASCII
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=13m --timeout-multiplier=1.5 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -330,7 +342,7 @@ jobs:
         shell: powershell
         run: |
           cd minikube_binaries
-          Get-Content .\report\testout.txt | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
+          Get-Content .\report\testout.txt -Encoding ASCII  | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
           $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${Env:JOB_NAME} ${Env:GITHUB_REF}" -repo "${Env:GITHUB_REPOSITORY}"  -details "${Env:GITHUB_SHA}")
           echo status: ${STAT}
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
@@ -350,6 +362,15 @@ jobs:
         with:
           name: functional_test_hyperv_windows
           path: minikube_binaries/report
+      - name: Install tools
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
+          choco install -y kubernetes-cli
+          choco install -y jq
+          if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: The End Result functional_test_hyperv_windows
         shell: powershell
         run: |
@@ -362,6 +383,7 @@ jobs:
           echo "*** $numPass Passed ***"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
+          If ($numPass -lt 33){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
   addons_certs_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
@@ -419,7 +441,7 @@ jobs:
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions)" -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -454,6 +476,9 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   multinode_pause_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
@@ -510,7 +535,7 @@ jobs:
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestPause|TestMultiNode)" -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestPause|TestMultiNode)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -545,6 +570,9 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   preload_docker_flags_tests_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
@@ -601,7 +629,7 @@ jobs:
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestPreload|TestDockerFlags)" -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestPreload|TestDockerFlags)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -636,6 +664,9 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 2 ];then echo "*** Failed to pass at least 27 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_baremetal_ubuntu18_04:
     needs: [build_minikube]
     env:
@@ -717,6 +748,10 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 27 ];then echo "*** Failed to pass at least 27 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
