@@ -35,8 +35,15 @@
 # the kubelet. The log directory specified must be an absolute directory.
 log_dir = "/var/log/crio/pods"
 
-# Location for CRI-O to lay down the version file
-version_file = "/var/lib/crio/version"
+# Location for CRI-O to lay down the temporary version file.
+# It is used to check if crio wipe should wipe containers, which should
+# always happen on a node reboot
+version_file = "/var/run/crio/version"
+
+# Location for CRI-O to lay down the persistent version file.
+# It is used to check if crio wipe should wipe images, which should
+# only happen when CRI-O has been upgraded
+version_file_persist = "/var/lib/crio/version"
 
 # The crio.api table contains settings for the kubelet/gRPC interface.
 [crio.api]
@@ -44,13 +51,11 @@ version_file = "/var/lib/crio/version"
 # Path to AF_LOCAL socket on which CRI-O will listen.
 listen = "/var/run/crio/crio.sock"
 
-# Host IP considered as the primary IP to use by CRI-O for things such as host network IP.
-host_ip = ""
-
 # IP address on which the stream server will listen.
 stream_address = "127.0.0.1"
 
-# The port on which the stream server will listen.
+# The port on which the stream server will listen. If the port is set to "0", then
+# CRI-O will allocate a random free port number.
 stream_port = "0"
 
 # Enable encrypted TLS transport of the stream server.
@@ -94,6 +99,10 @@ default_runtime = "runc"
 # If true, the runtime will not use pivot_root, but instead use MS_MOVE.
 no_pivot = false
 
+# decryption_keys_path is the path where the keys required for
+# image decryption are stored. This option supports live configuration reload.
+decryption_keys_path = "/etc/crio/keys/"
+
 # Path to the conmon binary, used for monitoring the OCI runtime.
 # Will be searched for using $PATH if empty.
 conmon = ""
@@ -107,36 +116,43 @@ conmon_env = [
 	"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 ]
 
+# Additional environment variables to set for all the
+# containers. These are overridden if set in the
+# container image spec or in the container runtime configuration.
+default_env = [
+]
+
 # If true, SELinux will be used for pod separation on the host.
 selinux = false
 
 # Path to the seccomp.json profile which is used as the default seccomp profile
 # for the runtime. If not specified, then the internal default seccomp profile
-# will be used.
+# will be used. This option supports live configuration reload.
 seccomp_profile = ""
 
 # Used to change the name of the default AppArmor profile of CRI-O. The default
-# profile name is "crio-default-" followed by the version string of CRI-O.
-apparmor_profile = "crio-default-1.16.1"
+# profile name is "crio-default". This profile only takes effect if the user
+# does not specify a profile via the Kubernetes Pod's metadata annotation. If
+# the profile is set to "unconfined", then this equals to disabling AppArmor.
+# This option supports live configuration reload.
+apparmor_profile = "crio-default"
 
 # Cgroup management implementation used for the runtime.
-cgroup_manager = "cgroupfs"
+cgroup_manager = "systemd"
 
 # List of default capabilities for containers. If it is empty or commented out,
 # only the capabilities defined in the containers json file by the user/kube
 # will be added.
 default_capabilities = [
-	"CHOWN", 
-	"DAC_OVERRIDE", 
-	"FSETID", 
-	"FOWNER", 
-	"NET_RAW", 
-	"SETGID", 
-	"SETUID", 
-	"SETPCAP", 
-	"NET_BIND_SERVICE", 
-	"SYS_CHROOT", 
-	"KILL", 
+	"CHOWN",
+	"DAC_OVERRIDE",
+	"FSETID",
+	"FOWNER",
+	"SETGID",
+	"SETUID",
+	"SETPCAP",
+	"NET_BIND_SERVICE",
+	"KILL",
 ]
 
 # List of default sysctls. If it is empty or commented out, only the sysctls
@@ -151,8 +167,10 @@ default_sysctls = [
 additional_devices = [
 ]
 
-# Path to OCI hooks directories for automatically executed hooks.
+# Path to OCI hooks directories for automatically executed hooks. If one of the
+# directories does not exist, then CRI-O will automatically skip them.
 hooks_dir = [
+	"/usr/share/containers/oci/hooks.d",
 ]
 
 # List of default mounts for each container. **Deprecated:** this option will
@@ -200,9 +218,13 @@ bind_mount_prefix = ""
 read_only = false
 
 # Changes the verbosity of the logs based on the level it is set to. Options
-# are fatal, panic, error, warn, info, and debug. This option supports live
-# configuration reload.
-log_level = "error"
+# are fatal, panic, error, warn, info, debug and trace. This option supports
+# live configuration reload.
+log_level = "info"
+
+# Filter the log messages by the provided regular expression.
+# This option supports live configuration reload.
+log_filter = ""
 
 # The UID mappings for the user namespace of each container. A range is
 # specified in the form containerUID:HostUID:Size. Multiple ranges must be
@@ -215,12 +237,23 @@ uid_mappings = ""
 gid_mappings = ""
 
 # The minimal amount of time in seconds to wait before issuing a timeout
-# regarding the proper termination of the container.
-ctr_stop_timeout = 0
+# regarding the proper termination of the container. The lowest possible
+# value is 30s, whereas lower values are not considered by CRI-O.
+ctr_stop_timeout = 30
 
-# ManageNetworkNSLifecycle determines whether we pin and remove network namespace
-# and manage its lifecycle.
-manage_network_ns_lifecycle = false
+# **DEPRECATED** this option is being replaced by manage_ns_lifecycle, which is described below.
+# manage_network_ns_lifecycle = false
+
+# manage_ns_lifecycle determines whether we pin and remove namespaces
+# and manage their lifecycle
+manage_ns_lifecycle = false
+
+# The directory where the state of the managed namespaces gets tracked.
+# Only used when manage_ns_lifecycle is true.
+namespaces_dir = "/var/run"
+
+# pinns_path is the path to find the pinns binary, which is needed to manage namespace lifecycle
+pinns_path = ""
 
 # The "crio.runtime.runtimes" table defines a list of OCI compatible runtimes.
 # The runtime to use is picked based on the runtime_handler provided by the CRI.
@@ -281,7 +314,7 @@ global_auth_file = ""
 
 # The image used to instantiate infra containers.
 # This option supports live configuration reload.
-pause_image = "k8s.gcr.io/pause:3.1"
+pause_image = "k8s.gcr.io/pause:3.2"
 
 # The path to a file containing credentials specific for pulling the pause_image from
 # above. The file is similar to that of /var/lib/kubelet/config.json
@@ -322,6 +355,10 @@ image_volumes = "mkdir"
 # The crio.network table containers settings pertaining to the management of
 # CNI plugins.
 [crio.network]
+
+# The default CNI network name to be selected. If not set or "", then
+# CRI-O will pick-up the first one found in network_dir.
+# cni_default_network = ""
 
 # Path to the directory where CNI configuration files are located.
 network_dir = "/etc/cni/net.d/"
