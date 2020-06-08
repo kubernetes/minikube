@@ -34,6 +34,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -100,11 +101,18 @@ func LoadFromTarball(img string) error {
 	p := filepath.Join(constants.ImageCacheDir, img)
 	p = localpath.SanitizeCacheDir(p)
 
-	cmd := exec.Command("docker", "load", "-i", p)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "%s", string(output))
+	tag, err := name.NewTag(Tag(img))
+	if err != nil {
+		return errors.Wrap(err, "new tag")
 	}
-	return nil
+
+	i, err := tarball.ImageFromPath(p, &tag)
+	if err != nil {
+		return errors.Wrap(err, "tarball")
+	}
+
+	_, err = daemon.Write(tag, i)
+	return err
 }
 
 // Tag returns just the image with the tag
