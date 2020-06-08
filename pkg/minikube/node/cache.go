@@ -128,10 +128,10 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		for _, img := range append([]string{cc.KicBaseImage}, kic.FallbackImages...) {
 			if err := image.LoadFromTarball(img); err == nil {
 				glog.Infof("successfully loaded %s from cached tarball", img)
-				finalImg = img
+				// strip the digest from the img before saving it in the config
+				// because loading an image from tarball to daemon doesn't load the digest
+				finalImg = image.Tag(img)
 				return nil
-			} else {
-				fmt.Println("Failed to load tarball:", err)
 			}
 			glog.Infof("Downloading %s to local daemon", img)
 			err := image.WriteImageToDaemon(img)
