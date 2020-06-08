@@ -24,6 +24,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 // General configuration: used to set the VM Driver
@@ -93,7 +95,7 @@ func KicDriver() bool {
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
 // (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {
-	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin")
+	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin") || driver.IsMicrosoftWSL()
 }
 
 // CanCleanup returns if cleanup is allowed
