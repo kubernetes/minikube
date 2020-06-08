@@ -38,16 +38,14 @@ func newFakeClient() *ssh.ExternalClient {
 
 func TestGeneratePodmanScripts(t *testing.T) {
 	var tests = []struct {
-		shell  string
-		config PodmanEnvConfig
-		//	noProxyGetter *FakeNoProxyGetter
+		shell     string
+		config    PodmanEnvConfig
 		wantSet   string
 		wantUnset string
 	}{
 		{
 			"bash",
 			PodmanEnvConfig{profile: "bash", driver: "kvm2", client: newFakeClient()},
-			//	nil,
 			`export PODMAN_VARLINK_BRIDGE="/usr/bin/ssh root@host -- sudo varlink -A \'podman varlink \\\$VARLINK_ADDRESS\' bridge"
 export MINIKUBE_ACTIVE_PODMAN="bash"
 
@@ -61,7 +59,6 @@ export MINIKUBE_ACTIVE_PODMAN="bash"
 	for _, tc := range tests {
 		t.Run(tc.config.profile, func(t *testing.T) {
 			tc.config.EnvConfig.Shell = tc.shell
-			//	defaultNoProxyGetter = tc.noProxyGetter
 			var b []byte
 			buf := bytes.NewBuffer(b)
 			if err := podmanSetScript(tc.config, buf); err != nil {
