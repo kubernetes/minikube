@@ -97,6 +97,7 @@ func ExistsImageInDaemon(img string) bool {
 }
 
 // LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
+// TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
 func LoadFromTarball(img string) error {
 	p := filepath.Join(constants.ImageCacheDir, img)
 	p = localpath.SanitizeCacheDir(p)
