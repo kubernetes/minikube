@@ -17,11 +17,13 @@ jobs:
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
-        run: |
+        run: |          
           make minikube-linux-amd64
           make e2e-linux-amd64
           make windows
           make e2e-windows-amd64.exe
+          make minikube-darwin-amd64
+          make e2e-darwin-amd64
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
