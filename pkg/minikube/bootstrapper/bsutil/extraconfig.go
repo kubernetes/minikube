@@ -29,7 +29,7 @@ import (
 )
 
 // enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
-// KubeadmExtraArgsWhitelist variable for more info)
+// KubeadmExtraArgsAllow variable for more info)
 const (
 	// KubeadmCmdParam is command parameters for kubeadm
 	KubeadmCmdParam = iota
@@ -56,12 +56,12 @@ var componentToKubeadmConfigKey = map[string]string{
 	Kubelet: "",
 }
 
-// KubeadmExtraArgsWhitelist is a whitelist of supported kubeadm params that can be supplied to kubeadm through
+// KubeadmExtraArgsAllow is a list of supported kubeadm params that can be supplied to kubeadm through
 // minikube's ExtraArgs parameter. The list is split into two parts - params that can be supplied as flags on the
 // command line and params that have to be inserted into the kubeadm config file. This is because of a kubeadm
 // constraint which allows only certain params to be provided from the command line when the --config parameter
 // is specified
-var KubeadmExtraArgsWhitelist = map[int][]string{
+var KubeadmExtraArgsAllow = map[int][]string{
 	KubeadmCmdParam: {
 		"ignore-preflight-errors",
 		"dry-run",
@@ -86,7 +86,7 @@ func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
 	// is specified, here we remove those that are not allowed
 	for opt := range kubeadmExtraOpts {
-		if !config.ContainsParam(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
+		if !config.ContainsParam(KubeadmExtraArgsAllow[KubeadmCmdParam], opt) {
 			// kubeadmExtraOpts is a copy so safe to delete
 			delete(kubeadmExtraOpts, opt)
 		}

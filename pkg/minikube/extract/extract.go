@@ -38,8 +38,8 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-// blacklist is a list of strings to explicitly omit from translation files.
-var blacklist = []string{
+// exclude is a list of strings to explicitly omit from translation files.
+var exclude = []string{
 	"{{.error}}",
 	"{{.url}}",
 	"{{.msg}}: {{.err}}",
@@ -351,9 +351,9 @@ func checkString(s string) string {
 		return ""
 	}
 
-	// Don't translate blacklisted strings
-	for _, b := range blacklist {
-		if b == stringToTranslate {
+	// Don't translate excluded strings
+	for _, e := range exclude {
+		if e == stringToTranslate {
 			return ""
 		}
 	}
