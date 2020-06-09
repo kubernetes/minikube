@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -126,7 +127,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 		}()
 		for _, img := range append([]string{cc.KicBaseImage}, kic.FallbackImages...) {
-			if err := image.LoadFromTarball(img); err == nil {
+			if err := image.LoadFromTarball(driver.Docker, img); err == nil {
 				glog.Infof("successfully loaded %s from cached tarball", img)
 				// strip the digest from the img before saving it in the config
 				// because loading an image from tarball to daemon doesn't load the digest
