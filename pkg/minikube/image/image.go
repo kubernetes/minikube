@@ -37,6 +37,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -98,22 +99,28 @@ func ExistsImageInDaemon(img string) bool {
 
 // LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
 // TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
-func LoadFromTarball(img string) error {
+func LoadFromTarball(binary, img string) error {
 	p := filepath.Join(constants.ImageCacheDir, img)
 	p = localpath.SanitizeCacheDir(p)
 
-	tag, err := name.NewTag(Tag(img))
-	if err != nil {
-		return errors.Wrap(err, "new tag")
+	switch binary {
+	case driver.Podman:
+		return fmt.Errorf("not yet implemented, see issue #8426")
+	default:
+		tag, err := name.NewTag(Tag(img))
+		if err != nil {
+			return errors.Wrap(err, "new tag")
+		}
+
+		i, err := tarball.ImageFromPath(p, &tag)
+		if err != nil {
+			return errors.Wrap(err, "tarball")
+		}
+
+		_, err = daemon.Write(tag, i)
+		return err
 	}
 
-	i, err := tarball.ImageFromPath(p, &tag)
-	if err != nil {
-		return errors.Wrap(err, "tarball")
-	}
-
-	_, err = daemon.Write(tag, i)
-	return err
 }
 
 // Tag returns just the image with the tag
