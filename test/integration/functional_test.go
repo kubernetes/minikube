@@ -170,7 +170,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
 	}
 	if err != nil {
-		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
+		t.Logf("failed to do status after eval-ing docker-env. error: %v", err)
 	}
 	if !strings.Contains(rr.Output(), "Running") {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
