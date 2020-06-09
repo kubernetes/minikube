@@ -24,11 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type FakeNoProxyGetter struct {
-	NoProxyVar   string
-	NoProxyValue string
-}
-
 func newFakeClient() *ssh.ExternalClient {
 	return &ssh.ExternalClient{
 		BaseArgs:   []string{"root@host"},

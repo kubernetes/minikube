@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/dockerenv"
+	"k8s.io/minikube/pkg/minikube/daemonenv"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -40,7 +40,7 @@ var (
 	dockerUnset bool
 )
 
-// dockerEnvCmd represents the docker-env command
+// dockerenvCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
 	Short: "Configure environment to use minikube's Docker daemon",
@@ -83,7 +83,7 @@ var dockerEnvCmd = &cobra.Command{
 			exit.WithError("Error detecting shell", err)
 		}
 
-		dockerenv.MaybeRestartDocker(cname, co.CP.Runner)
+		daemonenv.MaybeRestartDocker(cname, co.CP.Runner)
 
 		var err error
 		port := constants.DockerDaemonPort
@@ -94,7 +94,7 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		ec := dockerenv.DockerEnvConfig{
+		ec := daemonenv.DockerEnvConfig{
 			EnvConfig: sh,
 			Profile:   cname,
 			Driver:    driverName,
@@ -104,21 +104,21 @@ var dockerEnvCmd = &cobra.Command{
 			NoProxy:   noProxy,
 		}
 
-		out, err := dockerenv.TryDockerConnectivity("docker", ec)
+		out, err := daemonenv.TryDockerConnectivity("docker", ec)
 		if err != nil { // docker might be up but been loaded with wrong certs/config
 			// to fix issues like this #8185
 			glog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
-			dockerenv.MustRestartDocker(cname, co.CP.Runner)
+			daemonenv.MustRestartDocker(cname, co.CP.Runner)
 		}
 
 		if dockerUnset {
-			if err := dockerenv.UnsetScript(ec, os.Stdout); err != nil {
+			if err := daemonenv.UnsetScript(ec, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
 			}
 			return
 		}
 
-		if err := dockerenv.SetScript(ec, os.Stdout); err != nil {
+		if err := daemonenv.SetScript(ec, os.Stdout); err != nil {
 			exit.WithError("Error generating set output", err)
 		}
 	},

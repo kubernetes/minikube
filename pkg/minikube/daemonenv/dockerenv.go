@@ -17,7 +17,7 @@ limitations under the License.
 // Part of this code is heavily inspired/copied by the following file:
 // github.com/docker/machine/commands/env.go
 
-package dockerenv
+package daemonenv
 
 import (
 	"fmt"
@@ -50,18 +50,6 @@ type Config struct {
 	NoProxyValue           string
 }
 
-var (
-	defaultNoProxyGetter NoProxyGetter
-)
-
-// NoProxyGetter gets the no_proxy variable
-type NoProxyGetter interface {
-	GetNoProxyVar() (string, string)
-}
-
-// EnvNoProxyGetter gets the no_proxy variable, using environment
-type EnvNoProxyGetter struct{}
-
 // dockerShellCfgSet generates context variables for "docker-env"
 func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *Config {
 	profile := ec.Profile
@@ -76,7 +64,7 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *Config {
 	s.MinikubeDockerdProfile = envMap[constants.MinikubeActiveDockerdEnv]
 
 	if ec.NoProxy {
-		noProxyVar, noProxyValue := defaultNoProxyGetter.GetNoProxyVar()
+		noProxyVar, noProxyValue := GetNoProxyVar()
 
 		// add the docker host to the no_proxy list idempotently
 		switch {
@@ -96,7 +84,7 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *Config {
 }
 
 // GetNoProxyVar gets the no_proxy var
-func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
+func GetNoProxyVar() (string, string) {
 	// first check for an existing lower case no_proxy var
 	noProxyVar := "no_proxy"
 	noProxyValue := os.Getenv("no_proxy")
@@ -156,7 +144,7 @@ func UnsetScript(ec DockerEnvConfig, w io.Writer) error {
 	}
 
 	if ec.NoProxy {
-		k, _ := defaultNoProxyGetter.GetNoProxyVar()
+		k, _ := GetNoProxyVar()
 		if k != "" {
 			vars = append(vars, k)
 		}
@@ -195,8 +183,4 @@ func TryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
 	return c.CombinedOutput()
-}
-
-func init() {
-	defaultNoProxyGetter = &EnvNoProxyGetter{}
 }
