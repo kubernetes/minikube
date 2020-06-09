@@ -195,7 +195,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (comman
 	}
 
 	if driver.IsKIC(cc.Driver) {
-		beginDownloadKicBaseImage(&kicGroup, cc)
+		beginDownloadKicBaseImage(&kicGroup, cc, viper.GetBool("download-only"))
 	}
 
 	if !driver.BareMetal(cc.Driver) {
