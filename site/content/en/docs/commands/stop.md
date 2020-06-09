@@ -22,6 +22,7 @@ minikube stop [flags]
 ### Options
 
 ```
+      --all    Set flag to stop all profiles (clusters)
   -h, --help   help for stop
 ```
 

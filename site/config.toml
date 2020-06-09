@@ -159,6 +159,11 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	url = "https://minikube.sigs.k8s.io/docs/contrib/triage/"
 	icon = "fas fa-comments"
 	desc = "All community members are welcome and encouraged to join and help us triage minikube!"
+[[params.links.meetings]]
+	name = "Kanban board"
+	url = "http://tinyurl.com/minikube-kanban"
+	icon = "fas fa-comments"
+	desc = "Kanban visualization of the next milestone"
 
 
 # Related pages - does not appear to work yet

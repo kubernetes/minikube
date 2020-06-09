@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -102,7 +103,7 @@ func doCacheBinaries(k8sVersion string) error {
 }
 
 // beginDownloadKicBaseImage downloads the kic image
-func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig) {
+func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, downloadOnly bool) {
 	if cc.Driver != "docker" {
 		// TODO: driver == "podman"
 		glog.Info("Driver isn't docker, skipping base image download")
@@ -117,16 +118,35 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig) {
 	out.T(out.Pulling, "Pulling base image ...")
 	g.Go(func() error {
 		// TODO #8004 : make base-image respect --image-repository
+		var finalImg string
+		// If we end up using a fallback image, notify the user
+		defer func() {
+			if finalImg != "" && finalImg != cc.KicBaseImage {
+				out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(cc.KicBaseImage), image.Tag(finalImg)))
+				cc.KicBaseImage = finalImg
+			}
+		}()
 		for _, img := range append([]string{cc.KicBaseImage}, kic.FallbackImages...) {
+			if err := image.LoadFromTarball(driver.Docker, img); err == nil {
+				glog.Infof("successfully loaded %s from cached tarball", img)
+				// strip the digest from the img before saving it in the config
+				// because loading an image from tarball to daemon doesn't load the digest
+				finalImg = image.Tag(img)
+				return nil
+			}
 			glog.Infof("Downloading %s to local daemon", img)
 			err := image.WriteImageToDaemon(img)
 			if err == nil {
-				if img != cc.KicBaseImage {
-					out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s\n minikube will use %s as a fallback image", image.Tag(cc.KicBaseImage), image.Tag(img), image.Tag(img)))
-					cc.KicBaseImage = img
-				}
 				glog.Infof("successfully downloaded %s", img)
+				finalImg = img
 				return nil
+			}
+			if downloadOnly {
+				if err := image.SaveToDir([]string{img}, constants.ImageCacheDir); err == nil {
+					glog.Infof("successfully saved %s as a tarball", img)
+					finalImg = img
+					return nil
+				}
 			}
 			glog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
 		}
