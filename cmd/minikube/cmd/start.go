@@ -613,6 +613,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
+	// if we are only downloading artifacts for a driver, we can stop validation here
+	if viper.GetBool("download-only") {
+		return
+	}
+
 	st := ds.State
 	glog.Infof("status for %s: %+v", name, st)
 
