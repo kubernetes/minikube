@@ -70,7 +70,8 @@ func TestGetKubernetesVersion(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			viper.SetDefault(kubernetesVersion, test.paramVersion)
-			version := getKubernetesVersion(test.cfg)
+			var displayKubernetesUpgradeMessage uint32 = 1
+			version := getKubernetesVersion(test.cfg, &displayKubernetesUpgradeMessage)
 
 			// check whether we are getting the expected version
 			if version != test.expectedVersion {

@@ -475,7 +475,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	if cmd.Flags().Changed(kubernetesVersion) {
-		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
+		var displayKubernetesUpgradeMessage uint32 = 1
+		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing, &displayKubernetesUpgradeMessage)
 	}
 
 	if cmd.Flags().Changed(apiServerName) {

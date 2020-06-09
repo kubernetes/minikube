@@ -27,6 +27,7 @@ import (
 	"os/user"
 	"runtime"
 	"strings"
+	"sync/atomic"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/ssh"
@@ -209,7 +210,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, displayKubernetesUpgradeMessage *uint32) (node.Starter, error) {
 	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -226,7 +227,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		updateDriver(driverName)
 	}
 
-	k8sVersion := getKubernetesVersion(existing)
+	k8sVersion := getKubernetesVersion(existing, displayKubernetesUpgradeMessage)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
 	if err != nil {
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
@@ -825,7 +826,7 @@ func validateCPUCount(local bool) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(cmd *cobra.Command, drvName string) {
+func validateFlags(cmd *cobra.Command, drvName string, displayKubernetesUpgradeMessage *uint32) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
@@ -862,7 +863,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 
 		// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
-		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
+		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil, displayKubernetesUpgradeMessage))
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {
 				exit.WithCodeT(exit.Config, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
@@ -899,11 +900,11 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig, displayKubernetesUpgradeMessage *uint32) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
 	if existing != nil {
 		cp, err := config.PrimaryControlPlane(existing)
-		cp.KubernetesVersion = getKubernetesVersion(&cc)
+		cp.KubernetesVersion = getKubernetesVersion(&cc, displayKubernetesUpgradeMessage)
 		if err != nil {
 			return cc, config.Node{}, err
 		}
@@ -912,7 +913,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 		// KubernetesVersion is the only attribute that the user can override in the Node object
 		nodes := []config.Node{}
 		for _, n := range existing.Nodes {
-			n.KubernetesVersion = getKubernetesVersion(&cc)
+			n.KubernetesVersion = getKubernetesVersion(&cc, displayKubernetesUpgradeMessage)
 			nodes = append(nodes, n)
 		}
 		cc.Nodes = nodes
@@ -922,7 +923,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 
 	cp := config.Node{
 		Port:              cc.KubernetesConfig.NodePort,
-		KubernetesVersion: getKubernetesVersion(&cc),
+		KubernetesVersion: getKubernetesVersion(&cc, displayKubernetesUpgradeMessage),
 		Name:              kubeNodeName,
 		ControlPlane:      true,
 		Worker:            true,
@@ -964,7 +965,7 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *config.ClusterConfig) string {
+func getKubernetesVersion(old *config.ClusterConfig, displayKubernetesUpgradeMessage *uint32) string {
 	paramVersion := viper.GetString(kubernetesVersion)
 
 	// try to load the old version first if the user didn't specify anything
@@ -1037,7 +1038,8 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
     `, out.V{"prefix": version.VersionPrefix, "new": nvs, "old": ovs, "profile": profileArg, "suggestedName": suggestedName})
 
 	}
-	if defaultVersion.GT(nvs) {
+	if defaultVersion.GT(nvs) && atomic.LoadUint32(displayKubernetesUpgradeMessage) == 0 {
+		atomic.StoreUint32(displayKubernetesUpgradeMessage, 1)
 		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 	return nv
