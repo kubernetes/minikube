@@ -94,11 +94,6 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - name: Install lz4
-        shell: bash
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get -qq -y install liblz4-tool
       - name: Install gopogh
         shell: bash
         run: |
