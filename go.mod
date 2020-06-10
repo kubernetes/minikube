@@ -3,7 +3,6 @@ module k8s.io/minikube
 go 1.13
 
 require (
-	cloud.google.com/go v0.57.0
 	cloud.google.com/go/storage v1.8.0
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/Parallels/docker-machine-parallels v1.3.0
