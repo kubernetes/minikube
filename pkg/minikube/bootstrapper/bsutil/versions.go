@@ -39,14 +39,7 @@ func versionIsBetween(version, gte, lte semver.Version) bool {
 }
 
 var versionSpecificOpts = []config.VersionedExtraOption{
-	{
-		Option: config.ExtraOption{
-			Component: Kubelet,
-			Key:       "fail-swap-on",
-			Value:     "false",
-		},
-		GreaterThanOrEqual: semver.MustParse("1.8.0-alpha.0"),
-	},
+
 	// Kubeconfig args
 	config.NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
 	config.NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
@@ -72,9 +65,6 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 
 	// Kubelet config file
 	config.NewUnversionedOption(Kubelet, "config", "/var/lib/kubelet/config.yaml"),
-
-	// Network args
-	config.NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
 
 	// Auth args
 	config.NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
