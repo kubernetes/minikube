@@ -609,3 +609,39 @@ func iptablesFileExists(ociBin string, nameOrID string) bool {
 	}
 	return true
 }
+
+// CreateMounts use for init mounts configuration, to use it in oci drivers like docker, podman
+func CreateMounts(mountString string) []Mount {
+	var mounts []Mount
+	isReadOnly := true
+	SelinuxRelabel := false
+
+	if mountString == "" {
+		return mounts
+	}
+
+	splittedMounts := strings.Split(mountString, ",")
+	for _, mountString := range splittedMounts {
+		mountPieces := strings.Split(mountString, ":")
+		if len(mountPieces) == 1 {
+			mountPieces = append(mountPieces, mountPieces[0])
+		}
+
+		if len(mountPieces) == 3 {
+			if strings.Contains(mountPieces[2], "rw") {
+				isReadOnly = false
+			}
+			if strings.Contains(mountPieces[2], "Z") {
+				SelinuxRelabel = true
+			}
+		}
+		mounts = append(mounts, Mount{
+			ContainerPath:  mountPieces[1],
+			HostPath:       mountPieces[0],
+			Readonly:       isReadOnly,
+			SelinuxRelabel: SelinuxRelabel,
+		})
+	}
+
+	return mounts
+}

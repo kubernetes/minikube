@@ -78,6 +78,7 @@ func (d *Driver) Create() error {
 		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
 		OCIBinary:     d.NodeConfig.OCIBinary,
 		APIServerPort: d.NodeConfig.APIServerPort,
+		Mounts:        d.NodeConfig.Mounts,
 	}
 
 	defaultNetwork := d.MachineName

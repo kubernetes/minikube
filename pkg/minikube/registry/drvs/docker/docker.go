@@ -59,6 +59,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		APIServerPort:     cc.Nodes[0].Port,
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
+		Mounts:            oci.CreateMounts(cc.DriverMounts),
 	}), nil
 }
 

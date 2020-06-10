@@ -1045,6 +1045,13 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		exit.UsageT("Sorry, please set the --output flag to one of the following valid options: [text,json]")
 	}
 
+	if cmd.Flags().Changed(driverMounts) && !driver.IsDocker(drvName) {
+		exit.UsageT(
+			"Sorry, provided flag --{{.flag_name}} doesn't supported by {{.name}} driver, use --mount-string instead",
+			out.V{"flag_name": driverMounts, "name": drvName},
+		)
+	}
+
 	validateRegistryMirror()
 }
 

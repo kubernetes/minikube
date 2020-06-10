@@ -42,6 +42,8 @@ minikube start [flags]
       --docker-opt stringArray            Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
       --download-only                     If true, only download and cache files for later use - don't install or start anything.
       --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
+      --driver-mounts string              Use native driver mounts. Supported drivers:
+                                          		Docker: -v flag(bind mounts). Has no effect in the existing docker container. Additional options rw and Z supported, for example --driver-mounts="/tmp:/tmp:rwZ"
       --dry-run                           dry-run mode. Validates configuration, but does not mutate system state
       --embed-certs                       if true, will embed the certs in kubeconfig.
       --enable-default-cni                DEPRECATED: Replaced by --cni=bridge

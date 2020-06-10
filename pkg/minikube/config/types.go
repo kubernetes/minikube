@@ -70,6 +70,7 @@ type ClusterConfig struct {
 	Addons                  map[string]bool
 	VerifyComponents        map[string]bool // map of components to verify and wait for after start.
 	StartHostTimeout        time.Duration
+	DriverMounts            string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

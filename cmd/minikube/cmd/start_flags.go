@@ -105,6 +105,7 @@ const (
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
 	startOutput             = "output"
+	driverMounts            = "driver-mounts"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -195,6 +196,11 @@ func initDriverFlags() {
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (hyperv driver only)")
 	startCmd.Flags().Bool(hypervUseExternalSwitch, false, "Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)")
 	startCmd.Flags().String(hypervExternalAdapter, "", "External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)")
+
+	// Driver specific mounts
+	startCmd.Flags().String(driverMounts, "",
+		`Use native driver mounts. Supported drivers:
+		Docker: -v flag(bind mounts). Has no effect in the existing docker container. Additional options rw and Z supported, for example --driver-mounts="/tmp:/tmp:rwZ"`)
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -291,6 +297,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			NFSSharesRoot:           viper.GetString(nfsSharesRoot),
 			DockerEnv:               config.DockerEnv,
 			DockerOpt:               config.DockerOpt,
+			DriverMounts:            viper.GetString(driverMounts),
 			InsecureRegistry:        insecureRegistry,
 			RegistryMirror:          registryMirror,
 			HostOnlyCIDR:            viper.GetString(hostOnlyCIDR),
