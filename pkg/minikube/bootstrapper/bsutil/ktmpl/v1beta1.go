@@ -65,6 +65,12 @@ etcd:
     dataDir: {{.EtcdDataDir}}
     extraArgs:
       listen-metrics-urls: http://127.0.0.1:2381,http://{{.AdvertiseAddress}}:2381
+controllerManager:
+  extraArgs:
+    "leader-elect": "false"
+scheduler:
+  extraArgs:
+    "leader-elect": "false"
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
