@@ -461,7 +461,7 @@ func trySSH(h *host.Host, ip string) error {
 // tryRegistry tries to connect to the image repository
 func tryRegistry(r command.Runner, driverName string, imageRepository string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
-	opts := []string{"-sS", "-m", "2"}
+	opts := []string{"-L", "-sS", "-m", "2"}
 
 	proxy := os.Getenv("HTTPS_PROXY")
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
