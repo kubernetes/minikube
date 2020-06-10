@@ -78,14 +78,13 @@ var dockerEnvCmd = &cobra.Command{
 			glog.Warningf("dockerd is not active will try to restart it...")
 			mustRestartDocker(cname, co.CP.Runner)
 		}
-		sh, err := shell.GetShell("")
+		sh, err := shell.GetShell(shell.ForceShell)
 		if err != nil {
 			exit.WithError("Error detecting shell", err)
 		}
 
 		daemonenv.MaybeRestartDocker(cname, co.CP.Runner)
 
-		var err error
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
@@ -94,7 +93,7 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		ec := daemonenv.DockerEnvConfig{
+		ec := daemonenv.EnvConfig{
 			EnvConfig: sh,
 			Profile:   cname,
 			Driver:    driverName,

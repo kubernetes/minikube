@@ -137,11 +137,6 @@ var (
 	ForceShell string
 )
 
-// Detect detects user's current shell.
-func Detect() (string, error) {
-	return shell.Detect()
-}
-
 func (c EnvConfig) getShell() shellData {
 	shell, ok := shellConfigMap[c.Shell]
 	if !ok {
@@ -196,4 +191,18 @@ func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	}
 	_, err := w.Write([]byte(sb.String()))
 	return err
+}
+
+// Detect detects user's current shell.
+func Detect() (string, error) {
+	return shell.Detect()
+}
+
+func GetShell(useShell string) (EnvConfig, error) {
+	sh := EnvConfig{Shell: useShell}
+	var err error
+	if useShell == "" {
+		sh.Shell, err = Detect()
+	}
+	return sh, err
 }

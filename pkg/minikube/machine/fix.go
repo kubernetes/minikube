@@ -32,8 +32,11 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/daemonenv"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/shell"
 )
 
 // hostRunner is a minimal host.Host based interface for running commands
@@ -158,14 +161,19 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	if !driver.IsKIC(drver) {
 		return
 	}
+	sh, err := shell.GetShell(shell.ForceShell)
+	if err != nil {
+		exit.WithError("Error detecting shell", err)
+	}
+
+	ec := daemonenv.EnvConfig{
+		EnvConfig: sh,
+	}
+
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
-		// TODO: refactor docker-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
-		out.WarningT(`Please re-eval your docker-env, To ensure your environment variables have updated ports:
-
-	'minikube -p {{.profile_name}} docker-env'
-
-	`, out.V{"profile_name": name})
+		out.WarningT(`Please re-eval your docker-env`)
+		daemonenv.SetScript(ec, os.Stdout)
 	}
 	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
