@@ -166,11 +166,14 @@ jobs:
       - name: Install kubectl
         shell: bash
         run: |
+          brew install docker-machine docker
+          sudo docker –version
+      - name: Install kubectl
+        shell: bash
+        run: |
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-          which bash
-          echo $(which bash)
       - name: Install gopogh
         shell: bash
         run: |
@@ -468,11 +471,6 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - name: Install lz4
-        shell: bash
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get -qq -y install liblz4-tool
       - name: Docker Info
         shell: bash
         run: |
@@ -562,11 +560,6 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - name: Install lz4
-        shell: bash
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get -qq -y install liblz4-tool
       - name: Docker Info
         shell: bash
         run: |
@@ -656,11 +649,6 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - name: Install lz4
-        shell: bash
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get -qq -y install liblz4-tool
       - name: Docker Info
         shell: bash
         run: |
