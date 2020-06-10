@@ -154,7 +154,8 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateSpecifiedDriver(existing)
 	ds, alts, specified := selectDriver(existing)
-	starter, err := provisionWithDriver(cmd, ds, existing)
+	var displayKubernetesUpgradeMessage uint32 = 0
+	starter, err := provisionWithDriver(cmd, ds, existing, &displayKubernetesUpgradeMessage)
 	if err != nil {
 		if errors.Is(err, oci.ErrWindowsContainers) {
 			out.ErrLn("")
@@ -184,7 +185,7 @@ func runStart(cmd *cobra.Command, args []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing)
+				starter, err = provisionWithDriver(cmd, ds, existing, &displayKubernetesUpgradeMessage)
 				if err != nil {
 					continue
 				} else {
@@ -219,7 +220,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		glog.Errorf("Error autoSetOptions : %v", err)
 	}
 
-	validateFlags(cmd, driverName)
+	validateFlags(cmd, driverName, displayKubernetesUpgradeMessage)
 	validateUser(driverName)
 
 	// Download & update the driver, even in --download-only mode

@@ -345,13 +345,15 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	if driver.BareMetal(cc.Driver) {
 		kubeNodeName = "m01"
 	}
-	return createNode(cc, kubeNodeName, existing)
+	var displayKubernetesUpgradeMessage uint32 = 1
+	return createNode(cc, kubeNodeName, existing, &displayKubernetesUpgradeMessage)
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
-	validateFlags(cmd, existing.Driver)
+	var displayKubernetesUpgradeMessage uint32 = 1
+	validateFlags(cmd, existing.Driver, &displayKubernetesUpgradeMessage)
 
 	cc := *existing
 	if cmd.Flags().Changed(containerRuntime) {
