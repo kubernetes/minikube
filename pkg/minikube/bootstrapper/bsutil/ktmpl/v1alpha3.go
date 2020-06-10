@@ -56,6 +56,10 @@ controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
+controllerManagerExtraArgs:
+  leader-elect: "false"
+schedulerExtraArgs:
+  leader-elect: "false"  
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
