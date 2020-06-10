@@ -19,30 +19,10 @@ COPY files/ /usr/local/bin/
 ARG COMMIT_SHA
 
 RUN echo "set ENV variables ..." \
- && export SYSTEMD_VERSION="245.4-4ubuntu3" \
-    CONNTRACK_VERSION="1:1.4.5-2" \
-    IPTABLES_VERSION="1.8.4-3ubuntu2" \
-    IPROUTE2_VERSION="5.5.0-1ubuntu1" \
-    ETHTOOL_VERSION="1:5.4-1" \
-    SOCAT_VERSION="1.7.3.3-2" \
-    UTIL_LINUX_VERSION="2.34-0.1ubuntu9" \
-    MOUNT_VERSION="2.34-0.1ubuntu9" \
-    EBTABLES_VERSION="2.0.11-3build1" \
-    UDEV_VERSION="245.4-4ubuntu3" \
-    KMOD_VERSION="27-1ubuntu2" \
-    GNUPG_VERSION="2.2.19-3ubuntu2" \
-    LIBGLIB2_VERSION="2.64.2-1~fakesync1" \
-    LIBSECCOMP2_VERSION="2.4.3-1ubuntu1" \
-    CA_CERTIFICATES_VERSION="20190110ubuntu1" \
-    CURL_VERSION="7.68.0-1ubuntu2" \
-    RSYNC_VERSION="3.1.3-8" \
-    CRIO_VERSION="1.17.3~2" \
-    PODMAN_VERSION="1.9.0~2" \
-    LZ4_VERSION="1.9.2-2" \
-    SUDO_VERSION="1.8.31-1ubuntu1" \
-    DOCKER_VERSION="19.03.8-0ubuntu1" \
-    DNSUTILS_VERSION="1:9.16.1-0ubuntu2" \
+ && export CRIO_VERSION="1.17.4~1" \
+    PODMAN_VERSION="1.9.3~1" \
     CNI_VERSION="v0.8.5" \
+    DOCKER_VERSION="19.03.8-0ubuntu1" \
     CRICTL_VERSION="v1.17.0" \
     CONTAINERD_VERSION="1.3.3-61-g60bc1282" \
  && echo "Ensuring scripts are executable ..." \
@@ -50,16 +30,16 @@ RUN echo "set ENV variables ..." \
  && echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive apt-get update && \
       apt-get install -y --no-install-recommends \
-      systemd=${SYSTEMD_VERSION} conntrack=${CONNTRACK_VERSION} iptables=${IPTABLES_VERSION} iproute2=${IPROUTE2_VERSION} ethtool=${ETHTOOL_VERSION} \
-      socat=${SOCAT_VERSION} util-linux=${UTIL_LINUX_VERSION} mount=${MOUNT_VERSION} ebtables=${EBTABLES_VERSION} udev=${UDEV_VERSION} kmod=${KMOD_VERSION} \
-      gnupg=${GNUPG_VERSION} libglib2.0-0=${LIBGLIB2_VERSION} libseccomp2=${LIBSECCOMP2_VERSION} ca-certificates=${CA_CERTIFICATES_VERSION} \
-      curl=${CURL_VERSION} rsync=${RSYNC_VERSION} \
+      systemd conntrack iptables iproute2 ethtool \
+      socat util-linux mount ebtables udev kmod \
+      gnupg libglib2.0-0 libseccomp2 ca-certificates \
+      curl rsync \
       && rm -rf /var/lib/apt/lists/* \
     && sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
         curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
         apt-key add - < Release.key && apt-get update && \
-        apt-get install -y --no-install-recommends cri-o-1.17=${CRIO_VERSION} podman=${PODMAN_VERSION} lz4=${LZ4_VERSION} sudo=${SUDO_VERSION} \
-        docker.io=${DOCKER_VERSION} dnsutils=${DNSUTILS_VERSION} \
+        apt-get install -y --no-install-recommends cri-o-1.17=${CRIO_VERSION} podman=${PODMAN_VERSION} lz4 sudo \
+        docker.io=${DOCKER_VERSION} dnsutils \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
