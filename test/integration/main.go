@@ -92,6 +92,12 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
+// GithubActionRunner returns true if running inside a github action runner
+func GithubActionRunner() bool {
+	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
+	return os.Getenv("GITHUB_ACTIONS") == "true"
+}
+
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
 // (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {
