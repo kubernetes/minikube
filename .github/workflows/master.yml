@@ -155,7 +155,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 37 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
+          if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_virtualbox_macos:
     needs: [build_minikube]
@@ -233,7 +233,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 34 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
+          if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_docker_windows:
     needs: [build_minikube]
@@ -346,7 +346,7 @@ jobs:
           echo "*** $numPass Passed ***"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
-          If ($numPass -lt 34){ exit 2 }
+          If ($numPass -lt 33){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
   functional_hyperv_windows:
     needs: [build_minikube]
@@ -457,7 +457,7 @@ jobs:
           echo "*** $numPass Passed ***"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
-          If ($numPass -lt 34){ exit 2 }
+          If ($numPass -lt 33){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
   functional_baremetal_ubuntu18_04:
     needs: [build_minikube]
@@ -541,7 +541,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 28 ];then echo "*** Failed to pass at least 27 ! ***";exit 2;fi
+          if [ "$numPass" -lt 27 ];then echo "*** Failed to pass at least 27 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   addons_certs_docker_ubuntu:
     runs-on: ubuntu-18.04

@@ -154,57 +154,52 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
+	defer cancel()
+	var rr *RunResult
+	var err error
+	if runtime.GOOS == "windows" {
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
+		rr, err = Run(t, c)
+	} else {
+		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+		// we should be able to get minikube status with a bash which evaled docker-env
+		rr, err = Run(t, c)
+	}
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
+	}
+	if err != nil {
+		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
+	}
+	if !strings.Contains(rr.Output(), "Running") {
+		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
+	}
 
-	t.Run("StatusAfterEval", func(t *testing.T) {
-		mctx, cancel := context.WithTimeout(ctx, Seconds(30))
-		defer cancel()
-		var rr *RunResult
-		var err error
-		if runtime.GOOS == "windows" {
-			c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
-			rr, err = Run(t, c)
-		} else {
-			c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
-			// we should be able to get minikube status with a bash which evaled docker-env
-			rr, err = Run(t, c)
-		}
-		if mctx.Err() == context.DeadlineExceeded {
-			t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
-		}
-		if err != nil {
-			t.Logf("failed to do status after eval-ing docker-env. error: %v", err)
-		}
-		if !strings.Contains(rr.Output(), "Running") {
-			t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
-		}
-	})
+	mctx, cancel = context.WithTimeout(ctx, Seconds(30))
+	defer cancel()
+	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
+	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
+		rr, err = Run(t, c)
+	} else {
+		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
+		rr, err = Run(t, c)
+	}
 
-	t.Run("ListImages", func(t *testing.T) {
-		mctx, cancel := context.WithTimeout(ctx, Seconds(30))
-		defer cancel()
-		var rr *RunResult
-		var err error
-		// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
-		if runtime.GOOS == "windows" { // testing docker-env eval in powershell
-			c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
-			rr, err = Run(t, c)
-		} else {
-			c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
-			rr, err = Run(t, c)
-		}
-		if mctx.Err() == context.DeadlineExceeded {
-			t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
-		}
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+	}
 
-		if err != nil {
-			t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
-		}
+	if err != nil {
+		t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
+	}
 
-		expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
-		if !strings.Contains(rr.Output(), expectedImgInside) {
-			t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
-		}
-	})
+	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
+	if !strings.Contains(rr.Output(), expectedImgInside) {
+		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
+	}
+
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
@@ -217,7 +212,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=3600", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=2800", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
