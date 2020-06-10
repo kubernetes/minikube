@@ -86,6 +86,7 @@ func TestFunctional(t *testing.T) {
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
+			{"DockerEnv", validateDockerEnv},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -122,7 +123,6 @@ func TestFunctional(t *testing.T) {
 			{"FileSync", validateFileSync},
 			{"CertSync", validateCertSync},
 			{"UpdateContextCmd", validateUpdateContextCmd},
-			{"DockerEnv", validateDockerEnv},
 			{"NodeLabels", validateNodeLabels},
 		}
 		for _, tc := range tests {
@@ -212,7 +212,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=3800", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=3200", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
