@@ -166,11 +166,6 @@ jobs:
       - name: Install kubectl
         shell: bash
         run: |
-          brew install docker-machine docker
-          sudo docker –version
-      - name: Install kubectl
-        shell: bash
-        run: |
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
@@ -179,6 +174,11 @@ jobs:
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+      - name: Install docker
+        shell: bash
+        run: |
+          brew install docker-machine docker
+          sudo docker --version
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
