@@ -717,7 +717,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
+          if [ "$numPass" -lt 12 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   preload_docker_flags_docker_ubuntu:
     runs-on: ubuntu-18.04
@@ -806,7 +806,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 2 ];then echo "*** Failed to pass at least 27 ! ***";exit 2;fi
+          if [ "$numPass" -lt 2 ];then echo "*** Failed to pass at least 2 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   # After all integration tests finished
   # collect all the reports and upload them
