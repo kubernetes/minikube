@@ -38,6 +38,12 @@ dns:
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
+controllerManager:
+  extraArgs:
+    "leader-elect": "false"
+scheduler:
+  extraArgs:
+    "leader-elect": "false"
 kubernetesVersion: v1.19.0
 networking:
   dnsDomain: cluster.local
