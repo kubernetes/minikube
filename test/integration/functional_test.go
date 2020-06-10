@@ -155,7 +155,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	t.Run("StatusAfterEval", func(t *testing.T) { 
+	t.Run("StatusAfterEval", func(t *testing.T) {
 		mctx, cancel := context.WithTimeout(ctx, Seconds(30))
 		defer cancel()
 		var rr *RunResult
@@ -177,7 +177,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		if !strings.Contains(rr.Output(), "Running") {
 			t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 		}
-	}
+	})
 
 	t.Run("ListImages", func(t *testing.T) {
 		mctx, cancel := context.WithTimeout(ctx, Seconds(30))
@@ -195,16 +195,16 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		if mctx.Err() == context.DeadlineExceeded {
 			t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
 		}
-	
+
 		if err != nil {
 			t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
 		}
-	
+
 		expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
 		if !strings.Contains(rr.Output(), expectedImgInside) {
 			t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
 		}
-	}
+	})
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {

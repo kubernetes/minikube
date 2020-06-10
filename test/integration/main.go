@@ -98,7 +98,6 @@ func GithubActionRunner() bool {
 	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
-
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
 // (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {
