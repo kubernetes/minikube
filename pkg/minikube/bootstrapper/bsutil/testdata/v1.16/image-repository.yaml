@@ -34,6 +34,12 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       listen-metrics-urls: http://127.0.0.1:2381,http://1.1.1.1:2381
+controllerManager:
+  extraArgs:
+    "leader-elect": "false"
+scheduler:
+  extraArgs:
+    "leader-elect": "false"
 kubernetesVersion: v1.16.0
 networking:
   dnsDomain: cluster.local

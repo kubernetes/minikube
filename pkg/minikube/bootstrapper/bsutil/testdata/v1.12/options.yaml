@@ -33,6 +33,10 @@ controlPlaneEndpoint: control-plane.minikube.internal:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
+controllerManagerExtraArgs:
+  leader-elect: "false"
+schedulerExtraArgs:
+  leader-elect: "false"  
 kubernetesVersion: v1.12.0
 networking:
   dnsDomain: cluster.local
