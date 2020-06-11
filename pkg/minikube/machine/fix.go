@@ -66,7 +66,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	driverName := h.Driver.DriverName()
 
 	// check if need to re-run docker-env
-	maybeWarnAboutEvalEnv(driverName, cc.Name)
+	maybeWarnAboutEvalEnv(driverName)
 
 	h, err = recreateIfNeeded(api, cc, n, h)
 	if err != nil {
@@ -157,7 +157,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 
 // maybeWarnAboutEvalEnv wil warn user if they need to re-eval their docker-env, podman-env
 // because docker changes the allocated bind ports after restart https://github.com/kubernetes/minikube/issues/6824
-func maybeWarnAboutEvalEnv(drver string, name string) {
+func maybeWarnAboutEvalEnv(drver string) {
 	if !driver.IsKIC(drver) {
 		return
 	}
