@@ -4,7 +4,7 @@
 #
 ########################################################################
 
-FALCO_PROBE_VERSION = 0.21.0
+FALCO_PROBE_VERSION = 0.23.0
 FALCO_PROBE_SITE = https://github.com/falcosecurity/falco/archive
 FALCO_PROBE_SOURCE = $(FALCO_PROBE_VERSION).tar.gz
 FALCO_PROBE_DEPENDENCIES += ncurses libyaml
@@ -12,7 +12,7 @@ FALCO_PROBE_LICENSE = Apache-2.0
 FALCO_PROBE_LICENSE_FILES = COPYING
 
 # see cmake/modules/sysdig-repo/CMakeLists.txt
-FALCO_PROBE_SYSDIG_VERSION = be1ea2d9482d0e6e2cb14a0fd7e08cbecf517f94
+FALCO_PROBE_SYSDIG_VERSION = 96bd9bc560f67742738eb7255aeb4d03046b8045
 FALCO_PROBE_EXTRA_DOWNLOADS = https://github.com/draios/sysdig/archive/${FALCO_PROBE_SYSDIG_VERSION}.tar.gz
 
 define FALCO_PROBE_SYSDIG_SRC
