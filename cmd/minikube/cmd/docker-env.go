@@ -111,13 +111,13 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if dockerUnset {
-			if err := daemonenv.UnsetScript(ec, os.Stdout); err != nil {
+			if err := daemonenv.DockerUnsetScript(ec, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
 			}
 			return
 		}
 
-		if err := daemonenv.SetScript(ec, os.Stdout); err != nil {
+		if err := daemonenv.DockerSetScript(ec, os.Stdout); err != nil {
 			exit.WithError("Error generating set output", err)
 		}
 	},
