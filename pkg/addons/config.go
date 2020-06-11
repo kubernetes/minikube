@@ -149,4 +149,9 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableAddon},
 	},
+	{
+		name:      "heapster",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 }
