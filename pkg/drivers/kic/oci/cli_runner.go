@@ -88,7 +88,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	}
 
 	killTime := 19 * time.Second // this will be applied only if warnSlow is true
-	warnTime := 2 * time.Second
+	warnTime := 10 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), killTime)
 	defer cancel()
 
@@ -138,7 +138,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
-			return rr, fmt.Errorf("%q timed out after %s", rr.Command(), killTime)
+			return rr, context.DeadlineExceeded
 		}
 	}
 
