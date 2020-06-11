@@ -334,7 +334,11 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	// Apply new addons
 	for _, name := range additional {
-		toEnable[name] = true
+		// if the specified addon doesn't exist, skip enabling
+		_, e := isAddonValid(name)
+		if e {
+			toEnable[name] = true
+		}
 	}
 
 	toEnableList := []string{}
