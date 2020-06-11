@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package daemonenv
 
 import (
 	"bytes"
@@ -40,7 +40,7 @@ func TestGeneratePodmanScripts(t *testing.T) {
 	}{
 		{
 			"bash",
-			PodmanEnvConfig{profile: "bash", driver: "kvm2", client: newFakeClient()},
+			PodmanEnvConfig{Profile: "bash", Driver: "kvm2", Client: newFakeClient()},
 			`export PODMAN_VARLINK_BRIDGE="/usr/bin/ssh root@host -- sudo varlink -A \'podman varlink \\\$VARLINK_ADDRESS\' bridge"
 export MINIKUBE_ACTIVE_PODMAN="bash"
 
@@ -52,11 +52,11 @@ export MINIKUBE_ACTIVE_PODMAN="bash"
 		},
 	}
 	for _, tc := range tests {
-		t.Run(tc.config.profile, func(t *testing.T) {
+		t.Run(tc.config.Profile, func(t *testing.T) {
 			tc.config.EnvConfig.Shell = tc.shell
 			var b []byte
 			buf := bytes.NewBuffer(b)
-			if err := podmanSetScript(tc.config, buf); err != nil {
+			if err := PodmanSetScript(tc.config, buf); err != nil {
 				t.Errorf("setScript(%+v) error: %v", tc.config, err)
 			}
 			got := buf.String()
@@ -65,7 +65,7 @@ export MINIKUBE_ACTIVE_PODMAN="bash"
 			}
 
 			buf = bytes.NewBuffer(b)
-			if err := podmanUnsetScript(tc.config, buf); err != nil {
+			if err := PodmanUnsetScript(tc.config, buf); err != nil {
 				t.Errorf("unsetScript(%+v) error: %v", tc.config, err)
 			}
 			got = buf.String()

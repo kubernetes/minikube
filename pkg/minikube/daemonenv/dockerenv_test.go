@@ -227,7 +227,7 @@ export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
 			tc.config.EnvConfig.Shell = tc.shell
 			var b []byte
 			buf := bytes.NewBuffer(b)
-			if err := SetScript(tc.config, buf); err != nil {
+			if err := DockerSetScript(tc.config, buf); err != nil {
 				t.Errorf("setScript(%+v) error: %v", tc.config, err)
 			}
 			got := buf.String()
@@ -236,14 +236,13 @@ export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
 			}
 
 			buf = bytes.NewBuffer(b)
-			if err := UnsetScript(tc.config, buf); err != nil {
+			if err := DockerUnsetScript(tc.config, buf); err != nil {
 				t.Errorf("unsetScript(%+v) error: %v", tc.config, err)
 			}
 			got = buf.String()
 			if diff := cmp.Diff(tc.wantUnset, got); diff != "" {
 				t.Errorf("unsetScript(%+v) mismatch (-want +got):\n%s\n\nraw output:\n%s\nquoted: %q", tc.config, diff, got, got)
 			}
-
 		})
 	}
 }

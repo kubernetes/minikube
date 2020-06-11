@@ -39,8 +39,8 @@ import (
 
 var dockerEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
 
-// Config represents the shell config for Docker
-type Config struct {
+// DockerShellConfig represents the shell config for Docker
+type DockerShellConfig struct {
 	shell.Config
 	DockerCertPath         string
 	DockerHost             string
@@ -51,11 +51,11 @@ type Config struct {
 }
 
 // dockerShellCfgSet generates context variables for "docker-env"
-func dockerShellCfgSet(ec EnvConfig, envMap map[string]string) *Config {
+func dockerShellCfgSet(ec EnvConfig, envMap map[string]string) *DockerShellConfig {
 	profile := ec.Profile
 	const usgPlz = "To point your shell to minikube's docker-daemon, run:"
 	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
-	s := &Config{
+	s := &DockerShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
 	s.DockerCertPath = envMap[constants.DockerCertPathEnv]
@@ -129,13 +129,13 @@ type EnvConfig struct {
 }
 
 // DockerSetScript writes out a shell-compatible 'docker-env' script
-func SetScript(ec EnvConfig, w io.Writer) error {
+func DockerSetScript(ec EnvConfig, w io.Writer) error {
 	envVars := dockerEnvVars(ec)
 	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env unset' script
-func UnsetScript(ec EnvConfig, w io.Writer) error {
+func DockerUnsetScript(ec EnvConfig, w io.Writer) error {
 	vars := []string{
 		constants.DockerTLSVerifyEnv,
 		constants.DockerHostEnv,

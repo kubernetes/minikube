@@ -173,18 +173,16 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		out.WarningT(`Please re-eval your docker-env using given snipset`)
-		if err := daemonenv.SetScript(ec, os.Stdout); err != nil {
+		if err := daemonenv.DockerSetScript(ec, os.Stdout); err != nil {
 			out.WarningT("got unexpected error: {{.error}}", out.V{"error": err})
 		}
 	}
 	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
-		// TODO: refactor podman-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
-		out.WarningT(`Please re-eval your podman-env, To ensure your environment variables have updated ports:
-
-	'minikube -p {{.profile_name}} podman-env'
-
-	`, out.V{"profile_name": name})
+		out.WarningT(`Please re-eval your podman-env using given snipset`)
+		if err := daemonenv.PodmanSetScript(ec, os.Stdout); err != nil {
+			out.WarningT("got unexpected error: {{.error}}", out.V{"error": err})
+		}
 	}
 
 }
