@@ -76,7 +76,7 @@ func DeleteContainer(ociBin string, name string) error {
 
 	_, err := ContainerStatus(ociBin, name)
 	if err != nil {
-		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
+		glog.Infof("%s daemon seems to be stuck. Will try to delete anyways: %v", ociBin, err)
 	}
 	// try to delete anyways
 	if err := ShutDown(ociBin, name); err != nil {
