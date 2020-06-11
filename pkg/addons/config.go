@@ -149,4 +149,9 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableAddon},
 	},
+	{
+		name:      "podsecuritypolicies",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 }
