@@ -32,14 +32,14 @@ type FakeNoProxy struct {
 func TestGenerateDockerScripts(t *testing.T) {
 	var tests = []struct {
 		shell         string
-		config        EnvConfig
+		config        DockerEnvConfig
 		noProxyGetter FakeNoProxy
 		wantSet       string
 		wantUnset     string
 	}{
 		{
 			"bash",
-			EnvConfig{Profile: "dockerdrver", Driver: "docker", HostIP: "127.0.0.1", Port: 32842, CertsDir: "/certs"},
+			DockerEnvConfig{Profile: "dockerdrver", Driver: "docker", HostIP: "127.0.0.1", Port: 32842, CertsDir: "/certs"},
 			FakeNoProxy{},
 			`export DOCKER_TLS_VERIFY="1"
 export DOCKER_HOST="tcp://127.0.0.1:32842"
@@ -54,7 +54,7 @@ export MINIKUBE_ACTIVE_DOCKERD="dockerdrver"
 		},
 		{
 			"bash",
-			EnvConfig{Profile: "bash", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs"},
+			DockerEnvConfig{Profile: "bash", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs"},
 			FakeNoProxy{},
 			`export DOCKER_TLS_VERIFY="1"
 export DOCKER_HOST="tcp://127.0.0.1:2376"
@@ -69,7 +69,7 @@ export MINIKUBE_ACTIVE_DOCKERD="bash"
 		},
 		{
 			"bash",
-			EnvConfig{Profile: "ipv6", Driver: "kvm2", HostIP: "fe80::215:5dff:fe00:a903", Port: 2376, CertsDir: "/certs"},
+			DockerEnvConfig{Profile: "ipv6", Driver: "kvm2", HostIP: "fe80::215:5dff:fe00:a903", Port: 2376, CertsDir: "/certs"},
 			FakeNoProxy{},
 			`export DOCKER_TLS_VERIFY="1"
 export DOCKER_HOST="tcp://[fe80::215:5dff:fe00:a903]:2376"
@@ -84,7 +84,7 @@ export MINIKUBE_ACTIVE_DOCKERD="ipv6"
 		},
 		{
 			"fish",
-			EnvConfig{Profile: "fish", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs"},
+			DockerEnvConfig{Profile: "fish", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs"},
 			FakeNoProxy{},
 			`set -gx DOCKER_TLS_VERIFY "1";
 set -gx DOCKER_HOST "tcp://127.0.0.1:2376";
@@ -102,7 +102,7 @@ set -e MINIKUBE_ACTIVE_DOCKERD;
 		},
 		{
 			"powershell",
-			EnvConfig{Profile: "powershell", Driver: "hyperv", HostIP: "192.168.0.1", Port: 2376, CertsDir: "/certs"},
+			DockerEnvConfig{Profile: "powershell", Driver: "hyperv", HostIP: "192.168.0.1", Port: 2376, CertsDir: "/certs"},
 			FakeNoProxy{},
 			`$Env:DOCKER_TLS_VERIFY = "1"
 $Env:DOCKER_HOST = "tcp://192.168.0.1:2376"
@@ -117,7 +117,7 @@ $Env:MINIKUBE_ACTIVE_DOCKERD = "powershell"
 		},
 		{
 			"cmd",
-			EnvConfig{Profile: "cmd", Driver: "hyperv", HostIP: "192.168.0.1", Port: 2376, CertsDir: "/certs"},
+			DockerEnvConfig{Profile: "cmd", Driver: "hyperv", HostIP: "192.168.0.1", Port: 2376, CertsDir: "/certs"},
 			FakeNoProxy{},
 			`SET DOCKER_TLS_VERIFY=1
 SET DOCKER_HOST=tcp://192.168.0.1:2376
@@ -135,7 +135,7 @@ SET MINIKUBE_ACTIVE_DOCKERD=
 		},
 		{
 			"emacs",
-			EnvConfig{Profile: "emacs", Driver: "hyperv", HostIP: "192.168.0.1", Port: 2376, CertsDir: "/certs"},
+			DockerEnvConfig{Profile: "emacs", Driver: "hyperv", HostIP: "192.168.0.1", Port: 2376, CertsDir: "/certs"},
 			FakeNoProxy{},
 			`(setenv "DOCKER_TLS_VERIFY" "1")
 (setenv "DOCKER_HOST" "tcp://192.168.0.1:2376")
@@ -152,7 +152,7 @@ SET MINIKUBE_ACTIVE_DOCKERD=
 		},
 		{
 			"bash",
-			EnvConfig{Profile: "bash-no-proxy", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs", NoProxy: true},
+			DockerEnvConfig{Profile: "bash-no-proxy", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs", NoProxy: true},
 			FakeNoProxy{"NO_PROXY", "127.0.0.1"},
 			`export DOCKER_TLS_VERIFY="1"
 export DOCKER_HOST="tcp://127.0.0.1:2376"
@@ -169,7 +169,7 @@ export NO_PROXY="127.0.0.1"
 		},
 		{
 			"bash",
-			EnvConfig{Profile: "bash-no-proxy-lower", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs", NoProxy: true},
+			DockerEnvConfig{Profile: "bash-no-proxy-lower", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs", NoProxy: true},
 			FakeNoProxy{"no_proxy", "127.0.0.1"},
 			`export DOCKER_TLS_VERIFY="1"
 export DOCKER_HOST="tcp://127.0.0.1:2376"
@@ -186,7 +186,7 @@ export no_proxy="127.0.0.1"
 		},
 		{
 			"powershell",
-			EnvConfig{Profile: "powershell-no-proxy-idempotent", Driver: "hyperv", HostIP: "192.168.0.1", Port: 2376, CertsDir: "/certs", NoProxy: true},
+			DockerEnvConfig{Profile: "powershell-no-proxy-idempotent", Driver: "hyperv", HostIP: "192.168.0.1", Port: 2376, CertsDir: "/certs", NoProxy: true},
 			FakeNoProxy{"no_proxy", "192.168.0.1"},
 			`$Env:DOCKER_TLS_VERIFY = "1"
 $Env:DOCKER_HOST = "tcp://192.168.0.1:2376"
@@ -202,7 +202,7 @@ $Env:no_proxy = "192.168.0.1"
 		},
 		{
 			"bash",
-			EnvConfig{Profile: "sh-no-proxy-add", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs", NoProxy: true},
+			DockerEnvConfig{Profile: "sh-no-proxy-add", Driver: "kvm2", HostIP: "127.0.0.1", Port: 2376, CertsDir: "/certs", NoProxy: true},
 			FakeNoProxy{"NO_PROXY", "192.168.0.1,10.0.0.4"},
 			`export DOCKER_TLS_VERIFY="1"
 export DOCKER_HOST="tcp://127.0.0.1:2376"

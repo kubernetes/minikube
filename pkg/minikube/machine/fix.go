@@ -166,13 +166,12 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 		exit.WithError("Error detecting shell", err)
 	}
 
-	ec := daemonenv.EnvConfig{
-		EnvConfig: sh,
-	}
-
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		out.WarningT(`Please re-eval your docker-env using given snipset`)
+		ec := daemonenv.DockerEnvConfig{
+			EnvConfig: sh,
+		}
 		if err := daemonenv.DockerSetScript(ec, os.Stdout); err != nil {
 			out.WarningT("got unexpected error: {{.error}}", out.V{"error": err})
 		}
@@ -180,6 +179,10 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		out.WarningT(`Please re-eval your podman-env using given snipset`)
+
+		ec := daemonenv.PodmanEnvConfig{
+			EnvConfig: sh,
+		}
 		if err := daemonenv.PodmanSetScript(ec, os.Stdout); err != nil {
 			out.WarningT("got unexpected error: {{.error}}", out.V{"error": err})
 		}

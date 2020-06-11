@@ -93,7 +93,7 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		ec := daemonenv.EnvConfig{
+		ec := daemonenv.DockerEnvConfig{
 			EnvConfig: sh,
 			Profile:   cname,
 			Driver:    driverName,

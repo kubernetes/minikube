@@ -51,7 +51,7 @@ type DockerShellConfig struct {
 }
 
 // dockerShellCfgSet generates context variables for "docker-env"
-func dockerShellCfgSet(ec EnvConfig, envMap map[string]string) *DockerShellConfig {
+func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShellConfig {
 	profile := ec.Profile
 	const usgPlz = "To point your shell to minikube's docker-daemon, run:"
 	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
@@ -117,8 +117,8 @@ func MaybeRestartDocker(name string, runner command.Runner) {
 	}
 }
 
-// EnvConfig encapsulates all external inputs into shell generation for Docker
-type EnvConfig struct {
+// DockerEnvConfig encapsulates all external inputs into shell generation for Docker
+type DockerEnvConfig struct {
 	shell.EnvConfig
 	Profile  string
 	Driver   string
@@ -129,13 +129,13 @@ type EnvConfig struct {
 }
 
 // DockerSetScript writes out a shell-compatible 'docker-env' script
-func DockerSetScript(ec EnvConfig, w io.Writer) error {
+func DockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 	envVars := dockerEnvVars(ec)
 	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env unset' script
-func DockerUnsetScript(ec EnvConfig, w io.Writer) error {
+func DockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 	vars := []string{
 		constants.DockerTLSVerifyEnv,
 		constants.DockerHostEnv,
@@ -159,7 +159,7 @@ func dockerURL(ip string, port int) string {
 }
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
-func dockerEnvVars(ec EnvConfig) map[string]string {
+func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	env := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
 		constants.DockerHostEnv:            dockerURL(ec.HostIP, ec.Port),
@@ -170,7 +170,7 @@ func dockerEnvVars(ec EnvConfig) map[string]string {
 }
 
 // dockerEnvVarsList gets the necessary docker env variables to allow the use of minikube's docker daemon to be used in a exec.Command
-func dockerEnvVarsList(ec EnvConfig) []string {
+func dockerEnvVarsList(ec DockerEnvConfig) []string {
 	var envVarList []string
 	for k, v := range dockerEnvVars(ec) {
 		envVarList = append(envVarList, fmt.Sprintf("%s=%s", k, v))
@@ -179,7 +179,7 @@ func dockerEnvVarsList(ec EnvConfig) []string {
 }
 
 // TryDockerConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
-func TryDockerConnectivity(bin string, ec EnvConfig) ([]byte, error) {
+func TryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
 	return c.CombinedOutput()
