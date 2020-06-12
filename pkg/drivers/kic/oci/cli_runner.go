@@ -88,7 +88,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	}
 
 	killTime := 19 * time.Second // this will be applied only if warnSlow is true
-	warnTime := 10 * time.Second
+	warnTime := 2 * time.Second
 
 	if cmd.Args[1] == "volume" || cmd.Args[1] == "ps" { // volume and ps requires more time than inspect
 		killTime = 30 * time.Second
