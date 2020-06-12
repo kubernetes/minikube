@@ -170,4 +170,9 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{gcpauth.EnableOrDisable, enableOrDisableAddon, verifyGCPAuthAddon, gcpauth.DisplayAddonMessage},
 	},
+	{
+		name:      "volumesnapshots",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 }
