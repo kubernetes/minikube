@@ -334,6 +334,10 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	// Apply new addons
 	for _, name := range additional {
+		// replace heapster as metrics-server because heapster is deprecated
+		if name == "heapster" {
+			name = "metrics-server"
+		}
 		// if the specified addon doesn't exist, skip enabling
 		_, e := isAddonValid(name)
 		if e {
