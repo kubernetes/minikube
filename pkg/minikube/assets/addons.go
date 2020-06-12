@@ -416,7 +416,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/ambassador/ambassadorinstallation.yaml",
 			vmpath.GuestAddonsDir,
-			"ambassadorinstallation.yaml.yaml",
+			"ambassadorinstallation.yaml",
 			"0640",
 			false),
 	}, false, "ambassador"),
@@ -440,6 +440,38 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "gcp-auth"),
+	"volumesnapshots": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
+			vmpath.GuestAddonsDir,
+			"snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
+			vmpath.GuestAddonsDir,
+			"snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshots.yaml",
+			vmpath.GuestAddonsDir,
+			"snapshot.storage.k8s.io_volumesnapshots.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/volumesnapshots/rbac-volume-snapshot-controller.yaml",
+			vmpath.GuestAddonsDir,
+			"rbac-volume-snapshot-controller.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/volumesnapshots/volume-snapshot-controller-deployment.yaml",
+			vmpath.GuestAddonsDir,
+			"volume-snapshot-controller-deployment.yaml",
+			"0640",
+			false),
+	}, false, "volumesnapshots"),
 }
 
 // GenerateTemplateData generates template data for template assets
