@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"fmt"
@@ -73,10 +75,11 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 
 // DeleteContainer deletes a container by ID or Name
 func DeleteContainer(ociBin string, name string) error {
-
 	_, err := ContainerStatus(ociBin, name)
-	if err != nil {
-		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
+	if err == context.DeadlineExceeded {
+		out.WarningT("{{.ocibin}} is taking an unsually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
+	} else if err != nil {
+		glog.Warningf("error getting container status, will try to delete anyways: %v", err)
 	}
 	// try to delete anyways
 	if err := ShutDown(ociBin, name); err != nil {
