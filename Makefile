@@ -651,6 +651,11 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serv
 	  --ignoreCache \
 	  --buildFuture)
 
+.PHONY: site-update-theme ## updates site's docsy theme for the site to the latest version
+site-update-theme:
+	cd site/themes/docsy/ && git submodule update --remote
+
+
 .PHONY: out/mkcmp
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
