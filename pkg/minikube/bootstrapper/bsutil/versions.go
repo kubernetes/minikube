@@ -17,12 +17,10 @@ limitations under the License.
 package bsutil
 
 import (
-	"path"
 	"strings"
 
 	"github.com/blang/semver"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -52,8 +50,6 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 		LessThanOrEqual: semver.MustParse("1.9.10"),
 	},
 
-	// System pods args
-	config.NewUnversionedOption(Kubelet, "pod-manifest-path", vmpath.GuestManifestsDir),
 	{
 		Option: config.ExtraOption{
 			Component: Kubelet,
@@ -66,12 +62,6 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 	// Kubelet config file
 	config.NewUnversionedOption(Kubelet, "config", "/var/lib/kubelet/config.yaml"),
 
-	// Auth args
-	config.NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
-	config.NewUnversionedOption(Kubelet, "client-ca-file", path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt")),
-
-	// Cgroup args
-	config.NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
 	{
 		Option: config.ExtraOption{
 			Component: Apiserver,

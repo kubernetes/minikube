@@ -83,6 +83,7 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+clientCAFile: {{.ClientCAFile}}
 clusterDomain: "cluster.local"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
@@ -91,6 +92,7 @@ evictionHard:
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
 failSwapOn: false
+staticPodPath: {{.StaticPodPath}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
