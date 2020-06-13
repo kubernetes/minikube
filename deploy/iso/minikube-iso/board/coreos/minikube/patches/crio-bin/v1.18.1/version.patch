@@ -1,0 +1,78 @@
+diff --git a/Makefile b/Makefile
+index 764a0136a..4148d81eb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -100,7 +100,7 @@ BASE_LDFLAGS = ${SHRINKFLAGS} \
+ 	-X ${PROJECT}/internal/version.gitCommit=${COMMIT_NO} \
+ 	-X ${PROJECT}/internal/version.gitTreeState=${GIT_TREE_STATE} \
+ 
+-LDFLAGS = -ldflags '${BASE_LDFLAGS} ${EXTRA_LDFLAGS}'
++GO_LDFLAGS = -ldflags '${BASE_LDFLAGS} ${EXTRA_LDFLAGS}'
+ 
+ TESTIMAGE_VERSION := master-1.3.6
+ TESTIMAGE_REGISTRY := quay.io/crio
+@@ -157,16 +157,16 @@ bin/pinns:
+ 	$(MAKE) -C pinns
+ 
+ test/copyimg/copyimg: $(GO_FILES) .gopathok
+-	$(GO_BUILD) $(GCFLAGS) $(LDFLAGS) -tags "$(BUILDTAGS)" -o $@ $(PROJECT)/test/copyimg
++	$(GO_BUILD) $(GCFLAGS) $(GO_LDFLAGS) -tags "$(BUILDTAGS)" -o $@ $(PROJECT)/test/copyimg
+ 
+ test/checkseccomp/checkseccomp: $(GO_FILES) .gopathok
+-	$(GO_BUILD) $(GCFLAGS) $(LDFLAGS) -tags "$(BUILDTAGS)" -o $@ $(PROJECT)/test/checkseccomp
++	$(GO_BUILD) $(GCFLAGS) $(GO_LDFLAGS) -tags "$(BUILDTAGS)" -o $@ $(PROJECT)/test/checkseccomp
+ 
+ bin/crio: $(GO_FILES) .gopathok
+-	$(GO_BUILD) $(GCFLAGS) $(LDFLAGS) -tags "$(BUILDTAGS)" -o $@ $(PROJECT)/cmd/crio
++	$(GO_BUILD) $(GCFLAGS) $(GO_LDFLAGS) -tags "$(BUILDTAGS)" -o $@ $(PROJECT)/cmd/crio
+ 
+ bin/crio-status: $(GO_FILES) .gopathok
+-	$(GO_BUILD) $(GCFLAGS) $(LDFLAGS) -tags "$(BUILDTAGS)" -o $@ $(PROJECT)/cmd/crio-status
++	$(GO_BUILD) $(GCFLAGS) $(GO_LDFLAGS) -tags "$(BUILDTAGS)" -o $@ $(PROJECT)/cmd/crio-status
+ 
+ build-static:
+ 	$(CONTAINER_RUNTIME) run --rm -it -v $(shell pwd):/cri-o $(TESTIMAGE_NIX) sh -c \
+@@ -216,7 +216,7 @@ bin/crio.cross.%: .gopathok .explicit_phony
+ 	TARGET="$*"; \
+ 	GOOS="$${TARGET%%.*}" \
+ 	GOARCH="$${TARGET##*.}" \
+-	$(GO_BUILD) $(LDFLAGS) -tags "containers_image_openpgp btrfs_noversion" -o "$@" $(PROJECT)/cmd/crio
++	$(GO_BUILD) $(GO_LDFLAGS) -tags "containers_image_openpgp btrfs_noversion" -o "$@" $(PROJECT)/cmd/crio
+ 
+ local-image:
+ 	$(TESTIMAGE_SCRIPT)
+diff --git a/cmd/crio/main.go b/cmd/crio/main.go
+index ab033a47d..fa10f170a 100644
+--- a/cmd/crio/main.go
++++ b/cmd/crio/main.go
+@@ -120,7 +120,7 @@ func main() {
+ 	app.Authors = []*cli.Author{{Name: "The CRI-O Maintainers"}}
+ 	app.UsageText = usage
+ 	app.Description = app.Usage
+-	app.Version = "\n" + version.Get().String()
++	app.Version = version.Version + "\n" + version.Get().String()
+ 
+ 	var err error
+ 	app.Flags, app.Metadata, err = criocli.GetFlagsAndMetadata()
+diff --git a/internal/version/version.go b/internal/version/version.go
+index 7ab5da5a2..19692595e 100644
+--- a/internal/version/version.go
++++ b/internal/version/version.go
+@@ -6,6 +6,7 @@ import (
+ 	"fmt"
+ 	"io/ioutil"
+ 	"os"
++	"os/exec"
+ 	"path/filepath"
+ 	"reflect"
+ 	"runtime"
+@@ -171,6 +172,9 @@ func getLinkmode() string {
+ 		return ""
+ 	}
+ 
++	if _, err := exec.LookPath("ldd"); err != nil {
++		return ""
++	}
+ 	if _, err := utils.ExecCmd("ldd", abspath); err != nil {
+ 		if strings.Contains(err.Error(), "not a dynamic executable") {
+ 			return "static"
