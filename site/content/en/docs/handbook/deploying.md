@@ -5,6 +5,7 @@ description: >
   How to deploy an application to minikube
 aliases:
   - /docs/tasks/addons
+  - /Handbook/addons
 ---
 
 ## kubectl
@@ -28,10 +29,10 @@ To enable an add-on, see:
 minikube addons enable <name>
 ```
 
-To enable an addon at start-up:
+To enable an addon at start-up, where *--addons* option can be specified multiple times:
 
 ```shell
-minikube start --addons <name>
+minikube start --addons <name1> --addons <name2>
 ```
 
 For addons that expose a browser endpoint, you can quickly open them with:

@@ -30,7 +30,6 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/golang/glog"
-	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -41,7 +40,7 @@ const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v2"
+	PreloadVersion = "v3"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
@@ -77,17 +76,24 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 }
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
-func PreloadExists(k8sVersion, containerRuntime string) bool {
-	glog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
-	if !viper.GetBool("preload") {
+func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bool {
+
+	// and https://github.com/kubernetes/minikube/issues/6934
+	// to track status of adding crio
+	if containerRuntime == "crio" {
+		glog.Info("crio is not supported yet, skipping preload")
 		return false
 	}
 
-	// See https://github.com/kubernetes/minikube/issues/6933
-	// and https://github.com/kubernetes/minikube/issues/6934
-	// to track status of adding containerd & crio
-	if containerRuntime != "docker" {
-		glog.Info("Container runtime isn't docker, skipping preload")
+	// TODO (#8166): Get rid of the need for this and viper at all
+	force := false
+	if len(forcePreload) > 0 {
+		force = forcePreload[0]
+	}
+
+	// TODO: debug why this func is being called two times
+	glog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
+	if !viper.GetBool("preload") && !force {
 		return false
 	}
 
@@ -133,16 +139,7 @@ func Preload(k8sVersion, containerRuntime string) error {
 	out.T(out.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
 	url := remoteTarballURL(k8sVersion, containerRuntime)
 
-	tmpDst := targetPath + ".download"
-	client := &getter.Client{
-		Src:     url,
-		Dst:     tmpDst,
-		Mode:    getter.ClientModeFile,
-		Options: []getter.ClientOption{getter.WithProgress(DefaultProgressBar)},
-	}
-
-	glog.Infof("Downloading: %+v", client)
-	if err := client.Get(); err != nil {
+	if err := download(url, targetPath); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
 
@@ -150,10 +147,11 @@ func Preload(k8sVersion, containerRuntime string) error {
 		return errors.Wrap(err, "saving checksum file")
 	}
 
-	if err := verifyChecksum(k8sVersion, containerRuntime, tmpDst); err != nil {
+	if err := verifyChecksum(k8sVersion, containerRuntime, targetPath); err != nil {
 		return errors.Wrap(err, "verify")
 	}
-	return os.Rename(tmpDst, targetPath)
+
+	return nil
 }
 
 func saveChecksumFile(k8sVersion, containerRuntime string) error {

@@ -55,7 +55,8 @@ func TestDownloadOnly(t *testing.T) {
 
 			for _, v := range versions {
 				t.Run(v, func(t *testing.T) {
-					// Explicitly does not pass StartArgs() to test driver default
+					defer PostMortemLogs(t, profile)
+
 					// --force to avoid uid check
 					args := append([]string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v), fmt.Sprintf("--container-runtime=%s", r)}, StartArgs()...)
 
@@ -72,7 +73,7 @@ func TestDownloadOnly(t *testing.T) {
 
 					// skip for none, as none driver does not have preload feature.
 					if !NoneDriver() {
-						if download.PreloadExists(v, r) {
+						if download.PreloadExists(v, r, true) {
 							// Just make sure the tarball path exists
 							if _, err := os.Stat(download.TarballPath(v, r)); err != nil {
 								t.Errorf("failed to verify preloaded tarball file exists: %v", err)
@@ -124,6 +125,8 @@ func TestDownloadOnly(t *testing.T) {
 
 			// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
 			t.Run("DeleteAll", func(t *testing.T) {
+				defer PostMortemLogs(t, profile)
+
 				if !CanCleanup() {
 					t.Skip("skipping, as cleanup is disabled")
 				}
@@ -134,6 +137,8 @@ func TestDownloadOnly(t *testing.T) {
 			})
 			// Delete should always succeed, even if previously partially or fully deleted.
 			t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
+				defer PostMortemLogs(t, profile)
+
 				if !CanCleanup() {
 					t.Skip("skipping, as cleanup is disabled")
 				}
@@ -154,6 +159,7 @@ func TestDownloadOnlyKic(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
+	// TODO: #7795 add containerd to download only too
 	cRuntime := "docker"
 
 	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr"}

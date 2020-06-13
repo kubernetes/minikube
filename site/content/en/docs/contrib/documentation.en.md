@@ -3,6 +3,8 @@ linkTitle: "Documentation"
 title: "Contributing to minikube documentation"
 date: 2019-07-31
 weight: 2
+aliases:
+  - /docs/contribution-guidelines/
 ---
 
 minikube's documentation is in [Markdown](https://www.markdownguide.org/cheat-sheet/), and generated using the following tools:

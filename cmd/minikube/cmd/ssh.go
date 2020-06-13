@@ -19,7 +19,6 @@ package cmd
 import (
 	"os"
 
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/spf13/cobra"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -38,7 +37,7 @@ var (
 // sshCmd represents the docker-ssh command
 var sshCmd = &cobra.Command{
 	Use:   "ssh",
-	Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
+	Short: "Log into the minikube environment (for debugging)",
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
@@ -52,19 +51,13 @@ var sshCmd = &cobra.Command{
 		if nodeName == "" {
 			n = co.CP.Node
 		} else {
-			n, _, err = node.Retrieve(co.Config, nodeName)
+			n, _, err = node.Retrieve(*co.Config, nodeName)
 			if err != nil {
 				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
 			}
 		}
 
-		if nativeSSHClient {
-			ssh.SetDefaultClient(ssh.Native)
-		} else {
-			ssh.SetDefaultClient(ssh.External)
-		}
-
-		err = machine.CreateSSHShell(co.API, *co.Config, *n, args)
+		err = machine.CreateSSHShell(co.API, *co.Config, *n, args, nativeSSHClient)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)

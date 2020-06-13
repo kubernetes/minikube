@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 9
-VERSION_BUILD ?= 2
+VERSION_MINOR ?= 11
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -32,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 GO_VERSION ?= 1.13.8
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2019.02.10
+BUILDROOT_BRANCH ?= 2020.02.2
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
@@ -52,9 +52,9 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.107
+KERNEL_VERSION ?= 5.4.40
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.23.6
+GOLINT_VERSION ?= v1.26.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -205,6 +205,8 @@ minikube_iso: # old target kept for making tests happy
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 	fi;
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
+	mkdir -p $(BUILD_DIR)/buildroot/output/build
+	echo "module buildroot.org/go" > $(BUILD_DIR)/buildroot/output/build/go.mod
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
 
@@ -243,7 +245,7 @@ test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross exotic out/gvisor-addon ## Build all different minikube components
+all: cross drivers e2e-cross cross-tars exotic out/gvisor-addon ## Build all different minikube components
 
 .PHONY: drivers
 drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2 ## Build Hyperkit and KVM2 drivers
@@ -255,7 +257,7 @@ docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hype
 docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
-integration: out/minikube ## Trigger minikube integration test
+integration: out/minikube$(IS_EXE) ## Trigger minikube integration test
 	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
@@ -273,6 +275,10 @@ test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Tr
 .PHONY: generate-docs
 generate-docs: out/minikube ## Automatically generate commands documentation.
 	out/minikube generate-docs --path ./site/content/en/docs/commands/
+
+.PHONY: gotest
+gotest: $(SOURCE_GENERATED) ## Trigger minikube test
+	go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
 
 .PHONY: extract
 extract: ## Compile extract tool
@@ -392,6 +398,10 @@ reportcard: ## Run goreportcard for minikube
 .PHONY: mdlint
 mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)
+
+.PHONY: verify-iso
+verify-iso: # Make sure the current ISO exists in the expected bucket
+	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
@@ -521,7 +531,7 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
 	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --target base .
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(REGISTRY)/kicbase:$(KIC_VERSION) --target base .
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
@@ -564,7 +574,7 @@ out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
 
 out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
+	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
@@ -611,7 +621,7 @@ kvm-image: installers/linux/kvm/Dockerfile  ## Convenient alias to build the doc
 	@echo "$(@) successfully built"
 
 kvm_in_docker:
-	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
+	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
 	rm -f out/docker-machine-driver-kvm2
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 

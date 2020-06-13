@@ -33,7 +33,7 @@ type Settings struct {
 	// The name of the cluster for this context
 	ClusterName string
 
-	// ClusterServerAddress is the address of the kubernetes cluster
+	// ClusterServerAddress is the address of the Kubernetes cluster
 	ClusterServerAddress string
 
 	// ClientCertificate is the path to a client cert file for TLS.

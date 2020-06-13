@@ -7,6 +7,11 @@ description: >
   How to triage issues in the minikube repo
 ---
 
+Community triage takes place **every Wednesday** from **11AM-12PM PST**.
+Hangouts link: https://meet.google.com/ikf-fvrs-eer
+
+All community members are welcome and encouraged to join and help us triage minikube!
+
 Triage is an important part of maintaining the health of the minikube repo.
 A well organized repo allows maintainers to prioritize feature requests, fix bugs, and respond to users facing difficulty with the tool as quickly as possible.
 

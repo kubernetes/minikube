@@ -83,8 +83,14 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
-		name: "logviewer",
-		set:  SetBool,
+		name:      "kubevirt",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
+	{
+		name:      "logviewer",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "metrics-server",
@@ -101,7 +107,11 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableAddon},
 	},
-
+	{
+		name:      "olm",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 	{
 		name:      "registry",
 		set:       SetBool,
@@ -128,5 +138,15 @@ var Addons = []*Addon{
 		name:      "storage-provisioner-gluster",
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableStorageClasses},
+	},
+	{
+		name:      "metallb",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
+	{
+		name:      "ambassador",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 }

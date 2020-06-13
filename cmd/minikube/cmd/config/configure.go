@@ -18,9 +18,12 @@ package config
 
 import (
 	"io/ioutil"
+	"net"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 )
@@ -100,8 +103,11 @@ var addonsConfigureCmd = &cobra.Command{
 				acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
 			}
 
+			cname := ClusterFlagValue()
+
 			// Create ECR Secret
 			err := service.CreateSecret(
+				cname,
 				"kube-system",
 				"registry-creds-ecr",
 				map[string]string{
@@ -124,6 +130,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create GCR Secret
 			err = service.CreateSecret(
+				cname,
 				"kube-system",
 				"registry-creds-gcr",
 				map[string]string{
@@ -142,6 +149,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create Docker Secret
 			err = service.CreateSecret(
+				cname,
 				"kube-system",
 				"registry-creds-dpr",
 				map[string]string{
@@ -161,6 +169,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create Azure Container Registry Secret
 			err = service.CreateSecret(
+				cname,
 				"kube-system",
 				"registry-creds-acr",
 				map[string]string{
@@ -176,6 +185,26 @@ var addonsConfigureCmd = &cobra.Command{
 
 			if err != nil {
 				out.WarningT("ERROR creating `registry-creds-acr` secret")
+			}
+
+		case "metallb":
+			profile := ClusterFlagValue()
+			_, cfg := mustload.Partial(profile)
+
+			validator := func(s string) bool {
+				return net.ParseIP(s) != nil
+			}
+
+			if cfg.KubernetesConfig.LoadBalancerStartIP == "" {
+				cfg.KubernetesConfig.LoadBalancerStartIP = AskForStaticValidatedValue("-- Enter Load Balancer Start IP: ", validator)
+			}
+
+			if cfg.KubernetesConfig.LoadBalancerEndIP == "" {
+				cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
+			}
+
+			if err := config.SaveProfile(profile, cfg); err != nil {
+				out.ErrT(out.FatalType, "Failed to save config {{.profile}}", out.V{"profile": profile})
 			}
 
 		default:

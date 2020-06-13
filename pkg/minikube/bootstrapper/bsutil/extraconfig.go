@@ -29,7 +29,7 @@ import (
 )
 
 // enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
-// KubeadmExtraArgsWhitelist variable for more info)
+// KubeadmExtraArgsAllowed variable for more info)
 const (
 	// KubeadmCmdParam is command parameters for kubeadm
 	KubeadmCmdParam = iota
@@ -50,16 +50,18 @@ var componentToKubeadmConfigKey = map[string]string{
 	ControllerManager: "controllerManager",
 	Scheduler:         "scheduler",
 	Kubeadm:           "kubeadm",
+	// The KubeProxy is handled in different config block
+	Kubeproxy: "",
 	// The Kubelet is not configured in kubeadm, only in systemd.
 	Kubelet: "",
 }
 
-// KubeadmExtraArgsWhitelist is a whitelist of supported kubeadm params that can be supplied to kubeadm through
+// KubeadmExtraArgsAllowed is a list of supported kubeadm params that can be supplied to kubeadm through
 // minikube's ExtraArgs parameter. The list is split into two parts - params that can be supplied as flags on the
 // command line and params that have to be inserted into the kubeadm config file. This is because of a kubeadm
 // constraint which allows only certain params to be provided from the command line when the --config parameter
 // is specified
-var KubeadmExtraArgsWhitelist = map[int][]string{
+var KubeadmExtraArgsAllowed = map[int][]string{
 	KubeadmCmdParam: {
 		"ignore-preflight-errors",
 		"dry-run",
@@ -84,7 +86,7 @@ func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
 	// is specified, here we remove those that are not allowed
 	for opt := range kubeadmExtraOpts {
-		if !config.ContainsParam(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
+		if !config.ContainsParam(KubeadmExtraArgsAllowed[KubeadmCmdParam], opt) {
 			// kubeadmExtraOpts is a copy so safe to delete
 			delete(kubeadmExtraOpts, opt)
 		}
@@ -178,6 +180,9 @@ func optionPairsForComponent(component string, version semver.Version, cp config
 	return nil
 }
 
+// kubeadm extra args should not be included in the kubeadm config in the extra args section (instead, they must
+// be inserted explicitly in the appropriate places or supplied from the command line); here we remove all of the
+// kubeadm extra args from the slice
 // createExtraComponentConfig generates a map of component to extra args for all of the components except kubeadm
 func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version semver.Version, componentFeatureArgs string, cp config.Node) ([]componentOptions, error) {
 	extraArgsSlice, err := newComponentOptions(extraOptions, version, componentFeatureArgs, cp)
@@ -185,9 +190,6 @@ func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version se
 		return nil, err
 	}
 
-	// kubeadm extra args should not be included in the kubeadm config in the extra args section (instead, they must
-	// be inserted explicitly in the appropriate places or supplied from the command line); here we remove all of the
-	// kubeadm extra args from the slice
 	for i, extraArgs := range extraArgsSlice {
 		if extraArgs.Component == Kubeadm {
 			extraArgsSlice = append(extraArgsSlice[:i], extraArgsSlice[i+1:]...)
@@ -195,6 +197,12 @@ func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version se
 		}
 	}
 	return extraArgsSlice, nil
+}
+
+// createKubeProxyOptions generates a map of extra config for kube-proxy
+func createKubeProxyOptions(extraOptions config.ExtraOptionSlice) map[string]string {
+	kubeProxyOptions := extraOptions.AsMap().Get(Kubeproxy)
+	return kubeProxyOptions
 }
 
 func convertToFlags(opts map[string]string) string {

@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package kverify verifies a running kubernetes cluster is healthy
+// Package kverify verifies a running Kubernetes cluster is healthy
 package kverify
 
 import (
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os/exec"
@@ -104,7 +105,7 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 	}
 
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, healthz); err != nil {
-		return fmt.Errorf("apiserver healthz never reported healthy")
+		return fmt.Errorf("apiserver healthz never reported healthy: %v", err)
 	}
 
 	vcheck := func() (bool, error) {
@@ -166,7 +167,15 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 
 	rr, err = cr.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
 	if err != nil {
-		glog.Errorf("unable to get freezer state: %s", rr.Stderr.String())
+		// example error from github action:
+		// cat: /sys/fs/cgroup/freezer/actions_job/e62ef4349cc5a70f4b49f8a150ace391da6ad6df27073c83ecc03dbf81fde1ce/kubepods/burstable/poda1de58db0ce81d19df7999f6808def1b/5df53230fe3483fd65f341923f18a477fda92ae9cd71061168130ef164fe479c/freezer.state: No such file or directory\n"*
+		// TODO: #7770 investigate how to handle this error better.
+		if strings.Contains(rr.Stderr.String(), "freezer.state: No such file or directory\n") {
+			glog.Infof("unable to get freezer state (might be okay and be related to #770): %s", rr.Stderr.String())
+		} else {
+			glog.Warningf("unable to get freezer state: %s", rr.Stderr.String())
+		}
+
 		return apiServerHealthz(hostname, port)
 	}
 
@@ -194,13 +203,19 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 		glog.Infof("stopped: %s: %v", url, err)
 		return state.Stopped, nil
 	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		glog.Warningf("unable to read response body: %s", err)
+	}
+
+	glog.Infof("%s returned %d:\n%s", url, resp.StatusCode, body)
 	if resp.StatusCode == http.StatusUnauthorized {
-		glog.Errorf("%s returned code %d (unauthorized). Please ensure that your apiserver authorization settings make sense!", url, resp.StatusCode)
-		return state.Error, nil
+		return state.Error, fmt.Errorf("%s returned code %d (unauthorized). Check your apiserver authorization settings:\n%s", url, resp.StatusCode, body)
 	}
 	if resp.StatusCode != http.StatusOK {
-		glog.Warningf("%s response: %v %+v", url, err, resp)
-		return state.Error, nil
+		return state.Error, fmt.Errorf("%s returned error %d:\n%s", url, resp.StatusCode, body)
 	}
 	return state.Running, nil
 }

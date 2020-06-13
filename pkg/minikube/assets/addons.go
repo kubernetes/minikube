@@ -189,6 +189,14 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "istio"),
+	"kubevirt": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/kubevirt/pod.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"pod.yaml",
+			"0640",
+			false),
+	}, false, "kubevirt"),
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
@@ -209,6 +217,20 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "metrics-server"),
+	"olm": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/olm/crds.yaml",
+			vmpath.GuestAddonsDir,
+			"crds.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/olm/olm.yaml",
+			vmpath.GuestAddonsDir,
+			"olm.yaml",
+			"0640",
+			false),
+	}, false, "olm"),
 	"registry": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/registry/registry-rc.yaml.tmpl",
@@ -355,6 +377,40 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "ingress-dns"),
+	"metallb": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/metallb/metallb.yaml",
+			vmpath.GuestAddonsDir,
+			"metallb.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/metallb/metallb-config.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"metallb-config.yaml",
+			"0640",
+			true),
+	}, false, "metallb"),
+	"ambassador": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/ambassador/ambassador-operator-crds.yaml",
+			vmpath.GuestAddonsDir,
+			"ambassador-operator-crds.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/ambassador/ambassador-operator.yaml",
+			vmpath.GuestAddonsDir,
+			"ambassador-operator.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/ambassador/ambassadorinstallation.yaml",
+			vmpath.GuestAddonsDir,
+			"ambassadorinstallation.yaml.yaml",
+			"0640",
+			false),
+	}, false, "ambassador"),
 }
 
 // GenerateTemplateData generates template data for template assets
@@ -368,13 +424,17 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		ea = "-" + runtime.GOARCH
 	}
 	opts := struct {
-		Arch            string
-		ExoticArch      string
-		ImageRepository string
+		Arch                string
+		ExoticArch          string
+		ImageRepository     string
+		LoadBalancerStartIP string
+		LoadBalancerEndIP   string
 	}{
-		Arch:            a,
-		ExoticArch:      ea,
-		ImageRepository: cfg.ImageRepository,
+		Arch:                a,
+		ExoticArch:          ea,
+		ImageRepository:     cfg.ImageRepository,
+		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
 	}
 
 	return opts

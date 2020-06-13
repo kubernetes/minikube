@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/golang/glog"
@@ -83,6 +84,16 @@ func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 	return cp, nil
 }
 
+// ProfileNameValid checks if the profile name is container name friendly
+func ProfileNameValid(name string) bool {
+
+	// RestrictedNameChars collects the characters allowed to represent a name
+	const RestrictedNameChars = `[a-zA-Z0-9][a-zA-Z0-9_.-]`
+
+	var validName = regexp.MustCompile(`^` + RestrictedNameChars + `+$`)
+	return validName.MatchString(name)
+}
+
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
 func ProfileNameInReservedKeywords(name string) bool {
 	for _, v := range keywords {
@@ -125,6 +136,13 @@ func SaveNode(cfg *ClusterConfig, node *Node) error {
 	if !update {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
+
+	if MultiNode(*cfg) {
+		if err := MultiNodeCNIConfig(cfg); err != nil {
+			return err
+		}
+	}
+
 	return SaveProfile(viper.GetString(ProfileName), cfg)
 }
 

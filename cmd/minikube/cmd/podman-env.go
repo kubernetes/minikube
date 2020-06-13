@@ -38,12 +38,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
-var podmanEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv)
+var podmanEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv, constants.MinikubeActivePodmanEnv)
 
 // PodmanShellConfig represents the shell config for Podman
 type PodmanShellConfig struct {
 	shell.Config
-	VarlinkBridge string
+	VarlinkBridge         string
+	MinikubePodmanProfile string
 }
 
 var (
@@ -59,6 +60,7 @@ func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShel
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
 	s.VarlinkBridge = envMap[constants.PodmanVarlinkBridgeEnv]
+	s.MinikubePodmanProfile = envMap[constants.MinikubeActivePodmanEnv]
 
 	return s
 }
@@ -103,7 +105,7 @@ func createExternalSSHClient(d drivers.Driver) (*ssh.ExternalClient, error) {
 // podmanEnvCmd represents the podman-env command
 var podmanEnvCmd = &cobra.Command{
 	Use:   "podman-env",
-	Short: "Sets up podman env variables; similar to '$(podman-machine env)'",
+	Short: "Configure environment to use minikube's Podman service",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
@@ -163,10 +165,7 @@ type PodmanEnvConfig struct {
 
 // podmanSetScript writes out a shell-compatible 'podman-env' script
 func podmanSetScript(ec PodmanEnvConfig, w io.Writer) error {
-	envVars, err := podmanEnvVars(ec)
-	if err != nil {
-		return err
-	}
+	envVars := podmanEnvVars(ec)
 	return shell.SetScript(ec.EnvConfig, w, podmanEnvTmpl, podmanShellCfgSet(ec, envVars))
 }
 
@@ -174,6 +173,7 @@ func podmanSetScript(ec PodmanEnvConfig, w io.Writer) error {
 func podmanUnsetScript(ec PodmanEnvConfig, w io.Writer) error {
 	vars := []string{
 		constants.PodmanVarlinkBridgeEnv,
+		constants.MinikubeActivePodmanEnv,
 	}
 	return shell.UnsetScript(ec.EnvConfig, w, vars)
 }
@@ -187,11 +187,12 @@ func podmanBridge(client *ssh.ExternalClient) string {
 }
 
 // podmanEnvVars gets the necessary podman env variables to allow the use of minikube's podman service
-func podmanEnvVars(ec PodmanEnvConfig) (map[string]string, error) { // nolint result 1 (error) is always nil
+func podmanEnvVars(ec PodmanEnvConfig) map[string]string {
 	env := map[string]string{
-		constants.PodmanVarlinkBridgeEnv: podmanBridge(ec.client),
+		constants.PodmanVarlinkBridgeEnv:  podmanBridge(ec.client),
+		constants.MinikubeActivePodmanEnv: ec.profile,
 	}
-	return env, nil
+	return env
 }
 
 func init() {

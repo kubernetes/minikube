@@ -18,6 +18,7 @@ package machine
 
 import (
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -25,7 +26,7 @@ import (
 )
 
 // CreateSSHShell creates a new SSH shell / client
-func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, args []string) error {
+func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, args []string, native bool) error {
 	machineName := driver.MachineName(cc, n)
 	host, err := LoadHost(api, machineName)
 	if err != nil {
@@ -42,6 +43,13 @@ func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, 
 	}
 
 	client, err := host.CreateSSHClient()
+
+	if native {
+		ssh.SetDefaultClient(ssh.Native)
+	} else {
+		ssh.SetDefaultClient(ssh.External)
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "Creating ssh client")
 	}

@@ -6,25 +6,25 @@ DNS service for ingress controllers running on your minikube server
 ## Overview
 
 ### Problem
-When running minikube locally you are highly likely to want to run your services on an ingress controller so that you 
-don't have to use minikube tunnel or NodePorts to access your services. While NodePort might be ok in a lot of 
-circumstances in order to test some features an ingress is necessary. Ingress controllers are great because you can 
-define your entire architecture in something like a helm chart and all your services will be available. There is only 
-1 problem. That is that your ingress controller works basically off of dns and while running minikube that means that 
-your local dns names like `myservice.test` will have to resolve to `$(minikube ip)` not really a big deal except the 
-only real way to do this is to add an entry for every service in your `/etc/hosts` file. This gets messy for obvious 
-reasons. If you have a lot of services running that each have their own dns entry then you have to set those up 
-manually. Even if you automate it you then need to rely on the host operating system storing configurations instead of 
-storing them in your cluster. To make it worse it has to be constantly maintained and updated as services are added, 
+When running minikube locally you are highly likely to want to run your services on an ingress controller so that you
+don't have to use minikube tunnel or NodePorts to access your services. While NodePort might be ok in a lot of
+circumstances in order to test some features an ingress is necessary. Ingress controllers are great because you can
+define your entire architecture in something like a helm chart and all your services will be available. There is only
+1 problem. That is that your ingress controller works basically off of dns and while running minikube that means that
+your local dns names like `myservice.test` will have to resolve to `$(minikube ip)` not really a big deal except the
+only real way to do this is to add an entry for every service in your `/etc/hosts` file. This gets messy for obvious
+reasons. If you have a lot of services running that each have their own dns entry then you have to set those up
+manually. Even if you automate it you then need to rely on the host operating system storing configurations instead of
+storing them in your cluster. To make it worse it has to be constantly maintained and updated as services are added,
 remove, and renamed. I call it the `/ets/hosts` pollution problem.
 
 ### Solution
 What if you could just access your local services magically without having to edit your `/etc/hosts` file? Well now you
-can. This addon acts as a DNS service that runs inside your kubernetes cluster. All you have to do is install the 
-service and add the `$(minikube ip)` as a DNS server on your host machine. Each time the dns service is queried an 
-API call is made to the kubernetes master service for a list of all the ingresses. If a match is found for the name a 
-response is given with an IP address as the `$(minikube ip)`. So for example lets say my minikube ip address is 
-`192.168.99.106` and I have an ingress controller with the name of `myservice.test` then I would get a result like so: 
+can. This addon acts as a DNS service that runs inside your kubernetes cluster. All you have to do is install the
+service and add the `$(minikube ip)` as a DNS server on your host machine. Each time the dns service is queried an
+API call is made to the kubernetes master service for a list of all the ingresses. If a match is found for the name a
+response is given with an IP address as the `$(minikube ip)`. So for example lets say my minikube ip address is
+`192.168.99.106` and I have an ingress controller with the name of `myservice.test` then I would get a result like so:
 
 ```text
 #bash:~$ nslookup myservice.test $(minikube ip)
@@ -58,7 +58,7 @@ nameserver 192.168.99.169
 search_order 1
 timeout 5
 ```
-Replace `192.168.99.169` with your minikube ip and `profilename` is the name of the minikube profile for the 
+Replace `192.168.99.169` with your minikube ip and `profilename` is the name of the minikube profile for the
 corresponding ip address
 
 If you have multiple minikube ips you must configure multiple files
@@ -78,7 +78,7 @@ Replace `192.168.99.169` with your minikube ip
 If your linux OS uses `systemctl` run the following commands
 ```bash
 sudo resolvconf -u
-systemctl disable --now resolvconf.service 
+systemctl disable --now resolvconf.service
 ```
 
 If your linux does not use `systemctl` run the following commands
@@ -161,7 +161,7 @@ sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.mDNSResponder.pli
 
 ## TODO
 - Add a service that runs on the host OS which will update the files in `/etc/resolver` automatically
-- Start this service when running `minikube addons enable ingress-dns` and stop the service when running 
+- Start this service when running `minikube addons enable ingress-dns` and stop the service when running
 `minikube addons disable ingress-dns`
 
 ## Contributors
@@ -171,5 +171,5 @@ sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.mDNSResponder.pli
 
 | Image | Source | Owner |
 | :---  | :---   | :---  |
-| [nginx-ingress](https://hub.docker.com/r/nginx/nginx-ingress) | [ingress-nginx](https://github.com/kubernetes/ingress-nginx) | Nginx
+| [ingress-nginx](https://quay.io/repository/kubernetes-ingress-controller/nginx-ingress-controller) | [ingress-nginx](https://github.com/kubernetes/ingress-nginx) | Kubernetes ingress-nginx
 | [minikube-ingress-dns](https://hub.docker.com/r/cryptexlabs/minikube-ingress-dns) | [minikube-ingress-dns](https://gitlab.com/cryptexlabs/public/development/minikube-ingress-dns) | Cryptex Labs

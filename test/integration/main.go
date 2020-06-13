@@ -24,6 +24,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 // General configuration: used to set the VM Driver
@@ -39,6 +41,12 @@ var timeOutMultiplier = flag.Float64("timeout-multiplier", 1, "multiply the time
 // Paths to files - normally set for CI
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
+
+// Node names are consistent, let's store these for easy access later
+const (
+	SecondNodeName = "m02"
+	ThirdNodeName  = "m03"
+)
 
 // TestMain is the test main
 func TestMain(m *testing.M) {
@@ -69,15 +77,31 @@ func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
+// DockerDriver returns whether or not this test is using the docker or podman driver
+func DockerDriver() bool {
+	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker")
+}
+
+// PodmanDriver returns whether or not this test is using the docker or podman driver
+func PodmanDriver() bool {
+	return strings.Contains(*startArgs, "--vm-driver=podman") || strings.Contains(*startArgs, "driver=podman")
+}
+
 // KicDriver returns whether or not this test is using the docker or podman driver
 func KicDriver() bool {
-	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker") || strings.Contains(*startArgs, "--vm-driver=podman") || strings.Contains(*startArgs, "driver=podman")
+	return DockerDriver() || PodmanDriver()
+}
+
+// GithubActionRunner returns true if running inside a github action runner
+func GithubActionRunner() bool {
+	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
+	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
 // (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {
-	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin")
+	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin") || driver.IsMicrosoftWSL()
 }
 
 // CanCleanup returns if cleanup is allowed

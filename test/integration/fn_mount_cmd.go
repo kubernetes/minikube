@@ -43,7 +43,7 @@ const (
 	createdByPodRemovedByTest = "created-by-pod-removed-by-test"
 )
 
-func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
+func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // nolint
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
 	}
@@ -51,7 +51,17 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")
 	}
 
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping: mount broken on windows: https://github.com/kubernetes/minikube/issues/8303")
+	}
+
 	tempDir, err := ioutil.TempDir("", "mounttest")
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("failed to clean up %q temp folder.", tempDir)
+		}
+	}()
 	if err != nil {
 		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}

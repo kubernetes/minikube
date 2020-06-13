@@ -13,9 +13,10 @@ brew install docker-machine-parallels
 Otherwise:
 
 ```shell
-r=https://api.github.com/repos/Parallels/docker-machine-parallels
-curl -LO $(curl -s $r/releases/latest | grep -o 'http.*parallels' | head -n1) \
- && install docker-machine-driver-parallels /usr/local/bin/
+latest=$(curl -s https://api.github.com/repos/Parallels/docker-machine-parallels/releases/latest \
+  | grep -o 'http.*docker-machine-driver-parallels' | head -n1)
+curl -LO $latest
+install docker-machine-driver-parallels /usr/local/bin/
 ```
 
 

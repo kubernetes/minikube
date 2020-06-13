@@ -22,6 +22,7 @@ import (
 	"sort"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 const (
@@ -35,7 +36,7 @@ const (
 	None = "none"
 )
 
-// IsKIC checks if the driver is a kubernetes in container
+// IsKIC checks if the driver is a Kubernetes in container
 func IsKIC(name string) bool {
 	return name == Docker || name == Podman
 }
@@ -74,7 +75,8 @@ type DriverState struct {
 
 func (d DriverState) String() string {
 	if d.Priority == Experimental {
-		return fmt.Sprintf("%s (experimental)", d.Name)
+		experimental := translate.T("experimental")
+		return fmt.Sprintf("%s (%s)", d.Name, experimental)
 	}
 	return d.Name
 }

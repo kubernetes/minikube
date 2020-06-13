@@ -1,18 +1,18 @@
 ---
 title: "stop"
 description: >
-  Stops a running local kubernetes cluster
+  Stops a running local Kubernetes cluster
 ---
 
 
 
 ## minikube stop
 
-Stops a running local kubernetes cluster
+Stops a running local Kubernetes cluster
 
 ### Synopsis
 
-Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
+Stops a local Kubernetes cluster running in Virtualbox. This command stops the VM
 itself, leaving all files intact. The cluster can be started again with the "start" command.
 
 ```
@@ -22,6 +22,7 @@ minikube stop [flags]
 ### Options
 
 ```
+      --all    Set flag to stop all profiles (clusters)
   -h, --help   help for stop
 ```
 
@@ -29,7 +30,7 @@ minikube stop [flags]
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files

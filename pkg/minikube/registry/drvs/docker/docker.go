@@ -59,7 +59,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
-		ImageDigest:       kic.BaseImage,
+		ImageDigest:       cc.KicBaseImage,
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Docker,
@@ -71,6 +71,10 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 func status() registry.State {
 	docURL := "https://minikube.sigs.k8s.io/docs/drivers/docker/"
+	if runtime.GOARCH != "amd64" {
+		return registry.State{Error: fmt.Errorf("docker driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
+	}
+
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
@@ -80,9 +84,15 @@ func status() registry.State {
 	defer cancel()
 
 	// Quickly returns an error code if server is not running
-	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Version}}")
-	_, err = cmd.Output()
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
+	o, err := cmd.Output()
+	output := string(o)
+	if strings.Contains(output, "windows-") {
+		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
+
+	}
 	if err == nil {
+		glog.Infof("docker version: %s", output)
 		return registry.State{Installed: true, Healthy: true}
 	}
 
@@ -96,6 +106,10 @@ func status() registry.State {
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		stderr := strings.TrimSpace(string(exitErr.Stderr))
 		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
+
+		if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
+			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
+		}
 
 		if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") {
 			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}

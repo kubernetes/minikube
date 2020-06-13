@@ -35,7 +35,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	k8s := mc.KubernetesConfig
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing kubernetes version")
+		return nil, errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	extraOpts, err := extraConfigForComponent(Kubelet, k8s.ExtraOptions, version)
@@ -54,12 +54,8 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
-	cp, err := config.PrimaryControlPlane(&mc)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting master node")
-	}
 	if _, ok := extraOpts["node-ip"]; !ok {
-		extraOpts["node-ip"] = cp.IP
+		extraOpts["node-ip"] = nc.IP
 	}
 	if _, ok := extraOpts["hostname-override"]; !ok {
 		nodeName := KubeNodeName(mc, nc)

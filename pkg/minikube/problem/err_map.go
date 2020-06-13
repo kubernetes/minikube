@@ -367,8 +367,8 @@ var vmProblems = map[string]match{
 }
 
 // proxyDoc is the URL to proxy documentation
-const proxyDoc = "https://minikube.sigs.k8s.io/docs/reference/networking/proxy/"
-const vpnDoc = "https://minikube.sigs.k8s.io/docs/reference/networking/vpn/"
+const proxyDoc = "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"
+const vpnDoc = "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"
 
 // netProblems are network related problems.
 var netProblems = map[string]match{
@@ -543,7 +543,7 @@ var osProblems = map[string]match{
 	},
 	"JUJU_LOCK_DENIED": {
 		Regexp: re(`unable to open /tmp/juju.*: permission denied`),
-		Advice: "Run 'sudo sysctl fs.protected_regular=1', or try a driver which does not require root, such as '--driver=docker'",
+		Advice: "Run 'sudo sysctl fs.protected_regular=0', or try a driver which does not require root, such as '--driver=docker'",
 		GOOS:   []string{"linux"},
 		Issues: []int{6391},
 	},

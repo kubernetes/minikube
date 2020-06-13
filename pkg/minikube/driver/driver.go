@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -101,7 +100,7 @@ func MachineType(name string) string {
 	return "bare metal machine"
 }
 
-// IsKIC checks if the driver is a kubernetes in container
+// IsKIC checks if the driver is a Kubernetes in container
 func IsKIC(name string) bool {
 	return name == Docker || name == Podman
 }
@@ -126,18 +125,35 @@ func BareMetal(name string) bool {
 
 // NeedsRoot returns true if driver needs to run with root privileges
 func NeedsRoot(name string) bool {
-	return name == None || name == Podman
+	return name == None
 }
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
 	// Docker for Desktop
-	return IsKIC(name) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows")
+	return IsKIC(name) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows" || IsMicrosoftWSL())
+}
+
+// IsMicrosoftWSL will return true if process is running in WSL in windows
+// checking for WSL env var based on this https://github.com/microsoft/WSL/issues/423#issuecomment-608237689
+// also based on https://github.com/microsoft/vscode/blob/90a39ba0d49d75e9a4d7e62a6121ad946ecebc58/resources/win32/bin/code.sh#L24
+func IsMicrosoftWSL() bool {
+	return os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSLPATH") != "" || os.Getenv("WSLENV") != ""
 }
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
 func HasResourceLimits(name string) bool {
-	return !(name == None || name == Podman)
+	return name != None
+}
+
+// NeedsShutdown returns true if driver needs manual shutdown command before stopping.
+// Hyper-V requires special care to avoid ACPI and file locking issues
+// KIC also needs shutdown to avoid container getting stuck, https://github.com/kubernetes/minikube/issues/7657
+func NeedsShutdown(name string) bool {
+	if name == HyperV || IsKIC(name) {
+		return true
+	}
+	return false
 }
 
 // FlagHints are hints for what default options should be used for this driver
@@ -153,9 +169,8 @@ func FlagDefaults(name string) FlagHints {
 	fh := FlagHints{}
 	if name != None {
 		fh.CacheImages = true
-		// only for kic, till other run-times are available we auto-set containerd.
 		if name == Docker {
-			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
+			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", config.DefaultPodCIDR))
 		}
 		return fh
 	}

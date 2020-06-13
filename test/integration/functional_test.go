@@ -69,16 +69,8 @@ func TestFunctional(t *testing.T) {
 		if err := os.Remove(p); err != nil {
 			t.Logf("unable to remove %q: %v", p, err)
 		}
-		p = localTestCertPath()
-		if err := os.Remove(p); err != nil {
-			t.Logf("unable to remove %q: %v", p, err)
-		}
-		p = localEmptyCertPath()
-		if err := os.Remove(p); err != nil {
-			t.Logf("unable to remove %q: %v", p, err)
-		}
 
-		CleanupWithLogs(t, profile, cancel)
+		Cleanup(t, profile, cancel)
 	}()
 
 	// Serial tests
@@ -145,6 +137,8 @@ func TestFunctional(t *testing.T) {
 
 // validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
 func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
 	if err != nil {
 		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Command(), err)
@@ -159,23 +153,44 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
-	mctx, cancel := context.WithTimeout(ctx, Seconds(13))
+	defer PostMortemLogs(t, profile)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
-	// we should be able to get minikube status with a bash which evaled docker-env
-	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
-	rr, err := Run(t, c)
+	var rr *RunResult
+	var err error
+	if runtime.GOOS == "windows" {
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
+		rr, err = Run(t, c)
+	} else {
+		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+		// we should be able to get minikube status with a bash which evaled docker-env
+		rr, err = Run(t, c)
+	}
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
+	}
 	if err != nil {
-		t.Fatalf("failed to do minikube status after eval-ing docker-env %s", err)
+		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
 	}
 	if !strings.Contains(rr.Output(), "Running") {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
 
-	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
+	mctx, cancel = context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
-	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
-	rr, err = Run(t, c)
+	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
+		rr, err = Run(t, c)
+	} else {
+		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
+		rr, err = Run(t, c)
+	}
+
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+	}
+
 	if err != nil {
 		t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
 	}
@@ -188,6 +203,8 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	srv, err := startHTTPProxy(t)
 	if err != nil {
 		t.Fatalf("failed to set up the test proxy: %s", err)
@@ -195,7 +212,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=2800", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -219,11 +236,13 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
 func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	start := time.Now()
 	// the test before this had been start with --apiserver-port=8441
 	beforeCfg, err := config.LoadProfile(profile)
 	if err != nil {
-		t.Errorf("error reading cluster config before soft start: %v", err)
+		t.Fatalf("error reading cluster config before soft start: %v", err)
 	}
 	if beforeCfg.Config.KubernetesConfig.NodePort != apiPortTest {
 		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
@@ -250,6 +269,8 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
 func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "config", "current-context"))
 	if err != nil {
 		t.Errorf("failed to get current-context. args %q : %v", rr.Command(), err)
@@ -261,6 +282,8 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubectlGetPods asserts that `kubectl get pod -A` returns non-zero content
 func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A"))
 	if err != nil {
 		t.Errorf("failed to get kubectl pods: args %q : %v", rr.Command(), err)
@@ -275,6 +298,8 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 
 // validateMinikubeKubectl validates that the `minikube kubectl` command returns content
 func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	// Must set the profile so that it knows what version of Kubernetes to use
 	kubectlArgs := []string{"-p", profile, "kubectl", "--", "--context", profile, "get", "pods"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), kubectlArgs...))
@@ -285,6 +310,8 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
@@ -310,6 +337,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 }
 
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
 		t.Errorf("failed to run minikube status. args %q : %v", rr.Command(), err)
@@ -352,6 +380,8 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateDashboardCmd asserts that the dashboard command works
 func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -391,6 +421,8 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateDNS asserts that all Kubernetes DNS is healthy
 func validateDNS(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 	if err != nil {
 		t.Fatalf("failed to kubectl replace busybox : args %q: %v", rr.Command(), err)
@@ -424,7 +456,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	defer cancel()
 
 	// Too little memory!
-	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgs()...)
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
@@ -445,6 +477,8 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 
 // validateCacheCmd tests functionality of cache command (cache add, delete, list)
 func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
@@ -491,7 +525,8 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img)) // for some reason crictl rmi doesn't work
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
+
 			if err != nil {
 				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
 			}
@@ -639,7 +674,33 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceCmd asserts basic "service" command functionality
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=gcr.io/hello-minikube-zero-install/hello-node"))
+	defer PostMortemLogs(t, profile)
+
+	defer func() {
+		if t.Failed() {
+			t.Logf("service test failed - dumping debug information")
+
+			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node pod describe:\n%s", rr.Stdout)
+
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=hello-node"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node logs:\n%s", rr.Stdout)
+
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "svc", "hello-node"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node svc describe:\n%s", rr.Stdout)
+		}
+	}()
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.4"))
 	if err != nil {
 		t.Logf("%q failed: %v (may not be an error).", rr.Command(), err)
 	}
@@ -670,16 +731,18 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
 	}
 	if rr.Stderr.String() != "" {
-		t.Errorf("expected stderr to be empty but got *%q*", rr.Stderr)
+		t.Errorf("expected stderr to be empty but got *%q* . args %q", rr.Stderr, rr.Command())
 	}
 
 	endpoint := strings.TrimSpace(rr.Stdout.String())
+	t.Logf("found endpoint: %s", endpoint)
+
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		t.Fatalf("failed to parse service url endpoint %q: %v", endpoint, err)
 	}
 	if u.Scheme != "https" {
-		t.Errorf("expected scheme to be 'https' but got %q", u.Scheme)
+		t.Errorf("expected scheme for %s to be 'https' but got %q", endpoint, u.Scheme)
 	}
 
 	// Test --format=IP
@@ -691,33 +754,57 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service --format={{.IP}}' output to be -%q- but got *%q* . args %q.", u.Hostname(), rr.Stdout.String(), rr.Command())
 	}
 
-	// Test a regular URLminikube
+	// Test a regular URL
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url"))
 	if err != nil {
 		t.Errorf("failed to get service url. args: %q: %v", rr.Command(), err)
 	}
 
 	endpoint = strings.TrimSpace(rr.Stdout.String())
+	t.Logf("found endpoint for hello-node: %s", endpoint)
+
 	u, err = url.Parse(endpoint)
 	if err != nil {
 		t.Fatalf("failed to parse %q: %v", endpoint, err)
 	}
+
 	if u.Scheme != "http" {
 		t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
 	}
 
-	t.Logf("url: %s", endpoint)
-	resp, err := retryablehttp.Get(endpoint)
-	if err != nil {
-		t.Fatalf("get failed: %v\nresp: %v", err, resp)
+	t.Logf("Attempting to fetch %s ...", endpoint)
+
+	fetch := func() error {
+		resp, err := http.Get(endpoint)
+		if err != nil {
+			t.Logf("error fetching %s: %v", endpoint, err)
+			return err
+		}
+
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Logf("error reading body from %s: %v", endpoint, err)
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Logf("%s: unexpected status code %d - body:\n%s", endpoint, resp.StatusCode, body)
+		} else {
+			t.Logf("%s: success! body:\n%s", endpoint, body)
+		}
+		return nil
 	}
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status code for %q to be -%q- but got *%q*", endpoint, http.StatusOK, resp.StatusCode)
+
+	if err = retry.Expo(fetch, 1*time.Second, Seconds(30)); err != nil {
+		t.Errorf("failed to fetch %s: %v", endpoint, err)
 	}
 }
 
 // validateAddonsCmd asserts basic "addon" command functionality
 func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	// Table output
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list"))
 	if err != nil {
@@ -743,21 +830,50 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateSSHCmd asserts basic "ssh" command functionality
 func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
-	want := "hello\n"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
+	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
+	defer cancel()
+
+	want := "hello"
+
+	rr, err := Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "echo hello"))
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
 	if err != nil {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
-	if rr.Stdout.String() != want {
+	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
+	if strings.TrimSpace(rr.Stdout.String()) != want {
+		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
+	}
+
+	// testing hostname as well because testing something like "minikube ssh echo" could be confusing
+	// because it  is not clear if echo was run inside minikube on the powershell
+	// so better to test something inside minikube, that is meaningful per profile
+	// in this case /etc/hostname is same as the profile name
+	want = profile
+	rr, err = Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+
+	if err != nil {
+		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
+	}
+	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
+	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 }
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
 	if err != nil {
 		t.Fatalf("failed to kubectl replace mysql: args %q failed: %v", rr.Command(), err)
@@ -814,9 +930,14 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	testPem := "./testdata/minikube_test.pem"
 
-	err = copy.Copy(testPem, localTestCertPath())
-	if err != nil {
+	// Write to a temp file for an atomic write
+	tmpPem := localTestCertPath() + ".pem"
+	if err := copy.Copy(testPem, tmpPem); err != nil {
 		t.Fatalf("failed to copy %s: %v", testPem, err)
+	}
+
+	if err := os.Rename(tmpPem, localTestCertPath()); err != nil {
+		t.Fatalf("failed to rename %s: %v", tmpPem, err)
 	}
 
 	want, err := os.Stat(testPem)
@@ -841,6 +962,8 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 
 // validateFileSync to check existence of the test file
 func validateFileSync(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
@@ -866,6 +989,8 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 
 // validateCertSync to check existence of the test certificate
 func validateCertSync(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
@@ -899,6 +1024,8 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 
 // validateUpdateContextCmd asserts basic "update-context" command functionality
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
 	if err != nil {
 		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)

@@ -24,10 +24,14 @@ apiServerExtraArgs:
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
-controlPlaneEndpoint: 1.1.1.1:12345
+controlPlaneEndpoint: control-plane.minikube.internal:12345
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
+controllerManagerExtraArgs:
+  leader-elect: "false"
+schedulerExtraArgs:
+  leader-elect: "false"  
 kubernetesVersion: v1.13.0
 networking:
   dnsDomain: cluster.local
@@ -36,9 +40,11 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+clusterDomain: "cluster.local"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
 evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+failSwapOn: false

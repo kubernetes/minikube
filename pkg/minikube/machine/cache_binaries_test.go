@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/download"
 )
 
 type copyFailRunner struct {
@@ -82,6 +83,8 @@ func TestCopyBinary(t *testing.T) {
 }
 
 func TestCacheBinariesForBootstrapper(t *testing.T) {
+	download.EnableMock(true)
+
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 
@@ -89,7 +92,13 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
-	defer os.RemoveAll(minikubeHome)
+
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(minikubeHome)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", minikubeHome)
+		}
+	}()
 
 	var tc = []struct {
 		version, clusterBootstrapper string

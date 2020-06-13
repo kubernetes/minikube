@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 
@@ -51,8 +52,8 @@ var purge bool
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Deletes a local kubernetes cluster",
-	Long: `Deletes a local kubernetes cluster. This command deletes the VM, and removes all
+	Short: "Deletes a local Kubernetes cluster",
+	Long: `Deletes a local Kubernetes cluster. This command deletes the VM, and removes all
 associated files.`,
 	Run: runDelete,
 }
@@ -88,19 +89,32 @@ func init() {
 	RootCmd.AddCommand(deleteCmd)
 }
 
-func deleteContainersAndVolumes() {
+// shotgun cleanup to delete orphaned docker container data
+func deleteContainersAndVolumes(ociBin string) {
+	if _, err := exec.LookPath(ociBin); err != nil {
+		glog.Infof("skipping deleteContainersAndVolumes for %s: %v", ociBin, err)
+		return
+	}
+
+	glog.Infof("deleting containers and volumes ...")
+
 	delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
+	errs := oci.DeleteContainersByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will error if there is no container to delete
 		glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+	errs = oci.DeleteAllVolumesByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	if ociBin == oci.Podman {
+		// podman prune does not support --filter
+		return
+	}
+
+	errs = oci.PruneAllVolumesByLabel(ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
@@ -128,7 +142,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if deleteAll {
-		deleteContainersAndVolumes()
+		deleteContainersAndVolumes(oci.Docker)
+		deleteContainersAndVolumes(oci.Podman)
 
 		errs := DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
@@ -143,13 +158,22 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 		cname := ClusterFlagValue()
 		profile, err := config.LoadProfile(cname)
+		orphan := false
+
 		if err != nil {
 			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cname})
+			orphan = true
 		}
 
 		errs := DeleteProfiles([]*config.Profile{profile})
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
+		}
+
+		if orphan {
+			// TODO: generalize for non-KIC drivers: #8040
+			deletePossibleKicLeftOver(cname, driver.Docker)
+			deletePossibleKicLeftOver(cname, driver.Podman)
 		}
 	}
 
@@ -169,6 +193,7 @@ func purgeMinikubeDirectory() {
 
 // DeleteProfiles deletes one or more profiles
 func DeleteProfiles(profiles []*config.Profile) []error {
+	glog.Infof("DeleteProfiles")
 	var errs []error
 	for _, profile := range profiles {
 		err := deleteProfile(profile)
@@ -189,31 +214,70 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-func deleteProfileContainersAndVolumes(name string) {
-	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
-	if errs != nil { // it will error if there is no container to delete
-		glog.Infof("error deleting containers for %s (might be okay):\n%v", name, errs)
+// TODO: remove and/or move to delete package: #8040
+func deletePossibleKicLeftOver(cname string, driverName string) {
+	bin := ""
+	switch driverName {
+	case driver.Docker:
+		bin = oci.Docker
+	case driver.Podman:
+		bin = oci.Podman
+	default:
+		return
 	}
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+
+	if _, err := exec.LookPath(bin); err != nil {
+		glog.Infof("skipping deletePossibleKicLeftOver for %s: %v", bin, err)
+		return
+	}
+
+	glog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
+
+	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
+	cs, err := oci.ListContainersByLabel(bin, delLabel)
+	if err == nil && len(cs) > 0 {
+		for _, c := range cs {
+			out.T(out.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
+			err := oci.DeleteContainer(bin, c)
+			if err != nil { // it will error if there is no container to delete
+				glog.Errorf("error deleting container %q. You may want to delete it manually :\n%v", cname, err)
+			}
+
+		}
+	}
+
+	errs := oci.DeleteAllVolumesByLabel(bin, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
 		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
 	}
 
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	if bin == oci.Podman {
+		// podman prune does not support --filter
+		return
+	}
+
+	errs = oci.PruneAllVolumesByLabel(bin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
 	}
 }
 
 func deleteProfile(profile *config.Profile) error {
+	glog.Infof("Deleting %s", profile.Name)
 	viper.Set(config.ProfileName, profile.Name)
 	if profile.Config != nil {
+		glog.Infof("%s configuration: %+v", profile.Name, profile.Config)
+
 		// if driver is oci driver, delete containers and volumes
 		if driver.IsKIC(profile.Config.Driver) {
 			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
-			deleteProfileContainersAndVolumes(profile.Name)
+			for _, n := range profile.Config.Nodes {
+				machineName := driver.MachineName(*profile.Config, n)
+				deletePossibleKicLeftOver(machineName, profile.Config.Driver)
+			}
 		}
+	} else {
+		glog.Infof("%s has no configuration, will try to make it work anyways", profile.Name)
 	}
 
 	api, err := machine.NewAPIClient()
@@ -329,23 +393,24 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, n)
+	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
+	if err != nil {
+		return DeletionError{Err: fmt.Errorf("unable to load host: %v", err), Errtype: MissingCluster}
+	}
+
+	r, err := machine.CommandRunner(host)
+	if err != nil {
+		return DeletionError{Err: fmt.Errorf("unable to get command runner %v", err), Errtype: MissingCluster}
+	}
+
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, r)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
-	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
-	if err != nil {
-		exit.WithError("Error getting host", err)
-	}
-	r, err := machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
-	}
-
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
 	if err != nil {
-		exit.WithError("Failed runtime", err)
+		return DeletionError{Err: fmt.Errorf("unable to get runtime: %v", err), Errtype: Fatal}
 	}
 
 	// Unpause the cluster if necessary to avoid hung kubeadm

@@ -23,50 +23,44 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/pkg/errors"
 )
 
 const (
 	// runs is the number of times each binary will be timed for 'minikube start'
-	runs = 1
-)
-
-var (
-	// For testing
-	collectTimeMinikubeStart = timeMinikubeStart
+	runs = 3
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
-func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []string) error {
-	durations, err := collectTimes(ctx, binaries)
-	if err != nil {
-		return err
+func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
+	drivers := []string{"kvm2", "docker"}
+	for _, d := range drivers {
+		rm, err := collectResults(ctx, binaries, d)
+		if err != nil {
+			fmt.Printf("**%s Driver**\n", d)
+			fmt.Printf("error collecting results for %s driver: %v\n", d, err)
+			continue
+		}
+		rm.summarizeResults(binaries, d)
+		fmt.Println()
 	}
-
-	fmt.Fprintf(out, "Old binary: %v\nNew binary: %v\nAverage Old: %f\nAverage New: %f\n", durations[0], durations[1], average(durations[0]), average(durations[1]))
 	return nil
 }
 
-func collectTimes(ctx context.Context, binaries []string) ([][]float64, error) {
-	durations := make([][]float64, len(binaries))
-	for i := range durations {
-		durations[i] = make([]float64, runs)
-	}
-
-	for r := 0; r < runs; r++ {
-		log.Printf("Executing run %d...", r)
-		for index, binary := range binaries {
-			duration, err := collectTimeMinikubeStart(ctx, binary)
+func collectResults(ctx context.Context, binaries []*Binary, driver string) (*resultManager, error) {
+	rm := newResultManager()
+	for run := 0; run < runs; run++ {
+		log.Printf("Executing run %d/%d...", run+1, runs)
+		for _, binary := range binaries {
+			r, err := timeMinikubeStart(ctx, binary, driver)
 			if err != nil {
-				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary)
+				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
-			durations[index][r] = duration
+			rm.addResult(binary, r)
 		}
 	}
-
-	return durations, nil
+	return rm, nil
 }
 
 func average(nums []float64) float64 {
@@ -79,12 +73,11 @@ func average(nums []float64) float64 {
 
 // timeMinikubeStart returns the time it takes to execute `minikube start`
 // It deletes the VM after `minikube start`.
-func timeMinikubeStart(ctx context.Context, binary string) (float64, error) {
-	startCmd := exec.CommandContext(ctx, binary, "start")
-	startCmd.Stdout = os.Stdout
+func timeMinikubeStart(ctx context.Context, binary *Binary, driver string) (*result, error) {
+	startCmd := exec.CommandContext(ctx, binary.path, "start", fmt.Sprintf("--driver=%s", driver))
 	startCmd.Stderr = os.Stderr
 
-	deleteCmd := exec.CommandContext(ctx, binary, "delete")
+	deleteCmd := exec.CommandContext(ctx, binary.path, "delete")
 	defer func() {
 		if err := deleteCmd.Run(); err != nil {
 			log.Printf("error deleting minikube: %v", err)
@@ -92,11 +85,9 @@ func timeMinikubeStart(ctx context.Context, binary string) (float64, error) {
 	}()
 
 	log.Printf("Running: %v...", startCmd.Args)
-	start := time.Now()
-	if err := startCmd.Run(); err != nil {
-		return 0, errors.Wrap(err, "starting minikube")
+	r, err := timeCommandLogs(startCmd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "timing cmd: %v", startCmd.Args)
 	}
-
-	s := time.Since(start).Seconds()
-	return s, nil
+	return r, nil
 }

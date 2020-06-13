@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -39,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -93,9 +93,13 @@ func (d *Driver) Create() error {
 			ListenAddress: oci.DefaultBindIPV4,
 			ContainerPort: constants.DockerDaemonPort,
 		},
+		oci.PortMapping{
+			ListenAddress: oci.DefaultBindIPV4,
+			ContainerPort: constants.RegistryAddonPort,
+		},
 	)
 
-	exists, err := oci.ContainerExists(d.OCIBinary, params.Name)
+	exists, err := oci.ContainerExists(d.OCIBinary, params.Name, true)
 	if err != nil {
 		glog.Warningf("failed to check if container already exists: %v", err)
 	}
@@ -118,22 +122,27 @@ func (d *Driver) Create() error {
 	}
 
 	var waitForPreload sync.WaitGroup
-	waitForPreload.Add(1)
-	go func() {
-		defer waitForPreload.Done()
-		// If preload doesn't exist, don't bother extracting tarball to volume
-		if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
-			return
-		}
-		t := time.Now()
-		glog.Infof("Starting extracting preloaded images to volume")
-		// Extract preloaded images to container
-		if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
-			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
-		} else {
-			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
-		}
-	}()
+	if d.NodeConfig.OCIBinary == oci.Docker {
+		waitForPreload.Add(1)
+		go func() {
+			defer waitForPreload.Done()
+			// If preload doesn't exist, don't bother extracting tarball to volume
+			if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
+				return
+			}
+			t := time.Now()
+			glog.Infof("Starting extracting preloaded images to volume ...")
+			// Extract preloaded images to container
+			if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, d.NodeConfig.ImageDigest); err != nil {
+				glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
+			} else {
+				glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+			}
+		}()
+	} else {
+		// driver == "podman"
+		glog.Info("Driver isn't docker, skipping extracting preloaded images")
+	}
 
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
@@ -230,26 +239,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	out, err := oci.WarnIfSlow(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
-	if err != nil {
-		return state.Error, err
-	}
-
-	o := strings.TrimSpace(string(out))
-	switch o {
-	case "running":
-		return state.Running, nil
-	case "exited":
-		return state.Stopped, nil
-	case "paused":
-		return state.Paused, nil
-	case "restarting":
-		return state.Starting, nil
-	case "dead":
-		return state.Error, nil
-	default:
-		return state.None, fmt.Errorf("unknown state")
-	}
+	return oci.ContainerStatus(d.OCIBinary, d.MachineName, true)
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
@@ -259,9 +249,14 @@ func (d *Driver) Kill() error {
 	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "killing kic node %s", d.MachineName)
+
+	if err := oci.ShutDown(d.OCIBinary, d.MachineName); err != nil {
+		glog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
+	}
+
+	cr := command.NewExecRunner() // using exec runner for interacting with dameon.
+	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName))); err != nil {
+		return errors.Wrapf(err, "killing %q", d.MachineName)
 	}
 	return nil
 }
@@ -269,16 +264,22 @@ func (d *Driver) Kill() error {
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
-		log.Warnf("could not find the container %s to remove it.", d.MachineName)
+		glog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
 	}
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "rm", "-f", "-v", d.MachineName)
-	o, err := cmd.CombinedOutput()
-	out := strings.TrimSpace(string(o))
-	if err != nil {
-		if strings.Contains(out, "is already in progress") {
-			log.Warnf("Docker engine is stuck. please restart docker daemon on your computer.", d.MachineName)
+
+	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
+		if strings.Contains(err.Error(), "is already in progress") {
+			return errors.Wrap(err, "stuck delete")
 		}
-		return errors.Wrapf(err, "removing container %s, output %s", d.MachineName, out)
+		if strings.Contains(err.Error(), "No such container:") {
+			return nil // nothing was found to delete.
+		}
+
+	}
+
+	// check there be no container left after delete
+	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
+		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
 	return nil
 }
@@ -287,40 +288,41 @@ func (d *Driver) Remove() error {
 func (d *Driver) Restart() error {
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "get kic state")
+		glog.Warningf("get state during restart: %v", err)
 	}
-	switch s {
-	case state.Stopped:
+	if s == state.Stopped { // don't stop if already stopped
 		return d.Start()
-	case state.Running, state.Error:
-		if err = d.Stop(); err != nil {
-			return fmt.Errorf("restarting a kic stop phase %v", err)
-		}
-		if err = d.Start(); err != nil {
-			return fmt.Errorf("restarting a kic start phase %v", err)
-		}
-		return nil
 	}
-
-	return fmt.Errorf("restarted not implemented for kic state %s yet", s)
+	if err = d.Stop(); err != nil {
+		return fmt.Errorf("stop during restart %v", err)
+	}
+	if err = d.Start(); err != nil {
+		return fmt.Errorf("start during restart %v", err)
+	}
+	return nil
 }
 
-// Start a _stopped_ kic container
-// not meant to be used for Create().
+// Start an already created kic container
 func (d *Driver) Start() error {
-	s, err := d.GetState()
-	if err != nil {
-		return errors.Wrap(err, "get kic state")
+	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
+		return errors.Wrap(err, "start")
 	}
-	if s == state.Stopped {
-		cmd := exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName)
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "starting a stopped kic node %s", d.MachineName)
+	checkRunning := func() error {
+		s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
+		if err != nil {
+			return err
 		}
+		if s != state.Running {
+			return fmt.Errorf("expected container state be running but got %q", s)
+		}
+		glog.Infof("container %q state is running.", d.MachineName)
 		return nil
 	}
-	// TODO:medyagh maybe make it idempotent
-	return fmt.Errorf("cant start a not-stopped (%s) kic node", s)
+
+	if err := retry.Expo(checkRunning, 500*time.Microsecond, time.Second*30); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Stop a host gracefully, including any containers that we are managing.

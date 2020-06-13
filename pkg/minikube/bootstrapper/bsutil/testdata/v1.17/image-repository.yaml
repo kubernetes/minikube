@@ -26,12 +26,18 @@ apiServer:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
-controlPlaneEndpoint: 1.1.1.1:8443
+controlPlaneEndpoint: control-plane.minikube.internal:8443
 dns:
   type: CoreDNS
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
+controllerManager:
+  extraArgs:
+    "leader-elect": "false"
+scheduler:
+  extraArgs:
+    "leader-elect": "false"
 kubernetesVersion: v1.17.0
 networking:
   dnsDomain: cluster.local
@@ -40,13 +46,16 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+clusterDomain: "cluster.local"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
 evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+failSwapOn: false
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
+clusterCIDR: ""
 metricsBindAddress: 1.1.1.1:10249

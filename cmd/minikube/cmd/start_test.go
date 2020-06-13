@@ -98,6 +98,11 @@ func TestMirrorCountry(t *testing.T) {
 			mirrorCountry:   "",
 		},
 		{
+			description:     "image-repository none, image-mirror-country china",
+			imageRepository: "",
+			mirrorCountry:   "cn",
+		},
+		{
 			description:     "image-repository auto, image-mirror-country none",
 			imageRepository: "auto",
 			mirrorCountry:   "",
@@ -105,6 +110,16 @@ func TestMirrorCountry(t *testing.T) {
 		{
 			description:     "image-repository auto, image-mirror-country china",
 			imageRepository: "auto",
+			mirrorCountry:   "cn",
+		},
+		{
+			description:     "image-repository registry.test.com, image-mirror-country none",
+			imageRepository: "registry.test.com",
+			mirrorCountry:   "",
+		},
+		{
+			description:     "image-repository registry.test.com, image-mirror-country china",
+			imageRepository: "registry.test.com",
 			mirrorCountry:   "cn",
 		},
 	}
@@ -185,25 +200,34 @@ func TestSuggestMemoryAllocation(t *testing.T) {
 		description    string
 		sysLimit       int
 		containerLimit int
+		nodes          int
 		want           int
 	}{
-		{"128GB sys", 128000, 0, 6000},
-		{"64GB sys", 64000, 0, 6000},
-		{"16GB sys", 16384, 0, 4000},
-		{"odd sys", 14567, 0, 3600},
-		{"4GB sys", 4096, 0, 2200},
-		{"2GB sys", 2048, 0, 2048},
-		{"Unable to poll sys", 0, 0, 2200},
-		{"128GB sys, 16GB container", 128000, 16384, 16336},
-		{"64GB sys, 16GB container", 64000, 16384, 16000},
-		{"16GB sys, 4GB container", 16384, 4096, 4000},
-		{"4GB sys, 3.5GB container", 16384, 3500, 3452},
-		{"2GB sys, 2GB container", 16384, 2048, 2048},
-		{"2GB sys, unable to poll container", 16384, 0, 4000},
+		{"128GB sys", 128000, 0, 1, 6000},
+		{"64GB sys", 64000, 0, 1, 6000},
+		{"32GB sys", 32768, 0, 1, 6000},
+		{"16GB sys", 16384, 0, 1, 4000},
+		{"odd sys", 14567, 0, 1, 3600},
+		{"4GB sys", 4096, 0, 1, 2200},
+		{"2GB sys", 2048, 0, 1, 2048},
+		{"Unable to poll sys", 0, 0, 1, 2200},
+		{"128GB sys, 16GB container", 128000, 16384, 1, 16336},
+		{"64GB sys, 16GB container", 64000, 16384, 1, 16000},
+		{"16GB sys, 4GB container", 16384, 4096, 1, 4000},
+		{"4GB sys, 3.5GB container", 16384, 3500, 1, 3452},
+		{"16GB sys, 2GB container", 16384, 2048, 1, 2048},
+		{"16GB sys, unable to poll container", 16384, 0, 1, 4000},
+		{"128GB sys 2 nodes", 128000, 0, 2, 6000},
+		{"8GB sys 3 nodes", 8192, 0, 3, 2200},
+		{"16GB sys 2 nodes", 16384, 0, 2, 2200},
+		{"32GB sys 2 nodes", 32768, 0, 2, 4050},
+		{"odd sys 2 nodes", 14567, 0, 2, 2200},
+		{"4GB sys 2 nodes", 4096, 0, 2, 2200},
+		{"2GB sys 3 nodes", 2048, 0, 3, 2048},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			got := suggestMemoryAllocation(test.sysLimit, test.containerLimit)
+			got := suggestMemoryAllocation(test.sysLimit, test.containerLimit, test.nodes)
 			if got != test.want {
 				t.Errorf("defaultMemorySize(sys=%d, container=%d) = %d, want: %d", test.sysLimit, test.containerLimit, got, test.want)
 			}

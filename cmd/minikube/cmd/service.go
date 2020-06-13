@@ -33,7 +33,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/browser"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -57,8 +59,8 @@ var (
 // serviceCmd represents the service command
 var serviceCmd = &cobra.Command{
 	Use:   "service [flags] SERVICE",
-	Short: "Gets the kubernetes URL(s) for the specified service in your local cluster",
-	Long:  `Gets the kubernetes URL(s) for the specified service in your local cluster. In the case of multiple URLs they will be printed one at a time.`,
+	Short: "Returns a URL to connect to a service",
+	Long:  `Returns the Kubernetes URL for a service in your local cluster. In the case of multiple URLs they will be printed one at a time.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("serviceURL").Parse(serviceURLFormat)
 		if err != nil {
@@ -78,12 +80,7 @@ var serviceCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
-			startKicServiceTunnel(svc, cname)
-			return
-		}
-
-		urls, err := service.WaitForService(co.API, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
+		urls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			var s *service.SVCNotFoundError
 			if errors.As(err, &s) {
@@ -93,13 +90,18 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 			exit.WithError("Error opening service", err)
 		}
 
+		if driver.NeedsPortForward(co.Config.Driver) {
+			startKicServiceTunnel(svc, cname)
+			return
+		}
+
 		openURLs(svc, urls)
 	},
 }
 
 func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
-	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
+	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the Kubernetes service URL in the CLI instead of opening it in the default browser")
 	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
 	serviceCmd.Flags().IntVar(&wait, "wait", service.DefaultWait, "Amount of time to wait for a service in seconds")
 	serviceCmd.Flags().IntVar(&interval, "interval", service.DefaultInterval, "The initial time interval for each check that wait performs in seconds")
@@ -112,7 +114,7 @@ func startKicServiceTunnel(svc, configName string) {
 	ctrlC := make(chan os.Signal, 1)
 	signal.Notify(ctrlC, os.Interrupt)
 
-	clientset, err := service.K8s.GetClientset(1 * time.Second)
+	clientset, err := kapi.Client(configName)
 	if err != nil {
 		exit.WithError("error creating clientset", err)
 	}
@@ -137,7 +139,7 @@ func startKicServiceTunnel(svc, configName string) {
 	service.PrintServiceList(os.Stdout, data)
 
 	openURLs(svc, urls)
-	out.WarningT("Because you are using docker driver on Mac, the terminal needs to be open to run it.")
+	out.WarningT("Because you are using a Docker driver on {{.operating_system}}, the terminal needs to be open to run it.", out.V{"operating_system": runtime.GOOS})
 
 	<-ctrlC
 

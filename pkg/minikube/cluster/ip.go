@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"reflect"
 	"regexp"
 
 	"github.com/docker/machine/libmachine"
@@ -30,8 +31,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
-// GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
-func GetVMHostIP(host *host.Host) (net.IP, error) {
+// HostIP gets the ip address to be used for mapping host -> VM and VM -> host
+func HostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
 	case driver.Docker:
 		return oci.RoutableHostIPFromInside(oci.Docker, host.Name)
@@ -40,9 +41,18 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 	case driver.KVM2:
 		return net.ParseIP("192.168.39.1"), nil
 	case driver.HyperV:
-		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
-		// TODO(aprindle) Change this to deserialize the driver instead
-		hypervVirtualSwitch := re.FindStringSubmatch(string(host.RawDriver))[1]
+		v := reflect.ValueOf(host.Driver).Elem()
+		var hypervVirtualSwitch string
+		// We don't have direct access to hyperv.Driver so use reflection to retrieve the virtual switch name
+		for i := 0; i < v.NumField(); i++ {
+			if v.Type().Field(i).Name == "VSwitch" {
+				hypervVirtualSwitch = v.Field(i).Interface().(string)
+				break
+			}
+		}
+		if hypervVirtualSwitch == "" {
+			return nil, errors.New("No virtual switch found")
+		}
 		ip, err := getIPForInterface(fmt.Sprintf("vEthernet (%s)", hypervVirtualSwitch))
 		if err != nil {
 			return []byte{}, errors.Wrap(err, fmt.Sprintf("ip for interface (%s)", hypervVirtualSwitch))
@@ -55,11 +65,32 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 		}
 		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
 		iface := re.FindStringSubmatch(string(out))[1]
-		ip, err := getIPForInterface(iface)
+		ipList, err := exec.Command(driver.VBoxManagePath(), "list", "hostonlyifs").Output()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
-		return ip, nil
+		re = regexp.MustCompile(`(?s)Name:\s*` + iface + `.+IPAddress:\s*(\S+)`)
+		ip := re.FindStringSubmatch(string(ipList))[1]
+		return net.ParseIP(ip), nil
+	case driver.Parallels:
+		bin := "prlsrvctl"
+		var binPath string
+		if fullPath, err := exec.LookPath(bin); err != nil {
+			binPath = fullPath
+		} else {
+			binPath = bin
+		}
+		out, err := exec.Command(binPath, "net", "info", "Shared").Output()
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error reading the info of Parallels Shared network interface")
+		}
+		re := regexp.MustCompile(`IPv4 address: (.*)`)
+		ipMatch := re.FindStringSubmatch(string(out))
+		if len(ipMatch) < 2 {
+			return []byte{}, errors.Wrap(err, "Error getting the IP address of Parallels Shared network interface")
+		}
+		ip := ipMatch[1]
+		return net.ParseIP(ip), nil
 	case driver.HyperKit:
 		return net.ParseIP("192.168.64.1"), nil
 	case driver.VMware:
@@ -72,13 +103,15 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error converting VM IP address to IPv4 address")
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
+	case driver.None:
+		return net.ParseIP("127.0.0.1"), nil
 	default:
-		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
+		return []byte{}, fmt.Errorf("HostIP not yet implemented for %q driver", host.DriverName)
 	}
 }
 
-// GetHostDriverIP gets the ip address of the current minikube cluster
-func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
+// DriverIP gets the ip address of the current minikube cluster
+func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	host, err := machine.LoadHost(api, machineName)
 	if err != nil {
 		return nil, err

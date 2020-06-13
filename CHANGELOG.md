@@ -1,5 +1,245 @@
 # Release Notes
 
+## Version 1.11.0 - 2020-05-29
+
+Features:
+
+* add 'defaults' sub-command to `minikube config` [#8143](https://github.com/kubernetes/minikube/pull/8143)
+* addons: add OLM addon [#8129](https://github.com/kubernetes/minikube/pull/8129)
+* addons:: Add Ambassador Ingress controller addon [#8161](https://github.com/kubernetes/minikube/pull/8161)
+* bump oldest k8s version supported to 1.13 [#8154](https://github.com/kubernetes/minikube/pull/8154)
+* bump default kubernetes version to 1.18.3 [#8307](https://github.com/kubernetes/minikube/pull/8307)
+* Bump helm-tiller 2.16.7 and promote tiller ClusterRoleBinding to v1 [#8174](https://github.com/kubernetes/minikube/pull/8174)
+
+Minor Improvements:
+
+* docker/podman drivers: add fall back image in docker hub [#8320](https://github.com/kubernetes/minikube/pull/8320)
+* docker/podman drivers: exit with usage when need login to registry [#8225](https://github.com/kubernetes/minikube/pull/8225)
+* multinode: copy apiserver certs only to control plane [#8092](https://github.com/kubernetes/minikube/pull/8092)
+* docker-env: restart dockerd inside minikube on failure [#8239](https://github.com/kubernetes/minikube/pull/8239)
+* wait for kubernetes components on soft start [#8199](https://github.com/kubernetes/minikube/pull/8199)
+* improve minikube status display for one node [#8238](https://github.com/kubernetes/minikube/pull/8238)
+* improve solution message for wrong kuberentes-version format [#8118](https://github.com/kubernetes/minikube/pull/8118)
+
+Bug fixes:
+
+* fix HTTP_PROXY env not being passed to docker engine [#8198](https://github.com/kubernetes/minikube/pull/8198)
+* honor --image-repository even if --image-mirror-country is set [#8249](https://github.com/kubernetes/minikube/pull/8249)
+* parallels driver: fix HostIP implementation [#8259](https://github.com/kubernetes/minikube/pull/8259)
+* addon registry: avoid getting stuck on registry port 443 [#8208](https://github.com/kubernetes/minikube/pull/8208)
+* respect native-ssh param properly [#8290](https://github.com/kubernetes/minikube/pull/8290)
+* fixed parsing kubernetes version for keywords "latest" or "stable" [#8230](https://github.com/kubernetes/minikube/pull/8230)
+* multinode: make sure multinode clusters survive restarts [#7973](https://github.com/kubernetes/minikube/pull/7973)
+* multinode: delete docker volumes when deleting a  node [#8224](https://github.com/kubernetes/minikube/pull/8224)
+* multinode: delete worker volumes for docker driver [#8216](https://github.com/kubernetes/minikube/pull/8216)
+* multinode: recreate existing control plane node correctly [#8095](https://github.com/kubernetes/minikube/pull/8095)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Kenta Iso
+- Medya Ghazizadeh
+- Mikhail Zholobov
+- Natale Vinto
+- Nicola Ferraro
+- Priya Wadhwa
+- RA489
+- Sharif Elgamal
+- Shubham
+- kadern0
+
+## Version 1.10.1 - 2020-05-12
+
+Bug fixes:
+
+* virtualbox: fix IP address retrieval [#8106](https://github.com/kubernetes/minikube/pull/8106)
+* hyperv: fix virtual switch bug [#8103](https://github.com/kubernetes/minikube/pull/8103)
+* Bump Default Kubernetes version v1.18.2 and update newest [8099](https://github.com/kubernetes/minikube/pull/8099)
+
+Huge thank you for this release towards our contributors: 
+
+- cprogrammer1994
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Thomas Strömberg
+
+## Version 1.10.0 - 2020-05-11
+
+Features:
+
+* Add new env variable `MINIKUBE_FORCE_SYSTEMD` to configure force-systemd [#8010](https://github.com/kubernetes/minikube/pull/8010)
+* docker/podman: add alternative repository for base image in github packages [#7943](https://github.com/kubernetes/minikube/pull/7943)
+
+
+Improvements:
+
+* tunnel: change to clean up by default [#7946](https://github.com/kubernetes/minikube/pull/7946)
+* docker/podman warn about non-amd64 archs [#8053](https://github.com/kubernetes/minikube/pull/8053)
+* docker: Detect windows container and exit with instructions [#7984](https://github.com/kubernetes/minikube/pull/7984)
+* make `minikube help` output consistent [#8036](https://github.com/kubernetes/minikube/pull/8036)
+* podman: Use noninteractive sudo when running podman [#7959](https://github.com/kubernetes/minikube/pull/7959)
+* podman: Wrap the start command with cgroup manager too [#8001](https://github.com/kubernetes/minikube/pull/8001)
+* podman: implement copy for podman-remote [#8060](https://github.com/kubernetes/minikube/pull/8060)
+* podman: Don't run the extraction tar container for podman [#8057](https://github.com/kubernetes/minikube/pull/8057)
+* podman: disable selinux labels when extracting the tarball (permissions error) [#8017](https://github.com/kubernetes/minikube/pull/8017)
+* podman: Get the gateway by inspecting container network [#7962](https://github.com/kubernetes/minikube/pull/7962)
+* podman-env: add PointToHost function for podman driver [#8062](https://github.com/kubernetes/minikube/pull/8062)
+* virtualbox: Quiet initial ssh timeout warning [#8027](https://github.com/kubernetes/minikube/pull/8027)
+* update ingress-nginx addon version [#7997](https://github.com/kubernetes/minikube/pull/7997)
+* config: Add base image to the cluster config [#7985](https://github.com/kubernetes/minikube/pull/7985)
+
+Bug Fixes:
+
+* wait to add aliases to /etc/hosts before starting kubelet [#8035](https://github.com/kubernetes/minikube/pull/8035)
+* fix missing node name in minikube stop output [#8023](https://github.com/kubernetes/minikube/pull/8023)
+* addons: fix initial retry delay, double maximum limit [#7999](https://github.com/kubernetes/minikube/pull/7999)
+* restart: validate configs with new hostname, add logging [#8022](https://github.com/kubernetes/minikube/pull/8022)
+* assign proper internal IPs for nodes [#8018](https://github.com/kubernetes/minikube/pull/8018)
+* use the correct binary for unpacking the preload [#7961](https://github.com/kubernetes/minikube/pull/7961)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Giacomo Mr. Wolf Furlan
+- Kenta Iso
+- Manuel Alejandro de Brito Fontes
+- Medya Ghazizadeh
+- Noah Spahn
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- anencore94
+
+
+## Version 1.10.0-beta.2 - 2020-04-29
+
+Improvements:
+
+* Upgrade default Kubernetes to v1.18.1 [#7714](https://github.com/kubernetes/minikube/pull/7714)
+* Automatically apply CNI on multinode clusters [#7930](https://github.com/kubernetes/minikube/pull/7930)
+* Add Metal LB addon [#7308](https://github.com/kubernetes/minikube/pull/7308)
+* Add `(host|control-plane).minikube.internal` to /etc/hosts [#7247](https://github.com/kubernetes/minikube/pull/7247)
+* Add "sudo" to podman calls [#7631](https://github.com/kubernetes/minikube/pull/7631)
+* Add list option for "minikube node" command [#7851](https://github.com/kubernetes/minikube/pull/7851)
+* Add option to force docker to use systemd as cgroup manager [#7815](https://github.com/kubernetes/minikube/pull/7815)
+* Improve auto-select memory for multinode clusters [#7928](https://github.com/kubernetes/minikube/pull/7928)
+* bump dashboard image v2.0.0 [#7849](https://github.com/kubernetes/minikube/pull/7849)
+* Upgrade docker driver base image to v0.0.10 [#7858](https://github.com/kubernetes/minikube/pull/7858)
+* docker-env: fall back to bash if can not detect shell. [#7887](https://github.com/kubernetes/minikube/pull/7887)
+
+Bug fixes:
+
+* docker/podman drivers: wait for service before open url [#7898](https://github.com/kubernetes/minikube/pull/7898)
+* addon registry-alias: change hosts update container image [#7864](https://github.com/kubernetes/minikube/pull/7864)
+* Fix sysctl fs.protected_regular=1 typo [#7882](https://github.com/kubernetes/minikube/pull/7882)
+* change emoji for:  notifying new kubernetes version is available [#7835](https://github.com/kubernetes/minikube/pull/7835)
+* contained cni: rename default cni file to have higher priority [#7875](https://github.com/kubernetes/minikube/pull/7875)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Kenta Iso
+- Marcin Niemira
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Radoslaw Smigielski
+- Sharif Elgamal
+- Thomas Strömberg
+- Tobias Klauser
+- Travis Mehlinger
+- Zhongcheng Lao
+- ZouYu
+- priyawadhwa
+
+## Version 1.10.0-beta.1 - 2020-04-22
+
+Improvements:
+* Skip preload download if --image-repository is set [#7707](https://github.com/kubernetes/minikube/pull/7707)
+
+
+Bug Fixes:
+* ISO: persistently mount /var/lib/containerd [#7843](https://github.com/kubernetes/minikube/pull/7843)
+* docker/podman: fix delete -p not cleaning up & add integration test [#7819](https://github.com/kubernetes/minikube/pull/7819)
+
+
+Huge thank you for this release towards our contributors: 
+- Anders F Björklund
+- Kenta Iso
+- Medya Ghazizadeh
+- Prasad Katti
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Stromberg
+- Tobias Klauser
+
+
+## Version 1.10.0-beta.0 - 2020-04-20
+
+Improvements:
+* faster containerd start by preloading images [#7793](https://github.com/kubernetes/minikube/pull/7793)
+* Add fish completion support [#7777](https://github.com/kubernetes/minikube/pull/7777)
+* Behavior change: start with no arguments uses existing cluster config [#7449](https://github.com/kubernetes/minikube/pull/7449)
+* conformance: add --wait=all, reduce quirks [#7716](https://github.com/kubernetes/minikube/pull/7716)
+* Upgrade minimum supported k8s version to v1.12 [#7723](https://github.com/kubernetes/minikube/pull/7723)
+* Add default CNI network for running wth podman [#7754](https://github.com/kubernetes/minikube/pull/7754)
+* Behavior change: fallback to alternate drivers on failure [#7389](https://github.com/kubernetes/minikube/pull/7389)
+* Add registry addon feature for docker on mac/windows [#7603](https://github.com/kubernetes/minikube/pull/7603)
+* Check node pressure & new option "node_ready" for --wait flag [#7752](https://github.com/kubernetes/minikube/pull/7752)
+* docker driver: Add Service & Tunnel features to windows   [#7739](https://github.com/kubernetes/minikube/pull/7739)
+* Add master node/worker node type to `minikube status` [#7586](https://github.com/kubernetes/minikube/pull/7586)
+* Add new wait component apps_running [#7460](https://github.com/kubernetes/minikube/pull/7460)
+* none: Add support for OpenRC init (Google CloudShell) [#7539](https://github.com/kubernetes/minikube/pull/7539)
+* Upgrade falco-probe module to version 0.21.0 [#7436](https://github.com/kubernetes/minikube/pull/7436)
+
+Bug Fixes:
+* Fix multinode cluster creation for VM drivers [#7700](https://github.com/kubernetes/minikube/pull/7700)
+* tunnel: Fix resolver file permissions, add DNS forwarding test [#7753](https://github.com/kubernetes/minikube/pull/7753)
+* unconfine apparmor for kic [#7658](https://github.com/kubernetes/minikube/pull/7658)
+* Fix `minikube delete` output nodename missing with docker/podman driver [#7553](https://github.com/kubernetes/minikube/pull/7553)
+* Respect driver.FlagDefaults even if --extra-config is set [#7509](https://github.com/kubernetes/minikube/pull/7509)
+* remove docker/podman overlay network for docker-runtime [#7425](https://github.com/kubernetes/minikube/pull/7425)
+
+
+Huge thank you for this release towards our contributors:
+
+- Alonyb
+- Anders F Björklund
+- Anshul Sirur
+- Balint Pato
+- Batuhan Apaydın
+- Brad Walker
+- Frank Schwichtenberg
+- Kenta Iso
+- Medya Ghazizadeh
+- Michael Vorburger ⛑️
+- Pablo Caderno
+- Prasad Katti
+- Priya Wadhwa
+- Radoslaw Smigielski
+- Ruben Baez
+- Sharif Elgamal
+- Thomas Strömberg
+- Vikky Omkar
+- ZouYu
+- gorbondiga
+- loftkun
+- nestoralonso
+- remraz
+- sayboras
+- tomocy
+
+Thank you so much to users who helped with community triage:
+
+- ps-feng
+- Prasad Katti
+
+And big thank you to those who participated in our docs fixit week:
+
+- matjung
+- jlaswell
+- remraz
+
+
 ## Version 1.9.2 - 2020-04-04
 
 Minor improvements:

@@ -49,17 +49,11 @@ var dirs = [...]string{
 	localpath.MakeMiniPath("logs"),
 }
 
-var viperWhiteList = []string{
-	"alsologtostderr",
-	"log_dir",
-	"v",
-}
-
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "minikube",
-	Short: "Minikube is a tool for managing local Kubernetes clusters.",
-	Long:  `Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.`,
+	Short: "minikube quickly sets up a local Kubernetes cluster",
+	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
@@ -105,6 +99,10 @@ func Execute() {
 		glog.Errorf("oci env: %v", err)
 	}
 
+	if err := oci.PointToHostPodman(); err != nil {
+		glog.Errorf("oci env: %v", err)
+	}
+
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
 		os.Exit(exit.BadUsage)
@@ -144,7 +142,7 @@ func usageTemplate() string {
 // Handle config values for flags used in external packages (e.g. glog)
 // by setting them directly, using values from viper when not passed in as args
 func setFlagsUsingViper() {
-	for _, config := range viperWhiteList {
+	for _, config := range []string{"alsologtostderr", "log_dir", "v"} {
 		var a = pflag.Lookup(config)
 		viper.SetDefault(a.Name, a.DefValue)
 		// If the flag is set, override viper value
@@ -163,7 +161,7 @@ func setFlagsUsingViper() {
 func init() {
 	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
-	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
+	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 
 	groups := templates.CommandGroups{
 		{

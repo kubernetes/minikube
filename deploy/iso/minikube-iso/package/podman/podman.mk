@@ -1,5 +1,5 @@
-PODMAN_VERSION = v1.8.2
-PODMAN_COMMIT = 028e3317eb1494b9b2acba4a0a295df80fae66cc
+PODMAN_VERSION = v1.9.3
+PODMAN_COMMIT = 5d44534fff6877b1cb15b760242279ae6293154c
 PODMAN_SITE = https://github.com/containers/libpod/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
@@ -29,6 +29,8 @@ endef
 
 define PODMAN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 $(@D)/bin/podman $(TARGET_DIR)/usr/bin/podman
+	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/cni/net.d/
+	$(INSTALL) -m 644 $(@D)/cni/87-podman-bridge.conflist $(TARGET_DIR)/etc/cni/net.d/87-podman-bridge.conflist
 endef
 
 $(eval $(generic-package))

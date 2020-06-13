@@ -110,7 +110,7 @@ func (r *CRIO) Active() bool {
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable(disOthers bool) error {
+func (r *CRIO) Enable(disOthers, _ bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
@@ -136,7 +136,7 @@ func (r *CRIO) Disable() error {
 // ImageExists checks if an image exists
 func (r *CRIO) ImageExists(name string, sha string) bool {
 	// expected output looks like [NAME@sha256:SHA]
-	c := exec.Command("sudo", "podman", "inspect", "--format", "{{.Id}}", name)
+	c := exec.Command("sudo", "podman", "image", "inspect", "--format", "{{.Id}}", name)
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return false
