@@ -96,6 +96,8 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		FeatureArgs         map[string]bool
 		NoTaintMaster       bool
 		NodeIP              string
+		ClientCAFile        string
+		StaticPodPath       string
 		ControlPlaneAddress string
 		KubeProxyOptions    map[string]string
 	}{
@@ -117,6 +119,8 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		NoTaintMaster:       false, // That does not work with k8s 1.12+
 		DNSDomain:           k8s.DNSDomain,
 		NodeIP:              n.IP,
+		ClientCAFile:        path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
+		StaticPodPath:       vmpath.GuestManifestsDir,
 		ControlPlaneAddress: constants.ControlPlaneAlias,
 		KubeProxyOptions:    createKubeProxyOptions(k8s.ExtraOptions),
 	}
