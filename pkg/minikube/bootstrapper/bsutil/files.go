@@ -27,8 +27,6 @@ import (
 var KubeadmYamlPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 
 const (
-	//DefaultCNIConfigPath is the configuration file for CNI networks
-	DefaultCNIConfigPath = "/etc/cni/net.d/1-k8s.conf"
 	// KubeletServiceFile is the file for the systemd kubelet.service
 	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
 	// KubeletSystemdConfFile is config for the systemd kubelet.service

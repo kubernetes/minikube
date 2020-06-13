@@ -70,9 +70,7 @@ var nodeAddCmd = &cobra.Command{
 			}
 		}
 
-		// Add CNI config if it's not already there
-		// We need to run kubeadm.init here as well
-		if err := config.MultiNodeCNIConfig(cc); err != nil {
+		if err := config.SaveProfile(cc.Name, cc); err != nil {
 			exit.WithError("failed to save config", err)
 		}
 

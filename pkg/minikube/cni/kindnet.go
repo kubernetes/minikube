@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,39 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubeadm
+package cni
 
-import "html/template"
+import (
+	"bytes"
+	"context"
+	"text/template"
 
-// defaultCNIConfig is the CNI config which is provisioned when --enable-default-cni
-// has been passed to `minikube start`.
-//
-// The config is being written to /etc/cni/net.d/k8s.conf.
-const defaultCNIConfig = `
-{
-  "cniVersion": "0.3.0",
-  "name": "rkt.kubernetes.io",
-  "type": "bridge",
-  "bridge": "mybridge",
-  "mtu": 1460,
-  "addIf": "true",
-  "isGateway": true,
-  "ipMasq": true,
-  "ipam": {
-    "type": "host-local",
-    "subnet": "10.1.0.0/16",
-    "gateway": "10.1.0.1",
-    "routes": [
-      {
-        "dst": "0.0.0.0/0"
-      }
-    ]
-  }
-}
-`
+	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/config"
+)
 
-// kicCNIConfig is the cni plugin needed for kic uses cni plugin created by kind https://github.com/kubernetes-sigs/kind/blob/03a4b519067dc308308cce735065c47a6fda1583/pkg/build/node/cni.go
-var kicCNIConfig = template.Must(template.New("kubeletServiceTemplate").Parse(`---
+var kindNetTmpl = template.Must(template.New("kubeletServiceTemplate").Parse(`---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -160,3 +140,28 @@ spec:
 
 ---
 `))
+
+// KindNet is the KindNet CNI manager
+type KindNet struct {
+	cc config.ClusterConfig
+}
+
+// Assets returns a list of assets necessary to enable this CNI
+func (k KindNet) Assets() ([]assets.CopyableFile, error) {
+	b := bytes.Buffer{}
+	if err := kindNetTmpl.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
+		return nil, err
+	}
+
+	return []assets.CopyableFile{manifestAsset(b.Bytes())}, nil
+}
+
+// Apply enables the CNI
+func (k KindNet) Apply(ctx context.Context, r Runner) error {
+	return apply(ctx, r, k.cc)
+}
+
+// CIDR returns the default CIDR used by this CNI
+func (k KindNet) CIDR() string {
+	return "10.244.0.0/16"
+}
