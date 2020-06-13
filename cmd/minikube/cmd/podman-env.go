@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/daemonenv"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
@@ -53,7 +53,7 @@ var podmanEnvCmd = &cobra.Command{
 		}
 
 		cname := ClusterFlagValue()
-		co := mustload.Running(cname)
+		co := machine.Running(cname)
 		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {

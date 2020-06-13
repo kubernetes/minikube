@@ -31,7 +31,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -76,7 +75,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 	for _, profile := range profilesToStop {
 		// end new code
-		api, cc := mustload.Partial(profile)
+		api, cc := machine.Partial(profile)
 		defer api.Close()
 
 		for _, n := range cc.Nodes {

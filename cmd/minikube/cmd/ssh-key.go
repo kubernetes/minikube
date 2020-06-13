@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -31,7 +31,7 @@ var sshKeyCmd = &cobra.Command{
 	Short: "Retrieve the ssh identity key path of the specified cluster",
 	Long:  "Retrieve the ssh identity key path of the specified cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, cc := mustload.Partial(ClusterFlagValue())
+		_, cc := machine.Partial(ClusterFlagValue())
 		out.Ln(filepath.Join(localpath.MiniPath(), "machines", cc.Name, "id_rsa"))
 	},
 }

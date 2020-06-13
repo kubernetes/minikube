@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -36,7 +36,7 @@ var nodeDeleteCmd = &cobra.Command{
 		}
 		name := args[0]
 
-		co := mustload.Healthy(ClusterFlagValue())
+		co := machine.Healthy(ClusterFlagValue())
 		out.T(out.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
 
 		n, err := node.Delete(*co.Config, name)

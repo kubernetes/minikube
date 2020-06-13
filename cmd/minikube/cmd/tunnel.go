@@ -32,7 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 )
@@ -50,7 +50,7 @@ var tunnelCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		manager := tunnel.NewManager()
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := machine.Healthy(cname)
 
 		if cleanup {
 			glog.Info("Checking for tunnels to cleanup...")

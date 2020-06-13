@@ -29,7 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -39,7 +38,7 @@ var unpauseCmd = &cobra.Command{
 	Short: "unpause Kubernetes",
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
-		co := mustload.Running(cname)
+		co := machine.Running(cname)
 
 		for _, n := range co.Config.Nodes {
 			machineName := driver.MachineName(*co.Config, n)

@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/daemonenv"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
@@ -66,7 +67,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	driverName := h.Driver.DriverName()
 
 	// check if need to re-run docker-env
-	maybeWarnAboutEvalEnv(driverName)
+	maybeWarnAboutEvalEnv(driverName, cc)
 
 	h, err = recreateIfNeeded(api, cc, n, h)
 	if err != nil {
@@ -157,7 +158,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 
 // maybeWarnAboutEvalEnv wil warn user if they need to re-eval their docker-env, podman-env
 // because docker changes the allocated bind ports after restart https://github.com/kubernetes/minikube/issues/6824
-func maybeWarnAboutEvalEnv(drver string) {
+func maybeWarnAboutEvalEnv(drver string, cc *config.ClusterConfig) {
 	if !driver.IsKIC(drver) {
 		return
 	}
@@ -165,12 +166,18 @@ func maybeWarnAboutEvalEnv(drver string) {
 	if err != nil {
 		exit.WithError("Error detecting shell", err)
 	}
+	co := Running(cc.Name)
 
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		out.WarningT(`Please re-eval your docker-env using given snipset`)
 		ec := daemonenv.DockerEnvConfig{
 			EnvConfig: sh,
+			Profile:   cc.Name,
+			Driver:    co.CP.Host.DriverName,
+			HostIP:    co.CP.IP.String(),
+			Port:      constants.DockerDaemonPort,
+			CertsDir:  localpath.MakeMiniPath("certs"),
 		}
 		if err := daemonenv.DockerSetScript(ec, os.Stdout); err != nil {
 			out.WarningT("got unexpected error: {{.error}}", out.V{"error": err})

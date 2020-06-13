@@ -38,7 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
@@ -78,7 +78,7 @@ var serviceCmd = &cobra.Command{
 		svc := args[0]
 
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := machine.Healthy(cname)
 
 		urls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {

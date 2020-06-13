@@ -21,7 +21,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -36,7 +35,7 @@ var nodeStopCmd = &cobra.Command{
 		}
 
 		name := args[0]
-		api, cc := mustload.Partial(ClusterFlagValue())
+		api, cc := machine.Partial(ClusterFlagValue())
 
 		n, _, err := node.Retrieve(*cc, name)
 		if err != nil {

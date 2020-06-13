@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package mustload loads minikube clusters, exiting with user-friendly messages
-package mustload
+// Package machine loads minikube clusters, exiting with user-friendly messages
+package machine
 
 import (
 	"fmt"
@@ -32,7 +32,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -62,7 +61,7 @@ type ControlPlane struct {
 // Partial is a cmd-friendly way to load a cluster which may or may not be running
 func Partial(name string) (libmachine.API, *config.ClusterConfig) {
 	glog.Infof("Loading cluster: %s", name)
-	api, err := machine.NewAPIClient()
+	api, err := NewAPIClient()
 	if err != nil {
 		exit.WithError("libmachine failed", err)
 	}
@@ -89,7 +88,7 @@ func Running(name string) ClusterController {
 	}
 
 	machineName := driver.MachineName(*cc, cp)
-	hs, err := machine.Status(api, machineName)
+	hs, err := Status(api, machineName)
 	if err != nil {
 		exit.WithError("Unable to get machine status", err)
 	}
@@ -109,12 +108,12 @@ func Running(name string) ClusterController {
 		exitTip("start", name, exit.Unavailable)
 	}
 
-	host, err := machine.LoadHost(api, name)
+	host, err := LoadHost(api, name)
 	if err != nil {
 		exit.WithError("Unable to load host", err)
 	}
 
-	cr, err := machine.CommandRunner(host)
+	cr, err := CommandRunner(host)
 	if err != nil {
 		exit.WithError("Unable to get command runner", err)
 	}

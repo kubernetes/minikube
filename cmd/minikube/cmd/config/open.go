@@ -24,7 +24,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 )
@@ -58,7 +58,7 @@ var addonsOpenCmd = &cobra.Command{
 		addonName := args[0]
 
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := machine.Healthy(cname)
 
 		addon, ok := assets.Addons[addonName] // validate addon input
 		if !ok {

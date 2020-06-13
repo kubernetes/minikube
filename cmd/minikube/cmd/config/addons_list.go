@@ -29,7 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -50,7 +50,7 @@ var addonsListCmd = &cobra.Command{
 			exit.UsageT("usage: minikube addons list")
 		}
 
-		_, cc := mustload.Partial(ClusterFlagValue())
+		_, cc := machine.Partial(ClusterFlagValue())
 		switch strings.ToLower(addonListOutput) {
 		case "list":
 			printAddonsList(cc)

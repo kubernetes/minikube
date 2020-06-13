@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -32,7 +32,7 @@ var updateContextCmd = &cobra.Command{
 			with IP in kubeconfig, and corrects kubeconfig if incorrect.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
-		co := mustload.Running(cname)
+		co := machine.Running(cname)
 
 		updated, err := kubeconfig.UpdateEndpoint(cname, co.CP.Hostname, co.CP.Port, kubeconfig.PathFromEnv())
 		if err != nil {

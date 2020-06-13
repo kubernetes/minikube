@@ -22,7 +22,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -36,7 +36,7 @@ var nodeAddCmd = &cobra.Command{
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, args []string) {
-		co := mustload.Healthy(ClusterFlagValue())
+		co := machine.Healthy(ClusterFlagValue())
 		cc := co.Config
 
 		if driver.BareMetal(cc.Driver) {

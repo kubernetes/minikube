@@ -34,7 +34,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/service"
@@ -55,7 +55,7 @@ var dashboardCmd = &cobra.Command{
 	Long:  `Access the Kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
-		co := mustload.Healthy(cname)
+		co := machine.Healthy(cname)
 
 		for _, n := range co.Config.Nodes {
 			if err := proxy.ExcludeIP(n.IP); err != nil {

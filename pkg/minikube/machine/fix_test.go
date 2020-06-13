@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -59,7 +60,8 @@ func TestMaybeWarnAboutEvalEnv(t *testing.T) {
 			os.Stdout = tmpfile
 
 			os.Setenv(tc.activationMarker, "1")
-			maybeWarnAboutEvalEnv(tc.name)
+			cc := config.ClusterConfig{Name: "minikube"}
+			maybeWarnAboutEvalEnv(tc.name, &cc)
 
 			warningMsg, err := ioutil.ReadFile(tmpfile.Name())
 			if err != nil {

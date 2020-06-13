@@ -33,7 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
@@ -98,7 +98,7 @@ var mountCmd = &cobra.Command{
 			debugVal = 1 // ufs.StartServer takes int debug param
 		}
 
-		co := mustload.Running(ClusterFlagValue())
+		co := machine.Running(ClusterFlagValue())
 		if co.CP.Host.Driver.DriverName() == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube mount' command`)
 		}
