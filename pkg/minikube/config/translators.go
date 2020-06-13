@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/json"
+
 	v162 "k8s.io/minikube/pkg/minikube/config/v162"
 )
 
@@ -29,7 +31,15 @@ var versionConfigTranslators = []VersionConfigTranslator{
 			return nil, nil
 		},
 		TranslateToNextVersion: func(config interface{}) (interface{}, error) {
-			return translateFrom163ToCurrent(config.(v162.MachineConfig))
+			return translateFrom163ToNextVersion(config.(v162.MachineConfig))
+		},
+	},
+	{
+		TryLoadFromFile: func() (interface{}, error) {
+			return nil, nil
+		},
+		TranslateToNextVersion: func(config interface{}) (interface{}, error) {
+			return translateFrom152ToNextVersion(config.(v162.MachineConfig))
 		},
 	},
 }
@@ -43,130 +53,37 @@ type translateToNextVersion func(interface{}) (interface{}, error)
 type tryLoadFromFile func() (interface{}, error)
 type isValid func(interface{}) bool
 
-func translateFrom163ToCurrent(oldConfig v162.MachineConfig) (*ClusterConfig, error) {
-	hypervUseExternalSwitch := (oldConfig.HypervVirtualSwitch != "")
+func translateFrom163ToNextVersion(oldConfig v162.MachineConfig) (*ClusterConfig, error) {
 
-	return &ClusterConfig{
-		Name:                    oldConfig.Name,
-		KeepContext:             oldConfig.KeepContext,
-		EmbedCerts:              oldConfig.EmbedCerts,
-		MinikubeISO:             oldConfig.MinikubeISO,
-		Memory:                  oldConfig.Memory,
-		CPUs:                    oldConfig.CPUs,
-		DiskSize:                oldConfig.DiskSize,
-		Driver:                  oldConfig.VMDriver,
-		HyperkitVpnKitSock:      oldConfig.HyperkitVpnKitSock,
-		HyperkitVSockPorts:      oldConfig.HyperkitVSockPorts,
-		DockerEnv:               oldConfig.DockerEnv,
-		InsecureRegistry:        oldConfig.InsecureRegistry,
-		RegistryMirror:          oldConfig.RegistryMirror,
-		HostOnlyCIDR:            oldConfig.HostOnlyCIDR,
-		HypervUseExternalSwitch: hypervUseExternalSwitch,
-		KVMNetwork:              oldConfig.KVMNetwork,
-		KVMQemuURI:              oldConfig.KVMQemuURI,
-		KVMGPU:                  oldConfig.KVMGPU,
-		KVMHidden:               oldConfig.KVMHidden,
-		DockerOpt:               oldConfig.DockerOpt,
-		DisableDriverMounts:     oldConfig.DisableDriverMounts,
-		NFSShare:                oldConfig.NFSShare,
-		NFSSharesRoot:           oldConfig.NFSSharesRoot,
-		UUID:                    oldConfig.UUID,
-		NoVTXCheck:              oldConfig.NoVTXCheck,
-		DNSProxy:                oldConfig.DNSProxy,
-		HostDNSResolver:         oldConfig.HostDNSResolver,
-		HostOnlyNicType:         oldConfig.HostOnlyNicType,
-		NatNicType:              oldConfig.NatNicType,
-		Nodes: []Node{Node{
-			Name:              oldConfig.KubernetesConfig.NodeName,
-			ControlPlane:      true, //TODO: make sure that this is correct
-			IP:                oldConfig.KubernetesConfig.NodeIP,
-			KubernetesVersion: oldConfig.KubernetesConfig.KubernetesVersion,
-			Port:              oldConfig.KubernetesConfig.NodePort,
-			Worker:            true,
-		}},
-		KubernetesConfig: KubernetesConfig{
-			KubernetesVersion: oldConfig.KubernetesConfig.KubernetesVersion,
-			ClusterName:       oldConfig.Name,
-			APIServerName:     oldConfig.KubernetesConfig.APIServerName,
-			APIServerNames:    oldConfig.KubernetesConfig.APIServerNames,
-			APIServerIPs:      oldConfig.KubernetesConfig.APIServerIPs,
-			DNSDomain:         oldConfig.KubernetesConfig.DNSDomain,
-			ContainerRuntime:  oldConfig.KubernetesConfig.ContainerRuntime,
-			CRISocket:         oldConfig.KubernetesConfig.CRISocket,
-			NetworkPlugin:     oldConfig.KubernetesConfig.NetworkPlugin,
-			FeatureGates:      oldConfig.KubernetesConfig.FeatureGates,
-			ServiceCIDR:       oldConfig.KubernetesConfig.ServiceCIDR,
-			ImageRepository:   oldConfig.KubernetesConfig.ImageRepository,
-			// ExtraOptions:           oldConfig.KubernetesConfig.ExtraOptions,
-			ShouldLoadCachedImages: oldConfig.KubernetesConfig.ShouldLoadCachedImages,
-			EnableDefaultCNI:       oldConfig.KubernetesConfig.EnableDefaultCNI,
-			NodeIP:                 oldConfig.KubernetesConfig.NodeIP,
-			NodePort:               oldConfig.KubernetesConfig.NodePort,
-			NodeName:               oldConfig.KubernetesConfig.NodeName,
-		},
-	}, nil
+	hypervUseExternalSwitch := false
+
+	if oldConfig.HypervVirtualSwitch != "" && oldConfig.HypervVirtualSwitch == "true" {
+		hypervUseExternalSwitch = true
+	}
+	oldConfigBytes, err := json.Marshal(oldConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	var newConfig *ClusterConfig
+
+	json.Unmarshal(oldConfigBytes, newConfig)
+	newConfig.HypervUseExternalSwitch = hypervUseExternalSwitch
+	return newConfig, nil
+
 }
 
-func translateFrom152ToCurrent(oldConfig v162.MachineConfig) (*ClusterConfig, error) {
-	hypervUseExternalSwitch := (oldConfig.HypervVirtualSwitch != "")
+func translateFrom152ToNextVersion(oldConfig v162.MachineConfig) (*ClusterConfig, error) {
 
-	return &ClusterConfig{
-		Name:                    oldConfig.Name,
-		KeepContext:             oldConfig.KeepContext,
-		EmbedCerts:              oldConfig.EmbedCerts,
-		MinikubeISO:             oldConfig.MinikubeISO,
-		Memory:                  oldConfig.Memory,
-		CPUs:                    oldConfig.CPUs,
-		DiskSize:                oldConfig.DiskSize,
-		Driver:                  oldConfig.VMDriver,
-		HyperkitVpnKitSock:      oldConfig.HyperkitVpnKitSock,
-		HyperkitVSockPorts:      oldConfig.HyperkitVSockPorts,
-		DockerEnv:               oldConfig.DockerEnv,
-		InsecureRegistry:        oldConfig.InsecureRegistry,
-		RegistryMirror:          oldConfig.RegistryMirror,
-		HostOnlyCIDR:            oldConfig.HostOnlyCIDR,
-		HypervUseExternalSwitch: hypervUseExternalSwitch,
-		KVMNetwork:              oldConfig.KVMNetwork,
-		KVMQemuURI:              oldConfig.KVMQemuURI,
-		KVMGPU:                  oldConfig.KVMGPU,
-		KVMHidden:               oldConfig.KVMHidden,
-		DockerOpt:               oldConfig.DockerOpt,
-		DisableDriverMounts:     oldConfig.DisableDriverMounts,
-		NFSShare:                oldConfig.NFSShare,
-		NFSSharesRoot:           oldConfig.NFSSharesRoot,
-		UUID:                    oldConfig.UUID,
-		NoVTXCheck:              oldConfig.NoVTXCheck,
-		DNSProxy:                oldConfig.DNSProxy,
-		HostDNSResolver:         oldConfig.HostDNSResolver,
-		HostOnlyNicType:         oldConfig.HostOnlyNicType,
-		NatNicType:              oldConfig.NatNicType,
-		Nodes: []Node{{
-			Name:              oldConfig.KubernetesConfig.NodeName,
-			ControlPlane:      true, //TODO: make sure that this is correct
-			IP:                oldConfig.KubernetesConfig.NodeIP,
-			KubernetesVersion: oldConfig.KubernetesConfig.KubernetesVersion,
-			Port:              oldConfig.KubernetesConfig.NodePort,
-			Worker:            true,
-		}},
-		KubernetesConfig: KubernetesConfig{
-			KubernetesVersion: oldConfig.KubernetesConfig.KubernetesVersion,
-			ClusterName:       oldConfig.Name,
-			APIServerName:     oldConfig.KubernetesConfig.APIServerName,
-			APIServerNames:    oldConfig.KubernetesConfig.APIServerNames,
-			APIServerIPs:      oldConfig.KubernetesConfig.APIServerIPs,
-			DNSDomain:         oldConfig.KubernetesConfig.DNSDomain,
-			ContainerRuntime:  oldConfig.KubernetesConfig.ContainerRuntime,
-			CRISocket:         oldConfig.KubernetesConfig.CRISocket,
-			NetworkPlugin:     oldConfig.KubernetesConfig.NetworkPlugin,
-			FeatureGates:      oldConfig.KubernetesConfig.FeatureGates,
-			ServiceCIDR:       oldConfig.KubernetesConfig.ServiceCIDR,
-			ImageRepository:   oldConfig.KubernetesConfig.ImageRepository,
-			// ExtraOptions:           oldConfig.KubernetesConfig.ExtraOptions,
-			ShouldLoadCachedImages: oldConfig.KubernetesConfig.ShouldLoadCachedImages,
-			EnableDefaultCNI:       oldConfig.KubernetesConfig.EnableDefaultCNI,
-			NodeIP:                 oldConfig.KubernetesConfig.NodeIP,
-			NodePort:               oldConfig.KubernetesConfig.NodePort,
-			NodeName:               oldConfig.KubernetesConfig.NodeName,
-		},
-	}, nil
+	oldConfigBytes, err := json.Marshal(oldConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	var newConfig *ClusterConfig
+
+	json.Unmarshal(oldConfigBytes, newConfig)
+	//TODO: do real translation here, find the difference between the old and the new configs and re-assign the properties
+	return newConfig, nil
+
 }
