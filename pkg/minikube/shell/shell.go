@@ -198,10 +198,11 @@ func Detect() (string, error) {
 	return shell.Detect()
 }
 
-func GetShell(useShell string) (EnvConfig, error) {
-	sh := EnvConfig{Shell: useShell}
+// GetShell detects user's current shell if forceShell was empty as string, if not returns config based on forceShell
+func GetShell(forceShell string) (EnvConfig, error) {
+	sh := EnvConfig{Shell: forceShell}
 	var err error
-	if useShell == "" {
+	if forceShell == "" {
 		sh.Shell, err = Detect()
 	}
 	return sh, err

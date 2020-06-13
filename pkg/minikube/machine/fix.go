@@ -166,14 +166,16 @@ func maybeWarnAboutEvalEnv(drver string, cc *config.ClusterConfig) {
 	if err != nil {
 		exit.WithError("Error detecting shell", err)
 	}
-	co := Running(cc.Name)
+
+	profileName := cc.Name
+	co := Running(profileName)
 
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		out.WarningT(`Please re-eval your docker-env using given snipset`)
 		ec := daemonenv.DockerEnvConfig{
 			EnvConfig: sh,
-			Profile:   cc.Name,
+			Profile:   profileName,
 			Driver:    co.CP.Host.DriverName,
 			HostIP:    co.CP.IP.String(),
 			Port:      constants.DockerDaemonPort,
@@ -187,8 +189,16 @@ func maybeWarnAboutEvalEnv(drver string, cc *config.ClusterConfig) {
 		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		out.WarningT(`Please re-eval your podman-env using given snipset`)
 
+		driver := co.CP.Host.Driver
+		client, err := daemonenv.CreateExternalSSHClient(driver)
+		if err != nil {
+			exit.WithError("Error getting ssh client", err)
+		}
 		ec := daemonenv.PodmanEnvConfig{
 			EnvConfig: sh,
+			Profile:   profileName,
+			Driver:    driver.DriverName(),
+			Client:    client,
 		}
 		if err := daemonenv.PodmanSetScript(ec, os.Stdout); err != nil {
 			out.WarningT("got unexpected error: {{.error}}", out.V{"error": err})

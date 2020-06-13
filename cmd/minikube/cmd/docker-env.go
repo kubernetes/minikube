@@ -87,7 +87,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
-			port, err = oci.ForwardedPort(driverName, cname, port)
+			_, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
 				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
 			}
