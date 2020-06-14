@@ -19,13 +19,10 @@ package v152
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -56,63 +53,6 @@ var (
 
 // MinikubeConfig represents minikube config
 type MinikubeConfig map[string]interface{}
-
-func get(name string, config MinikubeConfig) (string, error) {
-	if val, ok := config[name]; ok {
-		return fmt.Sprintf("%v", val), nil
-	}
-	return "", ErrKeyNotFound
-}
-
-// WriteConfig writes a minikube config to the JSON file
-func WriteConfig(configFile string, m MinikubeConfig) error {
-	f, err := os.Create(configFile)
-	if err != nil {
-		return fmt.Errorf("create %s: %s", configFile, err)
-	}
-	defer f.Close()
-	err = encode(f, m)
-	if err != nil {
-		return fmt.Errorf("encode %s: %s", configFile, err)
-	}
-	return nil
-}
-
-// ReadConfig reads in the JSON minikube config
-func ReadConfig(configFile string) (MinikubeConfig, error) {
-	f, err := os.Open(configFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return make(map[string]interface{}), nil
-		}
-		return nil, fmt.Errorf("open %s: %v", localpath.ConfigFile, err)
-	}
-	defer f.Close()
-
-	m, err := decode(f)
-	if err != nil {
-		return nil, fmt.Errorf("decode %s: %v", localpath.ConfigFile, err)
-	}
-
-	return m, nil
-}
-
-func decode(r io.Reader) (MinikubeConfig, error) {
-	var data MinikubeConfig
-	err := json.NewDecoder(r).Decode(&data)
-	return data, err
-}
-
-func encode(w io.Writer, m MinikubeConfig) error {
-	b, err := json.MarshalIndent(m, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write(b)
-
-	return err
-}
 
 // GetMachineName gets the machine name for the VM
 func GetMachineName() string {

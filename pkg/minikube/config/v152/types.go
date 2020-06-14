@@ -16,9 +16,7 @@ limitations under the License.
 
 package v152
 
-import (
-	"net"
-)
+import "net"
 
 // Profile represents a minikube profile
 type Profile struct {

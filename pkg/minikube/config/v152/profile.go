@@ -24,8 +24,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-var keywords = []string{"start", "stop", "status", "delete", "config", "open", "profile", "addons", "cache", "logs"}
-
 // IsValid checks if the profile has the essential info needed for a profile
 func (p *Profile) IsValid() bool {
 	if p.Config == nil {
