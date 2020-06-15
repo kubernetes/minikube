@@ -116,6 +116,10 @@ var podmanEnvCmd = &cobra.Command{
 			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
 		}
 
+		if len(co.Config.Nodes) > 1 {
+			exit.WithCodeT(exit.BadUsage, `The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
+		}
+
 		if ok := isPodmanAvailable(co.CP.Runner); !ok {
 			exit.WithCodeT(exit.Unavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
