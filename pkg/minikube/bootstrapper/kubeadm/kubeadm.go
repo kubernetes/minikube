@@ -635,7 +635,15 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 		return errors.Wrap(err, "joining cp")
 	}
 
-	// TODO: Remove if we decide to default clusters to CNI
+	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
+		return errors.Wrap(err, "starting kubelet")
+	}
+
+	return nil
+}
+
+// ApplyCNI idempotently applies the appropriate CNI (required for multi-node)
+func (k *Bootstrapper) ApplyCNI(cc config.ClusterConfig) error {
 	c := cni.New(cc)
 	cniAssets, err := c.Assets()
 	if err != nil {
@@ -650,10 +658,6 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 
 	if err := c.Apply(context.Background(), k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
-	}
-
-	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
-		return errors.Wrap(err, "starting kubelet")
 	}
 
 	return nil
@@ -796,9 +800,10 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"))
 	}
 
+	// Install CNI assets before the kubelet starts to avoid later restarts
 	cniAssets, err := cni.New(cfg).Assets()
 	if err != nil {
-		return errors.Wrap(err, "cni assett")
+		return errors.Wrap(err, "cni assets")
 	}
 	if len(cniAssets) > 0 {
 		files = append(files, cniAssets...)

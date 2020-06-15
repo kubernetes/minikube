@@ -176,6 +176,11 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
+
+		// NOTE: This will be unnecessary if minikube defaults to CNI for all scenarios
+		if err = cpBs.ApplyCNI(*starter.Cfg); err != nil {
+			return nil, errors.Wrap(err, "applying CNI")
+		}
 	}
 
 	wg.Wait()
