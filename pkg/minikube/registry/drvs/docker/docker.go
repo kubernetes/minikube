@@ -112,7 +112,7 @@ func status() registry.State {
 		}
 
 		if strings.Contains(output, "/pipe/docker_engine: The system cannot find the file specified.") && runtime.GOOS == "windows" {
-			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Reset Docker to factory defaults:  under Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
+			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Reset Docker to factory settings:  under Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
 		}
 
 		if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") || strings.Contains(output, "docker daemon is not running") {
