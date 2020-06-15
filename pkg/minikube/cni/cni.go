@@ -31,6 +31,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
+const (
+	// defaultPodCIDR is the default CIDR to use in minikube CNI's.
+	defaultPodCIDR = "10.244.0.0/16"
+)
+
 // Runner is the subset of command.Runner this package consumes
 type Runner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
@@ -66,6 +71,8 @@ func New(cc config.ClusterConfig) Manager {
 		return KindNet{cc: cc}
 	case "custom":
 		return Custom{}
+	case "calico":
+		return Calico{cc: cc}
 	case "flannel":
 		return Flannel{cc: cc}
 	default:

@@ -163,5 +163,5 @@ func (k KindNet) Apply(ctx context.Context, r Runner) error {
 
 // CIDR returns the default CIDR used by this CNI
 func (k KindNet) CIDR() string {
-	return "10.244.0.0/16"
+	return defaultPodCIDR
 }
