@@ -166,24 +166,24 @@ There is one final step that must be done in order to obtain connectivity from t
 We need to patch our nginx controller so that it is listening on port 6379 and can route traffic to your service. To do
 this we need to create a patch file.
 
-`nginx-ingress-controller-patch.yaml`
+`ingress-nginx-controller-patch.yaml`
 ```yaml
 spec:
   template:
     spec:
       containers:
-      - name: nginx-ingress-controller
+      - name: ingress-nginx-controller
         ports:
          - containerPort: 6379
            hostPort: 6379
 ```
 
-Create a file called `nginx-ingress-controller-patch.yaml` and paste the contents above.
+Create a file called `ingress-nginx-controller-patch.yaml` and paste the contents above.
 
 Next apply the changes with the following command:
 
 ```shell
-kubectl patch deployment nginx-ingress-controller --patch "$(cat nginx-ingress-controller-patch.yaml)" -n kube-system
+kubectl patch deployment ingress-nginx-controller --patch "$(cat ingress-nginx-controller-patch.yaml)" -n kube-system
 ```
 
 ### Test your connection
@@ -212,7 +212,7 @@ In the above example we did the following:
 
 - Created a redis deployment and service in the `default` namespace
 - Patched the `tcp-services` configmap in the `kube-system` namespace
-- Patched the `nginx-ingress-controller` deployment in the `kube-system` namespace
+- Patched the `ingress-nginx-controller` deployment in the `kube-system` namespace
 - Connected to our service from the host via port 6379
 
 You can apply the same steps that were applied to `tcp-services` to the `udp-services` configmap as well if you have a 
