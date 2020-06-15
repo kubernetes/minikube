@@ -88,7 +88,9 @@ type KubernetesConfig struct {
 	ExtraOptions        ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
-	CNI                    string
+
+	EnableDefaultCNI bool   // deprecated in preference to CNI
+	CNI              string // CNI to use
 
 	// We need to keep these in the short term for backwards compatibility
 	NodeIP   string

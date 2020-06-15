@@ -177,7 +177,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
 
-		// NOTE: This will be unnecessary if minikube defaults to CNI for all scenarios
+		// This may upgrade a non-CNI cluster to CNI. It will be unnecessary if minikube defaults to CNI for all.
 		if err = cpBs.ApplyCNI(*starter.Cfg); err != nil {
 			return nil, errors.Wrap(err, "applying CNI")
 		}

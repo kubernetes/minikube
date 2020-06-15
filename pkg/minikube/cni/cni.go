@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -63,9 +64,15 @@ func New(cc config.ClusterConfig) Manager {
 	glog.Infof("Creating CNI manager for %q", cc.KubernetesConfig.CNI)
 
 	switch cc.KubernetesConfig.CNI {
-	case "", "true":
+	case "", "true", "auto":
 		return chooseDefault(cc)
 	case "false":
+		if driver.IsKIC(cc.Driver) && cc.KubernetesConfig.ContainerRuntime != "docker" {
+			glog.Errorf("CNI is recommended for %q driver and %q runtime - expect networking issues", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		}
+		if len(cc.Nodes) > 1 {
+			glog.Errorf("CNI is recommended for multi-node clusters - expect networking issues")
+		}
 		return Noop{}
 	case "kindnet":
 		return KindNet{cc: cc}
@@ -82,14 +89,23 @@ func New(cc config.ClusterConfig) Manager {
 }
 
 func chooseDefault(cc config.ClusterConfig) Manager {
-	if cc.Driver == "Docker" {
+	// For backwards compatibility with older profiles using --enable-default-cni
+	if cc.KubernetesConfig.EnableDefaultCNI {
+		glog.Infof("EnableDefaultCNI is true, recommending custom")
+		return Custom{}
+	}
+
+	if driver.IsKIC(cc.Driver) {
 		glog.Infof("%q driver found, recommending kindnet", cc.Driver)
 		return KindNet{cc: cc}
 	}
+
 	if len(cc.Nodes) > 1 {
 		glog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
 		return KindNet{cc: cc}
 	}
+
+	glog.Infof("CNI unnecessary in this configuration, recommending Noop")
 	return Noop{}
 }
 
@@ -111,16 +127,13 @@ func kubectlPath(cc config.ClusterConfig) string {
 // apply applies a CNI manifest
 func apply(ctx context.Context, r Runner, cc config.ClusterConfig) error {
 	if cc.KubernetesConfig.KubernetesVersion == "" {
-		return fmt.Errorf("KubernetesVersion is unknown, empty configuration?")
+		return errors.New("KubernetesVersion empty")
 	}
 
 	kubectl := kubectlPath(cc)
 	glog.Infof("applying CNI manifest using %s ...", kubectl)
 
-	cmd := exec.CommandContext(ctx, "sudo", kubectl, "apply",
-		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-		"-f", manifestPath())
-
+	cmd := exec.CommandContext(ctx, "sudo", kubectl, "apply", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), "-f", manifestPath())
 	if rr, err := r.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}

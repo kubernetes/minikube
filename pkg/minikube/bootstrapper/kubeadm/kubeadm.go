@@ -652,7 +652,7 @@ func (k *Bootstrapper) ApplyCNI(cc config.ClusterConfig) error {
 
 	if len(cniAssets) > 0 {
 		if err := copyFiles(k.c, cniAssets); err != nil {
-			return errors.Wrap(err, "copy CNI files")
+			return errors.Wrap(err, "copy files")
 		}
 	}
 

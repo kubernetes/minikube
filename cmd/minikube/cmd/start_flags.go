@@ -134,7 +134,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "Kubelet network plug-in to use (default: auto)")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=custom")
-	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use (default: auto)")
+	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use. Valid options: auto, calico, custom, flannel, kindnet (default: auto)")
 	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
@@ -263,6 +263,13 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 		}
 
+		// Backwards compatibility with --enable-default-cni
+		chosenCNI := viper.GetString(cniFlag)
+		if viper.GetBool(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
+			glog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=custom")
+			chosenCNI = "custom"
+		}
+
 		cc = config.ClusterConfig{
 			Name:                    ClusterFlagValue(),
 			KeepContext:             viper.GetBool(keepContext),
@@ -311,7 +318,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 				ImageRepository:        repository,
 				ExtraOptions:           config.ExtraOptions,
 				ShouldLoadCachedImages: viper.GetBool(cacheImages),
-				CNI:                    viper.GetString(cniFlag),
+				CNI:                    chosenCNI,
 				NodePort:               viper.GetInt(apiServerPort),
 			},
 		}
@@ -532,11 +539,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 	}
 
-	if cmd.Flags().Changed(enableDefaultCNI) {
+	if cmd.Flags().Changed(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
 		if viper.GetBool(enableDefaultCNI) {
+			glog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=custom")
 			cc.KubernetesConfig.CNI = "custom"
 		}
-		glog.Warningf("Found deprecated flag: --enable-default-cni. Setting CNI To custom")
 	}
 
 	if cmd.Flags().Changed(cniFlag) {
