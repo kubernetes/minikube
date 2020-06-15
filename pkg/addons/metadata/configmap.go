@@ -10,20 +10,24 @@ var metadataCorefileConfigmap = `apiVersion: v1
 data:
   Corefile: |
     .:53 {
-        errors
-        health
-        kubernetes cluster.local in-addr.arpa ip6.arpa {
-           pods insecure
-           upstream
-           fallthrough in-addr.arpa ip6.arpa
-        }
-        rewrite name metadata.google.internal metadata.metadata.svc.cluster.local
-        prometheus :9153
-        proxy . /etc/resolv.conf
-        cache 30
-        loop
-        reload
-        loadbalance
+      log
+      errors
+      health {
+         lameduck 5s
+      }
+      ready
+      kubernetes cluster.local in-addr.arpa ip6.arpa {
+         pods insecure
+         fallthrough in-addr.arpa ip6.arpa
+         ttl 30
+      }
+      rewrite name metadata.google.internal metadata.metadata.svc.cluster.local
+      prometheus :9153
+      forward . /etc/resolv.conf
+      cache 30
+      loop
+      reload
+      loadbalance
     }
 kind: ConfigMap
 metadata:
@@ -35,19 +39,22 @@ var originalCorefileConfigmap = `apiVersion: v1
 data:
   Corefile: |
     .:53 {
-        errors
-        health
-        kubernetes cluster.local in-addr.arpa ip6.arpa {
-           pods insecure
-           upstream
-           fallthrough in-addr.arpa ip6.arpa
-        }
-        prometheus :9153
-        proxy . /etc/resolv.conf
-        cache 30
-        loop
-        reload
-        loadbalance
+      errors
+      health {
+         lameduck 5s
+      }
+      ready
+      kubernetes cluster.local in-addr.arpa ip6.arpa {
+         pods insecure
+         fallthrough in-addr.arpa ip6.arpa
+         ttl 30
+      }
+      prometheus :9153
+      forward . /etc/resolv.conf
+      cache 30
+      loop
+      reload
+      loadbalance
     }
 kind: ConfigMap
 metadata:

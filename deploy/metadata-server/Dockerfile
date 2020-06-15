@@ -13,5 +13,5 @@
 # limitations under the License.
 
 FROM scratch
-COPY out/metadata-server metadata-server
+COPY metadata-server /metadata-server
 CMD ["/metadata-server"]

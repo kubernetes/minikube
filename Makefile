@@ -679,7 +679,7 @@ out/metadata-server:
 
 .PHONY: metadata-server-image
 metadata-server-image: out/metadata-server ## Build metadata-server docker image
-	docker build -t $(REGISTRY)/metadata-server -f deploy/metadata-server/Dockerfile  .
+	docker build -t $(REGISTRY)/metadata-server:snapshot -f deploy/metadata-server/Dockerfile ./out
 
 
 .PHONY: push-metadata-server-image
