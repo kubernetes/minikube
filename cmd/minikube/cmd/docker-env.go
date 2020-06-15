@@ -141,6 +141,10 @@ var dockerEnvCmd = &cobra.Command{
 			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 		}
 
+		if len(co.Config.Nodes) > 1 {
+			exit.WithCodeT(exit.BadUsage, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
+		}
+
 		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
 			exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
