@@ -360,14 +360,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*h
 		}
 	}
 
-	// don't try to re-create if container type is windows.
-	if errors.Is(err, oci.ErrWindowsContainers) {
-		glog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
-		return host, exists, err
-	}
-
-	// don't try to re-create if cpu count is not enough
-	if errors.Is(err, oci.ErrCPUCountLimit) {
+	if _, ff := err.(oci.FailFastError); ff {
 		glog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
 		return host, exists, err
 	}

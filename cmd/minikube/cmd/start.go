@@ -1039,7 +1039,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 func maybeExitWithAdvice(err error) {
 	if errors.Is(err, oci.ErrWindowsContainers) {
 		out.ErrLn("")
-		out.ErrT(out.Conflict, "Your Docker Desktop container os type is Windows but Linux is required.")
+		out.ErrT(out.Conflict, "Your Docker Desktop container OS type is Windows but Linux is required.")
 		out.T(out.Warning, "Please change Docker settings to use Linux containers instead of Windows containers.")
 		out.T(out.Documentation, "https://minikube.sigs.k8s.io/docs/drivers/docker/#verify-docker-container-type-is-linux")
 		exit.UsageT(`You can verify your Docker container type by running:
@@ -1049,15 +1049,20 @@ func maybeExitWithAdvice(err error) {
 
 	if errors.Is(err, oci.ErrCPUCountLimit) {
 		out.ErrLn("")
-		out.ErrT(out.Conflict, "Your {{.name}} doesn't have enough CPUs. ", out.V{"name": viper.GetString("driver")})
+		out.ErrT(out.Conflict, "{{.name}} doesn't have enough CPUs. ", out.V{"name": viper.GetString("driver")})
 		if runtime.GOOS != "linux" && viper.GetString("driver") == "docker" {
 			out.T(out.Warning, "Please consider changing your Docker desktop's resources.")
 			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
 		} else {
-			out.T(out.Warning, "Please ensure your system has at least {{.cpu_counts}} CPU cores", out.V{"cpu_counts": viper.GetInt(cpus)})
+			cpuCount := viper.GetInt(cpus)
+			if cpuCount == 2 {
+				out.T(out.Tip, "Please ensure your system has {{.cpu_counts}} CPU cores.", out.V{"cpu_counts": viper.GetInt(cpus)})
+			} else {
+				out.T(out.Tip, "Please ensure your {{.driver_name}} system has access to {{.cpu_counts}} CPU cores or reduce the number of the specified CPUs", out.V{"driver_name": viper.GetString("driver"), "cpu_counts": viper.GetInt(cpus)})
+			}
 		}
 
-		exit.UsageT("Esnure your system has enough CPUs")
+		exit.UsageT("Ensure your system has enough CPUs")
 	}
 
 }
