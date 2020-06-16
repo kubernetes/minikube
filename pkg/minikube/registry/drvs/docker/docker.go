@@ -101,6 +101,7 @@ func status() registry.State {
 
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {
+		glog.Warningf("%q timed out. ", strings.Join(cmd.Args, " "))
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
 	}
 
