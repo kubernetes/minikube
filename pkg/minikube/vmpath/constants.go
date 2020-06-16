@@ -24,7 +24,7 @@ const (
 	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
 	GuestEphemeralDir = "/var/tmp/minikube"
 	// GuestPersistentDir is the path where persistent data should be stored within the VM (not tmpfs)
-	GuestPersistentDir = "/var/lib/minikube"
+	GuestPersistentDir = "/tmp/var/lib/minikube"
 	// GuestKubernetesCertsDir are where Kubernetes certificates are stored
 	GuestKubernetesCertsDir = GuestPersistentDir + "/certs"
 	// GuestCertAuthDir is where system CA certificates are installed to

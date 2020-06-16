@@ -149,7 +149,7 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 	}
 	if p.OCIBinary == Docker {
-		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/tmp/var", p.Name))
 	}
 
 	runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
