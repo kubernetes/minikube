@@ -366,6 +366,12 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*h
 		return host, exists, err
 	}
 
+	// don't try to re-create if cpu count is not enough
+	if errors.Is(err, oci.ErrCPUCountLimit) {
+		glog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
+		return host, exists, err
+	}
+
 	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
 	// Try again, but just once to avoid making the logs overly confusing
 	time.Sleep(5 * time.Second)
