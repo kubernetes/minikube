@@ -113,7 +113,7 @@ func status() registry.State {
 	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
 }
 
-//suggestFix matches a stderr withy possible fix for the docker daemon
+//suggestFix matches a stderr with possible fix for the docker driver
 func suggestFix(stderr string, err error) registry.State {
 	if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
@@ -123,7 +123,7 @@ func suggestFix(stderr string, err error) registry.State {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Reset Docker to factory settings:  under Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
 	}
 
-	if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") || strings.Contains(output, "docker daemon is not running") {
+	if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") || strings.Contains(stderr, "docker daemon is not running") {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
 	}
 	// We don't have good advice, but at least we can provide a good error message
