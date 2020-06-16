@@ -18,8 +18,11 @@ package oci
 
 import "errors"
 
+// FailFastError type is an error that could not be solved by trying again
+type FailFastError error
+
 // ErrWindowsContainers is thrown when docker been configured to run windows containers instead of Linux
-var ErrWindowsContainers = errors.New("docker container type is windows")
+var ErrWindowsContainers = FailFastError(errors.New("docker container type is windows"))
 
 // ErrCPUCountLimit is thrown when docker daemon doesn't have enough CPUs for the requested container
-var ErrCPUCountLimit = errors.New("not enough CPUs is available for container")
+var ErrCPUCountLimit = FailFastError(errors.New("not enough CPUs is available for container"))
