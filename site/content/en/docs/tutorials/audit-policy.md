@@ -9,8 +9,8 @@ description: >
 
 ## Overview
 
-[Auditing](https://kubernetes.io/docs/Handbook/debug-application-cluster/audit/) is not enabled in minikube by default.
-This tutorial shows how to provide an [Audit Policy](https://kubernetes.io/docs/Handbook/debug-application-cluster/audit/#audit-policy) file to the minikube API server on startup.
+[Auditing](https://kubernetes.io/docs/tasks/debug-application-cluster/audit/) is not enabled in minikube by default.
+This tutorial shows how to provide an [Audit Policy](https://kubernetes.io/docs/tasks/debug-application-cluster/audit/#audit-policy) file to the minikube API server on startup.
 
 ## Tutorial
 
