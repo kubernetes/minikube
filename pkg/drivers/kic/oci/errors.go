@@ -20,3 +20,6 @@ import "errors"
 
 // ErrWindowsContainers is thrown when docker been configured to run windows containers instead of Linux
 var ErrWindowsContainers = errors.New("docker container type is windows")
+
+// ErrCPUCountLimit is thrown when docker daemon doesn't have enough CPUs for the requested container
+var ErrCPUCountLimit = errors.New("not enough CPUs is available for container")
