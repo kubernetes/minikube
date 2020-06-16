@@ -1062,7 +1062,7 @@ func maybeExitWithAdvice(err error) {
 			}
 		}
 
-		exit.UsageT("Ensure your system has enough CPUs")
+		exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
 	}
 
 }
