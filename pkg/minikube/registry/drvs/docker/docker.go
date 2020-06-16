@@ -34,6 +34,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
+var docURL = "https://minikube.sigs.k8s.io/docs/drivers/docker/"
+
 func init() {
 	priority := registry.Default
 	// Staged rollout for preferred:
@@ -70,7 +72,6 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	docURL := "https://minikube.sigs.k8s.io/docs/drivers/docker/"
 	if runtime.GOARCH != "amd64" {
 		return registry.State{Error: fmt.Errorf("docker driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
 	}
@@ -100,24 +101,32 @@ func status() registry.State {
 
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {
+		glog.Warningf("%q timed out. ", strings.Join(cmd.Args, " "))
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
 	}
 
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		stderr := strings.TrimSpace(string(exitErr.Stderr))
 		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
-
-		if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
-			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
-		}
-
-		if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") {
-			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
-		}
-
-		// We don't have good advice, but at least we can provide a good error message
-		return registry.State{Error: newErr, Installed: true, Healthy: false, Doc: docURL}
+		return suggestFix(stderr, newErr)
 	}
 
+	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
+}
+
+//suggestFix matches a stderr with possible fix for the docker driver
+func suggestFix(stderr string, err error) registry.State {
+	if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
+	}
+
+	if strings.Contains(stderr, "/pipe/docker_engine: The system cannot find the file specified.") && runtime.GOOS == "windows" {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Reset Docker to factory settings:  under Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
+	}
+
+	if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") || strings.Contains(stderr, "docker daemon is not running") {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
+	}
+	// We don't have good advice, but at least we can provide a good error message
 	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
 }
