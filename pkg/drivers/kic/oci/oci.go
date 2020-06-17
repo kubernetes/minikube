@@ -218,7 +218,8 @@ func CreateContainerNode(p CreateParams) error {
 
 	// retry up to up 13 seconds to make sure the created container status is running.
 	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*13); err != nil {
-		return errors.Wrapf(ErrNotRunningAfterCreate, "container name %q", p.Name)
+		printPostPortem(p.OCIBinary, p.Name)
+		return errors.Wrapf(ErrExitedAfterCreate, "container name %q", p.Name)
 	}
 
 	return nil
@@ -570,4 +571,40 @@ func ShutDown(ociBin string, name string) error {
 	}
 	glog.Infof("Successfully shutdown container %s", name)
 	return nil
+}
+
+//containerLogs will print out the logs for a container
+func containerLogs(ociBin string, name string) (*RunResult, error) {
+	if ociBin == Docker {
+		return runCmd(exec.Command(ociBin, "logs", "--timestamps", "--details", name))
+	}
+	// podman doesn't have --details
+	return runCmd(exec.Command(ociBin, "logs", "--timestamps", name))
+}
+
+//printPostPortem will print revelant docker/podman infos after a container fails
+func printPostPortem(ociBin string, name string) {
+	rr, err := containerLogs(ociBin, name)
+	glog.Warningf("The created container %s failed to be running", name)
+	if err != nil {
+		glog.Warningf("failed to get container logs for the :%v", name, err)
+	} else {
+		glog.Warningf("%s logs for container %q: %s", name, name, rr.Output())
+	}
+	if ociBin == Docker {
+		di, err := dockerSystemInfo()
+		if err != nil {
+			glog.Warningf("couldn't get postmortem info, failed to to run docker info: %v", err)
+		} else {
+			glog.Warningf("postmortem docker info: %+v", di)
+		}
+	} else {
+		pi, err := podmanSystemInfo()
+		if err != nil {
+			glog.Warningf("couldn't get postmortem info, failed to to run podman info: %v", err)
+		} else {
+			glog.Warningf("postmortem podman info: %+v", pi)
+		}
+	}
+
 }
