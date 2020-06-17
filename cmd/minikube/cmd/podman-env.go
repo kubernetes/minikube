@@ -108,6 +108,17 @@ var podmanEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Podman service",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		sh := shell.EnvConfig{
+			Shell: shell.ForceShell,
+		}
+
+		if podmanUnset {
+			if err := podmanUnsetScript(PodmanEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
+				exit.WithError("Error generating unset output", err)
+			}
+			return
+		}
+
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
 		driverName := co.CP.Host.DriverName
@@ -125,9 +136,6 @@ var podmanEnvCmd = &cobra.Command{
 			exit.WithError("Error getting ssh client", err)
 		}
 
-		sh := shell.EnvConfig{
-			Shell: shell.ForceShell,
-		}
 		ec := PodmanEnvConfig{
 			EnvConfig: sh,
 			profile:   cname,
@@ -140,13 +148,6 @@ var podmanEnvCmd = &cobra.Command{
 			if err != nil {
 				exit.WithError("Error detecting shell", err)
 			}
-		}
-
-		if podmanUnset {
-			if err := podmanUnsetScript(ec, os.Stdout); err != nil {
-				exit.WithError("Error generating unset output", err)
-			}
-			return
 		}
 
 		if err := podmanSetScript(ec, os.Stdout); err != nil {
