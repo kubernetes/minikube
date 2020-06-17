@@ -331,7 +331,7 @@ func (d *Driver) Start() error {
 			return errors.Wrapf(oci.ErrDaemonInfo, "container name %q", d.MachineName)
 		}
 
-		return err
+		return errors.Wrapf(oci.ErrExitedAfterCreate, "container name %q", d.MachineName)
 	}
 	return nil
 }
