@@ -11,7 +11,7 @@ aliases:
 This driver is experimental and in active development. Help wanted!
 {{% /pageinfo %}}
 
-The podman driver is another kubernetes in container driver for minikube. similar to [docker](https://minikube.sigs.k8s.io/Drivers/docker/) driver. The podman driver is  experimental, and only supported on Linux and macOS (with a remote podman server).
+The podman driver is another kubernetes in container driver for minikube. similar to [docker](https://minikube.sigs.k8s.io/docs/drivers/docker/) driver. The podman driver is  experimental, and only supported on Linux and macOS (with a remote podman server).
 
 ## Requirements
 
