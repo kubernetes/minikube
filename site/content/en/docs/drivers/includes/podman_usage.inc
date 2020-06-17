@@ -1,7 +1,7 @@
 ## experimental
 
 This is an experimental driver. please use it only for experimental reasons.
-for a better kubernetes in container experience, use docker [driver](https://minikube.sigs.k8s.io/docs/drivers/docker/).
+for a better kubernetes in container experience, use docker [driver]({{< ref "/docs/drivers/docker/" >}})
 
 ## Install Podman
 
