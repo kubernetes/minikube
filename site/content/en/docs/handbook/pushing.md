@@ -20,7 +20,7 @@ Here is a comparison table to help you choose:
 |---	|---	|---	|---	|---	|
 |  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env)	|   only docker	|  good 	|
 |  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env)	|   only cri-o |  good 	|
-|  [cache add command]({{< ref "/docs/commands/cache/#minikube-cache-add" >}}) 	|  all 	|  ok 	|
+|  [cache add command]({{< ref /docs/commands/cache/#minikube-cache-add >}}) 	|  all 	|  ok 	|
 |  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok 	|
 |  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all	| best 	|
 
