@@ -251,7 +251,11 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
 
-	if _, err := runCmd(exec.Command(ociBin, args...)); err != nil {
+	if rr, err := runCmd(exec.Command(ociBin, args...)); err != nil {
+		// full error: docker: Error response from daemon: Range of CPUs is from 0.01 to 8.00, as there are only 8 CPUs available.
+		if strings.Contains(rr.Output(), "Range of CPUs is from") && strings.Contains(rr.Output(), "CPUs available") { // CPUs available
+			return ErrCPUCountLimit
+		}
 		return err
 	}
 
