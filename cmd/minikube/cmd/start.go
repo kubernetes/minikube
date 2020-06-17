@@ -156,6 +156,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
 		maybeExitWithAdvice(err)
+		maybeAdviceNoExit(err)
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
 			exit.WithError("error provisioning host", err)
@@ -1066,3 +1067,35 @@ func maybeExitWithAdvice(err error) {
 	}
 
 }
+
+// maybeAdviceNoExit will provide advice without exiting, so minikube has a chance to try the failover
+func maybeAdviceNoExit(err error) {
+	driver = viper.GetString("driver")
+	if errors.Is(err, oci.ErrExitedAfterCreate) {
+		out.ErrLn("")
+		out.ErrT(out.Conflict, "Unfortunately Container exited after it was created, This could be due to not enough resourced available to {{.driver_name}}", out.V{"driver_name": viper.GetString("driver")})
+		out.T(out.Tip, "If you are still interested to make {{.driver_name} work. The following suggestions might help you get passed this issue:")
+		out.T(out.Empty, "- Prune unused {{.driver_name}} images, volumes and abandoned containers.",out.V{"driver_name": driver})
+		out.T(out.Empty, "- Restart your {{.driver_name}} service",out.V{"driver_name": driver})
+		if runtime.GOOS != "linux" {
+			out.T(out.Empty, "- ensure your {{.driver_name}} daemon has access to enough CPU/memory resources. ",out.V{"driver_name": driver})
+			if runtime.GOOS == "darwin" && driver == oci.Docker{
+				out.T(out.Documentation, "https://docs.docker.com/docker-for-mac/#resources")				
+			}
+			if runtime.GOOS == "windows" && driver == oci.Docker{
+				out.T(out.Documentation, "https://docs.docker.com/docker-for-windows/#resources")				
+			}
+		}
+		out.T(out.Empty, `- Delete and recreate minikube cluster
+				minikube delete
+				minikube start --driver={{.driver_name}}
+		`,out.V{"driver_name": driver})
+		out.T(out.Empty, `- If the above suggestion is not helpful, you want want to consider using --force-systemd flag:
+		minikube delete
+		minikube start --force-systemd
+		`,out.V{"driver_name": driver})
+
+
+
+}
+maybeAdviceNoExit(err)
