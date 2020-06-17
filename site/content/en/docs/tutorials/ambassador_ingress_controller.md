@@ -23,7 +23,7 @@ configured via both, [Ingress](https://kubernetes.io/docs/concepts/services-netw
 ### Installing Ambassador
 
 Ambassador is available as a Minikube
-[addon]({{< ref /docs/commands/addons/ >}}) Install it by running -
+[addon]({{< ref "/docs/commands/addons" >}}) Install it by running -
 
 ```shell script
 minikube addons enable ambassador
