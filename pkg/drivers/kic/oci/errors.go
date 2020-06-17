@@ -27,5 +27,5 @@ var ErrWindowsContainers = FailFastError(errors.New("docker container type is wi
 // ErrCPUCountLimit is thrown when docker daemon doesn't have enough CPUs for the requested container
 var ErrCPUCountLimit = FailFastError(errors.New("not enough CPUs is available for container"))
 
-// ErrNotRunningAfterCreate is thrown when container is created without error but it exists and it's status is not running
-var ErrNotRunningAfterCreate = errors.New("container status is not running after creation")
+// ErrExitedAfterCreate is thrown when container is created without error but it exists and it's status is not running.
+var ErrExitedAfterCreate = errors.New("container status is not running after creation")
