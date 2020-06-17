@@ -65,12 +65,11 @@ func TestErrorSpam(t *testing.T) {
 
 	for _, line := range strings.Split(stderr, "\n") {
 		if strings.HasPrefix(line, "E") {
+			if stderrAllowRe.MatchString(line) {
+				t.Logf("acceptable stderr: %q", line)
+				continue
+			}
 			t.Errorf("unexpected error log: %q", line)
-			continue
-		}
-
-		if stderrAllowRe.MatchString(line) {
-			t.Logf("acceptable stderr: %q", line)
 			continue
 		}
 
