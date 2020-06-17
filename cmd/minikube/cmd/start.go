@@ -1051,7 +1051,7 @@ func maybeExitWithAdvice(err error) {
 		out.ErrLn("")
 		out.ErrT(out.Conflict, "{{.name}} doesn't have enough CPUs. ", out.V{"name": viper.GetString("driver")})
 		if runtime.GOOS != "linux" && viper.GetString("driver") == "docker" {
-			out.T(out.Warning, "Please consider changing your Docker desktop's resources.")
+			out.T(out.Warning, "Please consider changing your Docker Desktop's resources.")
 			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
 		} else {
 			cpuCount := viper.GetInt(cpus)
