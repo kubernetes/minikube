@@ -29,3 +29,6 @@ var ErrCPUCountLimit = FailFastError(errors.New("not enough CPUs is available fo
 
 // ErrExitedAfterCreate is thrown when container is created without error but it exists and it's status is not running.
 var ErrExitedAfterCreate = errors.New("container status is not running after creation")
+
+// ErrDaemonInfo is thrown when docker/podman info is not failing or not responding
+var ErrDaemonInfo = errors.New("daemon info not responding")
