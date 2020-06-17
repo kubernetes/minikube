@@ -18,7 +18,7 @@ is only configured to listen on ports 80 and 443. TCP and UDP services listening
 
 - Latest minikube binary and ISO
 - Telnet command line tool
-- [Kubectl](https://kubernetes.io/docs/Handbook/tools/install-kubectl) command line tool
+- [Kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) command line tool
 - A text editor
 
 ## Configuring TCP and UDP services with the nginx ingress controller
@@ -228,6 +228,6 @@ for the latest info on these potential changes.
 
 ## Related articles
 
-- [Routing traffic multiple services on ports 80 and 443 in minikube with the Kubernetes Ingress resource](https://kubernetes.io/docs/Handbook/access-application-cluster/ingress-minikube/)
-- [Use port forwarding to access applications in a cluster](https://kubernetes.io/docs/Handbook/access-application-cluster/port-forward-access-application-cluster/)
+- [Routing traffic multiple services on ports 80 and 443 in minikube with the Kubernetes Ingress resource](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
+- [Use port forwarding to access applications in a cluster](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/)
 
