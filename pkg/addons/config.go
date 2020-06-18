@@ -150,7 +150,7 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
-		name:      "podsecuritypolicies",
+		name:      "pod-security-policy",
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableAddon},
 	},
