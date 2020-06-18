@@ -305,10 +305,10 @@ func (d *Driver) Restart() error {
 // Start an already created kic container
 func (d *Driver) Start() error {
 	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
-		oci.PrintPostPortem(d.OCIBinary, d.MachineName)
+		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
 		_, err := oci.DaemonInfo(d.OCIBinary)
 		if err != nil {
-			return errors.Wrapf(oci.ErrDaemonInfo, "container name %q", d.MachineName)
+			return errors.Wrapf(oci.ErrDaemonInfo, "debug daemon info %q", d.MachineName)
 		}
 		return errors.Wrap(err, "start")
 	}
@@ -325,13 +325,13 @@ func (d *Driver) Start() error {
 	}
 
 	if err := retry.Expo(checkRunning, 500*time.Microsecond, time.Second*30); err != nil {
-		oci.PrintPostPortem(d.OCIBinary, d.MachineName)
+		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
 		_, err := oci.DaemonInfo(d.OCIBinary)
 		if err != nil {
 			return errors.Wrapf(oci.ErrDaemonInfo, "container name %q", d.MachineName)
 		}
 
-		return errors.Wrapf(oci.ErrExitedAfterCreate, "container name %q", d.MachineName)
+		return errors.Wrapf(oci.ErrExitedUnexpectedly, "container name %q", d.MachineName)
 	}
 	return nil
 }
