@@ -156,6 +156,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
 		maybeExitWithAdvice(err)
+		machine.MaybeDisplayAdvice(err, viper.GetString("driver"))
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
 			exit.WithError("error provisioning host", err)
