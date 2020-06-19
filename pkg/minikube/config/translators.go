@@ -7,13 +7,13 @@ import (
 	v162 "k8s.io/minikube/pkg/minikube/config/v162"
 )
 
-func tryTranslate(vcontran []VersionConfigTranslator, name string, miniHome ...string) (interface{}, error) {
+func tryTranslate(vcontran []versionConfigTranslator, name string, miniHome ...string) (interface{}, error) {
 
 	// Get the previous version translator
 	previousVersion := vcontran[0]
 	previousVersionConfig, err := previousVersion.TryLoadFromFile(name, miniHome...)
 	// if the translator couldn't load the config from the file, then it's probably even an older version, so let's recurse again deeper
-	if (err != nil || !previousVersion.IsValid(previousVersionConfig)) && len(vcontran) > 1 {
+	if (err != nil) && len(vcontran) > 1 {
 		var err error
 		previousVersionConfig, err = tryTranslate(vcontran[1:], name, miniHome...)
 		if err != nil {
@@ -26,7 +26,7 @@ func tryTranslate(vcontran []VersionConfigTranslator, name string, miniHome ...s
 	return translatedConfig, err
 }
 
-var versionConfigTranslators = []VersionConfigTranslator{
+var versionConfigTranslators = []versionConfigTranslator{
 	{
 		TryLoadFromFile: func(name string, miniHome ...string) (interface{}, error) {
 			return v162.DefaultLoader.LoadConfigFromFile(name, miniHome...)
@@ -40,15 +40,14 @@ var versionConfigTranslators = []VersionConfigTranslator{
 			return v152.DefaultLoader.LoadConfigFromFile(name, miniHome...)
 		},
 		TranslateToNextVersion: func(config interface{}) (interface{}, error) {
-			return translateFrom152ToNextVersion(config.(v162.MachineConfig))
+			return translateFrom152ToNextVersion(config.(v152.MachineConfig))
 		},
 	},
 }
 
-type VersionConfigTranslator struct {
+type versionConfigTranslator struct {
 	TryLoadFromFile        tryLoadFromFile
 	TranslateToNextVersion translateToNextVersion
-	IsValid                isValid
 }
 type translateToNextVersion func(interface{}) (interface{}, error)
 type tryLoadFromFile func(name string, miniHome ...string) (interface{}, error)
@@ -78,7 +77,7 @@ func translateFrom163ToNextVersion(oldConfig v162.MachineConfig) (*ClusterConfig
 
 }
 
-func translateFrom152ToNextVersion(oldConfig v162.MachineConfig) (*ClusterConfig, error) {
+func translateFrom152ToNextVersion(oldConfig v152.MachineConfig) (*ClusterConfig, error) {
 
 	oldConfigBytes, err := json.Marshal(oldConfig)
 	if err != nil {
