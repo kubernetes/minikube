@@ -79,7 +79,10 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
-clientCAFile: {{.ClientCAFile}}
+authentication:
+  x509:
+    clientCAFile: {{.ClientCAFile}}
+cgroupDriver: {{.CgroupDriver}}
 clusterDomain: "cluster.local"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
