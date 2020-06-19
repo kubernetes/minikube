@@ -17,10 +17,12 @@ limitations under the License.
 package bsutil
 
 import (
+	"path"
 	"strings"
 
 	"github.com/blang/semver"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -38,9 +40,9 @@ func versionIsBetween(version, gte, lte semver.Version) bool {
 
 var versionSpecificOpts = []config.VersionedExtraOption{
 
-	// Kubeconfig args
-	config.NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
 	config.NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
+	config.NewUnversionedOption(Kubelet, "config", "/var/lib/kubelet/config.yaml"),
+	config.NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
 	{
 		Option: config.ExtraOption{
 			Component: Kubelet,
@@ -59,8 +61,16 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 		LessThanOrEqual: semver.MustParse("1.15.0-alpha.3"),
 	},
 
-	// Kubelet config file
-	config.NewUnversionedOption(Kubelet, "config", "/var/lib/kubelet/config.yaml"),
+	// before 1.16.0-beta.2, kubeadm bug did not allow overriding this via config file, so this has
+	// to be passed in as a kubelet flag. See https://github.com/kubernetes/kubernetes/pull/81903 for more details.
+	{
+		Option: config.ExtraOption{
+			Component: Kubelet,
+			Key:       "client-ca-file",
+			Value:     path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
+		},
+		LessThanOrEqual: semver.MustParse("1.16.0-beta.1"),
+	},
 
 	{
 		Option: config.ExtraOption{
