@@ -1,6 +1,5 @@
 /*
 Copyright 2020 The Kubernetes Authors All rights reserved.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -130,7 +129,8 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 	},
 }
 
-var defaultShell shellData = shellConfigMap["bash"]
+var defaultSh = "bash"
+var defaultShell shellData = shellConfigMap[defaultSh]
 
 var (
 	// ForceShell forces a shell name
@@ -139,7 +139,13 @@ var (
 
 // Detect detects user's current shell.
 func Detect() (string, error) {
-	return shell.Detect()
+	sh, err := shell.Detect()
+	// Don't error out when $SHELL has not been set
+	// Note: ErrUnknownShell is not used on windows
+	if sh == "" {
+		return defaultSh, nil
+	}
+	return sh, err
 }
 
 func (c EnvConfig) getShell() shellData {
