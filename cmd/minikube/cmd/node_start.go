@@ -23,6 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -36,7 +37,7 @@ var nodeStartCmd = &cobra.Command{
 			exit.UsageT("Usage: minikube node start [name]")
 		}
 
-		api, cc := machine.Partial(ClusterFlagValue())
+		api, cc := mustload.Partial(ClusterFlagValue())
 		name := args[0]
 
 		n, _, err := node.Retrieve(*cc, name)

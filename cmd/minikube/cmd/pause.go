@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -45,7 +46,7 @@ var pauseCmd = &cobra.Command{
 }
 
 func runPause(cmd *cobra.Command, args []string) {
-	co := machine.Running(ClusterFlagValue())
+	co := mustload.Running(ClusterFlagValue())
 
 	for _, n := range co.Config.Nodes {
 		host, err := machine.LoadHost(co.API, driver.MachineName(*co.Config, n))

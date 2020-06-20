@@ -25,7 +25,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -40,7 +40,7 @@ Examples:
 minikube kubectl -- --help
 minikube kubectl -- get pods --namespace kube-system`,
 	Run: func(cmd *cobra.Command, args []string) {
-		co := machine.Healthy(ClusterFlagValue())
+		co := mustload.Healthy(ClusterFlagValue())
 
 		version := co.Config.KubernetesConfig.KubernetesVersion
 		c, err := KubectlCommand(version, args...)

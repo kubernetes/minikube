@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 )
 
@@ -102,7 +103,7 @@ var statusCmd = &cobra.Command{
 		}
 
 		cname := ClusterFlagValue()
-		api, cc := machine.Partial(cname)
+		api, cc := mustload.Partial(cname)
 
 		var statuses []*Status
 

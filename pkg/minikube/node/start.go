@@ -49,6 +49,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
@@ -375,7 +376,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*h
 
 	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
-	out.ErrT(out.Sad, `Failed to start {{.driver}} {{.driver_type}}. "{{.cmd}}" may fix it: {{.error}}`, out.V{"driver": drv, "driver_type": driver.MachineType(drv), "cmd": machine.ExampleCmd(cc.Name, "start"), "error": err})
+	out.ErrT(out.Sad, `Failed to start {{.driver}} {{.driver_type}}. "{{.cmd}}" may fix it: {{.error}}`, out.V{"driver": drv, "driver_type": driver.MachineType(drv), "cmd": mustload.ExampleCmd(cc.Name, "start"), "error": err})
 	return host, exists, err
 }
 

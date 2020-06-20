@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -40,7 +41,7 @@ var sshCmd = &cobra.Command{
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
-		co := machine.Running(cname)
+		co := mustload.Running(cname)
 		if co.CP.Host.DriverName == driver.None {
 			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}

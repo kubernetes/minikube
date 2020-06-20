@@ -18,7 +18,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -28,7 +28,7 @@ var ipCmd = &cobra.Command{
 	Short: "Retrieves the IP address of the running cluster",
 	Long:  `Retrieves the IP address of the running cluster, and writes it to STDOUT.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		co := machine.Running(ClusterFlagValue())
+		co := mustload.Running(ClusterFlagValue())
 		out.Ln(co.CP.IP.String())
 	},
 }

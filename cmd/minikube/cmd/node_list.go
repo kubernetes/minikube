@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
 var nodeListCmd = &cobra.Command{
@@ -37,7 +37,7 @@ var nodeListCmd = &cobra.Command{
 		}
 
 		cname := ClusterFlagValue()
-		_, cc := machine.Partial(cname)
+		_, cc := mustload.Partial(cname)
 
 		if len(cc.Nodes) < 1 {
 			glog.Warningf("Did not found any minikube node.")

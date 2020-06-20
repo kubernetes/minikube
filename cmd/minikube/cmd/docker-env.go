@@ -30,7 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
@@ -58,7 +58,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		cname := ClusterFlagValue()
-		co := machine.Running(cname)
+		co := mustload.Running(cname)
 		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {
@@ -96,9 +96,9 @@ var dockerEnvCmd = &cobra.Command{
 		ec := daemonenv.DockerEnvConfig{
 			EnvConfig: sh,
 			Profile:   cname,
-			Driver:    co.CP.Host.DriverName,
+			Driver:    driverName,
 			HostIP:    co.CP.IP.String(),
-			Port:      constants.DockerDaemonPort,
+			Port:      port,
 			CertsDir:  localpath.MakeMiniPath("certs"),
 			NoProxy:   noProxy,
 		}

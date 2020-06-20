@@ -23,7 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -54,7 +54,7 @@ var ProfileCmd = &cobra.Command{
 		name is in the list of reserved keywords
 		*/
 		if config.ProfileNameInReservedKeywords(profile) {
-			exit.WithCodeT(exit.Config, `Profile name "{{.profilename}}" is reserved keyword. To delete this profile, run: "{{.cmd}}"`, out.V{"profilename": profile, "cmd": machine.ExampleCmd(profile, "delete")})
+			exit.WithCodeT(exit.Config, `Profile name "{{.profilename}}" is reserved keyword. To delete this profile, run: "{{.cmd}}"`, out.V{"profilename": profile, "cmd": mustload.ExampleCmd(profile, "delete")})
 		}
 
 		if profile == "default" {

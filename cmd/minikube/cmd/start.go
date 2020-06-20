@@ -52,6 +52,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -592,7 +593,7 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 * or *
 
 2) Start the existing "{{.name}}" cluster using: '{{.command}} --driver={{.old}}'
-`, out.V{"command": machine.ExampleCmd(existing.Name, "start"), "delcommand": machine.ExampleCmd(existing.Name, "delete"), "old": old, "name": existing.Name})
+`, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "delcommand": mustload.ExampleCmd(existing.Name, "delete"), "old": old, "name": existing.Name})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
@@ -717,7 +718,7 @@ func validateUser(drvName string) {
 	cname := ClusterFlagValue()
 	_, err = config.Load(cname)
 	if err == nil || !config.IsNotExist(err) {
-		out.ErrT(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": machine.ExampleCmd(cname, "delete")})
+		out.ErrT(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
 	}
 	if !useForce {
 		exit.WithCodeT(exit.Permissions, "Exiting")

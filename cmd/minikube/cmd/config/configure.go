@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 )
@@ -189,7 +189,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 		case "metallb":
 			profile := ClusterFlagValue()
-			_, cfg := machine.Partial(profile)
+			_, cfg := mustload.Partial(profile)
 
 			validator := func(s string) bool {
 				return net.ParseIP(s) != nil
