@@ -478,6 +478,16 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 				return out, nil
 			}
 			return out, fmt.Errorf("%s in state: %v", svc, state)
+		case "cat":
+			f.t.Logf("fake systemctl: %s cat: %v", svc, state)
+			if svc == "docker.service" {
+				out += "[Unit]\n"
+				out += "Description=Docker Application Container Engine\n"
+				out += "Documentation=https://docs.docker.com\n"
+				//out += "BindsTo=containerd.service\n"
+				return out, nil
+			}
+			return out, fmt.Errorf("%s cat unimplemented", svc)
 		default:
 			return out, fmt.Errorf("unimplemented fake action: %q", action)
 		}
@@ -562,7 +572,7 @@ func TestEnable(t *testing.T) {
 		want    map[string]serviceState
 	}{
 		{"docker", map[string]serviceState{
-			"docker":        SvcRunning,
+			"docker":        SvcRestarted,
 			"containerd":    SvcExited,
 			"crio":          SvcExited,
 			"crio-shutdown": SvcExited,
