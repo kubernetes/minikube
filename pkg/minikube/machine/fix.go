@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/shell"
 )
 
 // hostRunner is a minimal host.Host based interface for running commands
@@ -158,6 +159,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	if !driver.IsKIC(drver) {
 		return
 	}
+	ec, _ := shell.GetShell("")
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		// TODO: refactor docker-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
@@ -166,6 +168,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	'minikube -p {{.profile_name}} docker-env'
 
 	`, out.V{"profile_name": name})
+		shell.GenerateUsageHint(ec, "eval docker-env", "minikube -p TODO docker-env")
 	}
 	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
@@ -174,7 +177,10 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 
 	'minikube -p {{.profile_name}} podman-env'
 
+	
 	`, out.V{"profile_name": name})
+		shell.GenerateUsageHint(ec, "eval docker-env", "minikube -p TODO podman-env")
+
 	}
 
 }

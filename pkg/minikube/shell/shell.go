@@ -145,7 +145,7 @@ func (c EnvConfig) getShell() shellData {
 	return shell
 }
 
-func generateUsageHint(ec EnvConfig, usgPlz, usgCmd string) string {
+func GenerateUsageHint(ec EnvConfig, usgPlz, usgCmd string) string {
 	shellCfg := ec.getShell()
 	return shellCfg.usageHint(usgPlz, usgCmd)
 }
@@ -155,7 +155,7 @@ func CfgSet(ec EnvConfig, plz, cmd string) *Config {
 	shellCfg := ec.getShell()
 	s := &Config{}
 	s.Suffix, s.Prefix, s.Delimiter = shellCfg.suffix, shellCfg.prefix, shellCfg.delimiter
-	s.UsageHint = generateUsageHint(ec, plz, cmd)
+	s.UsageHint = GenerateUsageHint(ec, plz, cmd)
 
 	return s
 }
