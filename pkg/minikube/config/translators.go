@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 
 	v152 "k8s.io/minikube/pkg/minikube/config/v152"
 	v162 "k8s.io/minikube/pkg/minikube/config/v162"
@@ -48,7 +49,7 @@ var versionConfigTranslators = []versionConfigTranslator{
 			return v162.DefaultLoader.LoadConfigFromFile(name, miniHome...)
 		},
 		TranslateToNextVersion: func(config interface{}) (interface{}, error) {
-			return translateFrom163ToNextVersion(config.(v162.MachineConfig))
+			return translateFrom163ToNextVersion(config.(*v162.MachineConfig))
 		},
 	},
 	{
@@ -56,7 +57,7 @@ var versionConfigTranslators = []versionConfigTranslator{
 			return v152.DefaultLoader.LoadConfigFromFile(name, miniHome...)
 		},
 		TranslateToNextVersion: func(config interface{}) (interface{}, error) {
-			return translateFrom152ToNextVersion(config.(v152.MachineConfig))
+			return translateFrom152ToNextVersion(config.(*v152.Config))
 		},
 	},
 }
@@ -68,7 +69,7 @@ type versionConfigTranslator struct {
 type translateToNextVersion func(interface{}) (interface{}, error)
 type tryLoadFromFile func(name string, miniHome ...string) (interface{}, error)
 
-func translateFrom163ToNextVersion(oldConfig v162.MachineConfig) (*ClusterConfig, error) {
+func translateFrom163ToNextVersion(oldConfig *v162.MachineConfig) (*ClusterConfig, error) {
 
 	hypervUseExternalSwitch := false
 
@@ -92,19 +93,40 @@ func translateFrom163ToNextVersion(oldConfig v162.MachineConfig) (*ClusterConfig
 
 }
 
-func translateFrom152ToNextVersion(oldConfig v152.MachineConfig) (*ClusterConfig, error) {
+func translateFrom152ToNextVersion(oldConfig *v152.Config) (*ClusterConfig, error) {
 
-	oldConfigBytes, err := json.Marshal(oldConfig)
+	// The structure of the config from version 1.5.2 was different. It was split from the root to two properties: MachineConfig and KubernetesConfig
+	// so we have to accommodate to the next version which flattened the MachineConfig to the root, and made KubernetesConfig a property
+
+	if oldConfig == nil {
+		return nil, errors.New("oldConfig is nil")
+	}
+
+	oldMachineConfigBytes, err := json.Marshal(oldConfig.MachineConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	var newConfig *ClusterConfig
 
-	errorUnmarshalling := json.Unmarshal(oldConfigBytes, newConfig)
+	errorUnmarshalling := json.Unmarshal(oldMachineConfigBytes, newConfig)
 	if errorUnmarshalling != nil {
 		return nil, errorUnmarshalling
 	}
+
+	var newKubernetesConfig *KubernetesConfig
+	oldKubernetesConfigBytes, err := json.Marshal(oldConfig.KubernetesConfig)
+
+	if err != nil {
+		return nil, err
+	}
+
+	errorUnmarshallingKubernetesConfig := json.Unmarshal(oldKubernetesConfigBytes, newKubernetesConfig)
+	if errorUnmarshallingKubernetesConfig != nil {
+		return nil, errorUnmarshallingKubernetesConfig
+	}
+
+	newConfig.KubernetesConfig = *newKubernetesConfig
 
 	//TODO: do real translation here, find the difference between the old and the new configs and re-assign the properties
 	return newConfig, nil
