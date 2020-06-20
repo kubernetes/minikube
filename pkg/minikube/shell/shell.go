@@ -21,6 +21,8 @@ package shell
 import (
 	"fmt"
 	"io"
+	"os"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -139,13 +141,12 @@ var (
 
 // Detect detects user's current shell.
 func Detect() (string, error) {
-	sh, err := shell.Detect()
+	sh := os.Getenv("SHELL")
 	// Don't error out when $SHELL has not been set
-	// Note: ErrUnknownShell is not used on windows
-	if sh == "" {
+	if sh == "" && runtime.GOOS != "windows" {
 		return defaultSh, nil
 	}
-	return sh, err
+	return shell.Detect()
 }
 
 func (c EnvConfig) getShell() shellData {
