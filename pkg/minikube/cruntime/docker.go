@@ -117,6 +117,11 @@ func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 		return r.Init.Restart("docker")
 	}
 
+	if !dockerBoundToContainerd(r.Runner) {
+		// Make sure to use the internal containerd
+		return r.Init.Restart("docker")
+	}
+
 	return r.Init.Start("docker")
 }
 
