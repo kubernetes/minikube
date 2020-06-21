@@ -46,7 +46,7 @@ var podmanEnvCmd = &cobra.Command{
 			exit.WithError("Error detecting shell", err)
 		}
 		if podmanUnset {
-			if err := podmanUnsetScript(PodmanEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
+			if err := daemonenv.PodmanUnsetScript(daemonenv.PodmanEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
 			}
 			return

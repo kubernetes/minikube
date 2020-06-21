@@ -97,8 +97,8 @@ func GetNoProxyVar() (string, string) {
 	return noProxyVar, noProxyValue
 }
 
-// isDockerActive checks if Docker is active
-func isDockerActive(r command.Runner) bool {
+// IsDockerActive checks if Docker is active
+func IsDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
@@ -111,7 +111,7 @@ func MustRestartDocker(name string, runner command.Runner) {
 
 // MaybeRestartDocker tries to restart docker engine if needed
 func MaybeRestartDocker(name string, runner command.Runner) {
-	if ok := isDockerActive(runner); !ok {
+	if ok := IsDockerActive(runner); !ok {
 		glog.Warningf("dockerd is not active will try to restart it...")
 		MustRestartDocker(name, runner)
 	}

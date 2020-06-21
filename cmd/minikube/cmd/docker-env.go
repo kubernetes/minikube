@@ -51,7 +51,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if dockerUnset {
-			if err := dockerUnsetScript(daemonenv.DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
+			if err := daemonenv.DockerUnsetScript(daemonenv.DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
 			}
 			return
@@ -74,9 +74,9 @@ var dockerEnvCmd = &cobra.Command{
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
-		if ok := isDockerActive(co.CP.Runner); !ok {
+		if ok := daemonenv.IsDockerActive(co.CP.Runner); !ok {
 			glog.Warningf("dockerd is not active will try to restart it...")
-			mustRestartDocker(cname, co.CP.Runner)
+			daemonenv.MustRestartDocker(cname, co.CP.Runner)
 		}
 		sh, err := shell.GetShell(shell.ForceShell)
 		if err != nil {
