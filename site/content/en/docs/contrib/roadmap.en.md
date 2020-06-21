@@ -6,7 +6,7 @@ description: >
   Development Roadmap
 ---
 
-This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2020, divided by how they apply to our [guiding principles](principles.en.md)
+This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2020, divided by how they apply to our [guiding principles]({{< ref "/docs/contrib/principles" >}})
 
 Please send a PR to suggest any improvements to it.
 
