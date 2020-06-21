@@ -51,7 +51,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if dockerUnset {
-			if err := dockerUnsetScript(DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
+			if err := dockerUnsetScript(daemonenv.DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
 			}
 			return
