@@ -40,6 +40,7 @@ func TestKubeadmImages(t *testing.T) {
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 			"kubernetesui/dashboard:v2.0.0",
 			"kubernetesui/metrics-scraper:v1.0.2",
+			"kindest/kindnetd:0.5.4",
 		}},
 		{"v1.16.1", "mirror.k8s.io", []string{
 			"mirror.k8s.io/kube-proxy:v1.16.1",
@@ -52,6 +53,7 @@ func TestKubeadmImages(t *testing.T) {
 			"mirror.k8s.io/storage-provisioner:v1.8.1",
 			"mirror.k8s.io/dashboard:v2.0.0",
 			"mirror.k8s.io/metrics-scraper:v1.0.2",
+			"mirror.k8s.io/kindnetd:0.5.4",
 		}},
 		{"v1.15.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.15.0",
@@ -64,6 +66,7 @@ func TestKubeadmImages(t *testing.T) {
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 			"kubernetesui/dashboard:v2.0.0",
 			"kubernetesui/metrics-scraper:v1.0.2",
+			"kindest/kindnetd:0.5.4",
 		}},
 		{"v1.14.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.14.0",
@@ -76,6 +79,7 @@ func TestKubeadmImages(t *testing.T) {
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 			"kubernetesui/dashboard:v2.0.0",
 			"kubernetesui/metrics-scraper:v1.0.2",
+			"kindest/kindnetd:0.5.4",
 		}},
 		{"v1.13.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.13.0",
@@ -88,6 +92,7 @@ func TestKubeadmImages(t *testing.T) {
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 			"kubernetesui/dashboard:v2.0.0",
 			"kubernetesui/metrics-scraper:v1.0.2",
+			"kindest/kindnetd:0.5.4",
 		}},
 		{"v1.12.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.12.0",
@@ -100,6 +105,7 @@ func TestKubeadmImages(t *testing.T) {
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 			"kubernetesui/dashboard:v2.0.0",
 			"kubernetesui/metrics-scraper:v1.0.2",
+			"kindest/kindnetd:0.5.4",
 		}},
 	}
 	for _, tc := range tests {
