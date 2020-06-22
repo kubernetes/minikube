@@ -181,11 +181,19 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		out, err := tryDockerConnectivity("docker", ec)
-		if err != nil { // docker might be up but been loaded with wrong certs/config
-			// to fix issues like this #8185
-			glog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
-			mustRestartDocker(cname, co.CP.Runner)
+		dockerPath, err := exec.LookPath("docker")
+		if err != nil {
+			glog.Warningf("Unable to find docker in path - skipping connectivity check: %v", err)
+			dockerPath = ""
+		}
+
+		if dockerPath != "" {
+			out, err := tryDockerConnectivity("docker", ec)
+			if err != nil { // docker might be up but been loaded with wrong certs/config
+				// to fix issues like this #8185
+				glog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
+				mustRestartDocker(cname, co.CP.Runner)
+			}
 		}
 
 		if dockerUnset {
@@ -268,6 +276,7 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
+	glog.Infof("Testing Docker connectivity with: %v", c)
 	return c.CombinedOutput()
 }
 
