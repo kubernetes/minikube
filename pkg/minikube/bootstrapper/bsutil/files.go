@@ -18,8 +18,12 @@ limitations under the License.
 package bsutil
 
 import (
+	"os/exec"
 	"path"
 
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -36,3 +40,22 @@ const (
 	// KubeletInitPath is where Sys-V style init script is installed
 	KubeletInitPath = "/etc/init.d/kubelet"
 )
+
+// CopyFiles combines mkdir requests into a single call to reduce load
+func CopyFiles(runner command.Runner, files []assets.CopyableFile) error {
+	dirs := []string{}
+	for _, f := range files {
+		dirs = append(dirs, f.GetTargetDir())
+	}
+	args := append([]string{"mkdir", "-p"}, dirs...)
+	if _, err := runner.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+
+	for _, f := range files {
+		if err := runner.Copy(f); err != nil {
+			return errors.Wrapf(err, "copy")
+		}
+	}
+	return nil
+}

@@ -47,6 +47,9 @@ type Manager interface {
 	// Assets returns a list of assets necessary to enable this CNI
 	Assets() ([]assets.CopyableFile, error)
 
+	// NeedsApply returns whether or not CNI requires a manifest to be applied
+	NeedsApply() bool
+
 	// Enable enables the CNI
 	Apply(context.Context, Runner) error
 
@@ -54,45 +57,45 @@ type Manager interface {
 	CIDR() string
 }
 
+// tmplInputs are inputs to CNI templates
+type tmplInput struct {
+	ImageName    string
+	PodCIDR      string
+	DefaultRoute string
+}
+
 // New returns a new CNI manager
-func New(cc config.ClusterConfig) Manager {
+func New(cc config.ClusterConfig) (Manager, error) {
 	if cc.KubernetesConfig.NetworkPlugin != "" && cc.KubernetesConfig.NetworkPlugin != "cni" {
-		glog.Infof("network plugin configured as %q, returning noop", cc.KubernetesConfig.NetworkPlugin)
-		return Noop{}
+		glog.Infof("network plugin configured as %q, returning disabled", cc.KubernetesConfig.NetworkPlugin)
+		return Disabled{}, nil
 	}
 
 	glog.Infof("Creating CNI manager for %q", cc.KubernetesConfig.CNI)
 
 	switch cc.KubernetesConfig.CNI {
 	case "", "true", "auto":
-		return chooseDefault(cc)
+		return chooseDefault(cc), nil
 	case "false":
-		if driver.IsKIC(cc.Driver) && cc.KubernetesConfig.ContainerRuntime != "docker" {
-			glog.Errorf("CNI is recommended for %q driver and %q runtime - expect networking issues", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-		}
-		if len(cc.Nodes) > 1 {
-			glog.Errorf("CNI is recommended for multi-node clusters - expect networking issues")
-		}
-		return Noop{}
+		return Disabled{cc: cc}, nil
 	case "kindnet":
-		return KindNet{cc: cc}
-	case "custom":
-		return Custom{}
+		return KindNet{cc: cc}, nil
+	case "bridge":
+		return Bridge{cc: cc}, nil
 	case "calico":
-		return Calico{cc: cc}
+		return Calico{cc: cc}, nil
 	case "flannel":
-		return Flannel{cc: cc}
+		return Flannel{cc: cc}, nil
 	default:
-		glog.Errorf("unknown CNI choice: %q", cc.KubernetesConfig.CNI)
+		return NewCustom(cc, cc.KubernetesConfig.CNI)
 	}
-	return nil
 }
 
 func chooseDefault(cc config.ClusterConfig) Manager {
 	// For backwards compatibility with older profiles using --enable-default-cni
 	if cc.KubernetesConfig.EnableDefaultCNI {
-		glog.Infof("EnableDefaultCNI is true, recommending custom")
-		return Custom{}
+		glog.Infof("EnableDefaultCNI is true, recommending bridge")
+		return Bridge{}
 	}
 
 	if driver.IsKIC(cc.Driver) {
@@ -105,8 +108,8 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return KindNet{cc: cc}
 	}
 
-	glog.Infof("CNI unnecessary in this configuration, recommending Noop")
-	return Noop{}
+	glog.Infof("CNI unnecessary in this configuration, recommending no CNI")
+	return Disabled{}
 }
 
 // manifestPath returns the path to the CNI manifest
@@ -126,10 +129,6 @@ func kubectlPath(cc config.ClusterConfig) string {
 
 // apply applies a CNI manifest
 func apply(ctx context.Context, r Runner, cc config.ClusterConfig) error {
-	if cc.KubernetesConfig.KubernetesVersion == "" {
-		return errors.New("KubernetesVersion empty")
-	}
-
 	kubectl := kubectlPath(cc)
 	glog.Infof("applying CNI manifest using %s ...", kubectl)
 

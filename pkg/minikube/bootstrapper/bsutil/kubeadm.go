@@ -66,7 +66,12 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
-	podCIDR := cni.New(cc).CIDR()
+	cnm, err := cni.New(cc)
+	if err != nil {
+		return nil, errors.Wrap(err, "cni")
+	}
+
+	podCIDR := cnm.CIDR()
 	overrideCIDR := k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm)
 	if overrideCIDR != "" {
 		podCIDR = overrideCIDR

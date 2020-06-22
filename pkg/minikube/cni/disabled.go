@@ -18,53 +18,43 @@ package cni
 
 import (
 	"context"
-	"os"
-	"path"
 
-	"github.com/pkg/errors"
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
-// Custom is a CNI manager than applies a user-specified manifest
-type Custom struct {
-	cc       config.ClusterConfig
-	manifest string
-}
-
-// NewCustom returns a well-formed Custom CNI manager
-func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
-	_, err := os.Stat(manifest)
-	if err != nil {
-		return Custom{}, errors.Wrap(err, "stat")
-	}
-
-	return Custom{
-		cc:       cc,
-		manifest: manifest,
-	}, nil
+// Disabled is a CNI manager than does nothing
+type Disabled struct {
+	cc config.ClusterConfig
 }
 
 // Assets returns a list of assets necessary to enable this CNI
-func (n Custom) Assets() ([]assets.CopyableFile, error) {
-	ba, err := assets.NewBinAsset(n.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644", false)
-	if err != nil {
-		return nil, err
+func (n Disabled) Assets() ([]assets.CopyableFile, error) {
+	// Located here so that we have a place to put it.
+
+	if driver.IsKIC(n.cc.Driver) && n.cc.KubernetesConfig.ContainerRuntime != "docker" {
+		glog.Warningf("CNI is recommended for %q driver and %q runtime - expect networking issues", n.cc.Driver, n.cc.KubernetesConfig.ContainerRuntime)
 	}
-	return []assets.CopyableFile{ba}, nil
+	if len(n.cc.Nodes) > 1 {
+		glog.Warningf("CNI is recommended for multi-node clusters - expect networking issues")
+	}
+
+	return nil, nil
 }
 
 // NeedsApply returns whether or not CNI requires a manifest to be applied
-func (n Custom) NeedsApply() bool {
-	return true
+func (n Disabled) NeedsApply() bool {
+	return false
 }
 
 // Apply enables the CNI
-func (n Custom) Apply(ctx context.Context, r Runner) error {
-	return apply(ctx, r, n.cc)
+func (n Disabled) Apply(context.Context, Runner) error {
+	return nil
 }
 
 // CIDR returns the default CIDR used by this CNI
-func (n Custom) CIDR() string {
-	return defaultPodCIDR
+func (n Disabled) CIDR() string {
+	return ""
 }

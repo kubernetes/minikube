@@ -877,6 +877,11 @@ func (c Calico) Assets() ([]assets.CopyableFile, error) {
 	return []assets.CopyableFile{manifestAsset([]byte(calicoTmpl))}, nil
 }
 
+// NeedsApply returns whether or not CNI requires a manifest to be applied
+func (c Calico) NeedsApply() bool {
+	return true
+}
+
 // Apply enables the CNI
 func (c Calico) Apply(ctx context.Context, r Runner) error {
 	return apply(ctx, r, c.cc)

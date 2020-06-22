@@ -21,12 +21,12 @@ import (
 	"context"
 	"text/template"
 
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
-var kindNetTmpl = template.Must(template.New("kubeletServiceTemplate").Parse(`---
+var kindNetManifest = template.Must(template.New("kindnet").Parse(`---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -105,7 +105,7 @@ spec:
             fieldRef:
               fieldPath: status.podIP
         - name: POD_SUBNET
-          value: 10.244.0.0/16
+          value: {{.PodCIDR}}
         volumeMounts:
         - name: cni-cfg
           mountPath: /etc/cni/net.d
@@ -148,12 +148,25 @@ type KindNet struct {
 
 // Assets returns a list of assets necessary to enable this CNI
 func (k KindNet) Assets() ([]assets.CopyableFile, error) {
-	b := bytes.Buffer{}
-	if err := kindNetTmpl.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
-		return nil, err
+	assets := []assets.CopyableFile{}
+	input := &tmplInput{
+		DefaultRoute: "0.0.0.0/0", // assumes IPv4
+		PodCIDR:      defaultPodCIDR,
+		ImageName:    images.KindNet(k.cc.KubernetesConfig.ImageRepository),
 	}
 
-	return []assets.CopyableFile{manifestAsset(b.Bytes())}, nil
+	b := bytes.Buffer{}
+	if err := kindNetManifest.Execute(&b, input); err != nil {
+		return nil, err
+	}
+	assets = append(assets, manifestAsset(b.Bytes()))
+
+	return assets, nil
+}
+
+// NeedsApply returns whether or not CNI requires a manifest to be applied
+func (k KindNet) NeedsApply() bool {
+	return true
 }
 
 // Apply enables the CNI

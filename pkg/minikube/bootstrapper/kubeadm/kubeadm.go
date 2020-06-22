@@ -234,10 +234,23 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	wg.Add(4)
 
 	go func() {
+		defer wg.Done()
+		cnm, err := cni.New(cfg)
+		if err != nil {
+			glog.Errorf("Invalid CNI configuration: %v", err)
+			return
+		}
+
+		if !cnm.NeedsApply() {
+			return
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		if err := cni.New(cfg).Apply(ctx, k.c); err != nil {
+		out.T(out.CNI, "Configuring CNI (Container Networking Interface) ...")
+
+		if err := cnm.Apply(ctx, k.c); err != nil {
 			glog.Errorf("error applying CNI: %v", err)
 		}
 
@@ -246,8 +259,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 				glog.Errorf("failed to restart CRI: %v", err)
 			}
 		}
-
-		wg.Done()
 	}()
 
 	go func() {
@@ -642,27 +653,6 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	return nil
 }
 
-// ApplyCNI idempotently applies the appropriate CNI (required for multi-node)
-func (k *Bootstrapper) ApplyCNI(cc config.ClusterConfig) error {
-	c := cni.New(cc)
-	cniAssets, err := c.Assets()
-	if err != nil {
-		return errors.Wrap(err, "cni assets")
-	}
-
-	if len(cniAssets) > 0 {
-		if err := copyFiles(k.c, cniAssets); err != nil {
-			return errors.Wrap(err, "copy files")
-		}
-	}
-
-	if err := c.Apply(context.Background(), k.c); err != nil {
-		return errors.Wrap(err, "cni apply")
-	}
-
-	return nil
-}
-
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
 func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	// Take that generated token and use it to get a kubeadm join command
@@ -800,15 +790,6 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"))
 	}
 
-	// Install CNI assets before the kubelet starts to avoid later restarts
-	cniAssets, err := cni.New(cfg).Assets()
-	if err != nil {
-		return errors.Wrap(err, "cni assets")
-	}
-	if len(cniAssets) > 0 {
-		files = append(files, cniAssets...)
-	}
-
 	// Installs compatibility shims for non-systemd environments
 	kubeletPath := path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubelet")
 	shims, err := sm.GenerateInitShim("kubelet", kubeletPath, bsutil.KubeletSystemdConfFile)
@@ -817,7 +798,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 	files = append(files, shims...)
 
-	if err := copyFiles(k.c, files); err != nil {
+	if err := bsutil.CopyFiles(k.c, files); err != nil {
 		return errors.Wrap(err, "copy")
 	}
 
@@ -831,25 +812,6 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	return sm.Start("kubelet")
-}
-
-func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
-	// Combine mkdir request into a single call to reduce load
-	dirs := []string{}
-	for _, f := range files {
-		dirs = append(dirs, f.GetTargetDir())
-	}
-	args := append([]string{"mkdir", "-p"}, dirs...)
-	if _, err := runner.RunCmd(exec.Command("sudo", args...)); err != nil {
-		return errors.Wrap(err, "mkdir")
-	}
-
-	for _, f := range files {
-		if err := runner.Copy(f); err != nil {
-			return errors.Wrapf(err, "copy")
-		}
-	}
-	return nil
 }
 
 // kubectlPath returns the path to the kubelet

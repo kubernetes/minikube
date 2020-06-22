@@ -325,9 +325,13 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 
 		if cc.KubernetesConfig.NetworkPlugin == "auto" {
-			noop := cni.Noop{}
-			if cni.New(cc) != noop {
-				glog.Infof("Auto-enabling CNI network plug-in")
+			cnm, err := cni.New(cc)
+			if err != nil {
+				return cc, config.Node{}, errors.Wrap(err, "cni")
+			}
+			_, ok := cnm.(cni.Disabled)
+			if !ok {
+				glog.Infof("Enabling CNI network plug-in")
 				cc.KubernetesConfig.NetworkPlugin = "cni"
 			}
 		}

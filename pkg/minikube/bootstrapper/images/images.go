@@ -121,6 +121,7 @@ func auxiliary(mirror string) []string {
 		storageProvisioner(mirror),
 		dashboardFrontend(mirror),
 		dashboardMetrics(mirror),
+		KindNet(mirror),
 	}
 }
 
@@ -145,4 +146,12 @@ func dashboardMetrics(repo string) string {
 	}
 	// See 'dashboard-metrics-scraper' in deploy/addons/dashboard/dashboard-dp.yaml
 	return path.Join(repo, "metrics-scraper:v1.0.2")
+}
+
+// KindNet returns the image used for kindnet
+func KindNet(repo string) string {
+	if repo == "" {
+		repo = "kindest"
+	}
+	return path.Join(repo, "kindnetd:0.5.4")
 }

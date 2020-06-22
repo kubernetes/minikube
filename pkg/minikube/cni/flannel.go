@@ -638,6 +638,11 @@ func (f Flannel) Assets() ([]assets.CopyableFile, error) {
 	return []assets.CopyableFile{manifestAsset([]byte(flannelTmpl))}, nil
 }
 
+// NeedsApply returns whether or not CNI requires a manifest to be applied
+func (f Flannel) NeedsApply() bool {
+	return true
+}
+
 // Apply enables the CNI
 func (f Flannel) Apply(ctx context.Context, r Runner) error {
 	return apply(ctx, r, f.cc)
