@@ -51,6 +51,11 @@ type Bridge struct {
 	cc config.ClusterConfig
 }
 
+// String returns a string representation of this CNI
+func (c Bridge) String() string {
+	return "Bridge CNI"
+}
+
 func (c Bridge) netconf() (assets.CopyableFile, error) {
 	input := &tmplInput{PodCIDR: defaultPodCIDR}
 
@@ -73,6 +78,6 @@ func (c Bridge) Apply(_ Runner, nodes []Runner) error {
 }
 
 // CIDR returns the default CIDR used by this CNI
-func (n Bridge) CIDR() string {
+func (c Bridge) CIDR() string {
 	return defaultPodCIDR
 }

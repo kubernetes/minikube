@@ -146,6 +146,11 @@ type KindNet struct {
 	cc config.ClusterConfig
 }
 
+// String returns a string representation of this CNI
+func (c KindNet) String() string {
+	return "CNI"
+}
+
 // manifest returns a Kubernetes manifest for a CNI
 func (c KindNet) manifest() (assets.CopyableFile, error) {
 	input := &tmplInput{

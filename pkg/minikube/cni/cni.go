@@ -51,6 +51,9 @@ type Manager interface {
 
 	// CIDR returns the default CIDR used by this CNI
 	CIDR() string
+
+	// String representation
+	String() string
 }
 
 // tmplInputs are inputs to CNI templates
@@ -70,11 +73,11 @@ func New(cc config.ClusterConfig) (Manager, error) {
 	glog.Infof("Creating CNI manager for %q", cc.KubernetesConfig.CNI)
 
 	switch cc.KubernetesConfig.CNI {
-	case "", "true", "auto":
+	case "", "auto":
 		return chooseDefault(cc), nil
 	case "false":
 		return Disabled{cc: cc}, nil
-	case "kindnet":
+	case "kindnet", "true":
 		return KindNet{cc: cc}, nil
 	case "bridge":
 		return Bridge{cc: cc}, nil
@@ -84,6 +87,18 @@ func New(cc config.ClusterConfig) (Manager, error) {
 		return Flannel{cc: cc}, nil
 	default:
 		return NewCustom(cc, cc.KubernetesConfig.CNI)
+	}
+}
+
+// Supported returns a list of supported CNI options
+func Supported() []string {
+	return []string{
+		"auto",
+		"bridge",
+		"calico",
+		"false",
+		"flannel",
+		"kindnet",
 	}
 }
 

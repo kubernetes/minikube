@@ -31,6 +31,11 @@ type Custom struct {
 	manifest string
 }
 
+// String returns a string representation of this CNI
+func (c Custom) String() string {
+	return c.manifest
+}
+
 // NewCustom returns a well-formed Custom CNI manager
 func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
 	_, err := os.Stat(manifest)

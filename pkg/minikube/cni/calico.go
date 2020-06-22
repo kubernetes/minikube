@@ -869,6 +869,11 @@ type Calico struct {
 	cc config.ClusterConfig
 }
 
+// String returns a string representation of this CNI
+func (c Calico) String() string {
+	return "Calico"
+}
+
 // Apply enables the CNI
 func (c Calico) Apply(master Runner, nodes []Runner) error {
 	return applyManifest(c.cc, master, manifestAsset([]byte(calicoTmpl)))

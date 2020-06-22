@@ -630,6 +630,11 @@ type Flannel struct {
 	cc config.ClusterConfig
 }
 
+// String returns a string representation of this CNI
+func (c Flannel) String() string {
+	return "Flannel"
+}
+
 // Apply enables the CNI
 func (c Flannel) Apply(master Runner, nodes []Runner) error {
 	return applyManifest(c.cc, master, manifestAsset([]byte(flannelTmpl)))

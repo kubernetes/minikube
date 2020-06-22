@@ -27,9 +27,13 @@ type Disabled struct {
 	cc config.ClusterConfig
 }
 
+// String returns a string representation
+func (c Disabled) String() string {
+	return "Disabled"
+}
+
 // Apply enables the CNI
 func (c Disabled) Apply(master Runner, nodes []Runner) error {
-
 	if driver.IsKIC(c.cc.Driver) && c.cc.KubernetesConfig.ContainerRuntime != "docker" {
 		glog.Warningf("CNI is recommended for %q driver and %q runtime - expect networking issues", c.cc.Driver, c.cc.KubernetesConfig.ContainerRuntime)
 	}
