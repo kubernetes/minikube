@@ -109,8 +109,8 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return Bridge{}
 	}
 
-	if driver.IsKIC(cc.Driver) {
-		glog.Infof("%q driver found, recommending kindnet", cc.Driver)
+	if driver.IsKIC(cc.Driver) && cc.KubernetesConfig.ContainerRuntime != "docker" {
+		glog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 		return KindNet{cc: cc}
 	}
 
