@@ -17,9 +17,6 @@ limitations under the License.
 package cni
 
 import (
-	"context"
-
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -872,19 +869,9 @@ type Calico struct {
 	cc config.ClusterConfig
 }
 
-// Assets returns a list of assets necessary to enable this CNI
-func (c Calico) Assets() ([]assets.CopyableFile, error) {
-	return []assets.CopyableFile{manifestAsset([]byte(calicoTmpl))}, nil
-}
-
-// NeedsApply returns whether or not CNI requires a manifest to be applied
-func (c Calico) NeedsApply() bool {
-	return true
-}
-
 // Apply enables the CNI
-func (c Calico) Apply(ctx context.Context, r Runner) error {
-	return apply(ctx, r, c.cc)
+func (c Calico) Apply(master Runner, nodes []Runner) error {
+	return applyManifest(c.cc, master, manifestAsset([]byte(calicoTmpl)))
 }
 
 // CIDR returns the default CIDR used by this CNI

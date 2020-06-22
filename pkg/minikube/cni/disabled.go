@@ -17,10 +17,7 @@ limitations under the License.
 package cni
 
 import (
-	"context"
-
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
@@ -30,31 +27,21 @@ type Disabled struct {
 	cc config.ClusterConfig
 }
 
-// Assets returns a list of assets necessary to enable this CNI
-func (n Disabled) Assets() ([]assets.CopyableFile, error) {
-	// Located here so that we have a place to put it.
+// Apply enables the CNI
+func (c Disabled) Apply(master Runner, nodes []Runner) error {
 
-	if driver.IsKIC(n.cc.Driver) && n.cc.KubernetesConfig.ContainerRuntime != "docker" {
-		glog.Warningf("CNI is recommended for %q driver and %q runtime - expect networking issues", n.cc.Driver, n.cc.KubernetesConfig.ContainerRuntime)
+	if driver.IsKIC(c.cc.Driver) && c.cc.KubernetesConfig.ContainerRuntime != "docker" {
+		glog.Warningf("CNI is recommended for %q driver and %q runtime - expect networking issues", c.cc.Driver, c.cc.KubernetesConfig.ContainerRuntime)
 	}
-	if len(n.cc.Nodes) > 1 {
+
+	if len(c.cc.Nodes) > 1 {
 		glog.Warningf("CNI is recommended for multi-node clusters - expect networking issues")
 	}
 
-	return nil, nil
-}
-
-// NeedsApply returns whether or not CNI requires a manifest to be applied
-func (n Disabled) NeedsApply() bool {
-	return false
-}
-
-// Apply enables the CNI
-func (n Disabled) Apply(context.Context, Runner) error {
 	return nil
 }
 
 // CIDR returns the default CIDR used by this CNI
-func (n Disabled) CIDR() string {
+func (c Disabled) CIDR() string {
 	return ""
 }

@@ -17,7 +17,6 @@ limitations under the License.
 package cni
 
 import (
-	"context"
 	"os"
 	"path"
 
@@ -45,26 +44,17 @@ func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
 	}, nil
 }
 
-// Assets returns a list of assets necessary to enable this CNI
-func (n Custom) Assets() ([]assets.CopyableFile, error) {
-	ba, err := assets.NewBinAsset(n.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644", false)
-	if err != nil {
-		return nil, err
-	}
-	return []assets.CopyableFile{ba}, nil
-}
-
-// NeedsApply returns whether or not CNI requires a manifest to be applied
-func (n Custom) NeedsApply() bool {
-	return true
-}
-
 // Apply enables the CNI
-func (n Custom) Apply(ctx context.Context, r Runner) error {
-	return apply(ctx, r, n.cc)
+func (c Custom) Apply(master Runner, nodes []Runner) error {
+	m, err := assets.NewBinAsset(c.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644", false)
+	if err != nil {
+		return errors.Wrap(err, "manifest")
+	}
+
+	return applyManifest(c.cc, master, m)
 }
 
 // CIDR returns the default CIDR used by this CNI
-func (n Custom) CIDR() string {
+func (c Custom) CIDR() string {
 	return defaultPodCIDR
 }

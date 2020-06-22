@@ -17,9 +17,6 @@ limitations under the License.
 package cni
 
 import (
-	"context"
-
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -633,22 +630,12 @@ type Flannel struct {
 	cc config.ClusterConfig
 }
 
-// Assets returns a list of assets necessary to enable this CNI
-func (f Flannel) Assets() ([]assets.CopyableFile, error) {
-	return []assets.CopyableFile{manifestAsset([]byte(flannelTmpl))}, nil
-}
-
-// NeedsApply returns whether or not CNI requires a manifest to be applied
-func (f Flannel) NeedsApply() bool {
-	return true
-}
-
 // Apply enables the CNI
-func (f Flannel) Apply(ctx context.Context, r Runner) error {
-	return apply(ctx, r, f.cc)
+func (c Flannel) Apply(master Runner, nodes []Runner) error {
+	return applyManifest(c.cc, master, manifestAsset([]byte(flannelTmpl)))
 }
 
 // CIDR returns the default CIDR used by this CNI
-func (f Flannel) CIDR() string {
+func (c Flannel) CIDR() string {
 	return defaultPodCIDR
 }

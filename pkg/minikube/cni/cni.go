@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -40,18 +41,13 @@ const (
 // Runner is the subset of command.Runner this package consumes
 type Runner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
+	Copy(assets.CopyableFile) error
 }
 
 // Manager is a common interface for CNI
 type Manager interface {
-	// Assets returns a list of assets necessary to enable this CNI
-	Assets() ([]assets.CopyableFile, error)
-
-	// NeedsApply returns whether or not CNI requires a manifest to be applied
-	NeedsApply() bool
-
 	// Enable enables the CNI
-	Apply(context.Context, Runner) error
+	Apply(Runner, []Runner) error
 
 	// CIDR returns the default CIDR used by this CNI
 	CIDR() string
@@ -127,14 +123,32 @@ func kubectlPath(cc config.ClusterConfig) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", cc.KubernetesConfig.KubernetesVersion, "kubectl")
 }
 
-// apply applies a CNI manifest
-func apply(ctx context.Context, r Runner, cc config.ClusterConfig) error {
+// applyManifest applies a CNI manifest
+func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
 	kubectl := kubectlPath(cc)
 	glog.Infof("applying CNI manifest using %s ...", kubectl)
+
+	if err := r.Copy(f); err != nil {
+		return errors.Wrapf(err, "copy")
+	}
 
 	cmd := exec.CommandContext(ctx, "sudo", kubectl, "apply", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), "-f", manifestPath())
 	if rr, err := r.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
+	}
+
+	return nil
+}
+
+// applyNetConf applies a netconf file across nodes
+func applyNetConf(rs []Runner, f assets.CopyableFile) error {
+	for _, r := range rs {
+		if err := r.Copy(f); err != nil {
+			return errors.Wrapf(err, "copy")
+		}
 	}
 
 	return nil

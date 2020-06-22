@@ -241,16 +241,9 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 			return
 		}
 
-		if !cnm.NeedsApply() {
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
 		out.T(out.CNI, "Configuring CNI (Container Networking Interface) ...")
 
-		if err := cnm.Apply(ctx, k.c); err != nil {
+		if err := cnm.Apply(k.c, []cni.Runner{k.c}); err != nil {
 			glog.Errorf("error applying CNI: %v", err)
 		}
 

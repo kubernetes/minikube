@@ -18,9 +18,9 @@ package cni
 
 import (
 	"bytes"
-	"context"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -146,35 +146,31 @@ type KindNet struct {
 	cc config.ClusterConfig
 }
 
-// Assets returns a list of assets necessary to enable this CNI
-func (k KindNet) Assets() ([]assets.CopyableFile, error) {
-	assets := []assets.CopyableFile{}
+// manifest returns a Kubernetes manifest for a CNI
+func (c KindNet) manifest() (assets.CopyableFile, error) {
 	input := &tmplInput{
 		DefaultRoute: "0.0.0.0/0", // assumes IPv4
 		PodCIDR:      defaultPodCIDR,
-		ImageName:    images.KindNet(k.cc.KubernetesConfig.ImageRepository),
+		ImageName:    images.KindNet(c.cc.KubernetesConfig.ImageRepository),
 	}
 
 	b := bytes.Buffer{}
 	if err := kindNetManifest.Execute(&b, input); err != nil {
 		return nil, err
 	}
-	assets = append(assets, manifestAsset(b.Bytes()))
-
-	return assets, nil
-}
-
-// NeedsApply returns whether or not CNI requires a manifest to be applied
-func (k KindNet) NeedsApply() bool {
-	return true
+	return manifestAsset(b.Bytes()), nil
 }
 
 // Apply enables the CNI
-func (k KindNet) Apply(ctx context.Context, r Runner) error {
-	return apply(ctx, r, k.cc)
+func (c KindNet) Apply(master Runner, nodes []Runner) error {
+	m, err := c.manifest()
+	if err != nil {
+		return errors.Wrap(err, "manifest")
+	}
+	return applyManifest(c.cc, master, m)
 }
 
 // CIDR returns the default CIDR used by this CNI
-func (k KindNet) CIDR() string {
+func (c KindNet) CIDR() string {
 	return defaultPodCIDR
 }

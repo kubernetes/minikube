@@ -18,9 +18,9 @@ package cni
 
 import (
 	"bytes"
-	"context"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 )
@@ -51,8 +51,7 @@ type Bridge struct {
 	cc config.ClusterConfig
 }
 
-// Assets returns a list of assets necessary to enable this CNI
-func (n Bridge) Assets() ([]assets.CopyableFile, error) {
+func (c Bridge) netconf() (assets.CopyableFile, error) {
 	input := &tmplInput{PodCIDR: defaultPodCIDR}
 
 	b := bytes.Buffer{}
@@ -60,17 +59,17 @@ func (n Bridge) Assets() ([]assets.CopyableFile, error) {
 		return nil, err
 	}
 
-	return []assets.CopyableFile{assets.NewMemoryAssetTarget(b.Bytes(), "/etc/cni/net.d/1-k8s.conf", "0644")}, nil
-}
-
-// NeedsApply returns whether or not CNI requires a manifest to be applied
-func (n Bridge) NeedsApply() bool {
-	return false
+	return assets.NewMemoryAssetTarget(b.Bytes(), "/etc/cni/net.d/1-k8s.conf", "0644"), nil
 }
 
 // Apply enables the CNI
-func (n Bridge) Apply(context.Context, Runner) error {
-	return nil
+func (c Bridge) Apply(_ Runner, nodes []Runner) error {
+	f, err := c.netconf()
+	if err != nil {
+		return errors.Wrap(err, "netconf")
+	}
+
+	return applyNetConf(nodes, f)
 }
 
 // CIDR returns the default CIDR used by this CNI
