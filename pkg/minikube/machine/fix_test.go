@@ -20,9 +20,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -32,7 +32,6 @@ import (
 func TestMaybeWarnAboutEvalEnv(t *testing.T) {
 	orgShellEnv := os.Getenv("SHELL")
 	defer os.Setenv("SHELL", orgShellEnv)
-	os.Setenv("SHELL", "bash")
 
 	// Capture stdout
 	old := os.Stdout
@@ -44,12 +43,18 @@ func TestMaybeWarnAboutEvalEnv(t *testing.T) {
 		name             string
 		activationMarker string
 		expected         string
+		shell            string
 	}{
-		{`docker`, constants.MinikubeActiveDockerdEnv, `Please re-eval your docker-env using given snipset`},
-		//{`podman`, constants.MinikubeActivePodmanEnv, `unset baz bar`},
+		{`docker`, constants.MinikubeActiveDockerdEnv, `eval $(minikube -p minikube docker-env)`, "bash"},
+		{`podman`, constants.MinikubeActivePodmanEnv, `eval $(minikube -p minikube podman-env)`, "bash"},
+		{`docker`, constants.MinikubeActiveDockerdEnv, `minikube -p minikube docker-env | Invoke-Expression`, "powershell"},
+		{`podman`, constants.MinikubeActiveDockerdEnv, `minikube -p minikube podman-env | Invoke-Expression`, "powershell"},
+		{`docker`, constants.MinikubeActivePodmanEnv, `minikube -p minikube docker-env | source`, "fish"},
+		{`podman`, constants.MinikubeActivePodmanEnv, `minikube -p minikube podman-env | source`, "fish"},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			os.Setenv("SHELL", tc.shell)
 			tmpfile, err := ioutil.TempFile("", "machine_fix_test")
 			if err != nil {
 				log.Fatal(err)
@@ -57,19 +62,20 @@ func TestMaybeWarnAboutEvalEnv(t *testing.T) {
 
 			defer os.Remove(tmpfile.Name())
 
-			os.Stdout = tmpfile
+			os.Stderr = tmpfile
 
 			os.Setenv(tc.activationMarker, "1")
 			cc := config.ClusterConfig{Name: "minikube"}
-			maybeWarnAboutEvalEnv(tc.name, &cc)
+			maybeWarnAboutEvalEnv(tc.name, cc.Name)
 
 			warningMsg, err := ioutil.ReadFile(tmpfile.Name())
 			if err != nil {
 				t.Fatalf("Unable to read file: %v", err)
 			}
 			os.Stdout = old
-			if diff := cmp.Diff(tc.expected, string(warningMsg)); diff != "" {
-				t.Errorf("maybeWarnAboutEvalEnv(%s) mismatch (-want +got):\n%s", tc.name, diff)
+			msg := string(warningMsg)
+			if !strings.Contains(msg, tc.expected) {
+				t.Errorf("Expected that string: \"%s\" contains: \"%s\"", msg, tc.expected)
 			}
 		})
 	}

@@ -162,27 +162,14 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	ec, _ := shell.GetShell("")
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
-		// TODO: refactor docker-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
-		out.WarningT(`Please re-eval your docker-env, To ensure your environment variables have updated ports:
-
-	'minikube -p {{.profile_name}} docker-env'
-
-	`, out.V{"profile_name": name})
-		shell.GenerateUsageHint(ec, "eval docker-env", "minikube -p TODO docker-env")
+		msg := shell.GenerateUsageHint(ec, "eval docker-env", "minikube -p {{.profile_name}} docker-env")
+		out.WarningT(msg, out.V{"profile_name": name})
 	}
 	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
-		// TODO: refactor podman-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
-		out.WarningT(`Please re-eval your podman-env, To ensure your environment variables have updated ports:
-
-	'minikube -p {{.profile_name}} podman-env'
-
-	
-	`, out.V{"profile_name": name})
-		shell.GenerateUsageHint(ec, "eval docker-env", "minikube -p TODO podman-env")
-
+		msg := shell.GenerateUsageHint(ec, "eval podman-env", "minikube -p {{.profile_name}} podman-env")
+		out.WarningT(msg, out.V{"profile_name": name})
 	}
-
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
