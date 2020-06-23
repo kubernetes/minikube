@@ -536,6 +536,14 @@ var defaultServices = map[string]serviceState{
 	"containerd":    SvcExited,
 }
 
+// allServices reflects the state of all actual services running at once
+var allServices = map[string]serviceState{
+	"docker":        SvcRunning,
+	"crio":          SvcRunning,
+	"crio-shutdown": SvcExited,
+	"containerd":    SvcRunning,
+}
+
 func TestDisable(t *testing.T) {
 	var tests = []struct {
 		runtime string
@@ -568,32 +576,43 @@ func TestDisable(t *testing.T) {
 
 func TestEnable(t *testing.T) {
 	var tests = []struct {
-		runtime string
-		want    map[string]serviceState
+		runtime  string
+		services map[string]serviceState
+		want     map[string]serviceState
 	}{
-		{"docker", map[string]serviceState{
-			"docker":        SvcRunning,
-			"containerd":    SvcExited,
-			"crio":          SvcExited,
-			"crio-shutdown": SvcExited,
-		}},
-		{"containerd", map[string]serviceState{
-			"docker":        SvcExited,
-			"containerd":    SvcRestarted,
-			"crio":          SvcExited,
-			"crio-shutdown": SvcExited,
-		}},
-		{"crio", map[string]serviceState{
-			"docker":        SvcExited,
-			"containerd":    SvcExited,
-			"crio":          SvcRunning,
-			"crio-shutdown": SvcExited,
-		}},
+		{"docker", defaultServices,
+			map[string]serviceState{
+				"docker":        SvcRunning,
+				"containerd":    SvcExited,
+				"crio":          SvcExited,
+				"crio-shutdown": SvcExited,
+			}},
+		{"docker", allServices,
+			map[string]serviceState{
+				"docker":        SvcRestarted,
+				"containerd":    SvcExited,
+				"crio":          SvcExited,
+				"crio-shutdown": SvcExited,
+			}},
+		{"containerd", defaultServices,
+			map[string]serviceState{
+				"docker":        SvcExited,
+				"containerd":    SvcRestarted,
+				"crio":          SvcExited,
+				"crio-shutdown": SvcExited,
+			}},
+		{"crio", defaultServices,
+			map[string]serviceState{
+				"docker":        SvcExited,
+				"containerd":    SvcExited,
+				"crio":          SvcRunning,
+				"crio-shutdown": SvcExited,
+			}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
 			runner := NewFakeRunner(t)
-			for k, v := range defaultServices {
+			for k, v := range tc.services {
 				runner.services[k] = v
 			}
 			cr, err := New(Config{Type: tc.runtime, Runner: runner})
