@@ -32,7 +32,7 @@ etcd:
 controllerManagerExtraArgs:
   leader-elect: "false"
 schedulerExtraArgs:
-  leader-elect: "false"  
+  leader-elect: "false"
 kubernetesVersion: v1.13.0
 networking:
   dnsDomain: cluster.local
