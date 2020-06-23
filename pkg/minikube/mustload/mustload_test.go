@@ -17,15 +17,14 @@ limitations under the License.
 package mustload
 
 import (
-	"os"
 	"testing"
 )
 
 func TestPartial(t *testing.T) {
 	path := "../config/testdata/profile/.minikube"
-	os.Setenv("MINIKUBE_HOME", path)
 	name := "p1"
-	api, cc := Partial(name)
+	api, cc := Partial(name, path)
+
 	if cc.Name != name {
 		t.Fatalf("cc.Name expected to be same as name(%s), but got %s", name, cc.Name)
 	}
