@@ -120,24 +120,16 @@ set -e bar;`},
 func TestDetectSet(t *testing.T) {
 	orgShellEnv := os.Getenv("SHELL")
 	defer os.Setenv("SHELL", orgShellEnv)
-	for _, shellName := range []string{"bash", "cmd", "fish", "emacs"} {
-		t.Run(shellName, func(t *testing.T) {
-			os.Setenv("SHELL", shellName)
+	for _, testShellName := range []string{"bash", "cmd", "fish", "emacs"} {
+		t.Run(testShellName, func(t *testing.T) {
+			os.Setenv("SHELL", testShellName)
 			if s, err := Detect(); err != nil {
 				t.Fatalf("Unexpected error: '%v' during shell detection. Returned shell: %s", err, s)
-			} else if s != shellName {
-				t.Fatalf("Detected shell expected to be non empty string")
+			} else if s != testShellName {
+				t.Fatalf("Expected to detect %s but got %s", testShellName, s)
 			}
 		})
 	}
-	t.Run("failedDetect", func(t *testing.T) {
-		os.Setenv("SHELL", "")
-		if s, err := Detect(); err == nil {
-			t.Fatalf("Expected error: '%v' during shell detection when SHELL is empty. Returned shell: %s", err, s)
-		} else if s != DefaultShellName {
-			t.Fatalf("Detected shell expected to be non empty string")
-		}
-	})
 }
 
 func TestGetShell(t *testing.T) {
