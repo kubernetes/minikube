@@ -86,11 +86,6 @@ func (r *Docker) SocketPath() string {
 	return r.Socket
 }
 
-// DefaultCNI returns whether to use CNI networking by default
-func (r *Docker) DefaultCNI() bool {
-	return false
-}
-
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
 	_, err := exec.LookPath("docker")
