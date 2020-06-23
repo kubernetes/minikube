@@ -616,6 +616,13 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	st := ds.State
 	glog.Infof("status for %s: %+v", name, st)
 
+	if st.NeedsImprovement { // warn but don't exit
+		out.ErrLn("")
+		out.WarningT("'{{.driver}}' driver reported a issue that could affect the performance.", out.V{"driver": name})
+		out.ErrT(out.Tip, "Suggestion: {{.fix}}", out.V{"fix": translate.T(st.Fix)})
+		out.ErrLn("")
+	}
+
 	if st.Error != nil {
 		out.ErrLn("")
 
