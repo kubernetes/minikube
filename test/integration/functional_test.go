@@ -107,7 +107,6 @@ func TestFunctional(t *testing.T) {
 			{"ComponentHealth", validateComponentHealth},
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
-			{"DNS", validateDNS},
 			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
@@ -416,36 +415,6 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("failed to read http response body from dashboard %q: %v", u.String(), err)
 		}
 		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
-	}
-}
-
-// validateDNS asserts that all Kubernetes DNS is healthy
-func validateDNS(ctx context.Context, t *testing.T, profile string) {
-	defer PostMortemLogs(t, profile)
-
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
-	if err != nil {
-		t.Fatalf("failed to kubectl replace busybox : args %q: %v", rr.Command(), err)
-	}
-
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4))
-	if err != nil {
-		t.Fatalf("failed waiting for busybox pod : %v", err)
-	}
-
-	nslookup := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default"))
-		return err
-	}
-
-	// If the coredns process was stable, this retry wouldn't be necessary.
-	if err = retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
-		t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
-	}
-
-	want := []byte("10.96.0.1")
-	if !bytes.Contains(rr.Stdout.Bytes(), want) {
-		t.Errorf("failed nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}
 }
 

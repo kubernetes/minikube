@@ -140,7 +140,7 @@ func kubectlPath(cc config.ClusterConfig) string {
 
 // applyManifest applies a CNI manifest
 func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	kubectl := kubectlPath(cc)

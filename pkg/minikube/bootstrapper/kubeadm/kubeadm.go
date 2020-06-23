@@ -230,25 +230,16 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "run")
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(4)
+	cnm, err := cni.New(cfg)
+	if err != nil {
+		return errors.Wrap(err, "cni config")
+	}
 
-	go func() {
-		defer wg.Done()
-		cnm, err := cni.New(cfg)
-		if err != nil {
-			glog.Errorf("Invalid CNI configuration: %v", err)
-			return
-		}
-
-		if _, ok := cnm.(cni.Disabled); ok {
-			return
-		}
-
+	if _, ok := cnm.(cni.Disabled); !ok {
 		out.T(out.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
 
 		if err := cnm.Apply(k.c, []cni.Runner{k.c}); err != nil {
-			glog.Errorf("error applying CNI: %v", err)
+			return errors.Wrap(err, "cni apply")
 		}
 
 		if cfg.KubernetesConfig.ContainerRuntime == "crio" {
@@ -256,7 +247,10 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 				glog.Errorf("failed to restart CRI: %v", err)
 			}
 		}
-	}()
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(3)
 
 	go func() {
 		// we need to have cluster role binding before applying overlay to avoid #7428

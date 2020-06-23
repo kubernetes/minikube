@@ -266,8 +266,8 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		// Backwards compatibility with --enable-default-cni
 		chosenCNI := viper.GetString(cniFlag)
 		if viper.GetBool(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
-			glog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=custom")
-			chosenCNI = "custom"
+			glog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
+			chosenCNI = "bridge"
 		}
 
 		cc = config.ClusterConfig{
@@ -324,17 +324,17 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 
-		if cc.KubernetesConfig.NetworkPlugin == "auto" {
-			cnm, err := cni.New(cc)
-			if err != nil {
-				return cc, config.Node{}, errors.Wrap(err, "cni")
-			}
-			_, ok := cnm.(cni.Disabled)
-			if !ok {
-				glog.Infof("Enabling CNI network plug-in")
-				cc.KubernetesConfig.NetworkPlugin = "cni"
-			}
+		glog.Errorf("CNI test: cni=%q (%q) NetworkPlugin=%q", cc.KubernetesConfig.CNI, chosenCNI, cc.KubernetesConfig.NetworkPlugin)
+		cnm, err := cni.New(cc)
+		if err != nil {
+			return cc, config.Node{}, errors.Wrap(err, "cni")
 		}
+
+		if _, ok := cnm.(cni.Disabled); !ok {
+			glog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
+			cc.KubernetesConfig.NetworkPlugin = "cni"
+		}
+		glog.Errorf("CNI test post: cni=%q (%q) NetworkPlugin=%q", cc.KubernetesConfig.CNI, chosenCNI, cc.KubernetesConfig.NetworkPlugin)
 
 	}
 
@@ -523,10 +523,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.KubernetesConfig.CRISocket = viper.GetString(criSocket)
 	}
 
-	if cmd.Flags().Changed(criSocket) {
-		cc.KubernetesConfig.NetworkPlugin = viper.GetString(criSocket)
-	}
-
 	if cmd.Flags().Changed(networkPlugin) {
 		cc.KubernetesConfig.NetworkPlugin = viper.GetString(networkPlugin)
 	}
@@ -545,8 +541,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
 		if viper.GetBool(enableDefaultCNI) {
-			glog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=custom")
-			cc.KubernetesConfig.CNI = "custom"
+			glog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
+			cc.KubernetesConfig.CNI = "bridge"
 		}
 	}
 

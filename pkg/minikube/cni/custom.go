@@ -17,6 +17,7 @@ limitations under the License.
 package cni
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -33,7 +34,7 @@ type Custom struct {
 
 // String returns a string representation of this CNI
 func (c Custom) String() string {
-	return c.manifest
+	return fmt.Sprintf("Custom (%s)", c.manifest)
 }
 
 // NewCustom returns a well-formed Custom CNI manager
@@ -51,7 +52,7 @@ func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
 
 // Apply enables the CNI
 func (c Custom) Apply(master Runner, nodes []Runner) error {
-	m, err := assets.NewBinAsset(c.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644", false)
+	m, err := assets.NewFileAsset(c.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644")
 	if err != nil {
 		return errors.Wrap(err, "manifest")
 	}
