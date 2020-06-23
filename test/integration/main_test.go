@@ -19,8 +19,10 @@ package integration
 import (
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -51,10 +53,41 @@ const (
 // TestMain is the test main
 func TestMain(m *testing.M) {
 	flag.Parse()
+	setMaxParallelism()
+
 	start := time.Now()
 	code := m.Run()
 	fmt.Printf("Tests completed in %s (result code %d)\n", time.Since(start), code)
 	os.Exit(code)
+}
+
+// setMaxParallelism caps the max parallelism. Go assumes 1 core per test, whereas minikube needs 2 cores per test.
+func setMaxParallelism() {
+	procs := runtime.GOMAXPROCS(0)
+	pval := flag.Lookup("test.parallel").Value.String()
+	pv, err := strconv.Atoi(pval)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to parse --test.parallel value: %q\n", pval)
+		return
+	}
+
+	if procs != pv {
+		fmt.Fprintf(os.Stderr, "--test-parallel=%d was set via flags (system has %d cores)\n", pv, procs)
+		return
+	}
+
+	if procs == 2 {
+		fmt.Fprintf(os.Stderr, "Found %d cores, will not round down core count.\n", procs)
+		return
+	}
+
+	// During "minikube start", minikube briefly consumes ~1.5 cores. Most of the time it's less.
+	limit := int(math.Floor(float64(procs) * 0.75))
+	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", procs, limit)
+	if err := flag.Set("test.parallel", strconv.Itoa(limit)); err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to set test.parallel: %v\n", err)
+	}
+	runtime.GOMAXPROCS(limit)
 }
 
 // StartArgs returns the arguments normally used for starting minikube
