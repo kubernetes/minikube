@@ -22,6 +22,8 @@ package shell
 import (
 	"fmt"
 	"io"
+	"os"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -130,7 +132,8 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 	},
 }
 
-var defaultShell shellData = shellConfigMap["bash"]
+var defaultSh = "bash"
+var defaultShell shellData = shellConfigMap[defaultSh]
 
 var (
 	// ForceShell forces a shell name
@@ -139,6 +142,11 @@ var (
 
 // Detect detects user's current shell.
 func Detect() (string, error) {
+	sh := os.Getenv("SHELL")
+	// Don't error out when $SHELL has not been set
+	if sh == "" && runtime.GOOS != "windows" {
+		return defaultSh, nil
+	}
 	return shell.Detect()
 }
 
