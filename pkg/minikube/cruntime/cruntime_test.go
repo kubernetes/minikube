@@ -572,7 +572,7 @@ func TestEnable(t *testing.T) {
 		want    map[string]serviceState
 	}{
 		{"docker", map[string]serviceState{
-			"docker":        SvcRestarted,
+			"docker":        SvcRunning,
 			"containerd":    SvcExited,
 			"crio":          SvcExited,
 			"crio-shutdown": SvcExited,
