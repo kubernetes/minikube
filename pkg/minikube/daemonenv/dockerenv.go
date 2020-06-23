@@ -182,5 +182,6 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 func TryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
+	glog.Infof("Testing Docker connectivity with: %v", c)
 	return c.CombinedOutput()
 }

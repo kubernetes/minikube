@@ -22,6 +22,8 @@ package shell
 import (
 	"fmt"
 	"io"
+	"os"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -140,6 +142,16 @@ var (
 	ForceShell string
 )
 
+// Detect detects user's current shell.
+func Detect() (string, error) {
+	sh := os.Getenv("SHELL")
+	// Don't error out when $SHELL has not been set
+	if sh == "" && runtime.GOOS != "windows" {
+		return DefaultShellName, nil
+	}
+	return shell.Detect()
+}
+
 func (c EnvConfig) getShell() shellData {
 	shell, ok := shellConfigMap[c.Shell]
 	if !ok {
@@ -194,15 +206,6 @@ func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	}
 	_, err := w.Write([]byte(sb.String()))
 	return err
-}
-
-// Detect detects user's current shell.
-func Detect() (string, error) {
-	shell, err := shell.Detect()
-	if err != nil {
-		shell = DefaultShellName
-	}
-	return shell, err
 }
 
 // GetShell detects user's current shell if forceShell was empty as string, if not returns config based on forceShell
