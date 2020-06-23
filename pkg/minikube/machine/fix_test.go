@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -46,12 +47,12 @@ func TestMaybeWarnAboutEvalEnv(t *testing.T) {
 		{`docker`, constants.MinikubeActiveDockerdEnv, `eval $(minikube -p minikube docker-env)`, "bash"},
 		{`podman`, constants.MinikubeActivePodmanEnv, `eval $(minikube -p minikube podman-env)`, "bash"},
 		{`docker`, constants.MinikubeActiveDockerdEnv, `minikube -p minikube docker-env | Invoke-Expression`, "powershell"},
-		{`podman`, constants.MinikubeActiveDockerdEnv, `minikube -p minikube podman-env | Invoke-Expression`, "powershell"},
-		{`docker`, constants.MinikubeActivePodmanEnv, `minikube -p minikube docker-env | source`, "fish"},
+		{`podman`, constants.MinikubeActivePodmanEnv, `minikube -p minikube podman-env | Invoke-Expression`, "powershell"},
+		{`docker`, constants.MinikubeActiveDockerdEnv, `minikube -p minikube docker-env | source`, "fish"},
 		{`podman`, constants.MinikubeActivePodmanEnv, `minikube -p minikube podman-env | source`, "fish"},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s-%s", tc.shell, tc.name), func(t *testing.T) {
 			os.Setenv("SHELL", tc.shell)
 			tmpfile, err := ioutil.TempFile("", "machine_fix_test")
 			if err != nil {
@@ -59,10 +60,12 @@ func TestMaybeWarnAboutEvalEnv(t *testing.T) {
 			}
 
 			defer os.Remove(tmpfile.Name())
+			defer os.Setenv(tc.activationMarker, "")
 
 			os.Stderr = tmpfile
 
 			os.Setenv(tc.activationMarker, "1")
+
 			cc := config.ClusterConfig{Name: "minikube"}
 			maybeWarnAboutEvalEnv(tc.name, cc.Name)
 
