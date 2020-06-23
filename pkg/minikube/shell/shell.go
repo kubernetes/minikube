@@ -124,7 +124,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 		unsetSuffix:    "\n",
 		unsetDelimiter: "",
 		usageHint: func(s ...interface{}) string {
-			return  ""
+			return ""
 		},
 	},
 }
