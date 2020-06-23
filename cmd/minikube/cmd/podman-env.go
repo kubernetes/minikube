@@ -41,7 +41,8 @@ var podmanEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Podman service",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		sh, err := shell.GetShell(shell.ForceShell)
+		shName, err := shell.Detect(shell.ForceShell)
+		sh := shell.EnvConfig{Shell: shName}
 		if err != nil {
 			exit.WithError("Error detecting shell", err)
 		}

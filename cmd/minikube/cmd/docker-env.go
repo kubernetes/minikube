@@ -47,9 +47,11 @@ var dockerEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Docker daemon",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		sh := shell.EnvConfig{
-			Shell: shell.ForceShell,
+		shName, err := shell.Detect(shell.ForceShell)
+		if err != nil {
+			glog.Warningf("Error detecting shell: %s", err)
 		}
+		sh := shell.EnvConfig{Shell: shName}
 
 		if dockerUnset {
 			if err := daemonenv.DockerUnsetScript(daemonenv.DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
@@ -78,10 +80,6 @@ var dockerEnvCmd = &cobra.Command{
 		if ok := daemonenv.IsDockerActive(co.CP.Runner); !ok {
 			glog.Warningf("dockerd is not active will try to restart it...")
 			daemonenv.MustRestartDocker(cname, co.CP.Runner)
-		}
-		sh, err := shell.GetShell(shell.ForceShell)
-		if err != nil {
-			exit.WithError("Error detecting shell", err)
 		}
 
 		daemonenv.MaybeRestartDocker(cname, co.CP.Runner)

@@ -138,18 +138,18 @@ func TestGetShell(t *testing.T) {
 	os.Setenv("SHELL", "bash")
 
 	t.Run("discover", func(t *testing.T) {
-		if s, err := GetShell(""); err != nil {
+		if s, err := Detect(); err != nil {
 			t.Fatalf("unexpected error: '%v' during shell detection. Returned shell: %s", err, s)
-		} else if s.Shell == "" {
+		} else if s == "" {
 			t.Fatalf("Detected shell expected to be non empty string")
 		}
 	})
 	t.Run("force", func(t *testing.T) {
 		const forcedShellName = "forced-dummy-shell"
-		if s, err := GetShell(forcedShellName); err != nil {
+		if s, err := Detect(forcedShellName); err != nil {
 			t.Fatalf("unexpected error: '%v' during shell getting forced shell. Returned shell: %s", err, s)
-		} else if s.Shell != forcedShellName {
-			t.Fatalf("Expected shell %s but got %s", forcedShellName, s.Shell)
+		} else if s != forcedShellName {
+			t.Fatalf("Expected shell %s but got %s", forcedShellName, s)
 		}
 	})
 }

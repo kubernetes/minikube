@@ -143,7 +143,10 @@ var (
 )
 
 // Detect detects user's current shell.
-func Detect() (string, error) {
+func Detect(forceShell ...string) (string, error) {
+	if len(forceShell) > 0 {
+		return forceShell[0], nil
+	}
 	sh := os.Getenv("SHELL")
 	// Don't error out when $SHELL has not been set
 	if sh == "" && runtime.GOOS != "windows" {
@@ -206,14 +209,4 @@ func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	}
 	_, err := w.Write([]byte(sb.String()))
 	return err
-}
-
-// GetShell detects user's current shell if forceShell was empty as string, if not returns config based on forceShell
-func GetShell(forceShell string) (EnvConfig, error) {
-	sh := EnvConfig{Shell: forceShell}
-	var err error
-	if forceShell == "" {
-		sh.Shell, err = Detect()
-	}
-	return sh, err
 }

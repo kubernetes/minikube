@@ -159,7 +159,8 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	if !driver.IsKIC(drver) {
 		return
 	}
-	ec, err := shell.GetShell("")
+	sh, err := shell.Detect()
+	ec := shell.EnvConfig{Shell: sh}
 	if err != nil {
 		out.ErrT(out.Notice, "Cannot discover shell type. Fallback to {{.shell}} which may not be accurate", out.V{"shell": shell.DefaultShellName})
 	}
