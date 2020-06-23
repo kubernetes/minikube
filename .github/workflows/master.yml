@@ -1,8 +1,6 @@
-name: Master
+name: PR
 on:
-  push:
-    branches:
-      - master
+  pull_request:
     paths:
       - "**.go"
       - "**.yml"
@@ -797,7 +795,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 12 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
+          if [ "$numPass" -lt 12 ];then echo "*** Failed to pass at least 12 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   multinode_pause_virtualbox_macos:
     runs-on: macos-10.15
@@ -834,7 +832,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--driver=virtualbox  -test.run "(TestPause|TestMultiNode)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--driver=virtualbox  -test.run "(TestPause|TestMultiNode)" -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -870,7 +868,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 12 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
+          if [ "$numPass" -lt 12 ];then echo "*** Failed to pass at least 12 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   preload_docker_flags_docker_ubuntu:
     runs-on: ubuntu-18.04
