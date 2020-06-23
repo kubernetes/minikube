@@ -94,7 +94,7 @@ func status() registry.State {
 	}
 	if err == nil {
 		glog.Infof("docker version: %s", output)
-		return registry.State{Installed: true, Healthy: true}
+		return checkOverlayMod()
 	}
 
 	glog.Warningf("docker returned error: %v", err)
@@ -114,7 +114,22 @@ func status() registry.State {
 	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
 }
 
-//suggestFix matches a stderr with possible fix for the docker driver
+// checkOverlayMod checks if overlay mod is installed on a system
+func checkOverlayMod() registry.State {
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "mod", "probe", "overlay")
+	_, err := cmd.Output()
+	if err != nil {
+		// try a different way
+		cmd := exec.CommandContext(ctx, "mod", "probe", "overlay")
+
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
+	}
+	return registry.State{Installed: true, Healthy: true}
+}
+
+// suggestFix matches a stderr with possible fix for the docker driver
 func suggestFix(stderr string, err error) registry.State {
 	if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
