@@ -130,7 +130,10 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 	},
 }
 
-var defaultShell shellData = shellConfigMap["bash"]
+// DefaultShellName is default shell which will be used in case of shell detection error
+const DefaultShellName = "bash"
+
+var defaultShell shellData = shellConfigMap[DefaultShellName]
 
 var (
 	// ForceShell forces a shell name
@@ -195,7 +198,11 @@ func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 
 // Detect detects user's current shell.
 func Detect() (string, error) {
-	return shell.Detect()
+	shell, err := shell.Detect()
+	if err != nil {
+		shell = DefaultShellName
+	}
+	return shell, err
 }
 
 // GetShell detects user's current shell if forceShell was empty as string, if not returns config based on forceShell

@@ -159,7 +159,10 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	if !driver.IsKIC(drver) {
 		return
 	}
-	ec, _ := shell.GetShell("")
+	ec, err := shell.GetShell("")
+	if err != nil {
+		out.ErrT(out.Notice, "Cannot discover shell type. Fallback to {{.shell}} which may not be accurate", out.V{"shell": shell.DefaultShellName})
+	}
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		msg := shell.GenerateUsageHint(ec, "eval docker-env", "minikube -p {{.profile_name}} docker-env")

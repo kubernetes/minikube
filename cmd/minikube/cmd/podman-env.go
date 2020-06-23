@@ -80,13 +80,6 @@ var podmanEnvCmd = &cobra.Command{
 			Client:    client,
 		}
 
-		if ec.Shell == "" {
-			ec.Shell, err = shell.Detect()
-			if err != nil {
-				exit.WithError("Error detecting shell", err)
-			}
-		}
-
 		if err := daemonenv.PodmanSetScript(ec, os.Stdout); err != nil {
 			exit.WithError("Error generating set output", err)
 		}

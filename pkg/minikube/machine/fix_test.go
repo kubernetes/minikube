@@ -27,8 +27,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// maybeWarnAboutEvalEnv wil warn user if they need to re-eval their docker-env, podman-env
-// because docker changes the allocated bind ports after restart https://github.com/kubernetes/minikube/issues/6824
 func TestMaybeWarnAboutEvalEnv(t *testing.T) {
 	orgShellEnv := os.Getenv("SHELL")
 	defer os.Setenv("SHELL", orgShellEnv)
