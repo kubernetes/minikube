@@ -642,5 +642,5 @@ func (c Flannel) Apply(master Runner, nodes []Runner) error {
 
 // CIDR returns the default CIDR used by this CNI
 func (c Flannel) CIDR() string {
-	return defaultPodCIDR
+	return DefaultPodCIDR
 }

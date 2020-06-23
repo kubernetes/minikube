@@ -34,8 +34,8 @@ import (
 )
 
 const (
-	// defaultPodCIDR is the default CIDR to use in minikube CNI's.
-	defaultPodCIDR = "10.244.0.0/16"
+	// DefaultPodCIDR is the default CIDR to use in minikube CNI's.
+	DefaultPodCIDR = "10.244.0.0/16"
 )
 
 // Runner is the subset of command.Runner this package consumes

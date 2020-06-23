@@ -62,5 +62,5 @@ func (c Custom) Apply(master Runner, nodes []Runner) error {
 
 // CIDR returns the default CIDR used by this CNI
 func (c Custom) CIDR() string {
-	return defaultPodCIDR
+	return DefaultPodCIDR
 }

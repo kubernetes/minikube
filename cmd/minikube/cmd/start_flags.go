@@ -324,7 +324,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 
-		glog.Errorf("CNI test: cni=%q (%q) NetworkPlugin=%q", cc.KubernetesConfig.CNI, chosenCNI, cc.KubernetesConfig.NetworkPlugin)
 		cnm, err := cni.New(cc)
 		if err != nil {
 			return cc, config.Node{}, errors.Wrap(err, "cni")
@@ -334,8 +333,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			glog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
 			cc.KubernetesConfig.NetworkPlugin = "cni"
 		}
-		glog.Errorf("CNI test post: cni=%q (%q) NetworkPlugin=%q", cc.KubernetesConfig.CNI, chosenCNI, cc.KubernetesConfig.NetworkPlugin)
-
 	}
 
 	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})

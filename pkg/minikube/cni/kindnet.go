@@ -155,7 +155,7 @@ func (c KindNet) String() string {
 func (c KindNet) manifest() (assets.CopyableFile, error) {
 	input := &tmplInput{
 		DefaultRoute: "0.0.0.0/0", // assumes IPv4
-		PodCIDR:      defaultPodCIDR,
+		PodCIDR:      DefaultPodCIDR,
 		ImageName:    images.KindNet(c.cc.KubernetesConfig.ImageRepository),
 	}
 
@@ -177,5 +177,5 @@ func (c KindNet) Apply(master Runner, nodes []Runner) error {
 
 // CIDR returns the default CIDR used by this CNI
 func (c KindNet) CIDR() string {
-	return defaultPodCIDR
+	return DefaultPodCIDR
 }

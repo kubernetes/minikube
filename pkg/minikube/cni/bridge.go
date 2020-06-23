@@ -57,7 +57,7 @@ func (c Bridge) String() string {
 }
 
 func (c Bridge) netconf() (assets.CopyableFile, error) {
-	input := &tmplInput{PodCIDR: defaultPodCIDR}
+	input := &tmplInput{PodCIDR: DefaultPodCIDR}
 
 	b := bytes.Buffer{}
 	if err := bridgeConf.Execute(&b, input); err != nil {
@@ -79,5 +79,5 @@ func (c Bridge) Apply(_ Runner, nodes []Runner) error {
 
 // CIDR returns the default CIDR used by this CNI
 func (c Bridge) CIDR() string {
-	return defaultPodCIDR
+	return DefaultPodCIDR
 }

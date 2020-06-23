@@ -26,8 +26,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 func TestNetworkPlugins(t *testing.T) {
@@ -46,11 +48,10 @@ func TestNetworkPlugins(t *testing.T) {
 			{"bridge", []string{"--cni=bridge"}, "cni", "", true},
 			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", true},
 			{"flannel", []string{"--cni=flannel"}, "cni", "app=flannel", true},
-			{"calico", []string{"--cni=calico"}, "cni", "app=calico", true},
-			// kindnet only configures hairpin properly for the Docker driver
-			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", DockerDriver()},
-			{"false", []string{"--cni=false"}, "", "", true},
-			{"custom-weave", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "netcat-deployment.yaml"))}, "cni", "name=weave-net", true},
+			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", true},
+			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", true},
+			{"false", []string{"--cni=false"}, "", "", false},
+			{"custom-weave", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "netcat-deployment.yaml"))}, "cni", "", true},
 		}
 
 		for _, tc := range tests {
@@ -119,8 +120,16 @@ func TestNetworkPlugins(t *testing.T) {
 				})
 
 				t.Run("DNS", func(t *testing.T) {
-					rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "kubernetes.default"))
-					if err != nil {
+					var rr *RunResult
+					var err error
+
+					nslookup := func() error {
+						rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "kubernetes.default"))
+						return err
+					}
+
+					// If the coredns process was stable, this retry wouldn't be necessary.
+					if err := retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
 						t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
 					}
 

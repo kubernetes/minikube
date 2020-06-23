@@ -882,5 +882,5 @@ func (c Calico) Apply(master Runner, nodes []Runner) error {
 // CIDR returns the default CIDR used by this CNI
 func (c Calico) CIDR() string {
 	// Calico docs specify 192.168.0.0/16 - but we do this for compatibility with other CNI's.
-	return defaultPodCIDR
+	return DefaultPodCIDR
 }
