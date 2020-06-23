@@ -218,7 +218,12 @@ func CreateContainerNode(p CreateParams) error {
 
 	// retry up to up 13 seconds to make sure the created container status is running.
 	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*13); err != nil {
-		return errors.Wrapf(err, "check container %q running", p.Name)
+		LogContainerDebug(p.OCIBinary, p.Name)
+		_, err := DaemonInfo(p.OCIBinary)
+		if err != nil {
+			return errors.Wrapf(ErrDaemonInfo, "container name %q", p.Name)
+		}
+		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q", p.Name)
 	}
 
 	return nil
@@ -251,7 +256,11 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
 
-	if _, err := runCmd(exec.Command(ociBin, args...)); err != nil {
+	if rr, err := runCmd(exec.Command(ociBin, args...)); err != nil {
+		// full error: docker: Error response from daemon: Range of CPUs is from 0.01 to 8.00, as there are only 8 CPUs available.
+		if strings.Contains(rr.Output(), "Range of CPUs is from") && strings.Contains(rr.Output(), "CPUs available") { // CPUs available
+			return ErrCPUCountLimit
+		}
 		return err
 	}
 
