@@ -191,14 +191,14 @@ func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version se
 	if err != nil {
 		return nil, err
 	}
-	validComponenets := []componentOptions{}
+	validComponents := []componentOptions{}
 	for _, extraArgs := range extraArgsSlice {
 		if extraArgs.Component == Kubeadm || extraArgs.Component == Etcd {
 			continue
 		}
-		validComponenets = append(validComponenets, extraArgs)
+		validComponents = append(validComponents, extraArgs)
 	}
-	return validComponenets, nil
+	return validComponents, nil
 }
 
 // createKubeProxyOptions generates a map of extra config for kube-proxy
