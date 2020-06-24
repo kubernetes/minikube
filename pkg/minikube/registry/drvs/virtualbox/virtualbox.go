@@ -83,7 +83,7 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, path, "listz", "hostinfo")
+	cmd := exec.CommandContext(ctx, path, "list", "hostinfo")
 	err = cmd.Run()
 
 	// Basic timeout
