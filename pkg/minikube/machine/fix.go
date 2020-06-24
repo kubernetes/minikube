@@ -166,13 +166,13 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	}
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
-		msg := shell.GenerateUsageHint(ec, "eval docker-env", "minikube -p {{.profile_name}} docker-env")
-		out.WarningT(msg, out.V{"profile_name": name})
+		msg := shell.GenerateDockerEnvEvalHint(ec, name)
+		out.WarningT(msg)
 	}
 	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
 		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
-		msg := shell.GenerateUsageHint(ec, "eval podman-env", "minikube -p {{.profile_name}} podman-env")
-		out.WarningT(msg, out.V{"profile_name": name})
+		msg := shell.GeneratePodmanEnvEvalHint(ec, name)
+		out.WarningT(msg)
 	}
 }
 

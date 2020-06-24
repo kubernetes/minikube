@@ -210,3 +210,15 @@ func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	_, err := w.Write([]byte(sb.String()))
 	return err
 }
+
+func generateSthEnvEvalHint(ec EnvConfig, profile, command string) string {
+	return GenerateUsageHint(ec, "Please update your environment using given code", fmt.Sprintf("minikube -p %s %s", profile, command))
+}
+
+func GenerateDockerEnvEvalHint(ec EnvConfig, profile string) string {
+	return generateSthEnvEvalHint(ec, profile, "docker-env")
+}
+
+func GeneratePodmanEnvEvalHint(ec EnvConfig, profile string) string {
+	return generateSthEnvEvalHint(ec, profile, "podman-env")
+}
