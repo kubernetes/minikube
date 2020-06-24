@@ -157,11 +157,6 @@ func (r *Containerd) SocketPath() string {
 	return "/run/containerd/containerd.sock"
 }
 
-// DefaultCNI returns whether to use CNI networking by default
-func (r *Containerd) DefaultCNI() bool {
-	return true
-}
-
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
 	return r.Init.Active("containerd")
