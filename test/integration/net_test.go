@@ -57,6 +57,10 @@ func TestNetworkPlugins(t *testing.T) {
 			tc := tc
 
 			t.Run(tc.name, func(t *testing.T) {
+				if DockerDriver() && strings.Contains(tc.name, "flannel") {
+					t.Skipf("flannel is not yet compatible with Docker driver: iptables v1.8.3 (legacy): Couldn't load target `CNI-x': No such file or directory")
+				}
+
 				start := time.Now()
 				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)
@@ -162,6 +166,10 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() {
 					t.Run("HairPin", func(t *testing.T) {
+						if strings.Contains(tc.name, "weave") {
+							t.Skipf("skipping: weavenet hairpin results vary substantially across environments")
+						}
+
 						tryHairPin := func() error {
 							_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
 							return err
