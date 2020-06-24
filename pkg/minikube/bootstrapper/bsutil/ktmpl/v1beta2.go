@@ -63,6 +63,10 @@ dns:
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
+    extraArgs:
+{{- range $i, $val := printMapInOrder .EtcdExtraArgs ": " }}
+      {{$val}}
+{{- end}}   
 controllerManager:
   extraArgs:
     "leader-elect": "false"
