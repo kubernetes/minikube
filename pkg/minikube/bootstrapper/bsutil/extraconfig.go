@@ -49,6 +49,7 @@ var componentToKubeadmConfigKey = map[string]string{
 	Apiserver:         "apiServer",
 	ControllerManager: "controllerManager",
 	Scheduler:         "scheduler",
+	Etcd:              "etcd",
 	Kubeadm:           "kubeadm",
 	// The KubeProxy is handled in different config block
 	Kubeproxy: "",
@@ -191,7 +192,7 @@ func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version se
 	}
 
 	for i, extraArgs := range extraArgsSlice {
-		if extraArgs.Component == Kubeadm {
+		if extraArgs.Component == Kubeadm || extraArgs.Component == Etcd {
 			extraArgsSlice = append(extraArgsSlice[:i], extraArgsSlice[i+1:]...)
 			break
 		}
