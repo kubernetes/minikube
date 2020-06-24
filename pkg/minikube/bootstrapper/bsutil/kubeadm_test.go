@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/pmezard/go-difflib/difflib"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -244,5 +245,53 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestEtcdExtraArgs(t *testing.T) {
+	tcs := []struct {
+		description string
+		extraOpts   config.ExtraOptionSlice
+		expected    map[string]string
+	}{
+		{
+			description: "includes an etcd option",
+			extraOpts: config.ExtraOptionSlice{
+				config.ExtraOption{
+					Component: "kubeadm",
+					Key:       "key",
+					Value:     "value",
+				}, config.ExtraOption{
+					Component: "etcd",
+					Key:       "key1",
+					Value:     "value1",
+				},
+			},
+			expected: map[string]string{
+				"key1": "value1",
+			},
+		}, {
+			description: "no etcd option",
+			extraOpts: config.ExtraOptionSlice{
+				config.ExtraOption{
+					Component: "kubeadm",
+					Key:       "key",
+					Value:     "value",
+				}, config.ExtraOption{
+					Component: "apiserver",
+					Key:       "key1",
+					Value:     "value1",
+				},
+			},
+			expected: map[string]string{},
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.description, func(t *testing.T) {
+			actual := etcdExtraArgs(tc.extraOpts)
+			if diff := cmp.Diff(tc.expected, actual); diff != "" {
+				t.Errorf("machines mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

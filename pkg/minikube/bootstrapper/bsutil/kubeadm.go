@@ -43,14 +43,12 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing Kubernetes version")
 	}
-	fmt.Println(k8s.ExtraOptions)
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := parseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
 		return nil, errors.Wrap(err, "parses feature gate config for kubeadm and component")
 	}
-	fmt.Println(k8s.ExtraOptions)
 
 	// In case of no port assigned, use default
 	cp, err := config.PrimaryControlPlane(&cc)
@@ -62,12 +60,10 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		nodePort = constants.APIServerPort
 	}
 
-	fmt.Println(k8s.ExtraOptions)
 	componentOpts, err := createExtraComponentConfig(k8s.ExtraOptions, version, componentFeatureArgs, cp)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
-	fmt.Println(k8s.ExtraOptions)
 
 	opts := struct {
 		CertDir             string
@@ -131,7 +127,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
 	}
-	fmt.Printf("kubeadm config:\n%s\n", b.String())
+	glog.Infof("kubeadm config:\n%s\n", b.String())
 	return b.Bytes(), nil
 }
 
@@ -165,6 +161,5 @@ func etcdExtraArgs(extraOpts config.ExtraOptionSlice) map[string]string {
 		}
 		args[eo.Key] = eo.Value
 	}
-	fmt.Println("etcd extra args:", args)
 	return args
 }
