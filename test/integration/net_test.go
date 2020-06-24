@@ -61,10 +61,10 @@ func TestNetworkPlugins(t *testing.T) {
 				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)
 
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer Cleanup(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=20m"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=25m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {
@@ -76,7 +76,7 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() && tc.podLabel != "" {
 					t.Run("ControllerPod", func(t *testing.T) {
-						if _, err := PodWait(ctx, t, profile, "kube-system", tc.podLabel, Minutes(8)); err != nil {
+						if _, err := PodWait(ctx, t, profile, "kube-system", tc.podLabel, Minutes(10)); err != nil {
 							t.Fatalf("failed waiting for %s labeled pod: %v", tc.podLabel, err)
 						}
 					})
@@ -114,11 +114,11 @@ func TestNetworkPlugins(t *testing.T) {
 							t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
 						}
 
-						if err := kapi.WaitForDeploymentToStabilize(client, "default", "netcat", Minutes(12)); err != nil {
+						if err := kapi.WaitForDeploymentToStabilize(client, "default", "netcat", Minutes(15)); err != nil {
 							t.Errorf("failed waiting for netcat deployment to stabilize: %v", err)
 						}
 
-						if _, err := PodWait(ctx, t, profile, "default", "app=netcat", Minutes(12)); err != nil {
+						if _, err := PodWait(ctx, t, profile, "default", "app=netcat", Minutes(15)); err != nil {
 							t.Fatalf("failed waiting for netcat pod: %v", err)
 						}
 
@@ -136,7 +136,7 @@ func TestNetworkPlugins(t *testing.T) {
 						}
 
 						// If the coredns process was stable, this retry wouldn't be necessary.
-						if err := retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
+						if err := retry.Expo(nslookup, 1*time.Second, Minutes(2)); err != nil {
 							t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
 						}
 
@@ -154,7 +154,7 @@ func TestNetworkPlugins(t *testing.T) {
 							return err
 						}
 
-						if err := retry.Expo(tryLocal, 1*time.Second, Seconds(30)); err != nil {
+						if err := retry.Expo(tryLocal, 1*time.Second, Seconds(60)); err != nil {
 							t.Errorf("failed to connect via localhost: %v", err)
 						}
 					})
@@ -168,7 +168,7 @@ func TestNetworkPlugins(t *testing.T) {
 						}
 
 						if tc.hairpin {
-							if err := retry.Expo(tryHairPin, 1*time.Second, Seconds(30)); err != nil {
+							if err := retry.Expo(tryHairPin, 1*time.Second, Seconds(60)); err != nil {
 								t.Errorf("failed to connect via pod host: %v", err)
 							}
 						} else {
