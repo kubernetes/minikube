@@ -28,8 +28,10 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -147,6 +149,23 @@ Alternatively to use this addon you can use a vm-based driver:
 
 To track the update on this work in progress feature please check:
 https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
+	}
+
+	if name == "ingress" {
+		client, err := kapi.Client(viper.GetString(config.ProfileName))
+		if err != nil {
+			glog.Errorf("Failed to get kube-client to validate ingress addon: %v", err)
+			exit.WithError("Failed verifying connectivity to to ingress addon", err)
+		} else {
+			err = kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", time.Minute*3)
+			if err != nil {
+				glog.Errorf("failed waiting for ingress-controller deployment: %v", err)
+				exit.WithError(`Failed verifying ingress addon, try disable and enabling it again:
+			minikube addons disable ingress
+			minikube addons enable ingress`, err)
+			}
+		}
+
 	}
 
 	if strings.HasPrefix(name, "istio") && enable {
