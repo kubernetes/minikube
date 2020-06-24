@@ -627,7 +627,6 @@ jobs:
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
-          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   addons_certs_virtualbox_macos:
     runs-on: macos-10.15
     env:
@@ -705,7 +704,6 @@ jobs:
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
-          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   multinode_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
@@ -865,8 +863,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
-          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+          if [ "$numPass" -lt 7 ];then echo "*** Failed to pass at least 7 ! ***";exit 2;fi
   pause_preload_dockerflags_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
@@ -952,7 +949,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 2 ];then echo "*** Failed to pass at least 2 ! ***";exit 2;fi
+          if [ "$numPass" -lt 9 ];then echo "*** Failed to pass at least 9 ! ***";exit 2;fi
   pause_preload_dockerflags_virtualbox_macos:
     runs-on: macos-10.15
     env:
@@ -1024,8 +1021,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 2 ];then echo "*** Failed to pass at least 2 ! ***";exit 2;fi
-          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+          if [ "$numPass" -lt 9 ];then echo "*** Failed to pass at least 9 ! ***";exit 2;fi
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
