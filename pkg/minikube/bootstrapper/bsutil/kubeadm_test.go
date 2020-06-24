@@ -241,7 +241,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 					t.Fatalf("diff error: %v", err)
 				}
 				if diff != "" {
-					t.Errorf("unexpected diff:\n%s\n===== [RAW OUTPUT] =====\n%s", diff, got)
+					t.Errorf("unexpected diff:\n%s\n", diff)
 				}
 			})
 		}
@@ -249,49 +249,16 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 }
 
 func TestEtcdExtraArgs(t *testing.T) {
-	tcs := []struct {
-		description string
-		extraOpts   config.ExtraOptionSlice
-		expected    map[string]string
-	}{
-		{
-			description: "includes an etcd option",
-			extraOpts: config.ExtraOptionSlice{
-				config.ExtraOption{
-					Component: "kubeadm",
-					Key:       "key",
-					Value:     "value",
-				}, config.ExtraOption{
-					Component: "etcd",
-					Key:       "key1",
-					Value:     "value1",
-				},
-			},
-			expected: map[string]string{
-				"key1": "value1",
-			},
-		}, {
-			description: "no etcd option",
-			extraOpts: config.ExtraOptionSlice{
-				config.ExtraOption{
-					Component: "kubeadm",
-					Key:       "key",
-					Value:     "value",
-				}, config.ExtraOption{
-					Component: "apiserver",
-					Key:       "key1",
-					Value:     "value1",
-				},
-			},
-			expected: map[string]string{},
-		},
+	expected := map[string]string{
+		"key": "value",
 	}
-	for _, tc := range tcs {
-		t.Run(tc.description, func(t *testing.T) {
-			actual := etcdExtraArgs(tc.extraOpts)
-			if diff := cmp.Diff(tc.expected, actual); diff != "" {
-				t.Errorf("machines mismatch (-want +got):\n%s", diff)
-			}
-		})
+	extraOpts := append(getExtraOpts(), config.ExtraOption{
+		Component: Etcd,
+		Key:       "key",
+		Value:     "value",
+	})
+	actual := etcdExtraArgs(extraOpts)
+	if diff := cmp.Diff(expected, actual); diff != "" {
+		t.Errorf("machines mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -68,7 +68,7 @@ etcd:
 {{- range $i, $val := printMapInOrder .EtcdExtraArgs ": " }}
       {{$val}}
 {{- end}}
-{{- end }} 
+{{- end}}
 controllerManager:
   extraArgs:
     "leader-elect": "false"
