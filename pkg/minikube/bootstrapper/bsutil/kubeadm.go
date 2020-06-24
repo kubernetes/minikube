@@ -26,6 +26,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -65,6 +66,18 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
+	cnm, err := cni.New(cc)
+	if err != nil {
+		return nil, errors.Wrap(err, "cni")
+	}
+
+	podCIDR := cnm.CIDR()
+	overrideCIDR := k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm)
+	if overrideCIDR != "" {
+		podCIDR = overrideCIDR
+	}
+	glog.Infof("Using pod CIDR: %s", podCIDR)
+
 	opts := struct {
 		CertDir             string
 		ServiceCIDR         string
@@ -87,7 +100,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
-		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
+		PodSubnet:         podCIDR,
 		AdvertiseAddress:  n.IP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,

@@ -1,0 +1,16 @@
+***************
+*** 307,312 ****
+  			return nil
+  		}
+  
+  		out.ErrT(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
+  		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
+  			glog.Warningf("delete failed: %v", err)
+--- 307,313 ----
+  			return nil
+  		}
+  
++ 		panic(fmt.Errorf("restart failed: %v", err))
+  		out.ErrT(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
+  		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
+  			glog.Warningf("delete failed: %v", err)

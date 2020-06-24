@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -53,7 +54,12 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	}
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
+
+		if k8s.NetworkPlugin == "kubenet" {
+			extraOpts["pod-cidr"] = cni.DefaultPodCIDR
+		}
 	}
+
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = nc.IP
 	}
