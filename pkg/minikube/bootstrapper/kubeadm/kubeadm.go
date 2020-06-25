@@ -230,23 +230,8 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "run")
 	}
 
-	cnm, err := cni.New(cfg)
-	if err != nil {
-		return errors.Wrap(err, "cni config")
-	}
-
-	if _, ok := cnm.(cni.Disabled); !ok {
-		out.T(out.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
-
-		if err := cnm.Apply(k.c, []cni.Runner{k.c}); err != nil {
-			return errors.Wrap(err, "cni apply")
-		}
-
-		if cfg.KubernetesConfig.ContainerRuntime == "crio" {
-			if err := sysinit.New(k.c).Restart("crio"); err != nil {
-				glog.Errorf("failed to restart CRI: %v", err)
-			}
-		}
+	if err := k.applyCNI(cfg); err != nil {
+		return errors.Wrap(err, "apply cni")
 	}
 
 	var wg sync.WaitGroup
@@ -275,6 +260,33 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}()
 
 	wg.Wait()
+	return nil
+}
+
+// applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.
+func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
+
+	cnm, err := cni.New(cfg)
+	if err != nil {
+		return errors.Wrap(err, "cni config")
+	}
+
+	if _, ok := cnm.(cni.Disabled); ok {
+		return nil
+	}
+
+	out.T(out.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+
+	if err := cnm.Apply(k.c, []cni.Runner{k.c}); err != nil {
+		return errors.Wrap(err, "cni apply")
+	}
+
+	if cfg.KubernetesConfig.ContainerRuntime == "crio" {
+		if err := sysinit.New(k.c).Restart("crio"); err != nil {
+			glog.Errorf("failed to restart CRI: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -566,6 +578,11 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 
 	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), hostname, port, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver health")
+	}
+
+	// because reboots clear /etc/cni
+	if err := k.applyCNI(cfg); err != nil {
+		return errors.Wrap(err, "apply cni")
 	}
 
 	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
