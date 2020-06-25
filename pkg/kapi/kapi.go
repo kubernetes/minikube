@@ -19,6 +19,7 @@ package kapi
 import (
 	"context"
 	"fmt"
+	"path"
 	"time"
 
 	"github.com/golang/glog"
@@ -37,6 +38,7 @@ import (
 	watchtools "k8s.io/client-go/tools/watch"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 var (
@@ -204,4 +206,9 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 // IsRetryableAPIError returns if this error is retryable or not
 func IsRetryableAPIError(err error) bool {
 	return apierr.IsTimeout(err) || apierr.IsServerTimeout(err) || apierr.IsTooManyRequests(err) || apierr.IsInternalError(err)
+}
+
+// KubectlBinaryPath returns the path to kubectl on the node
+func KubectlBinaryPath(version string) string {
+	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }

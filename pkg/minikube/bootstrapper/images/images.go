@@ -136,7 +136,7 @@ func dashboardFrontend(repo string) string {
 		repo = "kubernetesui"
 	}
 	// See 'kubernetes-dashboard' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "dashboard:v2.0.0")
+	return path.Join(repo, "dashboard:v2.0.1")
 }
 
 // dashboardMetrics returns the image used for the dashboard metrics scraper
@@ -145,7 +145,7 @@ func dashboardMetrics(repo string) string {
 		repo = "kubernetesui"
 	}
 	// See 'dashboard-metrics-scraper' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "metrics-scraper:v1.0.2")
+	return path.Join(repo, "metrics-scraper:v1.0.4")
 }
 
 // KindNet returns the image used for kindnet
