@@ -39,7 +39,6 @@ minikube start [flags]
       --dns-proxy                         Enable proxy for NAT DNS requests (virtualbox driver only)
       --docker-env stringArray            Environment variables to pass to the Docker daemon. (format: key=value)
       --docker-opt stringArray            Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
-      --docker-volume strings             Volumes to mount from host into the minikube container on start. (format: [host-src:]container-dest[:<options>], the comma-delimited options are [rw|ro], [Z], [srhared|rslave|rprivate]) (docker driver only)
       --download-only                     If true, only download and cache files for later use - don't install or start anything.
       --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
       --dry-run                           dry-run mode. Validates configuration, but does not mutate system state
