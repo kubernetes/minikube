@@ -51,7 +51,7 @@ type ClusterConfig struct {
 	HyperkitVpnKitSock      string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts      []string // Only used by the Hyperkit driver
 	DockerEnv               []string // Each entry is formatted as KEY=VALUE.
-	DockerVolume            []string
+	VolumeMounts            []string
 	InsecureRegistry        []string
 	RegistryMirror          []string
 	HostOnlyCIDR            string // Only used by the virtualbox driver
