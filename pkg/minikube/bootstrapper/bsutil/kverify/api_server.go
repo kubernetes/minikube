@@ -215,7 +215,7 @@ func apiServerHealthzNow(hostname string, port int) (state.State, error) {
 	glog.Infof("Checking apiserver healthz at %s ...", url)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
-		Proxy:           nil, // To avoid connectivy issue if http(s)_proxy is set.
+		Proxy:           nil, // Avoid using a proxy to speak to a local host
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
