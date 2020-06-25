@@ -18,6 +18,7 @@ package cni
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -68,13 +69,20 @@ func (c Bridge) netconf() (assets.CopyableFile, error) {
 }
 
 // Apply enables the CNI
-func (c Bridge) Apply(_ Runner, nodes []Runner) error {
+func (c Bridge) Apply(r Runner) error {
+	if len(c.cc.Nodes) > 1 {
+		return fmt.Errorf("bridge CNI is incompatible with multi-node clusters")
+	}
+
 	f, err := c.netconf()
 	if err != nil {
 		return errors.Wrap(err, "netconf")
 	}
 
-	return applyNetConf(nodes, f)
+	if err := r.Copy(f); err != nil {
+		return errors.Wrapf(err, "copy")
+	}
+	return nil
 }
 
 // CIDR returns the default CIDR used by this CNI

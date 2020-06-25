@@ -167,12 +167,12 @@ func (c KindNet) manifest() (assets.CopyableFile, error) {
 }
 
 // Apply enables the CNI
-func (c KindNet) Apply(master Runner, nodes []Runner) error {
+func (c KindNet) Apply(r Runner) error {
 	m, err := c.manifest()
 	if err != nil {
 		return errors.Wrap(err, "manifest")
 	}
-	return applyManifest(c.cc, master, m)
+	return applyManifest(c.cc, r, m)
 }
 
 // CIDR returns the default CIDR used by this CNI
