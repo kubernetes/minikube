@@ -27,22 +27,22 @@ func TestListProfiles(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
-	// test cases for valid profiles
-	var testCasesValidProfs = []struct {
+
+	type testCase struct {
 		index      int
 		expectName string
 		vmDriver   string
-	}{
+	}
+
+	// test cases for valid profiles
+	var testCasesValidProfs = []testCase{
 		{0, "p1", "hyperkit"},
 		{1, "p2_newformat", "virtualbox"},
+		{2, "p6_v1_6_2_files", "hyperkit"},
 	}
 
 	// test cases for invalid profiles
-	var testCasesInValidProfs = []struct {
-		index      int
-		expectName string
-		vmDriver   string
-	}{
+	var testCasesInValidProfs = []testCase{
 		{0, "p3_empty", ""},
 		{1, "p4_invalid_file", ""},
 		{2, "p5_partial_config", ""},

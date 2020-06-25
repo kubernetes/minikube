@@ -49,7 +49,7 @@ var versionConfigTranslators = []versionConfigTranslator{
 			return v162.DefaultLoader.LoadConfigFromFile(name, miniHome...)
 		},
 		TranslateToNextVersion: func(config interface{}) (interface{}, error) {
-			return translateFrom163ToNextVersion(config.(*v162.MachineConfig))
+			return translateFrom162ToNextVersion(config.(*v162.MachineConfig))
 		},
 	},
 	{
@@ -69,7 +69,7 @@ type versionConfigTranslator struct {
 type translateToNextVersion func(interface{}) (interface{}, error)
 type tryLoadFromFile func(name string, miniHome ...string) (interface{}, error)
 
-func translateFrom163ToNextVersion(oldConfig *v162.MachineConfig) (*ClusterConfig, error) {
+func translateFrom162ToNextVersion(oldConfig *v162.MachineConfig) (*ClusterConfig, error) {
 
 	hypervUseExternalSwitch := false
 
@@ -81,15 +81,25 @@ func translateFrom163ToNextVersion(oldConfig *v162.MachineConfig) (*ClusterConfi
 		return nil, err
 	}
 
-	var newConfig *ClusterConfig
+	var newConfig ClusterConfig
 
-	errorUnmarshalling := json.Unmarshal(oldConfigBytes, newConfig)
+	errorUnmarshalling := json.Unmarshal(oldConfigBytes, &newConfig)
 
 	if errorUnmarshalling != nil {
 		return nil, errorUnmarshalling
 	}
 	newConfig.HypervUseExternalSwitch = hypervUseExternalSwitch
-	return newConfig, nil
+
+	newConfig.Driver = oldConfig.VMDriver
+	newConfig.Nodes = []Node{
+		{
+			Name:              oldConfig.KubernetesConfig.NodeName,
+			IP:                oldConfig.KubernetesConfig.NodeIP,
+			Port:              oldConfig.KubernetesConfig.NodePort,
+			KubernetesVersion: oldConfig.KubernetesConfig.KubernetesVersion,
+		},
+	}
+	return &newConfig, nil
 
 }
 
@@ -107,28 +117,28 @@ func translateFrom152ToNextVersion(oldConfig *v152.Config) (*ClusterConfig, erro
 		return nil, err
 	}
 
-	var newConfig *ClusterConfig
+	var newConfig ClusterConfig
 
-	errorUnmarshalling := json.Unmarshal(oldMachineConfigBytes, newConfig)
+	errorUnmarshalling := json.Unmarshal(oldMachineConfigBytes, &newConfig)
 	if errorUnmarshalling != nil {
 		return nil, errorUnmarshalling
 	}
 
-	var newKubernetesConfig *KubernetesConfig
+	var newKubernetesConfig KubernetesConfig
 	oldKubernetesConfigBytes, err := json.Marshal(oldConfig.KubernetesConfig)
 
 	if err != nil {
 		return nil, err
 	}
 
-	errorUnmarshallingKubernetesConfig := json.Unmarshal(oldKubernetesConfigBytes, newKubernetesConfig)
+	errorUnmarshallingKubernetesConfig := json.Unmarshal(oldKubernetesConfigBytes, &newKubernetesConfig)
 	if errorUnmarshallingKubernetesConfig != nil {
 		return nil, errorUnmarshallingKubernetesConfig
 	}
 
-	newConfig.KubernetesConfig = *newKubernetesConfig
+	newConfig.KubernetesConfig = newKubernetesConfig
 
 	//TODO: do real translation here, find the difference between the old and the new configs and re-assign the properties
-	return newConfig, nil
+	return &newConfig, nil
 
 }

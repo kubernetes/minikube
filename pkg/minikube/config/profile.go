@@ -259,9 +259,15 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	}
 	//TODO: we have to make sure what specific error that results from not being able to load an older version, and only then try to translate
 	if !p.IsValid() || (err != nil && err.Error() == "unmarshal") {
-		configTranslated, err := tryTranslate(versionConfigTranslators, name, miniHome...)
-		if err == nil {
+		configTranslated, errTranslating := tryTranslate(versionConfigTranslators, name, miniHome...)
+
+		//We do this assignment here to use the profile.IsValid method. And we have to check if nil before casting
+		if errTranslating == nil && configTranslated != nil {
 			p.Config = configTranslated.(*ClusterConfig)
+			if !p.IsValid() {
+				// revert back to the first loaded config above
+				p.Config = cfg
+			}
 		}
 	}
 
