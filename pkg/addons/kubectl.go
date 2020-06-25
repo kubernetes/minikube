@@ -32,7 +32,7 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 		v = cc.KubernetesConfig.KubernetesVersion
 	}
 
-	kubectlBinary := kubectlBinaryPath(v)
+	kubectlBinary := KubectlBinaryPath(v)
 
 	kubectlAction := "apply"
 	if !enable {
@@ -47,6 +47,7 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 	return exec.Command("sudo", args...)
 }
 
-func kubectlBinaryPath(version string) string {
+// KubectlBinaryPath returns the path to kubectl on the node
+func KubectlBinaryPath(version string) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }
