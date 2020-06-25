@@ -313,24 +313,20 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 }
 
 func validateIngress(cc *config.ClusterConfig, name string, val string) error {
-	fmt.Println("inside validatr inresssss")
 	glog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 	if name == "ingress" && enable {
-		fmt.Println("validating client")
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
 			return errors.Wrapf(err, "get kube-client to validate ingress addon: %s", name)
 		} else {
-			fmt.Println("validating deployment.....")
 			err = kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", time.Minute*3)
 			if err != nil {
-				return errors.Wrapf(err, "Failed verifying ingress addon: %s", name)
+				return errors.Wrapf(err, "Failed verifying ingress addon deployment: %s", name)
 			}
-			fmt.Println("SCUCESSSFULLY validated deployment.....")
 		}
 	}
 	return nil
