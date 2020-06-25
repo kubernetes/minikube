@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -123,17 +124,12 @@ func manifestAsset(b []byte) assets.CopyableFile {
 	return assets.NewMemoryAssetTarget(b, manifestPath(), "0644")
 }
 
-// kubectlPath returns the path to the kubelet
-func kubectlPath(cc config.ClusterConfig) string {
-	return path.Join(vmpath.GuestPersistentDir, "binaries", cc.KubernetesConfig.KubernetesVersion, "kubectl")
-}
-
 // applyManifest applies a CNI manifest
 func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	kubectl := kubectlPath(cc)
+	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	glog.Infof("applying CNI manifest using %s ...", kubectl)
 
 	if err := r.Copy(f); err != nil {
