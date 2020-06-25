@@ -73,6 +73,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		APIServerPort       int
 		KubernetesVersion   string
 		EtcdDataDir         string
+		EtcdExtraArgs       map[string]string
 		ClusterName         string
 		NodeName            string
 		DNSDomain           string
@@ -92,6 +93,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
+		EtcdExtraArgs:     etcdExtraArgs(k8s.ExtraOptions),
 		ClusterName:       cc.Name,
 		//kubeadm uses NodeName as the --hostname-override parameter, so this needs to be the name of the machine
 		NodeName:            KubeNodeName(cc, n),
@@ -138,6 +140,7 @@ const (
 	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
 	Kubeproxy         = "kube-proxy"
+	Etcd              = "etcd"
 )
 
 // InvokeKubeadm returns the invocation command for Kubeadm
@@ -148,4 +151,15 @@ func InvokeKubeadm(version string) string {
 // EtcdDataDir is where etcd data is stored.
 func EtcdDataDir() string {
 	return path.Join(vmpath.GuestPersistentDir, "etcd")
+}
+
+func etcdExtraArgs(extraOpts config.ExtraOptionSlice) map[string]string {
+	args := map[string]string{}
+	for _, eo := range extraOpts {
+		if eo.Component != Etcd {
+			continue
+		}
+		args[eo.Key] = eo.Value
+	}
+	return args
 }
