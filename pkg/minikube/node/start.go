@@ -36,6 +36,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -145,6 +146,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	if starter.ExistingAddons != nil {
 		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 	}
+
+	wg.Add(1)
+	go func() {
+		rescaleCoreDNS(starter.Cfg, starter.Runner)
+		wg.Done()
+	}()
 
 	if apiServer {
 		// special ops for none , like change minikube directory.
@@ -505,5 +512,17 @@ func prepareNone() {
 
 	if err := util.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
 		exit.WithCodeT(exit.Permissions, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": localpath.MiniPath(), "error": err})
+	}
+}
+
+// rescaleCoreDNS attempts to reduce coredns replicas from 2 to 1 to improve CPU overhead
+// no worries if this doesn't work
+func rescaleCoreDNS(cc *config.ClusterConfig, runner command.Runner) {
+	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
+	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "scale", "deployment", "--replicas=1", "coredns", "-n=kube-system")
+	if _, err := runner.RunCmd(cmd); err != nil {
+		glog.Warningf("unable to scale coredns replicas to 1: %v", err)
+	} else {
+		glog.Infof("successfully scaled coredns replicas to 1")
 	}
 }
