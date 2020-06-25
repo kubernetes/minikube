@@ -323,11 +323,10 @@ func validateIngress(cc *config.ClusterConfig, name string, val string) error {
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
 			return errors.Wrapf(err, "get kube-client to validate ingress addon: %s", name)
-		} else {
-			err = kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", time.Minute*3)
-			if err != nil {
-				return errors.Wrapf(err, "Failed verifying ingress addon deployment: %s", name)
-			}
+		}
+		err = kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", time.Minute*3)
+		if err != nil {
+			return errors.Wrapf(err, "Failed verifying ingress addon deployment: %s", name)
 		}
 	}
 	return nil
