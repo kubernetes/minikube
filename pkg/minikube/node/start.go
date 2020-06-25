@@ -191,7 +191,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "cni")
 		}
 
-		if err := cnm.Apply(cpr, []cni.Runner{cpr, starter.Runner}); err != nil {
+		if err := cnm.Apply(cpr); err != nil {
 			return nil, errors.Wrap(err, "cni apply")
 		}
 	}

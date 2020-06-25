@@ -636,8 +636,8 @@ func (c Flannel) String() string {
 }
 
 // Apply enables the CNI
-func (c Flannel) Apply(master Runner, nodes []Runner) error {
-	return applyManifest(c.cc, master, manifestAsset([]byte(flannelTmpl)))
+func (c Flannel) Apply(r Runner) error {
+	return applyManifest(c.cc, r, manifestAsset([]byte(flannelTmpl)))
 }
 
 // CIDR returns the default CIDR used by this CNI

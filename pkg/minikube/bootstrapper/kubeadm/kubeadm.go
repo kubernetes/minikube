@@ -277,7 +277,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 
 	out.T(out.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
 
-	if err := cnm.Apply(k.c, []cni.Runner{k.c}); err != nil {
+	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
 	}
 

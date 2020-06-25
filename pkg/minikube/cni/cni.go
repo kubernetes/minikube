@@ -46,8 +46,8 @@ type Runner interface {
 
 // Manager is a common interface for CNI
 type Manager interface {
-	// Enable enables the CNI
-	Apply(Runner, []Runner) error
+	// Apply a CNI. The provided runner is for the control plane
+	Apply(Runner) error
 
 	// CIDR returns the default CIDR used by this CNI
 	CIDR() string
@@ -143,17 +143,6 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 	cmd := exec.CommandContext(ctx, "sudo", kubectl, "apply", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), "-f", manifestPath())
 	if rr, err := r.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
-	}
-
-	return nil
-}
-
-// applyNetConf applies a netconf file across nodes
-func applyNetConf(rs []Runner, f assets.CopyableFile) error {
-	for _, r := range rs {
-		if err := r.Copy(f); err != nil {
-			return errors.Wrapf(err, "copy")
-		}
 	}
 
 	return nil

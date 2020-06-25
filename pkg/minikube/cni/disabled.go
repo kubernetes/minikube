@@ -33,7 +33,7 @@ func (c Disabled) String() string {
 }
 
 // Apply enables the CNI
-func (c Disabled) Apply(master Runner, nodes []Runner) error {
+func (c Disabled) Apply(r Runner) error {
 	if driver.IsKIC(c.cc.Driver) && c.cc.KubernetesConfig.ContainerRuntime != "docker" {
 		glog.Warningf("CNI is recommended for %q driver and %q runtime - expect networking issues", c.cc.Driver, c.cc.KubernetesConfig.ContainerRuntime)
 	}

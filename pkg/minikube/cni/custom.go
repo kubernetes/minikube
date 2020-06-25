@@ -51,13 +51,13 @@ func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
 }
 
 // Apply enables the CNI
-func (c Custom) Apply(master Runner, nodes []Runner) error {
+func (c Custom) Apply(r Runner) error {
 	m, err := assets.NewFileAsset(c.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644")
 	if err != nil {
 		return errors.Wrap(err, "manifest")
 	}
 
-	return applyManifest(c.cc, master, m)
+	return applyManifest(c.cc, r, m)
 }
 
 // CIDR returns the default CIDR used by this CNI
