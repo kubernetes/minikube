@@ -65,7 +65,7 @@ var Addons = []*Addon{
 	{
 		name:      "ingress",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon, validateIngress},
 	},
 	{
 		name:      "ingress-dns",
