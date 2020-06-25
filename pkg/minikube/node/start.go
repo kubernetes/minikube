@@ -36,6 +36,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -517,7 +518,7 @@ func prepareNone() {
 // rescaleCoreDNS attempts to reduce coredns replicas from 2 to 1 to improve CPU overhead
 // no worries if this doesn't work
 func rescaleCoreDNS(cc *config.ClusterConfig, runner command.Runner) {
-	kubectl := addons.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
+	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "scale", "deployment", "--replicas=1", "coredns", "-n=kube-system")
 	if _, err := runner.RunCmd(cmd); err != nil {
 		glog.Infof("unable to scale coredns replicas to 1: %v", err)
