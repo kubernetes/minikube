@@ -14,15 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package retry implements wrappers to retry function calls
 package retry
 
 import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/golang/glog"
 )
 
 const defaultMaxRetries = 113
+
+func notify(err error, d time.Duration) {
+	glog.Infof("will retry after %s: %v", d, err)
+}
+
+// Local is back-off retry for local connections
+func Local(callback func() error, maxTime time.Duration) error {
+	b := backoff.NewExponentialBackOff()
+	b.InitialInterval = 250 * time.Millisecond
+	b.RandomizationFactor = 0.25
+	b.Multiplier = 1.25
+	return backoff.RetryNotify(callback, b, notify)
+}
 
 // Expo is exponential backoff retry.
 // initInterval is the initial waiting time to start with.
@@ -40,7 +55,7 @@ func Expo(callback func() error, initInterval time.Duration, maxTime time.Durati
 	b.RandomizationFactor = 0.5
 	b.Multiplier = 1.5
 	bm := backoff.WithMaxRetries(b, maxRetry)
-	return backoff.Retry(callback, bm)
+	return backoff.RetryNotify(callback, bm, notify)
 }
 
 // RetriableError is an error that can be tried again
