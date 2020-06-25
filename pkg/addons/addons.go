@@ -19,7 +19,6 @@ package addons
 import (
 	"fmt"
 	"path"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -141,32 +140,15 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	}
 
 	// to match both ingress and ingress-dns adons
-	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
-		exit.UsageT(`Due to {{.driver_name}} networking limitations on {{.os_name}}, {{.addon_name}} addon is not supported for this driver.
-Alternatively to use this addon you can use a vm-based driver:
+	// 	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
+	// 		exit.UsageT(`Due to {{.driver_name}} networking limitations on {{.os_name}}, {{.addon_name}} addon is not supported for this driver.
+	// Alternatively to use this addon you can use a vm-based driver:
 
-	'minikube start --vm=true'
+	// 	'minikube start --vm=true'
 
-To track the update on this work in progress feature please check:
-https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
-	}
-
-	if name == "ingress" {
-		client, err := kapi.Client(viper.GetString(config.ProfileName))
-		if err != nil {
-			glog.Errorf("Failed to get kube-client to validate ingress addon: %v", err)
-			exit.WithError("Failed verifying connectivity to to ingress addon", err)
-		} else {
-			err = kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", time.Minute*3)
-			if err != nil {
-				glog.Errorf("failed waiting for ingress-controller deployment: %v", err)
-				exit.WithError(`Failed verifying ingress addon, try disable and enabling it again:
-			minikube addons disable ingress
-			minikube addons enable ingress`, err)
-			}
-		}
-
-	}
+	// To track the update on this work in progress feature please check:
+	// https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
+	// 	}
 
 	if strings.HasPrefix(name, "istio") && enable {
 		minMem := 8192
@@ -328,6 +310,30 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	}
 
 	return enableOrDisableAddon(cc, name, val)
+}
+
+func validateIngress(cc *config.ClusterConfig, name string, val string) error {
+	fmt.Println("inside validatr inresssss")
+	glog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+	if name == "ingress" && enable {
+		fmt.Println("validating client")
+		client, err := kapi.Client(viper.GetString(config.ProfileName))
+		if err != nil {
+			return errors.Wrapf(err, "get kube-client to validate ingress addon: %s", name)
+		} else {
+			fmt.Println("validating deployment.....")
+			err = kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", time.Minute*3)
+			if err != nil {
+				return errors.Wrapf(err, "Failed verifying ingress addon: %s", name)
+			}
+			fmt.Println("SCUCESSSFULLY validated deployment.....")
+		}
+	}
+	return nil
 }
 
 // Start enables the default addons for a profile, plus any additional
