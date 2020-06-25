@@ -17,7 +17,6 @@ limitations under the License.
 package cni
 
 import (
-	"fmt"
 	"os"
 	"path"
 
@@ -34,7 +33,7 @@ type Custom struct {
 
 // String returns a string representation of this CNI
 func (c Custom) String() string {
-	return fmt.Sprintf("Custom (%s)", c.manifest)
+	return c.manifest
 }
 
 // NewCustom returns a well-formed Custom CNI manager

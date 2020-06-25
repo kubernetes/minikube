@@ -54,7 +54,7 @@ type Bridge struct {
 
 // String returns a string representation of this CNI
 func (c Bridge) String() string {
-	return "Bridge CNI"
+	return "bridge CNI"
 }
 
 func (c Bridge) netconf() (assets.CopyableFile, error) {
