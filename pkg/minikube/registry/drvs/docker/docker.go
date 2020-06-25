@@ -56,8 +56,8 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	mounts := make([]oci.Mount, len(cc.DockerVolume))
-	for i, spec := range cc.DockerVolume {
+	mounts := make([]oci.Mount, len(cc.VolumeMounts))
+	for i, spec := range cc.VolumeMounts {
 		var err error
 		mounts[i], err = oci.ParseMountString(spec)
 		if err != nil {
