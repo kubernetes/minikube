@@ -47,7 +47,7 @@ var bridgeConf = template.Must(template.New("bridge").Parse(`
 }
 `))
 
-// Bridge is a CNI manager than does nothing
+// Bridge is a simple CNI manager for single-node usage
 type Bridge struct {
 	cc config.ClusterConfig
 }
