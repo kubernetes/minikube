@@ -521,7 +521,7 @@ func rescaleCoreDNS(cc *config.ClusterConfig, runner command.Runner) {
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "scale", "deployment", "--replicas=1", "coredns", "-n=kube-system")
 	if _, err := runner.RunCmd(cmd); err != nil {
-		glog.Infof("unable to scale coredns replicas to 1: %v", err)
+		glog.Warningf("unable to scale coredns replicas to 1: %v", err)
 	} else {
 		glog.Infof("successfully scaled coredns replicas to 1")
 	}
