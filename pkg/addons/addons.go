@@ -313,27 +313,24 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	return enableOrDisableAddon(cc, name, val)
 }
 
-func validateIngress(cc *config.ClusterConfig, name string, val string) error {
+func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
 	glog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
-	if name == "ingress" && enable {
+
+	label, ok := addonPodLabels[name]
+	if ok && enable {
+		out.T(out.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
-			return errors.Wrapf(err, "get kube-client to validate ingress addon: %s", name)
+			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
 		}
 
-		err = kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", time.Minute*3)
+		err = kapi.WaitForPods(client, "kube-system", label, time.Minute*3)
 		if err != nil {
-			return errors.Wrapf(err, "Failed verifying ingress addon deployment: %s", name)
-		}
-
-		// app.kubernetes.io/name: ingress-nginx
-		err = kapi.WaitForPods(client, "kube-system", "app.kubernetes.io/name=ingress-nginx", time.Minute*3)
-		if err != nil {
-			return errors.Wrapf(err, "Failed verifying ingress addon deployment: %s", name)
+			return errors.Wrapf(err, "verifying %s addon pods : %v", name, err)
 		}
 
 	}
