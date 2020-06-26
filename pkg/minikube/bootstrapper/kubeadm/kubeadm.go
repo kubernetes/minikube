@@ -17,7 +17,6 @@ limitations under the License.
 package kubeadm
 
 import (
-	"bytes"
 	"context"
 	"os/exec"
 	"path"
@@ -41,7 +40,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -49,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -231,6 +230,10 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "run")
 	}
 
+	if err := k.applyCNI(cfg); err != nil {
+		return errors.Wrap(err, "apply cni")
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(3)
 
@@ -238,12 +241,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		// we need to have cluster role binding before applying overlay to avoid #7428
 		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
 			glog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
-		}
-		// the overlay is required for containerd and cri-o runtime: see #7428
-		if config.MultiNode(cfg) || (driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker") {
-			if err := k.applyKICOverlay(cfg); err != nil {
-				glog.Errorf("failed to apply kic overlay: %v", err)
-			}
 		}
 		wg.Done()
 	}()
@@ -263,6 +260,33 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}()
 
 	wg.Wait()
+	return nil
+}
+
+// applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.
+func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
+
+	cnm, err := cni.New(cfg)
+	if err != nil {
+		return errors.Wrap(err, "cni config")
+	}
+
+	if _, ok := cnm.(cni.Disabled); ok {
+		return nil
+	}
+
+	out.T(out.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+
+	if err := cnm.Apply(k.c); err != nil {
+		return errors.Wrap(err, "cni apply")
+	}
+
+	if cfg.KubernetesConfig.ContainerRuntime == "crio" {
+		if err := sysinit.New(k.c).Restart("crio"); err != nil {
+			glog.Errorf("failed to restart CRI: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -556,6 +580,11 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "apiserver health")
 	}
 
+	// because reboots clear /etc/cni
+	if err := k.applyCNI(cfg); err != nil {
+		return errors.Wrap(err, "apply cni")
+	}
+
 	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
@@ -753,13 +782,6 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"))
 	}
 
-	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
-	// start a Pod in the case a user hasn't manually installed any CNI plugin
-	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
-	if cfg.KubernetesConfig.EnableDefaultCNI && !config.MultiNode(cfg) {
-		files = append(files, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), bsutil.DefaultCNIConfigPath, "0644"))
-	}
-
 	// Installs compatibility shims for non-systemd environments
 	kubeletPath := path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubelet")
 	shims, err := sm.GenerateInitShim("kubelet", kubeletPath, bsutil.KubeletSystemdConfFile)
@@ -768,7 +790,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 	files = append(files, shims...)
 
-	if err := copyFiles(k.c, files); err != nil {
+	if err := bsutil.CopyFiles(k.c, files); err != nil {
 		return errors.Wrap(err, "copy")
 	}
 
@@ -784,63 +806,9 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	return sm.Start("kubelet")
 }
 
-func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
-	// Combine mkdir request into a single call to reduce load
-	dirs := []string{}
-	for _, f := range files {
-		dirs = append(dirs, f.GetTargetDir())
-	}
-	args := append([]string{"mkdir", "-p"}, dirs...)
-	if _, err := runner.RunCmd(exec.Command("sudo", args...)); err != nil {
-		return errors.Wrap(err, "mkdir")
-	}
-
-	for _, f := range files {
-		if err := runner.Copy(f); err != nil {
-			return errors.Wrapf(err, "copy")
-		}
-	}
-	return nil
-}
-
 // kubectlPath returns the path to the kubelet
 func kubectlPath(cfg config.ClusterConfig) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
-}
-
-// applyKICOverlay applies the CNI plugin needed to make kic work
-func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
-	b := bytes.Buffer{}
-	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
-		return err
-	}
-
-	ko := path.Join(vmpath.GuestEphemeralDir, "kic_overlay.yaml")
-	f := assets.NewMemoryAssetTarget(b.Bytes(), ko, "0644")
-
-	if err := k.c.Copy(f); err != nil {
-		return errors.Wrapf(err, "copy")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), "apply",
-		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-		"-f", ko)
-
-	if rr, err := k.c.RunCmd(cmd); err != nil {
-		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
-	}
-
-	// Inform cri-o that the CNI has changed
-	if cfg.KubernetesConfig.ContainerRuntime == "crio" {
-		if err := sysinit.New(k.c).Restart("crio"); err != nil {
-			return errors.Wrap(err, "restart crio")
-		}
-	}
-
-	return nil
 }
 
 // applyNodeLabels applies minikube labels to all the nodes

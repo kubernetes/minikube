@@ -169,9 +169,6 @@ func FlagDefaults(name string) FlagHints {
 	fh := FlagHints{}
 	if name != None {
 		fh.CacheImages = true
-		if name == Docker {
-			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", config.DefaultPodCIDR))
-		}
 		return fh
 	}
 
