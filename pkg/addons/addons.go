@@ -141,7 +141,7 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	}
 
 	// to match both ingress and ingress-dns adons
-	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS == "linux" {
+	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
 		exit.UsageT(`Due to {{.driver_name}} networking limitations on {{.os_name}}, {{.addon_name}} addon is not supported for this driver.
 Alternatively to use this addon you can use a vm-based driver:
 
