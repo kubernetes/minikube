@@ -314,7 +314,7 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 }
 
 func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
-	glog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
+	glog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
