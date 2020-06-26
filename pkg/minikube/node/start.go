@@ -379,7 +379,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*h
 		}
 	}
 
-	if _, ff := err.(oci.FailFastError); ff {
+	if _, ff := err.(*oci.FailFastError); ff {
 		glog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
 		return host, exists, err
 	}
