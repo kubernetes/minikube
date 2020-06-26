@@ -212,6 +212,9 @@ func CreateContainerNode(p CreateParams) error {
 		if s != state.Running {
 			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
+		if !iptablesFileExists(p.OCIBinary, p.Name) {
+			return fmt.Errorf("iptables file doesn't exist, see #8179")
+		}
 		glog.Infof("the created container %q has a running status.", p.Name)
 		return nil
 	}
@@ -575,4 +578,17 @@ func ShutDown(ociBin string, name string) error {
 	}
 	glog.Infof("Successfully shutdown container %s", name)
 	return nil
+}
+
+// iptablesFileExists checks if /var/lib/dpkg/alternatives/iptables exists in minikube
+// this file is necessary for the entrypoint script to pass
+// TODO: https://github.com/kubernetes/minikube/issues/8179
+func iptablesFileExists(ociBin string, nameOrID string) bool {
+	file := "/var/lib/dpkg/alternatives/iptables"
+	_, err := runCmd(exec.Command(ociBin, "exec", nameOrID, "stat", file), false)
+	if err != nil {
+		glog.Warningf("error checking if %s exists: %v", file, err)
+		return false
+	}
+	return true
 }
