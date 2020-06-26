@@ -141,7 +141,7 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	}
 
 	// to match both ingress and ingress-dns adons
-	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
+	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS == "linux" {
 		exit.UsageT(`Due to {{.driver_name}} networking limitations on {{.os_name}}, {{.addon_name}} addon is not supported for this driver.
 Alternatively to use this addon you can use a vm-based driver:
 
@@ -324,10 +324,18 @@ func validateIngress(cc *config.ClusterConfig, name string, val string) error {
 		if err != nil {
 			return errors.Wrapf(err, "get kube-client to validate ingress addon: %s", name)
 		}
+
 		err = kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", time.Minute*3)
 		if err != nil {
 			return errors.Wrapf(err, "Failed verifying ingress addon deployment: %s", name)
 		}
+
+		// app.kubernetes.io/name: ingress-nginx
+		err = kapi.WaitForPods(client, "kube-system", "app.kubernetes.io/name=ingress-nginx", time.Minute*3)
+		if err != nil {
+			return errors.Wrapf(err, "Failed verifying ingress addon deployment: %s", name)
+		}
+
 	}
 	return nil
 }
