@@ -582,11 +582,8 @@ func ShutDown(ociBin string, name string) error {
 
 // iptablesFileExists checks if /var/lib/dpkg/alternatives/iptables exists in minikube
 // this file is necessary for the entrypoint script to pass
-// see: https://github.com/kubernetes/minikube/issues/8179
+// TODO: https://github.com/kubernetes/minikube/issues/8179
 func iptablesFileExists(ociBin string, nameOrID string) bool {
-	if ociBin != Docker {
-		return true
-	}
 	file := "/var/lib/dpkg/alternatives/iptables"
 	_, err := runCmd(exec.Command(ociBin, "exec", nameOrID, "stat", file), false)
 	if err != nil {
