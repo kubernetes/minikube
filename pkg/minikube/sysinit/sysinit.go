@@ -24,6 +24,7 @@ import (
 )
 
 var cachedSystemdCheck *bool
+var cachedOpenRCCheck *bool
 
 // Runner is the subset of command.Runner this package consumes
 type Runner interface {
@@ -68,6 +69,7 @@ func New(r Runner) Manager {
 	}
 
 	var systemd bool
+	var openrc bool
 
 	// Caching the result is important, as this manager may be created in many places,
 	// and ssh calls are expensive on some drivers, such as Docker.
@@ -77,9 +79,18 @@ func New(r Runner) Manager {
 		systemd = usesSystemd(r)
 		cachedSystemdCheck = &systemd
 	}
+	if cachedOpenRCCheck != nil {
+		openrc = *cachedOpenRCCheck
+	} else {
+		openrc = usesOpenRC(r)
+		cachedOpenRCCheck = &openrc
+	}
 
 	if systemd {
 		return &Systemd{r: r}
 	}
-	return &OpenRC{r: r}
+	if openrc {
+		return &OpenRC{r: r}
+	}
+	return &SysV{r: r}
 }

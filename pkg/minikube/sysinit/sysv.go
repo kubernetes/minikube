@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-var openrcRestartWrapper = `#!/bin/bash
+var sysvRestartWrapper = `#!/bin/bash
 # Wrapper script to emulate systemd restart on non-systemd systems
 readonly UNIT_PATH=$1
 
@@ -43,22 +43,36 @@ while true; do
 done
 `
 
-var openrcInitScriptTmpl = template.Must(template.New("initScript").Parse(`#!/bin/bash
-# OpenRC init script shim for systemd units
+var sysvInitScriptTmpl = template.Must(template.New("initScript").Parse(`#!/bin/bash
+# SysV init script shim for systemd units
 readonly NAME="{{.Name}}"
+readonly BINARY="{{.Binary}}"
 readonly RESTART_WRAPPER="{{.Wrapper}}"
 readonly UNIT_PATH="{{.Unit}}"
 readonly PID_PATH="/var/run/${NAME}.pid"
 
+if [ -r /etc/rc.d/init.d/functions ]; then
+  lsb=false
+  . /etc/rc.d/init.d/functions
+else
+  lsb=true
+  . /lib/lsb/init-functions
+fi
+
 function start() {
-    start-stop-daemon --oknodo --pidfile "${PID_PATH}" --background --start --make-pid --exec "${RESTART_WRAPPER}" "${UNIT_PATH}"
+    if $lsb; then
+        start_daemon -p "${PID_PATH}" "${RESTART_WRAPPER}" "${UNIT_PATH}"
+    else
+        daemon --pidfile "${PID_PATH}" "${RESTART_WRAPPER}" "${UNIT_PATH}"
+    fi
 }
 
 function stop() {
-	if [[ -f "${PID_PATH}" ]]; then
-		pkill -P "$(cat ${PID_PATH})"
-	fi
-	start-stop-daemon --oknodo --pidfile "${PID_PATH}" --stop
+    if $lsb; then
+        killproc -p "${PID_PATH}" $BINARY $NAME
+    else
+        killproc -p "${PID_PATH}" -b $BINARY $NAME
+    fi
 }
 
 case "$1" in
@@ -73,7 +87,11 @@ case "$1" in
         start
 		;;
     status)
-        start-stop-daemon --pidfile "${PID_PATH}" --status
+        if $lsb; then
+            status_of_proc -p "${PID_PATH}" $BINARY $NAME
+        else
+            status -p "${PID_PATH}" -b $BINARY $NAME
+        fi
 		;;
 	*)
 	    echo "Usage: {{.Name}} {start|stop|restart|status}"
@@ -82,24 +100,24 @@ case "$1" in
 esac
 `))
 
-// OpenRC is a service manager for OpenRC-like init systems
-type OpenRC struct {
+// SysV is a service manager for SysV-like init systems
+type SysV struct {
 	r Runner
 }
 
 // Name returns the name of the init system
-func (s *OpenRC) Name() string {
-	return "OpenRC"
+func (s *SysV) Name() string {
+	return "SysV"
 }
 
 // Active checks if a service is running
-func (s *OpenRC) Active(svc string) bool {
+func (s *SysV) Active(svc string) bool {
 	_, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "status"))
 	return err == nil
 }
 
 // Start starts a service idempotently
-func (s *OpenRC) Start(svc string) error {
+func (s *SysV) Start(svc string) error {
 	if s.Active(svc) {
 		return nil
 	}
@@ -112,37 +130,37 @@ func (s *OpenRC) Start(svc string) error {
 }
 
 // Disable does nothing
-func (s *OpenRC) Disable(svc string) error {
+func (s *SysV) Disable(svc string) error {
 	return nil
 }
 
 // Enable does nothing
-func (s *OpenRC) Enable(svc string) error {
+func (s *SysV) Enable(svc string) error {
 	return nil
 }
 
 // Restart restarts a service
-func (s *OpenRC) Restart(svc string) error {
+func (s *SysV) Restart(svc string) error {
 	rr, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "restart"))
 	glog.Infof("restart output: %s", rr.Output())
 	return err
 }
 
 // Stop stops a service
-func (s *OpenRC) Stop(svc string) error {
+func (s *SysV) Stop(svc string) error {
 	rr, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "stop"))
 	glog.Infof("stop output: %s", rr.Output())
 	return err
 }
 
 // ForceStop stops a service with prejuidice
-func (s *OpenRC) ForceStop(svc string) error {
+func (s *SysV) ForceStop(svc string) error {
 	return s.Stop(svc)
 }
 
 // GenerateInitShim generates any additional init files required for this service
-func (s *OpenRC) GenerateInitShim(svc string, binary string, unit string) ([]assets.CopyableFile, error) {
-	restartWrapperPath := path.Join(vmpath.GuestPersistentDir, "openrc-restart-wrapper.sh")
+func (s *SysV) GenerateInitShim(svc string, binary string, unit string) ([]assets.CopyableFile, error) {
+	restartWrapperPath := path.Join(vmpath.GuestPersistentDir, "sysv-restart-wrapper.sh")
 
 	opts := struct {
 		Binary  string
@@ -157,19 +175,14 @@ func (s *OpenRC) GenerateInitShim(svc string, binary string, unit string) ([]ass
 	}
 
 	var b bytes.Buffer
-	if err := openrcInitScriptTmpl.Execute(&b, opts); err != nil {
+	if err := sysvInitScriptTmpl.Execute(&b, opts); err != nil {
 		return nil, errors.Wrap(err, "template execute")
 	}
 
 	files := []assets.CopyableFile{
-		assets.NewMemoryAssetTarget([]byte(openrcRestartWrapper), restartWrapperPath, "0755"),
+		assets.NewMemoryAssetTarget([]byte(sysvRestartWrapper), restartWrapperPath, "0755"),
 		assets.NewMemoryAssetTarget(b.Bytes(), path.Join("/etc/init.d/", svc), "0755"),
 	}
 
 	return files, nil
-}
-
-func usesOpenRC(r Runner) bool {
-	_, err := r.RunCmd(exec.Command("openrc", "--version"))
-	return err == nil
 }
