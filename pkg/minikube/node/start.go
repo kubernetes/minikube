@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -160,17 +161,18 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 
+		glog.Infof("Will wait %s for node ...", waitTimeout)
 		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
-			return nil, errors.Wrap(err, "Wait failed")
+			return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 		}
 
 	} else {
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
-			return nil, errors.Wrap(err, "Updating node")
+			return nil, errors.Wrap(err, "update node")
 		}
 
 		// Make sure to use the command runner for the control plane to generate the join token
-		cpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
+		cpBs, cpr, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
@@ -183,8 +185,18 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
+
+		cnm, err := cni.New(*starter.Cfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "cni")
+		}
+
+		if err := cnm.Apply(cpr); err != nil {
+			return nil, errors.Wrap(err, "cni apply")
+		}
 	}
 
+	glog.Infof("waiting for startup goroutines ...")
 	wg.Wait()
 
 	// Write enabled addons to the config before completion
