@@ -51,6 +51,7 @@ func TestNetworkPlugins(t *testing.T) {
 			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", true},
 			{"false", []string{"--cni=false"}, "", "", false},
 			{"custom-weave", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "weavenet.yaml"))}, "cni", "", true},
+			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", true},
 		}
 
 		for _, tc := range tests {
