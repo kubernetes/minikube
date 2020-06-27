@@ -39,6 +39,7 @@ func TestListProfiles(t *testing.T) {
 		{0, "p1", "hyperkit"},
 		{1, "p2_newformat", "virtualbox"},
 		{2, "p6_v1_6_2_files", "hyperkit"},
+		{3, "p7_v1_5_2_file", "hyperkit"},
 	}
 
 	// test cases for invalid profiles

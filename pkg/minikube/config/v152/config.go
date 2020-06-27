@@ -97,3 +97,15 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 	}
 	return &cc, nil
 }
+
+func IsValid(config *Config) bool {
+	if config == nil {
+		return false
+	}
+
+	if config.MachineConfig.Memory == 0 || config.MachineConfig.MinikubeISO == "" || config.MachineConfig.VMDriver == "" {
+		return false
+	}
+
+	return true
+}

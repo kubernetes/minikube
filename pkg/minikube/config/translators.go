@@ -30,7 +30,8 @@ func tryTranslate(vcontran []versionConfigTranslator, name string, miniHome ...s
 	previousVersion := vcontran[0]
 	previousVersionConfig, err := previousVersion.TryLoadFromFile(name, miniHome...)
 	// if the translator couldn't load the config from the file, then it's probably even an older version, so let's recurse again deeper
-	if (err != nil) && len(vcontran) > 1 {
+	if (err != nil ||
+		(previousVersionConfig != nil && !previousVersion.IsValid(previousVersionConfig))) && len(vcontran) > 1 {
 		var err error
 		previousVersionConfig, err = tryTranslate(vcontran[1:], name, miniHome...)
 		if err != nil {
@@ -51,6 +52,10 @@ var versionConfigTranslators = []versionConfigTranslator{
 		TranslateToNextVersion: func(config interface{}) (interface{}, error) {
 			return translateFrom162ToNextVersion(config.(*v162.MachineConfig))
 		},
+		IsValid: func(config interface{}) bool {
+
+			return v162.IsValid(config.(*v162.MachineConfig))
+		},
 	},
 	{
 		TryLoadFromFile: func(name string, miniHome ...string) (interface{}, error) {
@@ -59,15 +64,21 @@ var versionConfigTranslators = []versionConfigTranslator{
 		TranslateToNextVersion: func(config interface{}) (interface{}, error) {
 			return translateFrom152ToNextVersion(config.(*v152.Config))
 		},
+		IsValid: func(config interface{}) bool {
+
+			return v152.IsValid(config.(*v152.Config))
+		},
 	},
 }
 
 type versionConfigTranslator struct {
 	TryLoadFromFile        tryLoadFromFile
 	TranslateToNextVersion translateToNextVersion
+	IsValid                isValid
 }
 type translateToNextVersion func(interface{}) (interface{}, error)
 type tryLoadFromFile func(name string, miniHome ...string) (interface{}, error)
+type isValid func(config interface{}) bool
 
 func translateFrom162ToNextVersion(oldConfig *v162.MachineConfig) (*ClusterConfig, error) {
 
@@ -103,7 +114,7 @@ func translateFrom162ToNextVersion(oldConfig *v162.MachineConfig) (*ClusterConfi
 
 }
 
-func translateFrom152ToNextVersion(oldConfig *v152.Config) (*ClusterConfig, error) {
+func translateFrom152ToNextVersion(oldConfig *v152.Config) (*v162.MachineConfig, error) {
 
 	// The structure of the config from version 1.5.2 was different. It was split from the root to two properties: MachineConfig and KubernetesConfig
 	// so we have to accommodate to the next version which flattened the MachineConfig to the root, and made KubernetesConfig a property
@@ -117,14 +128,14 @@ func translateFrom152ToNextVersion(oldConfig *v152.Config) (*ClusterConfig, erro
 		return nil, err
 	}
 
-	var newConfig ClusterConfig
+	var newConfig v162.MachineConfig
 
 	errorUnmarshalling := json.Unmarshal(oldMachineConfigBytes, &newConfig)
 	if errorUnmarshalling != nil {
 		return nil, errorUnmarshalling
 	}
 
-	var newKubernetesConfig KubernetesConfig
+	var newKubernetesConfig v162.KubernetesConfig
 	oldKubernetesConfigBytes, err := json.Marshal(oldConfig.KubernetesConfig)
 
 	if err != nil {
