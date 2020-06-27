@@ -137,6 +137,10 @@ func imagePullCommand(containerRuntime, img string) *exec.Cmd {
 	if containerRuntime == "containerd" {
 		return exec.Command("docker", "exec", profile, "sudo", "crictl", "pull", img)
 	}
+
+	if containerRuntime == "cri-o" {
+		return exec.Command("docker", "exec", profile, "sudo", "crictl", "pull", img)
+	}
 	return nil
 }
 
@@ -152,6 +156,10 @@ func createImageTarball(tarballFilename, containerRuntime string) error {
 
 	if containerRuntime == "containerd" {
 		dirs = append(dirs, fmt.Sprintf("./lib/containerd"))
+	}
+
+	if containerRuntime == "cri-o" {
+		dirs = append(dirs, fmt.Sprintf("./lib/containers"))
 	}
 
 	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename}
