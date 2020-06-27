@@ -66,7 +66,7 @@ func TestNetworkPlugins(t *testing.T) {
 				profile := UniqueProfileName(tc.name)
 
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer Cleanup(t, profile, cancel)
+				defer CleanupWithLogs(t, profile, cancel)
 
 				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=25m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
@@ -129,6 +129,10 @@ func TestNetworkPlugins(t *testing.T) {
 					})
 				}
 
+				if strings.Contains(tc.name, "weave") {
+					t.Skipf("skipping remaining tests for weave, as results can be unpredictable")
+				}
+
 				if !t.Failed() {
 					t.Run("DNS", func(t *testing.T) {
 						var rr *RunResult
@@ -166,10 +170,6 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() {
 					t.Run("HairPin", func(t *testing.T) {
-						if strings.Contains(tc.name, "weave") {
-							t.Skipf("skipping: weavenet hairpin results vary substantially across environments")
-						}
-
 						tryHairPin := func() error {
 							_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
 							return err
