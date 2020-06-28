@@ -160,10 +160,11 @@ const (
 var KubeadmExtraConfigOpts = []string{
 	Apiserver,
 	ControllerManager,
+	Scheduler,
+	Etcd,
 	Kubeadm,
 	Kubelet,
 	Kubeproxy,
-	Scheduler,
 }
 
 // InvokeKubeadm returns the invocation command for Kubeadm
