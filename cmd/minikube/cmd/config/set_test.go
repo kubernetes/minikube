@@ -83,6 +83,9 @@ func createTestConfig(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		os.RemoveAll(td)
+		err := os.RemoveAll(td)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", td)
+		}
 	})
 }
