@@ -47,6 +47,9 @@ const (
 
 // TarballName returns name of the tarball
 func TarballName(k8sVersion, containerRuntime string) string {
+	if containerRuntime == "crio" {
+		containerRuntime = "cri-o"
+	}
 	var storageDriver string
 	if containerRuntime == "cri-o" {
 		storageDriver = "overlay"
