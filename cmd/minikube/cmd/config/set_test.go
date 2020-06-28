@@ -81,4 +81,8 @@ func createTestConfig(t *testing.T) {
 	if err = os.MkdirAll(localpath.MakeMiniPath("profiles"), 0777); err != nil {
 		t.Fatalf("error creating temporary profiles directory: %+v", err)
 	}
+
+	t.Cleanup(func() {
+		os.RemoveAll(td)
+	})
 }
