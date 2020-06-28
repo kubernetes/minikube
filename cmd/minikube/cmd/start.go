@@ -154,7 +154,8 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateSpecifiedDriver(existing)
 	ds, alts, specified := selectDriver(existing)
-	starter, err := provisionWithDriver(cmd, ds, existing)
+	k8sVersion := getKubernetesVersion(existing)
+	starter, err := provisionWithDriver(cmd, ds, existing, k8sVersion)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)
 		machine.MaybeDisplayAdvice(err, viper.GetString("driver"))
@@ -177,7 +178,7 @@ func runStart(cmd *cobra.Command, args []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing)
+				starter, err = provisionWithDriver(cmd, ds, existing, k8sVersion)
 				if err != nil {
 					continue
 				} else {
@@ -204,7 +205,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, k8sVersion string) (node.Starter, error) {
 	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -213,7 +214,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		glog.Errorf("Error autoSetOptions : %v", err)
 	}
 
-	validateFlags(cmd, driverName)
+	validateFlags(cmd, driverName, k8sVersion)
 	validateUser(driverName)
 
 	// Download & update the driver, even in --download-only mode
@@ -221,7 +222,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		updateDriver(driverName)
 	}
 
-	k8sVersion := getKubernetesVersion(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
 	if err != nil {
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
@@ -829,7 +829,7 @@ func validateCPUCount(local bool) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(cmd *cobra.Command, drvName string) {
+func validateFlags(cmd *cobra.Command, drvName, k8sVersion string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
@@ -890,7 +890,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 
 		// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
-		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
+		version, _ := util.ParseKubernetesVersion(k8sVersion)
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {
 				exit.WithCodeT(exit.Config, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
@@ -927,11 +927,11 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig, k8sVersion string) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
 	if existing != nil {
 		cp, err := config.PrimaryControlPlane(existing)
-		cp.KubernetesVersion = getKubernetesVersion(&cc)
+		cp.KubernetesVersion = k8sVersion
 		if err != nil {
 			return cc, config.Node{}, err
 		}
@@ -940,7 +940,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 		// KubernetesVersion is the only attribute that the user can override in the Node object
 		nodes := []config.Node{}
 		for _, n := range existing.Nodes {
-			n.KubernetesVersion = getKubernetesVersion(&cc)
+			n.KubernetesVersion = k8sVersion
 			nodes = append(nodes, n)
 		}
 		cc.Nodes = nodes
@@ -950,7 +950,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 
 	cp := config.Node{
 		Port:              cc.KubernetesConfig.NodePort,
-		KubernetesVersion: getKubernetesVersion(&cc),
+		KubernetesVersion: k8sVersion,
 		Name:              kubeNodeName,
 		ControlPlane:      true,
 		Worker:            true,
