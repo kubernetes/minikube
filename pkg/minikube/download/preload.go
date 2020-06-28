@@ -47,7 +47,13 @@ const (
 
 // TarballName returns name of the tarball
 func TarballName(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-overlay2-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, runtime.GOARCH)
+	var storageDriver string
+	if containerRuntime == "cri-o" {
+		storageDriver = "overlay"
+	} else {
+		storageDriver = "overlay2"
+	}
+	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, runtime.GOARCH)
 }
 
 // returns the name of the checksum file
