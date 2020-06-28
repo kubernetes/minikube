@@ -370,7 +370,7 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	if err != nil {
 		return false
 	}
-	type criImages struct {
+	type crictlImages struct {
 		Images []struct {
 			ID          string      `json:"id"`
 			RepoTags    []string    `json:"repoTags"`
@@ -381,7 +381,7 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 		} `json:"images"`
 	}
 
-	var jsonImages criImages
+	var jsonImages crictlImages
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
 	if err != nil {
 		glog.Errorf("failed to unmarshal images, will assume images are not preloaded")
