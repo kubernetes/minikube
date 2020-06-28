@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -37,6 +38,7 @@ const (
 
 var (
 	dockerStorageDriver = "overlay2"
+	podmanStorageDriver = "overlay"
 	containerRuntimes   = []string{"docker", "containerd", "cri-o"}
 	k8sVersion          string
 	k8sVersions         []string
@@ -64,6 +66,9 @@ func main() {
 
 	if err := verifyDockerStorage(); err != nil {
 		exit("Docker storage type is incompatible: %v \n", err)
+	}
+	if err := verifyPodmanStorage(); err != nil {
+		exit("Podman storage type is incompatible: %v \n", err)
 	}
 	if k8sVersions == nil {
 		var err error
@@ -109,6 +114,26 @@ func verifyDockerStorage() error {
 	driver := strings.Trim(string(output), " \n")
 	if driver != dockerStorageDriver {
 		return fmt.Errorf("docker storage driver %s does not match requested %s", driver, dockerStorageDriver)
+	}
+	return nil
+}
+
+func verifyPodmanStorage() error {
+	cmd := exec.Command("sudo", "podman", "info", "-f", "json")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("%v: %v:\n%s", cmd.Args, err, stderr.String())
+	}
+	var info map[string]map[string]interface{}
+	err = json.Unmarshal(output, &info)
+	if err != nil {
+		return err
+	}
+	driver := info["store"]["graphDriverName"]
+	if driver != podmanStorageDriver {
+		return fmt.Errorf("podman storage driver %s does not match requested %s", driver, podmanStorageDriver)
 	}
 	return nil
 }
