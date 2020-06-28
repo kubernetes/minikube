@@ -149,11 +149,11 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 const (
 	Apiserver         = "apiserver"
 	ControllerManager = "controller-manager"
-	Kubeadm           = "kubeadm"
-	Kubelet           = "kubelet"
-	Kubeproxy         = "kube-proxy"
 	Scheduler         = "scheduler"
 	Etcd              = "etcd"
+	Kubeadm           = "kubeadm"
+	Kubeproxy         = "kube-proxy"
+	Kubelet           = "kubelet"
 )
 
 // KubeadmExtraConfigOpts is a list of allowed "extra-config" components
