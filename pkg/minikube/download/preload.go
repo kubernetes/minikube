@@ -87,13 +87,6 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bool {
 
-	// and https://github.com/kubernetes/minikube/issues/6934
-	// to track status of adding crio
-	if containerRuntime == "crio" {
-		glog.Info("crio is not supported yet, skipping preload")
-		return false
-	}
-
 	// TODO (#8166): Get rid of the need for this and viper at all
 	force := false
 	if len(forcePreload) > 0 {
