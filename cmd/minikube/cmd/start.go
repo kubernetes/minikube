@@ -46,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -850,6 +851,21 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		validateMemorySize()
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
+		}
+	}
+
+	if cmd.Flags().Changed(containerRuntime) {
+		runtime := strings.ToLower(viper.GetString(containerRuntime))
+
+		var validRuntime bool
+		for _, option := range cruntime.ValidRuntimes() {
+			if runtime == option {
+				validRuntime = true
+			}
+		}
+
+		if !validRuntime {
+			exit.UsageT(`Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
 		}
 	}
 
