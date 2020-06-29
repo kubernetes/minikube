@@ -44,7 +44,6 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -156,7 +155,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	ds, alts, specified := selectDriver(existing)
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
-		maybeExitWithAdvice(err)
+		node.MaybeExitWithAdvice(err)
 		machine.MaybeDisplayAdvice(err, viper.GetString("driver"))
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
@@ -194,6 +193,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	kubeconfig, err := startWithDriver(starter, existing)
 	if err != nil {
+		node.MaybeExitWithAdvice(err)
 		exit.WithError("failed to start node", err)
 	}
 
@@ -1044,43 +1044,4 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 	return nv
-}
-
-// maybeExitWithAdvice before exiting will try to check for different error types and provide advice if we know for sure what the error is
-func maybeExitWithAdvice(err error) {
-	if errors.Is(err, oci.ErrWindowsContainers) {
-		out.ErrLn("")
-		out.ErrT(out.Conflict, "Your Docker Desktop container OS type is Windows but Linux is required.")
-		out.T(out.Warning, "Please change Docker settings to use Linux containers instead of Windows containers.")
-		out.T(out.Documentation, "https://minikube.sigs.k8s.io/docs/drivers/docker/#verify-docker-container-type-is-linux")
-		exit.UsageT(`You can verify your Docker container type by running:
-{{.command}}
-	`, out.V{"command": "docker info --format '{{.OSType}}'"})
-	}
-
-	if errors.Is(err, oci.ErrCPUCountLimit) {
-		out.ErrLn("")
-		out.ErrT(out.Conflict, "{{.name}} doesn't have enough CPUs. ", out.V{"name": viper.GetString("driver")})
-		if runtime.GOOS != "linux" && viper.GetString("driver") == "docker" {
-			out.T(out.Warning, "Please consider changing your Docker Desktop's resources.")
-			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
-		} else {
-			cpuCount := viper.GetInt(cpus)
-			if cpuCount == 2 {
-				out.T(out.Tip, "Please ensure your system has {{.cpu_counts}} CPU cores.", out.V{"cpu_counts": viper.GetInt(cpus)})
-			} else {
-				out.T(out.Tip, "Please ensure your {{.driver_name}} system has access to {{.cpu_counts}} CPU cores or reduce the number of the specified CPUs", out.V{"driver_name": viper.GetString("driver"), "cpu_counts": viper.GetInt(cpus)})
-			}
-		}
-		exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
-	}
-
-	if errors.Is(err, kubeadm.ErrNoExecLinux) {
-		out.ErrLn("")
-		out.ErrT(out.Conflict, "kubeadm binary is not executable !")
-		out.T(out.Documentation, "Other users fixed this as explained in this issue: https://github.com/kubernetes/minikube/issues/8327#issuecomment-651288459")
-		exit.UsageT(`Ensure the binaries are not mounted with "noexec" option. To see list of your mount permissions run:
-		findmnt`)
-	}
-
 }
