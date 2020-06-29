@@ -30,7 +30,7 @@ minikube start [flags]
       --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.10@sha256:f58e0c4662bac8a9b5dda7984b185bad8502ade5d9fa364bf2755d636ab51438")
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, flannel, kindnet, or path to a CNI manifest (default: auto)
-      --container-runtime string          The container runtime to be used (docker, crio, containerd). (default "docker")
+      --container-runtime string          The container runtime to be used (docker, cri-o, containerd). (default "docker")
       --cpus int                          Number of CPUs allocated to Kubernetes. (default 2)
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
