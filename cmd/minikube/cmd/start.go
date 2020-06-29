@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -1045,7 +1046,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	return nv
 }
 
-// maybeExitWithAdvice before exiting will try to check for different error types and provide advice
+// maybeExitWithAdvice before exiting will try to check for different error types and provide advice if we know for sure what the error is
 func maybeExitWithAdvice(err error) {
 	if errors.Is(err, oci.ErrWindowsContainers) {
 		out.ErrLn("")
@@ -1071,8 +1072,15 @@ func maybeExitWithAdvice(err error) {
 				out.T(out.Tip, "Please ensure your {{.driver_name}} system has access to {{.cpu_counts}} CPU cores or reduce the number of the specified CPUs", out.V{"driver_name": viper.GetString("driver"), "cpu_counts": viper.GetInt(cpus)})
 			}
 		}
-
 		exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
+	}
+
+	if errors.Is(err, kubeadm.ErrNoExecLinux) {
+		out.ErrLn("")
+		out.ErrT(out.Conflict, "kubeadm binary is not executable !")
+		out.T(out.Documentation, "Other users fixed this as explained in this issue: https://github.com/kubernetes/minikube/issues/8327#issuecomment-651288459")
+		exit.UsageT(`Ensure the binaries are not mounted with "noexec" option. To see list of your mount permissions run:
+		findmnt`)
 	}
 
 }
