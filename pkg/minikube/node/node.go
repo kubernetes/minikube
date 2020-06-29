@@ -32,6 +32,7 @@ import (
 const (
 	mountString = "mount-string"
 	createMount = "mount"
+	cpus        = "cpus"
 )
 
 // Add adds a new node config to an existing cluster.
