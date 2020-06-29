@@ -110,8 +110,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		// setup kubeadm (must come after setupKubeconfig)
 		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
 		err = bs.StartCluster(*starter.Cfg)
-
 		if err != nil {
+			MaybeExitWithAdvice(err)
 			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 			return nil, err
 		}
