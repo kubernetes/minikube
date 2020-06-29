@@ -859,12 +859,17 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 		validOptions := cruntime.ValidRuntimes()
 		// `crio` is accepted as an alternative spelling to `cri-o`
-		validOptions = append(validOptions, "crio")
+		validOptions = append(validOptions, constants.CRIO)
 
 		var validRuntime bool
 		for _, option := range validOptions {
 			if runtime == option {
 				validRuntime = true
+			}
+
+			// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
+			if runtime == "cri-o" {
+				viper.Set(containerRuntime, constants.CRIO)
 			}
 		}
 

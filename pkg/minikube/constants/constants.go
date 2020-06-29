@@ -42,6 +42,8 @@ const (
 	SSHPort = 22
 	// RegistryAddonPort os the default registry addon port
 	RegistryAddonPort = 5000
+	// CRIO is the default name and spelling for the cri-o container runtime
+	CRIO = "crio"
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"
