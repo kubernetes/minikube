@@ -857,8 +857,12 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(containerRuntime) {
 		runtime := strings.ToLower(viper.GetString(containerRuntime))
 
+		validOptions := cruntime.ValidRuntimes()
+		// `crio` is accepted as an alternative spelling to `cri-o`
+		validOptions = append(validOptions, "crio")
+
 		var validRuntime bool
-		for _, option := range cruntime.ValidRuntimes() {
+		for _, option := range validOptions {
 			if runtime == option {
 				validRuntime = true
 			}
