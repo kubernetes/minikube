@@ -227,6 +227,9 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	if _, err := k.c.RunCmd(c); err != nil {
+		if strings.Contains(err.Error(), "'kubeadm': Permission denied") {
+			return ErrNoExecLinux
+		}
 		return errors.Wrap(err, "run")
 	}
 
@@ -348,11 +351,15 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
-	if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
-		glog.Warningf("delete failed: %v", err)
+	// retry again if it is not a fail fast error
+	if _, ff := err.(*FailFastError); !ff {
+		out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
+		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
+			glog.Warningf("delete failed: %v", err)
+		}
+		return k.init(cfg)
 	}
-	return k.init(cfg)
+	return err
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
