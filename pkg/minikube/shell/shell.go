@@ -49,7 +49,7 @@ type shellData struct {
 }
 
 var shellConfigMap = map[string]shellData{
-	"fish": shellData{
+	"fish": {
 		prefix:         "set -gx ",
 		suffix:         "\";\n",
 		delimiter:      " \"",
@@ -63,7 +63,7 @@ var shellConfigMap = map[string]shellData{
 `, s...)
 		},
 	},
-	"powershell": shellData{
+	"powershell": {
 		prefix:         "$Env:",
 		suffix:         "\"\n",
 		delimiter:      " = \"",
@@ -76,7 +76,7 @@ var shellConfigMap = map[string]shellData{
 `, s...)
 		},
 	},
-	"cmd": shellData{
+	"cmd": {
 		prefix:         "SET ",
 		suffix:         "\n",
 		delimiter:      "=",
@@ -89,7 +89,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 `, s...)
 		},
 	},
-	"emacs": shellData{
+	"emacs": {
 		prefix:         "(setenv \"",
 		suffix:         "\")\n",
 		delimiter:      "\" \"",
@@ -102,7 +102,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 `, s...)
 		},
 	},
-	"bash": shellData{
+	"bash": {
 		prefix:         "export ",
 		suffix:         "\"\n",
 		delimiter:      "=\"",
@@ -116,7 +116,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 `, s...)
 		},
 	},
-	"none": shellData{
+	"none": {
 		prefix:         "",
 		suffix:         "\n",
 		delimiter:      "=",
