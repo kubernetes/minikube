@@ -323,11 +323,9 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			},
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
-<<<<<<< HEAD
 		if viper.GetBool(createMount) {
 			cc.VolumeMounts = []string{viper.GetString(mountString)}
-=======
-
+		}
 		cnm, err := cni.New(cc)
 		if err != nil {
 			return cc, config.Node{}, errors.Wrap(err, "cni")
@@ -336,7 +334,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		if _, ok := cnm.(cni.Disabled); !ok {
 			glog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
 			cc.KubernetesConfig.NetworkPlugin = "cni"
->>>>>>> 0d146db62f08056d453572654fecb72001938807
 		}
 	}
 
