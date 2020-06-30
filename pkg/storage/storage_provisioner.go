@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/v5/controller"
 )
 
 const provisionerName = "k8s.io/minikube-hostpath"
