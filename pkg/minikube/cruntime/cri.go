@@ -266,8 +266,8 @@ func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) strin
 // warning this is only meant for kuberentes images where we know the GCR addreses have .io in them
 // not mean to be used for public images
 func addRepoTagToImageName(imgName string) string {
-        if !strings.Contains(imgName, ".io/") {
-                return "docker.io/" + imgName
-        } // else it already has repo name dont add anything
-        return imgName
+	if !strings.Contains(imgName, ".io/") {
+		return "docker.io/" + imgName
+	} // else it already has repo name dont add anything
+	return imgName
 }
