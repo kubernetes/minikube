@@ -64,12 +64,6 @@ func main() {
 		fmt.Printf("error cleaning up minikube at start up: %v \n", err)
 	}
 
-	if err := verifyDockerStorage(); err != nil {
-		exit("Docker storage type is incompatible: %v \n", err)
-	}
-	if err := verifyPodmanStorage(); err != nil {
-		exit("Podman storage type is incompatible: %v \n", err)
-	}
 	if k8sVersions == nil {
 		var err error
 		k8sVersions, err = RecentK8sVersions()
@@ -104,7 +98,7 @@ func main() {
 }
 
 func verifyDockerStorage() error {
-	cmd := exec.Command("docker", "info", "-f", "{{.Info.Driver}}")
+	cmd := exec.Command("docker", "exec", profile, "docker", "info", "-f", "{{.Info.Driver}}")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()
@@ -119,7 +113,7 @@ func verifyDockerStorage() error {
 }
 
 func verifyPodmanStorage() error {
-	cmd := exec.Command("sudo", "podman", "info", "-f", "json")
+	cmd := exec.Command("docker", "exec", profile, "sudo", "podman", "info", "-f", "json")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()
