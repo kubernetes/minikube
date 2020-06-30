@@ -216,7 +216,7 @@ func ClusterFlagValue() string {
 func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
 	if existing != nil { // create profile config first time
-		cc = updateExistingConfigFromFlags(cmd, existing, k8sVersion)
+		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
 		glog.Info("no existing cluster config was found, will generate one from the flags ")
 		sysLimit, containerLimit, err := memoryLimits(drvName)
@@ -350,13 +350,13 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	if driver.BareMetal(cc.Driver) {
 		kubeNodeName = "m01"
 	}
-	return createNode(cc, kubeNodeName, existing, k8sVersion)
+	return createNode(cc, kubeNodeName, existing)
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
-func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
-	validateFlags(cmd, existing.Driver, k8sVersion)
+func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
+	validateFlags(cmd, existing.Driver)
 
 	cc := *existing
 
@@ -481,7 +481,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	if cmd.Flags().Changed(kubernetesVersion) {
-		cc.KubernetesConfig.KubernetesVersion = k8sVersion
+		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
 	}
 
 	if cmd.Flags().Changed(apiServerName) {
