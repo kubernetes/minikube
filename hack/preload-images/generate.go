@@ -60,6 +60,10 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		return errors.Wrap(err, "creating kic driver")
 	}
 
+	if err := verifyStorage(containerRuntime); err != nil {
+		return errors.Wrap(err, "verifying storage")
+	}
+
 	// Now, get images to pull
 	imgs, err := images.Kubeadm("", kubernetesVersion)
 	if err != nil {
@@ -126,6 +130,20 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	}
 
 	return copyTarballToHost(tarballFilename)
+}
+
+func verifyStorage(containerRuntime string) error {
+	if containerRuntime == "docker" || containerRuntime == "containerd" {
+		if err := verifyDockerStorage(); err != nil {
+			return errors.Wrap(err, "Docker storage type is incompatible")
+		}
+	}
+	if containerRuntime == "cri-o" {
+		if err := verifyPodmanStorage(); err != nil {
+			return errors.Wrap(err, "Podman storage type is incompatible")
+		}
+	}
+	return nil
 }
 
 // returns the right command to pull image for a specific runtime
