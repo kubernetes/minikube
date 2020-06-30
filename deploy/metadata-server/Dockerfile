@@ -14,4 +14,4 @@
 
 FROM scratch
 COPY metadata-server /metadata-server
-CMD ["/metadata-server"]
+ENTRYPOINT ["/metadata-server"]

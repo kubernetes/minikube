@@ -1,74 +1,70 @@
 package metadata
 
 import (
+	"path/filepath"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/client-go/util/homedir"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
-func EnableOrDisable(cc *config.ClusterConfig, name string, val string) error {
+//EnableOrDisable enables or disables the metadata addon based on val
+func EnableOrDisable(cfg *config.ClusterConfig, name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 	if enable {
-		return enableAddon()
+		return enableAddon(cfg)
 	}
 	return disableAddon()
 
 }
 
-func enableAddon() error {
-	if err := updateConfigmap(metadataCorefileConfigmap); err != nil {
-		return err
-	}
-	if err := restartCoreDNS(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func disableAddon() error {
-	if err := updateConfigmap(originalCorefileConfigmap); err != nil {
-		return err
-	}
-	if err := restartCoreDNS(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func restartCoreDNS() error {
-	client, err := kapi.Client(viper.GetString(config.ProfileName))
+func enableAddon(cfg *config.ClusterConfig) error {
+	// This is the default location for GCP credentials to live, it's where they're stored when gcloud login is run
+	credsPath := filepath.Join(homedir.HomeDir(), ".config", "gcloud", "application_default_credentials.json")
+	f, err := assets.NewFileAsset(credsPath, "/tmp/", "google_application_credentials.json", "0444")
 	if err != nil {
 		return err
 	}
-	ns := "kube-system"
-	pods, err := client.CoreV1().Pods(ns).List(metav1.ListOptions{})
 
-	var coreDNSPods []string
-	for _, p := range pods.Items {
-		if !strings.Contains(p.GetName(), "coredns") {
-			continue
-		}
-		coreDNSPods = append(coreDNSPods, p.GetName())
-	}
-
-	for _, p := range coreDNSPods {
-		if err := client.CoreV1().Pods(ns).Delete(p, &metav1.DeleteOptions{}); err != nil {
-			return err
-		}
-	}
-	// Wait for deployment to be healthy again
-	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "coredns", 2*time.Minute); err != nil {
+	api, err := machine.NewAPIClient()
+	if err != nil {
 		return err
 	}
+
+	host, err := machine.LoadHost(api, driver.MachineName(*cfg, cfg.Nodes[0]))
+	if err != nil {
+		return err
+	}
+
+	r, err := machine.CommandRunner(host)
+	if err != nil {
+		return err
+	}
+
+	return r.Copy(f)
+
+	/*secretCmd := exec.Command("kubectl", "create", "secret", "generic", "metadata-certs", "--from-file", "key.pem=server-key.pem", "--from-file", "cert.pem=server-cert.pem", "--dry-run", "-o", "yaml")
+	secretYaml, err := secretCmd.Output()
+	if err != nil {
+		return err
+	}
+
+	applyCmd := exec.Command("kubectl", "-n", "metadata", "apply", "-f", "-")
+	reader := bytes.NewReader(secretYaml)
+	applyCmd.Stdin = reader
+	applyCmd.Stdout = os.Stdout
+	applyCmd.Stderr = os.Stdout
+
+	return applyCmd.Run()*/
+}
+
+func disableAddon() error {
 	return nil
 }

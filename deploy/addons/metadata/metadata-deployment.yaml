@@ -15,5 +15,14 @@ spec:
       containers:
         - name: metadata
           image: gcr.io/k8s-minikube/metadata-server:snapshot
+          imagePullPolicy: Never
           ports:
-            - containerPort: 8080
+            - containerPort: 8443
+          volumeMounts:
+          - name: webhook-certs
+            mountPath: /etc/webhook/certs
+            readOnly: true
+      volumes: 
+      - name: webhook-certs 
+        secret: 
+          secretName: metadata-certs 

@@ -411,15 +411,21 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/metadata/metadata-deployment.yaml.tmpl",
+			"deploy/addons/metadata/metadata-deployment.yaml",
 			vmpath.GuestAddonsDir,
 			"metadata-deployment.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/metadata/metadata-service.yaml.tmpl",
+			"deploy/addons/metadata/metadata-service.yaml",
 			vmpath.GuestAddonsDir,
 			"metadata-service.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/metadata/metadata-mutatingwebhook.yaml",
+			vmpath.GuestAddonsDir,
+			"metadata-mutatingwebhook.yaml",
 			"0640",
 			false),
 	}, false, "metadata"),

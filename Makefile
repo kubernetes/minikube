@@ -674,6 +674,8 @@ help:
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 
+metadata-server: out/metadata-server
+
 out/metadata-server:
 	CGO_ENABLED=0 GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/metadata-server/server.go
 
