@@ -22,14 +22,6 @@ import (
 	"github.com/blang/semver"
 )
 
-const (
-	// DefaultNetwork is the Docker default bridge network named "bridge"
-	// (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
-	DefaultNetwork = "bridge"
-	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
-	DefaultPodCIDR = "10.244.0.0/16"
-)
-
 // Profile represents a minikube profile
 type Profile struct {
 	Name   string
@@ -97,7 +89,9 @@ type KubernetesConfig struct {
 	ExtraOptions        ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
-	EnableDefaultCNI       bool
+
+	EnableDefaultCNI bool   // deprecated in preference to CNI
+	CNI              string // CNI to use
 
 	// We need to keep these in the short term for backwards compatibility
 	NodeIP   string

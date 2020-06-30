@@ -22,53 +22,12 @@ package shell
 import (
 	"fmt"
 	"io"
+	"os"
+	"runtime"
 	"strings"
 	"text/template"
 
 	"github.com/docker/machine/libmachine/shell"
-)
-
-const (
-	fishSetPfx   = "set -gx "
-	fishSetSfx   = "\";\n" // semi-colon required for fish 2.7
-	fishSetDelim = " \""
-
-	fishUnsetPfx = "set -e "
-	fishUnsetSfx = ";\n"
-
-	psSetPfx   = "$Env:"
-	psSetSfx   = "\"\n"
-	psSetDelim = " = \""
-
-	psUnsetPfx = `Remove-Item Env:\\`
-	psUnsetSfx = "\n"
-
-	cmdSetPfx   = "SET "
-	cmdSetSfx   = "\n"
-	cmdSetDelim = "="
-
-	cmdUnsetPfx   = "SET "
-	cmdUnsetSfx   = "\n"
-	cmdUnsetDelim = "="
-
-	emacsSetPfx   = "(setenv \""
-	emacsSetSfx   = "\")\n"
-	emacsSetDelim = "\" \""
-
-	emacsUnsetPfx   = "(setenv \""
-	emacsUnsetSfx   = ")\n"
-	emacsUnsetDelim = "\" nil"
-
-	bashSetPfx   = "export "
-	bashSetSfx   = "\"\n"
-	bashSetDelim = "=\""
-
-	bashUnsetPfx = "unset "
-	bashUnsetSfx = "\n"
-
-	nonePfx   = ""
-	noneSfx   = "\n"
-	noneDelim = "="
 )
 
 // Config represents the shell config
@@ -79,6 +38,100 @@ type Config struct {
 	UsageHint string
 }
 
+type shellData struct {
+	prefix         string
+	suffix         string
+	delimiter      string
+	unsetPrefix    string
+	unsetSuffix    string
+	unsetDelimiter string
+	usageHint      func(s ...interface{}) string
+}
+
+var shellConfigMap = map[string]shellData{
+	"fish": shellData{
+		prefix:         "set -gx ",
+		suffix:         "\";\n",
+		delimiter:      " \"",
+		unsetPrefix:    "set -e ",
+		unsetSuffix:    ";\n",
+		unsetDelimiter: "",
+		usageHint: func(s ...interface{}) string {
+			return fmt.Sprintf(`
+# %s
+# %s | source
+`, s...)
+		},
+	},
+	"powershell": shellData{
+		prefix:         "$Env:",
+		suffix:         "\"\n",
+		delimiter:      " = \"",
+		unsetPrefix:    `Remove-Item Env:\\`,
+		unsetSuffix:    "\n",
+		unsetDelimiter: "",
+		usageHint: func(s ...interface{}) string {
+			return fmt.Sprintf(`# %s
+# & %s | Invoke-Expression
+`, s...)
+		},
+	},
+	"cmd": shellData{
+		prefix:         "SET ",
+		suffix:         "\n",
+		delimiter:      "=",
+		unsetPrefix:    "SET ",
+		unsetSuffix:    "\n",
+		unsetDelimiter: "=",
+		usageHint: func(s ...interface{}) string {
+			return fmt.Sprintf(`REM %s
+REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
+`, s...)
+		},
+	},
+	"emacs": shellData{
+		prefix:         "(setenv \"",
+		suffix:         "\")\n",
+		delimiter:      "\" \"",
+		unsetPrefix:    "(setenv \"",
+		unsetSuffix:    ")\n",
+		unsetDelimiter: "\" nil",
+		usageHint: func(s ...interface{}) string {
+			return fmt.Sprintf(`;; %s
+;; (with-temp-buffer (shell-command "%s" (current-buffer)) (eval-buffer))
+`, s...)
+		},
+	},
+	"bash": shellData{
+		prefix:         "export ",
+		suffix:         "\"\n",
+		delimiter:      "=\"",
+		unsetPrefix:    "unset ",
+		unsetSuffix:    "\n",
+		unsetDelimiter: "",
+		usageHint: func(s ...interface{}) string {
+			return fmt.Sprintf(`
+# %s
+# eval $(%s)
+`, s...)
+		},
+	},
+	"none": shellData{
+		prefix:         "",
+		suffix:         "\n",
+		delimiter:      "=",
+		unsetPrefix:    "",
+		unsetSuffix:    "\n",
+		unsetDelimiter: "",
+		usageHint: func(s ...interface{}) string {
+			return ""
+		},
+	},
+}
+
+var defaultSh = "bash"
+var defaultShell shellData = shellConfigMap[defaultSh]
+
 var (
 	// ForceShell forces a shell name
 	ForceShell string
@@ -86,70 +139,34 @@ var (
 
 // Detect detects user's current shell.
 func Detect() (string, error) {
+	sh := os.Getenv("SHELL")
+	// Don't error out when $SHELL has not been set
+	if sh == "" && runtime.GOOS != "windows" {
+		return defaultSh, nil
+	}
 	return shell.Detect()
 }
 
-func generateUsageHint(sh, usgPlz, usgCmd string) string {
-	var usageHintMap = map[string]string{
-		"bash": fmt.Sprintf(`
-# %s
-# eval $(%s)
-`, usgPlz, usgCmd),
-		"fish": fmt.Sprintf(`
-# %s
-# %s | source
-`, usgPlz, usgCmd),
-		"powershell": fmt.Sprintf(`# %s
-# & %s | Invoke-Expression
-`, usgPlz, usgCmd),
-		"cmd": fmt.Sprintf(`REM %s
-REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
-`, usgPlz, usgCmd),
-		"emacs": fmt.Sprintf(`;; %s
-;; (with-temp-buffer (shell-command "%s" (current-buffer)) (eval-buffer))
-`, usgPlz, usgCmd),
-	}
-
-	hint, ok := usageHintMap[sh]
+func (c EnvConfig) getShell() shellData {
+	shell, ok := shellConfigMap[c.Shell]
 	if !ok {
-		return usageHintMap["bash"]
+		shell = defaultShell
 	}
-	return hint
+	return shell
+}
+
+func generateUsageHint(ec EnvConfig, usgPlz, usgCmd string) string {
+	shellCfg := ec.getShell()
+	return shellCfg.usageHint(usgPlz, usgCmd)
 }
 
 // CfgSet generates context variables for shell
 func CfgSet(ec EnvConfig, plz, cmd string) *Config {
-	s := &Config{
-		UsageHint: generateUsageHint(ec.Shell, plz, cmd),
-	}
+	shellCfg := ec.getShell()
+	s := &Config{}
+	s.Suffix, s.Prefix, s.Delimiter = shellCfg.suffix, shellCfg.prefix, shellCfg.delimiter
+	s.UsageHint = generateUsageHint(ec, plz, cmd)
 
-	switch ec.Shell {
-	case "fish":
-		s.Prefix = fishSetPfx
-		s.Suffix = fishSetSfx
-		s.Delimiter = fishSetDelim
-	case "powershell":
-		s.Prefix = psSetPfx
-		s.Suffix = psSetSfx
-		s.Delimiter = psSetDelim
-	case "cmd":
-		s.Prefix = cmdSetPfx
-		s.Suffix = cmdSetSfx
-		s.Delimiter = cmdSetDelim
-	case "emacs":
-		s.Prefix = emacsSetPfx
-		s.Suffix = emacsSetSfx
-		s.Delimiter = emacsSetDelim
-	case "none":
-		s.Prefix = nonePfx
-		s.Suffix = noneSfx
-		s.Delimiter = noneDelim
-		s.UsageHint = ""
-	default:
-		s.Prefix = bashSetPfx
-		s.Suffix = bashSetSfx
-		s.Delimiter = bashSetDelim
-	}
 	return s
 }
 
@@ -167,25 +184,20 @@ func SetScript(ec EnvConfig, w io.Writer, envTmpl string, data interface{}) erro
 // UnsetScript writes out a shell-compatible unset script
 func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	var sb strings.Builder
+	shellCfg := ec.getShell()
+	pfx, sfx, delim := shellCfg.unsetPrefix, shellCfg.unsetSuffix, shellCfg.unsetDelimiter
 	switch ec.Shell {
-	case "fish":
-		for _, v := range vars {
-			sb.WriteString(fmt.Sprintf("%s%s%s", fishUnsetPfx, v, fishUnsetSfx))
-		}
+	case "cmd", "emacs", "fish":
+		break
 	case "powershell":
-		sb.WriteString(fmt.Sprintf("%s%s%s", psUnsetPfx, strings.Join(vars, " Env:\\\\"), psUnsetSfx))
-	case "cmd":
-		for _, v := range vars {
-			sb.WriteString(fmt.Sprintf("%s%s%s%s", cmdUnsetPfx, v, cmdUnsetDelim, cmdUnsetSfx))
-		}
-	case "emacs":
-		for _, v := range vars {
-			sb.WriteString(fmt.Sprintf("%s%s%s%s", emacsUnsetPfx, v, emacsUnsetDelim, emacsUnsetSfx))
-		}
-	case "none":
-		sb.WriteString(fmt.Sprintf("%s%s%s", nonePfx, strings.Join(vars, " "), noneSfx))
+		vars = []string{strings.Join(vars, " Env:\\\\")}
 	default:
-		sb.WriteString(fmt.Sprintf("%s%s%s", bashUnsetPfx, strings.Join(vars, " "), bashUnsetSfx))
+		vars = []string{strings.Join(vars, " ")}
+	}
+	for _, v := range vars {
+		if _, err := sb.WriteString(fmt.Sprintf("%s%s%s%s", pfx, v, delim, sfx)); err != nil {
+			return err
+		}
 	}
 	_, err := w.Write([]byte(sb.String()))
 	return err

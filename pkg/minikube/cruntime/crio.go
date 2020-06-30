@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 
@@ -89,11 +90,6 @@ func (r *CRIO) SocketPath() string {
 	return "/var/run/crio/crio.sock"
 }
 
-// DefaultCNI returns whether to use CNI networking by default
-func (r *CRIO) DefaultCNI() bool {
-	return true
-}
-
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
 	c := exec.Command("which", "crio")
@@ -101,7 +97,6 @@ func (r *CRIO) Available() error {
 		return errors.Wrapf(err, "check crio available.")
 	}
 	return nil
-
 }
 
 // Active returns if CRIO is active on the host
@@ -136,7 +131,7 @@ func (r *CRIO) Disable() error {
 // ImageExists checks if an image exists
 func (r *CRIO) ImageExists(name string, sha string) bool {
 	// expected output looks like [NAME@sha256:SHA]
-	c := exec.Command("sudo", "podman", "inspect", "--format", "{{.Id}}", name)
+	c := exec.Command("sudo", "podman", "image", "inspect", "--format", "{{.Id}}", name)
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return false
@@ -228,4 +223,31 @@ func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
 		return nil
 	}
 	return fmt.Errorf("not yet implemented for %s", r.Name())
+}
+
+// UpdateCRIONet updates CRIO CNI network configuration and restarts it
+func UpdateCRIONet(r CommandRunner, cidr string) error {
+	glog.Infof("Updating CRIO to use CIDR: %q", cidr)
+	ip, net, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return errors.Wrap(err, "parse cidr")
+	}
+
+	oldNet := "10.88.0.0/16"
+	oldGw := "10.88.0.1"
+
+	newNet := cidr
+
+	// Assume gateway is first IP in netmask (10.244.0.1, for instance)
+	newGw := ip.Mask(net.Mask)
+	newGw[3]++
+
+	// Update subnets used by 100-crio-bridge.conf & 87-podman-bridge.conflist
+	// avoids: "Error adding network: failed to set bridge addr: could not add IP address to \"cni0\": permission denied"
+	sed := fmt.Sprintf("sed -i -e s#%s#%s# -e s#%s#%s# /etc/cni/net.d/*bridge*", oldNet, newNet, oldGw, newGw)
+	if _, err := r.RunCmd(exec.Command("sudo", "/bin/bash", "-c", sed)); err != nil {
+		glog.Errorf("netconf update failed: %v", err)
+	}
+
+	return sysinit.New(r).Restart("crio")
 }

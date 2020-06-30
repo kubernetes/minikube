@@ -40,7 +40,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
@@ -56,6 +56,7 @@ func TestAddons(t *testing.T) {
 			{"Ingress", validateIngressAddon},
 			{"MetricsServer", validateMetricsServerAddon},
 			{"HelmTiller", validateHelmTillerAddon},
+			{"Olm", validateOlmAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -326,5 +327,68 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "helm-tiller", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed disabling helm-tiller addon. arg %q.s %v", rr.Command(), err)
+	}
+}
+
+func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
+	t.Skipf("Skipping olm test till this timeout issue is solved https://github.com/operator-framework/operator-lifecycle-manager/issues/1534#issuecomment-632342257")
+	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
+	}
+
+	start := time.Now()
+	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "catalog-operator", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for catalog-operator deployment to stabilize: %v", err)
+	}
+	t.Logf("catalog-operator stabilized in %s", time.Since(start))
+	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "olm-operator", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for olm-operator deployment to stabilize: %v", err)
+	}
+	t.Logf("olm-operator stabilized in %s", time.Since(start))
+	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "packageserver", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for packageserver deployment to stabilize: %v", err)
+	}
+	t.Logf("packageserver stabilized in %s", time.Since(start))
+
+	if _, err := PodWait(ctx, t, profile, "olm", "app=catalog-operator", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for pod catalog-operator: %v", err)
+	}
+	if _, err := PodWait(ctx, t, profile, "olm", "app=olm-operator", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for pod olm-operator: %v", err)
+	}
+	if _, err := PodWait(ctx, t, profile, "olm", "app=packageserver", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for pod packageserver: %v", err)
+	}
+	if _, err := PodWait(ctx, t, profile, "olm", "olm.catalogSource=operatorhubio-catalog", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for pod operatorhubio-catalog: %v", err)
+	}
+
+	// Install one sample Operator such as etcd
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", "https://operatorhub.io/install/etcd.yaml"))
+	if err != nil {
+		t.Logf("etcd operator installation with %s failed: %v", rr.Command(), err)
+	}
+
+	want := "Succeeded"
+	checkOperatorInstalled := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "csv", "-n", "my-etcd"))
+		if err != nil {
+			return err
+		}
+		if rr.Stderr.String() != "" {
+			t.Logf("%v: unexpected stderr: %s", rr.Command(), rr.Stderr)
+		}
+		if !strings.Contains(rr.Stdout.String(), want) {
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
+		}
+		return nil
+	}
+
+	// Operator installation takes a while
+	if err := retry.Expo(checkOperatorInstalled, time.Second*3, Minutes(6)); err != nil {
+		t.Errorf("failed checking operator installed: %v", err.Error())
 	}
 }

@@ -25,6 +25,7 @@ The `minikube start` command supports 3 additional kvm specific flags:
 * **`--gpu`**: Enable experimental NVIDIA GPU support in minikube
 * **`--hidden`**: Hide the hypervisor signature from the guest in minikube
 * **`--kvm-network`**:  The KVM network name
+* **`--kvm-qemu-uri`**: The KVM qemu uri, defaults to qemu:///system
 
 ## Issues
 

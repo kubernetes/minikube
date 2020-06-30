@@ -1,0 +1,56 @@
+# hack taken from CMakeLists.txt
+# PATCH_COMMAND sed -i "s/luaL_reg/luaL_Reg/g" ${PROJECT_SOURCE_DIR}/userspace/libsinsp/chisel.cpp && sed -i "s/luaL_reg/luaL_Reg/g" ${PROJECT_SOURCE_DIR}/userspace/libsinsp/lua_parser.cpp && sed -i "s/luaL_getn/lua_objlen /g" ${PROJECT_SOURCE_DIR}/userspace/libsinsp/lua_parser_api.cpp
+diff -ur sysdig-0.23.1.orig/userspace/libsinsp/chisel.cpp sysdig-0.23.1/userspace/libsinsp/chisel.cpp
+--- sysdig-0.23.1.orig/userspace/libsinsp/chisel.cpp	2018-08-14 22:58:06.000000000 +0200
++++ sysdig-0.23.1/userspace/libsinsp/chisel.cpp	2020-05-17 12:33:38.871530253 +0200
+@@ -96,7 +96,7 @@
+ // Lua callbacks
+ ///////////////////////////////////////////////////////////////////////////////
+ #ifdef HAS_LUA_CHISELS
+-const static struct luaL_reg ll_sysdig [] =
++const static struct luaL_Reg ll_sysdig [] =
+ {
+ 	{"set_filter", &lua_cbacks::set_global_filter},
+ 	{"set_snaplen", &lua_cbacks::set_snaplen},
+@@ -132,7 +132,7 @@
+ 	{NULL,NULL}
+ };
+ 
+-const static struct luaL_reg ll_chisel [] =
++const static struct luaL_Reg ll_chisel [] =
+ {
+ 	{"request_field", &lua_cbacks::request_field},
+ 	{"set_filter", &lua_cbacks::set_filter},
+@@ -144,7 +144,7 @@
+ 	{NULL,NULL}
+ };
+ 
+-const static struct luaL_reg ll_evt [] =
++const static struct luaL_Reg ll_evt [] =
+ {
+ 	{"field", &lua_cbacks::field},
+ 	{"get_num", &lua_cbacks::get_num},
+diff -ur sysdig-0.23.1.orig/userspace/libsinsp/lua_parser_api.cpp sysdig-0.23.1/userspace/libsinsp/lua_parser_api.cpp
+--- sysdig-0.23.1.orig/userspace/libsinsp/lua_parser_api.cpp	2018-08-14 22:58:06.000000000 +0200
++++ sysdig-0.23.1/userspace/libsinsp/lua_parser_api.cpp	2020-05-17 12:33:53.019534358 +0200
+@@ -235,7 +235,7 @@
+ 					fprintf(stderr, "%s\n", err.c_str());
+ 					throw sinsp_exception("parser API error");
+ 				}
+-				int n = luaL_getn(ls, 3);  /* get size of table */
++				int n = lua_objlen (ls, 3);  /* get size of table */
+ 				for (i=1; i<=n; i++)
+ 				{
+ 					lua_rawgeti(ls, 3, i);
+diff -ur sysdig-0.23.1.orig/userspace/libsinsp/lua_parser.cpp sysdig-0.23.1/userspace/libsinsp/lua_parser.cpp
+--- sysdig-0.23.1.orig/userspace/libsinsp/lua_parser.cpp	2018-08-14 22:58:06.000000000 +0200
++++ sysdig-0.23.1/userspace/libsinsp/lua_parser.cpp	2020-05-17 12:33:46.343532385 +0200
+@@ -14,7 +14,7 @@
+ #include "lauxlib.h"
+ }
+ 
+-const static struct luaL_reg ll_filter [] =
++const static struct luaL_Reg ll_filter [] =
+ {
+ 	{"rel_expr", &lua_parser_cbacks::rel_expr},
+ 	{"bool_op", &lua_parser_cbacks::bool_op},

@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/node"
 )
 
 var statusFormat string
@@ -105,19 +106,33 @@ var statusCmd = &cobra.Command{
 		api, cc := mustload.Partial(cname)
 
 		var statuses []*Status
-		for _, n := range cc.Nodes {
-			glog.Infof("checking status of %s ...", n.Name)
-			machineName := driver.MachineName(*cc, n)
-			st, err := status(api, *cc, n)
-			glog.Infof("%s status: %+v", machineName, st)
 
+		if nodeName != "" || statusFormat != defaultStatusFormat && len(cc.Nodes) > 1 {
+			n, _, err := node.Retrieve(*cc, nodeName)
+			if err != nil {
+				exit.WithError("retrieving node", err)
+			}
+
+			st, err := status(api, *cc, *n)
 			if err != nil {
 				glog.Errorf("status error: %v", err)
 			}
-			if st.Host == Nonexistent {
-				glog.Errorf("The %q host does not exist!", machineName)
-			}
 			statuses = append(statuses, st)
+		} else {
+			for _, n := range cc.Nodes {
+				machineName := driver.MachineName(*cc, n)
+				glog.Infof("checking status of %s ...", machineName)
+				st, err := status(api, *cc, n)
+				glog.Infof("%s status: %+v", machineName, st)
+
+				if err != nil {
+					glog.Errorf("status error: %v", err)
+				}
+				if st.Host == Nonexistent {
+					glog.Errorf("The %q host does not exist!", machineName)
+				}
+				statuses = append(statuses, st)
+			}
 		}
 
 		switch strings.ToLower(output) {
@@ -217,7 +232,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 	glog.Infof("%s kubelet status = %s", name, stk)
 	st.Kubelet = stk.String()
 
-	// Early exit for regular nodes
+	// Early exit for worker nodes
 	if !controlPlane {
 		return st, nil
 	}
@@ -253,6 +268,7 @@ func init() {
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
 	statusCmd.Flags().StringVarP(&output, "output", "o", "text",
 		`minikube status --output OUTPUT. json, text`)
+	statusCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.")
 }
 
 func statusText(st *Status, w io.Writer) error {

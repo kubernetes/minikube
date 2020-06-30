@@ -11,39 +11,43 @@ date: 2019-11-24
 
 ## Prerequisites
 
-- minikube 1.9.0 or higher
+- minikube 1.10.1 or higher
 - kubectl
 
 ## Tutorial
 
-- Start a cluster with 2 nodes in the driver of your choice (the extra parameters are to make our chosen CNI, flannel, work while we're still experimental):
+- Start a cluster with 2 nodes in the driver of your choice:
 ```
-minikube start --nodes 2 -p multinode-demo --network-plugin=cni --extra-config=kubeadm.pod-network-cidr=10.244.0.0/16
-😄  [multinode-demo] minikube v1.9.2 on Darwin 10.14.6
+minikube start --nodes 2 -p multinode-demo
+😄  [multinode-demo] minikube v1.10.1 on Darwin 10.15.4
 ✨  Automatically selected the hyperkit driver
 👍  Starting control plane node multinode-demo in cluster multinode-demo
-🔥  Creating hyperkit VM (CPUs=2, Memory=4000MB, Disk=20000MB) ...
-🐳  Preparing Kubernetes v1.18.0 on Docker 19.03.8 ...
-    ▪ kubeadm.pod-network-cidr=10.244.0.0/16
-🌟  Enabling addons: default-storageclass, storage-provisioner
+🔥  Creating hyperkit VM (CPUs=2, Memory=2200MB, Disk=20000MB) ...
+🐳  Preparing Kubernetes v1.18.2 on Docker 19.03.8 ...
+🔎  Verifying Kubernetes components...
+🌟  Enabled addons: default-storageclass, storage-provisioner
+
+❗  Multi-node clusters are currently experimental and might exhibit unintended behavior.
+To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.
 
 👍  Starting node multinode-demo-m02 in cluster multinode-demo
-🔥  Creating hyperkit VM (CPUs=2, Memory=4000MB, Disk=20000MB) ...
+🔥  Creating hyperkit VM (CPUs=2, Memory=2200MB, Disk=20000MB) ...
 🌐  Found network options:
-    ▪ NO_PROXY=192.168.64.213
-🐳  Preparing Kubernetes v1.18.0 on Docker 19.03.8 ...
+    ▪ NO_PROXY=192.168.64.11
+🐳  Preparing Kubernetes v1.18.2 on Docker 19.03.8 ...
 🏄  Done! kubectl is now configured to use "multinode-demo"
+
 ```
 
 - Get the list of your nodes:
 ```
 kubectl get nodes
-NAME                 STATUS   ROLES    AGE     VERSION
-multinode-demo       Ready    master   9m58s   v1.18.0
-multinode-demo-m02   Ready    <none>   9m5s    v1.18.0
+NAME                 STATUS   ROLES    AGE   VERSION
+multinode-demo       Ready    master   72s   v1.18.2
+multinode-demo-m02   Ready    <none>   33s   v1.18.2
 ```
 
-NOTE: You can also check the status of your nodes:
+- You can also check the status of your nodes:
 ```
 $ minikube status
 multinode-demo
@@ -59,22 +63,6 @@ host: Running
 kubelet: Running
 ```
 
-- Install a CNI (e.g. flannel):
-NOTE: This currently needs to be done manually after the apiserver is running, the multi-node feature is still experimental as of 1.9.2.
-```
-kubectl apply -f kube-flannel.yaml
-podsecuritypolicy.policy/psp.flannel.unprivileged created
-clusterrole.rbac.authorization.k8s.io/flannel created
-clusterrolebinding.rbac.authorization.k8s.io/flannel created
-serviceaccount/flannel created
-configmap/kube-flannel-cfg created
-daemonset.apps/kube-flannel-ds-amd64 created
-daemonset.apps/kube-flannel-ds-arm64 created
-daemonset.apps/kube-flannel-ds-arm created
-daemonset.apps/kube-flannel-ds-ppc64le created
-daemonset.apps/kube-flannel-ds-s390x created
-```
-
 - Deploy our hello world deployment:
 ```
 kubectl apply -f hello-deployment.yaml
@@ -86,7 +74,6 @@ deployment "hello" successfully rolled out
 
 
 - Deploy our hello world service, which just spits back the IP address the request was served from:
-{{% readfile file="/docs/tutorials/includes/hello-svc.yaml" %}}
 ```
 kubectl apply -f hello-svc.yml
 service/hello created
@@ -133,11 +120,6 @@ Hello from hello-c7b8df44f-xv4v6 (10.244.0.2)
 
 - Referenced YAML files
 {{% tabs %}}
-{{% tab kube-flannel.yaml %}}
-```
-{{% readfile file="/docs/tutorials/includes/kube-flannel.yaml" %}}
-```
-{{% /tab %}}
 {{% tab hello-deployment.yaml %}}
 ```
 {{% readfile file="/docs/tutorials/includes/hello-deployment.yaml" %}}

@@ -107,7 +107,6 @@ func TestFunctional(t *testing.T) {
 			{"ComponentHealth", validateComponentHealth},
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
-			{"DNS", validateDNS},
 			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
@@ -154,24 +153,43 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
-	mctx, cancel := context.WithTimeout(ctx, Seconds(13))
+	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
-	// we should be able to get minikube status with a bash which evaled docker-env
-	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
-	rr, err := Run(t, c)
+	var rr *RunResult
+	var err error
+	if runtime.GOOS == "windows" {
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
+		rr, err = Run(t, c)
+	} else {
+		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+		// we should be able to get minikube status with a bash which evaled docker-env
+		rr, err = Run(t, c)
+	}
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
+	}
 	if err != nil {
-		t.Fatalf("failed to do minikube status after eval-ing docker-env %s", err)
+		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
 	}
 	if !strings.Contains(rr.Output(), "Running") {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
 
-	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
+	mctx, cancel = context.WithTimeout(ctx, Seconds(30))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
-	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
-	rr, err = Run(t, c)
+	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
+		rr, err = Run(t, c)
+	} else {
+		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
+		rr, err = Run(t, c)
+	}
+
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+	}
+
 	if err != nil {
 		t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
 	}
@@ -223,7 +241,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	// the test before this had been start with --apiserver-port=8441
 	beforeCfg, err := config.LoadProfile(profile)
 	if err != nil {
-		t.Errorf("error reading cluster config before soft start: %v", err)
+		t.Fatalf("error reading cluster config before soft start: %v", err)
 	}
 	if beforeCfg.Config.KubernetesConfig.NodePort != apiPortTest {
 		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
@@ -319,7 +337,6 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
 		t.Errorf("failed to run minikube status. args %q : %v", rr.Command(), err)
@@ -401,36 +418,6 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateDNS asserts that all Kubernetes DNS is healthy
-func validateDNS(ctx context.Context, t *testing.T, profile string) {
-	defer PostMortemLogs(t, profile)
-
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
-	if err != nil {
-		t.Fatalf("failed to kubectl replace busybox : args %q: %v", rr.Command(), err)
-	}
-
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4))
-	if err != nil {
-		t.Fatalf("failed waiting for busybox pod : %v", err)
-	}
-
-	nslookup := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default"))
-		return err
-	}
-
-	// If the coredns process was stable, this retry wouldn't be necessary.
-	if err = retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
-		t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
-	}
-
-	want := []byte("10.96.0.1")
-	if !bytes.Contains(rr.Stdout.Bytes(), want) {
-		t.Errorf("failed nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
-	}
-}
-
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
 func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	// dry-run mode should always be able to finish quickly (<5s)
@@ -507,7 +494,8 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img)) // for some reason crictl rmi doesn't work
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
+
 			if err != nil {
 				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
 			}
@@ -528,6 +516,15 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 		})
 
+		// delete will clean up the cached images since they are global and all other tests will load it for no reason
+		t.Run("delete", func(t *testing.T) {
+			for _, img := range []string{"busybox:latest", "k8s.gcr.io/pause:latest"} {
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", img))
+				if err != nil {
+					t.Errorf("failed to delete %s from cache. args %q: %v", img, rr.Command(), err)
+				}
+			}
+		})
 	})
 }
 
@@ -812,16 +809,41 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 // validateSSHCmd asserts basic "ssh" command functionality
 func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
-	want := "hello\n"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
+	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
+	defer cancel()
+
+	want := "hello"
+
+	rr, err := Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "echo hello"))
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
 	if err != nil {
 		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
-	if rr.Stdout.String() != want {
+	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
+	if strings.TrimSpace(rr.Stdout.String()) != want {
+		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
+	}
+
+	// testing hostname as well because testing something like "minikube ssh echo" could be confusing
+	// because it  is not clear if echo was run inside minikube on the powershell
+	// so better to test something inside minikube, that is meaningful per profile
+	// in this case /etc/hostname is same as the profile name
+	want = profile
+	rr, err = Run(t, exec.CommandContext(mctx, Target(), "-p", profile, "ssh", "cat /etc/hostname"))
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+
+	if err != nil {
+		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
+	}
+	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
+	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 }

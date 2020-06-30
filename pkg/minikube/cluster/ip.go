@@ -59,18 +59,38 @@ func HostIP(host *host.Host) (net.IP, error) {
 		}
 		return ip, nil
 	case driver.VirtualBox:
-		out, err := exec.Command(driver.VBoxManagePath(), "showvminfo", host.Name, "--machinereadable").Output()
+		vBoxManageCmd := driver.VBoxManagePath()
+		out, err := exec.Command(vBoxManageCmd, "showvminfo", host.Name, "--machinereadable").Output()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "vboxmanage")
 		}
 		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
 		iface := re.FindStringSubmatch(string(out))[1]
-		ipList, err := exec.Command(driver.VBoxManagePath(), "list", "hostonlyifs").Output()
+		ipList, err := exec.Command(vBoxManageCmd, "list", "hostonlyifs").Output()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
-		re = regexp.MustCompile(`(?s)Name:\s*` + iface + `.+IPAddress:\s*(\S+)`)
+		re = regexp.MustCompile(`(?sm)Name:\s*` + iface + `\s*$.+?IPAddress:\s*(\S+)`)
 		ip := re.FindStringSubmatch(string(ipList))[1]
+		return net.ParseIP(ip), nil
+	case driver.Parallels:
+		bin := "prlsrvctl"
+		var binPath string
+		if fullPath, err := exec.LookPath(bin); err != nil {
+			binPath = fullPath
+		} else {
+			binPath = bin
+		}
+		out, err := exec.Command(binPath, "net", "info", "Shared").Output()
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error reading the info of Parallels Shared network interface")
+		}
+		re := regexp.MustCompile(`IPv4 address: (.*)`)
+		ipMatch := re.FindStringSubmatch(string(out))
+		if len(ipMatch) < 2 {
+			return []byte{}, errors.Wrap(err, "Error getting the IP address of Parallels Shared network interface")
+		}
+		ip := ipMatch[1]
 		return net.ParseIP(ip), nil
 	case driver.HyperKit:
 		return net.ParseIP("192.168.64.1"), nil

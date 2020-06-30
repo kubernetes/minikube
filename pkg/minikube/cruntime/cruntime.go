@@ -47,6 +47,11 @@ func (cs ContainerState) String() string {
 	return [...]string{"all", "running", "paused"}[cs]
 }
 
+// ValidRuntimes lists the supported container runtimes
+func ValidRuntimes() []string {
+	return []string{"docker", "cri-o", "containerd"}
+}
+
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
@@ -79,8 +84,6 @@ type Manager interface {
 	KubeletOptions() map[string]string
 	// SocketPath returns the path to the socket file for a given runtime
 	SocketPath() string
-	// DefaultCNI returns whether to use CNI networking by default
-	DefaultCNI() bool
 
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
@@ -136,7 +139,11 @@ func New(c Config) (Manager, error) {
 
 	switch c.Type {
 	case "", "docker":
-		return &Docker{Socket: c.Socket, Runner: c.Runner, Init: sm}, nil
+		return &Docker{
+			Socket: c.Socket,
+			Runner: c.Runner,
+			Init:   sm,
+		}, nil
 	case "crio", "cri-o":
 		return &CRIO{
 			Socket:            c.Socket,
@@ -206,7 +213,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 // enableIPForwarding configures IP forwarding, which is handled normally by Docker
 // Context: https://github.com/kubernetes/kubeadm/issues/1062
 func enableIPForwarding(cr CommandRunner) error {
-	c := exec.Command("sudo", "sysctl", "net.netfilter.nf_conntrack_count")
+	c := exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables")
 	if rr, err := cr.RunCmd(c); err != nil {
 		glog.Infof("couldn't verify netfilter by %q which might be okay. error: %v", rr.Command(), err)
 		c = exec.Command("sudo", "modprobe", "br_netfilter")
