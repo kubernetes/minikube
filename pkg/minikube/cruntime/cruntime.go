@@ -47,6 +47,11 @@ func (cs ContainerState) String() string {
 	return [...]string{"all", "running", "paused"}[cs]
 }
 
+// ValidRuntimes lists the supported container runtimes
+func ValidRuntimes() []string {
+	return []string{"docker", "cri-o", "containerd"}
+}
+
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
