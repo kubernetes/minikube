@@ -153,9 +153,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	validateSpecifiedDriver(existing)
+	validateKubernetesVersion(existing)
 	ds, alts, specified := selectDriver(existing)
-	k8sVersion := getKubernetesVersion(existing)
-	starter, err := provisionWithDriver(cmd, ds, existing, k8sVersion)
+	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)
 		machine.MaybeDisplayAdvice(err, viper.GetString("driver"))
@@ -178,7 +178,7 @@ func runStart(cmd *cobra.Command, args []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing, k8sVersion)
+				starter, err = provisionWithDriver(cmd, ds, existing)
 				if err != nil {
 					continue
 				} else {
@@ -205,7 +205,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, k8sVersion string) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
 	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -214,7 +214,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		glog.Errorf("Error autoSetOptions : %v", err)
 	}
 
-	validateFlags(cmd, driverName, k8sVersion)
+	validateFlags(cmd, driverName)
 	validateUser(driverName)
 
 	// Download & update the driver, even in --download-only mode
@@ -222,6 +222,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		updateDriver(driverName)
 	}
 
+	k8sVersion := getKubernetesVersion(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
 	if err != nil {
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
@@ -829,7 +830,7 @@ func validateCPUCount(local bool) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(cmd *cobra.Command, drvName, k8sVersion string) {
+func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
@@ -890,7 +891,7 @@ func validateFlags(cmd *cobra.Command, drvName, k8sVersion string) {
 		}
 
 		// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
-		version, _ := util.ParseKubernetesVersion(k8sVersion)
+		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {
 				exit.WithCodeT(exit.Config, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
@@ -927,11 +928,11 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig, k8sVersion string) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
 	if existing != nil {
 		cp, err := config.PrimaryControlPlane(existing)
-		cp.KubernetesVersion = k8sVersion
+		cp.KubernetesVersion = getKubernetesVersion(&cc)
 		if err != nil {
 			return cc, config.Node{}, err
 		}
@@ -940,7 +941,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 		// KubernetesVersion is the only attribute that the user can override in the Node object
 		nodes := []config.Node{}
 		for _, n := range existing.Nodes {
-			n.KubernetesVersion = k8sVersion
+			n.KubernetesVersion = getKubernetesVersion(&cc)
 			nodes = append(nodes, n)
 		}
 		cc.Nodes = nodes
@@ -950,7 +951,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 
 	cp := config.Node{
 		Port:              cc.KubernetesConfig.NodePort,
-		KubernetesVersion: k8sVersion,
+		KubernetesVersion: getKubernetesVersion(&cc),
 		Name:              kubeNodeName,
 		ControlPlane:      true,
 		Worker:            true,
@@ -991,26 +992,9 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	return err
 }
 
-// getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *config.ClusterConfig) string {
-	paramVersion := viper.GetString(kubernetesVersion)
-
-	// try to load the old version first if the user didn't specify anything
-	if paramVersion == "" && old != nil {
-		paramVersion = old.KubernetesConfig.KubernetesVersion
-	}
-
-	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
-		paramVersion = constants.DefaultKubernetesVersion
-	} else if strings.EqualFold(paramVersion, "latest") {
-		paramVersion = constants.NewestKubernetesVersion
-	}
-
-	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
-	if err != nil {
-		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
-	}
-	nv := version.VersionPrefix + nvs.String()
+// validateKubernetesVersion ensures that the requested version is reasonable
+func validateKubernetesVersion(old *config.ClusterConfig) {
+	nvs, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(old), version.VersionPrefix))
 
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
@@ -1031,7 +1015,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv
+		return
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
@@ -1040,7 +1024,6 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 
 	if nvs.LT(ovs) {
-		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
 		if old.Name != constants.DefaultClusterName {
 			profileArg = fmt.Sprintf(" -p %s", old.Name)
@@ -1068,5 +1051,27 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	if defaultVersion.GT(nvs) {
 		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
-	return nv
+}
+
+// getKubernetesVersion ensures that the requested version is reasonable
+func getKubernetesVersion(old *config.ClusterConfig) string {
+	paramVersion := viper.GetString(kubernetesVersion)
+
+	// try to load the old version first if the user didn't specify anything
+	if paramVersion == "" && old != nil {
+		paramVersion = old.KubernetesConfig.KubernetesVersion
+	}
+
+	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
+		paramVersion = constants.DefaultKubernetesVersion
+	} else if strings.EqualFold(paramVersion, "latest") {
+		paramVersion = constants.NewestKubernetesVersion
+	}
+
+	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
+	if err != nil {
+		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
+	}
+
+	return version.VersionPrefix + nvs.String()
 }
