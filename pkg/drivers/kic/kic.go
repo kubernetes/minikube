@@ -134,7 +134,7 @@ func (d *Driver) Create() error {
 			t := time.Now()
 			glog.Infof("Starting extracting preloaded images to volume ...")
 			// Extract preloaded images to container
-			if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
+			if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, d.NodeConfig.ImageDigest); err != nil {
 				glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 			} else {
 				glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
@@ -306,6 +306,11 @@ func (d *Driver) Restart() error {
 // Start an already created kic container
 func (d *Driver) Start() error {
 	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
+		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
+		_, err := oci.DaemonInfo(d.OCIBinary)
+		if err != nil {
+			return errors.Wrapf(oci.ErrDaemonInfo, "debug daemon info %q", d.MachineName)
+		}
 		return errors.Wrap(err, "start")
 	}
 	checkRunning := func() error {
@@ -321,7 +326,13 @@ func (d *Driver) Start() error {
 	}
 
 	if err := retry.Expo(checkRunning, 500*time.Microsecond, time.Second*30); err != nil {
-		return err
+		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
+		_, err := oci.DaemonInfo(d.OCIBinary)
+		if err != nil {
+			return errors.Wrapf(oci.ErrDaemonInfo, "container name %q", d.MachineName)
+		}
+
+		return errors.Wrapf(oci.ErrExitedUnexpectedly, "container name %q", d.MachineName)
 	}
 	return nil
 }

@@ -19,11 +19,15 @@ package integration
 import (
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 // General configuration: used to set the VM Driver
@@ -40,13 +44,54 @@ var timeOutMultiplier = flag.Float64("timeout-multiplier", 1, "multiply the time
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
 
+// Node names are consistent, let's store these for easy access later
+const (
+	SecondNodeName = "m02"
+	ThirdNodeName  = "m03"
+)
+
 // TestMain is the test main
 func TestMain(m *testing.M) {
 	flag.Parse()
+	setMaxParallelism()
+
 	start := time.Now()
 	code := m.Run()
 	fmt.Printf("Tests completed in %s (result code %d)\n", time.Since(start), code)
 	os.Exit(code)
+}
+
+// setMaxParallelism caps the max parallelism. Go assumes 1 core per test, whereas minikube needs 2 cores per test.
+func setMaxParallelism() {
+
+	flagVal := flag.Lookup("test.parallel").Value.String()
+	requested, err := strconv.Atoi(flagVal)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to parse --test.parallel value: %q\n", flagVal)
+		return
+	}
+
+	maxp := runtime.GOMAXPROCS(0)
+
+	// Do not ignore what the user has explicitly set
+	if requested != maxp {
+		fmt.Fprintf(os.Stderr, "--test-parallel=%d was set via flags (system has %d cores)\n", requested, maxp)
+		return
+	}
+
+	if maxp == 2 {
+		fmt.Fprintf(os.Stderr, "Found %d cores, will not round down core count.\n", maxp)
+		return
+	}
+
+	// Each "minikube start" consumes up to 2 cores, though the average usage is somewhat lower
+	limit := int(math.Floor(float64(maxp) / 1.75))
+
+	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", maxp, limit)
+	if err := flag.Set("test.parallel", strconv.Itoa(limit)); err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to set test.parallel: %v\n", err)
+	}
+	runtime.GOMAXPROCS(limit)
 }
 
 // StartArgs returns the arguments normally used for starting minikube
@@ -84,10 +129,16 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
+// GithubActionRunner returns true if running inside a github action runner
+func GithubActionRunner() bool {
+	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
+	return os.Getenv("GITHUB_ACTIONS") == "true"
+}
+
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
 // (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {
-	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin")
+	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin") || driver.IsMicrosoftWSL()
 }
 
 // CanCleanup returns if cleanup is allowed

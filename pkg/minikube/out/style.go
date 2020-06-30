@@ -122,6 +122,7 @@ var styles = map[StyleEnum]style{
 	Unmount:          {Prefix: "🔥  "},
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
 	Verifying:        {Prefix: "🤔  "},
+	CNI:              {Prefix: "🔗  "},
 }
 
 // Add a prefix to a string

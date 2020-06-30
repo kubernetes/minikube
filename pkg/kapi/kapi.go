@@ -19,6 +19,7 @@ package kapi
 import (
 	"context"
 	"fmt"
+	"path"
 	"time"
 
 	"github.com/golang/glog"
@@ -27,7 +28,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -37,6 +37,7 @@ import (
 	watchtools "k8s.io/client-go/tools/watch"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 var (
@@ -68,21 +69,21 @@ func Client(context string) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(c)
 }
 
-// WaitForPodsWithLabelRunning waits for all matching pods to become Running and at least one matching pod exists.
-func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector, timeOut ...time.Duration) error {
+// WaitForPods waits for all matching pods to become Running or finish successfully and at least one matching pod exists.
+func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...time.Duration) error {
 	start := time.Now()
-	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
+	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, selector)
 	lastKnownPodNumber := -1
 	f := func() (bool, error) {
-		listOpts := meta.ListOptions{LabelSelector: label.String()}
+		listOpts := meta.ListOptions{LabelSelector: selector}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
-			glog.Infof("temporary error: getting Pods with label selector %q : [%v]\n", label.String(), err)
+			glog.Infof("temporary error: getting Pods with label selector %q : [%v]\n", selector, err)
 			return false, nil
 		}
 
 		if lastKnownPodNumber != len(pods.Items) {
-			glog.Infof("Found %d Pods for label selector %s\n", len(pods.Items), label.String())
+			glog.Infof("Found %d Pods for label selector %s\n", len(pods.Items), selector)
 			lastKnownPodNumber = len(pods.Items)
 		}
 
@@ -91,8 +92,8 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		}
 
 		for _, pod := range pods.Items {
-			if pod.Status.Phase != core.PodRunning {
-				glog.Infof("waiting for pod %q, current state: %s: [%v]\n", label.String(), pod.Status.Phase, err)
+			if pod.Status.Phase != core.PodRunning && pod.Status.Phase != core.PodSucceeded {
+				glog.Infof("waiting for pod %q, current state: %s: [%v]\n", selector, pod.Status.Phase, err)
 				return false, nil
 			}
 		}
@@ -104,7 +105,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		t = timeOut[0]
 	}
 	err := wait.PollImmediate(kconst.APICallRetryInterval, t, f)
-	glog.Infof("duration metric: took %s to wait for %s ...", time.Since(start), label)
+	glog.Infof("duration metric: took %s to wait for %s ...", time.Since(start), selector)
 	return err
 }
 
@@ -204,4 +205,9 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 // IsRetryableAPIError returns if this error is retryable or not
 func IsRetryableAPIError(err error) bool {
 	return apierr.IsTimeout(err) || apierr.IsServerTimeout(err) || apierr.IsTooManyRequests(err) || apierr.IsInternalError(err)
+}
+
+// KubectlBinaryPath returns the path to kubectl on the node
+func KubectlBinaryPath(version string) string {
+	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }

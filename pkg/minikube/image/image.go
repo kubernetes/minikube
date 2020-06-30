@@ -18,6 +18,7 @@ package image
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -33,8 +34,11 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 var defaultPlatform = v1.Platform{
@@ -93,6 +97,44 @@ func ExistsImageInDaemon(img string) bool {
 	return false
 }
 
+// LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
+// TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
+func LoadFromTarball(binary, img string) error {
+	p := filepath.Join(constants.ImageCacheDir, img)
+	p = localpath.SanitizeCacheDir(p)
+
+	switch binary {
+	case driver.Podman:
+		return fmt.Errorf("not yet implemented, see issue #8426")
+	default:
+		tag, err := name.NewTag(Tag(img))
+		if err != nil {
+			return errors.Wrap(err, "new tag")
+		}
+
+		i, err := tarball.ImageFromPath(p, &tag)
+		if err != nil {
+			return errors.Wrap(err, "tarball")
+		}
+
+		_, err = daemon.Write(tag, i)
+		return err
+	}
+
+}
+
+// Tag returns just the image with the tag
+// eg image:tag@sha256:digest -> image:tag if there is an associated tag
+// if not possible, just return the initial img
+func Tag(img string) string {
+	split := strings.Split(img, ":")
+	if len(split) == 3 {
+		tag := strings.Split(split[1], "@")[0]
+		return fmt.Sprintf("%s:%s", split[0], tag)
+	}
+	return img
+}
+
 // WriteImageToDaemon write img to the local docker daemon
 func WriteImageToDaemon(img string) error {
 	glog.Infof("Writing %s to local daemon", img)
@@ -103,29 +145,20 @@ func WriteImageToDaemon(img string) error {
 	glog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref)
 	if err != nil {
+		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
+			ErrGithubNeedsLogin = errors.New(err.Error())
+			return ErrGithubNeedsLogin
+		} else if strings.Contains(err.Error(), "UNAUTHORIZED") {
+			ErrNeedsLogin = errors.New(err.Error())
+			return ErrNeedsLogin
+		}
+
 		return errors.Wrap(err, "getting remote image")
 	}
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	glog.V(3).Infof("Writing image %v", ref)
+	_, err = daemon.Write(ref, i)
 	if err != nil {
-		return errors.Wrap(err, "getting tag")
-	}
-	glog.V(3).Infof("Writing image %v", tag)
-	_, err = daemon.Write(tag, i)
-	if err != nil {
-		return errors.Wrap(err, "writing image")
-	}
-
-	//TODO: Make pkg/v1/daemon accept Ref too
-	//      Only added it to pkg/v1/tarball
-	//
-	// https://github.com/google/go-containerregistry/pull/702
-
-	glog.V(3).Infof("Pulling image %v", ref)
-
-	// Pull digest
-	cmd := exec.Command("docker", "pull", "--quiet", img)
-	if _, err := cmd.Output(); err != nil {
-		return errors.Wrap(err, "pulling remote image")
+		return errors.Wrap(err, "writing daemon image")
 	}
 
 	return nil

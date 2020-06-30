@@ -29,7 +29,8 @@ minikube start [flags]
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
       --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.10@sha256:f58e0c4662bac8a9b5dda7984b185bad8502ade5d9fa364bf2755d636ab51438")
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
-      --container-runtime string          The container runtime to be used (docker, crio, containerd). (default "docker")
+      --cni string                        CNI plug-in to use. Valid options: auto, bridge, flannel, kindnet, or path to a CNI manifest (default: auto)
+      --container-runtime string          The container runtime to be used (docker, cri-o, containerd). (default "docker")
       --cpus int                          Number of CPUs allocated to Kubernetes. (default 2)
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
@@ -43,7 +44,7 @@ minikube start [flags]
       --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
       --dry-run                           dry-run mode. Validates configuration, but does not mutate system state
       --embed-certs                       if true, will embed the certs in kubeconfig.
-      --enable-default-cni                Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with "--network-plugin=cni".
+      --enable-default-cni                DEPRECATED: Replaced by --cni=bridge
       --extra-config ExtraOption          A set of key=value pairs that describe configuration that may be passed to different components.
                                           		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
                                           		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
@@ -65,9 +66,9 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.10.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.10.0/minikube-v1.10.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.10.0.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.11.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.11.0/minikube-v1.11.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.11.0.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.18.2, 'latest' for v1.18.3-beta.0). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.18.3, 'latest' for v1.18.4-rc.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM network name. (kvm2 driver only) (default "default")
@@ -77,7 +78,7 @@ minikube start [flags]
       --mount-string string               The argument to pass the minikube mount command on start.
       --nat-nic-type string               NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
-      --network-plugin string             The name of the network plugin.
+      --network-plugin string             Kubelet network plug-in to use (default: auto)
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
       --no-vtx-check                      Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)

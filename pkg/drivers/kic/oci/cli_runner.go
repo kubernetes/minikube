@@ -89,13 +89,14 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 
 	killTime := 19 * time.Second // this will be applied only if warnSlow is true
 	warnTime := 2 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), killTime)
-	defer cancel()
 
 	if cmd.Args[1] == "volume" || cmd.Args[1] == "ps" { // volume and ps requires more time than inspect
 		killTime = 30 * time.Second
 		warnTime = 3 * time.Second
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), killTime)
+	defer cancel()
 
 	if warn { // convert exec.Command to with context
 		cmdWithCtx := exec.CommandContext(ctx, cmd.Args[0], cmd.Args[1:]...)
@@ -138,7 +139,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
-			return rr, fmt.Errorf("%q timed out after %s", rr.Command(), killTime)
+			return rr, context.DeadlineExceeded
 		}
 	}
 

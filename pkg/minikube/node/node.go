@@ -19,6 +19,7 @@ package node
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -31,6 +32,7 @@ import (
 const (
 	mountString = "mount-string"
 	createMount = "mount"
+	cpus        = "cpus"
 )
 
 // Add adds a new node config to an existing cluster.
@@ -58,30 +60,37 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 }
 
 // Delete stops and deletes the given node from the given cluster
-func Delete(cc config.ClusterConfig, name string) error {
-	n, index, err := Retrieve(&cc, name)
+func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
+	n, index, err := Retrieve(cc, name)
 	if err != nil {
-		return errors.Wrap(err, "retrieve")
+		return n, errors.Wrap(err, "retrieve")
 	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		return err
+		return n, err
 	}
 
 	err = machine.DeleteHost(api, driver.MachineName(cc, *n))
 	if err != nil {
-		return err
+		return n, err
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
 
 // Retrieve finds the node by name in the given cluster
-func Retrieve(cc *config.ClusterConfig, name string) (*config.Node, int, error) {
+func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
+
 	for i, n := range cc.Nodes {
 		if n.Name == name {
+			return &n, i, nil
+		}
+
+		// Accept full machine name as well as just node name
+		if driver.MachineName(cc, n) == name {
+			glog.Infof("Couldn't find node name %s, but found it as a machine name, returning it anyway.", name)
 			return &n, i, nil
 		}
 	}

@@ -108,12 +108,27 @@ var podmanEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Podman service",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		sh := shell.EnvConfig{
+			Shell: shell.ForceShell,
+		}
+
+		if podmanUnset {
+			if err := podmanUnsetScript(PodmanEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
+				exit.WithError("Error generating unset output", err)
+			}
+			return
+		}
+
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
 		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
+		}
+
+		if len(co.Config.Nodes) > 1 {
+			exit.WithCodeT(exit.BadUsage, `The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
 		if ok := isPodmanAvailable(co.CP.Runner); !ok {
@@ -125,9 +140,6 @@ var podmanEnvCmd = &cobra.Command{
 			exit.WithError("Error getting ssh client", err)
 		}
 
-		sh := shell.EnvConfig{
-			Shell: shell.ForceShell,
-		}
 		ec := PodmanEnvConfig{
 			EnvConfig: sh,
 			profile:   cname,
@@ -140,13 +152,6 @@ var podmanEnvCmd = &cobra.Command{
 			if err != nil {
 				exit.WithError("Error detecting shell", err)
 			}
-		}
-
-		if podmanUnset {
-			if err := podmanUnsetScript(ec, os.Stdout); err != nil {
-				exit.WithError("Error generating unset output", err)
-			}
-			return
 		}
 
 		if err := podmanSetScript(ec, os.Stdout); err != nil {

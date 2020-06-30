@@ -28,8 +28,10 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -311,6 +313,30 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	return enableOrDisableAddon(cc, name, val)
 }
 
+func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
+	glog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+
+	label, ok := addonPodLabels[name]
+	if ok && enable {
+		out.T(out.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
+		client, err := kapi.Client(viper.GetString(config.ProfileName))
+		if err != nil {
+			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
+		}
+
+		err = kapi.WaitForPods(client, "kube-system", label, time.Minute*3)
+		if err != nil {
+			return errors.Wrapf(err, "verifying %s addon pods : %v", name, err)
+		}
+
+	}
+	return nil
+}
+
 // Start enables the default addons for a profile, plus any additional
 func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, additional []string) {
 	wg.Add(1)
@@ -334,7 +360,15 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	// Apply new addons
 	for _, name := range additional {
-		toEnable[name] = true
+		// replace heapster as metrics-server because heapster is deprecated
+		if name == "heapster" {
+			name = "metrics-server"
+		}
+		// if the specified addon doesn't exist, skip enabling
+		_, e := isAddonValid(name)
+		if e {
+			toEnable[name] = true
+		}
 	}
 
 	toEnableList := []string{}

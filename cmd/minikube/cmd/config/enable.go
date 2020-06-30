@@ -32,6 +32,11 @@ var addonsEnableCmd = &cobra.Command{
 			exit.UsageT("usage: minikube addons enable ADDON_NAME")
 		}
 		addon := args[0]
+		// replace heapster as metrics-server because heapster is deprecated
+		if addon == "heapster" {
+			out.T(out.Waiting, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
+			addon = "metrics-server"
+		}
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
 		if err != nil {
 			exit.WithError("enable failed", err)

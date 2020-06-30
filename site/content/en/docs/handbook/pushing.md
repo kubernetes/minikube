@@ -20,7 +20,7 @@ Here is a comparison table to help you choose:
 |---	|---	|---	|---	|---	|
 |  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env)	|   only docker	|  good 	|
 |  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env)	|   only cri-o |  good 	|
-|  [cache add command](/pushing/#2-push-images-using-cache-command) 	|  all 	|  ok 	|
+|  [cache add command]({{< ref "/docs/commands/cache.md#minikube-cache-add" >}}) 	|  all 	|  ok 	|
 |  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok 	|
 |  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all	| best 	|
 
@@ -182,7 +182,7 @@ For illustration purpose, we will assume that minikube VM has one of the ip from
 
 Ensure that docker is configured to use `192.168.39.0/24` as insecure registry. Refer [here](https://docs.docker.com/registry/insecure/) for instructions.
 
-Ensure that `192.168.39.0/24` is enabled as insecure registry in minikube. Refer [here](https://minikube.sigs.k8s.io/Handbook/registry/insecure/) for instructions..
+Ensure that `192.168.39.0/24` is enabled as insecure registry in minikube. Refer [here](https://minikube.sigs.k8s.io/docs/handbook/registry/#enabling-insecure-registries/) for instructions..
 
 Enable minikube registry addon:
 
@@ -218,7 +218,7 @@ For more information on the `docker build` command, read the [Docker documentati
 For Podman, use:
 
 ```shell
-sudo -E podman build
+sudo podman build
 ```
 
 For more information on the `podman build` command, read the [Podman documentation](https://github.com/containers/libpod/blob/master/docs/source/markdown/podman-build.1.md) (podman.io).

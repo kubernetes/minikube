@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 10
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 12
+VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,16 +23,16 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
+ISO_VERSION ?= v1.11.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.13.8
+GO_VERSION ?= 1.13.9
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2019.02.10
+BUILDROOT_BRANCH ?= 2020.02.2
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
@@ -40,8 +40,9 @@ COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
 
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
-# NOTE: "latest" as of 2020-02-26. kube-cross images aren't updated as often as Kubernetes
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
+# NOTE: "latest" as of 2020-05-13. kube-cross images aren't updated as often as Kubernetes
+# https://github.com/kubernetes/kubernetes/blob/release-1.18/build/build-image/cross/VERSION
+BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-5
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 
@@ -52,7 +53,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.107
+KERNEL_VERSION ?= 5.4.40
 # latest from https://github.com/golangci/golangci-lint/releases
 GOLINT_VERSION ?= v1.26.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
@@ -205,6 +206,8 @@ minikube_iso: # old target kept for making tests happy
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 	fi;
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
+	mkdir -p $(BUILD_DIR)/buildroot/output/build
+	echo "module buildroot.org/go" > $(BUILD_DIR)/buildroot/output/build/go.mod
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
 
@@ -572,7 +575,7 @@ out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
 
 out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
+	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
@@ -619,7 +622,7 @@ kvm-image: installers/linux/kvm/Dockerfile  ## Convenient alias to build the doc
 	@echo "$(@) successfully built"
 
 kvm_in_docker:
-	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
+	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
 	rm -f out/docker-machine-driver-kvm2
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 

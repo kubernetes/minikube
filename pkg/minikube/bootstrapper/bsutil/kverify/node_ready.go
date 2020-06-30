@@ -32,7 +32,7 @@ import (
 
 // WaitForNodeReady waits till kube client reports node status as "ready"
 func WaitForNodeReady(cs *kubernetes.Clientset, timeout time.Duration) error {
-	glog.Info("waiting for node status to be ready ...")
+	glog.Infof("waiting %s for node status to be ready ...", timeout)
 	start := time.Now()
 	defer func() {
 		glog.Infof("duration metric: took %s to wait for WaitForNodeReady...", time.Since(start))

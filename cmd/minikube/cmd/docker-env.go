@@ -24,9 +24,11 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -119,12 +121,29 @@ func isDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
+func mustRestartDocker(name string, runner command.Runner) {
+	if err := sysinit.New(runner).Restart("docker"); err != nil {
+		exit.WithCodeT(exit.Unavailable, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+	}
+}
+
 // dockerEnvCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
 	Short: "Configure environment to use minikube's Docker daemon",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		sh := shell.EnvConfig{
+			Shell: shell.ForceShell,
+		}
+
+		if dockerUnset {
+			if err := dockerUnsetScript(DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
+				exit.WithError("Error generating unset output", err)
+			}
+			return
+		}
+
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
 		driverName := co.CP.Host.DriverName
@@ -133,17 +152,18 @@ var dockerEnvCmd = &cobra.Command{
 			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 		}
 
+		if len(co.Config.Nodes) > 1 {
+			exit.WithCodeT(exit.BadUsage, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
+		}
+
 		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
 			exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
 		if ok := isDockerActive(co.CP.Runner); !ok {
-			exit.WithCodeT(exit.Unavailable, `The docker service within '{{.name}}' is not active`, out.V{"name": cname})
-		}
-
-		sh := shell.EnvConfig{
-			Shell: shell.ForceShell,
+			glog.Warningf("dockerd is not active will try to restart it...")
+			mustRestartDocker(cname, co.CP.Runner)
 		}
 
 		var err error
@@ -172,11 +192,19 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		if dockerUnset {
-			if err := dockerUnsetScript(ec, os.Stdout); err != nil {
-				exit.WithError("Error generating unset output", err)
+		dockerPath, err := exec.LookPath("docker")
+		if err != nil {
+			glog.Warningf("Unable to find docker in path - skipping connectivity check: %v", err)
+			dockerPath = ""
+		}
+
+		if dockerPath != "" {
+			out, err := tryDockerConnectivity("docker", ec)
+			if err != nil { // docker might be up but been loaded with wrong certs/config
+				// to fix issues like this #8185
+				glog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
+				mustRestartDocker(cname, co.CP.Runner)
 			}
-			return
 		}
 
 		if err := dockerSetScript(ec, os.Stdout); err != nil {
@@ -236,6 +264,24 @@ func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	}
 
 	return env
+}
+
+// dockerEnvVarsList gets the necessary docker env variables to allow the use of minikube's docker daemon to be used in a exec.Command
+func dockerEnvVarsList(ec DockerEnvConfig) []string {
+	return []string{
+		fmt.Sprintf("%s=%s", constants.DockerTLSVerifyEnv, "1"),
+		fmt.Sprintf("%s=%s", constants.DockerHostEnv, dockerURL(ec.hostIP, ec.port)),
+		fmt.Sprintf("%s=%s", constants.DockerCertPathEnv, ec.certsDir),
+		fmt.Sprintf("%s=%s", constants.MinikubeActiveDockerdEnv, ec.profile),
+	}
+}
+
+// tryDockerConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
+func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
+	c := exec.Command(bin, "version", "--format={{.Server}}")
+	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
+	glog.Infof("Testing Docker connectivity with: %v", c)
+	return c.CombinedOutput()
 }
 
 func init() {

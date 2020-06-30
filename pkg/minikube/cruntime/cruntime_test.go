@@ -267,6 +267,16 @@ func (f *FakeRunner) dockerRm(args []string) (string, error) {
 	return "", nil
 }
 
+func (f *FakeRunner) dockerInspect(args []string) (string, error) {
+	if args[1] == "--format" && args[2] == "{{.Id}}" {
+		if args[3] == "missing" {
+			return "", &exec.ExitError{Stderr: []byte("Error: No such object: missing")}
+		}
+		return "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
+	}
+	return "", nil
+}
+
 // docker is a fake implementation of docker
 func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	switch cmd := args[0]; cmd {
@@ -285,14 +295,13 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 			return "18.06.2-ce", nil
 		}
 
-	case "inspect":
-
-		if args[1] == "--format" && args[2] == "{{.Id}}" {
-			if args[3] == "missing" {
-				return "", &exec.ExitError{Stderr: []byte("Error: No such object: missing")}
-			}
-			return "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
+	case "image":
+		if args[1] == "inspect" {
+			return f.dockerInspect(args[1:])
 		}
+
+	case "inspect":
+		return f.dockerInspect(args)
 
 	case "info":
 
@@ -309,9 +318,9 @@ func (f *FakeRunner) podman(args []string, _ bool) (string, error) {
 	case "--version":
 		return "podman version 1.6.4", nil
 
-	case "inspect":
+	case "image":
 
-		if args[1] == "--format" && args[2] == "{{.Id}}" {
+		if args[1] == "inspect" && args[2] == "--format" && args[3] == "{{.Id}}" {
 			if args[3] == "missing" {
 				return "", &exec.ExitError{Stderr: []byte("Error: error getting image \"missing\": unable to find a name and tag match for missing in repotags: no such image")}
 			}
@@ -469,6 +478,16 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 				return out, nil
 			}
 			return out, fmt.Errorf("%s in state: %v", svc, state)
+		case "cat":
+			f.t.Logf("fake systemctl: %s cat: %v", svc, state)
+			if svc == "docker.service" {
+				out += "[Unit]\n"
+				out += "Description=Docker Application Container Engine\n"
+				out += "Documentation=https://docs.docker.com\n"
+				//out += "BindsTo=containerd.service\n"
+				return out, nil
+			}
+			return out, fmt.Errorf("%s cat unimplemented", svc)
 		default:
 			return out, fmt.Errorf("unimplemented fake action: %q", action)
 		}
@@ -517,6 +536,14 @@ var defaultServices = map[string]serviceState{
 	"containerd":    SvcExited,
 }
 
+// allServices reflects the state of all actual services running at once
+var allServices = map[string]serviceState{
+	"docker":        SvcRunning,
+	"crio":          SvcRunning,
+	"crio-shutdown": SvcExited,
+	"containerd":    SvcRunning,
+}
+
 func TestDisable(t *testing.T) {
 	var tests = []struct {
 		runtime string
@@ -549,32 +576,43 @@ func TestDisable(t *testing.T) {
 
 func TestEnable(t *testing.T) {
 	var tests = []struct {
-		runtime string
-		want    map[string]serviceState
+		runtime  string
+		services map[string]serviceState
+		want     map[string]serviceState
 	}{
-		{"docker", map[string]serviceState{
-			"docker":        SvcRunning,
-			"containerd":    SvcExited,
-			"crio":          SvcExited,
-			"crio-shutdown": SvcExited,
-		}},
-		{"containerd", map[string]serviceState{
-			"docker":        SvcExited,
-			"containerd":    SvcRestarted,
-			"crio":          SvcExited,
-			"crio-shutdown": SvcExited,
-		}},
-		{"crio", map[string]serviceState{
-			"docker":        SvcExited,
-			"containerd":    SvcExited,
-			"crio":          SvcRunning,
-			"crio-shutdown": SvcExited,
-		}},
+		{"docker", defaultServices,
+			map[string]serviceState{
+				"docker":        SvcRunning,
+				"containerd":    SvcExited,
+				"crio":          SvcExited,
+				"crio-shutdown": SvcExited,
+			}},
+		{"docker", allServices,
+			map[string]serviceState{
+				"docker":        SvcRestarted,
+				"containerd":    SvcExited,
+				"crio":          SvcExited,
+				"crio-shutdown": SvcExited,
+			}},
+		{"containerd", defaultServices,
+			map[string]serviceState{
+				"docker":        SvcExited,
+				"containerd":    SvcRestarted,
+				"crio":          SvcExited,
+				"crio-shutdown": SvcExited,
+			}},
+		{"crio", defaultServices,
+			map[string]serviceState{
+				"docker":        SvcExited,
+				"containerd":    SvcExited,
+				"crio":          SvcRunning,
+				"crio-shutdown": SvcExited,
+			}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
 			runner := NewFakeRunner(t)
-			for k, v := range defaultServices {
+			for k, v := range tc.services {
 				runner.services[k] = v
 			}
 			cr, err := New(Config{Type: tc.runtime, Runner: runner})

@@ -80,14 +80,13 @@ func TestStartStop(t *testing.T) {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
-
+				profile := UniqueProfileName(tc.name)
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+				defer Cleanup(t, profile, cancel)
+				type validateStartStopFunc func(context.Context, *testing.T, string, string, string, []string)
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
-
-				profile := UniqueProfileName(tc.name)
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer CleanupWithLogs(t, profile, cancel)
 
 				waitFlag := "--wait=true"
 				if strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
@@ -98,80 +97,140 @@ func TestStartStop(t *testing.T) {
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
 
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-				if err != nil {
-					t.Fatalf("failed starting minikube -first start-. args %q: %v", rr.Command(), err)
-				}
-
-				if !strings.Contains(tc.name, "cni") {
-					testPodScheduling(ctx, t, profile)
-				}
-
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
-				if err != nil {
-					t.Fatalf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
-				}
-
-				// The none driver never really stops
-				if !NoneDriver() {
-					got := Status(ctx, t, Target(), profile, "Host")
-					if got != state.Stopped.String() {
-						t.Fatalf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
+				t.Run("serial", func(t *testing.T) {
+					serialTests := []struct {
+						name      string
+						validator validateStartStopFunc
+					}{
+						{"FirstStart", validateFirstStart},
+						{"DeployApp", validateDeploying},
+						{"Stop", validateStop},
+						{"EnableAddonAfterStop", validateEnableAddonAfterStop},
+						{"SecondStart", validateSecondStart},
+						{"UserAppExistsAfterStop", validateAppExistsAfterStop},
+						{"AddonExistsAfterStop", validateAddonAfterStop},
+						{"VerifyKubernetesImages", validateKubernetesImages},
+						{"Pause", validatePauseAfterSart},
 					}
-				}
-
-				// Enable an addon to assert it comes up afterwards
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
-				if err != nil {
-					t.Fatalf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
-				}
-
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-				if err != nil {
-					// Explicit fatal so that failures don't move directly to deletion
-					t.Fatalf("failed to start minikube post-stop. args %q: %v", rr.Command(), err)
-				}
-
-				if strings.Contains(tc.name, "cni") {
-					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else {
-					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(7)); err != nil {
-						t.Fatalf("failed waiting for pod 'busybox' post-stop-start: %v", err)
-					}
-					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
-						t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
-					}
-				}
-
-				got := Status(ctx, t, Target(), profile, "Host")
-				if got != state.Running.String() {
-					t.Fatalf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
-				}
-
-				if !NoneDriver() {
-					testPulledImages(ctx, t, profile, tc.version)
-				}
-
-				testPause(ctx, t, profile)
-
-				if *cleanup {
-					// Normally handled by cleanuprofile, but not fatal there
-					rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
-					if err != nil {
-						t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
+					for _, stc := range serialTests {
+						tcName := tc.name
+						tcVersion := tc.version
+						stc := stc
+						t.Run(stc.name, func(t *testing.T) {
+							stc.validator(ctx, t, profile, tcName, tcVersion, startArgs)
+						})
 					}
 
-					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
-					if err != nil {
-						t.Logf("config context error: %v (may be ok)", err)
+					if *cleanup {
+						// Normally handled by cleanuprofile, but not fatal there
+						rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+						if err != nil {
+							t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
+						}
+
+						rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
+						if err != nil {
+							t.Logf("config context error: %v (may be ok)", err)
+						}
+						if rr.ExitCode != 1 {
+							t.Errorf("expected exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
+						}
 					}
-					if rr.ExitCode != 1 {
-						t.Errorf("expected exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
-					}
-				}
+
+				})
+
 			})
 		}
 	})
+}
+
+func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err != nil {
+		t.Fatalf("failed starting minikube -first start-. args %q: %v", rr.Command(), err)
+	}
+}
+
+func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	if !strings.Contains(tcName, "cni") {
+		testPodScheduling(ctx, t, profile)
+	}
+}
+
+func validateStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
+	if err != nil {
+		t.Fatalf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
+	}
+}
+
+func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	// The none driver never really stops
+	if !NoneDriver() {
+		got := Status(ctx, t, Target(), profile, "Host", profile)
+		if got != state.Stopped.String() {
+			t.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
+		}
+	}
+
+	// Enable an addon to assert it comes up afterwards
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
+	}
+
+}
+
+func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err != nil {
+		// Explicit fatal so that failures don't move directly to deletion
+		t.Fatalf("failed to start minikube post-stop. args %q: %v", rr.Command(), err)
+	}
+
+	got := Status(ctx, t, Target(), profile, "Host", profile)
+	if got != state.Running.String() {
+		t.Errorf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
+	}
+
+}
+
+// validateAppExistsAfterStop verifies that a user's app will not vanish after a minikube stop
+func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	if strings.Contains(tcName, "cni") {
+		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+	} else if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
+		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
+	}
+
+}
+
+// validateAddonAfterStop validates that an addon which was enabled when minikube is stopped will be enabled and working..
+func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	if strings.Contains(tcName, "cni") {
+		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+	} else if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
+		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
+	}
+}
+
+func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	if !NoneDriver() {
+		testPulledImages(ctx, t, profile, tcVersion)
+	}
+}
+
+func validatePauseAfterSart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+	testPause(ctx, t, profile)
 }
 
 // testPodScheduling asserts that this configuration can schedule new pods
@@ -264,12 +323,12 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	got := Status(ctx, t, Target(), profile, "APIServer")
+	got := Status(ctx, t, Target(), profile, "APIServer", profile)
 	if got != state.Paused.String() {
 		t.Errorf("post-pause apiserver status = %q; want = %q", got, state.Paused)
 	}
 
-	got = Status(ctx, t, Target(), profile, "Kubelet")
+	got = Status(ctx, t, Target(), profile, "Kubelet", profile)
 	if got != state.Stopped.String() {
 		t.Errorf("post-pause kubelet status = %q; want = %q", got, state.Stopped)
 	}
@@ -279,12 +338,12 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	got = Status(ctx, t, Target(), profile, "APIServer")
+	got = Status(ctx, t, Target(), profile, "APIServer", profile)
 	if got != state.Running.String() {
 		t.Errorf("post-unpause apiserver status = %q; want = %q", got, state.Running)
 	}
 
-	got = Status(ctx, t, Target(), profile, "Kubelet")
+	got = Status(ctx, t, Target(), profile, "Kubelet", profile)
 	if got != state.Running.String() {
 		t.Errorf("post-unpause kubelet status = %q; want = %q", got, state.Running)
 	}

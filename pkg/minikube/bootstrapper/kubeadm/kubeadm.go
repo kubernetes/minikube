@@ -17,7 +17,6 @@ limitations under the License.
 package kubeadm
 
 import (
-	"bytes"
 	"context"
 	"os/exec"
 	"path"
@@ -41,7 +40,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -49,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -228,7 +227,14 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	if _, err := k.c.RunCmd(c); err != nil {
+		if strings.Contains(err.Error(), "'kubeadm': Permission denied") {
+			return ErrNoExecLinux
+		}
 		return errors.Wrap(err, "run")
+	}
+
+	if err := k.applyCNI(cfg); err != nil {
+		return errors.Wrap(err, "apply cni")
 	}
 
 	var wg sync.WaitGroup
@@ -238,12 +244,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		// we need to have cluster role binding before applying overlay to avoid #7428
 		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
 			glog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
-		}
-		// the overlay is required for containerd and cri-o runtime: see #7428
-		if config.MultiNode(cfg) || (driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker") {
-			if err := k.applyKICOverlay(cfg); err != nil {
-				glog.Errorf("failed to apply kic overlay: %v", err)
-			}
 		}
 		wg.Done()
 	}()
@@ -263,6 +263,33 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}()
 
 	wg.Wait()
+	return nil
+}
+
+// applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.
+func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
+
+	cnm, err := cni.New(cfg)
+	if err != nil {
+		return errors.Wrap(err, "cni config")
+	}
+
+	if _, ok := cnm.(cni.Disabled); ok {
+		return nil
+	}
+
+	out.T(out.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+
+	if err := cnm.Apply(k.c); err != nil {
+		return errors.Wrap(err, "cni apply")
+	}
+
+	if cfg.KubernetesConfig.ContainerRuntime == constants.CRIO {
+		if err := cruntime.UpdateCRIONet(k.c, cnm.CIDR()); err != nil {
+			return errors.Wrap(err, "update crio")
+		}
+	}
+
 	return nil
 }
 
@@ -302,7 +329,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
 		glog.Infof("found existing configuration files, will attempt cluster restart")
-		rerr := k.restartCluster(cfg)
+		rerr := k.restartControlPlane(cfg)
 		if rerr == nil {
 			return nil
 		}
@@ -324,11 +351,15 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
-	if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
-		glog.Warningf("delete failed: %v", err)
+	// retry again if it is not a fail fast error
+	if _, ff := err.(*FailFastError); !ff {
+		out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
+		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
+			glog.Warningf("delete failed: %v", err)
+		}
+		return k.init(cfg)
 	}
-	return k.init(cfg)
+	return err
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
@@ -355,7 +386,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForNode blocks until the node appears to be healthy
-func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) (waitErr error) {
+func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 
 	if !n.ControlPlane {
@@ -371,20 +402,19 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	defer func() { // run pressure verification after all other checks, so there be an api server to talk to.
-		client, err := k.client(hostname, port)
-		if err != nil {
-			waitErr = errors.Wrap(err, "get k8s client")
-		}
-		if err := kverify.NodePressure(client); err != nil {
-			adviseNodePressure(err, cfg.Name, cfg.Driver)
-			waitErr = errors.Wrap(err, "node pressure")
-		}
-	}()
+	client, err := k.client(hostname, port)
+	if err != nil {
+		return errors.Wrap(err, "kubernetes client")
+	}
 
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
 		glog.Infof("skip waiting for components based on config.")
-		return waitErr
+
+		if err := kverify.NodePressure(client); err != nil {
+			adviseNodePressure(err, cfg.Name, cfg.Driver)
+			return errors.Wrap(err, "node pressure")
+		}
+		return nil
 	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
@@ -393,10 +423,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
-		client, err := k.client(hostname, port)
-		if err != nil {
-			return errors.Wrap(err, "get k8s client")
-		}
 		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
 			return errors.Wrap(err, "wait for apiserver proc")
 		}
@@ -407,47 +433,36 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
-		client, err := k.client(hostname, port)
-		if err != nil {
-			return errors.Wrap(err, "get k8s client")
-		}
 		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
 			return errors.Wrap(err, "waiting for system pods")
 		}
 	}
 
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
-		client, err := k.client(hostname, port)
-		if err != nil {
-			return errors.Wrap(err, "get k8s client")
-		}
 		if err := kverify.WaitForDefaultSA(client, timeout); err != nil {
 			return errors.Wrap(err, "waiting for default service account")
 		}
 	}
 
 	if cfg.VerifyComponents[kverify.AppsRunningKey] {
-		client, err := k.client(hostname, port)
-		if err != nil {
-			return errors.Wrap(err, "get k8s client")
-		}
 		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
 			return errors.Wrap(err, "waiting for apps_running")
 		}
 	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
-		client, err := k.client(hostname, port)
-		if err != nil {
-			return errors.Wrap(err, "get k8s client")
-		}
 		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
 			return errors.Wrap(err, "waiting for node to be ready")
 		}
 	}
 
 	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
-	return waitErr
+
+	if err := kverify.NodePressure(client); err != nil {
+		adviseNodePressure(err, cfg.Name, cfg.Driver)
+		return errors.Wrap(err, "node pressure")
+	}
+	return nil
 }
 
 // needsReconfigure returns whether or not the cluster needs to be reconfigured
@@ -484,7 +499,7 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	glog.Infof("restartCluster start")
 
 	start := time.Now()
@@ -572,6 +587,11 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "apiserver health")
 	}
 
+	// because reboots clear /etc/cni
+	if err := k.applyCNI(cfg); err != nil {
+		return errors.Wrap(err, "apply cni")
+	}
+
 	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
@@ -605,10 +625,24 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	}()
 
 	// Join the master by specifying its token
-	joinCmd = fmt.Sprintf("%s --v=10 --node-name=%s", joinCmd, driver.MachineName(cc, n))
-	out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
-	if err != nil {
-		return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out)
+	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, driver.MachineName(cc, n))
+
+	join := func() error {
+		// reset first to clear any possibly existing state
+		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))))
+		if err != nil {
+			glog.Infof("kubeadm reset failed, continuing anyway: %v", err)
+		}
+
+		out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
+		if err != nil {
+			return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
+		}
+		return nil
+	}
+
+	if err := retry.Expo(join, 10*time.Second, 1*time.Minute); err != nil {
+		return errors.Wrap(err, "joining cp")
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
@@ -618,17 +652,21 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	return nil
 }
 
-// GenerateToken creates a token and returns the appropriate kubeadm join command to run
+// GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
 func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
+	// Take that generated token and use it to get a kubeadm join command
 	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(tokenCmd)
 	if err != nil {
-		return "", errors.Wrap(err, "generating bootstrap token")
+		return "", errors.Wrap(err, "generating join command")
 	}
 
 	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
+	if cc.KubernetesConfig.CRISocket != "" {
+		joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, cc.KubernetesConfig.CRISocket)
+	}
 
 	return joinCmd, nil
 }
@@ -743,15 +781,12 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	files := []assets.CopyableFile{
-		assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"),
 		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile, "0644"),
 		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile, "0644"),
 	}
-	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
-	// start a Pod in the case a user hasn't manually installed any CNI plugin
-	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
-	if cfg.KubernetesConfig.EnableDefaultCNI {
-		files = append(files, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), bsutil.DefaultCNIConfigPath, "0644"))
+
+	if n.ControlPlane {
+		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"))
 	}
 
 	// Installs compatibility shims for non-systemd environments
@@ -762,7 +797,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 	files = append(files, shims...)
 
-	if err := copyFiles(k.c, files); err != nil {
+	if err := bsutil.CopyFiles(k.c, files); err != nil {
 		return errors.Wrap(err, "copy")
 	}
 
@@ -778,63 +813,9 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	return sm.Start("kubelet")
 }
 
-func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
-	// Combine mkdir request into a single call to reduce load
-	dirs := []string{}
-	for _, f := range files {
-		dirs = append(dirs, f.GetTargetDir())
-	}
-	args := append([]string{"mkdir", "-p"}, dirs...)
-	if _, err := runner.RunCmd(exec.Command("sudo", args...)); err != nil {
-		return errors.Wrap(err, "mkdir")
-	}
-
-	for _, f := range files {
-		if err := runner.Copy(f); err != nil {
-			return errors.Wrapf(err, "copy")
-		}
-	}
-	return nil
-}
-
 // kubectlPath returns the path to the kubelet
 func kubectlPath(cfg config.ClusterConfig) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
-}
-
-// applyKICOverlay applies the CNI plugin needed to make kic work
-func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
-	b := bytes.Buffer{}
-	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
-		return err
-	}
-
-	ko := path.Join(vmpath.GuestEphemeralDir, "kic_overlay.yaml")
-	f := assets.NewMemoryAssetTarget(b.Bytes(), ko, "0644")
-
-	if err := k.c.Copy(f); err != nil {
-		return errors.Wrapf(err, "copy")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), "apply",
-		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-		"-f", ko)
-
-	if rr, err := k.c.RunCmd(cmd); err != nil {
-		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
-	}
-
-	// Inform cri-o that the CNI has changed
-	if cfg.KubernetesConfig.ContainerRuntime == "crio" {
-		if err := sysinit.New(k.c).Restart("crio"); err != nil {
-			return errors.Wrap(err, "restart crio")
-		}
-	}
-
-	return nil
 }
 
 // applyNodeLabels applies minikube labels to all the nodes
