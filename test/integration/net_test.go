@@ -34,6 +34,9 @@ import (
 
 func TestNetworkPlugins(t *testing.T) {
 	MaybeParallel(t)
+	if NoneDriver() {
+		t.Skip("skipping since test for none driver")
+	}
 
 	t.Run("group", func(t *testing.T) {
 		tests := []struct {
