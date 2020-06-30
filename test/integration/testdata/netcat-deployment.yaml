@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netcat
+  labels:
+    app: netcat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: netcat
+  template:
+    metadata:
+      labels:
+        app: netcat
+    spec:
+      containers:
+        # dnsutils is easier to debug DNS issues with than the standard busybox image
+        - name: dnsutils
+          image: gcr.io/kubernetes-e2e-test-images/dnsutils:1.3
+          command:
+            ["/bin/sh", "-c", "while true; do echo hello | nc -l -p 8080; done"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: netcat
+spec:
+  ports:
+    - port: 8080
+  selector:
+    app: netcat

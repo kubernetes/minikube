@@ -120,8 +120,8 @@ var statusCmd = &cobra.Command{
 			statuses = append(statuses, st)
 		} else {
 			for _, n := range cc.Nodes {
-				glog.Infof("checking status of %s ...", n.Name)
 				machineName := driver.MachineName(*cc, n)
+				glog.Infof("checking status of %s ...", machineName)
 				st, err := status(api, *cc, n)
 				glog.Infof("%s status: %+v", machineName, st)
 

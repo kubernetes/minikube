@@ -46,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -155,15 +156,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	ds, alts, specified := selectDriver(existing)
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
-		if errors.Is(err, oci.ErrWindowsContainers) {
-			out.ErrLn("")
-			out.ErrT(out.Conflict, "Your Docker Desktop container os type is Windows but Linux is required.")
-			out.T(out.Warning, "Please change Docker settings to use Linux containers instead of Windows containers.")
-			out.T(out.Documentation, "https://minikube.sigs.k8s.io/docs/drivers/docker/#verify-docker-container-type-is-linux")
-			exit.UsageT(`You can verify your Docker container type by running:
-	{{.command}}
-		`, out.V{"command": "docker info --format '{{.OSType}}'"})
-		}
+		node.MaybeExitWithAdvice(err)
+		machine.MaybeDisplayAdvice(err, viper.GetString("driver"))
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
 			exit.WithError("error provisioning host", err)
@@ -200,6 +194,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	kubeconfig, err := startWithDriver(starter, existing)
 	if err != nil {
+		node.MaybeExitWithAdvice(err)
 		exit.WithError("failed to start node", err)
 	}
 
@@ -376,6 +371,8 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
+		out.ErrT(out.Kubectl, "Kubectl not found in your path")
+		out.ErrT(out.Workaround, "You can use kubectl inside minikube. For more information, visit https://minikube.sigs.k8s.io/docs/handbook/kubectl/")
 		out.ErrT(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		return nil
 	}
@@ -613,8 +610,20 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
+	// if we are only downloading artifacts for a driver, we can stop validation here
+	if viper.GetBool("download-only") {
+		return
+	}
+
 	st := ds.State
 	glog.Infof("status for %s: %+v", name, st)
+
+	if st.NeedsImprovement { // warn but don't exit
+		out.ErrLn("")
+		out.WarningT("'{{.driver}}' driver reported a issue that could affect the performance.", out.V{"driver": name})
+		out.ErrT(out.Tip, "Suggestion: {{.fix}}", out.V{"fix": translate.T(st.Fix)})
+		out.ErrLn("")
+	}
 
 	if st.Error != nil {
 		out.ErrLn("")
@@ -703,7 +712,7 @@ func validateUser(drvName string) {
 	useForce := viper.GetBool(force)
 
 	if driver.NeedsRoot(drvName) && u.Uid != "0" && !useForce {
-		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo minikube start --driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
+		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo -E minikube start --driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
 	}
 
 	if driver.NeedsRoot(drvName) || u.Uid != "0" {
@@ -846,6 +855,30 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
+	if cmd.Flags().Changed(containerRuntime) {
+		runtime := strings.ToLower(viper.GetString(containerRuntime))
+
+		validOptions := cruntime.ValidRuntimes()
+		// `crio` is accepted as an alternative spelling to `cri-o`
+		validOptions = append(validOptions, constants.CRIO)
+
+		var validRuntime bool
+		for _, option := range validOptions {
+			if runtime == option {
+				validRuntime = true
+			}
+
+			// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
+			if runtime == "cri-o" {
+				viper.Set(containerRuntime, constants.CRIO)
+			}
+		}
+
+		if !validRuntime {
+			exit.UsageT(`Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
+		}
+	}
+
 	if driver.BareMetal(drvName) {
 		if ClusterFlagValue() != constants.DefaultClusterName {
 			exit.WithCodeT(exit.Config, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
@@ -865,10 +898,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
-	// check that kubeadm extra args contain only whitelisted parameters
+	// check that kubeadm extra args contain only allowed parameters
 	for param := range config.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
-		if !config.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmCmdParam], param) &&
-			!config.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmConfigParam], param) {
+		if !config.ContainsParam(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmCmdParam], param) &&
+			!config.ContainsParam(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmConfigParam], param) {
 			exit.UsageT("Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
 		}
 	}

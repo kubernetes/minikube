@@ -18,7 +18,7 @@ is only configured to listen on ports 80 and 443. TCP and UDP services listening
 
 - Latest minikube binary and ISO
 - Telnet command line tool
-- [Kubectl](https://kubernetes.io/docs/Handbook/tools/install-kubectl) command line tool
+- [Kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) command line tool
 - A text editor
 
 ## Configuring TCP and UDP services with the nginx ingress controller
@@ -166,24 +166,24 @@ There is one final step that must be done in order to obtain connectivity from t
 We need to patch our nginx controller so that it is listening on port 6379 and can route traffic to your service. To do
 this we need to create a patch file.
 
-`nginx-ingress-controller-patch.yaml`
+`ingress-nginx-controller-patch.yaml`
 ```yaml
 spec:
   template:
     spec:
       containers:
-      - name: nginx-ingress-controller
+      - name: ingress-nginx-controller
         ports:
          - containerPort: 6379
            hostPort: 6379
 ```
 
-Create a file called `nginx-ingress-controller-patch.yaml` and paste the contents above.
+Create a file called `ingress-nginx-controller-patch.yaml` and paste the contents above.
 
 Next apply the changes with the following command:
 
 ```shell
-kubectl patch deployment nginx-ingress-controller --patch "$(cat nginx-ingress-controller-patch.yaml)" -n kube-system
+kubectl patch deployment ingress-nginx-controller --patch "$(cat ingress-nginx-controller-patch.yaml)" -n kube-system
 ```
 
 ### Test your connection
@@ -212,7 +212,7 @@ In the above example we did the following:
 
 - Created a redis deployment and service in the `default` namespace
 - Patched the `tcp-services` configmap in the `kube-system` namespace
-- Patched the `nginx-ingress-controller` deployment in the `kube-system` namespace
+- Patched the `ingress-nginx-controller` deployment in the `kube-system` namespace
 - Connected to our service from the host via port 6379
 
 You can apply the same steps that were applied to `tcp-services` to the `udp-services` configmap as well if you have a 
@@ -228,6 +228,6 @@ for the latest info on these potential changes.
 
 ## Related articles
 
-- [Routing traffic multiple services on ports 80 and 443 in minikube with the Kubernetes Ingress resource](https://kubernetes.io/docs/Handbook/access-application-cluster/ingress-minikube/)
-- [Use port forwarding to access applications in a cluster](https://kubernetes.io/docs/Handbook/access-application-cluster/port-forward-access-application-cluster/)
+- [Routing traffic multiple services on ports 80 and 443 in minikube with the Kubernetes Ingress resource](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
+- [Use port forwarding to access applications in a cluster](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/)
 

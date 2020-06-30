@@ -11,6 +11,10 @@ networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
   dataDir: /var/lib/minikube/etcd
+controllerManagerExtraArgs:
+  leader-elect: "false"
+schedulerExtraArgs:
+  leader-elect: "false"
 nodeName: "mk"
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 criSocket: /run/containerd/containerd.sock

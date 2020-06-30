@@ -26,8 +26,8 @@ import (
 	"testing"
 )
 
-// stderrWhitelist are regular expressions acceptable to find in normal stderr
-var stderrWhitelist = []string{
+// stderrAllow are regular expressions acceptable to find in normal stderr
+var stderrAllow = []string{
 	// kubectl out of date warning
 	`kubectl`,
 	// slow docker warning
@@ -38,8 +38,8 @@ var stderrWhitelist = []string{
 	`cache_images.go:.*Failed to load profile`,
 }
 
-// stderrWhitelistRe combines rootCauses into a single regex
-var stderrWhitelistRe = regexp.MustCompile(strings.Join(stderrWhitelist, "|"))
+// stderrAllowRe combines rootCauses into a single regex
+var stderrAllowRe = regexp.MustCompile(strings.Join(stderrAllow, "|"))
 
 // TestErrorSpam asserts that there are no errors displayed
 func TestErrorSpam(t *testing.T) {
@@ -65,12 +65,11 @@ func TestErrorSpam(t *testing.T) {
 
 	for _, line := range strings.Split(stderr, "\n") {
 		if strings.HasPrefix(line, "E") {
+			if stderrAllowRe.MatchString(line) {
+				t.Logf("acceptable stderr: %q", line)
+				continue
+			}
 			t.Errorf("unexpected error log: %q", line)
-			continue
-		}
-
-		if stderrWhitelistRe.MatchString(line) {
-			t.Logf("acceptable stderr: %q", line)
 			continue
 		}
 

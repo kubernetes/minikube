@@ -107,7 +107,6 @@ func TestFunctional(t *testing.T) {
 			{"ComponentHealth", validateComponentHealth},
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
-			{"DNS", validateDNS},
 			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
@@ -419,36 +418,6 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateDNS asserts that all Kubernetes DNS is healthy
-func validateDNS(ctx context.Context, t *testing.T, profile string) {
-	defer PostMortemLogs(t, profile)
-
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
-	if err != nil {
-		t.Fatalf("failed to kubectl replace busybox : args %q: %v", rr.Command(), err)
-	}
-
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4))
-	if err != nil {
-		t.Fatalf("failed waiting for busybox pod : %v", err)
-	}
-
-	nslookup := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default"))
-		return err
-	}
-
-	// If the coredns process was stable, this retry wouldn't be necessary.
-	if err = retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
-		t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
-	}
-
-	want := []byte("10.96.0.1")
-	if !bytes.Contains(rr.Stdout.Bytes(), want) {
-		t.Errorf("failed nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
-	}
-}
-
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
 func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	// dry-run mode should always be able to finish quickly (<5s)
@@ -547,6 +516,15 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 		})
 
+		// delete will clean up the cached images since they are global and all other tests will load it for no reason
+		t.Run("delete", func(t *testing.T) {
+			for _, img := range []string{"busybox:latest", "k8s.gcr.io/pause:latest"} {
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", img))
+				if err != nil {
+					t.Errorf("failed to delete %s from cache. args %q: %v", img, rr.Command(), err)
+				}
+			}
+		})
 	})
 }
 

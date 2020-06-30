@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"path"
 
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -32,7 +33,7 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 		v = cc.KubernetesConfig.KubernetesVersion
 	}
 
-	kubectlBinary := kubectlBinaryPath(v)
+	kubectlBinary := kapi.KubectlBinaryPath(v)
 
 	kubectlAction := "apply"
 	if !enable {
@@ -45,8 +46,4 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 	}
 
 	return exec.Command("sudo", args...)
-}
-
-func kubectlBinaryPath(version string) string {
-	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }

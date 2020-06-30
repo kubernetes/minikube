@@ -26,6 +26,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -65,6 +66,18 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
+	cnm, err := cni.New(cc)
+	if err != nil {
+		return nil, errors.Wrap(err, "cni")
+	}
+
+	podCIDR := cnm.CIDR()
+	overrideCIDR := k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm)
+	if overrideCIDR != "" {
+		podCIDR = overrideCIDR
+	}
+	glog.Infof("Using pod CIDR: %s", podCIDR)
+
 	opts := struct {
 		CertDir             string
 		ServiceCIDR         string
@@ -73,6 +86,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		APIServerPort       int
 		KubernetesVersion   string
 		EtcdDataDir         string
+		EtcdExtraArgs       map[string]string
 		ClusterName         string
 		NodeName            string
 		DNSDomain           string
@@ -87,11 +101,12 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
-		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
+		PodSubnet:         podCIDR,
 		AdvertiseAddress:  n.IP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
+		EtcdExtraArgs:     etcdExtraArgs(k8s.ExtraOptions),
 		ClusterName:       cc.Name,
 		//kubeadm uses NodeName as the --hostname-override parameter, so this needs to be the name of the machine
 		NodeName:            KubeNodeName(cc, n),
@@ -138,6 +153,7 @@ const (
 	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
 	Kubeproxy         = "kube-proxy"
+	Etcd              = "etcd"
 )
 
 // InvokeKubeadm returns the invocation command for Kubeadm
@@ -148,4 +164,15 @@ func InvokeKubeadm(version string) string {
 // EtcdDataDir is where etcd data is stored.
 func EtcdDataDir() string {
 	return path.Join(vmpath.GuestPersistentDir, "etcd")
+}
+
+func etcdExtraArgs(extraOpts config.ExtraOptionSlice) map[string]string {
+	args := map[string]string{}
+	for _, eo := range extraOpts {
+		if eo.Component != Etcd {
+			continue
+		}
+		args[eo.Key] = eo.Value
+	}
+	return args
 }
