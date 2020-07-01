@@ -37,16 +37,12 @@ Huge thank you for this release towards our contributors:
 - Anders F Björklund
 - Harkishen-Singh
 - Jeff Wu
-- Kubernetes Prow Robot
 - Marcin Maciaszczyk
-- Medya Gh
 - Medya Ghazizadeh
 - Priya Wadhwa
 - Sharif Elgamal
 - Sunny Beatteay
-- Thomas Stromberg
 - Thomas Strömberg
-- priyawadhwa
 
 ## Version 1.12.0-beta.0 - 2020-06-18
 
