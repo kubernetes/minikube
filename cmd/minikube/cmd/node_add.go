@@ -63,7 +63,7 @@ var nodeAddCmd = &cobra.Command{
 			}
 		}
 
-		if err := node.Add(cc, n); err != nil {
+		if err := node.Add(cc, n, false); err != nil {
 			_, err := maybeDeleteAndRetry(*cc, n, nil, err)
 			if err != nil {
 				exit.WithError("failed to add node", err)

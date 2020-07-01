@@ -204,7 +204,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 }
 
 // Provision provisions the machine/container for the node
-func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 
 	name := driver.MachineName(*cc, *n)
 	if apiServer {
@@ -230,7 +230,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (comman
 	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
 	waitDownloadKicBaseImage(&kicGroup)
 
-	return startMachine(cc, n)
+	return startMachine(cc, n, delOnFail)
 
 }
 
@@ -336,12 +336,12 @@ func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, 
 }
 
 // StartMachine starts a VM
-func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists, err = startHost(m, cfg, node)
+	host, preExists, err = startHost(m, cfg, node, delOnFail)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
 	}
@@ -365,7 +365,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
+func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
 		return host, exists, nil
@@ -387,6 +387,15 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*h
 	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
 	// Try again, but just once to avoid making the logs overly confusing
 	time.Sleep(5 * time.Second)
+
+	if delOnFail {
+		glog.Info("Deleting existing host since delete-on-failure was set.")
+		// Delete the failed existing host
+		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
+		if err != nil {
+			glog.Warningf("delete host: %v", err)
+		}
+	}
 
 	host, exists, err = machine.StartHost(api, cc, n)
 	if err == nil {
