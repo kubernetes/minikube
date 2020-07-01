@@ -1053,7 +1053,6 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	}
 }
 
-// getKubernetesVersion ensures that the requested version is reasonable
 func getKubernetesVersion(old *config.ClusterConfig) string {
 	paramVersion := viper.GetString(kubernetesVersion)
 
