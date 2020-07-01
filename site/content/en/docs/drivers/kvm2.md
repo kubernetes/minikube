@@ -37,6 +37,11 @@ The `minikube start` command supports 3 additional kvm specific flags:
 
 Also see [co/kvm2 open issues](https://github.com/kubernetes/minikube/labels/co%2Fkvm2)
 
+### Nested Virtulization
+
+if you are running kvm inside a nested virtualized VM follow [this tutorial](https://stafwag.github.io/blog/blog/2018/06/04/nested-virtualization-in-kvm/) to config the kernel modules
+
+
 ## Troubleshooting
 
 * Run `minikube start --alsologtostderr -v=7` to debug crashes
