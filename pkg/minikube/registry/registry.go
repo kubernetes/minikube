@@ -45,6 +45,8 @@ const (
 	Default
 	// Preferred is for drivers that use a native hypervisor interface
 	Preferred
+	// HighlyPreferred is the ultimate driver preferences
+	HighlyPreferred
 )
 
 // Registry contains all the supported driver definitions on the host
