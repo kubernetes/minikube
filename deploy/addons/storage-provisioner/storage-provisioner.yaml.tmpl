@@ -76,7 +76,14 @@ subjects:
   - kind: ServiceAccount
     name: storage-provisioner
     namespace: kube-system
-
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: k8s.io-minikube-hostpath
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
 ---
 apiVersion: v1
 kind: Pod
