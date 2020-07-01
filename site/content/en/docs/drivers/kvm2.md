@@ -38,7 +38,7 @@ The `minikube start` command supports 3 additional kvm specific flags:
 Also see [co/kvm2 open issues](https://github.com/kubernetes/minikube/labels/co%2Fkvm2)
 
 ## Troubleshooting
-
+* Run `virt-host-validate` and check for the suggestions.
 * Run `minikube start --alsologtostderr -v=7` to debug crashes
 * Run `docker-machine-driver-kvm2 version` to verify the kvm2 driver executes properly.
 * Read [How to debug Virtualization problems](https://fedoraproject.org/wiki/How_to_debug_Virtualization_problems)
