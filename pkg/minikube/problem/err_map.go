@@ -91,9 +91,9 @@ var vmProblems = map[string]match{
 		Advice: "minikube is not yet compatible with ChromeOS",
 		Issues: []int{6411},
 	},
-	"DOCKER_PRE_STUCK_CONTAINER": {
+	"DOCKER_PROVISION_STUCK_CONTAINER": {
 		Regexp: re(`executing "" at <index (index .NetworkSettings.Ports "22/tcp") 0>`),
-		Advice: "Ensure docker is running and then run: 'minikube delete' and then 'minikube start' again",
+		Advice: "Restart Docker, Ensure docker is running and then run: 'minikube delete' and then 'minikube start' again",
 		URL:    "https://github.com/kubernetes/minikube/issues/8163#issuecomment-652627436",
 		Issues: []int{8163},
 	},
