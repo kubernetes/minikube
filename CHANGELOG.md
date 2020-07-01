@@ -1,8 +1,57 @@
 # Release Notes
 
+## Version 1.12.0-beta.1 - 2020-07-01
+
+Features:
+
+* Add --cni flag (replaces --enable-default-cni), fix --network-plugin handling [#8545](https://github.com/kubernetes/minikube/pull/8545)
+* make docker driver highly preferred [#8623](https://github.com/kubernetes/minikube/pull/8623)
+* Reduce coredns replicas from 2 to 1 [#8552](https://github.com/kubernetes/minikube/pull/8552)
+* Allow passing in extra args to etcd via command line [#8551](https://github.com/kubernetes/minikube/pull/8551)
+
+Minor Impovements:
+
+* Kernel with CONFIG_IKHEADERS for BPF tools on Kubernetes [#8582](https://github.com/kubernetes/minikube/pull/8582)
+* CNI: Update CRIO netconfig with matching subnet [#8570](https://github.com/kubernetes/minikube/pull/8570)
+* docker driver: add solution message when container create is stuck [#8629](https://github.com/kubernetes/minikube/pull/8629)
+* docker driver: warn if overlay module is not enabled [#8541](https://github.com/kubernetes/minikube/pull/8541)
+* virtualbox: double health check timeout, add better errors [#8547](https://github.com/kubernetes/minikube/pull/8547)
+* linux: add solution message for noexec mount volumes [#8597](https://github.com/kubernetes/minikube/pull/8597)
+* Gracefully exit if container runtime is misspelled [#8593](https://github.com/kubernetes/minikube/pull/8593)
+* add verification for enabling ingress, registry and gvisor addons [#8563](https://github.com/kubernetes/minikube/pull/8563)
+* Disable containerd from starting up at boot [#8621](https://github.com/kubernetes/minikube/pull/8621)
+* Upgrade podman to 2.0.0 [#8539](https://github.com/kubernetes/minikube/pull/8539)
+* Bump Dashboard to v2.0.1 [#8294](https://github.com/kubernetes/minikube/pull/8294)
+* Check for iptables file before determining container is running [#8565](https://github.com/kubernetes/minikube/pull/8565)
+
+Bug Fixes:
+
+* --delete-on-failure flag: Ensure deleting failed hosts in all cases [#8628](https://github.com/kubernetes/minikube/pull/8628)
+* docker-env: Do not output usage hint when shell=none. [#8531](https://github.com/kubernetes/minikube/pull/8531)
+* docker-env: Avoid container suicide if Docker is not installed locally [#8528](https://github.com/kubernetes/minikube/pull/8528)
+* Don't verify nf_conntrack for br_netfilter [#8598](https://github.com/kubernetes/minikube/pull/8598)
+
+Huge thank you for this release towards our contributors:
+
+- Alban Crequy
+- Anders F Björklund
+- Harkishen-Singh
+- Jeff Wu
+- Kubernetes Prow Robot
+- Marcin Maciaszczyk
+- Medya Gh
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Sunny Beatteay
+- Thomas Stromberg
+- Thomas Strömberg
+- priyawadhwa
+
 ## Version 1.12.0-beta.0 - 2020-06-18
 
 Features:
+
 * Adds support for unsetting of env vars [#8506](https://github.com/kubernetes/minikube/pull/8506)
 * Require minikube-automount for /run/minikube/env [#8472](https://github.com/kubernetes/minikube/pull/8472)
 * Enable support for offline docker driver [#8417](https://github.com/kubernetes/minikube/pull/8417)
@@ -13,6 +62,7 @@ Features:
 * Log stacks for slowjam analysis if STACKLOG_PATH is set [#8329](https://github.com/kubernetes/minikube/pull/8329)
 
 Minor Improvements:
+
 * Add heapster alias to metrics-server addon [#8455](https://github.com/kubernetes/minikube/pull/8455)
 * Upgrade crio and crio.conf to v1.18.1 [#8404](https://github.com/kubernetes/minikube/pull/8404)
 * bump helm-tiller addon to v2.16.8 [#8471](https://github.com/kubernetes/minikube/pull/8471)
@@ -22,9 +72,11 @@ Minor Improvements:
 * Upgrade Docker, from 19.03.8 to 19.03.11 [#8403](https://github.com/kubernetes/minikube/pull/8403)
 
 Bug Fixes:
+
 * Fix host network interface for VBox [#8475](https://github.com/kubernetes/minikube/pull/8475)
 
-Huge thank you for this release towards our contributors: 
+Huge thank you for this release towards our contributors:
+
 - Anders F Björklund
 - Ashley Schuett
 - Harkishen-Singh
@@ -46,7 +98,6 @@ Huge thank you for this release towards our contributors:
 - gashirar
 - jjanik
 - sakshamkhanna
-
 
 ## Version 1.11.0 - 2020-05-29
 
