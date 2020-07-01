@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -51,7 +52,7 @@ var nodeStartCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		r, p, m, h, err := node.Provision(cc, n, false)
+		r, p, m, h, err := node.Provision(cc, n, false, viper.GetBool(deleteOnFailure))
 		if err != nil {
 			exit.WithError("provisioning host for node", err)
 		}

@@ -36,12 +36,12 @@ const (
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.ClusterConfig, n config.Node) error {
+func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 	if err := config.SaveNode(cc, &n); err != nil {
 		return errors.Wrap(err, "save node")
 	}
 
-	r, p, m, h, err := Provision(cc, &n, false)
+	r, p, m, h, err := Provision(cc, &n, false, delOnFail)
 	if err != nil {
 		return err
 	}
