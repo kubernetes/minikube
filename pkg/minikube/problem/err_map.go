@@ -94,6 +94,7 @@ var vmProblems = map[string]match{
 	"DOCKER_PRE_STUCK_CONTAINER": {
 		Regexp: re(`executing "" at <index (index .NetworkSettings.Ports "22/tcp") 0>`),
 		Advice: "Ensure docker is running and then run: 'minikube delete' and then 'minikube start' again",
+		URL:    "https://github.com/kubernetes/minikube/issues/8163#issuecomment-652627436",
 		Issues: []int{8163},
 	},
 	// Hyperkit
