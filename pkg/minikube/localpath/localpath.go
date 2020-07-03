@@ -42,7 +42,8 @@ func MiniPath() string {
 	if minikubeHomeEnv == "" {
 		return filepath.Join(homedir.HomeDir(), ".minikube")
 	}
-	if filepath.Base(minikubeHomeEnv) == ".minikube" {
+	switch filepath.Base(minikubeHomeEnv) {
+	case ".minikube", "minikube":
 		return minikubeHomeEnv
 	}
 	return filepath.Join(minikubeHomeEnv, ".minikube")
