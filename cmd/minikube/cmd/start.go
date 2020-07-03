@@ -46,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -155,7 +156,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	ds, alts, specified := selectDriver(existing)
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
-		maybeExitWithAdvice(err)
+		node.MaybeExitWithAdvice(err)
 		machine.MaybeDisplayAdvice(err, viper.GetString("driver"))
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
@@ -193,6 +194,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	kubeconfig, err := startWithDriver(starter, existing)
 	if err != nil {
+		node.MaybeExitWithAdvice(err)
 		exit.WithError("failed to start node", err)
 	}
 
@@ -247,7 +249,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		}
 	}
 
-	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true)
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
 	if err != nil {
 		return node.Starter{}, err
 	}
@@ -304,7 +306,7 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 						KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 					}
 					out.Ln("") // extra newline for clarity on the command line
-					err := node.Add(starter.Cfg, n)
+					err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
 					if err != nil {
 						return nil, errors.Wrap(err, "adding node")
 					}
@@ -312,7 +314,7 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 			} else {
 				for _, n := range existing.Nodes {
 					if !n.ControlPlane {
-						err := node.Add(starter.Cfg, n)
+						err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
 						if err != nil {
 							return nil, errors.Wrap(err, "adding node")
 						}
@@ -415,7 +417,7 @@ func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons 
 
 		var kubeconfig *kubeconfig.Settings
 		for _, n := range cc.Nodes {
-			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane)
+			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane, false)
 			s := node.Starter{
 				Runner:         r,
 				PreExists:      p,
@@ -615,6 +617,13 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 
 	st := ds.State
 	glog.Infof("status for %s: %+v", name, st)
+
+	if st.NeedsImprovement { // warn but don't exit
+		out.ErrLn("")
+		out.WarningT("'{{.driver}}' driver reported a issue that could affect the performance.", out.V{"driver": name})
+		out.ErrT(out.Tip, "Suggestion: {{.fix}}", out.V{"fix": translate.T(st.Fix)})
+		out.ErrLn("")
+	}
 
 	if st.Error != nil {
 		out.ErrLn("")
@@ -846,6 +855,30 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
+	if cmd.Flags().Changed(containerRuntime) {
+		runtime := strings.ToLower(viper.GetString(containerRuntime))
+
+		validOptions := cruntime.ValidRuntimes()
+		// `crio` is accepted as an alternative spelling to `cri-o`
+		validOptions = append(validOptions, constants.CRIO)
+
+		var validRuntime bool
+		for _, option := range validOptions {
+			if runtime == option {
+				validRuntime = true
+			}
+
+			// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
+			if runtime == "cri-o" {
+				viper.Set(containerRuntime, constants.CRIO)
+			}
+		}
+
+		if !validRuntime {
+			exit.UsageT(`Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
+		}
+	}
+
 	if driver.BareMetal(drvName) {
 		if ClusterFlagValue() != constants.DefaultClusterName {
 			exit.WithCodeT(exit.Config, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
@@ -1036,36 +1069,4 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 	return nv
-}
-
-// maybeExitWithAdvice before exiting will try to check for different error types and provide advice
-func maybeExitWithAdvice(err error) {
-	if errors.Is(err, oci.ErrWindowsContainers) {
-		out.ErrLn("")
-		out.ErrT(out.Conflict, "Your Docker Desktop container OS type is Windows but Linux is required.")
-		out.T(out.Warning, "Please change Docker settings to use Linux containers instead of Windows containers.")
-		out.T(out.Documentation, "https://minikube.sigs.k8s.io/docs/drivers/docker/#verify-docker-container-type-is-linux")
-		exit.UsageT(`You can verify your Docker container type by running:
-{{.command}}
-	`, out.V{"command": "docker info --format '{{.OSType}}'"})
-	}
-
-	if errors.Is(err, oci.ErrCPUCountLimit) {
-		out.ErrLn("")
-		out.ErrT(out.Conflict, "{{.name}} doesn't have enough CPUs. ", out.V{"name": viper.GetString("driver")})
-		if runtime.GOOS != "linux" && viper.GetString("driver") == "docker" {
-			out.T(out.Warning, "Please consider changing your Docker Desktop's resources.")
-			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
-		} else {
-			cpuCount := viper.GetInt(cpus)
-			if cpuCount == 2 {
-				out.T(out.Tip, "Please ensure your system has {{.cpu_counts}} CPU cores.", out.V{"cpu_counts": viper.GetInt(cpus)})
-			} else {
-				out.T(out.Tip, "Please ensure your {{.driver_name}} system has access to {{.cpu_counts}} CPU cores or reduce the number of the specified CPUs", out.V{"driver_name": viper.GetString("driver"), "cpu_counts": viper.GetInt(cpus)})
-			}
-		}
-
-		exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
-	}
-
 }

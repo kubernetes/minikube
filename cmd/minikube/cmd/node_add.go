@@ -63,16 +63,14 @@ var nodeAddCmd = &cobra.Command{
 			}
 		}
 
-		if err := node.Add(cc, n); err != nil {
+		if err := node.Add(cc, n, false); err != nil {
 			_, err := maybeDeleteAndRetry(*cc, n, nil, err)
 			if err != nil {
 				exit.WithError("failed to add node", err)
 			}
 		}
 
-		// Add CNI config if it's not already there
-		// We need to run kubeadm.init here as well
-		if err := config.MultiNodeCNIConfig(cc); err != nil {
+		if err := config.SaveProfile(cc.Name, cc); err != nil {
 			exit.WithError("failed to save config", err)
 		}
 

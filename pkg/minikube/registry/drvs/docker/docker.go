@@ -37,21 +37,12 @@ import (
 var docURL = "https://minikube.sigs.k8s.io/docs/drivers/docker/"
 
 func init() {
-	priority := registry.Default
-	// Staged rollout for preferred:
-	// - Linux
-	// - Windows (once "service" command works)
-	// - macOS
-	if runtime.GOOS == "linux" {
-		priority = registry.Preferred
-	}
-
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
-		Priority: priority,
+		Priority: registry.HighlyPreferred,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -94,7 +85,7 @@ func status() registry.State {
 	}
 	if err == nil {
 		glog.Infof("docker version: %s", output)
-		return registry.State{Installed: true, Healthy: true}
+		return checkNeedsImprovement()
 	}
 
 	glog.Warningf("docker returned error: %v", err)
@@ -114,7 +105,49 @@ func status() registry.State {
 	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
 }
 
-//suggestFix matches a stderr with possible fix for the docker driver
+// checkNeedsImprovement if overlay mod is installed on a system
+func checkNeedsImprovement() registry.State {
+	if runtime.GOOS == "linux" {
+		return checkOverlayMod()
+	} // TODO #8540: on non-linux check if docker desktop has enough CPU/memory
+	return registry.State{Installed: true, Healthy: true}
+}
+
+// checkOverlayMod checks if
+func checkOverlayMod() registry.State {
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "modprobe", "overlay")
+	_, err := cmd.Output()
+	if err != nil {
+		// try a different way
+		cmd = exec.CommandContext(ctx, "uname", "-r")
+		out, err := cmd.Output()
+		if ctx.Err() == context.DeadlineExceeded {
+			glog.Warningf("%q timed out checking for ", strings.Join(cmd.Args, " "))
+			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
+		}
+		if err != nil {
+			glog.Warningf("couldn't verify the linux distro's uname : %s", err)
+			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
+		}
+		path := fmt.Sprintf("/lib/modules/%s/modules.builtin", string(out))
+		cmd = exec.CommandContext(ctx, "cat", path)
+		out, err = cmd.Output()
+		if err != nil {
+			glog.Warningf("overlay module was not found in %q", path)
+			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
+		}
+		if strings.Contains(string(out), "overlay") { // success
+			return registry.State{NeedsImprovement: false, Installed: true, Healthy: true}
+		}
+		glog.Warningf("overlay module was not found")
+		return registry.State{NeedsImprovement: true, Installed: true, Healthy: true}
+	}
+	return registry.State{Installed: true, Healthy: true}
+}
+
+// suggestFix matches a stderr with possible fix for the docker driver
 func suggestFix(stderr string, err error) registry.State {
 	if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}

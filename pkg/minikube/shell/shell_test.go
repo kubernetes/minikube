@@ -40,8 +40,7 @@ func TestGenerateUsageHint(t *testing.T) {
 ;; (with-temp-buffer (shell-command "bar" (current-buffer)) (eval-buffer))`},
 		{EnvConfig{"fish"}, `# foo
 # bar | source`},
-		{EnvConfig{"none"}, `# foo
-# eval $(bar)`},
+		{EnvConfig{"none"}, ``},
 	}
 	for _, tc := range testCases {
 		tc := tc

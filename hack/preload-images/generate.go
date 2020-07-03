@@ -65,8 +65,9 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	if err != nil {
 		return errors.Wrap(err, "kubeadm images")
 	}
+
 	if containerRuntime != "docker" { // kic overlay image is only needed by containerd and cri-o https://github.com/kubernetes/minikube/issues/7428
-		imgs = append(imgs, kic.OverlayImage)
+		imgs = append(imgs, images.KindNet(""))
 	}
 
 	runner := command.NewKICRunner(profile, driver.OCIBinary)

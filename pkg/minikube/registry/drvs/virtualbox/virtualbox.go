@@ -25,6 +25,7 @@ import (
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/golang/glog"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -79,17 +80,32 @@ func status() registry.State {
 	}
 
 	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, path, "list", "hostinfo")
-	out, err := cmd.CombinedOutput()
+	err = cmd.Run()
+
+	// Basic timeout
+	if ctx.Err() == context.DeadlineExceeded {
+		glog.Warningf("%q timed out. ", strings.Join(cmd.Args, " "))
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart VirtualBox", Doc: docURL}
+	}
+
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		stderr := strings.TrimSpace(string(exitErr.Stderr))
+		return registry.State{
+			Installed: true,
+			Error:     fmt.Errorf(`%q returned: %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr),
+			Fix:       "Restart VirtualBox, or upgrade to the latest version of VirtualBox",
+			Doc:       docURL,
+		}
+	}
+
 	if err != nil {
 		return registry.State{
 			Installed: true,
-			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out),
-			Fix:       "Install the latest version of VirtualBox",
-			Doc:       docURL,
+			Error:     fmt.Errorf("%s failed: %v", strings.Join(cmd.Args, " "), err),
 		}
 	}
 

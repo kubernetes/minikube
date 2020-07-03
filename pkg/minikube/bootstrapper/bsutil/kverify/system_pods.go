@@ -27,7 +27,6 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -36,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
@@ -43,10 +43,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
 
-	podList := func() (bool, error) {
-		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during pod check")
-		}
+	podList := func() error {
 		if time.Since(start) > minLogCheckTime {
 			announceProblems(r, bs, cfg, cr)
 			time.Sleep(kconst.APICallRetryInterval * 5)
@@ -56,19 +53,22 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
 		if err != nil {
 			glog.Warningf("pod list returned error: %v", err)
-			return false, nil
+			return err
 		}
+
 		glog.Infof("%d kube-system pods found", len(pods.Items))
 		for _, pod := range pods.Items {
 			glog.Infof(podStatusMsg(pod))
 		}
 
 		if len(pods.Items) < 2 {
-			return false, nil
+			return fmt.Errorf("only %d pod(s) have shown up", len(pods.Items))
 		}
-		return true, nil
+
+		return nil
 	}
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, podList); err != nil {
+
+	if err := retry.Local(podList, timeout); err != nil {
 		return fmt.Errorf("apiserver never returned a pod list")
 	}
 	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
@@ -83,11 +83,15 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	if err != nil {
 		return err
 	}
+	glog.Infof("%d kube-system pods found", len(pods.Items))
 
 	for _, pod := range pods.Items {
+		glog.Infof(podStatusMsg(pod))
+
 		if pod.Status.Phase != core.PodRunning {
 			continue
 		}
+
 		for k, v := range pod.ObjectMeta.Labels {
 			if k == "component" || k == "k8s-app" {
 				found[v] = true
@@ -112,15 +116,12 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout tim
 	glog.Info("waiting for k8s-apps to be running ...")
 	start := time.Now()
 
-	checkRunning := func() (bool, error) {
-		if err := ExpectAppsRunning(cs, expected); err != nil {
-			return false, nil
-		}
-		return true, nil
+	checkRunning := func() error {
+		return ExpectAppsRunning(cs, expected)
 	}
 
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, checkRunning); err != nil {
-		return errors.Wrapf(err, "checking k8s-apps to be running")
+	if err := retry.Local(checkRunning, timeout); err != nil {
+		return errors.Wrapf(err, "expected k8s-apps")
 	}
 	glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
 	return nil
