@@ -32,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 GO_VERSION ?= 1.13.9
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2019.02.10
+BUILDROOT_BRANCH ?= 2019.02.11
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
