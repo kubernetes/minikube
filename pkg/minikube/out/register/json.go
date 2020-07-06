@@ -14,22 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package out
+package register
 
-import (
-	"fmt"
-
-	cloudevents "github.com/cloudevents/sdk-go/v2"
-)
-
-func printAsCloudEvent(eventType string, data map[string]string) {
-	event := cloudevents.NewEvent()
-	event.SetSource("https://minikube.sigs.k8s.io/")
-	event.SetType(eventType)
-	event.SetData(cloudevents.ApplicationJSON, data)
-	json, err := event.MarshalJSON()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(json))
+// PrintStep prints a Step type in JSON format
+func PrintStep(message string) {
+	s := NewStep(message)
+	printAsCloudEvent(s, s.data)
 }

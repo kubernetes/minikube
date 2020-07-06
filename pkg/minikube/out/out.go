@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -69,7 +70,11 @@ type V map[string]interface{}
 // T writes a stylized and templated message to stdout
 func T(style StyleEnum, format string, a ...V) {
 	outStyled := ApplyTemplateFormatting(style, useColor, format, a...)
-	String(outStyled)
+	if JSON {
+		register.PrintStep(outStyled)
+	} else {
+		String(outStyled)
+	}
 }
 
 // String writes a basic formatted string to stdout
