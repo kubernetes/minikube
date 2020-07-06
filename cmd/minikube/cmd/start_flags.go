@@ -104,6 +104,7 @@ const (
 	deleteOnFailure         = "delete-on-failure"
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
+	startOutput             = "output"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -144,6 +145,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
+	startCmd.Flags().String(startOutput, "", "Format to print stdout in. Options include: [json]")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options

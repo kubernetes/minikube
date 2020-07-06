@@ -50,6 +50,8 @@ var (
 	useColor = false
 	// OverrideEnv is the environment variable used to override color/emoji usage
 	OverrideEnv = "MINIKUBE_IN_STYLE"
+	// JSON is whether or not we should output stdout in JSON format. Set using SetJSON()
+	JSON = false
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
@@ -138,6 +140,12 @@ func SetOutFile(w fdWriter) {
 	glog.Infof("Setting OutFile to fd %d ...", w.Fd())
 	outFile = w
 	useColor = wantsColor(w.Fd())
+}
+
+// SetJSON configures printing to STDOUT in JSON
+func SetJSON(j bool) {
+	glog.Infof("Setting JSON to %v", j)
+	JSON = j
 }
 
 // SetErrFile configures which writer error output goes to.

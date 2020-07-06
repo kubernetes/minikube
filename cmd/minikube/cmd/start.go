@@ -122,6 +122,7 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
+	out.SetJSON(viper.GetString(startOutput) == "json")
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
