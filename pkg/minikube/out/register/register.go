@@ -14,27 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package out
+// Package register contains all the logic to print out `minikube start` in JSON
+package register
+
+import "fmt"
 
 const (
-	InitialSetup         Step = "Initial Minikube Setup"
-	SelectingDriver      Step = "Selecting Driver"
-	DownloadingArtifacts Step = "Downloading Artifacts"
-	StartingNode         Step = "Starting Node"
-	PreparingKubernetes  Step = "Preparing Kubernetes"
-	VerifyingKubernetes  Step = "Verifying Kubernetes"
-	EnablingAddons       Step = "Enabling Addons"
-	Done                 Step = "Done"
+	InitialSetup         RegStep = "Initial Minikube Setup"
+	SelectingDriver      RegStep = "Selecting Driver"
+	DownloadingArtifacts RegStep = "Downloading Artifacts"
+	StartingNode         RegStep = "Starting Node"
+	PreparingKubernetes  RegStep = "Preparing Kubernetes"
+	VerifyingKubernetes  RegStep = "Verifying Kubernetes"
+	EnablingAddons       RegStep = "Enabling Addons"
+	Done                 RegStep = "Done"
 )
 
-// Step is a type representing a distinct step of `minikube start`
-type Step string
+// RegStep is a type representing a distinct step of `minikube start`
+type RegStep string
 
 // Register holds all of the steps we could see in `minikube start`
 // and keeps track of the current step
 type Register struct {
-	steps   []Step
-	current Step
+	steps   []RegStep
+	current RegStep
 }
 
 // Reg is a package level register that keep track
@@ -43,7 +46,7 @@ var Reg Register
 
 func init() {
 	Reg = Register{
-		steps: []Step{
+		steps: []RegStep{
 			InitialSetup,
 			SelectingDriver,
 			DownloadingArtifacts,
@@ -58,21 +61,21 @@ func init() {
 }
 
 // totalSteps returns the total number of steps in the register
-func (r *Register) totalSteps() int {
-	return len(r.steps)
+func (r *Register) totalSteps() string {
+	return fmt.Sprintf("%d", len(r.steps))
 }
 
 // currentStep returns the current step we are on
-func (r *Register) currentStep() int {
+func (r *Register) currentStep() string {
 	for i, s := range r.steps {
 		if r.current == s {
-			return i
+			return fmt.Sprintf("%d", i)
 		}
 	}
-	return -1
+	return ""
 }
 
 // SetStep sets the current step
-func (r *Register) SetStep(s Step) {
+func (r *Register) SetStep(s RegStep) {
 	r.current = s
 }

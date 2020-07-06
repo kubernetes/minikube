@@ -29,6 +29,7 @@ require (
 	github.com/google/go-containerregistry v0.0.0-20200601195303-96cf69f03a3c
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/slowjam v0.0.0-20200530021616-df27e642fe7b
+	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.6.6
