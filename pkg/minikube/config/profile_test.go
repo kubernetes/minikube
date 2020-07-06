@@ -75,22 +75,23 @@ func TestListProfiles(t *testing.T) {
 func TestProfileNameValid(t *testing.T) {
 	var testCases = map[string]bool{
 		"profile":             true,
-		"pro file":            false,
 		"pro-file":            true,
-		"pro-file-":           false,
 		"profile1":            true,
 		"pro-file1":           true,
 		"1st-profile":         true,
 		"1st-2nd-3rd-profile": true,
-		"-profile":            false,
-		"meaningful_name":     false,
-		"meaningful_name@":    false,
-		"n_a_m_e_2":           false,
 		"n":                   true,
-		"_name":               false,
-		"N__a.M--E12567":      false,
 		"1":                   true,
 		"12567":               true,
+
+		"pro file":         false,
+		"pro-file-":        false,
+		"-profile":         false,
+		"meaningful_name":  false,
+		"meaningful_name@": false,
+		"n_a_m_e_2":        false,
+		"_name":            false,
+		"N__a.M--E12567":   false,
 	}
 
 	for name, exp := range testCases {
