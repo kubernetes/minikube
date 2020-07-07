@@ -33,7 +33,9 @@ func printAsCloudEvent(log Log, data map[string]string) {
 	event.SetSource("https://minikube.sigs.k8s.io/")
 	event.SetType(log.Type())
 	event.SetSpecVersion(specVersion)
-	event.SetData(cloudevents.ApplicationJSON, data)
+	if err := event.SetData(cloudevents.ApplicationJSON, data); err != nil {
+		glog.Warningf("error setting data: %v", err)
+	}
 	event.SetID(guuid.New().String())
 	json, err := event.MarshalJSON()
 	if err != nil {
