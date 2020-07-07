@@ -205,7 +205,7 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 		return nil
 	}
 
-	err = retry.Local(check, 8*time.Second)
+	err = retry.Local(check, 5*time.Second)
 	return st, err
 }
 
