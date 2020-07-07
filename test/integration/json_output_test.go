@@ -27,6 +27,9 @@ import (
 )
 
 func TestJSONOutput(t *testing.T) {
+	if NoneDriver() || DockerDriver() {
+		t.Skipf("skipping: test drivers once all JSON output is enabled")
+	}
 	profile := UniqueProfileName("json-output")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
