@@ -69,7 +69,7 @@ type V map[string]interface{}
 
 // T writes a stylized and templated message to stdout
 func T(style StyleEnum, format string, a ...V) {
-	outStyled := ApplyTemplateFormatting(0, useColor, format, a...)
+	outStyled := ApplyTemplateFormatting(style, useColor, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
 		return
@@ -94,6 +94,10 @@ func String(format string, a ...interface{}) {
 
 // Ln writes a basic formatted string with a newline to stdout
 func Ln(format string, a ...interface{}) {
+	if JSON {
+		register.PrintStep(format + "\n")
+		return
+	}
 	String(format+"\n", a...)
 }
 
