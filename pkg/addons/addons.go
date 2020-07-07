@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -382,6 +383,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	var awg sync.WaitGroup
 
 	defer func() { // making it show after verifications( not perfect till #7613 is closed)
+		register.Reg.SetStep(register.EnablingAddons)
 		out.T(out.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
 	}()
 	for _, a := range toEnableList {

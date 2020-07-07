@@ -17,13 +17,17 @@ limitations under the License.
 // Package register contains all the logic to print out `minikube start` in JSON
 package register
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	InitialSetup         RegStep = "Initial Minikube Setup"
 	SelectingDriver      RegStep = "Selecting Driver"
 	DownloadingArtifacts RegStep = "Downloading Artifacts"
 	StartingNode         RegStep = "Starting Node"
+	CreatingContainer    RegStep = "Creating Container"
+	CreatingVM           RegStep = "Creating VM"
 	PreparingKubernetes  RegStep = "Preparing Kubernetes"
 	VerifyingKubernetes  RegStep = "Verifying Kubernetes"
 	EnablingAddons       RegStep = "Enabling Addons"
@@ -50,6 +54,8 @@ func init() {
 			SelectingDriver,
 			DownloadingArtifacts,
 			StartingNode,
+			CreatingContainer,
+			CreatingVM,
 			PreparingKubernetes,
 			VerifyingKubernetes,
 			EnablingAddons,
@@ -61,7 +67,7 @@ func init() {
 
 // totalSteps returns the total number of steps in the register
 func (r *Register) totalSteps() string {
-	return fmt.Sprintf("%d", len(r.steps))
+	return fmt.Sprintf("%d", len(r.steps)-1)
 }
 
 // currentStep returns the current step we are on
@@ -71,7 +77,9 @@ func (r *Register) currentStep() string {
 			return fmt.Sprintf("%d", i)
 		}
 	}
-	return ""
+	// all steps should be registered so this shouldn't happen
+	// can't call exit.WithError as it creates an import dependency loopm
+	panic(fmt.Sprintf("%v is not a registered step", r.current))
 }
 
 // SetStep sets the current step
