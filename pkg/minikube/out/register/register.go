@@ -40,8 +40,7 @@ type Register struct {
 	current RegStep
 }
 
-// Reg is a package level register that keep track
-// of the current step we are on
+// Reg keeps track of all possible steps and the current step we are on
 var Reg Register
 
 func init() {
