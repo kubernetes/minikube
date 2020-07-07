@@ -78,7 +78,7 @@ func (r *Register) currentStep() string {
 		}
 	}
 	// all steps should be registered so this shouldn't happen
-	// can't call exit.WithError as it creates an import dependency loopm
+	// can't call exit.WithError as it creates an import dependency loop
 	panic(fmt.Sprintf("%v is not a registered step", r.current))
 }
 

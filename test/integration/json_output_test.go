@@ -26,12 +26,12 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
-func TestCloudEvents(t *testing.T) {
+func TestJSONOutput(t *testing.T) {
 	profile := UniqueProfileName("json-output")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	startArgs := []string{"start", "-p", profile, "--memory=2200", "--output=json", "--wait=true", "-p", profile}
+	startArgs := []string{"start", "-p", profile, "--memory=2200", "--output=json", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -39,7 +39,26 @@ func TestCloudEvents(t *testing.T) {
 		t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
 	}
 
-	//  make sure all output can be marshaled as a cloud event
+	type validateJSONOutputFunc func(context.Context, *testing.T, *RunResult)
+	t.Run("serial", func(t *testing.T) {
+		serialTests := []struct {
+			name      string
+			validator validateJSONOutputFunc
+		}{
+			{"CloudEvents", validateCloudEvents},
+			{"CurrentSteps", validateCurrentSteps},
+		}
+		for _, stc := range serialTests {
+			t.Run(stc.name, func(t *testing.T) {
+				stc.validator(ctx, t, rr)
+			})
+		}
+	})
+
+}
+
+//  make sure all output can be marshaled as a cloud event
+func validateCloudEvents(ctx context.Context, t *testing.T, rr *RunResult) {
 	stdout := strings.Split(rr.Stdout.String(), "\n")
 	for _, s := range stdout {
 		if s == "" {
@@ -47,7 +66,32 @@ func TestCloudEvents(t *testing.T) {
 		}
 		event := cloudevents.NewEvent()
 		if err := json.Unmarshal([]byte(s), &event); err != nil {
-			t.Fatalf("unable to marshal output: %v\n%s", err, s)
+			t.Fatalf("unable to unmarshal output: %v\n%s", err, s)
+		}
+	}
+}
+
+// make sure each step in a successful `minikube start` has a distict step number
+func validateCurrentSteps(ctx context.Context, t *testing.T, rr *RunResult) {
+	stdout := strings.Split(rr.Stdout.String(), "\n")
+	data := map[string]string{}
+	currentSteps := map[string]struct{}{}
+	for _, s := range stdout {
+		if s == "" {
+			continue
+		}
+		event := cloudevents.NewEvent()
+		if err := json.Unmarshal([]byte(s), &event); err != nil {
+			t.Fatalf("unable to unmarshal output: %v\n%s", err, s)
+		}
+		if err := json.Unmarshal(event.Data(), &data); err != nil {
+			t.Fatalf("unable to unmarshal output: %v\n%s", err, s)
+		}
+		cs := data["currentstep"]
+		if _, ok := currentSteps[cs]; ok {
+			t.Fatalf("The log \"%s\" has already been logged, please create a new log for this step: %v", data["name"], data["message"])
+		} else {
+			currentSteps[cs] = struct{}{}
 		}
 	}
 }
