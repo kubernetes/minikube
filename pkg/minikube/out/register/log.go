@@ -22,6 +22,7 @@ type Log interface {
 	Type() string
 }
 
+// Step represents a normal step in minikube execution
 type Step struct {
 	data map[string]string
 }
@@ -32,13 +33,15 @@ func (s *Step) Type() string {
 
 func NewStep(message string) *Step {
 	return &Step{data: map[string]string{
-		"totalsteps":  string(Reg.totalSteps()),
-		"currentstep": string(Reg.currentStep()),
+		"totalsteps":  Reg.totalSteps(),
+		"currentstep": Reg.currentStep(),
 		"message":     message,
 		"name":        string(Reg.current),
 	}}
 }
 
+// TODO (priyawadhwa@): implement all types below this comment
+// Download will be used to notify the user that a download has begun
 type Download struct {
 }
 
@@ -46,6 +49,7 @@ func (s *Download) Type() string {
 	return "io.k8s.sigs.minikube.download"
 }
 
+// DownloadProgress will be used to notify the user around the progress of a download
 type DownloadProgress struct {
 }
 
@@ -53,6 +57,7 @@ func (s *DownloadProgress) Type() string {
 	return "io.k8s.sigs.minikube.download.progress"
 }
 
+// Warning will be used to notify the user of warnings
 type Warning struct {
 }
 
@@ -60,6 +65,7 @@ func (s *Warning) Type() string {
 	return "io.k8s.sigs.minikube.warning"
 }
 
+// Info will be used to notify users of any extra info (env variables, options)
 type Info struct {
 }
 
@@ -67,6 +73,7 @@ func (s *Info) Type() string {
 	return "io.k8s.sigs.minikube.info"
 }
 
+// Error will be used to notify the user of errors
 type Error struct {
 }
 
