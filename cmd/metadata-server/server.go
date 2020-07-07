@@ -193,5 +193,5 @@ func main() {
 		Handler: mux,
 	}
 
-	log.Fatal(s.ListenAndServeTLS("/etc/webhook/certs/cert.pem", "/etc/webhook/certs/key.pem"))
+	log.Fatal(s.ListenAndServeTLS("/etc/webhook/certs/cert", "/etc/webhook/certs/key"))
 }

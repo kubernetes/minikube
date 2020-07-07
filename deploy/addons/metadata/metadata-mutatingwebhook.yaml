@@ -55,6 +55,35 @@ spec:
             - --secret-name=metadata-certs
       restartPolicy: OnFailure
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metadata
+  namespace: metadata
+spec:
+  selector:
+    matchLabels:
+      app: metadata
+  template:
+    metadata:
+      labels:
+        app: metadata
+    spec:
+      containers:
+        - name: metadata
+          image: gcr.io/k8s-minikube/metadata-server:snapshot
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+          - name: webhook-certs
+            mountPath: /etc/webhook/certs
+            readOnly: true
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: metadata-certs
+---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
@@ -70,6 +99,7 @@ webhooks:
       name: metadata
       namespace: metadata
       path: "/mutate"
+    caBundle: ${CA_BUNDLE}
   rules:
   - operations: ["CREATE", "UPDATE"]
     apiGroups: ["*"]
@@ -95,6 +125,6 @@ spec:
           args:
             - patch
             - --secret-name=metadata-certs
-            - --namespace=metadata-certs
+            - --namespace=metadata
             - --webhook-name=metadata-webhook-cfg
       restartPolicy: OnFailure
