@@ -836,6 +836,12 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          VBoxManage --version
+          sysctl hw.physicalcpu hw.logicalcpu 
       - name: Run Integration Test
         continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
@@ -994,6 +1000,12 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          VBoxManage --version
+          sysctl hw.physicalcpu hw.logicalcpu 
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of
