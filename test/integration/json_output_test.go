@@ -49,7 +49,6 @@ func TestJSONOutput(t *testing.T) {
 			validator validateJSONOutputFunc
 		}{
 			{"CloudEvents", validateCloudEvents},
-			{"CurrentSteps", validateCurrentSteps},
 		}
 		for _, stc := range serialTests {
 			t.Run(stc.name, func(t *testing.T) {
@@ -70,31 +69,6 @@ func validateCloudEvents(ctx context.Context, t *testing.T, rr *RunResult) {
 		event := cloudevents.NewEvent()
 		if err := json.Unmarshal([]byte(s), &event); err != nil {
 			t.Fatalf("unable to unmarshal output: %v\n%s", err, s)
-		}
-	}
-}
-
-// make sure each step in a successful `minikube start` has a distict step number
-func validateCurrentSteps(ctx context.Context, t *testing.T, rr *RunResult) {
-	stdout := strings.Split(rr.Stdout.String(), "\n")
-	data := map[string]string{}
-	currentSteps := map[string]struct{}{}
-	for _, s := range stdout {
-		if s == "" {
-			continue
-		}
-		event := cloudevents.NewEvent()
-		if err := json.Unmarshal([]byte(s), &event); err != nil {
-			t.Fatalf("unable to unmarshal output: %v\n%s", err, s)
-		}
-		if err := json.Unmarshal(event.Data(), &data); err != nil {
-			t.Fatalf("unable to unmarshal output: %v\n%s", err, s)
-		}
-		cs := data["currentstep"]
-		if _, ok := currentSteps[cs]; ok {
-			t.Fatalf("The log \"%s\" has already been logged, please create a new log for this step: %v", data["name"], data["message"])
-		} else {
-			currentSteps[cs] = struct{}{}
 		}
 	}
 }
