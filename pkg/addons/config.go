@@ -165,7 +165,7 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
-		name:      "metadata",
+		name:      "gcp-auth",
 		set:       SetBool,
 		callbacks: []setFn{metadata.EnableOrDisable, enableOrDisableAddon},
 	},
