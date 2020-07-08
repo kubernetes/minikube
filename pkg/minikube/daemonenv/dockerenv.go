@@ -134,7 +134,7 @@ func DockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
-// dockerSetScript writes out a shell-compatible 'docker-env unset' script
+// DockerUnsetScript writes out a shell-compatible 'docker-env unset' script
 func DockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 	vars := []string{
 		constants.DockerTLSVerifyEnv,

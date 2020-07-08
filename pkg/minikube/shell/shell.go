@@ -129,10 +129,10 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 	},
 }
 
-// DefaultShellName is default shell which will be used in case of shell detection error
-const DefaultShellName = "bash"
+// Default is default shell which will be used in case of shell detection error
+const Default = "bash"
 
-var defaultShell shellData = shellConfigMap[DefaultShellName]
+var defaultShell shellData = shellConfigMap[Default]
 
 var (
 	// ForceShell forces a shell name
@@ -147,7 +147,7 @@ func Detect(forceShell ...string) (string, error) {
 	sh := os.Getenv("SHELL")
 	// Don't error out when $SHELL has not been set
 	if sh == "" && runtime.GOOS != "windows" {
-		return DefaultShellName, nil
+		return Default, nil
 	}
 	return shell.Detect()
 }
@@ -160,7 +160,7 @@ func (c EnvConfig) getShell() shellData {
 	return shell
 }
 
-func GenerateUsageHint(ec EnvConfig, usgPlz, usgCmd string) string {
+func usgCmd(ec EnvConfig, usgPlz, usgCmd string) string {
 	shellCfg := ec.getShell()
 	return shellCfg.usageHint(usgPlz, usgCmd)
 }
@@ -170,7 +170,7 @@ func CfgSet(ec EnvConfig, plz, cmd string) *Config {
 	shellCfg := ec.getShell()
 	s := &Config{}
 	s.Suffix, s.Prefix, s.Delimiter = shellCfg.suffix, shellCfg.prefix, shellCfg.delimiter
-	s.UsageHint = GenerateUsageHint(ec, plz, cmd)
+	s.UsageHint = usgCmd(ec, plz, cmd)
 
 	return s
 }
@@ -208,14 +208,16 @@ func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
 	return err
 }
 
-func generateSthEnvEvalHint(ec EnvConfig, profile, command string) string {
-	return GenerateUsageHint(ec, "Please update your environment using given code", fmt.Sprintf("minikube -p %s %s", profile, command))
+func generateSthEnvEvalHint(ec EnvConfig, profile, daemon string) string {
+	return usgCmd(ec, "Please update your environment using given code", fmt.Sprintf("minikube -p %s %s", profile, daemon))
 }
 
+// GenerateDockerEnvEvalHint generates eval hint for docker daemon
 func GenerateDockerEnvEvalHint(ec EnvConfig, profile string) string {
 	return generateSthEnvEvalHint(ec, profile, "docker-env")
 }
 
+// GeneratePodmanEnvEvalHint generates eval hint for podman daemon
 func GeneratePodmanEnvEvalHint(ec EnvConfig, profile string) string {
 	return generateSthEnvEvalHint(ec, profile, "podman-env")
 }

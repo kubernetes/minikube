@@ -23,7 +23,7 @@ import (
 	"testing"
 )
 
-func TestGenerateUsageHint(t *testing.T) {
+func TestUsgCmd(t *testing.T) {
 	var testCases = []struct {
 		ec       EnvConfig
 		expected string
@@ -45,7 +45,7 @@ func TestGenerateUsageHint(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.ec.Shell, func(t *testing.T) {
-			got := strings.TrimSpace(GenerateUsageHint(tc.ec, "foo", "bar"))
+			got := strings.TrimSpace(usgCmd(tc.ec, "foo", "bar"))
 			expected := strings.TrimSpace(tc.expected)
 			if got != expected {
 				t.Errorf("Expected '%v' but got '%v'", expected, got)
