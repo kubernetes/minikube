@@ -68,6 +68,7 @@ type V map[string]interface{}
 func T(style StyleEnum, format string, a ...V) {
 	if style == Option {
 		Infof(format, a...)
+		return
 	}
 	outStyled := ApplyTemplateFormatting(style, useColor, format, a...)
 	String(outStyled)

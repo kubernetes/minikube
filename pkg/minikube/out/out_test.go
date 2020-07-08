@@ -114,3 +114,7 @@ func TestErr(t *testing.T) {
 		t.Errorf("Err() = %q, want %q", got, want)
 	}
 }
+
+func TestInfof(t *testing.T) {
+
+}
