@@ -249,7 +249,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		}
 	}
 
-	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true)
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
 	if err != nil {
 		return node.Starter{}, err
 	}
@@ -306,7 +306,7 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 						KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 					}
 					out.Ln("") // extra newline for clarity on the command line
-					err := node.Add(starter.Cfg, n)
+					err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
 					if err != nil {
 						return nil, errors.Wrap(err, "adding node")
 					}
@@ -314,7 +314,7 @@ func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kub
 			} else {
 				for _, n := range existing.Nodes {
 					if !n.ControlPlane {
-						err := node.Add(starter.Cfg, n)
+						err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
 						if err != nil {
 							return nil, errors.Wrap(err, "adding node")
 						}
@@ -417,7 +417,7 @@ func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons 
 
 		var kubeconfig *kubeconfig.Settings
 		for _, n := range cc.Nodes {
-			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane)
+			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane, false)
 			s := node.Starter{
 				Runner:         r,
 				PreExists:      p,
@@ -896,6 +896,20 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 				exit.WithCodeT(exit.Config, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
 			}
 		}
+	}
+
+	// validate kubeadm extra args
+	if invalidOpts := bsutil.FindInvalidExtraConfigFlags(config.ExtraOptions); len(invalidOpts) > 0 {
+		out.ErrT(
+			out.Warning,
+			"These --extra-config parameters are invalid: {{.invalid_extra_opts}}",
+			out.V{"invalid_extra_opts": invalidOpts},
+		)
+		exit.WithCodeT(
+			exit.Config,
+			"Valid components are: {{.valid_extra_opts}}",
+			out.V{"valid_extra_opts": bsutil.KubeadmExtraConfigOpts},
+		)
 	}
 
 	// check that kubeadm extra args contain only allowed parameters

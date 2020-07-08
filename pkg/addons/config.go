@@ -160,6 +160,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
+		name:      "pod-security-policy",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
+	{
 		name:      "metadata",
 		set:       SetBool,
 		callbacks: []setFn{metadata.EnableOrDisable, enableOrDisableAddon},

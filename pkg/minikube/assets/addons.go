@@ -81,6 +81,14 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, true, "default-storageclass"),
+	"pod-security-policy": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/pod-security-policy/pod-security-policy.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"pod-security-policy.yaml",
+			"0640",
+			false),
+	}, false, "pod-security-policy"),
 	"storage-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/storage-provisioner/storage-provisioner.yaml.tmpl",
