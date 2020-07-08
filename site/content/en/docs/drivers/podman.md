@@ -11,7 +11,7 @@ aliases:
 This driver is experimental and in active development. Help wanted!
 {{% /pageinfo %}}
 
-The podman driver is an alternative container runtime to the [Docker]({{< ref "/docs/drivers/docker.md >}}) driver.
+The podman driver is an alternative container runtime to the [Docker]({{< ref "/docs/drivers/docker.md" >}}) driver.
 
 ## Requirements
 
