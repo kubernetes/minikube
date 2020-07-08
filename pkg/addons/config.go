@@ -162,6 +162,6 @@ var Addons = []*Addon{
 	{
 		name:      "metadata",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon, metadata.EnableOrDisable},
+		callbacks: []setFn{metadata.EnableOrDisable, enableOrDisableAddon},
 	},
 }

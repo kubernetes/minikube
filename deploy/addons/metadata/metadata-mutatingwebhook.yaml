@@ -18,6 +18,14 @@ rules:
       - list
       - get
       - create
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - mutatingwebhookconfigurations
+    verbs:
+      - get
+      - update
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -79,33 +87,17 @@ spec:
           - name: webhook-certs
             mountPath: /etc/webhook/certs
             readOnly: true
+          - name: gcp-project
+            mountPath: /tmp/google_cloud_project
+            readOnly: true
       volumes:
       - name: webhook-certs
         secret:
           secretName: metadata-certs
----
-apiVersion: admissionregistration.k8s.io/v1
-kind: MutatingWebhookConfiguration
-metadata:
-  name: metadata-webhook-cfg
-  labels:
-    app: metadata
-webhooks:
-- name: metadata-mutate.k8s.io
-  sideEffects: None
-  admissionReviewVersions: ["v1", "v1beta1"]
-  clientConfig:
-    service:
-      name: metadata
-      namespace: metadata
-      path: "/mutate"
-    caBundle: ${CA_BUNDLE}
-  rules:
-  - operations: ["CREATE", "UPDATE"]
-    apiGroups: ["*"]
-    apiVersions: ["*"]
-    resources: ["pods"]
-    scope: "*"
+      - name: gcp-project
+        hostPath:
+          path: /tmp/google_cloud_project
+          type: File
 ---
 apiVersion: batch/v1
 kind: Job
@@ -126,5 +118,28 @@ spec:
             - patch
             - --secret-name=metadata-certs
             - --namespace=metadata
+            - --patch-validating=false
             - --webhook-name=metadata-webhook-cfg
       restartPolicy: OnFailure
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: metadata-webhook-cfg
+  labels:
+    app: metadata
+webhooks:
+- name: metadata-mutate.k8s.io
+  sideEffects: None
+  admissionReviewVersions: ["v1", "v1beta1"]
+  clientConfig:
+    service:
+      name: metadata
+      namespace: metadata
+      path: "/mutate"
+  rules:
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: ["*"]
+    apiVersions: ["*"]
+    resources: ["pods"]
+    scope: "*"

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -97,11 +98,22 @@ func mutateHandler(w http.ResponseWriter, r *http.Request) {
 		Value: "/google-app-creds.json",
 	}
 
-	e2 := corev1.EnvVar{
-		Name:  "GOOGLE_CLOUD_PROJECT",
-		Value: "k8s-minikube",
+	// If GOOGLE_CLOUD_PROJECT is set in the VM, set it for all GCP apps.
+	var e2 corev1.EnvVar
+	if _, err := os.Stat("/tmp/google_cloud_project"); err == nil {
+		project, err := ioutil.ReadFile("/tmp/google_cloud_project")
+		if err == nil {
+			e2 = corev1.EnvVar{
+				Name:  "GOOGLE_CLOUD_PROJECT",
+				Value: string(project),
+			}
+		}
 	}
-	envVars := []corev1.EnvVar{e, e2}
+
+	envVars := []corev1.EnvVar{e}
+	if e2.Name != "" {
+		envVars = append(envVars, e2)
+	}
 
 	patch = append(patch, patchOperation{
 		Op:    "add",
