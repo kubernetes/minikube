@@ -206,7 +206,6 @@ jobs:
         shell: bash {0}
         run: |
           cd minikube_binaries
-          sudo codesign --force --sign  ./e2e-darwin-amd64
           sudo codesign --force --sign  ./minikube-darwin-amd64
       - name: Run Integration Test
         continue-on-error: false
