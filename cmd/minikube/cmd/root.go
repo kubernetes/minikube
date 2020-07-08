@@ -62,7 +62,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		logDir := pflag.Lookup("log_dir")
-		if !logDir.Changed {
+		if logDir.Value.String()=="" {
 			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
 				exit.WithError("logdir set failed", err)
 			}
