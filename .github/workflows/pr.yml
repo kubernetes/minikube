@@ -202,11 +202,6 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
-      - name: Sign binaries
-        shell: bash {0}
-        run: |
-          cd minikube_binaries
-          sudo codesign --force --sign  ./minikube-darwin-amd64
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of
