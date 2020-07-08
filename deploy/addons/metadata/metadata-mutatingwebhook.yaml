@@ -79,8 +79,8 @@ spec:
     spec:
       containers:
         - name: metadata
-          image: gcr.io/k8s-minikube/metadata-server:snapshot
-          imagePullPolicy: Never
+          image: gcr.io/k8s-minikube/gcp-auth-webhook:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
           volumeMounts:
