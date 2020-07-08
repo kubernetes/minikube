@@ -95,7 +95,7 @@ func String(format string, a ...interface{}) {
 // Ln writes a basic formatted string with a newline to stdout
 func Ln(format string, a ...interface{}) {
 	if JSON {
-		register.PrintStep(format + "\n")
+		glog.Warningf("please use out.T to log steps in JSON")
 		return
 	}
 	String(format+"\n", a...)
