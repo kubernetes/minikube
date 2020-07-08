@@ -66,7 +66,16 @@ type V map[string]interface{}
 
 // T writes a stylized and templated message to stdout
 func T(style StyleEnum, format string, a ...V) {
+	if style == Option {
+		Infof(format, a...)
+	}
 	outStyled := ApplyTemplateFormatting(style, useColor, format, a...)
+	String(outStyled)
+}
+
+// Infof is used for informational logs (options, env variables, etc)
+func Infof(format string, a ...V) {
+	outStyled := ApplyTemplateFormatting(Option, useColor, format, a...)
 	String(outStyled)
 }
 

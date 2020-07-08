@@ -151,14 +151,14 @@ var mountCmd = &cobra.Command{
 			bindIP = "127.0.0.1"
 		}
 		out.T(out.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
-		out.T(out.Option, "Mount type:   {{.name}}", out.V{"type": cfg.Type})
-		out.T(out.Option, "User ID:      {{.userID}}", out.V{"userID": cfg.UID})
-		out.T(out.Option, "Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
-		out.T(out.Option, "Version:      {{.version}}", out.V{"version": cfg.Version})
-		out.T(out.Option, "Message Size: {{.size}}", out.V{"size": cfg.MSize})
-		out.T(out.Option, "Permissions:  {{.octalMode}} ({{.writtenMode}})", out.V{"octalMode": fmt.Sprintf("%o", cfg.Mode), "writtenMode": cfg.Mode})
-		out.T(out.Option, "Options:      {{.options}}", out.V{"options": cfg.Options})
-		out.T(out.Option, "Bind Address: {{.Address}}", out.V{"Address": net.JoinHostPort(bindIP, fmt.Sprint(port))})
+		out.Infof("Mount type:   {{.name}}", out.V{"type": cfg.Type})
+		out.Infof("User ID:      {{.userID}}", out.V{"userID": cfg.UID})
+		out.Infof("Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
+		out.Infof("Version:      {{.version}}", out.V{"version": cfg.Version})
+		out.Infof("Message Size: {{.size}}", out.V{"size": cfg.MSize})
+		out.Infof("Permissions:  {{.octalMode}} ({{.writtenMode}})", out.V{"octalMode": fmt.Sprintf("%o", cfg.Mode), "writtenMode": cfg.Mode})
+		out.Infof("Options:      {{.options}}", out.V{"options": cfg.Options})
+		out.Infof("Bind Address: {{.Address}}", out.V{"Address": net.JoinHostPort(bindIP, fmt.Sprint(port))})
 
 		var wg sync.WaitGroup
 		if cfg.Type == nineP {
