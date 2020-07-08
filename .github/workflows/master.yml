@@ -194,6 +194,12 @@ jobs:
         run: |
           brew install docker-machine docker
           sudo docker --version
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          VBoxManage --version
+          sysctl hw.physicalcpu hw.logicalcpu 
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
