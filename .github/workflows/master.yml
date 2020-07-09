@@ -80,6 +80,8 @@ jobs:
         continue-on-error: false
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
+  # Run the following integration tests after the build_minikube
+  # They will run in parallel and use the binaries in previous step
   functional_docker_ubuntu:
     needs: [build_minikube]
     env:
@@ -685,7 +687,8 @@ jobs:
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k      - name: Download Binaries
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k      
+      - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
