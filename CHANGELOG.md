@@ -11,8 +11,6 @@ ISO Changes:
 
 * Upgrade Docker, from 19.03.11 to 19.03.12 [#8643](https://github.com/kubernetes/minikube/pull/8643)
 * Upgrade crio to 1.18.2 [#8645](https://github.com/kubernetes/minikube/pull/8645)
-* Revert Buildroot version from 2020.02 to 2019.02 [#8649](https://github.com/kubernetes/minikube/pull/8649)
-* Revert "Upgrade podman to 2.0.0" [#8644](https://github.com/kubernetes/minikube/pull/8644)
 
 Huge thank you for this release towards our contributors:
 
