@@ -45,7 +45,6 @@ Minor Improvements:
 * Gracefully exit if container runtime is misspelled [#8593](https://github.com/kubernetes/minikube/pull/8593)
 * add verification for enabling ingress, registry and gvisor addons [#8563](https://github.com/kubernetes/minikube/pull/8563)
 * Disable containerd from starting up at boot [#8621](https://github.com/kubernetes/minikube/pull/8621)
-* Upgrade podman to 2.0.0 [#8539](https://github.com/kubernetes/minikube/pull/8539)
 * Bump Dashboard to v2.0.1 [#8294](https://github.com/kubernetes/minikube/pull/8294)
 * Check for iptables file before determining container is running [#8565](https://github.com/kubernetes/minikube/pull/8565)
 
