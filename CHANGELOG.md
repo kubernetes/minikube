@@ -12,6 +12,10 @@ ISO Changes:
 * Upgrade Docker, from 19.03.11 to 19.03.12 [#8643](https://github.com/kubernetes/minikube/pull/8643)
 * Upgrade crio to 1.18.2 [#8645](https://github.com/kubernetes/minikube/pull/8645)
 
+Bug fixes:
+
+* none: Fix 'minikube delete' issues when the apiserver is down  [#8664](https://github.com/kubernetes/minikube/pull/8664)
+
 Huge thank you for this release towards our contributors:
 
 - Anders F Björklund
