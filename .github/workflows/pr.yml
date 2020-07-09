@@ -683,7 +683,8 @@ jobs:
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k      - name: Download Binaries
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k      
+      - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
