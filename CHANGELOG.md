@@ -1,5 +1,32 @@
 # Release Notes
 
+## Version 1.12.0 - 2020-07-09
+
+Features:
+
+* new addon : pod-security-policy [#8454](https://github.com/kubernetes/minikube/pull/8454)
+* new --extra-config option to config "scheduler" [#8147](https://github.com/kubernetes/minikube/pull/8147)
+
+ISO Changes:
+
+* Upgrade Docker, from 19.03.11 to 19.03.12 [#8643](https://github.com/kubernetes/minikube/pull/8643)
+* Upgrade crio to 1.18.2 [#8645](https://github.com/kubernetes/minikube/pull/8645)
+* Revert Buildroot version from 2020.02 to 2019.02 [#8649](https://github.com/kubernetes/minikube/pull/8649)
+* Revert "Upgrade podman to 2.0.0" [#8644](https://github.com/kubernetes/minikube/pull/8644)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Ilya Danilkin
+- Jani Poikela
+- Li Zhijian
+- Matt Broberg
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- colvin
+- vinu2003
+
 ## Version 1.12.0-beta.1 - 2020-07-01
 
 Features:
@@ -9,7 +36,7 @@ Features:
 * Reduce coredns replicas from 2 to 1 [#8552](https://github.com/kubernetes/minikube/pull/8552)
 * Allow passing in extra args to etcd via command line [#8551](https://github.com/kubernetes/minikube/pull/8551)
 
-Minor Impovements:
+Minor Improvements:
 
 * Kernel with CONFIG_IKHEADERS for BPF tools on Kubernetes [#8582](https://github.com/kubernetes/minikube/pull/8582)
 * CNI: Update CRIO netconfig with matching subnet [#8570](https://github.com/kubernetes/minikube/pull/8570)
