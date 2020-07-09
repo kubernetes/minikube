@@ -26,6 +26,7 @@ Huge thank you for this release towards our contributors:
 - Medya Ghazizadeh
 - Priya Wadhwa
 - Sharif Elgamal
+- Thomas Strömberg
 - colvin
 - vinu2003
 
