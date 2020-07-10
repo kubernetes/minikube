@@ -911,6 +911,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
+	if s := viper.GetString(startOutput); s != "text" && s != "json" {
+		exit.UsageT("Sorry, please set the --output flag to one of the following valid options: [text,json]")
+	}
+
 	validateRegistryMirror()
 }
 
