@@ -419,23 +419,23 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "ambassador"),
-	"metadata": NewAddon([]*BinAsset{
+	"gcp-auth": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/metadata/metadata-ns.yaml",
+			"deploy/addons/gcp-auth/gcp-auth-ns.yaml",
 			vmpath.GuestAddonsDir,
-			"metadata-ns.yaml",
+			"gcp-auth-ns.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/metadata/metadata-service.yaml",
+			"deploy/addons/gcp-auth/gcp-auth-service.yaml",
 			vmpath.GuestAddonsDir,
-			"metadata-service.yaml",
+			"gcp-auth-service.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/metadata/metadata-mutatingwebhook.yaml",
+			"deploy/addons/gcp-auth/gcp-auth-webhook.yaml",
 			vmpath.GuestAddonsDir,
-			"metadata-mutatingwebhook.yaml",
+			"gcp-auth-webhook.yaml",
 			"0640",
 			false),
 	}, false, "metadata"),
