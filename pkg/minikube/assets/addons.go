@@ -438,7 +438,7 @@ var Addons = map[string]*Addon{
 			"gcp-auth-webhook.yaml",
 			"0640",
 			false),
-	}, false, "metadata"),
+	}, false, "gcp-auth"),
 }
 
 // GenerateTemplateData generates template data for template assets
