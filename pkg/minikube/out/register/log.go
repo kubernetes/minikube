@@ -27,10 +27,12 @@ type Step struct {
 	data map[string]string
 }
 
+// Type returns the cloud events compatible type of this struct
 func (s *Step) Type() string {
 	return "io.k8s.sigs.minikube.step"
 }
 
+// NewStep returns a new step type
 func NewStep(message string) *Step {
 	return &Step{data: map[string]string{
 		"totalsteps":  Reg.totalSteps(),
@@ -40,22 +42,46 @@ func NewStep(message string) *Step {
 	}}
 }
 
-// TODO (priyawadhwa@): implement all types below this comment
 // Download will be used to notify the user that a download has begun
 type Download struct {
+	data map[string]string
 }
 
+// Type returns the cloud events compatible type of this struct
 func (s *Download) Type() string {
 	return "io.k8s.sigs.minikube.download"
 }
 
-// DownloadProgress will be used to notify the user around the progress of a download
-type DownloadProgress struct {
+// NewDownload returns a new download type
+func NewDownload(artifact string) *Download {
+	return &Download{data: map[string]string{
+		"totalsteps":  Reg.totalSteps(),
+		"currentstep": Reg.currentStep(),
+		"artifact":    artifact,
+	}}
 }
 
+// DownloadProgress will be used to notify the user around the progress of a download
+type DownloadProgress struct {
+	data map[string]string
+}
+
+// Type returns the cloud events compatible type of this struct
 func (s *DownloadProgress) Type() string {
 	return "io.k8s.sigs.minikube.download.progress"
 }
+
+// NewDownloadProgress returns a new download progress type
+func NewDownloadProgress(artifact, progress string) *DownloadProgress {
+	return &DownloadProgress{data: map[string]string{
+		"totalsteps":  Reg.totalSteps(),
+		"currentstep": Reg.currentStep(),
+		"progress":    progress,
+		"artifact":    artifact,
+	}}
+}
+
+// TODO (priyawadhwa@): implement all types below this comment
 
 // Warning will be used to notify the user of warnings
 type Warning struct {
