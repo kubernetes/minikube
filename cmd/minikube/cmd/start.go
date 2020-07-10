@@ -980,6 +980,10 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	hints := driver.FlagDefaults(drvName)
 	if len(hints.ExtraOptions) > 0 {
 		for _, eo := range hints.ExtraOptions {
+			if config.ExtraOptions.Exists(eo) {
+				glog.Infof("skipping extra-config %q.", eo)
+				continue
+			}
 			glog.Infof("auto setting extra-config to %q.", eo)
 			err = config.ExtraOptions.Set(eo)
 			if err != nil {
