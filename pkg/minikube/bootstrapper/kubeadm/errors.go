@@ -16,7 +16,13 @@ limitations under the License.
 
 package kubeadm
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+// max minutes wait for kubeadm init
+const initTimeOutMinutes = 1
 
 // FailFastError type is an error that could not be solved by trying again
 type FailFastError struct {
@@ -30,3 +36,6 @@ func (f *FailFastError) Error() string {
 // ErrNoExecLinux is thrown on linux when the kubeadm binaries are mounted in a noexec volume on Linux as seen in https://github.com/kubernetes/minikube/issues/8327#issuecomment-651288459
 // this error could be seen on docker/podman or none driver.
 var ErrNoExecLinux = &FailFastError{errors.New("mounted kubeadm binary is not executable")}
+
+// ErrInitTimedout is thrown if kubeadm init takes longer than max time allowed
+var ErrInitTimedout = fmt.Errorf("kubeadm init timed out in %d minutes", initTimeOutMinutes)

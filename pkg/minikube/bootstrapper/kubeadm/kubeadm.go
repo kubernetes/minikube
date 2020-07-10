@@ -224,9 +224,15 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	conf := bsutil.KubeadmYamlPath
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
+	ctx, cancel := context.WithTimeout(context.Background(), initTimeOutMinutes*time.Second)
+	defer cancel()
+	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	if _, err := k.c.RunCmd(c); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return ErrInitTimedout
+		}
+
 		if strings.Contains(err.Error(), "'kubeadm': Permission denied") {
 			return ErrNoExecLinux
 		}
