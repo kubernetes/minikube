@@ -84,6 +84,10 @@ func T(style StyleEnum, format string, a ...V) {
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
 	outStyled := ApplyTemplateFormatting(Option, useColor, format, a...)
+	if JSON {
+		register.PrintInfo(outStyled)
+		return
+	}
 	String(outStyled)
 }
 
