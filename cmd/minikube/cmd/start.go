@@ -145,7 +145,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	if !config.ProfileNameValid(ClusterFlagValue()) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
-		exit.UsageT("Only alphanumeric, dots, underscores and dashes '-' are permitted. Minimum 2 characters, starting by alphanumeric.")
+		exit.UsageT("Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
 	}
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
