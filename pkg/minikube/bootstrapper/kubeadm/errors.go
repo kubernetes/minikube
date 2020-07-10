@@ -23,7 +23,7 @@ import (
 
 // max minutes wait for kubeadm init. usually finishes in less than 1 minute.
 // giving it a generous timeout for possible super slow machines.
-const initTimeOutMinutes = 10
+const initTimeoutMinutes = 10
 
 // max seconds to wait for running kubectl apply manifests to the cluster to exit
 const applyTimeoutSeconds = 10
@@ -42,4 +42,4 @@ func (f *FailFastError) Error() string {
 var ErrNoExecLinux = &FailFastError{errors.New("mounted kubeadm binary is not executable")}
 
 // ErrInitTimedout is thrown if kubeadm init takes longer than max time allowed
-var ErrInitTimedout = fmt.Errorf("kubeadm init timed out in %d minutes", initTimeOutMinutes)
+var ErrInitTimedout = fmt.Errorf("kubeadm init timed out in %d minutes", initTimeoutMinutes)
