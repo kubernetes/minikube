@@ -21,3 +21,9 @@ func PrintStep(message string) {
 	s := NewStep(message)
 	printAsCloudEvent(s, s.data)
 }
+
+// PrintInfo prints an Info type in JSON format
+func PrintInfo(message string) {
+	s := NewInfo(message)
+	printAsCloudEvent(s, s.data)
+}
