@@ -20,7 +20,6 @@ package hyperkit
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 

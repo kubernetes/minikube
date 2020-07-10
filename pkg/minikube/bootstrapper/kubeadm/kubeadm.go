@@ -224,9 +224,15 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	conf := bsutil.KubeadmYamlPath
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
+	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
+	defer cancel()
+	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	if _, err := k.c.RunCmd(c); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return ErrInitTimedout
+		}
+
 		if strings.Contains(err.Error(), "'kubeadm': Permission denied") {
 			return ErrNoExecLinux
 		}
@@ -827,8 +833,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
 	nameLbl := "minikube.k8s.io/name=" + cfg.Name
 
-	// Allow no more than 5 seconds for applying labels
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
 	defer cancel()
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl label nodes minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
@@ -837,6 +842,9 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 
 	if _, err := k.c.RunCmd(cmd); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return errors.Wrapf(err, "timeout apply labels")
+		}
 		return errors.Wrapf(err, "applying node labels")
 	}
 	return nil
