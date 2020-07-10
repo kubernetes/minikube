@@ -833,8 +833,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
 	nameLbl := "minikube.k8s.io/name=" + cfg.Name
 
-	// Allow no more than 5 seconds for applying labels
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
 	defer cancel()
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl label nodes minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
