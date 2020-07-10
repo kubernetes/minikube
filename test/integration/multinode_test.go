@@ -231,11 +231,21 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 	}
 
 	if strings.Count(rr.Stdout.String(), "host: Running") != 2 {
-		t.Errorf("status says both hosts are not running: args %q: %v", rr.Command(), rr.Stdout.String())
+		t.Errorf("status says both hosts are not running: args %q: %v", rr.Command(), rr.Output())
 	}
 
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
-		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
+		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Output())
+	}
+
+	// Make sure kubectl reports that all nodes are ready
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
+	if err != nil {
+		t.Fatalf("failed to kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
+
+	if strings.Count(rr.Stdout.String(), "True") != 2 {
+		t.Errorf("expected 2 nodes Ready status to be True, got %v", rr.Output())
 	}
 }
 
