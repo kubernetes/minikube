@@ -358,7 +358,7 @@ func displayEnviron(env []string) {
 		k := bits[0]
 		v := bits[1]
 		if strings.HasPrefix(k, "MINIKUBE_") || k == constants.KubeconfigEnvVar {
-			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
+			out.Infof("{{.key}}={{.value}}", out.V{"key": k, "value": v})
 		}
 	}
 }
@@ -520,7 +520,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	if pick.Name == "" {
 		out.T(out.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
 		for _, r := range rejects {
-			out.T(out.Option, "{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
 		}
 		out.T(out.Workaround, "Try specifying a --driver, or see https://minikube.sigs.k8s.io/docs/start/")
 		os.Exit(exit.Unavailable)
