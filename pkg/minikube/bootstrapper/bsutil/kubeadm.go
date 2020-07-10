@@ -147,14 +147,25 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 // These are the components that can be configured
 // through the "extra-config"
 const (
-	Kubelet           = "kubelet"
-	Kubeadm           = "kubeadm"
 	Apiserver         = "apiserver"
-	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
-	Kubeproxy         = "kube-proxy"
+	Scheduler         = "scheduler"
 	Etcd              = "etcd"
+	Kubeadm           = "kubeadm"
+	Kubeproxy         = "kube-proxy"
+	Kubelet           = "kubelet"
 )
+
+// KubeadmExtraConfigOpts is a list of allowed "extra-config" components
+var KubeadmExtraConfigOpts = []string{
+	Apiserver,
+	ControllerManager,
+	Scheduler,
+	Etcd,
+	Kubeadm,
+	Kubelet,
+	Kubeproxy,
+}
 
 // InvokeKubeadm returns the invocation command for Kubeadm
 func InvokeKubeadm(version string) string {
