@@ -126,8 +126,6 @@ func CreateContainerNode(p CreateParams) error {
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
 		"--security-opt", "seccomp=unconfined", //  ignore seccomp
-		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
-		"--security-opt", "apparmor=unconfined",
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// logs,pods be stroed on  filesystem vs inside container,
@@ -150,6 +148,8 @@ func CreateContainerNode(p CreateParams) error {
 	}
 	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
+		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
+		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
 	}
 
 	runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
