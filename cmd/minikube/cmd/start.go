@@ -153,6 +153,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	validateSpecifiedDriver(existing)
+	validateKubernetesVersion(existing)
 	ds, alts, specified := selectDriver(existing)
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
@@ -1005,26 +1006,9 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	return err
 }
 
-// getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *config.ClusterConfig) string {
-	paramVersion := viper.GetString(kubernetesVersion)
-
-	// try to load the old version first if the user didn't specify anything
-	if paramVersion == "" && old != nil {
-		paramVersion = old.KubernetesConfig.KubernetesVersion
-	}
-
-	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
-		paramVersion = constants.DefaultKubernetesVersion
-	} else if strings.EqualFold(paramVersion, "latest") {
-		paramVersion = constants.NewestKubernetesVersion
-	}
-
-	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
-	if err != nil {
-		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
-	}
-	nv := version.VersionPrefix + nvs.String()
+// validateKubernetesVersion ensures that the requested version is reasonable
+func validateKubernetesVersion(old *config.ClusterConfig) {
+	nvs, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(old), version.VersionPrefix))
 
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
@@ -1045,7 +1029,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv
+		return
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
@@ -1054,7 +1038,6 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 
 	if nvs.LT(ovs) {
-		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
 		if old.Name != constants.DefaultClusterName {
 			profileArg = fmt.Sprintf(" -p %s", old.Name)
@@ -1082,5 +1065,26 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	if defaultVersion.GT(nvs) {
 		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
-	return nv
+}
+
+func getKubernetesVersion(old *config.ClusterConfig) string {
+	paramVersion := viper.GetString(kubernetesVersion)
+
+	// try to load the old version first if the user didn't specify anything
+	if paramVersion == "" && old != nil {
+		paramVersion = old.KubernetesConfig.KubernetesVersion
+	}
+
+	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
+		paramVersion = constants.DefaultKubernetesVersion
+	} else if strings.EqualFold(paramVersion, "latest") {
+		paramVersion = constants.NewestKubernetesVersion
+	}
+
+	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
+	if err != nil {
+		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
+	}
+
+	return version.VersionPrefix + nvs.String()
 }
