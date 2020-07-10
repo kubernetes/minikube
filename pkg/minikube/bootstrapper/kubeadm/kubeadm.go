@@ -722,7 +722,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) er
 	return err
 }
 
-// UpdateCluster updates the cluster.
+// UpdateCluster updates the control plane with cluster-level info.
 func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
@@ -745,11 +745,14 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		}
 	}
 
-	for _, n := range cfg.Nodes {
-		err := k.UpdateNode(cfg, n, r)
-		if err != nil {
-			return errors.Wrap(err, "updating node")
-		}
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "getting control plane")
+	}
+
+	err = k.UpdateNode(cfg, cp, r)
+	if err != nil {
+		return errors.Wrap(err, "updating control plane")
 	}
 
 	return nil
