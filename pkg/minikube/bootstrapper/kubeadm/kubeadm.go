@@ -858,7 +858,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	}()
 
 	// Allow no more than 5 seconds for creating cluster role bindings
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
 	defer cancel()
 	rbacName := "minikube-rbac"
 	// kubectl create clusterrolebinding minikube-rbac --clusterrole=cluster-admin --serviceaccount=kube-system:default
@@ -867,10 +867,14 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return errors.Wrapf(err, "timeout apply sa")
+		}
 		// Error from server (AlreadyExists): clusterrolebindings.rbac.authorization.k8s.io "minikube-rbac" already exists
 		if strings.Contains(rr.Output(), "Error from server (AlreadyExists)") {
 			glog.Infof("rbac %q already exists not need to re-create.", rbacName)
-			return nil
+		} else {
+			return errors.Wrapf(err, "apply sa")
 		}
 	}
 
