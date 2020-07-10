@@ -14,22 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package register
+// This file implements a go-getter wrapper for cheggaaa progress bar
+// based on:
+// https://github.com/hashicorp/go-getter/blob/master/cmd/go-getter/progress_tracking.go
 
-// PrintStep prints a Step type in JSON format
-func PrintStep(message string) {
-	s := NewStep(message)
-	printAsCloudEvent(s, s.data)
-}
+package download
 
-// PrintDownload prints a Download type in JSON format
-func PrintDownload(artifact string) {
-	s := NewDownload(artifact)
-	printAsCloudEvent(s, s.data)
-}
-
-// PrintDownloadProgress prints a DownloadProgress type in JSON format
-func PrintDownloadProgress(artifact, progress string) {
-	s := NewDownloadProgress(artifact, progress)
-	printAsCloudEvent(s, s.data)
+type jsonOutput struct {
 }
