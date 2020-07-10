@@ -25,7 +25,7 @@ import (
 // giving it a generous timeout for possible super slow machines.
 const initTimeOutMinutes = 10
 
-// max seconds to wait for running kbuectl apply manfiests to the cluster to exit
+// max seconds to wait for running kubectl apply manifests to the cluster to exit
 const applyTimeoutSeconds = 10
 
 // FailFastError type is an error that could not be solved by trying again
