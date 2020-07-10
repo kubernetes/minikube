@@ -20,5 +20,57 @@ limitations under the License.
 
 package download
 
+import (
+	"fmt"
+	"io"
+	"sync"
+
+	"github.com/cheggaaa/pb/v3"
+	"github.com/hashicorp/go-getter"
+	"k8s.io/minikube/pkg/minikube/out/register"
+)
+
+var DefaultJSONOutput getter.ProgressTracker = &jsonOutput{}
+
 type jsonOutput struct {
+	lock     sync.Mutex
+	progress *pb.ProgressBar
+}
+
+// TrackProgress prints out progress of the stream in JSON format until closed
+func (cpb *jsonOutput) TrackProgress(src string, currentSize, totalSize int64, stream io.ReadCloser) io.ReadCloser {
+	cpb.lock.Lock()
+	defer cpb.lock.Unlock()
+
+	register.PrintDownload(src)
+
+	return &readCloser{
+		Reader: &jsonReader{
+			Reader:   stream,
+			artifact: src,
+			current:  currentSize,
+			total:    totalSize,
+		},
+		close: func() error {
+			cpb.lock.Lock()
+			defer cpb.lock.Unlock()
+			return nil
+		},
+	}
+}
+
+// jsonReader is a wrapper for printing with JSON output
+type jsonReader struct {
+	artifact string
+	current  int64
+	total    int64
+	io.Reader
+}
+
+func (r *jsonReader) Read(p []byte) (n int, err error) {
+	n, err = r.Reader.Read(p)
+	r.current += int64(n)
+	progress := float64(r.current) / float64(r.total)
+	register.PrintDownloadProgress(r.artifact, fmt.Sprintf("%v", progress))
+	return
 }
