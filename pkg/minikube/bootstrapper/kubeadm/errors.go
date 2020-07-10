@@ -21,8 +21,9 @@ import (
 	"fmt"
 )
 
-// max minutes wait for kubeadm init
-const initTimeOutMinutes = 1
+// max minutes wait for kubeadm init. usually finishes in less than 1 minute.
+// giving it a generous timeout for possible super slow machines.
+const initTimeOutMinutes = 13
 
 // FailFastError type is an error that could not be solved by trying again
 type FailFastError struct {
