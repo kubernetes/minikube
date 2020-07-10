@@ -844,7 +844,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 
 	if _, err := k.c.RunCmd(cmd); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return errors.Wrapf(err, "timeout apply node labels")
+			return errors.Wrapf(err, "timeout apply labels")
 		}
 		return errors.Wrapf(err, "applying node labels")
 	}
