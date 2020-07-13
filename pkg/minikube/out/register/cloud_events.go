@@ -18,6 +18,8 @@ package register
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/golang/glog"
@@ -28,6 +30,11 @@ const (
 	specVersion = "1.0"
 )
 
+var (
+	outputFile io.Writer = os.Stdout
+	getUUID              = randomID
+)
+
 func printAsCloudEvent(log Log, data map[string]string) {
 	event := cloudevents.NewEvent()
 	event.SetSource("https://minikube.sigs.k8s.io/")
@@ -36,10 +43,14 @@ func printAsCloudEvent(log Log, data map[string]string) {
 	if err := event.SetData(cloudevents.ApplicationJSON, data); err != nil {
 		glog.Warningf("error setting data: %v", err)
 	}
-	event.SetID(guuid.New().String())
+	event.SetID(getUUID())
 	json, err := event.MarshalJSON()
 	if err != nil {
 		glog.Warningf("error marashalling event: %v", err)
 	}
-	fmt.Println(string(json))
+	fmt.Fprintln(outputFile, string(json))
+}
+
+func randomID() string {
+	return guuid.New().String()
 }
