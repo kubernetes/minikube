@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -50,6 +51,8 @@ var (
 	useColor = false
 	// OverrideEnv is the environment variable used to override color/emoji usage
 	OverrideEnv = "MINIKUBE_IN_STYLE"
+	// JSON is whether or not we should output stdout in JSON format. Set using SetJSON()
+	JSON = false
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
@@ -71,12 +74,20 @@ func T(style StyleEnum, format string, a ...V) {
 		return
 	}
 	outStyled := ApplyTemplateFormatting(style, useColor, format, a...)
+	if JSON {
+		register.PrintStep(outStyled)
+		return
+	}
 	String(outStyled)
 }
 
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
 	outStyled := ApplyTemplateFormatting(Option, useColor, format, a...)
+	if JSON {
+		register.PrintInfo(outStyled)
+		return
+	}
 	String(outStyled)
 }
 
@@ -97,6 +108,10 @@ func String(format string, a ...interface{}) {
 
 // Ln writes a basic formatted string with a newline to stdout
 func Ln(format string, a ...interface{}) {
+	if JSON {
+		glog.Warningf("please use out.T to log steps in JSON")
+		return
+	}
 	String(format+"\n", a...)
 }
 
@@ -148,6 +163,12 @@ func SetOutFile(w fdWriter) {
 	glog.Infof("Setting OutFile to fd %d ...", w.Fd())
 	outFile = w
 	useColor = wantsColor(w.Fd())
+}
+
+// SetJSON configures printing to STDOUT in JSON
+func SetJSON(j bool) {
+	glog.Infof("Setting JSON to %v", j)
+	JSON = j
 }
 
 // SetErrFile configures which writer error output goes to.
