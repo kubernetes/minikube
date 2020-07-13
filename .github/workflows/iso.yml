@@ -2,10 +2,7 @@ name: ISO
 on:
   pull_request:
     paths:
-      - "**.go"
-      - "**.yml"
-      - "**.yaml"
-      - "Makefile"
+      - "deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
@@ -34,6 +31,10 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
+      - name: Build ISO
+        run: |
+          make minikube_iso
+          make checksum
       - uses: actions/upload-artifact@v1
         with:
           name: minikube_binaries
@@ -83,12 +84,13 @@ jobs:
         shell: bash {0}
         run: |
           cd minikube_binaries
+          pwd
           mkdir -p report
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=virtualbox --iso-url=file://$(pwd)/out/minikube.iso" -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
