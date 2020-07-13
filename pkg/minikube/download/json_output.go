@@ -14,10 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This file implements a go-getter wrapper for cheggaaa progress bar
-// based on:
-// https://github.com/hashicorp/go-getter/blob/master/cmd/go-getter/progress_tracking.go
-
 package download
 
 import (
@@ -25,7 +21,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/cheggaaa/pb/v3"
 	"github.com/hashicorp/go-getter"
 	"k8s.io/minikube/pkg/minikube/out/register"
 )
@@ -33,8 +28,7 @@ import (
 var DefaultJSONOutput getter.ProgressTracker = &jsonOutput{}
 
 type jsonOutput struct {
-	lock     sync.Mutex
-	progress *pb.ProgressBar
+	lock sync.Mutex
 }
 
 // TrackProgress prints out progress of the stream in JSON format until closed
