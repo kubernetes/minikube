@@ -1,5 +1,35 @@
 # Release Notes
 
+## Version 1.12.0 - 2020-07-09
+
+Features:
+
+* new addon : pod-security-policy [#8454](https://github.com/kubernetes/minikube/pull/8454)
+* new --extra-config option to config "scheduler" [#8147](https://github.com/kubernetes/minikube/pull/8147)
+
+ISO Changes:
+
+* Upgrade Docker, from 19.03.11 to 19.03.12 [#8643](https://github.com/kubernetes/minikube/pull/8643)
+* Upgrade crio to 1.18.2 [#8645](https://github.com/kubernetes/minikube/pull/8645)
+
+Bug fixes:
+
+* none: Fix 'minikube delete' issues when the apiserver is down  [#8664](https://github.com/kubernetes/minikube/pull/8664)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Ilya Danilkin
+- Jani Poikela
+- Li Zhijian
+- Matt Broberg
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- colvin
+- vinu2003
+
 ## Version 1.12.0-beta.1 - 2020-07-01
 
 Features:
@@ -9,7 +39,7 @@ Features:
 * Reduce coredns replicas from 2 to 1 [#8552](https://github.com/kubernetes/minikube/pull/8552)
 * Allow passing in extra args to etcd via command line [#8551](https://github.com/kubernetes/minikube/pull/8551)
 
-Minor Impovements:
+Minor Improvements:
 
 * Kernel with CONFIG_IKHEADERS for BPF tools on Kubernetes [#8582](https://github.com/kubernetes/minikube/pull/8582)
 * CNI: Update CRIO netconfig with matching subnet [#8570](https://github.com/kubernetes/minikube/pull/8570)
@@ -20,7 +50,6 @@ Minor Impovements:
 * Gracefully exit if container runtime is misspelled [#8593](https://github.com/kubernetes/minikube/pull/8593)
 * add verification for enabling ingress, registry and gvisor addons [#8563](https://github.com/kubernetes/minikube/pull/8563)
 * Disable containerd from starting up at boot [#8621](https://github.com/kubernetes/minikube/pull/8621)
-* Upgrade podman to 2.0.0 [#8539](https://github.com/kubernetes/minikube/pull/8539)
 * Bump Dashboard to v2.0.1 [#8294](https://github.com/kubernetes/minikube/pull/8294)
 * Check for iptables file before determining container is running [#8565](https://github.com/kubernetes/minikube/pull/8565)
 

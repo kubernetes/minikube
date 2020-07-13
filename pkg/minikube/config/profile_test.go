@@ -73,24 +73,38 @@ func TestListProfiles(t *testing.T) {
 }
 
 func TestProfileNameValid(t *testing.T) {
-	var testCases = []struct {
-		name     string
-		expected bool
-	}{
-		{"meaningful_name", true},
-		{"meaningful_name@", false},
-		{"n_a_m_e_2", true},
-		{"n", false},
-		{"_name", false},
-		{"N__a.M--E12567", true},
-	}
-	for _, tt := range testCases {
-		got := ProfileNameValid(tt.name)
-		if got != tt.expected {
-			t.Errorf("expected ProfileNameValid(%s)=%t but got %t ", tt.name, tt.expected, got)
-		}
+	var testCases = map[string]bool{
+		"profile":             true,
+		"pro-file":            true,
+		"profile1":            true,
+		"pro-file1":           true,
+		"1st-profile":         true,
+		"1st-2nd-3rd-profile": true,
+		"n":                   true,
+		"1":                   true,
+		"12567":               true,
+
+		"pro file":         false,
+		"pro-file-":        false,
+		"-profile":         false,
+		"meaningful_name":  false,
+		"meaningful_name@": false,
+		"n_a_m_e_2":        false,
+		"_name":            false,
+		"N__a.M--E12567":   false,
 	}
 
+	for name, exp := range testCases {
+		name, exp := name, exp // capture range variables
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			got := ProfileNameValid(name)
+			if got != exp {
+				t.Errorf("expected ProfileNameValid(%s)=%t but got %t ", name, exp, got)
+			}
+		})
+	}
 }
 
 func TestProfileNameInReservedKeywords(t *testing.T) {
