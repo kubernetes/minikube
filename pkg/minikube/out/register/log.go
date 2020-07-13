@@ -93,10 +93,20 @@ func (s *Warning) Type() string {
 
 // Info will be used to notify users of any extra info (env variables, options)
 type Info struct {
+	data map[string]string
 }
 
 func (s *Info) Type() string {
 	return "io.k8s.sigs.minikube.info"
+}
+
+// NewInfo returns a new Info type
+func NewInfo(message string) *Info {
+	return &Info{
+		map[string]string{
+			"message": message,
+		},
+	}
 }
 
 // Error will be used to notify the user of errors

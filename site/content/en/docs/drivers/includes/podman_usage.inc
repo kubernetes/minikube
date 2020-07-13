@@ -1,20 +1,22 @@
-## experimental
+## Experimental
 
-This is an experimental driver. please use it only for experimental reasons.
-for a better kubernetes in container experience, use docker [driver]({{< ref "/docs/drivers/docker/" >}})
-
-## Install Podman
-
-- [Podman](https://podman.io/getting-started/installation.html)
+This is an experimental driver. Please use it only for experimental reasons until it has reached maturity. For a more reliable minikube experience, use a non-experimental driver, like [Docker]({{< ref "/docs/drivers/docker.md" >}}).
 
 ## Usage
 
-Start a cluster using the podman driver:
+It's recommended to run minikube with the podman driver and [CRI-O container runtime](https://https://cri-o.io/): 
 
 ```shell
-minikube start --driver=podman
+minikube start --driver=podman --container-runtime=cri-o
 ```
-To make docker the default driver:
+
+Alternatively, start minikube with the podman driver only: 
+
+```shell
+minikube start --driver=podman 
+```
+
+To make podman the default driver: 
 
 ```shell
 minikube config set driver podman
