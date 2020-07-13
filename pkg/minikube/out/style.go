@@ -155,7 +155,7 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 	}
 
 	// Similar to CSS styles, if no style matches, output an unformatted string.
-	if !ok {
+	if !ok || JSON {
 		return format
 	}
 
