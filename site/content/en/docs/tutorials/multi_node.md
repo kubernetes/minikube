@@ -49,7 +49,7 @@ multinode-demo-m02   Ready    <none>   33s   v1.18.2
 
 - You can also check the status of your nodes:
 ```
-$ minikube status
+$ minikube status -p multinode-demo
 multinode-demo
 type: Control Plane
 host: Running
