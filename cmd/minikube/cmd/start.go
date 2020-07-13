@@ -757,8 +757,36 @@ func memoryLimits(drvName string) (int, int, error) {
 			return -1, -1, err
 		}
 		containerLimit = int(s.TotalMemory / 1024 / 1024)
+		myabeAdviceDockerResources(containerLimit, sysLimit, s.CPUs, drvName)
 	}
+
 	return sysLimit, containerLimit, nil
+}
+
+func myabeAdviceDockerResources(containerLimit int, sysLimit int, CPUs int, drvName string) {
+	if drvName == oci.Docker && runtime.GOOS != "linux" {
+		if containerLimit < 2492 {
+			out.T(out.Conflict, `Your Docker Desktop has only {{.container_limit}} memory. Increase memory to at least 2.5 GB or more:
+
+	Docker Icon > Settings > Resources > Memory
+
+			`, out.V{"container_limit": containerLimit})
+			// for users with more than 8 GB advice 3 GB
+		} else if containerLimit < 2997 && sysLimit > 8000 {
+			out.T(out.Tip, `Your system has {{.system_limit}}mb memory but Docker has only {{.container_limit}}mb. For a better performance increase to at least 3 GB.
+
+	Docker Icon > Settings > Resources > Memory
+
+`, out.V{"container_limit": containerLimit, "system_limit": sysLimit})
+		}
+		if CPUs < 2 {
+			out.T(out.Conflict, `Your Docker Desktop has less than 2 CPUs. Increase CPUs for Docker Desktop:
+
+	Docker icon > Settings > Resources > CPUs
+
+`, out.V{"container_limit": containerLimit})
+		}
+	}
 }
 
 // suggestMemoryAllocation calculates the default memory footprint in MB
