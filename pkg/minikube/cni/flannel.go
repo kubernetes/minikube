@@ -17,6 +17,9 @@ limitations under the License.
 package cni
 
 import (
+	"os/exec"
+
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -637,6 +640,12 @@ func (c Flannel) String() string {
 
 // Apply enables the CNI
 func (c Flannel) Apply(r Runner) error {
+	// Mostly applicable to the 'none' driver
+	_, err := r.RunCmd(exec.Command("stat", "/opt/cni/bin/portmap"))
+	if err != nil {
+		return errors.Wrap(err, "required 'portmap' CNI plug-in not found")
+	}
+
 	return applyManifest(c.cc, r, manifestAsset([]byte(flannelTmpl)))
 }
 

@@ -11,6 +11,7 @@ require (
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cheggaaa/pb/v3 v3.0.1
+	github.com/cloudevents/sdk-go/v2 v2.1.0
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/containerd/containerd v1.3.1-0.20191213020239-082f7e3aed57 // indirect
@@ -28,6 +29,7 @@ require (
 	github.com/google/go-containerregistry v0.0.0-20200601195303-96cf69f03a3c
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/slowjam v0.0.0-20200530021616-df27e642fe7b
+	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.6.6
