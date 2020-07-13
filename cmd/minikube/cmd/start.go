@@ -161,7 +161,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)
-		machine.MaybeDisplayAdvice(err, existing.Driver)
+		machine.MaybeDisplayAdvice(err, ds.Name)
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
 			exit.WithError("error provisioning host", err)
