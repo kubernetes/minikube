@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.11.13'
+          go-version: '1.13.9'
           stable: true
       - name: Download Dependencies
         run: go mod download
@@ -31,6 +31,24 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
+      - name: Build ISO
+        run: |
+          make minikube_iso
+          make checksum
+      - uses: actions/upload-artifact@v1
+        with:
+          name: minikube_binaries
+          path: out
+  build_iso:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.11.13'
+          stable: true
+      - name: Download Dependencies
+        run: go mod download
       - name: Build ISO
         run: |
           make minikube_iso
