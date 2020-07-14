@@ -81,8 +81,6 @@ func NewDownloadProgress(artifact, progress string) *DownloadProgress {
 	}}
 }
 
-// TODO (priyawadhwa@): implement all types below this comment
-
 // Warning will be used to notify the user of warnings
 type Warning struct {
 }
