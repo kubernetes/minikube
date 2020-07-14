@@ -17,12 +17,12 @@ limitations under the License.
 package gcpauth
 
 import (
+	"context"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 
 	"github.com/pkg/errors"
-	"k8s.io/client-go/util/homedir"
+	"golang.org/x/oauth2/google"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -43,12 +43,15 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 }
 
 func enableAddon(cfg *config.ClusterConfig) error {
-	// This is the default location for GCP credentials to live, it's where they're stored when gcloud login is run
-	credsPath := filepath.Join(homedir.HomeDir(), ".config", "gcloud", "application_default_credentials.json")
-	f, err := assets.NewFileAsset(credsPath, "/tmp/", "google_application_credentials.json", "0444")
+	// Grab credentials from where GCP would normally look
+	// We should allow users to specify an arbitrary file as well
+	ctx := context.Background()
+	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
 		return err
 	}
+
+	f := assets.NewMemoryAssetTarget(creds.JSON, "/tmp/google_application_credentials.json", "0444")
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
