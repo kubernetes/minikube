@@ -198,11 +198,11 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
-	if strings.Count(rr.Stdout.String(), "host: Stopped") != 3 {
+	if strings.Count(rr.Stdout.String(), "host: Stopped") != 2 {
 		t.Errorf("incorrect number of stopped hosts: args %q: %v", rr.Command(), rr.Stdout.String())
 	}
 
-	if strings.Count(rr.Stdout.String(), "kubelet: Stopped") != 3 {
+	if strings.Count(rr.Stdout.String(), "kubelet: Stopped") != 2 {
 		t.Errorf("incorrect number of stopped kubelets: args %q: %v", rr.Command(), rr.Stdout.String())
 	}
 }
@@ -230,11 +230,11 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
-	if strings.Count(rr.Stdout.String(), "host: Running") != 3 {
+	if strings.Count(rr.Stdout.String(), "host: Running") != 2 {
 		t.Errorf("status says both hosts are not running: args %q: %v", rr.Command(), rr.Output())
 	}
 
-	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 3 {
+	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Output())
 	}
 
@@ -244,8 +244,8 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 		t.Fatalf("failed to kubectl get nodes. args %q : %v", rr.Command(), err)
 	}
 
-	if strings.Count(rr.Stdout.String(), "True") != 3 {
-		t.Errorf("expected 3 nodes Ready status to be True, got %v", rr.Output())
+	if strings.Count(rr.Stdout.String(), "True") != 2 {
+		t.Errorf("expected 2 nodes Ready status to be True, got %v", rr.Output())
 	}
 }
 
