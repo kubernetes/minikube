@@ -885,8 +885,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
-	validateMemorySize()
 	if cmd.Flags().Changed(memory) {
+		validateMemorySize()
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 		}
