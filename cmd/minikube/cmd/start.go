@@ -763,9 +763,9 @@ func memoryLimits(drvName string) (int, int, error) {
 	return sysLimit, containerLimit, nil
 }
 
-func myabeAdviceDockerResources(containerLimit int, sysLimit int, CPUs int, drvName string) {
+func myabeAdviceDockerResources(containerLimit int, sysLimit int, cpus int, drvName string) {
 	if drvName == oci.Docker && runtime.GOOS != "linux" {
-		if containerLimit < 2492 {
+		if containerLimit < 1991 {
 			out.T(out.Conflict, `Your Docker Desktop has only {{.container_limit}} memory. Increase memory to at least 2.5 GB or more:
 
 	Docker Icon > Settings > Resources > Memory
@@ -779,12 +779,15 @@ func myabeAdviceDockerResources(containerLimit int, sysLimit int, CPUs int, drvN
 
 `, out.V{"container_limit": containerLimit, "system_limit": sysLimit})
 		}
-		if CPUs < 2 {
-			out.T(out.Conflict, `Your Docker Desktop has less than 2 CPUs. Increase CPUs for Docker Desktop:
+		if cpus < 2 {
+			out.T(out.Conflict, `Your Docker Desktop has less than 2 CPUs. Increase CPUs for Docker Desktop. 
 
 	Docker icon > Settings > Resources > CPUs
 
 `, out.V{"container_limit": containerLimit})
+			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
+			exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
+
 		}
 	}
 }
