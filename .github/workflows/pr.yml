@@ -174,7 +174,7 @@ jobs:
       JOB_NAME: "functional_virtualbox_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -182,6 +182,11 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
+      - name: Install virtualbox
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install virtualbox virtualbox-ext-pack
       - name: Info
         shell: bash
         run: |
