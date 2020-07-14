@@ -1173,7 +1173,7 @@ jobs:
     needs:
       [
         functional_docker_ubuntu,
-        functional_virtualbox_ubuntu
+        functional_virtualbox_ubuntu,
         functional_virtualbox_macos,
         functional_docker_windows,
         functional_hyperv_windows,
