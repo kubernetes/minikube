@@ -72,7 +72,7 @@ func Client(context string) (*kubernetes.Clientset, error) {
 // WaitForPods waits for all matching pods to become Running or finish successfully and at least one matching pod exists.
 func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...time.Duration) error {
 	start := time.Now()
-	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, selector)
+	glog.Infof("Waiting for pod with label %q in ns %q ...", selector, ns)
 	lastKnownPodNumber := -1
 	f := func() (bool, error) {
 		listOpts := meta.ListOptions{LabelSelector: selector}

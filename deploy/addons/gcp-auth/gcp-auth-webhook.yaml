@@ -76,6 +76,7 @@ spec:
     metadata:
       labels:
         app: gcp-auth
+        kubernetes.io/minikube-addons: gcp-auth
     spec:
       containers:
         - name: gcp-auth
@@ -88,7 +89,7 @@ spec:
             mountPath: /etc/webhook/certs
             readOnly: true
           - name: gcp-project
-            mountPath: /tmp/google_cloud_project
+            mountPath: /var/lib/minikube/google_cloud_project
             readOnly: true
       volumes:
       - name: webhook-certs
@@ -96,7 +97,7 @@ spec:
           secretName: gcp-auth-certs
       - name: gcp-project
         hostPath:
-          path: /tmp/google_cloud_project
+          path: /var/lib/minikube/google_cloud_project
           type: File
 ---
 apiVersion: batch/v1
@@ -130,8 +131,13 @@ metadata:
     app: gcp-auth
 webhooks:
 - name: gcp-auth-mutate.k8s.io
+  objectSelector:
+    matchExpressions:
+      - key: gcp-auth-skip-secret
+        operator: NotIn
+        values: ["true"]
   sideEffects: None
-  admissionReviewVersions: ["v1", "v1beta1"]
+  admissionReviewVersions: ["v1","v1beta1"]
   clientConfig:
     service:
       name: gcp-auth

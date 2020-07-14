@@ -315,6 +315,14 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 }
 
 func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
+	return verifyAddonStatusInternal(cc, name, val, "kube-system")
+}
+
+func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
+	return verifyAddonStatusInternal(cc, name, val, "gcp-auth")
+}
+
+func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string) error {
 	glog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
@@ -329,7 +337,7 @@ func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error 
 			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
 		}
 
-		err = kapi.WaitForPods(client, "kube-system", label, time.Minute*3)
+		err = kapi.WaitForPods(client, ns, label, time.Minute*3)
 		if err != nil {
 			return errors.Wrapf(err, "verifying %s addon pods : %v", name, err)
 		}

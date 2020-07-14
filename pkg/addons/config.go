@@ -36,6 +36,7 @@ var addonPodLabels = map[string]string{
 	"ingress":  "app.kubernetes.io/name=ingress-nginx",
 	"registry": "kubernetes.io/minikube-addons=registry",
 	"gvisor":   "kubernetes.io/minikube-addons=gvisor",
+	"gcp-auth": "kubernetes.io/minikube-addons=gcp-auth",
 }
 
 // Addons is a list of all addons
@@ -167,6 +168,6 @@ var Addons = []*Addon{
 	{
 		name:      "gcp-auth",
 		set:       SetBool,
-		callbacks: []setFn{gcpauth.EnableOrDisable, enableOrDisableAddon},
+		callbacks: []setFn{gcpauth.EnableOrDisable, enableOrDisableAddon, verifyGCPAuthAddon},
 	},
 }

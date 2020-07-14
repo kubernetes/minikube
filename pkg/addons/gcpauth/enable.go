@@ -18,6 +18,7 @@ package gcpauth
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"strconv"
 
@@ -27,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
 // EnableOrDisable enables or disables the metadata addon depending on the val parameter
@@ -43,6 +45,11 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 }
 
 func enableAddon(cfg *config.ClusterConfig) error {
+
+	// Grab command runner from running cluster
+	cc := mustload.Running(cfg.Name)
+	r := cc.CP.Runner
+
 	// Grab credentials from where GCP would normally look
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
@@ -50,32 +57,24 @@ func enableAddon(cfg *config.ClusterConfig) error {
 		return err
 	}
 
-	f := assets.NewMemoryAssetTarget(creds.JSON, "/tmp/google_application_credentials.json", "0444")
-
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		return err
-	}
-
-	host, err := machine.LoadHost(api, driver.MachineName(*cfg, cfg.Nodes[0]))
-	if err != nil {
-		return err
-	}
-
-	r, err := machine.CommandRunner(host)
-	if err != nil {
-		return err
-	}
+	f := assets.NewMemoryAssetTarget(creds.JSON, "/var/lib/minikube/google_application_credentials.json", "0444")
 
 	err = r.Copy(f)
 	if err != nil {
 		return err
 	}
 
+	// First check if the project env var is explicitly set
+	projectEnv := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if projectEnv != "" {
+		f := assets.NewMemoryAssetTarget([]byte(projectEnv), "/var/lib/minikube/google_cloud_project", "0444")
+		return r.Copy(f)
+	}
+
 	// We're currently assuming gcloud is installed and in the user's path
 	project, err := exec.Command("gcloud", "config", "get-value", "project").Output()
 	if err == nil && len(project) > 0 {
-		f := assets.NewMemoryAssetTarget(project, "/tmp/google_cloud_project", "0444")
+		f := assets.NewMemoryAssetTarget(project, "/var/lib/minikube/google_cloud_project", "0444")
 		return r.Copy(f)
 	}
 
@@ -99,13 +98,13 @@ func disableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	// Clean up the files generated when enabling the addon
-	creds := assets.NewMemoryAssetTarget([]byte{}, "/tmp/google_application_credentials.json", "0444")
+	creds := assets.NewMemoryAssetTarget([]byte{}, "/var/lib/minikube/google_application_credentials.json", "0444")
 	err = r.Remove(creds)
 	if err != nil {
 		return err
 	}
 
-	project := assets.NewMemoryAssetTarget([]byte{}, "/tmp/google_cloud_project", "0444")
+	project := assets.NewMemoryAssetTarget([]byte{}, "/var/lib/minikube/google_cloud_project", "0444")
 	err = r.Remove(project)
 	if err != nil {
 		return err
