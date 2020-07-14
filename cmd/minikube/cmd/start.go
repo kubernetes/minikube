@@ -763,35 +763,6 @@ func memoryLimits(drvName string) (int, int, error) {
 	return sysLimit, containerLimit, nil
 }
 
-func myabeAdviceDockerResources(containerLimit int, sysLimit int, cpus int, drvName string) {
-	if drvName == oci.Docker && runtime.GOOS != "linux" {
-		if containerLimit < 1991 {
-			out.T(out.Conflict, `Your Docker Desktop has only {{.container_limit}} memory. Increase memory to at least 2.5 GB or more:
-
-	Docker Icon > Settings > Resources > Memory
-
-			`, out.V{"container_limit": containerLimit})
-			// for users with more than 8 GB advice 3 GB
-		} else if containerLimit < 2997 && sysLimit > 8000 {
-			out.T(out.Tip, `Your system has {{.system_limit}}mb memory but Docker has only {{.container_limit}}mb. For a better performance increase to at least 3 GB.
-
-	Docker Icon > Settings > Resources > Memory
-
-`, out.V{"container_limit": containerLimit, "system_limit": sysLimit})
-		}
-		if cpus < 2 {
-			out.T(out.Conflict, `Your Docker Desktop has less than 2 CPUs. Increase CPUs for Docker Desktop. 
-
-	Docker icon > Settings > Resources > CPUs
-
-`, out.V{"container_limit": containerLimit})
-			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
-			exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
-
-		}
-	}
-}
-
 // suggestMemoryAllocation calculates the default memory footprint in MB
 func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 	if mem := viper.GetInt(memory); mem != 0 {
@@ -831,11 +802,13 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 }
 
 // validateMemorySize validates the memory size matches the minimum recommended
-func validateMemorySize() {
-	req, err := util.CalculateSizeInMB(viper.GetString(memory))
+func validateMemorySize(req int, drvName string) {
+
+	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
-		exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		glog.Warningf("Unable to query memory limits: %v", err)
 	}
+
 	if req < minUsableMem && !viper.GetBool(force) {
 		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB",
 			out.V{"requested": req, "mininum": minUsableMem})
@@ -844,12 +817,28 @@ func validateMemorySize() {
 		out.T(out.Notice, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
 			out.V{"requested": req, "recommended": minRecommendedMem})
 	}
+
+	if driver.IsDockerDesktop(drvName) {
+		if containerLimit < 1991 {
+			out.T(out.Tip, `Increase Docker for Desktop memory to at least 2.5 GB or more:
+			
+	Docker for Desktop > Settings > Resources > Memory
+
+`)
+		} else if containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
+			out.T(out.Tip, `Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3 GB.
+
+	Docker for Desktop  > Settings > Resources > Memory
+
+`, out.V{"container_limit": containerLimit, "system_limit": sysLimit})
+		}
+	}
 }
 
 // validateCPUCount validates the cpu count matches the minimum recommended
-func validateCPUCount(local bool) {
+func validateCPUCount(drvName string) {
 	var cpuCount int
-	if local {
+	if driver.BareMetal(drvName) {
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
@@ -862,6 +851,25 @@ func validateCPUCount(local bool) {
 	}
 	if cpuCount < minimumCPUS && !viper.GetBool(force) {
 		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
+	}
+
+	if driver.IsKIC((drvName)) {
+		si, err := cachedKicSystemInfo(drvName)
+		if err != nil {
+			out.WarningT("Failed to verify '{{.driver_name}} info', ensure your {{.driver_name}} is running healthy.", out.V{"driver_namee": drvName})
+		}
+		if si.CPUs < 2 {
+			if drvName == oci.Docker {
+				out.T(out.Conflict, `Your Docker Desktop has less than 2 CPUs. Increase CPUs for Docker Desktop. 
+	
+	Docker icon > Settings > Resources > CPUs
+				
+				`)
+			}
+			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
+			exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.NameForHumans(viper.GetString("driver"))})
+
+		}
 	}
 }
 
@@ -879,14 +887,18 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if cmd.Flags().Changed(cpus) {
-		validateCPUCount(driver.BareMetal(drvName))
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --cpus flag", out.V{"name": drvName})
 		}
 	}
+	validateCPUCount(drvName)
 
 	if cmd.Flags().Changed(memory) {
-		validateMemorySize()
+		req, err := util.CalculateSizeInMB(viper.GetString(memory))
+		if err != nil {
+			exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		}
+		validateMemorySize(req, drvName)
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 		}
