@@ -44,7 +44,6 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 
 func enableAddon(cfg *config.ClusterConfig) error {
 	// Grab credentials from where GCP would normally look
-	// We should allow users to specify an arbitrary file as well
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
