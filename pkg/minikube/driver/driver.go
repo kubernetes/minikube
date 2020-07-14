@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -105,6 +106,17 @@ func IsKIC(name string) bool {
 	return name == Docker || name == Podman
 }
 
+// IsKIC checks if the driver is a Docker for Desktop (Docker on windows or MacOs)
+// for linux and exotic archs, this will be false
+func IsDockerDesktop(name string) bool {
+	if IsKIC(name) {
+		if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
+			return true
+		}
+	}
+	return false
+}
+
 // IsMock checks if the driver is a mock
 func IsMock(name string) bool {
 	return name == Mock
@@ -154,6 +166,22 @@ func NeedsShutdown(name string) bool {
 		return true
 	}
 	return false
+}
+
+// NameForHumans will return the human-known and formatted name for the driver
+func NameForHumans(name string) string {
+	switch name {
+	case oci.Docker:
+		if IsDockerDesktop(name) {
+			return "Docker for Desktop"
+		}
+		return "Docker Service"
+
+	case oci.Podman:
+		return "Podman Service"
+	default:
+		return strings.Title(name)
+	}
 }
 
 // FlagHints are hints for what default options should be used for this driver
