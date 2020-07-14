@@ -49,10 +49,10 @@ jobs:
         run: go mod download
       - name: Install ISO tools
         run: |
-          apt-get update \
-          && apt-get install -y apt dpkg apt-utils ca-certificates \
-          && apt-get upgrade -y \
-          && apt-get install -y \
+          sudo apt-get update \
+          && sudo apt-get install -y apt dpkg apt-utils ca-certificates \
+          && sudo apt-get upgrade -y \
+          && sudo apt-get install -y \
             build-essential \
             git \
             wget \
