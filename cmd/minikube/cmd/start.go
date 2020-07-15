@@ -70,7 +70,6 @@ var (
 	insecureRegistry []string
 	apiServerNames   []string
 	apiServerIPs     []net.IP
-	kicSysInfo       *oci.SysInfo
 )
 
 func init() {
@@ -753,7 +752,7 @@ func memoryLimits(drvName string) (int, int, error) {
 	containerLimit := 0
 
 	if driver.IsKIC(drvName) {
-		s, err := cachedKicSystemInfo(drvName)
+		s, err := oci.CachedDaemonInfo(drvName)
 		if err != nil {
 			return -1, -1, err
 		}
@@ -854,7 +853,7 @@ func validateCPUCount(drvName string) {
 	}
 
 	if driver.IsKIC((drvName)) {
-		si, err := cachedKicSystemInfo(drvName)
+		si, err := oci.CachedDaemonInfo(drvName)
 		if err != nil {
 			out.WarningT("Failed to verify '{{.driver_name}} info', ensure your {{.driver_name}} is running healthy.", out.V{"driver_namee": drvName})
 		}
@@ -1143,15 +1142,4 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 
 	return version.VersionPrefix + nvs.String()
-}
-
-// cachedKicSystemInfo will return docker/podman info. it will call docker/podam info only once per minikube start to avoid perforamce side effects
-func cachedKicSystemInfo(ociBin string) (oci.SysInfo, error) {
-	var err error
-	if kicSysInfo == nil {
-		si, err := oci.DaemonInfo(ociBin)
-		kicSysInfo = &si
-		return *kicSysInfo, err
-	}
-	return *kicSysInfo, err
 }
