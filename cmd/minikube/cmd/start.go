@@ -858,7 +858,7 @@ func validateCPUCount(drvName string) {
 			out.T(out.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
 			si, err = oci.DaemonInfo(drvName)
 			if err != nil {
-				exit.UsageT("Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.NameForHumans(drvName)})
+				exit.UsageT("Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 			}
 
 		}
@@ -871,7 +871,7 @@ func validateCPUCount(drvName string) {
 				`)
 			}
 			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
-			exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.NameForHumans(viper.GetString("driver"))})
+			exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
 
 		}
 	}
