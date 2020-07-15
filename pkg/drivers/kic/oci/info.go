@@ -37,12 +37,10 @@ var cachedSysInfoErr *error
 
 // CachedDaemonInfo will run and return a docker/podman info only once per minikube run time. to avoid performance
 func CachedDaemonInfo(ociBin string) (SysInfo, error) {
-	var err error
 	if cachedSysInfo == nil {
 		si, err := DaemonInfo(ociBin)
 		cachedSysInfo = &si
 		cachedSysInfoErr = &err
-		return *cachedSysInfo, err
 	}
 	return *cachedSysInfo, *cachedSysInfoErr
 }
