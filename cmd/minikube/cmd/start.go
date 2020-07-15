@@ -818,14 +818,16 @@ func validateMemorySize(req int, drvName string) {
 	}
 
 	if driver.IsDockerDesktop(drvName) {
+		// in Docker Desktop if you allocate 2 GB the docker info shows:  Total Memory: 1.945GiB which becomes 1991 when we calculate the MBs
+		// thats why it is not same number as other drivers which is 2 GB
 		if containerLimit < 1991 {
-			out.T(out.Tip, `Increase Docker for Desktop memory to at least 2.5 GB or more:
+			out.T(out.Tip, `Increase Docker for Desktop memory to at least 2.5GB or more:
 			
 	Docker for Desktop > Settings > Resources > Memory
 
 `)
 		} else if containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
-			out.T(out.Tip, `Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3 GB.
+			out.T(out.Tip, `Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3GB.
 
 	Docker for Desktop  > Settings > Resources > Memory
 
