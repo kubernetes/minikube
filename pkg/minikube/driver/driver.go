@@ -106,10 +106,15 @@ func IsKIC(name string) bool {
 	return name == Docker || name == Podman
 }
 
+// IsDocker checks if the driver docker
+func IsDocker(name string) bool {
+	return name == Docker
+}
+
 // IsKIC checks if the driver is a Docker for Desktop (Docker on windows or MacOs)
 // for linux and exotic archs, this will be false
 func IsDockerDesktop(name string) bool {
-	if IsKIC(name) {
+	if IsDocker(name) {
 		if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
 			return true
 		}
@@ -168,8 +173,8 @@ func NeedsShutdown(name string) bool {
 	return false
 }
 
-// NameForHumans will return the human-known and formatted name for the driver
-func NameForHumans(name string) string {
+// FullName will return the human-known and formatted name for the driver
+func FullName(name string) string {
 	switch name {
 	case oci.Docker:
 		if IsDockerDesktop(name) {
