@@ -134,8 +134,7 @@ webhooks:
   objectSelector:
     matchExpressions:
       - key: gcp-auth-skip-secret
-        operator: NotIn
-        values: ["true"]
+        operator: DoesNotExist
   sideEffects: None
   admissionReviewVersions: ["v1","v1beta1"]
   clientConfig:
