@@ -26,8 +26,6 @@ import (
 	"golang.org/x/oauth2/google"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
@@ -45,7 +43,6 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 }
 
 func enableAddon(cfg *config.ClusterConfig) error {
-
 	// Grab command runner from running cluster
 	cc := mustload.Running(cfg.Name)
 	r := cc.CP.Runner
@@ -82,24 +79,13 @@ func enableAddon(cfg *config.ClusterConfig) error {
 }
 
 func disableAddon(cfg *config.ClusterConfig) error {
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		return err
-	}
-
-	host, err := machine.LoadHost(api, driver.MachineName(*cfg, cfg.Nodes[0]))
-	if err != nil {
-		return err
-	}
-
-	r, err := machine.CommandRunner(host)
-	if err != nil {
-		return err
-	}
+	// Grab command runner from running cluster
+	cc := mustload.Running(cfg.Name)
+	r := cc.CP.Runner
 
 	// Clean up the files generated when enabling the addon
 	creds := assets.NewMemoryAssetTarget([]byte{}, "/var/lib/minikube/google_application_credentials.json", "0444")
-	err = r.Remove(creds)
+	err := r.Remove(creds)
 	if err != nil {
 		return err
 	}
