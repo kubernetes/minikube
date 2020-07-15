@@ -186,7 +186,9 @@ jobs:
         shell: bash
         run: |
           sudo apt update
-          sudo apt install virtualbox virtualbox-ext-pack
+          echo virtualbox-ext-pack virtualbox-ext-pack/license select true | sudo debconf-set-selections
+          sudo apt install -y virtualbox
+          sudo apt install -y virtualbox-ext-pack           
       - name: Info
         shell: bash
         run: |
