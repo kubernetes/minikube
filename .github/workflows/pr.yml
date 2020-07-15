@@ -194,7 +194,6 @@ jobs:
         run: |
           hostname
           VBoxManage --version
-          sysctl hw.physicalcpu hw.logicalcpu 
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
