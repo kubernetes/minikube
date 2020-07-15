@@ -121,8 +121,18 @@ func getKubeDNSIP(t *testing.T, profile string) string {
 func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
 
-	args := []string{"-p", profile, "tunnel", "--alsologtostderr"}
-	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
+	var cmd string
+	var args []string
+
+	if runtime.GOOS == "windows" {
+		cmd = "powershell"
+		args = []string{fmt.Sprintf("Start-Process %v -ArgumentList \"-p %v tunnel --alsologtostderr\" -Verb RunAs -WindowStyle Hidden", Target(), profile)}
+	} else {
+		cmd = Target()
+		args = []string{"-p", profile, "tunnel", "--alsologtostderr"}
+	}
+
+	ss, err := Start(t, exec.CommandContext(ctx, cmd, args...))
 	if err != nil {
 		t.Errorf("failed to start a tunnel: args %q: %v", args, err)
 	}
@@ -155,9 +165,6 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	t.Run("IngressIP", func(t *testing.T) {
-		if HyperVDriver() {
-			t.Skip("The test WaitService/IngressIP is broken on hyperv https://github.com/kubernetes/minikube/issues/8381")
-		}
 		// Wait until the nginx-svc has a loadbalancer ingress IP
 		err = wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
@@ -183,9 +190,9 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 
 // validateAccessDirect validates if the test service can be accessed with LoadBalancer IP from host
 func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping: access direct test is broken on windows: https://github.com/kubernetes/minikube/issues/8304")
-	}
+	//if runtime.GOOS == "windows" {
+	//	t.Skip("skipping: access direct test is broken on windows: https://github.com/kubernetes/minikube/issues/8304")
+	//}
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
