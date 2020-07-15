@@ -33,6 +33,7 @@ type SysInfo struct {
 }
 
 var cachedSysInfo *SysInfo
+var cachedSysInfoErr *error
 
 // CachedDaemonInfo will run and return a docker/podman info only once per minikube run time. to avoid performance
 func CachedDaemonInfo(ociBin string) (SysInfo, error) {
@@ -40,9 +41,10 @@ func CachedDaemonInfo(ociBin string) (SysInfo, error) {
 	if cachedSysInfo == nil {
 		si, err := DaemonInfo(ociBin)
 		cachedSysInfo = &si
+		cachedSysInfoErr = &err
 		return *cachedSysInfo, err
 	}
-	return *cachedSysInfo, err
+	return *cachedSysInfo, *cachedSysInfoErr
 }
 
 // DaemonInfo returns common docker/podman daemon system info that minikube cares about
