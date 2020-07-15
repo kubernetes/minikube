@@ -173,7 +173,7 @@ func NeedsShutdown(name string) bool {
 	return false
 }
 
-// FullName will return the human-known and formatted name for the driver
+// FullName will return the human-known and title formatted name for the driver based on platform
 func FullName(name string) string {
 	switch name {
 	case oci.Docker:
@@ -181,9 +181,6 @@ func FullName(name string) string {
 			return "Docker for Desktop"
 		}
 		return "Docker Service"
-
-	case oci.Podman:
-		return "Podman Service"
 	default:
 		return strings.Title(name)
 	}
