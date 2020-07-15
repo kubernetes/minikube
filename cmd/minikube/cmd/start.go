@@ -855,7 +855,7 @@ func validateCPUCount(drvName string) {
 	if driver.IsKIC((drvName)) {
 		si, err := oci.CachedDaemonInfo(drvName)
 		if err != nil {
-			out.WarningT("Failed to verify '{{.driver_name}} info', ensure your {{.driver_name}} is running healthy.", out.V{"driver_namee": drvName})
+			out.WarningT("Failed to verify '{{.driver_name}} info', ensure your {{.driver_name}} is running healthy.", out.V{"driver_name": drvName})
 		}
 		if si.CPUs < 2 {
 			if drvName == oci.Docker {
