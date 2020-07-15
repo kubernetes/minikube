@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestMultiNode(t *testing.T) {
@@ -238,12 +239,15 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Output())
 	}
 
+	time.Sleep(Seconds(30))
+
 	// Make sure kubectl reports that all nodes are ready
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
-	if err != nil {
-		t.Fatalf("failed to kubectl get nodes. args %q : %v", rr.Command(), err)
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
+	if strings.Count(rr.Stdout.String(), "NotReady") > 0 {
+		t.Errorf("expected 2 nodes to be Ready, got %v", rr.Output())
 	}
 
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
 	if strings.Count(rr.Stdout.String(), "True") != 2 {
 		t.Errorf("expected 2 nodes Ready status to be True, got %v", rr.Output())
 	}
