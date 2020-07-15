@@ -29,6 +29,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
+const (
+	credentialsPath = "/var/lib/minikube/google_application_credentials.json"
+	projectPath     = "/var/lib/minikube/google_cloud_project"
+)
+
 // EnableOrDisable enables or disables the metadata addon depending on the val parameter
 func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 	enable, err := strconv.ParseBool(val)
@@ -54,7 +59,7 @@ func enableAddon(cfg *config.ClusterConfig) error {
 		return err
 	}
 
-	f := assets.NewMemoryAssetTarget(creds.JSON, "/var/lib/minikube/google_application_credentials.json", "0444")
+	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
 
 	err = r.Copy(f)
 	if err != nil {
@@ -64,14 +69,14 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	// First check if the project env var is explicitly set
 	projectEnv := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectEnv != "" {
-		f := assets.NewMemoryAssetTarget([]byte(projectEnv), "/var/lib/minikube/google_cloud_project", "0444")
+		f := assets.NewMemoryAssetTarget([]byte(projectEnv), projectPath, "0444")
 		return r.Copy(f)
 	}
 
 	// We're currently assuming gcloud is installed and in the user's path
 	project, err := exec.Command("gcloud", "config", "get-value", "project").Output()
 	if err == nil && len(project) > 0 {
-		f := assets.NewMemoryAssetTarget(project, "/var/lib/minikube/google_cloud_project", "0444")
+		f := assets.NewMemoryAssetTarget(project, projectPath, "0444")
 		return r.Copy(f)
 	}
 
@@ -84,13 +89,13 @@ func disableAddon(cfg *config.ClusterConfig) error {
 	r := cc.CP.Runner
 
 	// Clean up the files generated when enabling the addon
-	creds := assets.NewMemoryAssetTarget([]byte{}, "/var/lib/minikube/google_application_credentials.json", "0444")
+	creds := assets.NewMemoryAssetTarget([]byte{}, credentialsPath, "0444")
 	err := r.Remove(creds)
 	if err != nil {
 		return err
 	}
 
-	project := assets.NewMemoryAssetTarget([]byte{}, "/var/lib/minikube/google_cloud_project", "0444")
+	project := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
 	err = r.Remove(project)
 	if err != nil {
 		return err
