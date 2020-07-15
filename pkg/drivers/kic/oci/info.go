@@ -32,21 +32,33 @@ type SysInfo struct {
 	OSType      string // container's OsType (windows or linux)
 }
 
+var cachedSysInfo *SysInfo
+
+// CachedDaemonInfo will run and return a docker/podman info only once per minikube run time. to avoid perfomance
+func CachedDaemonInfo(ociBin string) (SysInfo, error) {
+	var err error
+	if cachedSysInfo == nil {
+		si, err := DaemonInfo(ociBin)
+		cachedSysInfo = &si
+		return *cachedSysInfo, err
+	}
+	return *cachedSysInfo, err
+}
+
 // DaemonInfo returns common docker/podman daemon system info that minikube cares about
 func DaemonInfo(ociBin string) (SysInfo, error) {
-	var info SysInfo
 	if ociBin == Podman {
 		p, err := podmanSystemInfo()
-		info.CPUs = p.Host.Cpus
-		info.TotalMemory = p.Host.MemTotal
-		info.OSType = p.Host.Os
-		return info, err
+		cachedSysInfo.CPUs = p.Host.Cpus
+		cachedSysInfo.TotalMemory = p.Host.MemTotal
+		cachedSysInfo.OSType = p.Host.Os
+		return *cachedSysInfo, err
 	}
 	d, err := dockerSystemInfo()
-	info.CPUs = d.NCPU
-	info.TotalMemory = d.MemTotal
-	info.OSType = d.OSType
-	return info, err
+	cachedSysInfo.CPUs = d.NCPU
+	cachedSysInfo.TotalMemory = d.MemTotal
+	cachedSysInfo.OSType = d.OSType
+	return *cachedSysInfo, err
 }
 
 // dockerSysInfo represents the output of docker system info --format '{{json .}}'
