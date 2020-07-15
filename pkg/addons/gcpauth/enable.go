@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 const (
@@ -101,5 +102,12 @@ func disableAddon(cfg *config.ClusterConfig) error {
 		return err
 	}
 
+	return nil
+}
+
+// DisplayAddonMessage display an gcp auth addon specific message to the user
+func DisplayAddonMessage(cfg *config.ClusterConfig, name string, val string) error {
+	out.T(out.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cfg.Name})
+	out.T(out.Notice, "If you don't want credential mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
 	return nil
 }
