@@ -83,10 +83,12 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 		return errors.Wrap(err, "runtime")
 	}
 
-	imgClient, err := client.NewClientWithOpts(client.FromEnv) // image client
-	if err != nil {
-		glog.Infof("couldn't get a local image daemon which might be ok: %v", err)
-		imgClient = nil
+	var imgClient *client.Client
+	if cr.Name() == "Docker" {
+		imgClient, err = client.NewClientWithOpts(client.FromEnv) // image client
+		if err != nil {
+			glog.Infof("couldn't get a local image daemon which might be ok: %v", err)
+		}
 	}
 
 	for _, image := range images {

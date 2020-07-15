@@ -27,3 +27,15 @@ func PrintInfo(message string) {
 	s := NewInfo(message)
 	printAsCloudEvent(s, s.data)
 }
+
+// PrintDownload prints a Download type in JSON format
+func PrintDownload(artifact string) {
+	s := NewDownload(artifact)
+	printAsCloudEvent(s, s.data)
+}
+
+// PrintDownloadProgress prints a DownloadProgress type in JSON format
+func PrintDownloadProgress(artifact, progress string) {
+	s := NewDownloadProgress(artifact, progress)
+	printAsCloudEvent(s, s.data)
+}
