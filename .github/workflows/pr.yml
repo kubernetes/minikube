@@ -167,49 +167,44 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
-  functional_virtualbox_ubuntu:
+  functional_hyperkit_macos:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_virtualbox_ubuntu"
+      JOB_NAME: "functional_hyperkit_macos"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: macos-10.15
     steps:
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - name: Install virtualbox
+      - name: Install gopogh
         shell: bash
         run: |
-          sudo apt update
-          echo virtualbox-ext-pack virtualbox-ext-pack/license select true | sudo debconf-set-selections
-          sudo apt install -y virtualbox
-          sudo apt install -y virtualbox-ext-pack           
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-darwin-amd64
+          sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+      - name: Install docker and hyperkit
+        shell: bash
+        run: |
+          brew update
+          brew install docker-machine docker hyperkit
+          sudo docker --version
+          hyperkit -v
       - name: Info
         shell: bash
         run: |
           hostname
           VBoxManage --version
-          echo "--------------------------"
-          docker version || true
-          echo "--------------------------"
-          docker info || true
-          echo "--------------------------"
-          docker system df || true
-          echo "--------------------------"
-          docker system info || true
-          echo "--------------------------"
-          docker ps || true
-          echo "--------------------------"
-      - name: Install gopogh
-        shell: bash
+          hyperkit -v
+          sysctl hw.physicalcpu hw.logicalcpu 
+      - name: Disable firewall
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
-          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -224,10 +219,8 @@ jobs:
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
-          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
-          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run TestFunctional -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=hyperkit  -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -249,22 +242,9 @@ jobs:
           echo ::set-env name=STAT::${STAT}
       - uses: actions/upload-artifact@v1
         with:
-          name: functional_virtualbox_ubuntu
+          name: functional_hyperkit_macos
           path: minikube_binaries/report
-      - name: The End Result functional_virtualbox_ubuntu
-        shell: bash
-        run: |
-          echo ${GOPOGH_RESULT}
-          numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
-          numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
-          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
-          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+      - name: The End Result functional_hyperkit_macos
   functional_virtualbox_macos:
     needs: [build_minikube]
     env:
@@ -1181,6 +1161,7 @@ jobs:
         functional_docker_ubuntu,
         functional_virtualbox_ubuntu,
         functional_virtualbox_macos,
+        functional_hyperkit_macos,
         functional_docker_windows,
         functional_hyperv_windows,
         functional_baremetal_ubuntu18_04,
@@ -1203,6 +1184,7 @@ jobs:
           ls -lah
           cp -r ./functional_docker_ubuntu ./all_reports/
           cp -r ./functional_virtualbox_macos ./all_reports/
+          cp -r ./functional_hyperkit_macos ./all_reports/         
           cp -r ./functional_docker_windows ./all_reports/
           cp -r ./functional_hyperv_windows ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
