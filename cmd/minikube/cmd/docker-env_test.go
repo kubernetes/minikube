@@ -42,15 +42,15 @@ func TestGenerateDockerScripts(t *testing.T) {
 	}{
 		{
 			"bash",
-			DockerEnvConfig{profile: "dockerdrver", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			DockerEnvConfig{profile: "dockerdriver", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
 			nil,
 			`export DOCKER_TLS_VERIFY="1"
 export DOCKER_HOST="tcp://127.0.0.1:32842"
 export DOCKER_CERT_PATH="/certs"
-export MINIKUBE_ACTIVE_DOCKERD="dockerdrver"
+export MINIKUBE_ACTIVE_DOCKERD="dockerdriver"
 
 # To point your shell to minikube's docker-daemon, run:
-# eval $(minikube -p dockerdrver docker-env)
+# eval $(minikube -p dockerdriver docker-env)
 `,
 			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
 `,
@@ -218,6 +218,18 @@ export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
 `,
 
 			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD NO_PROXY
+`,
+		},
+		{
+			"none",
+			DockerEnvConfig{profile: "noneshell", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			nil,
+			`DOCKER_TLS_VERIFY=1
+DOCKER_HOST=tcp://127.0.0.1:32842
+DOCKER_CERT_PATH=/certs
+MINIKUBE_ACTIVE_DOCKERD=noneshell
+`,
+			`DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
 `,
 		},
 	}

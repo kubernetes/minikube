@@ -24,13 +24,19 @@ import (
 )
 
 // FailFastError type is an error that could not be solved by trying again
-type FailFastError error
+type FailFastError struct {
+	Err error
+}
+
+func (f *FailFastError) Error() string {
+	return f.Err.Error()
+}
 
 // ErrWindowsContainers is thrown when docker been configured to run windows containers instead of Linux
-var ErrWindowsContainers = FailFastError(errors.New("docker container type is windows"))
+var ErrWindowsContainers = &FailFastError{errors.New("docker container type is windows")}
 
 // ErrCPUCountLimit is thrown when docker daemon doesn't have enough CPUs for the requested container
-var ErrCPUCountLimit = FailFastError(errors.New("not enough CPUs is available for container"))
+var ErrCPUCountLimit = &FailFastError{errors.New("not enough CPUs is available for container")}
 
 // ErrExitedUnexpectedly is thrown when container is created/started without error but later it exists and it's status is not running anymore.
 var ErrExitedUnexpectedly = errors.New("container exited unexpectedly")
