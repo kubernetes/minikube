@@ -91,6 +91,12 @@ var vmProblems = map[string]match{
 		Advice: "minikube is not yet compatible with ChromeOS",
 		Issues: []int{6411},
 	},
+	"DOCKER_PROVISION_STUCK_CONTAINER": {
+		Regexp: re(`executing "" at <index (index .NetworkSettings.Ports "22/tcp") 0>`),
+		Advice: "Restart Docker, Ensure docker is running and then run: 'minikube delete' and then 'minikube start' again",
+		URL:    "https://github.com/kubernetes/minikube/issues/8163#issuecomment-652627436",
+		Issues: []int{8163},
+	},
 	// Hyperkit
 	"HYPERKIT_NO_IP": {
 		Regexp: re(`IP address never found in dhcp leases file Temporary Error: Could not find an IP address for`),

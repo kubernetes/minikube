@@ -45,6 +45,13 @@ func MakeTempDir() string {
 	return localpath.MiniPath()
 }
 
+func RemoveTempDir(tempdir string) {
+	if filepath.Base(tempdir) == ".minikube" {
+		tempdir = filepath.Dir(tempdir)
+	}
+	os.RemoveAll(tempdir)
+}
+
 // FakeFile satisfies fdWriter
 type FakeFile struct {
 	b bytes.Buffer

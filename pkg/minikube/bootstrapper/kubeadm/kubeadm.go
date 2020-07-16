@@ -55,6 +55,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
@@ -224,9 +225,18 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	conf := bsutil.KubeadmYamlPath
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
+	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
+	defer cancel()
+	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	if _, err := k.c.RunCmd(c); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return ErrInitTimedout
+		}
+
+		if strings.Contains(err.Error(), "'kubeadm': Permission denied") {
+			return ErrNoExecLinux
+		}
 		return errors.Wrap(err, "run")
 	}
 
@@ -281,9 +291,9 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "cni apply")
 	}
 
-	if cfg.KubernetesConfig.ContainerRuntime == "crio" {
-		if err := sysinit.New(k.c).Restart("crio"); err != nil {
-			glog.Errorf("failed to restart CRI: %v", err)
+	if cfg.KubernetesConfig.ContainerRuntime == constants.CRIO {
+		if err := cruntime.UpdateCRIONet(k.c, cnm.CIDR()); err != nil {
+			return errors.Wrap(err, "update crio")
 		}
 	}
 
@@ -348,11 +358,15 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
-	if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
-		glog.Warningf("delete failed: %v", err)
+	// retry again if it is not a fail fast error
+	if _, ff := err.(*FailFastError); !ff {
+		out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
+		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
+			glog.Warningf("delete failed: %v", err)
+		}
+		return k.init(cfg)
 	}
-	return k.init(cfg)
+	return err
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
@@ -387,6 +401,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
+	register.Reg.SetStep(register.VerifyingKubernetes)
 	out.T(out.HealthCheck, "Verifying Kubernetes components...")
 
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
@@ -820,8 +835,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
 	nameLbl := "minikube.k8s.io/name=" + cfg.Name
 
-	// Allow no more than 5 seconds for applying labels
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
 	defer cancel()
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl label nodes minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
@@ -830,6 +844,9 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 
 	if _, err := k.c.RunCmd(cmd); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return errors.Wrapf(err, "timeout apply labels")
+		}
 		return errors.Wrapf(err, "applying node labels")
 	}
 	return nil

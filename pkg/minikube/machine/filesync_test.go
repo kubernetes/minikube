@@ -17,25 +17,15 @@ limitations under the License.
 package machine
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	testutil "k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
-
-func setupTestDir() (string, error) {
-	path, err := ioutil.TempDir("", "minipath")
-	if err != nil {
-		return "", err
-	}
-
-	os.Setenv(localpath.MinikubeHome, path)
-	return path, err
-}
 
 func TestAssetsFromDir(t *testing.T) {
 	tests := []struct {
@@ -107,17 +97,8 @@ func TestAssetsFromDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			testDir, err := setupTestDir()
-			defer func() { //clean up tempdir
-				err := os.RemoveAll(testDir)
-				if err != nil {
-					t.Errorf("failed to clean up temp folder  %q", testDir)
-				}
-			}()
-			if err != nil {
-				t.Errorf("got unexpected error creating test dir: %v", err)
-				return
-			}
+			testDir := testutil.MakeTempDir()
+			defer testutil.RemoveTempDir(testDir)
 
 			testDirs = append(testDirs, testDir)
 			testFileBaseDir := filepath.Join(testDir, test.baseDir)

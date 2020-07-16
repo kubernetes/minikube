@@ -26,6 +26,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var (
@@ -39,13 +40,17 @@ func EnableMock(b bool) {
 
 // download is a well-configured atomic download function
 func download(src string, dst string) error {
+	progress := getter.WithProgress(DefaultProgressBar)
+	if out.JSON {
+		progress = getter.WithProgress(DefaultJSONOutput)
+	}
 	tmpDst := dst + ".download"
 	client := &getter.Client{
 		Src:     src,
 		Dst:     tmpDst,
 		Dir:     false,
 		Mode:    getter.ClientModeFile,
-		Options: []getter.ClientOption{getter.WithProgress(DefaultProgressBar)},
+		Options: []getter.ClientOption{progress},
 		Getters: map[string]getter.Getter{
 			"file":  &getter.FileGetter{Copy: false},
 			"http":  &getter.HttpGetter{Netrc: false},

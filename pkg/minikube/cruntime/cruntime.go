@@ -47,6 +47,11 @@ func (cs ContainerState) String() string {
 	return [...]string{"all", "running", "paused"}[cs]
 }
 
+// ValidRuntimes lists the supported container runtimes
+func ValidRuntimes() []string {
+	return []string{"docker", "cri-o", "containerd"}
+}
+
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
@@ -208,7 +213,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 // enableIPForwarding configures IP forwarding, which is handled normally by Docker
 // Context: https://github.com/kubernetes/kubeadm/issues/1062
 func enableIPForwarding(cr CommandRunner) error {
-	c := exec.Command("sudo", "sysctl", "net.netfilter.nf_conntrack_count")
+	c := exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables")
 	if rr, err := cr.RunCmd(c); err != nil {
 		glog.Infof("couldn't verify netfilter by %q which might be okay. error: %v", rr.Command(), err)
 		c = exec.Command("sudo", "modprobe", "br_netfilter")

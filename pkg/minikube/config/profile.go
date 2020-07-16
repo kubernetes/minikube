@@ -84,13 +84,13 @@ func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 	return cp, nil
 }
 
-// ProfileNameValid checks if the profile name is container name friendly
+// ProfileNameValid checks if the profile name is container name and DNS hostname/label friendly.
 func ProfileNameValid(name string) bool {
+	// RestrictedNamePattern describes the characters allowed to represent a profile's name
+	const RestrictedNamePattern = `(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])`
 
-	// RestrictedNameChars collects the characters allowed to represent a name
-	const RestrictedNameChars = `[a-zA-Z0-9][a-zA-Z0-9_.-]`
+	var validName = regexp.MustCompile(`^` + RestrictedNamePattern + `$`)
 
-	var validName = regexp.MustCompile(`^` + RestrictedNameChars + `+$`)
 	return validName.MatchString(name)
 }
 
@@ -181,6 +181,7 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 	if err = os.Rename(tf.Name(), path); err != nil {
 		return err
 	}
+
 	return nil
 }
 
