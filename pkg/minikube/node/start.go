@@ -53,6 +53,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
@@ -110,8 +111,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		// setup kubeadm (must come after setupKubeconfig)
 		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
 		err = bs.StartCluster(*starter.Cfg)
-
 		if err != nil {
+			MaybeExitWithAdvice(err)
 			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 			return nil, err
 		}
@@ -204,8 +205,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 }
 
 // Provision provisions the machine/container for the node
-func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
-
+func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+	register.Reg.SetStep(register.StartingNode)
 	name := driver.MachineName(*cc, *n)
 	if apiServer {
 		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
@@ -230,7 +231,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (comman
 	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
 	waitDownloadKicBaseImage(&kicGroup)
 
-	return startMachine(cc, n)
+	return startMachine(cc, n, delOnFail)
 
 }
 
@@ -288,7 +289,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		exit.WithError("Failed to get bootstrapper", err)
 	}
 	for _, eo := range config.ExtraOptions {
-		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
+		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
 	// update cluster and set up certs
@@ -336,12 +337,12 @@ func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, 
 }
 
 // StartMachine starts a VM
-func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists, err = startHost(m, cfg, node)
+	host, preExists, err = startHost(m, cfg, node, delOnFail)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
 	}
@@ -365,7 +366,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
+func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
 		return host, exists, nil
@@ -379,7 +380,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*h
 		}
 	}
 
-	if _, ff := err.(oci.FailFastError); ff {
+	if _, ff := err.(*oci.FailFastError); ff {
 		glog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
 		return host, exists, err
 	}
@@ -387,6 +388,15 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*h
 	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
 	// Try again, but just once to avoid making the logs overly confusing
 	time.Sleep(5 * time.Second)
+
+	if delOnFail {
+		glog.Info("Deleting existing host since delete-on-failure was set.")
+		// Delete the failed existing host
+		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
+		if err != nil {
+			glog.Warningf("delete host: %v", err)
+		}
+	}
 
 	host, exists, err = machine.StartHost(api, cc, n)
 	if err == nil {
@@ -414,7 +424,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 				out.T(out.Internet, "Found network options:")
 				optSeen = true
 			}
-			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
+			out.Infof("{{.key}}={{.value}}", out.V{"key": k, "value": v})
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
 			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {

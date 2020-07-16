@@ -15,6 +15,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.13.9'
+          stable: true
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -38,6 +42,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.13.9'
+          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -53,6 +61,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.13.9'
+          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -180,6 +192,16 @@ jobs:
         run: |
           brew install docker-machine docker
           sudo docker --version
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          VBoxManage --version
+          sysctl hw.physicalcpu hw.logicalcpu 
+      - name: Disable firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -652,6 +674,16 @@ jobs:
         run: |
           brew install docker-machine docker
           sudo docker --version
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          VBoxManage --version
+          sysctl hw.physicalcpu hw.logicalcpu 
+      - name: Disable firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k      
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -816,6 +848,16 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          VBoxManage --version
+          sysctl hw.physicalcpu hw.logicalcpu 
+      - name: Disable firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Run Integration Test
         continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
@@ -974,6 +1016,16 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          VBoxManage --version
+          sysctl hw.physicalcpu hw.logicalcpu 
+      - name: Disable firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of

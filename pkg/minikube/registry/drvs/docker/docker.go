@@ -37,21 +37,12 @@ import (
 var docURL = "https://minikube.sigs.k8s.io/docs/drivers/docker/"
 
 func init() {
-	priority := registry.Default
-	// Staged rollout for preferred:
-	// - Linux
-	// - Windows (once "service" command works)
-	// - macOS
-	if runtime.GOOS == "linux" {
-		priority = registry.Preferred
-	}
-
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
-		Priority: priority,
+		Priority: registry.HighlyPreferred,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
