@@ -48,11 +48,12 @@ define CONTAINERD_BIN_INSTALL_TARGET_CMDS
 endef
 
 define CONTAINERD_BIN_INSTALL_INIT_SYSTEMD
-	$(INSTALL) -Dm755 \
+	$(INSTALL) -Dm644 \
 		$(CONTAINERD_BIN_PKGDIR)/containerd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/containerd.service
-	$(call link-service,containerd.service)
-	$(call link-service,containerd-shutdown.service)
+	$(INSTALL) -Dm644 \
+		$(CONTAINERD_BIN_PKGDIR)/50-minikube.preset \
+		$(TARGET_DIR)/usr/lib/systemd/system-preset/50-minikube.preset
 endef
 
 $(eval $(generic-package))

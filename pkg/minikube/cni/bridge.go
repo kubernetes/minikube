@@ -82,6 +82,7 @@ func (c Bridge) Apply(r Runner) error {
 	if err := r.Copy(f); err != nil {
 		return errors.Wrapf(err, "copy")
 	}
+
 	return nil
 }
 

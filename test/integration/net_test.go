@@ -34,6 +34,9 @@ import (
 
 func TestNetworkPlugins(t *testing.T) {
 	MaybeParallel(t)
+	if NoneDriver() {
+		t.Skip("skipping since test for none driver")
+	}
 
 	t.Run("group", func(t *testing.T) {
 		tests := []struct {
@@ -67,7 +70,7 @@ func TestNetworkPlugins(t *testing.T) {
 				profile := UniqueProfileName(tc.name)
 
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer Cleanup(t, profile, cancel)
+				defer CleanupWithLogs(t, profile, cancel)
 
 				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=25m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
@@ -88,7 +91,16 @@ func TestNetworkPlugins(t *testing.T) {
 				}
 				if !t.Failed() {
 					t.Run("KubeletFlags", func(t *testing.T) {
-						rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
+						var rr *RunResult
+						var err error
+
+						// none does not support 'minikube ssh'
+						if NoneDriver() {
+							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
+						} else {
+							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
+						}
+
 						if err != nil {
 							t.Fatalf("ssh failed: %v", err)
 						}
@@ -130,6 +142,10 @@ func TestNetworkPlugins(t *testing.T) {
 					})
 				}
 
+				if strings.Contains(tc.name, "weave") {
+					t.Skipf("skipping remaining tests for weave, as results can be unpredictable")
+				}
+
 				if !t.Failed() {
 					t.Run("DNS", func(t *testing.T) {
 						var rr *RunResult
@@ -167,10 +183,6 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() {
 					t.Run("HairPin", func(t *testing.T) {
-						if strings.Contains(tc.name, "weave") {
-							t.Skipf("skipping: weavenet hairpin results vary substantially across environments")
-						}
-
 						tryHairPin := func() error {
 							_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
 							return err

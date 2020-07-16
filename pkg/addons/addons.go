@@ -28,8 +28,10 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -38,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -311,6 +314,30 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	return enableOrDisableAddon(cc, name, val)
 }
 
+func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
+	glog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+
+	label, ok := addonPodLabels[name]
+	if ok && enable {
+		out.T(out.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
+		client, err := kapi.Client(viper.GetString(config.ProfileName))
+		if err != nil {
+			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
+		}
+
+		err = kapi.WaitForPods(client, "kube-system", label, time.Minute*3)
+		if err != nil {
+			return errors.Wrapf(err, "verifying %s addon pods : %v", name, err)
+		}
+
+	}
+	return nil
+}
+
 // Start enables the default addons for a profile, plus any additional
 func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, additional []string) {
 	wg.Add(1)
@@ -356,6 +383,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	var awg sync.WaitGroup
 
 	defer func() { // making it show after verifications( not perfect till #7613 is closed)
+		register.Reg.SetStep(register.EnablingAddons)
 		out.T(out.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
 	}()
 	for _, a := range toEnableList {
