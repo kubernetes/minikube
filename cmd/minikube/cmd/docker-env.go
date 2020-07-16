@@ -109,7 +109,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if dockerPath != "" {
-			out, err := daemonenv.TryDockerConnectivity("docker", ec)
+			out, err := daemonenv.TryConnectivity("docker", ec)
 			if err != nil { // docker might be up but been loaded with wrong certs/config
 				// to fix issues like this #8185
 				glog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)

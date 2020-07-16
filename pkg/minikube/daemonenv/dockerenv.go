@@ -24,7 +24,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -176,12 +175,4 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 		envVarList = append(envVarList, fmt.Sprintf("%s=%s", k, v))
 	}
 	return envVarList
-}
-
-// TryDockerConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
-func TryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
-	c := exec.Command(bin, "version", "--format={{.Server}}")
-	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
-	glog.Infof("Testing Docker connectivity with: %v", c)
-	return c.CombinedOutput()
 }
