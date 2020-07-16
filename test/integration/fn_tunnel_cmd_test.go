@@ -126,7 +126,7 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 
 	if runtime.GOOS == "windows" {
 		cmd = "powershell"
-		args = []string{fmt.Sprintf("Start-Process %v -ArgumentList \"-p %v tunnel --alsologtostderr\" -Verb RunAs -WindowStyle Hidden", Target(), profile)}
+		args = []string{"Start-Process " + Target() + " -ArgumentList \"-p " + profile + " tunnel --alsologtostderr\" -Verb RunAs -WindowStyle Hidden"}
 	} else {
 		cmd = Target()
 		args = []string{"-p", profile, "tunnel", "--alsologtostderr"}
@@ -165,6 +165,9 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	t.Run("IngressIP", func(t *testing.T) {
+		if HyperVDriver() {
+			t.Skip("The test WaitService/IngressIP is broken on hyperv https://github.com/kubernetes/minikube/issues/8381")
+		}
 		// Wait until the nginx-svc has a loadbalancer ingress IP
 		err = wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
