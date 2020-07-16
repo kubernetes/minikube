@@ -17,11 +17,12 @@ limitations under the License.
 package mustload
 
 import (
+	"path/filepath"
 	"testing"
 )
 
 func TestPartial(t *testing.T) {
-	path := "../config/testdata/profile/.minikube"
+	path := filepath.Join("..", "config", "testdata", "profile", ".minikube")
 	name := "p1"
 	api, cc := Partial(name, path)
 
