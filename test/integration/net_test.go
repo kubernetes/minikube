@@ -157,7 +157,7 @@ func TestNetworkPlugins(t *testing.T) {
 						}
 
 						// If the coredns process was stable, this retry wouldn't be necessary.
-						if err := retry.Expo(nslookup, 1*time.Second, Minutes(2)); err != nil {
+						if err := retry.Expo(nslookup, 1*time.Second, Minutes(6)); err != nil {
 							t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
 						}
 
