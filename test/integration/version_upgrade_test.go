@@ -58,6 +58,11 @@ func installRelease(version string) (f *os.File, err error) {
 	return tf, nil
 }
 
+// legacyStartArgs returns the arguments normally used for starting older versions of minikube
+func legacyStartArgs() []string {
+	return strings.Split(strings.Replace(*startArgs, "--driver", "--vm-driver", -1), " ")
+}
+
 // TestRunningBinaryUpgrade does an upgrade test on a running cluster
 func TestRunningBinaryUpgrade(t *testing.T) {
 	MaybeParallel(t)
@@ -79,7 +84,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	}
 	defer os.Remove(tf.Name())
 
-	args := append([]string{"start", "-p", profile, "--memory=2200"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2200"}, legacyStartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
@@ -122,7 +127,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	}
 	defer os.Remove(tf.Name())
 
-	args := append([]string{"start", "-p", profile, "--memory=2200"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2200"}, legacyStartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
