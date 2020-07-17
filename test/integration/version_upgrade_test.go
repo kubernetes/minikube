@@ -134,8 +134,8 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 }
 
-// TestMissingUpgrade tests a Docker upgrade where the underlying container is missing
-func TestMissingUpgrade(t *testing.T) {
+// TestMissingContainerUpgrade tests a Docker upgrade where the underlying container is missing
+func TestMissingContainerUpgrade(t *testing.T) {
 	if !DockerDriver() {
 		t.Skipf("This test is only for Docker")
 	}
@@ -190,6 +190,6 @@ func TestMissingUpgrade(t *testing.T) {
 	args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("failed to start minikube HEAD with newest k8s version. args: %s : %v", rr.Command(), err)
+		t.Errorf("failed missing container upgrade from %s. args: %s : %v", legacyVersion, rr.Command(), err)
 	}
 }
