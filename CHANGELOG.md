@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 1.12.1 - 2020-07-17
+
+Features:
+* Add support for Calico CNI (--cni=calico) [#8571](https://github.com/kubernetes/minikube/pull/8571)
+* Add support for Cilium CNI (--cni=cilium) [#8573](https://github.com/kubernetes/minikube/pull/8573)
+
+
+Bug Fixes:
+* Fix bugs which prevented upgrades from v1.0+ to v1.12 [#8741](https://github.com/kubernetes/minikube/pull/8741)
+* Add KicBaseImage to existing config if missing (fixes v1.9.x upgrade) [#8738](https://github.com/kubernetes/minikube/pull/8738)
+* multinode: fix control plane not ready on restart [#8698](https://github.com/kubernetes/minikube/pull/8698)
+* none CNI: error if portmap plug-in is required but unavailable [#8684](https://github.com/kubernetes/minikube/pull/8684)
+
+Version Upgrades:
+* ingress addon: bump to latest version [#8705](https://github.com/kubernetes/minikube/pull/8705)
+* Upgrade go version to 1.14.4 [#8660](https://github.com/kubernetes/minikube/pull/8660)
+
+Huge thank you for this release towards our contributors: 
+- Anders F Björklund
+- Harsh Modi
+- James Lucktaylor
+- Medya Ghazizadeh
+- Michael Vorburger ⛑️
+- Prasad Katti
+- Priya Wadhwa
+- RA489
+- Sharif Elgamal
+- Sun-Li Beatteay
+- Tam Mach
+- Thomas Strömberg
+- jinhong.kim
+
+
+
 ## Version 1.12.0 - 2020-07-09
 
 Features:
