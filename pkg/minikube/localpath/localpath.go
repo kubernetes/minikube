@@ -79,7 +79,7 @@ func ClientCert(name string) string {
 		return new
 	}
 
-	glog.Errorf("unable to find a client cert, returning default: %s", new)
+	glog.Infof("unable to find a client cert, returning default: %s", new)
 	return new
 }
 
