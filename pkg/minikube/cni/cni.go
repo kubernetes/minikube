@@ -82,6 +82,10 @@ func New(cc config.ClusterConfig) (Manager, error) {
 		return KindNet{cc: cc}, nil
 	case "bridge":
 		return Bridge{cc: cc}, nil
+	case "calico":
+		return Calico{cc: cc}, nil
+	case "cilium":
+		return Cilium{cc: cc}, nil
 	case "flannel":
 		return Flannel{cc: cc}, nil
 	default:

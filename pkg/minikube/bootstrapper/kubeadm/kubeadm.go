@@ -396,16 +396,15 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 
-	if !n.ControlPlane {
-		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
-		return nil
-	}
-
 	register.Reg.SetStep(register.VerifyingKubernetes)
 	out.T(out.HealthCheck, "Verifying Kubernetes components...")
 
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
-	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &n, cfg.Driver)
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "get primary control plane")
+	}
+	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
 	}
@@ -430,31 +429,33 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
 	}
 
-	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
-		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
-			return errors.Wrap(err, "wait for apiserver proc")
+	if n.ControlPlane {
+		if cfg.VerifyComponents[kverify.APIServerWaitKey] {
+			if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
+				return errors.Wrap(err, "wait for apiserver proc")
+			}
+
+			if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
+				return errors.Wrap(err, "wait for healthy API server")
+			}
 		}
 
-		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
-			return errors.Wrap(err, "wait for healthy API server")
+		if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
+			if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
+				return errors.Wrap(err, "waiting for system pods")
+			}
 		}
-	}
 
-	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
-		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
-			return errors.Wrap(err, "waiting for system pods")
+		if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+			if err := kverify.WaitForDefaultSA(client, timeout); err != nil {
+				return errors.Wrap(err, "waiting for default service account")
+			}
 		}
-	}
 
-	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
-		if err := kverify.WaitForDefaultSA(client, timeout); err != nil {
-			return errors.Wrap(err, "waiting for default service account")
-		}
-	}
-
-	if cfg.VerifyComponents[kverify.AppsRunningKey] {
-		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
-			return errors.Wrap(err, "waiting for apps_running")
+		if cfg.VerifyComponents[kverify.AppsRunningKey] {
+			if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
+				return errors.Wrap(err, "waiting for apps_running")
+			}
 		}
 	}
 
@@ -730,7 +731,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) er
 	return err
 }
 
-// UpdateCluster updates the cluster.
+// UpdateCluster updates the control plane with cluster-level info.
 func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
@@ -753,11 +754,14 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		}
 	}
 
-	for _, n := range cfg.Nodes {
-		err := k.UpdateNode(cfg, n, r)
-		if err != nil {
-			return errors.Wrap(err, "updating node")
-		}
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "getting control plane")
+	}
+
+	err = k.UpdateNode(cfg, cp, r)
+	if err != nil {
+		return errors.Wrap(err, "updating control plane")
 	}
 
 	return nil
