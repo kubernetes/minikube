@@ -337,6 +337,8 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	}
 
+	glog.Infof("config:\n%+v", cc)
+
 	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
 	if err != nil {
 		return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
@@ -355,9 +357,33 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	return createNode(cc, kubeNodeName, existing)
 }
 
+// upgradeExistingConfig upgrades legacy configuration files
+func upgradeExistingConfig(cc *config.ClusterConfig) {
+	if cc == nil {
+		return
+	}
+
+	if cc.VMDriver != "" && cc.Driver == "" {
+		glog.Infof("config upgrade: Driver=%s", cc.VMDriver)
+		cc.Driver = cc.VMDriver
+	}
+
+	if cc.Name == "" {
+		glog.Infof("config upgrade: Name=%s", ClusterFlagValue())
+		cc.Name = ClusterFlagValue()
+	}
+
+	if cc.KicBaseImage == "" {
+		// defaults to kic.BaseImage
+		cc.KicBaseImage = viper.GetString(kicBaseImage)
+		glog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
+	}
+}
+
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
+
 	validateFlags(cmd, existing.Driver)
 
 	cc := *existing
