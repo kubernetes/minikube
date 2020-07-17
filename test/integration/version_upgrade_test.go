@@ -214,8 +214,8 @@ func TestKubernetesUpgrade(t *testing.T) {
 	}
 }
 
-// TestMissingUpgrade tests a Docker upgrade where the underlying container is missing
-func TestMissingUpgrade(t *testing.T) {
+// TestMissingContainerUpgrade tests a Docker upgrade where the underlying container is missing
+func TestMissingContainerUpgrade(t *testing.T) {
 	if !DockerDriver() {
 		t.Skipf("This test is only for Docker")
 	}
