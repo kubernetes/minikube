@@ -267,3 +267,63 @@ func TestMissingContainerUpgrade(t *testing.T) {
 		t.Errorf("failed missing container upgrade from %s. args: %s : %v", legacyVersion, rr.Command(), err)
 	}
 }
+
+// TestMissingContainerUpgrade tests a Docker upgrade where the underlying container is missing
+func TestMissingContainerUpgrade(t *testing.T) {
+	if !DockerDriver() {
+		t.Skipf("This test is only for Docker")
+	}
+
+	MaybeParallel(t)
+	profile := UniqueProfileName("missing-upgrade")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
+
+	defer CleanupWithLogs(t, profile, cancel)
+
+	legacyVersion := "v1.9.1"
+	tf, err := ioutil.TempFile("", fmt.Sprintf("minikube-%s.*.exe", legacyVersion))
+	if err != nil {
+		t.Fatalf("tempfile: %v", err)
+	}
+	defer os.Remove(tf.Name())
+	tf.Close()
+
+	url := pkgutil.GetBinaryDownloadURL(legacyVersion, runtime.GOOS)
+	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, Minutes(3)); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(tf.Name(), 0700); err != nil {
+			t.Errorf("chmod: %v", err)
+		}
+	}
+
+	args := append([]string{"start", "-p", profile, "--memory=2200"}, StartArgs()...)
+	rr := &RunResult{}
+	r := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
+		return err
+	}
+
+	// Retry up to two times, to allow flakiness for the previous release
+	if err := retry.Expo(r, 1*time.Second, Minutes(30), 2); err != nil {
+		t.Fatalf("release start failed: %v", err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "stop", profile))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "rm", profile))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("failed missing container upgrade from %s. args: %s : %v", legacyVersion, rr.Command(), err)
+	}
+}
