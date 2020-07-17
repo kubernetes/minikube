@@ -24,12 +24,14 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/retry"
 
+	"github.com/docker/machine/libmachine/state"
 	"github.com/hashicorp/go-getter"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
@@ -158,9 +160,19 @@ func TestKubernetesUpgrade(t *testing.T) {
 		t.Errorf("failed to start minikube HEAD with oldest k8s version: %s: %v", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
 	if err != nil {
-		t.Errorf("failed to stop cluster: %s: %v", rr.Command(), err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.Host}}"))
+	if err != nil {
+		t.Logf("status error: %v (may be ok)", err)
+	}
+
+	got := strings.TrimSpace(rr.Stdout.String())
+	if got != state.Stopped.String() {
+		t.Errorf("FAILED: status = %q; want = %q", got, state.Stopped.String())
 	}
 
 	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
