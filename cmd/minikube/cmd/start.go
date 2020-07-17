@@ -155,7 +155,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
-	upgradeExistingConfig(existing)
+	if existing != nil {
+		upgradeExistingConfig(existing)
+	}
 
 	validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
