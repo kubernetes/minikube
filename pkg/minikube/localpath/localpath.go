@@ -76,10 +76,8 @@ func ClientCert(name string) string {
 			glog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
 			return legacy
 		}
-		return new
 	}
 
-	glog.Infof("unable to find a client cert, returning default: %s", new)
 	return new
 }
 
@@ -98,10 +96,8 @@ func ClientKey(name string) string {
 			glog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
 			return legacy
 		}
-		return new
 	}
 
-	glog.Errorf("unable to find a client key, returning default: %s", new)
 	return new
 }
 
