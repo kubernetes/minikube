@@ -10,7 +10,6 @@ Features:
 Bug Fixes:
 * Fix bugs which prevented upgrades from v1.0+ to v1.12 [#8741](https://github.com/kubernetes/minikube/pull/8741)
 * Add KicBaseImage to existing config if missing (fixes v1.9.x upgrade) [#8738](https://github.com/kubernetes/minikube/pull/8738)
-* add required quote to alias kubectl [#8747](https://github.com/kubernetes/minikube/pull/8747)
 * multinode: fix control plane not ready on restart [#8698](https://github.com/kubernetes/minikube/pull/8698)
 * none CNI: error if portmap plug-in is required but unavailable [#8684](https://github.com/kubernetes/minikube/pull/8684)
 
