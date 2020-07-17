@@ -358,6 +358,11 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
+	// Upgrade legacy config
+	if existing.VMDriver != "" {
+		existing.Driver = existing.VMDriver
+	}
+
 	validateFlags(cmd, existing.Driver)
 
 	cc := *existing
@@ -553,7 +558,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 	}
 
-	if cmd.Flags().Changed(kicBaseImage) {
+	if cmd.Flags().Changed(kicBaseImage) || cc.KicBaseImage == "" {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
 	}
 
