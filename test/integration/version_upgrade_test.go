@@ -59,7 +59,7 @@ func installRelease(version string) (f *os.File, err error) {
 // TestRunningBinaryUpgrade does an upgrade test on a running cluster
 func TestRunningBinaryUpgrade(t *testing.T) {
 	MaybeParallel(t)
-	profile := UniqueProfileName("binary-upgrade")
+	profile := UniqueProfileName("running-upgrade")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
 
 	defer CleanupWithLogs(t, profile, cancel)
@@ -100,7 +100,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 func TestStoppedBinaryUpgrade(t *testing.T) {
 
 	MaybeParallel(t)
-	profile := UniqueProfileName("binary-upgrade")
+	profile := UniqueProfileName("stopped-upgrade")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
 
 	defer CleanupWithLogs(t, profile, cancel)
