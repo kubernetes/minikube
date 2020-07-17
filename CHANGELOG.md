@@ -4,6 +4,8 @@
 
 Features:
 * Add support for Calico CNI (--cni=calico) [#8571](https://github.com/kubernetes/minikube/pull/8571)
+* Add support for Cilium CNI (--cni=cilium) [#8573](https://github.com/kubernetes/minikube/pull/8573)
+
 
 Bug Fixes:
 * Fix bugs which prevented upgrades from v1.0+ to v1.12 [#8741](https://github.com/kubernetes/minikube/pull/8741)
