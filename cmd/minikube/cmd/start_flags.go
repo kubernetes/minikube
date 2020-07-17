@@ -359,6 +359,10 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 // upgradeExistingConfig upgrades legacy configuration files
 func upgradeExistingConfig(cc *config.ClusterConfig) {
+	if cc == nil {
+		return
+	}
+
 	if cc.VMDriver != "" && cc.Driver == "" {
 		glog.Infof("config upgrade: Driver=%s", cc.VMDriver)
 		cc.Driver = cc.VMDriver
