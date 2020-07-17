@@ -155,6 +155,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
+	upgradeExistingConfig(existing)
+
 	validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
 	ds, alts, specified := selectDriver(existing)
@@ -562,7 +564,10 @@ func hostDriver(existing *config.ClusterConfig) string {
 	machineName := driver.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
-		glog.Warningf("selectDriver api.Load: %v", err)
+		glog.Warningf("api.Load failed for %s: %v", machineName, err)
+		if existing.VMDriver != "" {
+			return existing.VMDriver
+		}
 		return existing.Driver
 	}
 
