@@ -154,7 +154,7 @@ func suggestFix(stderr string, err error) registry.State {
 	}
 
 	if strings.Contains(stderr, "/pipe/docker_engine: The system cannot find the file specified.") && runtime.GOOS == "windows" {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker service. If already started, you may need to reset Docker to factory settings: under Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
 	}
 
 	if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") || strings.Contains(stderr, "docker daemon is not running") {
