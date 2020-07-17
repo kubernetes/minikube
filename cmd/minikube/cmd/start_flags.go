@@ -368,6 +368,12 @@ func upgradeExistingConfig(cc *config.ClusterConfig) {
 		glog.Infof("config upgrade: Name=%s", ClusterFlagValue())
 		cc.Name = ClusterFlagValue()
 	}
+
+	if cc.KicBaseImage == "" {
+		// defaults to kic.BaseImage
+		cc.KicBaseImage = viper.GetString(kicBaseImage)
+		glog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
+	}
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
@@ -569,7 +575,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 	}
 
-	if cmd.Flags().Changed(kicBaseImage) || cc.KicBaseImage == "" {
+	if cmd.Flags().Changed(kicBaseImage) {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
 	}
 
