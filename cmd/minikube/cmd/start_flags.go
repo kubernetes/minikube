@@ -553,7 +553,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 	}
 
-	if cmd.Flags().Changed(kicBaseImage) {
+	// Handle flags and legacy configuration upgrades that do not contain KicBaseImage
+	if cmd.Flags().Changed(kicBaseImage) || cc.KicBaseImage == "" {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
 	}
 
