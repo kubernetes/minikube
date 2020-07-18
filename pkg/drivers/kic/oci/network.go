@@ -162,3 +162,30 @@ func dockerContainerIP(name string) (string, string, error) {
 
 	return ips[0], ips[1], nil
 }
+
+// CreateNetwork creates a network
+func CreateNetwork(name, ipRange string) error {
+	// TODO: validate if exist?
+	// TODO: subnet conflict
+	// TODO: configure gateway explictly
+
+	subnet := fmt.Sprintf("--subnet=%s", ipRange)
+	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, name))
+	if err != nil {
+		return errors.Wrapf(err, "error creating network")
+	}
+
+	return nil
+}
+
+// RemoveNetwork removes a network
+func RemoveNetwork(name string) error {
+	// TODO: check if exist?
+
+	_, err := runCmd(exec.Command(Docker, "network", "remove", name))
+	if err != nil {
+		return errors.Wrapf(err, "error removing network")
+	}
+
+	return nil
+}
