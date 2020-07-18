@@ -48,6 +48,8 @@ type CreateParams struct {
 	Envs          map[string]string // environment variables to pass to the container
 	ExtraArgs     []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	OCIBinary     string            // docker or podman
+	Network       string            // network used by the container
+	IP            string            // container ip address
 }
 
 // createOpt is an option for Create

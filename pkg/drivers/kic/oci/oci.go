@@ -142,6 +142,13 @@ func CreateContainerNode(p CreateParams) error {
 		"--label", p.NodeLabel,
 	}
 
+	// network
+	if p.OCIBinary == Docker && runtime.GOOS == "linux" { // for now only docker on linux
+		runArgs = append(runArgs, "--network", p.Network)
+		runArgs = append(runArgs, "--ip", p.IP)
+	}
+
+	// volume
 	if p.OCIBinary == Podman { // enable execing in /var
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
