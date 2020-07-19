@@ -193,7 +193,7 @@ func (d *Driver) GetIP() (string, error) {
 	return ip, err
 }
 
-// GetExternalIP returns an IP which is accissble from outside
+// GetExternalIP returns an IP which is accessible from outside
 func (d *Driver) GetExternalIP() (string, error) {
 	return oci.DefaultBindIPV4, nil
 }

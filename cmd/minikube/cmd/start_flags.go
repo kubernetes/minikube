@@ -135,7 +135,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "Kubelet network plug-in to use (default: auto)")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=bridge")
-	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use. Valid options: auto, bridge, flannel, kindnet, or path to a CNI manifest (default: auto)")
+	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)")
 	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
@@ -337,6 +337,8 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	}
 
+	glog.Infof("config:\n%+v", cc)
+
 	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
 	if err != nil {
 		return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
@@ -355,9 +357,33 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	return createNode(cc, kubeNodeName, existing)
 }
 
+// upgradeExistingConfig upgrades legacy configuration files
+func upgradeExistingConfig(cc *config.ClusterConfig) {
+	if cc == nil {
+		return
+	}
+
+	if cc.VMDriver != "" && cc.Driver == "" {
+		glog.Infof("config upgrade: Driver=%s", cc.VMDriver)
+		cc.Driver = cc.VMDriver
+	}
+
+	if cc.Name == "" {
+		glog.Infof("config upgrade: Name=%s", ClusterFlagValue())
+		cc.Name = ClusterFlagValue()
+	}
+
+	if cc.KicBaseImage == "" {
+		// defaults to kic.BaseImage
+		cc.KicBaseImage = viper.GetString(kicBaseImage)
+		glog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
+	}
+}
+
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
+
 	validateFlags(cmd, existing.Driver)
 
 	cc := *existing
@@ -553,7 +579,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 	}
 
-	if cmd.Flags().Changed(kicBaseImage) {
+	// Handle flags and legacy configuration upgrades that do not contain KicBaseImage
+	if cmd.Flags().Changed(kicBaseImage) || cc.KicBaseImage == "" {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
 	}
 
