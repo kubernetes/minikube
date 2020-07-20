@@ -103,7 +103,7 @@ jobs:
           echo "--------------------------"
           docker system df || true
           echo "--------------------------"
-          docker system info || true
+          docker system info --format='{{json .}}'|| true
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
