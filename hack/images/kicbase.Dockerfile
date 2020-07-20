@@ -28,6 +28,11 @@ RUN apt-get install -y --no-install-recommends podman
 # install varlink
 RUN apt-get install -y --no-install-recommends varlink
 
+# automount service
+COPY automount/minikube-automount /usr/sbin/minikube-automount
+COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
+RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
+    /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
