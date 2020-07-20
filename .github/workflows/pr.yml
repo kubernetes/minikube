@@ -99,11 +99,11 @@ jobs:
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
-          docker info || true
+          docker info --format='{{json .}}' || true
           echo "--------------------------"
           docker system df || true
           echo "--------------------------"
-          docker system info || true
+          docker system info --format='{{json .}}'|| true
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"

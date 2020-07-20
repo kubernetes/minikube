@@ -232,10 +232,15 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			if err != nil {
 				exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 			}
+			if driver.IsKIC(drvName) && mem > containerLimit {
+				exit.UsageT("{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
+			}
 
 		} else {
 			glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 		}
+
+		validateMemorySize(mem, drvName)
 
 		diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
