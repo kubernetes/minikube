@@ -6,8 +6,6 @@ build:
       context: leeroy-web
     - image: leeroy-app
       context: leeroy-app
-  local:
-    push: false
 deploy:
   kubectl:
     manifests:
