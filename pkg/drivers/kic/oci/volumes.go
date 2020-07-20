@@ -106,3 +106,14 @@ func createVolume(ociBin string, profile string, nodeName string) error {
 	}
 	return nil
 }
+
+// prepareVolume will copy the initial content of the mount point by starting a container to check the expected content
+func prepareVolume(ociBin string, imageName string, nodeName string) error {
+	cmdArgs := []string{"run", "--rm", "--entrypoint", "/usr/bin/test"}
+	cmdArgs = append(cmdArgs, "-v", fmt.Sprintf("%s:/var", nodeName), imageName, "-d", "/var/lib")
+	cmd := exec.Command(ociBin, cmdArgs...)
+	if _, err := runCmd(cmd); err != nil {
+		return err
+	}
+	return nil
+}

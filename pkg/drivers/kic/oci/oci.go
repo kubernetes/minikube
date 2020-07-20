@@ -99,6 +99,10 @@ func PrepareContainerNode(p CreateParams) error {
 		return errors.Wrapf(err, "creating volume for %s container", p.Name)
 	}
 	glog.Infof("Successfully created a %s volume %s", p.OCIBinary, p.Name)
+	if err := prepareVolume(p.OCIBinary, p.Image, p.Name); err != nil {
+		return errors.Wrapf(err, "preparing volume for %s container", p.Name)
+	}
+	glog.Infof("Successfully prepared a %s volume %s", p.OCIBinary, p.Name)
 	return nil
 }
 
