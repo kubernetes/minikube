@@ -26,7 +26,7 @@ Please send a PR to suggest any improvements to it.
 
 ## (#3) Support all Kubernetes features
 
-- [ ] Multi-node
+- [x] Multi-node
 - [ ] IPv6
 - [ ] Usage documentation for 3 leading CNI providers
 - [ ] Automatically publish conformance test results after a release
@@ -34,8 +34,8 @@ Please send a PR to suggest any improvements to it.
 ## (#4) Cross-platform
 
 - [x] VM-free deployment to containers (Docker, Podman)
-- [ ] Windows as a first-class citizen
-- [ ] WSL2 support (no additional VM required)
+- [x] Windows as a first-class citizen
+- [x] WSL2 support (no additional VM required)
 - [ ] Firecracker VM support
 - [ ] Generic (SSH) driver support
 
@@ -47,10 +47,10 @@ Please send a PR to suggest any improvements to it.
 
 ## (#6) High Performance
 
-- [ ] Startup latency under 30s
+- [x] Startup latency under 30s
 - [ ] Kernel-assisted mounts (CIFS, NFS) by default
 - [x] Pause support
-- [ ] <25% CPU overhead on a single core
+- [x] <25% CPU overhead on a single core
 
 ## (#7) Developer Focused
 
