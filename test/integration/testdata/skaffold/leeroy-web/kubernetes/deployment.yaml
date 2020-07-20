@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leeroy-web
+  labels:
+    app: leeroy-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leeroy-web
+  template:
+    metadata:
+      labels:
+        app: leeroy-web
+    spec:
+      containers:
+        - name: leeroy-web
+          image: leeroy-web
+          ports:
+            - containerPort: 8080
