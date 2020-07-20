@@ -282,7 +282,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
 	kubeconfig, err := node.Start(starter, true)
 	if err != nil {
-		kubeconfig, err = maybeDeleteAndRetry(*starter.Cfg, *starter.Node, starter.ExistingAddons, err)
+		kubeconfig, err = maybeDeleteAndRetry(starter.Cfg, *starter.Node, starter.ExistingAddons, err)
 		if err != nil {
 			return nil, err
 		}
@@ -411,7 +411,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	return nil
 }
 
-func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
+func maybeDeleteAndRetry(cc *config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
 	if viper.GetBool(deleteOnFailure) {
 		out.WarningT("Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
 		// Start failed, delete the cluster and try again
@@ -425,15 +425,17 @@ func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons 
 			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
 		}
 
+		// Re-generate the cluster config, just in case the failure was related to an old config format
+		upgradeExistingConfig(cc)
 		var kubeconfig *kubeconfig.Settings
 		for _, n := range cc.Nodes {
-			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane, false)
+			r, p, m, h, err := node.Provision(cc, &n, n.ControlPlane, false)
 			s := node.Starter{
 				Runner:         r,
 				PreExists:      p,
 				MachineAPI:     m,
 				Host:           h,
-				Cfg:            &cc,
+				Cfg:            cc,
 				Node:           &n,
 				ExistingAddons: existingAddons,
 			}

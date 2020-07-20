@@ -217,7 +217,7 @@ func ClusterFlagValue() string {
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
 func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
-	if existing != nil { // create profile config first time
+	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
 		glog.Info("no existing cluster config was found, will generate one from the flags ")
