@@ -49,15 +49,11 @@ func CachedDaemonInfo(ociBin string) (SysInfo, error) {
 func DaemonInfo(ociBin string) (SysInfo, error) {
 	if ociBin == Podman {
 		p, err := podmanSystemInfo()
-		cachedSysInfo.CPUs = p.Host.Cpus
-		cachedSysInfo.TotalMemory = p.Host.MemTotal
-		cachedSysInfo.OSType = p.Host.Os
+		cachedSysInfo = &SysInfo{CPUs: p.Host.Cpus, TotalMemory: p.Host.MemTotal, OSType: p.Host.Os}
 		return *cachedSysInfo, err
 	}
 	d, err := dockerSystemInfo()
-	cachedSysInfo.CPUs = d.NCPU
-	cachedSysInfo.TotalMemory = d.MemTotal
-	cachedSysInfo.OSType = d.OSType
+	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType}
 	return *cachedSysInfo, err
 }
 
