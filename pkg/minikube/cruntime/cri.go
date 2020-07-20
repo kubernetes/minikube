@@ -259,3 +259,15 @@ func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) strin
 	cmd.WriteString(id)
 	return cmd.String()
 }
+
+// addRepoTagToImageName makes sure the image name has a repo tag in it.
+// in crictl images list have the repo tag prepended to them
+// for example "kubernetesui/dashboard:v2.0.0 will show up as "docker.io/kubernetesui/dashboard:v2.0.0"
+// warning this is only meant for kuberentes images where we know the GCR addreses have .io in them
+// not mean to be used for public images
+func addRepoTagToImageName(imgName string) string {
+	if !strings.Contains(imgName, ".io/") {
+		return "docker.io/" + imgName
+	} // else it already has repo name dont add anything
+	return imgName
+}
