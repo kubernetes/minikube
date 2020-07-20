@@ -33,9 +33,9 @@ import (
 )
 
 func TestSkaffold(t *testing.T) {
-	// get unique profile for test
-	MaybeParallel(t)
-	profile := UniqueProfileName("skaffold")
+	// can't use a unique profile, as skaffold only recognizes the
+	// profile name 'minikube' as a local cluster
+	profile := "minikube"
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
 	defer CleanupWithLogs(t, profile, cancel)
 
