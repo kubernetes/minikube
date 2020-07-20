@@ -32,7 +32,7 @@ var (
 	boilerplatedir = flag.String("boilerplate-dir", ".", "Boilerplate directory for boilerplate files")
 	rootdir        = flag.String("rootdir", "../../", "Root directory to examine")
 	verbose        = flag.Bool("v", false, "Verbose")
-	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
+	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy|test/integration/testdata`)
 	windowdNewLine = regexp.MustCompile(`\r`)
 	txtExtension   = regexp.MustCompile(`\.txt`)
 	goBuildTag     = regexp.MustCompile(`(?m)^(// \+build.*\n)+\n`)
