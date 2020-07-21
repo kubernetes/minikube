@@ -22,9 +22,11 @@ import (
 	"os/exec"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -134,7 +136,35 @@ func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
 
 // Based on code from http://stackoverflow.com/questions/23529663/how-to-get-all-addresses-and-masks-from-local-interfaces-in-go
 func getIPForInterface(name string) (net.IP, error) {
-	i, _ := net.InterfaceByName(name)
+	ints, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	var i net.Interface
+	for _, in := range ints {
+		if strings.HasPrefix(in.Name, name) {
+			i = in
+			break
+		}
+	}
+
+	// Didn't find prefix, let's try any substring
+	if i.Name == "" {
+		for _, in := range ints {
+			if strings.Contains(in.Name, name) {
+				i = in
+				break
+			}
+		}
+	}
+
+	// We found nothing, fail out
+	if i.Name == "" {
+		return nil, errors.Errorf("Could not find interface %s inside %+v", name, ints)
+	}
+
+	glog.Infof("Found hyperv interface: %+v\n", i)
 	addrs, _ := i.Addrs()
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok {
