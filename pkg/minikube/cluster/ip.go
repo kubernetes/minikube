@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -148,10 +149,22 @@ func getIPForInterface(name string) (net.IP, error) {
 		}
 	}
 
+	// Didn't find prefix, let's try any substring
 	if i.Name == "" {
-		return nil, errors.Errorf("Could not find interface %s", name)
+		for _, in := range ints {
+			if strings.Contains(in.Name, name) {
+				i = in
+				break
+			}
+		}
 	}
 
+	// We found nothing, fail out
+	if i.Name == "" {
+		return nil, errors.Errorf("Could not find interface %s inside %+v", name, ints)
+	}
+
+	glog.Infof("Found hyperv interface: %+v\n", i)
 	addrs, _ := i.Addrs()
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok {
