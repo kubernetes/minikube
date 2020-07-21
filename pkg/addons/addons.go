@@ -340,7 +340,6 @@ func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error 
 
 // Start enables the default addons for a profile, plus any additional
 func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, additional []string) {
-	wg.Add(1)
 	defer wg.Done()
 
 	start := time.Now()
