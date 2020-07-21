@@ -101,7 +101,7 @@ jobs:
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
-          docker info --format='{{json .}}' || true
+          docker info  || true
           echo "--------------------------"
           docker system df || true
           echo "--------------------------"
@@ -109,7 +109,13 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
@@ -160,13 +166,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
@@ -186,7 +192,13 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
@@ -250,13 +262,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures :(----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
           echo "*******************************************************"
+          echo "----------------${numFail} Failures :(----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
@@ -304,6 +316,10 @@ jobs:
           echo "------------------------"
           docker volume ls
           echo "------------------------"
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install tools
         continue-on-error: true
         shell: powershell
@@ -351,7 +367,7 @@ jobs:
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
-          echo "----------------${numFail} Failures----------------------------"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
           echo $failedTest
           echo "-------------------------------------------------------"
           $numPass=$(echo $STAT | jq '.NumberOfPass')
@@ -365,14 +381,14 @@ jobs:
         run: |
           $numFail=(echo $Env:STAT | jq '.NumberOfFail')
           $failedTests=( echo $Env:STAT | jq '.FailedTests')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $failedTests
-          echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
-          $passedTests=( echo $Env:STAT | jq '.PassedTests'
+          $passedTests=( echo $Env:STAT | jq '.PassedTests')
           echo "*******************${numPass} Passes :) *******************"
           echo $passedTests
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $failedTests
+          echo "-------------------------------------------------------"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
           If ($numPass -lt 33){ exit 2 }
@@ -417,6 +433,10 @@ jobs:
           ls 
           echo $env:computername
           Get-WmiObject -class Win32_ComputerSystem
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install tools
         continue-on-error: true
         shell: powershell
@@ -465,7 +485,7 @@ jobs:
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
-          echo "----------------${numFail} Failures----------------------------"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
           echo $failedTest
           echo "-------------------------------------------------------"
           $numPass=$(echo $STAT | jq '.NumberOfPass')
@@ -479,14 +499,14 @@ jobs:
         run: |
           $numFail=(echo $Env:STAT | jq '.NumberOfFail')
           $failedTests=( echo $Env:STAT | jq '.FailedTests')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $failedTests
-          echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
-          $passedTests=( echo $Env:STAT | jq '.PassedTests'
+          $passedTests=( echo $Env:STAT | jq '.PassedTests')
           echo "*******************${numPass} Passes :) *******************"
           echo $passedTests
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $failedTests
+          echo "-------------------------------------------------------"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
           If ($numPass -lt 33){ exit 2 }
@@ -517,7 +537,13 @@ jobs:
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
@@ -566,13 +592,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 26 ];then echo "*** Failed to pass at least 26 ! ***";exit 2;fi
@@ -606,7 +632,13 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
@@ -655,13 +687,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
@@ -680,7 +712,13 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
@@ -744,13 +782,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
@@ -783,7 +821,13 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
@@ -834,13 +878,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
@@ -859,7 +903,13 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
@@ -918,13 +968,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 7 ];then echo "*** Failed to pass at least 7 ! ***";exit 2;fi
@@ -957,7 +1007,13 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
@@ -1006,13 +1062,14 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
-          echo "*******************************************************"          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 9 ];then echo "*** Failed to pass at least 9 ! ***";exit 2;fi
   pause_preload_dockerflags_virtualbox_macos:
@@ -1030,7 +1087,13 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install gopogh
+
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
@@ -1089,13 +1152,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
-          echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
           echo "*******************${numPass} Passes :) *******************"
           echo $STAT | jq '.PassedTests' || true
           echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 9 ];then echo "*** Failed to pass at least 9 ! ***";exit 2;fi
