@@ -85,7 +85,7 @@ func (p *Problem) Display() {
 func (p *Problem) DisplayJSON(exitcode int) {
 	var issues string
 	for _, i := range p.Issues {
-		issues += fmt.Sprintf("https://github.com/kubernetes/minikube/issues/%v", i)
+		issues += fmt.Sprintf("https://github.com/kubernetes/minikube/issues/%v,", i)
 	}
 	extraArgs := map[string]string{
 		"name":   p.ID,
