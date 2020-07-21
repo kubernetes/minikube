@@ -283,7 +283,7 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	if err != nil {
 		return false
 	}
-	type criImages struct {
+	type crictlImages struct {
 		Images []struct {
 			ID          string      `json:"id"`
 			RepoTags    []string    `json:"repoTags"`
@@ -294,7 +294,7 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 		} `json:"images"`
 	}
 
-	var jsonImages criImages
+	var jsonImages crictlImages
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
 	if err != nil {
 		glog.Errorf("failed to unmarshal images, will assume images are not preloaded")
@@ -322,7 +322,7 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 			return false
 		}
 	}
-	glog.Infof("all images are preloaded for crio runtime.")
+	glog.Infof("all images are preloaded for cri-o runtime.")
 	return true
 }
 
