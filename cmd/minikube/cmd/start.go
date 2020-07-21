@@ -200,7 +200,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubeconfig, err := startWithDriver(starter, existing)
+	kubeconfig, err := startWithDriver(cmd, starter, existing)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)
 		exit.WithError("failed to start node", err)
@@ -279,10 +279,10 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}, nil
 }
 
-func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
+func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
 	kubeconfig, err := node.Start(starter, true)
 	if err != nil {
-		kubeconfig, err = maybeDeleteAndRetry(*starter.Cfg, *starter.Node, starter.ExistingAddons, err)
+		kubeconfig, err = maybeDeleteAndRetry(cmd, *starter.Cfg, *starter.Node, starter.ExistingAddons, err)
 		if err != nil {
 			return nil, err
 		}
@@ -411,20 +411,22 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	return nil
 }
 
-func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
+func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
 	if viper.GetBool(deleteOnFailure) {
 		out.WarningT("Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
 		// Start failed, delete the cluster and try again
-		profile, err := config.LoadProfile(cc.Name)
+		profile, err := config.LoadProfile(existing.Name)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cc.Name})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
 		}
 
 		err = deleteProfile(profile)
 		if err != nil {
-			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
+			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": existing.Name})
 		}
 
+		// Re-generate the cluster config, just in case the failure was related to an old config format
+		cc := updateExistingConfigFromFlags(cmd, &existing)
 		var kubeconfig *kubeconfig.Settings
 		for _, n := range cc.Nodes {
 			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane, false)
