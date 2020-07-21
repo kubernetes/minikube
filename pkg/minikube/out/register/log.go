@@ -85,8 +85,19 @@ func NewDownloadProgress(artifact, progress string) *DownloadProgress {
 
 // Warning will be used to notify the user of warnings
 type Warning struct {
+	data map[string]string
 }
 
+// NewWarning returns a new warning type
+func NewWarning(warning string) *Warning {
+	return &Warning{
+		map[string]string{
+			"message": warning,
+		},
+	}
+}
+
+// Type returns the cloud events compatible type of this struct
 func (s *Warning) Type() string {
 	return "io.k8s.sigs.minikube.warning"
 }
