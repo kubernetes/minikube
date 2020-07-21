@@ -122,27 +122,22 @@ func (d *Driver) Create() error {
 	}
 
 	var waitForPreload sync.WaitGroup
-	if d.NodeConfig.OCIBinary == oci.Docker {
-		waitForPreload.Add(1)
-		go func() {
-			defer waitForPreload.Done()
-			// If preload doesn't exist, don't bother extracting tarball to volume
-			if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
-				return
-			}
-			t := time.Now()
-			glog.Infof("Starting extracting preloaded images to volume ...")
-			// Extract preloaded images to container
-			if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, d.NodeConfig.ImageDigest); err != nil {
-				glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
-			} else {
-				glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
-			}
-		}()
-	} else {
-		// driver == "podman"
-		glog.Info("Driver isn't docker, skipping extracting preloaded images")
-	}
+	waitForPreload.Add(1)
+	go func() {
+		defer waitForPreload.Done()
+		// If preload doesn't exist, don't bother extracting tarball to volume
+		if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
+			return
+		}
+		t := time.Now()
+		glog.Infof("Starting extracting preloaded images to volume ...")
+		// Extract preloaded images to container
+		if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, d.NodeConfig.ImageDigest); err != nil {
+			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
+		} else {
+			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+		}
+	}()
 
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
@@ -193,7 +188,7 @@ func (d *Driver) GetIP() (string, error) {
 	return ip, err
 }
 
-// GetExternalIP returns an IP which is accissble from outside
+// GetExternalIP returns an IP which is accessible from outside
 func (d *Driver) GetExternalIP() (string, error) {
 	return oci.DefaultBindIPV4, nil
 }

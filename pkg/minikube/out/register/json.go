@@ -39,3 +39,9 @@ func PrintDownloadProgress(artifact, progress string) {
 	s := NewDownloadProgress(artifact, progress)
 	printAsCloudEvent(s, s.data)
 }
+
+// PrintWarning prints a Warning type in JSON format
+func PrintWarning(warning string) {
+	w := NewWarning(warning)
+	printAsCloudEvent(w, w.data)
+}

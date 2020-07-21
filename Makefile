@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 12
-VERSION_BUILD ?= 0
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -29,7 +29,7 @@ DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.14.4
+GO_VERSION ?= 1.14.6
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2019.02.11
@@ -42,7 +42,7 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 # NOTE: "latest" as of 2020-05-13. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-2
+BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 

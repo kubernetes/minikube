@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/otiai10/copy"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/homedir"
 )
@@ -62,12 +63,42 @@ func Profile(name string) string {
 
 // ClientCert returns client certificate path, used by kubeconfig
 func ClientCert(name string) string {
-	return filepath.Join(Profile(name), "client.crt")
+	new := filepath.Join(Profile(name), "client.crt")
+	if _, err := os.Stat(new); err == nil {
+		return new
+	}
+
+	// minikube v1.5.x
+	legacy := filepath.Join(MiniPath(), "client.crt")
+	if _, err := os.Stat(legacy); err == nil {
+		glog.Infof("copying %s -> %s", legacy, new)
+		if err := copy.Copy(legacy, new); err != nil {
+			glog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
+			return legacy
+		}
+	}
+
+	return new
 }
 
 // ClientKey returns client certificate path, used by kubeconfig
 func ClientKey(name string) string {
-	return filepath.Join(Profile(name), "client.key")
+	new := filepath.Join(Profile(name), "client.key")
+	if _, err := os.Stat(new); err == nil {
+		return new
+	}
+
+	// minikube v1.5.x
+	legacy := filepath.Join(MiniPath(), "client.key")
+	if _, err := os.Stat(legacy); err == nil {
+		glog.Infof("copying %s -> %s", legacy, new)
+		if err := copy.Copy(legacy, new); err != nil {
+			glog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
+			return legacy
+		}
+	}
+
+	return new
 }
 
 // CACert returns the minikube CA certificate shared between profiles

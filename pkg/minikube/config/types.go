@@ -39,6 +39,7 @@ type ClusterConfig struct {
 	Memory                  int
 	CPUs                    int
 	DiskSize                int
+	VMDriver                string // Legacy use only
 	Driver                  string
 	HyperkitVpnKitSock      string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts      []string // Only used by the Hyperkit driver
