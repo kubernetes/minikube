@@ -22,6 +22,7 @@ import (
 	"regexp"
 
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -78,6 +79,21 @@ func (p *Problem) Display() {
 	for _, i := range issues {
 		out.ErrT(out.Issue, "{{.url}}", out.V{"url": fmt.Sprintf("%s/%d", issueBase, i)})
 	}
+}
+
+// DisplayJSON displays problem metadata in JSON format
+func (p *Problem) DisplayJSON(exitcode int) {
+	var issues string
+	for _, i := range p.Issues {
+		issues += fmt.Sprintf("https://github.com/kubernetes/minikube/issues/%v", i)
+	}
+	extraArgs := map[string]string{
+		"name":   p.ID,
+		"advice": p.Advice,
+		"url":    p.URL,
+		"issues": issues,
+	}
+	register.PrintErrorExitCode(p.Err.Error(), exitcode, extraArgs)
 }
 
 // FromError returns a known problem from an error on an OS
