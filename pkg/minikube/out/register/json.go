@@ -39,3 +39,13 @@ func PrintDownloadProgress(artifact, progress string) {
 	s := NewDownloadProgress(artifact, progress)
 	printAsCloudEvent(s, s.data)
 }
+
+func PrintError(err string) {
+	e := NewError(err)
+	printAsCloudEvent(e, e.data)
+}
+
+func PrintErrorExitCode(err string, exitcode int, additionalArgs ...map[string]string) {
+	e := NewErrorExitCode(err, exitcode, additionalArgs...)
+	printAsCloudEvent(e, e.data)
+}
