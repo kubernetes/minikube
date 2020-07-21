@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo=1.8.27-1ubuntu4.1 \
     docker.io=19.03.2-0ubuntu1 \
     openssh-server=1:8.0p1-6build1 \
-    dnsutils=1:9.11.5.P4+dfsg-5.1ubuntu2.1 \
+    dnsutils=1:9.11.5.P4+dfsg-5.1ubuntu2.2 \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0=2.62.1-1 \
     && rm /etc/crictl.yaml
@@ -28,6 +28,11 @@ RUN apt-get install -y --no-install-recommends podman
 # install varlink
 RUN apt-get install -y --no-install-recommends varlink
 
+# automount service
+COPY automount/minikube-automount /usr/sbin/minikube-automount
+COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
+RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
+    /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
