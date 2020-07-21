@@ -422,7 +422,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(cpus) {
 		if viper.GetInt(cpus) != existing.CPUs {
-			out.WarningT("You cannot change the CPUs for an exiting minikube cluster. Please first delete the cluster.")
+			out.WarningT("You cannot change the CPUs for an existing minikube cluster. Please first delete the cluster.")
 		}
 	}
 
