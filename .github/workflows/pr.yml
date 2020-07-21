@@ -308,7 +308,18 @@ jobs:
       - name: Start Docker Desktop
         shell: powershell
         run: |
-          Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          if (!$docker_running) {
+          Write-Output "Starting Docker as an administrator"
+          Start-Process 'C:/Program Files/Docker/Docker/Docker Desktop.exe' -Verb runAs
+          }
+          while (!$docker_running) {
+          Start-Sleep 5
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          }
+          Write-Output "Docker is running"
           docker system prune -f -a
       - name: Info
         shell: powershell
@@ -430,7 +441,18 @@ jobs:
       - name: Start Docker Desktop
         shell: powershell
         run: |
-          Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          if (!$docker_running) {
+          Write-Output "Starting Docker as an administrator"
+          Start-Process 'C:/Program Files/Docker/Docker/Docker Desktop.exe' -Verb runAs
+          }
+          while (!$docker_running) {
+          Start-Sleep 5
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          }
+          Write-Output "Docker is running"
           docker system prune -f -a
       - name: Info
         continue-on-error: true
