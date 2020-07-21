@@ -101,7 +101,7 @@ jobs:
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
-          docker info  || true
+          docker info || true
           echo "--------------------------"
           docker system df || true
           echo "--------------------------"
