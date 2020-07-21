@@ -250,11 +250,9 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		}
 	}
 
-	command := kubectlCommand(cc, deployFiles, enable)
-
 	// Retry, because sometimes we race against an apiserver restart
 	apply := func() error {
-		_, err := cmd.RunCmd(command)
+		_, err := cmd.RunCmd(kubectlCommand(cc, deployFiles, enable))
 		if err != nil {
 			glog.Warningf("apply failed, will retry: %v", err)
 		}
