@@ -60,8 +60,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v0.0.0-20161223203901-3a8809bd8a80
 	github.com/pmezard/go-difflib v1.0.0
-	github.com/prometheus/client_golang v1.1.0 // indirect
-	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/russross/blackfriday v1.5.3-0.20200218234912-41c5fccfd6f6 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible
@@ -74,6 +72,7 @@ require (
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/sys v0.0.0-20200523222454-059865788121
 	golang.org/x/text v0.3.2
@@ -87,7 +86,8 @@ require (
 	k8s.io/kubectl v0.0.0
 	k8s.io/kubernetes v1.17.3
 	k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab // indirect
-	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible
+	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible // indirect
+	sigs.k8s.io/sig-storage-lib-external-provisioner/v5 v5.0.0
 )
 
 replace (

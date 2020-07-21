@@ -36,7 +36,54 @@ subjects:
   - kind: ServiceAccount
     name: storage-provisioner
     namespace: kube-system
-
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: system::leader-locking-storage-provisioner
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - watch
+- apiGroups:
+  - ""
+  resourceNames:
+  - k8s.io-minikube-hostpath
+  resources:
+  - endpoints
+  verbs:
+  - get
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: leader-locking-storage-provisioner
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: system::leader-locking-storage-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: storage-provisioner
+    namespace: kube-system
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: k8s.io-minikube-hostpath
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
 ---
 apiVersion: v1
 kind: Pod
