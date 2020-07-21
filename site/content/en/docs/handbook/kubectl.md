@@ -15,7 +15,7 @@ as well.
 
 `minikube kubectl -- <kubectl commands>`
 
-You can also `alias kubectl=minikube kubectl --` for easier usage.
+You can also `alias kubectl="minikube kubectl --"` for easier usage.
 
 Get pods
 

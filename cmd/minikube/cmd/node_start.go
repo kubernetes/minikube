@@ -69,7 +69,7 @@ var nodeStartCmd = &cobra.Command{
 
 		_, err = node.Start(s, false)
 		if err != nil {
-			_, err := maybeDeleteAndRetry(*cc, *n, nil, err)
+			_, err := maybeDeleteAndRetry(cmd, *cc, *n, nil, err)
 			if err != nil {
 				node.MaybeExitWithAdvice(err)
 				exit.WithError("failed to start node", err)

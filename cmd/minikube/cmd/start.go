@@ -155,6 +155,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
+	if existing != nil {
+		upgradeExistingConfig(existing)
+	}
+
 	validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
 	ds, alts, specified := selectDriver(existing)
@@ -196,7 +200,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubeconfig, err := startWithDriver(starter, existing)
+	kubeconfig, err := startWithDriver(cmd, starter, existing)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)
 		exit.WithError("failed to start node", err)
@@ -275,10 +279,10 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}, nil
 }
 
-func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
+func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
 	kubeconfig, err := node.Start(starter, true)
 	if err != nil {
-		kubeconfig, err = maybeDeleteAndRetry(*starter.Cfg, *starter.Node, starter.ExistingAddons, err)
+		kubeconfig, err = maybeDeleteAndRetry(cmd, *starter.Cfg, *starter.Node, starter.ExistingAddons, err)
 		if err != nil {
 			return nil, err
 		}
@@ -407,20 +411,22 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	return nil
 }
 
-func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
+func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
 	if viper.GetBool(deleteOnFailure) {
 		out.WarningT("Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
 		// Start failed, delete the cluster and try again
-		profile, err := config.LoadProfile(cc.Name)
+		profile, err := config.LoadProfile(existing.Name)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cc.Name})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
 		}
 
 		err = deleteProfile(profile)
 		if err != nil {
-			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
+			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": existing.Name})
 		}
 
+		// Re-generate the cluster config, just in case the failure was related to an old config format
+		cc := updateExistingConfigFromFlags(cmd, &existing)
 		var kubeconfig *kubeconfig.Settings
 		for _, n := range cc.Nodes {
 			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane, false)
@@ -562,7 +568,10 @@ func hostDriver(existing *config.ClusterConfig) string {
 	machineName := driver.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
-		glog.Warningf("selectDriver api.Load: %v", err)
+		glog.Warningf("api.Load failed for %s: %v", machineName, err)
+		if existing.VMDriver != "" {
+			return existing.VMDriver
+		}
 		return existing.Driver
 	}
 
@@ -752,12 +761,13 @@ func memoryLimits(drvName string) (int, int, error) {
 	containerLimit := 0
 
 	if driver.IsKIC(drvName) {
-		s, err := oci.DaemonInfo(drvName)
+		s, err := oci.CachedDaemonInfo(drvName)
 		if err != nil {
 			return -1, -1, err
 		}
 		containerLimit = int(s.TotalMemory / 1024 / 1024)
 	}
+
 	return sysLimit, containerLimit, nil
 }
 
@@ -800,11 +810,13 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 }
 
 // validateMemorySize validates the memory size matches the minimum recommended
-func validateMemorySize() {
-	req, err := util.CalculateSizeInMB(viper.GetString(memory))
+func validateMemorySize(req int, drvName string) {
+
+	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
-		exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		glog.Warningf("Unable to query memory limits: %v", err)
 	}
+
 	if req < minUsableMem && !viper.GetBool(force) {
 		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB",
 			out.V{"requested": req, "mininum": minUsableMem})
@@ -813,12 +825,30 @@ func validateMemorySize() {
 		out.T(out.Notice, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
 			out.V{"requested": req, "recommended": minRecommendedMem})
 	}
+
+	if driver.IsDockerDesktop(drvName) {
+		// in Docker Desktop if you allocate 2 GB the docker info shows:  Total Memory: 1.945GiB which becomes 1991 when we calculate the MBs
+		// thats why it is not same number as other drivers which is 2 GB
+		if containerLimit < 1991 {
+			out.T(out.Tip, `Increase Docker for Desktop memory to at least 2.5GB or more:
+			
+	Docker for Desktop > Settings > Resources > Memory
+
+`)
+		} else if containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
+			out.T(out.Tip, `Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3GB.
+
+	Docker for Desktop  > Settings > Resources > Memory
+
+`, out.V{"container_limit": containerLimit, "system_limit": sysLimit})
+		}
+	}
 }
 
 // validateCPUCount validates the cpu count matches the minimum recommended
-func validateCPUCount(local bool) {
+func validateCPUCount(drvName string) {
 	var cpuCount int
-	if local {
+	if driver.BareMetal(drvName) {
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
@@ -831,6 +861,30 @@ func validateCPUCount(local bool) {
 	}
 	if cpuCount < minimumCPUS && !viper.GetBool(force) {
 		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
+	}
+
+	if driver.IsKIC((drvName)) {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			out.T(out.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
+			si, err = oci.DaemonInfo(drvName)
+			if err != nil {
+				exit.UsageT("Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+			}
+
+		}
+		if si.CPUs < 2 {
+			if drvName == oci.Docker {
+				out.T(out.Conflict, `Your Docker Desktop has less than 2 CPUs. Increase CPUs for Docker Desktop. 
+	
+	Docker icon > Settings > Resources > CPUs
+				
+				`)
+			}
+			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
+			exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
+
+		}
 	}
 }
 
@@ -848,14 +902,18 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if cmd.Flags().Changed(cpus) {
-		validateCPUCount(driver.BareMetal(drvName))
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --cpus flag", out.V{"name": drvName})
 		}
 	}
+	validateCPUCount(drvName)
 
 	if cmd.Flags().Changed(memory) {
-		validateMemorySize()
+		req, err := util.CalculateSizeInMB(viper.GetString(memory))
+		if err != nil {
+			exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		}
+		validateMemorySize(req, drvName)
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 		}
