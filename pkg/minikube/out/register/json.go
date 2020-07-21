@@ -40,11 +40,13 @@ func PrintDownloadProgress(artifact, progress string) {
 	printAsCloudEvent(s, s.data)
 }
 
+// PrintError prints an Error type in JSON format
 func PrintError(err string) {
 	e := NewError(err)
 	printAsCloudEvent(e, e.data)
 }
 
+// PrintErrorExitCode prints an error in JSON format and includes an exit code
 func PrintErrorExitCode(err string, exitcode int, additionalArgs ...map[string]string) {
 	e := NewErrorExitCode(err, exitcode, additionalArgs...)
 	printAsCloudEvent(e, e.data)
