@@ -37,8 +37,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-// minReqPodmanVer is required the mininum version of podman to be installed for podman driver.
+// minReqPodmanVer is required the minimum version of podman to be installed for podman driver.
 var minReqPodmanVer = semver.Version{Major: 1, Minor: 7, Patch: 0}
+
+// podmanVerTwo is required to exit with an error when podman2 driver is currently installed because it is not supported yet.
+var podmanVerTwo = semver.Version{Major: 2, Minor: 0, Patch: 0}
 
 func init() {
 	priority := registry.Experimental
@@ -105,6 +108,16 @@ func status() registry.State {
 
 		if v.LT(minReqPodmanVer) {
 			glog.Warningf("Warning ! minimum required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html ", minReqPodmanVer.String(), v.String())
+		}
+
+		if v.GTE(podmanVerTwo) {
+			return registry.State{
+				Error:     fmt.Errorf("Podman2 is not supported yet"),
+				Installed: true,
+				Healthy:   false,
+				Fix:       "Install a compatable Podman driver",
+				Doc:       "https://github.com/containers/podman/releases/v1.9.3",
+			}
 		}
 
 		return registry.State{Installed: true, Healthy: true}
