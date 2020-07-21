@@ -305,6 +305,11 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
+      - name: Start Docker Desktop
+        shell: powershell
+        run: |
+          Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+          docker system prune -f -a
       - name: Info
         shell: powershell
         run: |
@@ -422,6 +427,11 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
+      - name: Start Docker Desktop
+        shell: powershell
+        run: |
+          Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+          docker system prune -f -a
       - name: Info
         continue-on-error: true
         shell: powershell
