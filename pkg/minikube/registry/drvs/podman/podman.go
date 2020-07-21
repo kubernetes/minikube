@@ -112,7 +112,7 @@ func status() registry.State {
 
 		if v.GTE(podmanVerTwo) {
 			return registry.State{
-				Error:     fmt.Errorf("Podman2 is not supported yet"),
+				Error:     fmt.Errorf("podman2 is not supported yet"),
 				Installed: true,
 				Healthy:   false,
 				Fix:       "Install a compatible Podman driver",
