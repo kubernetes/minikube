@@ -648,7 +648,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
   addons_certs_virtualbox_macos:
     runs-on: macos-10.15
     env:
@@ -736,7 +736,7 @@ jobs:
           echo "*** $numPass Passed ***"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
   multinode_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
