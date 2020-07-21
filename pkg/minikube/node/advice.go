@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -45,7 +46,7 @@ func MaybeExitWithAdvice(err error) {
 
 	if errors.Is(err, oci.ErrCPUCountLimit) {
 		out.ErrLn("")
-		out.ErrT(out.Conflict, "{{.name}} doesn't have enough CPUs. ", out.V{"name": viper.GetString("driver")})
+		out.ErrT(out.Conflict, "{{.name}} doesn't have enough CPUs. ", out.V{"name": driver.FullName(viper.GetString("driver"))})
 		if runtime.GOOS != "linux" && viper.GetString("driver") == "docker" {
 			out.T(out.Warning, "Please consider changing your Docker Desktop's resources.")
 			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
@@ -54,7 +55,7 @@ func MaybeExitWithAdvice(err error) {
 			if cpuCount == 2 {
 				out.T(out.Tip, "Please ensure your system has {{.cpu_counts}} CPU cores.", out.V{"cpu_counts": viper.GetInt(cpus)})
 			} else {
-				out.T(out.Tip, "Please ensure your {{.driver_name}} system has access to {{.cpu_counts}} CPU cores or reduce the number of the specified CPUs", out.V{"driver_name": viper.GetString("driver"), "cpu_counts": viper.GetInt(cpus)})
+				out.T(out.Tip, "Please ensure your {{.driver_name}} system has access to {{.cpu_counts}} CPU cores or reduce the number of the specified CPUs", out.V{"driver_name": driver.FullName(viper.GetString("driver")), "cpu_counts": viper.GetInt(cpus)})
 			}
 		}
 		exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
