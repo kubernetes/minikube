@@ -31,7 +31,7 @@ export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.14.4" "/usr/local" || true
+sudo ./installers/check_install_golang.sh "1.14.6" "/usr/local" || true
 
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 docker volume prune -f || true
@@ -338,9 +338,9 @@ fi
 
 echo ">> Installing gopogh"
 if [ "$(uname)" != "Darwin" ]; then
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
 else
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
 fi
 
 echo ">> Running gopogh"

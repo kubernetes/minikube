@@ -150,6 +150,10 @@ func FatalT(format string, a ...V) {
 
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
+	if JSON {
+		register.PrintWarning(ApplyTemplateFormatting(Warning, useColor, format, a...))
+		return
+	}
 	ErrT(Warning, format, a...)
 }
 

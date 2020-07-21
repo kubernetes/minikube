@@ -419,6 +419,26 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "ambassador"),
+	"gcp-auth": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/gcp-auth/gcp-auth-ns.yaml",
+			vmpath.GuestAddonsDir,
+			"gcp-auth-ns.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/gcp-auth/gcp-auth-service.yaml",
+			vmpath.GuestAddonsDir,
+			"gcp-auth-service.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/gcp-auth/gcp-auth-webhook.yaml",
+			vmpath.GuestAddonsDir,
+			"gcp-auth-webhook.yaml",
+			"0640",
+			false),
+	}, false, "gcp-auth"),
 }
 
 // GenerateTemplateData generates template data for template assets
