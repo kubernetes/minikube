@@ -65,6 +65,8 @@ func TestJSONOutputError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
 	defer Cleanup(t, profile, cancel)
 
+	// force a failure via --driver=fail so that we can make sure errors
+	// are printed as expected
 	startArgs := []string{"start", "-p", profile, "--memory=2200", "--output=json", "--wait=true", "--driver=fail"}
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
