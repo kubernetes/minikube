@@ -701,7 +701,8 @@ jobs:
           mkdir -p report
           mkdir -p testhome
           chmod a+x e2e-*
-          chmod a+x minikube-*
+          cp minikube-darwin-amd64 minikube
+          chmod a+x minikube*
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "(TestAddons|TestCertOptions|TestSkaffold)" -test.timeout=15m -test.v -timeout-multiplier=3 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)

@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -56,6 +57,12 @@ func TestSkaffold(t *testing.T) {
 	// make sure "skaffold run" exits without failure
 	cmd := exec.CommandContext(ctx, tf.Name(), "run", "--kube-context", profile, "--status-check=true", "--port-forward=false")
 	cmd.Dir = "testdata/skaffold"
+	// make sure minikube binary is in path so that skaffold can access it
+	abs, err := filepath.Abs(Target())
+	if err != nil {
+		t.Fatalf("absolute path to minikube binary: %v", err)
+	}
+	os.Setenv("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), filepath.Dir(abs)))
 	rr, err = Run(t, cmd)
 	if err != nil {
 		t.Fatalf("error running skaffold: %v\n%s", err, rr.Output())
