@@ -115,7 +115,7 @@ func status() registry.State {
 				Error:     fmt.Errorf("Podman2 is not supported yet"),
 				Installed: true,
 				Healthy:   false,
-				Fix:       "Install a compatable Podman driver",
+				Fix:       "Install a compatible Podman driver",
 				Doc:       "https://github.com/containers/podman/releases/v1.9.3",
 			}
 		}
