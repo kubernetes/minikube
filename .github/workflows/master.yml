@@ -80,8 +80,6 @@ jobs:
         continue-on-error: false
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
-  # Run the following integration tests after the build_minikube
-  # They will run in parallel and use the binaries in previous step
   functional_docker_ubuntu:
     needs: [build_minikube]
     env:
@@ -103,18 +101,18 @@ jobs:
           echo "--------------------------"
           docker version || true
           echo "--------------------------"
-          docker info || true
+          docker info --format='{{json .}}' || true
           echo "--------------------------"
           docker system df || true
           echo "--------------------------"
-          docker system info || true
+          docker system info --format='{{json .}}'|| true
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -166,7 +164,9 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
@@ -189,7 +189,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -250,11 +250,13 @@ jobs:
         run: |
           echo ${GOPOGH_RESULT}
           numFail=$(echo $STAT | jq '.NumberOfFail')
-          echo "----------------${numFail} Failures----------------------------"
+          echo "----------------${numFail} Failures :(----------------------------"
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
@@ -306,7 +308,7 @@ jobs:
         continue-on-error: true
         shell: powershell
         run: |
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
@@ -367,7 +369,10 @@ jobs:
           echo $failedTests
           echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          $passedTests=( echo $Env:STAT | jq '.PassedTests'
+          echo "*******************${numPass} Passes :) *******************"
+          echo $passedTests
+          echo "*******************************************************"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
           If ($numPass -lt 33){ exit 2 }
@@ -417,7 +422,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
           choco install -y kubernetes-cli
           choco install -y jq
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
@@ -478,7 +483,10 @@ jobs:
           echo $failedTests
           echo "-------------------------------------------------------"
           $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          $passedTests=( echo $Env:STAT | jq '.PassedTests'
+          echo "*******************${numPass} Passes :) *******************"
+          echo $passedTests
+          echo "*******************************************************"
           If ($numFail -gt 0){ exit 2 } 
           If ($numPass -eq 0){ exit 2 }
           If ($numPass -lt 33){ exit 2 }
@@ -512,7 +520,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -562,7 +570,9 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 26 ];then echo "*** Failed to pass at least 26 ! ***";exit 2;fi
@@ -599,7 +609,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -649,7 +659,9 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
@@ -671,7 +683,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -736,7 +748,9 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
@@ -772,7 +786,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -824,7 +838,9 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
@@ -846,7 +862,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -906,7 +922,9 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 7 ];then echo "*** Failed to pass at least 7 ! ***";exit 2;fi
@@ -942,7 +960,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -992,8 +1010,9 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
-          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 9 ];then echo "*** Failed to pass at least 9 ! ***";exit 2;fi
   pause_preload_dockerflags_virtualbox_macos:
@@ -1014,7 +1033,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1074,7 +1093,9 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 9 ];then echo "*** Failed to pass at least 9 ! ***";exit 2;fi
