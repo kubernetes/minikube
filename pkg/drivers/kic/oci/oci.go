@@ -298,7 +298,12 @@ func StartContainer(ociBin string, container string) error {
 func ContainerID(ociBin string, nameOrID string) (string, error) {
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "-f", "{{.Id}}", nameOrID))
 	if err != nil { // don't return error if not found, only return empty string
-		if strings.Contains(rr.Stdout.String(), "Error: No such object:") || strings.Contains(rr.Stdout.String(), "unable to find") {
+		if strings.Contains(rr.Stdout.String(), "Error: No such object:") ||
+			strings.Contains(rr.Stdout.String(), "Error: No such container:") ||
+			strings.Contains(rr.Stdout.String(), "unable to find") ||
+			strings.Contains(rr.Stdout.String(), "Error: error inspecting object") ||
+			strings.Contains(rr.Stdout.String(), "Error: error looking up container") ||
+			strings.Contains(rr.Stdout.String(), "no such container") {
 			err = nil
 		}
 		return "", err

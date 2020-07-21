@@ -51,3 +51,9 @@ func PrintErrorExitCode(err string, exitcode int, additionalArgs ...map[string]s
 	e := NewErrorExitCode(err, exitcode, additionalArgs...)
 	printAsCloudEvent(e, e.data)
 }
+
+// PrintWarning prints a Warning type in JSON format
+func PrintWarning(warning string) {
+	w := NewWarning(warning)
+	printAsCloudEvent(w, w.data)
+}

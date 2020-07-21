@@ -66,7 +66,6 @@ func TestJSONOutputError(t *testing.T) {
 	defer Cleanup(t, profile, cancel)
 
 	startArgs := []string{"start", "-p", profile, "--memory=2200", "--output=json", "--wait=true", "--driver=fail"}
-	startArgs = append(startArgs, StartArgs()...)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err == nil {
