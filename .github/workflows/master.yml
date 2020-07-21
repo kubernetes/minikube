@@ -118,7 +118,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -201,7 +201,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -324,7 +324,7 @@ jobs:
         continue-on-error: true
         shell: powershell
         run: |
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
@@ -442,7 +442,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
           choco install -y kubernetes-cli
           choco install -y jq
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
@@ -546,7 +546,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -641,7 +641,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -721,7 +721,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -830,7 +830,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -912,7 +912,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1016,7 +1016,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1096,7 +1096,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.3/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
