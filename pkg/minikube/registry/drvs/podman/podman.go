@@ -40,7 +40,7 @@ import (
 // minReqPodmanVer is required the minimum version of podman to be installed for podman driver.
 var minReqPodmanVer = semver.Version{Major: 1, Minor: 7, Patch: 0}
 
-// podmanVerTwo is required to exit with an error when podman2 driver is currently installed because it is not supported yet.
+// podmanVerTwo is required to exit with an error when podman v2 driver is currently installed because it is not supported yet.
 var podmanVerTwo = semver.Version{Major: 2, Minor: 0, Patch: 0}
 
 func init() {
@@ -112,7 +112,7 @@ func status() registry.State {
 
 		if v.GTE(podmanVerTwo) {
 			return registry.State{
-				Error:     fmt.Errorf("podman2 is not supported yet"),
+				Error:     fmt.Errorf("podman v2 is not supported yet"),
 				Installed: true,
 				Healthy:   false,
 				Fix:       "Install a compatible Podman driver",
