@@ -97,15 +97,20 @@ func TestErrorExitCode(t *testing.T) {
 	}
 
 	PrintErrorExitCode("error", 5, map[string]string{"a": "b"}, map[string]string{"c": "d"})
+	actual := buf.String()
+	if actual != expected {
+		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
+	}
+}
 func TestWarning(t *testing.T) {
 	expected := `{"data":{"message":"warning"},"datacontenttype":"application/json","id":"random-id","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.warning"}`
 	expected += "\n"
 
 	buf := bytes.NewBuffer([]byte{})
-	outputFile = buf
-	defer func() { outputFile = os.Stdout }()
+	OutputFile = buf
+	defer func() { OutputFile = os.Stdout }()
 
-	getUUID = func() string {
+	GetUUID = func() string {
 		return "random-id"
 	}
 
