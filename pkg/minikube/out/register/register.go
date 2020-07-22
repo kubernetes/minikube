@@ -27,8 +27,10 @@ const (
 	DownloadingArtifacts RegStep = "Downloading Artifacts"
 	StartingNode         RegStep = "Starting Node"
 	RunningLocalhost     RegStep = "Running on Localhost"
+	LocalOSRelease       RegStep = "Local OS Release"
 	CreatingContainer    RegStep = "Creating Container"
 	CreatingVM           RegStep = "Creating VM"
+	ConfiguringLHEnv     RegStep = "Configuring Localhost Environment"
 	PreparingKubernetes  RegStep = "Preparing Kubernetes"
 	VerifyingKubernetes  RegStep = "Verifying Kubernetes"
 	EnablingAddons       RegStep = "Enabling Addons"
@@ -56,6 +58,7 @@ func init() {
 			DownloadingArtifacts,
 			StartingNode,
 			RunningLocalhost,
+			LocalOSRelease,
 			CreatingContainer,
 			CreatingVM,
 			PreparingKubernetes,
