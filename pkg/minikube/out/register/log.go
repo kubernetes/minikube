@@ -133,6 +133,7 @@ func NewError(err string) *Error {
 	}
 }
 
+// NewErrorExitCode returns an error that has an associated exit code
 func NewErrorExitCode(err string, exitcode int, additionalData ...map[string]string) *Error {
 	e := NewError(err)
 	e.data["exitcode"] = fmt.Sprintf("%v", exitcode)
