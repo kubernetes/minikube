@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/hashicorp/go-getter"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -56,8 +57,13 @@ func TestSkaffold(t *testing.T) {
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
 	}
+
 	// make sure minikube binary is in path so that skaffold can access it
 	abs, err := filepath.Abs(Target())
+	// copy minikube binary to minikube
+	if err := mcnutils.CopyFile(Target(), filepath.Join(filepath.Dir(abs), "minikube")); err != nil {
+		t.Fatalf("error copying to minikube")
+	}
 	if err != nil {
 		t.Fatalf("absolute path to minikube binary: %v", err)
 	}
