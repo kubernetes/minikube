@@ -61,6 +61,7 @@ func init() {
 			LocalOSRelease,
 			CreatingContainer,
 			CreatingVM,
+			ConfiguringLHEnv,
 			PreparingKubernetes,
 			VerifyingKubernetes,
 			EnablingAddons,
