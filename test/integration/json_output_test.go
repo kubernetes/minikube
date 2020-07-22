@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -51,6 +52,7 @@ func TestJSONOutput(t *testing.T) {
 			validator validateJSONOutputFunc
 		}{
 			{"DistinctCurrentSteps", validateDistinctCurrentSteps},
+			{"IncreasingCurrentSteps", validateIncreasingCurrentSteps},
 		}
 		for _, stc := range serialTests {
 			t.Run(stc.name, func(t *testing.T) {
@@ -72,6 +74,25 @@ func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*clou
 			t.Fatalf("step %v has already been assigned to another step:\n%v\nCannot use for:\n%v\n%v", currentStep, msg, ce.data["message"], ces)
 		}
 		steps[currentStep] = ce.data["message"]
+	}
+}
+
+// for successful minikube start, 'current step' should be increasing
+func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
+	step := -1
+	for _, ce := range ces {
+		currentStep, exists := ce.data["currentstep"]
+		if !exists {
+			continue
+		}
+		cs, err := strconv.Atoi(currentStep)
+		if err != nil {
+			t.Fatalf("current step is not an integer: %v\n%v", currentStep, ce)
+		}
+		if cs <= step {
+			t.Fatalf("current step is not in increasing order: %v", ces)
+		}
+		step = cs
 	}
 }
 
