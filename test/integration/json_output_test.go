@@ -19,12 +19,16 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
 func TestJSONOutput(t *testing.T) {
@@ -96,6 +100,32 @@ func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cl
 	}
 }
 
+func TestJSONOutputError(t *testing.T) {
+	profile := UniqueProfileName("json-output-error")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
+	defer Cleanup(t, profile, cancel)
+
+	// force a failure via --driver=fail so that we can make sure errors
+	// are printed as expected
+	startArgs := []string{"start", "-p", profile, "--memory=2200", "--output=json", "--wait=true", "--driver=fail"}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err == nil {
+		t.Errorf("expected failure: args %q: %v", rr.Command(), err)
+	}
+	ces, err := cloudEvents(t, rr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// we want the last cloud event to be of type error and have the expected exit code and message
+	last := ces[len(ces)-1]
+	if last.Type() != register.NewError("").Type() {
+		t.Fatalf("last cloud event is not of type error: %v", last)
+	}
+	last.validateData(t, "exitcode", fmt.Sprintf("%v", exit.Unavailable))
+	last.validateData(t, "message", fmt.Sprintf("The driver 'fail' is not supported on %s\n", runtime.GOOS))
+}
+
 type cloudEvent struct {
 	cloudevents.Event
 	data map[string]string
@@ -110,6 +140,16 @@ func newCloudEvent(t *testing.T, ce cloudevents.Event) *cloudEvent {
 	return &cloudEvent{
 		Event: ce,
 		data:  m,
+	}
+}
+
+func (c *cloudEvent) validateData(t *testing.T, key, value string) {
+	v, ok := c.data[key]
+	if !ok {
+		t.Fatalf("expected key %s does not exist in cloud event", key)
+	}
+	if v != value {
+		t.Fatalf("values in cloud events do not match:\nActual:\n%v\nExpected:\n%v\n", v, value)
 	}
 }
 
