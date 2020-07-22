@@ -27,9 +27,6 @@ import (
 )
 
 func TestJSONOutput(t *testing.T) {
-	if NoneDriver() || DockerDriver() {
-		t.Skipf("skipping: test drivers once all JSON output is enabled")
-	}
 	profile := UniqueProfileName("json-output")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
@@ -42,25 +39,61 @@ func TestJSONOutput(t *testing.T) {
 		t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
 	}
 
-	type validateJSONOutputFunc func(context.Context, *testing.T, *RunResult)
+	ces, err := cloudEvents(t, rr)
+	if err != nil {
+		t.Fatalf("converting to cloud events: %v\n", err)
+	}
+
+	type validateJSONOutputFunc func(context.Context, *testing.T, []*cloudEvent)
 	t.Run("serial", func(t *testing.T) {
 		serialTests := []struct {
 			name      string
 			validator validateJSONOutputFunc
 		}{
-			{"CloudEvents", validateCloudEvents},
+			{"DistinctCurrentSteps", validateDistinctCurrentSteps},
 		}
 		for _, stc := range serialTests {
 			t.Run(stc.name, func(t *testing.T) {
-				stc.validator(ctx, t, rr)
+				stc.validator(ctx, t, ces)
 			})
 		}
 	})
-
 }
 
-//  make sure all output can be marshaled as a cloud event
-func validateCloudEvents(ctx context.Context, t *testing.T, rr *RunResult) {
+//  make sure each log has a distinct step
+func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
+	steps := map[string]string{}
+	for _, ce := range ces {
+		currentStep, exists := ce.data["currentstep"]
+		if !exists {
+			continue
+		}
+		if msg, alreadySeen := steps[currentStep]; alreadySeen {
+			t.Fatalf("step %v has already been assigned to another step %v:\n%v", currentStep, msg, ces)
+		}
+		steps[currentStep] = ce.data["message"]
+	}
+}
+
+type cloudEvent struct {
+	cloudevents.Event
+	data map[string]string
+}
+
+func newCloudEvent(t *testing.T, ce cloudevents.Event) *cloudEvent {
+	m := map[string]string{}
+	data := ce.Data()
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("marshalling cloud event: %v", err)
+	}
+	return &cloudEvent{
+		Event: ce,
+		data:  m,
+	}
+}
+
+func cloudEvents(t *testing.T, rr *RunResult) ([]*cloudEvent, error) {
+	ces := []*cloudEvent{}
 	stdout := strings.Split(rr.Stdout.String(), "\n")
 	for _, s := range stdout {
 		if s == "" {
@@ -68,7 +101,10 @@ func validateCloudEvents(ctx context.Context, t *testing.T, rr *RunResult) {
 		}
 		event := cloudevents.NewEvent()
 		if err := json.Unmarshal([]byte(s), &event); err != nil {
-			t.Fatalf("unable to unmarshal output: %v\n%s", err, s)
+			t.Logf("unable to marshal output: %v", s)
+			return nil, err
 		}
+		ces = append(ces, newCloudEvent(t, event))
 	}
+	return ces, nil
 }
