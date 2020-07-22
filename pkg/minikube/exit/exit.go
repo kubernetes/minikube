@@ -43,13 +43,13 @@ const (
 
 // UsageT outputs a templated usage error and exits with error code 64
 func UsageT(format string, a ...out.V) {
-	out.ErrT(out.Usage, format, a...)
+	out.ErrWithExitCode(out.Usage, format, BadUsage, a...)
 	os.Exit(BadUsage)
 }
 
 // WithCodeT outputs a templated fatal error message and exits with the supplied error code.
 func WithCodeT(code int, format string, a ...out.V) {
-	out.FatalT(format, a...)
+	out.ErrWithExitCode(out.FatalType, format, code, a...)
 	os.Exit(code)
 }
 
@@ -57,8 +57,12 @@ func WithCodeT(code int, format string, a ...out.V) {
 func WithError(msg string, err error) {
 	glog.Infof("WithError(%s)=%v called from:\n%s", msg, err, debug.Stack())
 	p := problem.FromError(err, runtime.GOOS)
-	if p != nil {
+	if p != nil && out.JSON {
+		p.DisplayJSON(Config)
+		os.Exit(Config)
+	} else {
 		WithProblem(msg, err, p)
+		os.Exit(Config)
 	}
 	out.DisplayError(msg, err)
 	os.Exit(Software)
@@ -74,5 +78,4 @@ func WithProblem(msg string, err error, p *problem.Problem) {
 		out.ErrT(out.Sad, "If the above advice does not help, please let us know: ")
 		out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 	}
-	os.Exit(Config)
 }
