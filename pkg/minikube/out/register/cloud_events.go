@@ -31,8 +31,8 @@ const (
 )
 
 var (
-	outputFile io.Writer = os.Stdout
-	getUUID              = randomID
+	OutputFile io.Writer = os.Stdout
+	GetUUID              = randomID
 )
 
 func printAsCloudEvent(log Log, data map[string]string) {
@@ -43,12 +43,12 @@ func printAsCloudEvent(log Log, data map[string]string) {
 	if err := event.SetData(cloudevents.ApplicationJSON, data); err != nil {
 		glog.Warningf("error setting data: %v", err)
 	}
-	event.SetID(getUUID())
+	event.SetID(GetUUID())
 	json, err := event.MarshalJSON()
 	if err != nil {
 		glog.Warningf("error marashalling event: %v", err)
 	}
-	fmt.Fprintln(outputFile, string(json))
+	fmt.Fprintln(OutputFile, string(json))
 }
 
 func randomID() string {
