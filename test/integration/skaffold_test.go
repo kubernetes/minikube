@@ -34,6 +34,9 @@ import (
 )
 
 func TestSkaffold(t *testing.T) {
+	if NoneDriver() {
+		t.Skip("none driver doesn't support `minikube docker-env`, which skaffold requires")
+	}
 	// can't use a unique profile, as skaffold only recognizes the
 	// profile name 'minikube' as a local cluster
 	profile := "minikube"
@@ -53,16 +56,22 @@ func TestSkaffold(t *testing.T) {
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
 	}
-
-	// make sure "skaffold run" exits without failure
-	cmd := exec.CommandContext(ctx, tf.Name(), "run", "--kube-context", profile, "--status-check=true", "--port-forward=false")
-	cmd.Dir = "testdata/skaffold"
 	// make sure minikube binary is in path so that skaffold can access it
 	abs, err := filepath.Abs(Target())
 	if err != nil {
 		t.Fatalf("absolute path to minikube binary: %v", err)
 	}
 	os.Setenv("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), filepath.Dir(abs)))
+	// make sure 'docker' and 'minikube' are on PATH
+	for _, binary := range []string{"minikube", "docker"} {
+		rr, err := Run(t, exec.CommandContext(ctx, "which", binary))
+		if err != nil {
+			t.Fatalf("'which %v' failed: check if %v is on PATH\n%v", binary, binary, rr.Output())
+		}
+	}
+	// make sure "skaffold run" exits without failure
+	cmd := exec.CommandContext(ctx, tf.Name(), "run", "--kube-context", profile, "--status-check=true", "--port-forward=false")
+	cmd.Dir = "testdata/skaffold"
 	rr, err = Run(t, cmd)
 	if err != nil {
 		t.Fatalf("error running skaffold: %v\n%s", err, rr.Output())
