@@ -26,6 +26,7 @@ const (
 	SelectingDriver      RegStep = "Selecting Driver"
 	DownloadingArtifacts RegStep = "Downloading Artifacts"
 	StartingNode         RegStep = "Starting Node"
+	RunningLocalhost     RegStep = "Running on Localhost"
 	CreatingContainer    RegStep = "Creating Container"
 	CreatingVM           RegStep = "Creating VM"
 	PreparingKubernetes  RegStep = "Preparing Kubernetes"
@@ -54,6 +55,7 @@ func init() {
 			SelectingDriver,
 			DownloadingArtifacts,
 			StartingNode,
+			RunningLocalhost,
 			CreatingContainer,
 			CreatingVM,
 			PreparingKubernetes,
