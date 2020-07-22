@@ -32,10 +32,10 @@ func TestSetCurrentStep(t *testing.T) {
 	expected += "\n"
 
 	buf := bytes.NewBuffer([]byte{})
-	outputFile = buf
-	defer func() { outputFile = os.Stdout }()
+	OutputFile = buf
+	defer func() { OutputFile = os.Stdout }()
 
-	getUUID = func() string {
+	GetUUID = func() string {
 		return "random-id"
 	}
 
