@@ -23,7 +23,10 @@ RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/lib
     apt-get install -y --no-install-recommends cri-o-1.17
 
 # install podman
-RUN apt-get install -y --no-install-recommends podman
+RUN sh -c "echo 'deb https://dl.bintray.com/afbjorklund/podman eoan main' > /etc/apt/sources.list.d/podman.list" && \
+    curl -L https://bintray.com/user/downloadSubjectPublicKey?username=afbjorklund -o afbjorklund-public.key.asc && \
+    apt-key add - < afbjorklund-public.key.asc && apt-get update && \
+    apt-get install -y --no-install-recommends podman=1.9.3~1
 
 # install varlink
 RUN apt-get install -y --no-install-recommends varlink
