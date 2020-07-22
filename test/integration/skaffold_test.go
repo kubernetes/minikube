@@ -61,7 +61,7 @@ func TestSkaffold(t *testing.T) {
 	if err != nil {
 		t.Fatalf("absolute path to minikube binary: %v", err)
 	}
-	os.Setenv("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), filepath.Dir(abs)))
+	os.Setenv("PATH", fmt.Sprintf("%s:%s", filepath.Dir(abs), os.Getenv("PATH")))
 	// make sure 'docker' and 'minikube' are on PATH
 	for _, binary := range []string{"minikube", "docker"} {
 		rr, err := Run(t, exec.CommandContext(ctx, "which", binary))
