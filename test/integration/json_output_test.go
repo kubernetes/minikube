@@ -60,7 +60,7 @@ func TestJSONOutput(t *testing.T) {
 	})
 }
 
-//  make sure each log has a distinct step
+//  make sure each step has a distinct step number
 func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
 	steps := map[string]string{}
 	for _, ce := range ces {
@@ -69,7 +69,7 @@ func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*clou
 			continue
 		}
 		if msg, alreadySeen := steps[currentStep]; alreadySeen {
-			t.Fatalf("step %v has already been assigned to another step %v:\n%v", currentStep, msg, ces)
+			t.Fatalf("step %v has already been assigned to another step:\n%v\nCannot use for:\n%v\n%v", currentStep, msg, ce.data["message"], ces)
 		}
 		steps[currentStep] = ce.data["message"]
 	}
