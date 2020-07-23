@@ -89,10 +89,10 @@ jobs:
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+          sudo apt-get install -y jq
       - name: Install docker
         shell: bash
         run: |
-          sudo apt-get update
           sudo apt-get install -y docker.io
       - name: Run Integration Test
         continue-on-error: false
