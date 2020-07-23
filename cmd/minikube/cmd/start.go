@@ -223,6 +223,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
+	validateDockerStorageDriver(driverName)
 
 	// Download & update the driver, even in --download-only mode
 	if !viper.GetBool(dryRun) {
@@ -1157,4 +1158,27 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 
 	return version.VersionPrefix + nvs.String()
+}
+
+// validateDockerStorageDriver checks that docker is using overlay2
+// if not, set preload=false (see #7626)
+func validateDockerStorageDriver(drvName string) {
+	if !driver.IsKIC(drvName) {
+		return
+	}
+	if _, err := exec.LookPath("docker"); err != nil {
+		exit.WithCodeT(exit.BadUsage, "Please make sure docker is available on your PATH")
+	}
+	j, err := exec.Command("docker", "info", "--format", "{{.Driver}}").Output()
+	if err != nil {
+		glog.Warningf("Unable to confirm that docker is using overlay2; setting preload=false")
+		viper.Set(preload, false)
+		return
+	}
+	driver := strings.Trim(string(j), "\n")
+	if driver == "overlay2" {
+		return
+	}
+	out.WarningT("Docker is currently using the {{.Driver}} storage driver. Consider switching to overlay2 for better performance.", out.V{"Driver": driver})
+	viper.Set(preload, false)
 }
