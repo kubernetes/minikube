@@ -64,6 +64,10 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.11.13'
+          stable: true
       - name: Build ISO
         run: |
           whoami
