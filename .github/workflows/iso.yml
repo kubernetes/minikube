@@ -9,6 +9,10 @@ jobs:
   build_test_iso:
     runs-on: [self-hosted, Ubuntu, 16CPUs, kvm2]
     steps:
+      - name: clean up workspace
+        shell: bash
+        run: |
+          rm -rf minikube
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
@@ -54,7 +58,7 @@ jobs:
           sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
       - name: Build ISO
         run: |
-          IN_DOCKER=1 make out/minikube.iso
+          make out/minikube.iso
           make checksum
       - name: Install kubectl
         shell: bash

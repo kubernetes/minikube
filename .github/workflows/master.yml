@@ -8,6 +8,7 @@ on:
       - "**.yml"
       - "**.yaml"
       - "Makefile"
+      - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
