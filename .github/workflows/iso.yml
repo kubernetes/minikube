@@ -33,7 +33,7 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - name: Install ISO tools
+      - name: Install ISO build tools
         run: |
           sudo apt-get update \
           && sudo apt-get install -y apt dpkg apt-utils ca-certificates \
@@ -58,7 +58,7 @@ jobs:
           sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
       - name: Build ISO
         run: |
-          make out/minikube.iso
+          make minikube_iso
           make checksum
       - name: Install kubectl
         shell: bash
@@ -69,7 +69,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.23/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -87,7 +87,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=kvm2 --iso-url=file://$(pwd)/minikube.iso" -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=kvm2   --iso-url=file://$(pwd)/minikube.iso" -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
