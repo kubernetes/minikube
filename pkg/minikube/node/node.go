@@ -18,12 +18,15 @@ package node
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -152,4 +155,26 @@ func Save(cfg *config.ClusterConfig, node *config.Node) error {
 // Name returns the appropriate name for the node given the current number of nodes
 func Name(index int) string {
 	return fmt.Sprintf("m%02d", index)
+}
+
+// DriverIP gets the ip address of the node
+func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
+	host, err := machine.LoadHost(api, machineName)
+	if err != nil {
+		return nil, err
+	}
+
+	ipStr, err := host.Driver.GetIP()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting IP")
+	}
+
+	if driver.IsKIC(host.DriverName) {
+		ipStr = oci.DefaultBindIPV4
+	}
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return nil, fmt.Errorf("parsing IP: %s", ipStr)
+	}
+	return ip, nil
 }

@@ -24,7 +24,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
+	lmstate "github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/state"
 )
 
 // ClusterController holds all the needed information for a minikube cluster
@@ -94,17 +95,17 @@ func Running(name string) ClusterController {
 		exit.WithError("Unable to get machine status", err)
 	}
 
-	if hs == state.None.String() {
+	if hs == lmstate.None.String() {
 		out.T(out.Shrug, `The control plane node "{{.name}}" does not exist.`, out.V{"name": cp.Name})
 		exitTip("start", name, exit.Unavailable)
 	}
 
-	if hs == state.Stopped.String() {
+	if hs == lmstate.Stopped.String() {
 		out.T(out.Shrug, `The control plane node must be running for this command`)
 		exitTip("start", name, exit.Unavailable)
 	}
 
-	if hs != state.Running.String() {
+	if hs != lmstate.Running.String() {
 		out.T(out.Shrug, `The control plane node is not running (state={{.state}})`, out.V{"name": cp.Name, "state": hs})
 		exitTip("start", name, exit.Unavailable)
 	}
@@ -148,13 +149,21 @@ func Healthy(name string) ClusterController {
 		exitTip("delete", name, exit.Unavailable)
 	}
 
-	if as == state.Paused {
+	if as.Condition == state.Paused {
 		out.T(out.Shrug, `The control plane for "{{.name}}" is paused!`, out.V{"name": name})
 		exitTip("unpause", name, exit.Unavailable)
 	}
 
-	if as != state.Running {
-		out.T(out.Shrug, `This control plane is not running! (state={{.state}})`, out.V{"state": as.String()})
+	if len(as.Warnings) > 0 {
+		glog.Warningf("status returned warnings: %s", as.Warnings)
+	}
+
+	if len(as.Errors) > 0 {
+		glog.Errorf("errors seen: %v", as.Errors)
+	}
+
+	if as.Condition != state.OK {
+		out.T(out.Shrug, `This control plane is not healthy! (state={{.state}})`, out.V{"state": as.String()})
 		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
 		exitTip("start", name, exit.Unavailable)
 	}

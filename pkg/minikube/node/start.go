@@ -39,7 +39,7 @@ import (
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cluster"
+
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -57,6 +57,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
+
+	// FIXME: cluster should import node, not vice-versa
+	"k8s.io/minikube/pkg/minikube/cluster"
 )
 
 const waitTimeout = "wait-timeout"
@@ -92,7 +95,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
 	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
-	hostIP, err := cluster.HostIP(starter.Host)
+	hostIP, err := machine.HostIP(starter.Host)
 	if err != nil {
 		glog.Errorf("Unable to get host IP: %v", err)
 	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {

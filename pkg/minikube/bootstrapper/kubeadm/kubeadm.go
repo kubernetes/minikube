@@ -34,7 +34,6 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -56,6 +55,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/state"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
@@ -73,15 +73,6 @@ type Bootstrapper struct {
 // NewBootstrapper creates a new kubeadm.Bootstrapper
 func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
 	return &Bootstrapper{c: r, contextName: cc.Name, k8sClient: nil}, nil
-}
-
-// GetAPIServerStatus returns the api-server status
-func (k *Bootstrapper) GetAPIServerStatus(hostname string, port int) (string, error) {
-	s, err := kverify.APIServerStatus(k.c, hostname, port)
-	if err != nil {
-		return state.Error.String(), err
-	}
-	return s.String(), nil
 }
 
 // LogCommands returns a map of log type to a command which will display that log.
@@ -487,7 +478,7 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 		return true
 	}
 
-	if st != state.Running {
+	if st.Condition != state.OK {
 		glog.Infof("needs reconfigure: apiserver in state %s", st)
 		return true
 	}

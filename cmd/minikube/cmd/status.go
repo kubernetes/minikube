@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,290 +17,141 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"os"
 	"strings"
-	"text/template"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
-	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/state"
 )
 
-var statusFormat string
-var output string
+/* Example output:
+
+cluster:    OK (healthz returned in 0.15s)
+kubeconfig: OK (endpoint: 127.0.0.1:8080)
+
+nodes:
+* minikube: OK (load: 10.40)
+*/
 
 const (
-	// # Additional states used by kubeconfig:
+	clusterTmpl = `cluster:  {{.Condition}} ({{.Message}})
 
-	// Configured means configured
-	Configured = "Configured" // ~state.Saved
-	// Misconfigured means misconfigured
-	Misconfigured = "Misconfigured" // ~state.Error
+components:
+	{{ range .Components }}{{ .Name }}: {{.Condition}} ({{.Message}}){{ end}}
 
-	// # Additional states used for clarity:
+nodes:
+  {{ range .Nodes }}{{ .Name }}: {{.State}} ({{.Message}}){{ end}}`
 
-	// Nonexistent means nonexistent
-	Nonexistent = "Nonexistent" // ~state.None
-	// Irrelevant is used for statuses that aren't meaningful for worker nodes
-	Irrelevant = "Irrelevant"
+	nodeTmpl = `{{ .Name }}: {{.State}} ({{.Message}})
+	
+components:
+	{{ range .Components }}{{ .Name }}: {{.Condition}} ({{.Message}}){{ end}}`
 )
 
-// Status holds string representations of component states
-type Status struct {
-	Name       string
-	Host       string
-	Kubelet    string
-	APIServer  string
-	Kubeconfig string
-	Worker     bool
+var (
+	outputFlag string
+	compatFlag string
+	nodeFlag   string
+	formatFlag string
+
+	exitCodeMap = map[state.Condition]int{
+		state.Unknown:     exit.Software,
+		state.Nonexistent: exit.NoInput,
+		state.Unavailable: exit.Unavailable,
+		state.OK:          0,
+		state.Warning:     0,
+		state.Error:       exit.Failure,
+
+		state.Starting: 0,
+		state.Pausing:  0,
+		state.Paused:   0,
+		state.Stopping: 0,
+		state.Stopped:  0,
+	}
+)
+
+type statusConfig struct {
+	Cluster string
+	Node    string
+
+	Format     string
+	Template   string
+	compatMode bool
 }
-
-const (
-	minikubeNotRunningStatusFlag = 1 << 0
-	clusterNotRunningStatusFlag  = 1 << 1
-	k8sNotRunningStatusFlag      = 1 << 2
-	defaultStatusFormat          = `{{.Name}}
-type: Control Plane
-host: {{.Host}}
-kubelet: {{.Kubelet}}
-apiserver: {{.APIServer}}
-kubeconfig: {{.Kubeconfig}}
-
-`
-	workerStatusFormat = `{{.Name}}
-type: Worker
-host: {{.Host}}
-kubelet: {{.Kubelet}}
-
-`
-)
 
 // statusCmd represents the status command
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Gets the status of a local Kubernetes cluster",
-	Long: `Gets the status of a local Kubernetes cluster.
-	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
-	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
+	Short: "Output the status of a local Kubernetes cluster",
 	Run: func(cmd *cobra.Command, args []string) {
+		outputFormat := strings.ToLower(outputFlag)
 
-		if output != "text" && statusFormat != defaultStatusFormat {
-			exit.UsageT("Cannot use both --output and --format options")
+		// Backwards compatibility while we transition from legacy to new output
+		compatMode := false
+		glog.Infof("compat: %q", viper.GetString("compat"))
+		if cmd.Flags().Changed("compat") {
+			glog.Infof("compat changed")
+		}
+
+		if compatFlag == "true" {
+			glog.Infof("compat=true")
+			compatMode = true
+		} else if compatFlag == "auto" {
+			glog.Infof("compat=auto")
+			// Preserve existing behavior for programattic use cases
+			if cmd.Flags().Changed("output") || cmd.Flags().Changed("format") {
+				glog.Errorf("Automatically enabling --compat=true. Please explicitly pass --compat=(false|true) to avoid warning")
+				compatMode = true
+			}
+		}
+
+		tmpl := ""
+
+		if cmd.Flags().Changed("format") {
+			if outputFormat != "text" {
+				exit.UsageT("Cannot use both --output and --format options")
+			}
+			tmpl = formatFlag
 		}
 
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname)
 
-		var statuses []*Status
-
-		if nodeName != "" || statusFormat != defaultStatusFormat && len(cc.Nodes) > 1 {
-			n, _, err := node.Retrieve(*cc, nodeName)
-			if err != nil {
-				exit.WithError("retrieving node", err)
-			}
-
-			st, err := status(api, *cc, *n)
-			if err != nil {
-				glog.Errorf("status error: %v", err)
-			}
-			statuses = append(statuses, st)
-		} else {
-			for _, n := range cc.Nodes {
-				machineName := driver.MachineName(*cc, n)
-				glog.Infof("checking status of %s ...", machineName)
-				st, err := status(api, *cc, n)
-				glog.Infof("%s status: %+v", machineName, st)
-
-				if err != nil {
-					glog.Errorf("status error: %v", err)
-				}
-				if st.Host == Nonexistent {
-					glog.Errorf("The %q host does not exist!", machineName)
-				}
-				statuses = append(statuses, st)
-			}
+		err, cs := cluster.Status(api, cc)
+		if err != nil {
+			exit.WithError("status", cs)
 		}
 
-		switch strings.ToLower(output) {
-		case "text":
-			for _, st := range statuses {
-				if err := statusText(st, os.Stdout); err != nil {
-					exit.WithError("status text failure", err)
-				}
-			}
-		case "json":
-			if err := statusJSON(statuses, os.Stdout); err != nil {
-				exit.WithError("status json failure", err)
-			}
-		default:
-			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
+		node := viper.GetString("node")
+		if node != "" {
+			nodeStatus(api, cc, statusConfig{Cluster: cname, Node: node, Format: outputFormat, Template: tmpl, compatMode: compatMode})
 		}
 
-		os.Exit(exitCode(statuses))
+		clusterStatus(api, cc, statusConfig{Cluster: cname, Format: outputFormat, Template: tmpl, compatMode: compatMode})
 	},
 }
 
-func exitCode(statuses []*Status) int {
-	c := 0
-	for _, st := range statuses {
-		if st.Host != state.Running.String() {
-			c |= minikubeNotRunningStatusFlag
-		}
-		if (st.APIServer != state.Running.String() && st.APIServer != Irrelevant) || st.Kubelet != state.Running.String() {
-			c |= clusterNotRunningStatusFlag
-		}
-		if st.Kubeconfig != Configured && st.Kubeconfig != Irrelevant {
-			c |= k8sNotRunningStatusFlag
-		}
-	}
-	return c
-}
+func outputStatus(api libmachine.API, cc *config.ClusterConfig, sc statusConfig) {
+	glog.Errorf("status config: %+v", sc)
 
-func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
-
-	controlPlane := n.ControlPlane
-	name := driver.MachineName(cc, n)
-
-	st := &Status{
-		Name:       name,
-		Host:       Nonexistent,
-		APIServer:  Nonexistent,
-		Kubelet:    Nonexistent,
-		Kubeconfig: Nonexistent,
-		Worker:     !controlPlane,
+	cs := cluster.Status(api, cc)
+	if sc.CompatMode {
+		return legacyStatus(cs, sc)
 	}
 
-	hs, err := machine.Status(api, name)
-	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
-	if err != nil {
-		return st, errors.Wrap(err, "host")
-	}
-
-	// We have no record of this host. Return nonexistent struct
-	if hs == state.None.String() {
-		return st, nil
-	}
-	st.Host = hs
-
-	// If it's not running, quickly bail out rather than delivering conflicting messages
-	if st.Host != state.Running.String() {
-		glog.Infof("host is not running, skipping remaining checks")
-		st.APIServer = st.Host
-		st.Kubelet = st.Host
-		st.Kubeconfig = st.Host
-		return st, nil
-	}
-
-	// We have a fully operational host, now we can check for details
-	if _, err := cluster.DriverIP(api, name); err != nil {
-		glog.Errorf("failed to get driver ip: %v", err)
-		st.Host = state.Error.String()
-		return st, err
-	}
-
-	st.Kubeconfig = Configured
-	if !controlPlane {
-		st.Kubeconfig = Irrelevant
-		st.APIServer = Irrelevant
-	}
-
-	host, err := machine.LoadHost(api, name)
-	if err != nil {
-		return st, err
-	}
-
-	cr, err := machine.CommandRunner(host)
-	if err != nil {
-		return st, err
-	}
-
-	stk := kverify.KubeletStatus(cr)
-	glog.Infof("%s kubelet status = %s", name, stk)
-	st.Kubelet = stk.String()
-
-	// Early exit for worker nodes
-	if !controlPlane {
-		return st, nil
-	}
-
-	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
-	if err != nil {
-		glog.Errorf("forwarded endpoint: %v", err)
-		st.Kubeconfig = Misconfigured
-	} else {
-		err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
-		if err != nil {
-			glog.Errorf("kubeconfig endpoint: %v", err)
-			st.Kubeconfig = Misconfigured
-		}
-	}
-
-	sta, err := kverify.APIServerStatus(cr, hostname, port)
-	glog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
-
-	if err != nil {
-		glog.Errorln("Error apiserver status:", err)
-		st.APIServer = state.Error.String()
-	} else {
-		st.APIServer = sta.String()
-	}
-
-	return st, nil
 }
 
 func init() {
-	statusCmd.Flags().StringVarP(&statusFormat, "format", "f", defaultStatusFormat,
-		`Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
-	statusCmd.Flags().StringVarP(&output, "output", "o", "text",
-		`minikube status --output OUTPUT. json, text`)
-	statusCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.")
-}
+	statusCmd.Flags().StringVarP(&formatFlag, "format", "f", "", `Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 
-func statusText(st *Status, w io.Writer) error {
-	tmpl, err := template.New("status").Parse(statusFormat)
-	if st.Worker && statusFormat == defaultStatusFormat {
-		tmpl, err = template.New("worker-status").Parse(workerStatusFormat)
-	}
-	if err != nil {
-		return err
-	}
-	if err := tmpl.Execute(w, st); err != nil {
-		return err
-	}
-	if st.Kubeconfig == Misconfigured {
-		_, err := w.Write([]byte("\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n"))
-		return err
-	}
-	return nil
-}
-
-func statusJSON(st []*Status, w io.Writer) error {
-	var js []byte
-	var err error
-	// Keep backwards compat with single node clusters to not break anyone
-	if len(st) == 1 {
-		js, err = json.Marshal(st[0])
-	} else {
-		js, err = json.Marshal(st)
-	}
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(js)
-	return err
+	For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
+	statusCmd.Flags().StringVarP(&outputFlag, "output", "o", "text", "Format for status output. Options are: json, text")
+	statusCmd.Flags().StringVarP(&nodeFlag, "nodee", "n", "", "The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.")
+	statusCmd.Flags().StringVar(&compatFlag, "compat", "auto", "Output status in backwards-compatible format (currently defaults to true when --output or --format are set)")
 }
