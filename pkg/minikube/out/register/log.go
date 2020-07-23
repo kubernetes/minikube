@@ -16,6 +16,8 @@ limitations under the License.
 
 package register
 
+import "fmt"
+
 // Log represents the different types of logs that can be output as JSON
 // This includes: Step, Download, DownloadProgress, Warning, Info, Error
 type Log interface {
@@ -120,6 +122,27 @@ func NewInfo(message string) *Info {
 
 // Error will be used to notify the user of errors
 type Error struct {
+	data map[string]string
+}
+
+func NewError(err string) *Error {
+	return &Error{
+		map[string]string{
+			"message": err,
+		},
+	}
+}
+
+// NewErrorExitCode returns an error that has an associated exit code
+func NewErrorExitCode(err string, exitcode int, additionalData ...map[string]string) *Error {
+	e := NewError(err)
+	e.data["exitcode"] = fmt.Sprintf("%v", exitcode)
+	for _, a := range additionalData {
+		for k, v := range a {
+			e.data[k] = v
+		}
+	}
+	return e
 }
 
 func (s *Error) Type() string {

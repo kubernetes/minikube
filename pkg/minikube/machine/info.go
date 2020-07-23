@@ -27,6 +27,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
 type hostInfo struct {
@@ -77,6 +78,7 @@ func showLocalOsRelease() {
 		return
 	}
 
+	register.Reg.SetStep(register.LocalOSRelease)
 	out.T(out.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
 }
 

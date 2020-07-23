@@ -115,6 +115,16 @@ func Ln(format string, a ...interface{}) {
 	String(format+"\n", a...)
 }
 
+// ErrWithExitCode includes the exit code in JSON output
+func ErrWithExitCode(style StyleEnum, format string, exitcode int, a ...V) {
+	if JSON {
+		errStyled := ApplyTemplateFormatting(style, useColor, format, a...)
+		register.PrintErrorExitCode(errStyled, exitcode)
+		return
+	}
+	ErrT(style, format, a...)
+}
+
 // ErrT writes a stylized and templated error message to stderr
 func ErrT(style StyleEnum, format string, a ...V) {
 	errStyled := ApplyTemplateFormatting(style, useColor, format, a...)
@@ -123,6 +133,10 @@ func ErrT(style StyleEnum, format string, a ...V) {
 
 // Err writes a basic formatted string to stderr
 func Err(format string, a ...interface{}) {
+	if JSON {
+		register.PrintError(format)
+		return
+	}
 	if errFile == nil {
 		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
@@ -232,8 +246,12 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 
 // DisplayError prints the error and displays the standard minikube error messaging
 func DisplayError(msg string, err error) {
-	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
+	if JSON {
+		FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
+		return
+	}
+	// use Warning because Error will display a duplicate message to stderr
 	ErrT(Empty, "")
 	FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
 	ErrT(Empty, "")
