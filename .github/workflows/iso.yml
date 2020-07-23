@@ -9,10 +9,13 @@ jobs:
   build_test_iso:
     runs-on: [self-hosted, Ubuntu, 16CPUs, kvm2]
     steps:
-      - name: clean up workspace
+      - name: Clean up workspace
         shell: bash
         run: |
+          ls -lah
           rm -rf minikube
+          ls -lah
+          df -h
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
@@ -33,6 +36,10 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
+      - name: Install KVM 
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
       - name: Install ISO build tools
         run: |
           sudo apt-get update \
@@ -58,6 +65,7 @@ jobs:
           sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
       - name: Build ISO
         run: |
+          whoami
           make minikube_iso
           make checksum
       - name: Install kubectl
