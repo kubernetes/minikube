@@ -932,7 +932,6 @@ func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
 			return errors.Wrap(err, "stop")
 		}
 	}
-
 	return nil
 }
 
