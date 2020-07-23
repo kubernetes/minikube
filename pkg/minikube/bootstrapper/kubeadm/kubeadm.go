@@ -555,7 +555,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	if err := k.stopKubeSystem(cfg); err != nil {
-		glog.Warningf("failed to stop kube system container before reconfiguring kubeadm, this might cause port conflicts sometimes : %v", err)
+		glog.Warningf("Failed to stop kube-system containers: port conflicts may arise: %v %v", err)
 	}
 	if err := k.clearStaleConfigs(cfg); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
