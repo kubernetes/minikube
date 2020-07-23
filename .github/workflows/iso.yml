@@ -23,19 +23,6 @@ jobs:
           stable: true
       - name: Download Dependencies
         run: go mod download
-      - name: Build Binaries
-        run: |
-          make cross
-          make e2e-cross
-          cp -r test/integration/testdata ./out
-          whoami
-          echo github ref $GITHUB_REF
-          echo workflow $GITHUB_WORKFLOW
-          echo home $HOME
-          echo event name $GITHUB_EVENT_NAME
-          echo workspace $GITHUB_WORKSPACE
-          echo "end of debug stuff"
-          echo $(which jq)
       - name: Install KVM 
         run: |
           sudo apt-get update
@@ -63,6 +50,19 @@ jobs:
             dumb-init \
             libpcre3-dev
           sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+      - name: Build Binaries
+        run: |
+          make cross
+          make e2e-cross
+          cp -r test/integration/testdata ./out
+          whoami
+          echo github ref $GITHUB_REF
+          echo workflow $GITHUB_WORKFLOW
+          echo home $HOME
+          echo event name $GITHUB_EVENT_NAME
+          echo workspace $GITHUB_WORKSPACE
+          echo "end of debug stuff"
+          echo $(which jq)
       - name: Build ISO
         run: |
           whoami
