@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -63,30 +62,6 @@ func IsPodmanAvailable(r command.Runner) bool {
 	}
 
 	return true
-}
-
-func CreateExternalSSHClient(d drivers.Driver) (*ssh.ExternalClient, error) {
-	sshBinaryPath, err := exec.LookPath("ssh")
-	if err != nil {
-		return &ssh.ExternalClient{}, err
-	}
-
-	addr, err := d.GetSSHHostname()
-	if err != nil {
-		return &ssh.ExternalClient{}, err
-	}
-
-	port, err := d.GetSSHPort()
-	if err != nil {
-		return &ssh.ExternalClient{}, err
-	}
-
-	auth := &ssh.Auth{}
-	if d.GetSSHKeyPath() != "" {
-		auth.Keys = []string{d.GetSSHKeyPath()}
-	}
-
-	return ssh.NewExternalClient(sshBinaryPath, d.GetSSHUsername(), addr, port, auth)
 }
 
 // PodmanEnvConfig encapsulates all external inputs into shell generation for Podman

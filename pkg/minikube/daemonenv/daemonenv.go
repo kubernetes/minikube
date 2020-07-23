@@ -24,6 +24,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 )
 
@@ -40,4 +42,43 @@ func TryConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 		glog.Infof(msg)
 		return []byte{}, fmt.Errorf("tried to test connectivity of unsupported daemon: %s", bin)
 	}
+}
+
+// CreateExternalSSHClient creates external ssh client
+func CreateExternalSSHClient(d drivers.Driver) (*ssh.ExternalClient, error) {
+	sshBinaryPath, err := exec.LookPath("ssh")
+	if err != nil {
+		return &ssh.ExternalClient{}, err
+	}
+
+	addr, err := d.GetSSHHostname()
+	if err != nil {
+		return &ssh.ExternalClient{}, err
+	}
+
+	port, err := d.GetSSHPort()
+	if err != nil {
+		return &ssh.ExternalClient{}, err
+	}
+
+	auth := &ssh.Auth{}
+	if d.GetSSHKeyPath() != "" {
+		auth.Keys = []string{d.GetSSHKeyPath()}
+	}
+
+	return ssh.NewExternalClient(sshBinaryPath, d.GetSSHUsername(), addr, port, auth)
+}
+
+// GetNoProxyVar gets the no_proxy var
+func GetNoProxyVar() (string, string) {
+	// first check for an existing lower case no_proxy var
+	noProxyVar := "no_proxy"
+	noProxyValue := os.Getenv("no_proxy")
+
+	// otherwise default to allcaps HTTP_PROXY
+	if noProxyValue == "" {
+		noProxyVar = "NO_PROXY"
+		noProxyValue = os.Getenv("NO_PROXY")
+	}
+	return noProxyVar, noProxyValue
 }

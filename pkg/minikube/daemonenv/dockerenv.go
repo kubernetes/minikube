@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 
@@ -80,20 +79,6 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShel
 	}
 
 	return s
-}
-
-// GetNoProxyVar gets the no_proxy var
-func GetNoProxyVar() (string, string) {
-	// first check for an existing lower case no_proxy var
-	noProxyVar := "no_proxy"
-	noProxyValue := os.Getenv("no_proxy")
-
-	// otherwise default to allcaps HTTP_PROXY
-	if noProxyValue == "" {
-		noProxyVar = "NO_PROXY"
-		noProxyValue = os.Getenv("NO_PROXY")
-	}
-	return noProxyVar, noProxyValue
 }
 
 // IsDockerActive checks if Docker is active
