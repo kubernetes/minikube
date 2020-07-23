@@ -554,6 +554,9 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		return nil
 	}
 
+	if err := k.stopKubeSystem(cfg); err != nil {
+		glog.Warningf("Failed to stop kube-system containers: port conflicts may arise: %v", err)
+	}
 	if err := k.clearStaleConfigs(cfg); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
 	}
@@ -900,6 +903,27 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		// retry up to make sure SA is created
 		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
 			return errors.Wrap(err, "ensure sa was created")
+		}
+	}
+	return nil
+}
+
+// stopKubeSystem stops all the containers in the kube-system to prevent #8740 when doing hot upgrade
+func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
+	glog.Info("stopping kube-system containers ...")
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return errors.Wrap(err, "new cruntime")
+	}
+
+	ids, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
+	if err != nil {
+		return errors.Wrap(err, "list")
+	}
+
+	if len(ids) > 0 {
+		if err := cr.StopContainers(ids); err != nil {
+			return errors.Wrap(err, "stop")
 		}
 	}
 	return nil
