@@ -811,7 +811,6 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 
 // validateMemorySize validates the memory size matches the minimum recommended
 func validateMemorySize(req int, drvName string) {
-
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
 		glog.Warningf("Unable to query memory limits: %v", err)
@@ -822,7 +821,7 @@ func validateMemorySize(req int, drvName string) {
 			out.V{"requested": req, "mininum": minUsableMem})
 	}
 	if req < minRecommendedMem && !viper.GetBool(force) {
-		out.T(out.Notice, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
+		out.WarningT("Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
 			out.V{"requested": req, "recommended": minRecommendedMem})
 	}
 
@@ -830,13 +829,13 @@ func validateMemorySize(req int, drvName string) {
 		// in Docker Desktop if you allocate 2 GB the docker info shows:  Total Memory: 1.945GiB which becomes 1991 when we calculate the MBs
 		// thats why it is not same number as other drivers which is 2 GB
 		if containerLimit < 1991 {
-			out.T(out.Tip, `Increase Docker for Desktop memory to at least 2.5GB or more:
+			out.WarningT(`Increase Docker for Desktop memory to at least 2.5GB or more:
 			
 	Docker for Desktop > Settings > Resources > Memory
 
 `)
 		} else if containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
-			out.T(out.Tip, `Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3GB.
+			out.WarningT(`Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3GB.
 
 	Docker for Desktop  > Settings > Resources > Memory
 

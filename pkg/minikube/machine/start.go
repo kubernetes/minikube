@@ -253,6 +253,7 @@ func showHostInfo(cfg config.ClusterConfig) {
 	if driver.BareMetal(cfg.Driver) {
 		info, err := getHostInfo()
 		if err == nil {
+			register.Reg.SetStep(register.RunningLocalhost)
 			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 		return
