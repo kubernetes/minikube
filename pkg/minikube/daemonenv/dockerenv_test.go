@@ -25,8 +25,8 @@ import (
 )
 
 type FakeNoProxy struct {
-	NoProxyVar   string
-	NoProxyValue string
+	VarName string
+	Value   string
 }
 
 func TestGenerateDockerScripts(t *testing.T) {
@@ -232,9 +232,9 @@ MINIKUBE_ACTIVE_DOCKERD=noneshell
 	}
 	for _, tc := range tests {
 		t.Run(tc.config.Profile, func(t *testing.T) {
-			orgEnv := os.Getenv(tc.noProxyGetter.NoProxyVar)
-			defer os.Setenv(tc.noProxyGetter.NoProxyVar, orgEnv)
-			os.Setenv(tc.noProxyGetter.NoProxyVar, tc.noProxyGetter.NoProxyValue)
+			orgEnv := os.Getenv(tc.noProxyGetter.VarName)
+			defer os.Setenv(tc.noProxyGetter.VarName, orgEnv)
+			os.Setenv(tc.noProxyGetter.VarName, tc.noProxyGetter.Value)
 
 			tc.config.EnvConfig.Shell = tc.shell
 			var b []byte
