@@ -7,7 +7,7 @@ env:
   GOPROXY: https://proxy.golang.org
 jobs:
   build_test_iso:
-    runs-on: [self-hosted, Ubuntu, 16CPUs, kmv]
+    runs-on: [self-hosted, Ubuntu, 16CPUs, kvm2]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -118,7 +118,8 @@ jobs:
           echo "*******************************************************"
           echo "---------------- ${numFail} Failures :( ----------------------------"
           echo $STAT | jq '.FailedTests' || true
-          echo "-------------------------------------------------------"          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "-------------------------------------------------------"
+          numPass=$(echo $STAT | jq '.NumberOfPass')
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
