@@ -81,7 +81,7 @@ const (
 
 // The srvFile type represents a file (or directory) served by the file server.
 type srvFile struct {
-	sync.Mutex
+	sync.RWMutex
 	Dir
 	flags FFlags
 
@@ -239,13 +239,13 @@ func (f *srvFile) Rename(name string) error {
 func (p *srvFile) Find(name string) *srvFile {
 	var f *srvFile
 
-	p.Lock()
+	p.RLock()
 	for f = p.cfirst; f != nil; f = f.next {
 		if name == f.Name {
 			break
 		}
 	}
-	p.Unlock()
+	p.RUnlock()
 	return f
 }
 
@@ -496,13 +496,13 @@ func (*Fsrv) Clunk(req *SrvReq) {
 func (*Fsrv) Remove(req *SrvReq) {
 	fid := req.Fid.Aux.(*FFid)
 	f := fid.F
-	f.Lock()
+	f.RLock()
 	if f.cfirst != nil {
-		f.Unlock()
+		f.RUnlock()
 		req.RespondError(Enotempty)
 		return
 	}
-	f.Unlock()
+	f.RUnlock()
 
 	if rop, ok := (f.ops).(FRemoveOp); ok {
 		err := rop.Remove(fid)
