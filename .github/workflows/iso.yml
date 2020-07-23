@@ -53,8 +53,8 @@ jobs:
           sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
       - name: Build Binaries
         run: |
-          make cross
-          make e2e-cross
+          make linux
+          make e2e-linux-amd64
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
