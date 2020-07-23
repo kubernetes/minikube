@@ -46,6 +46,8 @@ BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSIO
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 
+KIC_BASE_IMAGE ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
+
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -532,7 +534,7 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
 	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(REGISTRY)/kicbase:$(KIC_VERSION) --target base ./hack/images
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(KIC_BASE_IMAGE)-snapshot -t $(KIC_BASE_IMAGE) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE) --target base ./hack/images
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
@@ -541,6 +543,10 @@ upload-preloaded-images-tar: out/minikube # Upload the preloaded images for olde
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
 	gcloud docker -- push $(STORAGE_PROVISIONER_IMAGE)
+
+.PHONY: push-kic-base-image
+push-kic-base-image: kic-base-image ## Push kic-base docker image using gcloud
+	gcloud docker -- push $(KIC_BASE_IMAGE)
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
