@@ -36,8 +36,8 @@ func TryConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 		glog.Infof("Testing Docker connectivity with: %v", c)
 		return c.CombinedOutput()
 	default:
-		msg := fmt.Sprintf("Tried to test connectivity of unsupported type: %s", bin)
+		msg := fmt.Sprintf("Tried to test connectivity of unsupported daemon: %s", bin)
 		glog.Infof(msg)
-		panic(msg)
+		return []byte{}, fmt.Errorf("tried to test connectivity of unsupported daemon: %s", bin)
 	}
 }
