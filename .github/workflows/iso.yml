@@ -7,7 +7,7 @@ env:
   GOPROXY: https://proxy.golang.org
 jobs:
   build_test_iso:
-    runs-on: [self-hosted, Ubuntu, 16CPUs, kvm2]
+    runs-on: [self-hosted, Ubuntu, kvm, iso]
     steps:
       - name: Clean up workspace
         shell: bash
