@@ -36,7 +36,7 @@ import (
 
 func TestSkaffold(t *testing.T) {
 	if NoneDriver() {
-		t.Skip("none driver doesn't support `minikube docker-env`, which skaffold requires")
+		t.Skip("none driver doesn't support `minikube docker-env`; skaffold depends on this command")
 	}
 	// can't use a unique profile, as skaffold only recognizes the
 	// profile name 'minikube' as a local cluster
