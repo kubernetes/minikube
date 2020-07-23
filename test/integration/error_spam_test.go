@@ -36,6 +36,10 @@ var stderrAllow = []string{
 	`cache_images.go:.*error getting status`,
 	// don't care if we can't push images to other profiles which are deleted.
 	`cache_images.go:.*Failed to load profile`,
+	// ! 'docker' driver reported a issue that could affect the performance."
+	`docker.*issue.*performance`,
+	// "* Suggestion: enable overlayfs kernel module on your Linux"
+	`Suggestion.*overlayfs`,
 }
 
 // stderrAllowRe combines rootCauses into a single regex
@@ -64,12 +68,8 @@ func TestErrorSpam(t *testing.T) {
 	stderr := rr.Stderr.String()
 
 	for _, line := range strings.Split(stderr, "\n") {
-		if strings.HasPrefix(line, "E") {
-			if stderrAllowRe.MatchString(line) {
-				t.Logf("acceptable stderr: %q", line)
-				continue
-			}
-			t.Errorf("unexpected error log: %q", line)
+		if stderrAllowRe.MatchString(line) {
+			t.Logf("acceptable stderr: %q", line)
 			continue
 		}
 
