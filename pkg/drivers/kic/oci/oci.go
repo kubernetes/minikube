@@ -223,14 +223,14 @@ func CreateContainerNode(p CreateParams) error {
 		return nil
 	}
 
-	// retry up to up 13 seconds to make sure the created container status is running.
-	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*13); err != nil {
-		LogContainerDebug(p.OCIBinary, p.Name)
+	if err := retry.Expo(checkRunning, 15*time.Millisecond, 25*time.Second); err != nil {
+		excerpt := LogContainerDebug(p.OCIBinary, p.Name)
 		_, err := DaemonInfo(p.OCIBinary)
 		if err != nil {
 			return errors.Wrapf(ErrDaemonInfo, "container name %q", p.Name)
 		}
-		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q", p.Name)
+
+		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q: log: %s", p.Name, excerpt)
 	}
 
 	return nil

@@ -6,6 +6,7 @@ on:
       - "**.yml"
       - "**.yaml"
       - "Makefile"
+      - "!hack/images/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
@@ -307,7 +308,9 @@ jobs:
           name: minikube_binaries
       - name: Start Docker Desktop
         shell: powershell
+        continue-on-error: true
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           docker ps 2>&1 | Out-Null
           $docker_running = $?
           if (!$docker_running) {
@@ -440,7 +443,9 @@ jobs:
           name: minikube_binaries
       - name: Start Docker Desktop
         shell: powershell
+        continue-on-error: true
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           docker ps 2>&1 | Out-Null
           $docker_running = $?
           if (!$docker_running) {
@@ -688,7 +693,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions|TestSkaffold)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -726,7 +731,7 @@ jobs:
           echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
   addons_certs_virtualbox_macos:
     runs-on: macos-10.15
     env:
@@ -781,9 +786,10 @@ jobs:
           mkdir -p report
           mkdir -p testhome
           chmod a+x e2e-*
-          chmod a+x minikube-*
+          cp minikube-darwin-amd64 minikube
+          chmod a+x minikube*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "(TestAddons|TestCertOptions)" -test.timeout=15m -test.v -timeout-multiplier=3 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "(TestAddons|TestCertOptions|TestSkaffold)" -test.timeout=15m -test.v -timeout-multiplier=3 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -821,7 +827,7 @@ jobs:
           echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
   multinode_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:

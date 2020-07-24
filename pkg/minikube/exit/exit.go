@@ -57,10 +57,12 @@ func WithCodeT(code int, format string, a ...out.V) {
 func WithError(msg string, err error) {
 	glog.Infof("WithError(%s)=%v called from:\n%s", msg, err, debug.Stack())
 	p := problem.FromError(err, runtime.GOOS)
-	if p != nil && out.JSON {
-		p.DisplayJSON(Config)
-		os.Exit(Config)
-	} else {
+
+	if p != nil {
+		if out.JSON {
+			p.DisplayJSON(Config)
+			os.Exit(Config)
+		}
 		WithProblem(msg, err, p)
 		os.Exit(Config)
 	}
@@ -71,6 +73,7 @@ func WithError(msg string, err error) {
 // WithProblem outputs info related to a known problem and exits.
 func WithProblem(msg string, err error, p *problem.Problem) {
 	out.ErrT(out.Empty, "")
+	glog.Errorf("%+v\n", p)
 	out.FailureT("[{{.id}}] {{.msg}} {{.error}}", out.V{"msg": msg, "id": p.ID, "error": p.Err})
 	p.Display()
 	if p.ShowIssueLink {
