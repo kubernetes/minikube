@@ -72,5 +72,6 @@ RUN apt-get clean -y && rm -rf \
     /var/tmp/* \
     /usr/share/doc/* \
     /usr/share/man/* \
-    /usr/share/local/* \
-    RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+    /usr/share/local/*
+
+RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
