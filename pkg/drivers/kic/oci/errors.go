@@ -19,6 +19,7 @@ package oci
 import (
 	"errors"
 	"os/exec"
+	"strings"
 
 	"github.com/golang/glog"
 )
@@ -45,7 +46,7 @@ var ErrExitedUnexpectedly = errors.New("container exited unexpectedly")
 var ErrDaemonInfo = errors.New("daemon info not responding")
 
 // LogContainerDebug will print relevant docker/podman infos after a container fails
-func LogContainerDebug(ociBin string, name string) {
+func LogContainerDebug(ociBin string, name string) string {
 	rr, err := containerInspect(ociBin, name)
 	if err != nil {
 		glog.Warningf("Filed to get postmortem inspect. %s :%v", rr.Command(), err)
@@ -74,6 +75,17 @@ func LogContainerDebug(ociBin string, name string) {
 			glog.Infof("postmortem podman info: %+v", pi)
 		}
 	}
+
+	if rr.Stdout.Len() == 0 {
+		return ""
+	}
+
+	// If available, return an excerpt of the post-mortem logs for inclusion in error message
+	excerpt := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
+	if len(excerpt) > 4 {
+		excerpt = excerpt[len(excerpt)-4:]
+	}
+	return strings.Join(excerpt, "\n")
 }
 
 // containerLogs will return out the logs for a container
