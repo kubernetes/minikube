@@ -307,6 +307,7 @@ jobs:
           name: minikube_binaries
       - name: Start Docker Desktop
         shell: powershell
+        continue-on-error: true
         run: |
           docker ps 2>&1 | Out-Null
           $docker_running = $?
@@ -440,6 +441,7 @@ jobs:
           name: minikube_binaries
       - name: Start Docker Desktop
         shell: powershell
+        continue-on-error: true
         run: |
           docker ps 2>&1 | Out-Null
           $docker_running = $?
