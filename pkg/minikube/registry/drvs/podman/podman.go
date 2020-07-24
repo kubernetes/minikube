@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -107,9 +108,11 @@ func status() registry.State {
 		}
 
 		if v.LT(minReqPodmanVer) {
-			glog.Warningf("Warning ! minimum required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html", minReqPodmanVer.String(), v.String())
+			out.WarningT("Warning ! minimum required version for podman is {{.minVersion}}. your version is {{.currentVersion}}. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html",
+				out.V{"minVersion": minReqPodmanVer.String(), "currentVersion": v.String()})
 		} else if v.GTE(podmanVerTwo) {
-			glog.Warningf("Warning ! podman 2 is not supported yet. your version is %q. minikube might not work. use at your own risk.", v.String())
+			out.WarningT("Warning ! podman 2 is not supported yet. your version is {{.currentVersion}}. minikube might not work. use at your own risk.",
+				out.V{"currentVersion": v.String()})
 		}
 
 		return registry.State{Installed: true, Healthy: true}
