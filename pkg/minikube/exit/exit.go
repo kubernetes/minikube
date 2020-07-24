@@ -57,10 +57,12 @@ func WithCodeT(code int, format string, a ...out.V) {
 func WithError(msg string, err error) {
 	glog.Infof("WithError(%s)=%v called from:\n%s", msg, err, debug.Stack())
 	p := problem.FromError(err, runtime.GOOS)
-	if p != nil && out.JSON {
-		p.DisplayJSON(Config)
-		os.Exit(Config)
-	} else {
+
+	if p != nil {
+		if out.JSON {
+			p.DisplayJSON(Config)
+			os.Exit(Config)
+		}
 		WithProblem(msg, err, p)
 		os.Exit(Config)
 	}
