@@ -20,6 +20,6 @@ jobs:
           # working-directory: somedir
 
           # Optional: golangci-lint command line arguments.
-          args: --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled --exclude 'variable on range scope.*in function literal|ifElseChain' --skip-files "pkg/minikube/translate/translations.go|pkg/minikube/assets/assets.go" --build-tags "integration container_image_ostree_stub containers_image_openpgp go_getter_nos3 go_getter_nogcs"
+          args: --timeout 10m --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled --exclude 'variable on range scope.*in function literal|ifElseChain' --skip-files "pkg/minikube/translate/translations.go|pkg/minikube/assets/assets.go" --build-tags "integration container_image_ostree_stub containers_image_openpgp go_getter_nos3 go_getter_nogcs"
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           # only-new-issues: true
