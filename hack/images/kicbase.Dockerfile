@@ -6,14 +6,14 @@ FROM kindest/base:v20200430-2c0eee40 as base
 USER root
 # specify version of everything explicitly using 'apt-cache policy'
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    lz4=1.9.1-1 \
-    gnupg=2.2.12-1ubuntu3 \ 
-    sudo=1.8.27-1ubuntu4.1 \
-    docker.io=19.03.2-0ubuntu1 \
-    openssh-server=1:8.0p1-6build1 \
-    dnsutils=1:9.11.5.P4+dfsg-5.1ubuntu2.2 \
+    lz4 \
+    gnupg \ 
+    sudo \
+    docker.io \
+    openssh-server \
+    dnsutils \
     # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0=2.62.1-1 \
+    libglib2.0-0   \
     && rm /etc/crictl.yaml
 
 # install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
