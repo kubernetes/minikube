@@ -6,7 +6,7 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
-  build_test_iso:
+  build_test_kic_image:
     runs-on: [self-hosted, Ubuntu, kvm, iso]
     steps:
       - name: Clean up workspace
@@ -26,6 +26,7 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
+          apt-get install -y make
           make linux
           make e2e-linux-amd64
           cp -r test/integration/testdata ./out
@@ -94,7 +95,7 @@ jobs:
         with:
           name: kic_image_functional_test_docker_ubuntu
           path: out/report
-      - name: The End Result iso_functional_test_kvm2_ubuntu
+      - name: The End Result build_test_kic_image_docker_ubuntu
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
