@@ -26,6 +26,7 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
+          sudo apt-get update
           sudo apt-get install -y make build-essential
           make linux
           make e2e-linux-amd64
@@ -39,7 +40,7 @@ jobs:
           echo "end of debug stuff"
           echo $(which jq)
       - name: Build Image
-        run: |
+        run: |          
           sudo apt-get install -y docker.io
           make kic-base-image
           docker images
