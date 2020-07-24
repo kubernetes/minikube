@@ -310,6 +310,7 @@ jobs:
         shell: powershell
         continue-on-error: true
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           docker ps 2>&1 | Out-Null
           $docker_running = $?
           if (!$docker_running) {
@@ -444,6 +445,7 @@ jobs:
         shell: powershell
         continue-on-error: true
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           docker ps 2>&1 | Out-Null
           $docker_running = $?
           if (!$docker_running) {
