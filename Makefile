@@ -55,7 +55,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.107
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.26.0
+GOLINT_VERSION ?= v1.29.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
