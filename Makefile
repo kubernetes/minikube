@@ -133,6 +133,17 @@ KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/
 # hyperkit ldflags
 HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/hyperkit.gitCommitID=$(COMMIT)
 
+# don't ask for user confirmation
+IN_AUTOMATION=false
+
+# $(call user_confirm, message)
+define user_confirm
+	@if [ "${IN_AUTOMATION}" = "false" ]; then\
+		echo "⚠️ $(1)"; \
+		read -p "Do you want to proceed? (Y/N): " confirm && echo $$confirm | grep -iq "^[yY]" || exit 1;\
+	fi
+endef
+
 # $(call DOCKER, image, command)
 define DOCKER
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
@@ -546,7 +557,8 @@ push-storage-provisioner-image: storage-provisioner-image ## Push storage-provis
 
 .PHONY: push-kic-base-image
 push-kic-base-image: kic-base-image ## Push kic-base docker image using gcloud
-	(docker pull $(KIC_BASE_IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry. Pushing...")
+	(docker pull $(KIC_BASE_IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry")
+	$(call user_confirm, 'Are you sure you want to push $(KIC_BASE_IMAGE) ?')
 	gcloud docker -- push $(KIC_BASE_IMAGE)
 
 .PHONY: out/gvisor-addon
