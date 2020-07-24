@@ -17,7 +17,6 @@ limitations under the License.
 package bsutil
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 
@@ -42,7 +41,7 @@ func AdjustResourceLimits(c command.Runner) error {
 	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
 	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
 	if _, err = c.RunCmd(exec.Command("/bin/bash", "-c", "echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj")); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("oom_adj adjust"))
+		return errors.Wrap(err, "oom_adj adjust")
 	}
 	return nil
 }
