@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Stress test for start, restart, upgrade.
 # 
@@ -25,53 +25,66 @@ if [[ ! -x "${NEW_PATH}" ]]; then
   exit 4
 fi
 
-echo "Downloading minikube ${UPGRADE_FROM} for upgrade test ..."
+
+fail() {
+  local msg=$1
+
+  lecho "** FAILED with ${START_FLAGS}: ${msg} -- docker logs follow: **"
+  docker logs "${PROFILE}" | tee -a $LOG_PATH
+  lecho "** FULL FAILURE LOGS are available in ${LOG_PATH}"
+}
+
+lecho() {
+  local msg=$1
+  echo "$msg" | tee -a "${LOG_PATH}"
+}
+
+lecho "Downloading minikube ${UPGRADE_FROM} for upgrade test ..."
 curl -L -C - -o "${OLD_PATH}" https://storage.googleapis.com/minikube/releases/${UPGRADE_FROM}/minikube-darwin-amd64
 chmod 755 "${OLD_PATH}"
 
+
 for i in $(seq 1 ${TOTAL}); do
-  echo ""
-  echo "*** LOOP ${i} of ${TOTAL}: ${UPGRADE_FROM} to HEAD, logging to ${LOG_PATH}"
-  echo "***   start flags: -p ${PROFILE} ${START_FLAGS}"
-  echo ""
+  lecho ""
+  lecho "*** LOOP ${i} of ${TOTAL}: ${UPGRADE_FROM} to HEAD, logging to ${LOG_PATH}" 
+  lecho "***   start flags: -p ${PROFILE} ${START_FLAGS}"
+  lecho ""
   "${NEW_PATH}" delete -p ${PROFILE}
 
-  echo ""
-  echo "Upgrade ${UPGRADE_FROM} to HEAD hot test: loop ${i}"
-  ${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} || { echo "${OLD_PATH} failed, that's OK though"; }
+  lecho ""
+  lecho "Upgrade ${UPGRADE_FROM} to HEAD hot test: loop ${i}"
+  time ${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { lecho "${OLD_PATH} failed, which is OK"; }    
+  lecho "Starting cluster built-by ${UPGRADE_FROM} with ${NEW_PATH}"
+  time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { fail "hot upgrade (loop $i)";  exit 1; }
+  lecho "Deleting ${UPGRADE_FROM} built-cluster"
+  ${NEW_PATH} delete -p ${PROFILE}
 
-  time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr -v=2 2>${LOG_PATH} \
-    || { docker logs ${PROFILE} | tee -a ${LOG_PATH}; echo "fail hot upgrade (loop $i): see ${LOG_PATH}";  exit 1; }
+  lecho ""
+  lecho "Upgrade ${UPGRADE_FROM} to HEAD cold test: loop ${i}"
+  time ${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { lecho "${OLD_PATH} failed, which is OK"; }
+
+  lecho "Stopping ${UPGRADE_FROM}} built-cluster"
+  ${OLD_PATH} stop -p ${PROFILE} 2>>${LOG_PATH}
+
+  lecho "Starting cluster built-by ${UPGRADE_FROM} with ${NEW_PATH}"
+  time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { fail "hot upgrade (loop $i)";  exit 1; }
+
+  lecho ""
+  lecho "Restart HEAD hot test: loop ${i}"
+  time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { fail "hot HEAD restart (loop $i)"; exit 3; }
+
+  lecho ""
+  lecho "Restart HEAD cold test: loop ${i}"
+  ${NEW_PATH} stop -p ${PROFILE}
+
+  time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { fail "cold HEAD restart (loop $i)"; exit 4; }
 
   ${NEW_PATH} delete -p ${PROFILE}
 
-  echo ""
-  echo "Upgrade ${UPGRADE_FROM} to HEAD cold test: loop ${i}"
-  ${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} || { echo "${OLD_PATH} failed, that's OK though"; }
-
-  ${OLD_PATH} stop -p ${PROFILE}
-
-  time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr -v=2 2>${LOG_PATH} \
-    || { docker logs ${PROFILE} | tee -a ${LOG_PATH}; echo "fail cold upgrade (loop $i): see ${LOG_PATH}"; exit 2; }
-
-  echo ""
-  echo "Restart HEAD hot test: loop ${i}"
-  time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr -v=2 2>${LOG_PATH} \
-    || { docker logs ${PROFILE} | tee -a ${LOG_PATH}; echo "fail hot HEAD restart (loop $i): see ${LOG_PATH}"; exit 3; }
-
-  echo ""
-  echo "Restart HEAD cold test: loop ${i}"
-  ${NEW_PATH} stop
-
-  time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr -v=2 2>${LOG_PATH} \
-    || { docker logs ${PROFILE} | tee -a ${LOG_PATH}; echo "fail cold HEAD restart (loop $i): see ${LOG_PATH}"; exit 4; }
-
-  ${NEW_PATH} delete -p ${PROFILE}
-
-  echo ""
-  echo "****************************************************"
-  echo "Congratulations - ${PROFILE} survived loop ${i} of ${TOTAL}"
-  echo "****************************************************"
-  echo ""
+  lecho ""
+  lecho "****************************************************"
+  lecho "Congratulations - ${PROFILE} survived loop ${i} of ${TOTAL}"
+  lecho "****************************************************"
+  lecho ""
 done
 
