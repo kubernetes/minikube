@@ -8,6 +8,7 @@ on:
       - "**.yml"
       - "**.yaml"
       - "Makefile"
+      - "!hack/images/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
