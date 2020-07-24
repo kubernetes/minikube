@@ -374,7 +374,12 @@ func TestNewConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() {
+		err := os.RemoveAll(dir)
+		if err != nil {
+			t.Errorf("Failed to remove dir %q: %v", dir, err)
+		}
+	}()
 
 	// setup minikube config
 	expected := api.NewConfig()
