@@ -72,3 +72,4 @@ RUN apt-get clean -y && rm -rf \
   /usr/share/man/* \
   /usr/share/local/* \
   RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+  
