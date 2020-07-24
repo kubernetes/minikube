@@ -37,6 +37,10 @@ COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-autom
 RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
     /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
+# add modified entrypoint
+COPY entrypoint /usr/local/bin/entrypoint
+RUN chmod 755 /usr/local/bin/entrypoint
+
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
@@ -47,8 +51,6 @@ RUN mkdir /var/run/sshd
 RUN echo 'root:root' |chpasswd
 RUN sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
-# Add set -x to entrypoint file
-RUN sed -i "20i set -x" /usr/local/bin/entrypoint
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
@@ -63,12 +65,12 @@ USER root
 RUN mkdir -p /kind
 # Deleting leftovers
 RUN apt-get clean -y && rm -rf \
-  /var/cache/debconf/* \
-  /var/lib/apt/lists/* \
-  /var/log/* \
-  /tmp/* \
-  /var/tmp/* \
-  /usr/share/doc/* \
-  /usr/share/man/* \
-  /usr/share/local/* \
-  RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+    /var/cache/debconf/* \
+    /var/lib/apt/lists/* \
+    /var/log/* \
+    /tmp/* \
+    /var/tmp/* \
+    /usr/share/doc/* \
+    /usr/share/man/* \
+    /usr/share/local/* \
+    RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
