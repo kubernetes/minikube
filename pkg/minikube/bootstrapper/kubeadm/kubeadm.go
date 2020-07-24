@@ -557,6 +557,11 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	if err := k.stopKubeSystem(cfg); err != nil {
 		glog.Warningf("Failed to stop kube-system containers: port conflicts may arise: %v", err)
 	}
+
+	if err := sysinit.New(k.c).Stop("kubelet"); err != nil {
+		glog.Warningf("Failed to stop kubelet, this might cause upgrade errors: %v", err)
+	}
+
 	if err := k.clearStaleConfigs(cfg); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
 	}
@@ -567,6 +572,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 
 	baseCmd := fmt.Sprintf("%s %s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), phase)
 	cmds := []string{
+		fmt.Sprintf("%s phase kubelet-start --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase certs all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, conf),
