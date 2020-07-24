@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -43,21 +44,60 @@ func TestJSONOutput(t *testing.T) {
 		t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
 	}
 
-	type validateJSONOutputFunc func(context.Context, *testing.T, *RunResult)
+	ces, err := cloudEvents(t, rr)
+	if err != nil {
+		t.Fatalf("converting to cloud events: %v\n", err)
+	}
+
+	type validateJSONOutputFunc func(context.Context, *testing.T, []*cloudEvent)
 	t.Run("serial", func(t *testing.T) {
 		serialTests := []struct {
 			name      string
 			validator validateJSONOutputFunc
 		}{
-			{"CloudEvents", validateCloudEvents},
+			{"DistinctCurrentSteps", validateDistinctCurrentSteps},
+			{"IncreasingCurrentSteps", validateIncreasingCurrentSteps},
 		}
 		for _, stc := range serialTests {
 			t.Run(stc.name, func(t *testing.T) {
-				stc.validator(ctx, t, rr)
+				stc.validator(ctx, t, ces)
 			})
 		}
 	})
+}
 
+//  make sure each step has a distinct step number
+func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
+	steps := map[string]string{}
+	for _, ce := range ces {
+		currentStep, exists := ce.data["currentstep"]
+		if !exists {
+			continue
+		}
+		if msg, alreadySeen := steps[currentStep]; alreadySeen {
+			t.Fatalf("step %v has already been assigned to another step:\n%v\nCannot use for:\n%v\n%v", currentStep, msg, ce.data["message"], ces)
+		}
+		steps[currentStep] = ce.data["message"]
+	}
+}
+
+// for successful minikube start, 'current step' should be increasing
+func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
+	step := -1
+	for _, ce := range ces {
+		currentStep, exists := ce.data["currentstep"]
+		if !exists {
+			continue
+		}
+		cs, err := strconv.Atoi(currentStep)
+		if err != nil {
+			t.Fatalf("current step is not an integer: %v\n%v", currentStep, ce)
+		}
+		if cs <= step {
+			t.Fatalf("current step is not in increasing order: %v", ces)
+		}
+		step = cs
+	}
 }
 
 func TestJSONOutputError(t *testing.T) {
@@ -78,7 +118,7 @@ func TestJSONOutputError(t *testing.T) {
 		t.Fatal(err)
 	}
 	// we want the last cloud event to be of type error and have the expected exit code and message
-	last := newCloudEvent(t, ces[len(ces)-1])
+	last := ces[len(ces)-1]
 	if last.Type() != register.NewError("").Type() {
 		t.Fatalf("last cloud event is not of type error: %v", last)
 	}
@@ -113,8 +153,8 @@ func (c *cloudEvent) validateData(t *testing.T, key, value string) {
 	}
 }
 
-func cloudEvents(t *testing.T, rr *RunResult) ([]cloudevents.Event, error) {
-	ces := []cloudevents.Event{}
+func cloudEvents(t *testing.T, rr *RunResult) ([]*cloudEvent, error) {
+	ces := []*cloudEvent{}
 	stdout := strings.Split(rr.Stdout.String(), "\n")
 	for _, s := range stdout {
 		if s == "" {
@@ -125,15 +165,7 @@ func cloudEvents(t *testing.T, rr *RunResult) ([]cloudevents.Event, error) {
 			t.Logf("unable to marshal output: %v", s)
 			return nil, err
 		}
-		ces = append(ces, event)
+		ces = append(ces, newCloudEvent(t, event))
 	}
 	return ces, nil
-}
-
-//  make sure all output can be marshaled as a cloud event
-func validateCloudEvents(ctx context.Context, t *testing.T, rr *RunResult) {
-	_, err := cloudEvents(t, rr)
-	if err != nil {
-		t.Fatalf("converting to cloud events: %v\n", err)
-	}
 }

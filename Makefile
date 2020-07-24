@@ -57,7 +57,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.107
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.26.0
+GOLINT_VERSION ?= v1.29.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -544,8 +544,9 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
-	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(KIC_BASE_IMAGE)-snapshot -t $(KIC_BASE_IMAGE) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE) --target base ./hack/images
+	docker rmi -f $(KIC_BASE_IMAGE)-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t local/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE) --target base ./hack/images
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE)-snapshot
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.

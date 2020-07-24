@@ -510,6 +510,7 @@ func tryRegistry(r command.Runner, driverName string, imageRepository string) {
 
 // prepareNone prepares the user and host for the joy of the "none" driver
 func prepareNone() {
+	register.Reg.SetStep(register.ConfiguringLHEnv)
 	out.T(out.StartingNone, "Configuring local host environment ...")
 	if viper.GetBool(config.WantNoneDriverWarning) {
 		out.ErrT(out.Empty, "")
