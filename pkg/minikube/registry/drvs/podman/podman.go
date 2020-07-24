@@ -108,10 +108,10 @@ func status() registry.State {
 		}
 
 		if v.LT(minReqPodmanVer) {
-			out.WarningT("Warning ! minimum required version for podman is {{.minVersion}}. your version is {{.currentVersion}}. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html",
+			out.WarningT("Warning ! minimum required version for podman is '{{.minVersion}}'. your version is '{{.currentVersion}}'. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html",
 				out.V{"minVersion": minReqPodmanVer.String(), "currentVersion": v.String()})
 		} else if v.GTE(podmanVerTwo) {
-			out.WarningT("Warning ! podman 2 is not supported yet. your version is {{.currentVersion}}. minikube might not work. use at your own risk.",
+			out.WarningT("Warning ! podman 2 is not supported yet. your version is '{{.currentVersion}}'. minikube might not work. use at your own risk.",
 				out.V{"currentVersion": v.String()})
 		}
 
