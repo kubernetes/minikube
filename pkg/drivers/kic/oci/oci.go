@@ -224,12 +224,13 @@ func CreateContainerNode(p CreateParams) error {
 	}
 
 	if err := retry.Expo(checkRunning, 15*time.Millisecond, 25*time.Second); err != nil {
-		LogContainerDebug(p.OCIBinary, p.Name)
+		excerpt := LogContainerDebug(p.OCIBinary, p.Name)
 		_, err := DaemonInfo(p.OCIBinary)
 		if err != nil {
 			return errors.Wrapf(ErrDaemonInfo, "container name %q", p.Name)
 		}
-		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q", p.Name)
+
+		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q: log: %s", p.Name, excerpt)
 	}
 
 	return nil
