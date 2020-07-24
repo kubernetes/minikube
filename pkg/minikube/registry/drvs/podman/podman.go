@@ -107,17 +107,9 @@ func status() registry.State {
 		}
 
 		if v.LT(minReqPodmanVer) {
-			glog.Warningf("Warning ! minimum required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html ", minReqPodmanVer.String(), v.String())
-		}
-
-		if v.GTE(podmanVerTwo) {
-			return registry.State{
-				Error:     fmt.Errorf("podman v2 is not supported yet"),
-				Installed: true,
-				Healthy:   false,
-				Fix:       fmt.Sprintf("Install a compatible Podman version. %q+", minReqPodmanVer.String()),
-				Doc:       "https://github.com/containers/podman/releases/v1.9.3",
-			}
+			glog.Warningf("Warning ! minimum required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html", minReqPodmanVer.String(), v.String())
+		} else if v.GTE(podmanVerTwo) {
+			glog.Warningf("Warning ! podman 2 is not supported yet. your version is %q. minikube might not work. use at your own risk.", v.String())
 		}
 
 		return registry.State{Installed: true, Healthy: true}
