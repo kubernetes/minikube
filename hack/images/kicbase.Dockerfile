@@ -2,7 +2,7 @@ ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile
 # which is an ubuntu 19.10 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
-FROM kindest/base:v20200317-92225082 as base
+FROM kindest/base:v20200430-2c0eee40 as base
 USER root
 # specify version of everything explicitly using 'apt-cache policy'
 RUN apt-get update && apt-get install -y --no-install-recommends \
