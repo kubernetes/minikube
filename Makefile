@@ -546,6 +546,7 @@ push-storage-provisioner-image: storage-provisioner-image ## Push storage-provis
 
 .PHONY: push-kic-base-image
 push-kic-base-image: kic-base-image ## Push kic-base docker image using gcloud
+	(docker pull $(KIC_BASE_IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry. Pushing...")
 	gcloud docker -- push $(KIC_BASE_IMAGE)
 
 .PHONY: out/gvisor-addon
