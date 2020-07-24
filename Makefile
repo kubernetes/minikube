@@ -134,11 +134,11 @@ KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/
 HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/hyperkit.gitCommitID=$(COMMIT)
 
 # don't ask for user confirmation
-IN_AUTOMATION=false
+IN_CI=false
 
 # $(call user_confirm, message)
 define user_confirm
-	@if [ "${IN_AUTOMATION}" = "false" ]; then\
+	@if [ "${IN_CI}" = "false" ]; then\
 		echo "⚠️ $(1)"; \
 		read -p "Do you want to proceed? (Y/N): " confirm && echo $$confirm | grep -iq "^[yY]" || exit 1;\
 	fi
