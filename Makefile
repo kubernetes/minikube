@@ -139,7 +139,7 @@ IN_CI=false
 # $(call user_confirm, message)
 define user_confirm
 	@if [ "${IN_CI}" = "false" ]; then\
-		echo "⚠️ $(1)"; \
+		echo "⚠️ $(1)";\
 		read -p "Do you want to proceed? (Y/N): " confirm && echo $$confirm | grep -iq "^[yY]" || exit 1;\
 	fi
 endef
