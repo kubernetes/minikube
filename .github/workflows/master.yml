@@ -8,7 +8,7 @@ on:
       - "**.yml"
       - "**.yaml"
       - "Makefile"
-      - "!hack/images/**"
+      - "!deploy/kicbase/**"
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
