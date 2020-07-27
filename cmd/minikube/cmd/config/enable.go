@@ -41,6 +41,15 @@ var addonsEnableCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("enable failed", err)
 		}
+		if addon == "dashboard" {
+			out.T(out.Waiting, "Some dashboard features require the 'metrics-server' add-on")
+			err = addons.SetAndSave(ClusterFlagValue(), "metrics-server", "true")
+			if err != nil {
+				exit.WithError("enable failed", err)
+			}
+			out.T(out.AddonEnable, "The 'metrics-server' add-on was enabled automatically")
+		}
+
 		out.T(out.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
 	},
 }
