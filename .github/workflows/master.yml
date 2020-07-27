@@ -9,6 +9,7 @@ on:
       - "**.yaml"
       - "Makefile"
       - "!hack/images/**"
+      - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
