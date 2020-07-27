@@ -197,6 +197,8 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--userns=host")
 	}
 
+	fmt.Println(runArgs)
+
 	if err := createContainer(p.OCIBinary, p.Image, withRunArgs(runArgs...), withMounts(p.Mounts), withPortMappings(p.PortMappings)); err != nil {
 		return errors.Wrap(err, "create container")
 	}
