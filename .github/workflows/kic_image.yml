@@ -41,7 +41,7 @@ jobs:
           echo $(which jq)
       - name: Build Image
         run: |          
-          sudo apt-get install -y docker.io
+          docker images
           make kic-base-image
           docker images
       - name: Install kubectl
