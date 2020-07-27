@@ -57,6 +57,7 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
           sudo apt-get install -y jq
+          rm -f gopogh-linux-amd64 || true
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of
@@ -85,8 +86,8 @@ jobs:
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
           STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
-          FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          FailNum=$(echo $STAT | jq '.NumberOfFail' || true)
+          TestsNum=$(echo $STAT | jq '.NumberOfTests' || true)
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}
