@@ -9,7 +9,7 @@ jobs:
   build_test_kic_image:
     runs-on: [self-hosted, debian9, gcp]
     steps:
-      - name: Clean up workspace
+      - name: Clean up 
         shell: bash
         run: |
           pwd
@@ -17,6 +17,7 @@ jobs:
           rm -rf out
           ls -lah
           df -h
+          sudo rm -f /etc/cron.hourly/cleanup_and_reboot || true
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
