@@ -291,4 +291,20 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 		}
 	}
 
+	// Make sure kubectl knows the node is gone
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
+	if err != nil {
+		t.Fatalf("failed to run kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
+	if strings.Count(rr.Stdout.String(), "NotReady") > 0 {
+		t.Errorf("expected 2 nodes to be Ready, got %v", rr.Output())
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
+	if err != nil {
+		t.Fatalf("failed to run kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
+	if strings.Count(rr.Stdout.String(), "True") != 2 {
+		t.Errorf("expected 2 nodes Ready status to be True, got %v", rr.Output())
+	}
 }
