@@ -66,7 +66,7 @@ func legacyStartArgs() []string {
 // TestRunningBinaryUpgrade does an upgrade test on a running cluster
 func TestRunningBinaryUpgrade(t *testing.T) {
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
-	if strings.Contains(*startArgs, "base-image") {
+	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
 	}
 
@@ -111,7 +111,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 // TestStoppedBinaryUpgrade does an upgrade test on a stopped cluster
 func TestStoppedBinaryUpgrade(t *testing.T) {
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
-	if strings.Contains(*startArgs, "base-image") {
+	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
 	}
 
@@ -235,7 +235,7 @@ func TestMissingContainerUpgrade(t *testing.T) {
 	}
 
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
-	if strings.Contains(*startArgs, "base-image") {
+	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
 	}
 
