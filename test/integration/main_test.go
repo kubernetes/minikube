@@ -155,3 +155,8 @@ func Minutes(n int) time.Duration {
 func Seconds(n int) time.Duration {
 	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Second
 }
+
+// TestingKicBaseImage will return true if the integraiton test is running against a passed --base-image flag
+func TestingKicBaseImage() bool {
+	return strings.Contains(*startArgs, "base-image")
+}
