@@ -93,7 +93,7 @@ func runStop(cmd *cobra.Command, args []string) {
 
 			nonexistent := stop(api, machineName)
 			if !nonexistent {
-				stoppedNodes += 1
+				stoppedNodes++
 			}
 		}
 
