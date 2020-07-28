@@ -44,8 +44,23 @@ var unpauseCmd = &cobra.Command{
 		register.SetEventLogPath(localpath.EventLog(cname))
 
 		co := mustload.Running(cname)
+		register.Reg.SetStep(register.Unpausing)
+
+		glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+		if allNamespaces {
+			namespaces = nil //all
+		} else {
+			if len(namespaces) == 0 {
+				exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
+			}
+		}
+
+		ids := []string{}
 
 		for _, n := range co.Config.Nodes {
+			glog.Infof("node: %+v", n)
+			out.T(out.Pause, "Unpausing node {{.name}} ... ", out.V{"name": n.Name})
+
 			machineName := driver.MachineName(*co.Config, n)
 			host, err := machine.LoadHost(co.API, machineName)
 			if err != nil {
@@ -62,27 +77,20 @@ var unpauseCmd = &cobra.Command{
 				exit.WithError("Failed runtime", err)
 			}
 
-			glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
-			if allNamespaces {
-				namespaces = nil //all
-			} else {
-				if len(namespaces) == 0 {
-					exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
-				}
-			}
-
-			ids, err := cluster.Unpause(cr, r, namespaces)
+			uids, err := cluster.Unpause(cr, r, namespaces)
 			if err != nil {
 				exit.WithError("Pause", err)
 			}
-
-			if namespaces == nil {
-				out.T(out.Pause, "Unpaused kubelet and {{.count}} containers", out.V{"count": len(ids)})
-			} else {
-				out.T(out.Pause, "Unpaused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
-			}
+			ids = append(ids, uids...)
 		}
 
+		register.Reg.SetStep(register.Done)
+
+		if namespaces == nil {
+			out.T(out.Pause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
+		} else {
+			out.T(out.Pause, "Unpaused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+		}
 	},
 }
 

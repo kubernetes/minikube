@@ -62,6 +62,7 @@ func init() {
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	register.Reg.SetStep(register.Stopping)
 
 	// new code
 	var profilesToStop []string
@@ -78,6 +79,8 @@ func runStop(cmd *cobra.Command, args []string) {
 		profilesToStop = append(profilesToStop, cname)
 	}
 	for _, profile := range profilesToStop {
+		register.Reg.SetStep(register.Stopping)
+
 		// end new code
 		api, cc := mustload.Partial(profile)
 		defer api.Close()
@@ -99,6 +102,8 @@ func runStop(cmd *cobra.Command, args []string) {
 			exit.WithError("update config", err)
 		}
 	}
+	register.Reg.SetStep(register.Done)
+
 }
 
 func stop(api libmachine.API, machineName string) bool {
