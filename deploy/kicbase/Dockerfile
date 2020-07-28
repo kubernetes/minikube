@@ -31,6 +31,7 @@ RUN sh -c "echo 'deb https://dl.bintray.com/afbjorklund/podman eoan main' > /etc
 # install varlink
 RUN apt-get install -y --no-install-recommends varlink
 
+COPY entrypoint /usr/local/bin/entrypoint
 # automount service
 COPY automount/minikube-automount /usr/sbin/minikube-automount
 COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
@@ -47,8 +48,6 @@ RUN mkdir /var/run/sshd
 RUN echo 'root:root' |chpasswd
 RUN sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
-# Add set -x to entrypoint file
-RUN sed -i "20i set -x" /usr/local/bin/entrypoint
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
