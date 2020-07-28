@@ -45,6 +45,12 @@ jobs:
           docker images
           make kic-base-image
           docker images
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          uname -r
+          lsb_release -a
       - name: Install kubectl
         shell: bash
         run: |
@@ -63,14 +69,14 @@ jobs:
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
+          KIC_VERSION=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+          KIC_IMG_HEAD="local/kicbase:${KIC_VERSION}-snapshot"
           cd out
           mkdir -p report
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KIC_VERSION=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
-          KIC_IMG_HEAD="local/kicbase:${KIC_VERSION}-snapshot"
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker   --base-image=${KIC_IMG_HEAD}"  -test.run TestOffline -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
@@ -84,7 +90,7 @@ jobs:
           cd out
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(/usr/local/bin/gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_N AME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(/usr/local/bin/gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail' || true)
           TestsNum=$(echo $STAT | jq '.NumberOfTests' || true)
