@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 )
 
@@ -42,18 +41,14 @@ func TestOffline(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				profileStartArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--memory=2000", "--wait=true", "--container-runtime", runtime}
-				profileStartArgs = append(profileStartArgs, StartArgs()...)
-				c := exec.CommandContext(ctx, Target(), profileStartArgs...)
+				startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--memory=2000", "--wait=true", "--container-runtime", runtime}
+				startArgs = append(startArgs, StartArgs()...)
+				c := exec.CommandContext(ctx, Target(), startArgs...)
 				env := os.Environ()
 				// RFC1918 address that unlikely to host working a proxy server
 				env = append(env, "HTTP_PROXY=172.16.1.1:1")
 				env = append(env, "HTTP_PROXYS=172.16.1.1:1")
-				if !strings.Contains(*startArgs, "base-image") {
-					env = append(env, "DOCKER_HOST=172.16.1.1:1")
-				} else {
-					t.Log("Because base-image flag was set, will not test pointing DOCKER_HOST to a wrong docker.")
-				}
+				env = append(env, "DOCKER_HOST=172.16.1.1:1")
 
 				c.Env = env
 				rr, err := Run(t, c)
