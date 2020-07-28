@@ -219,7 +219,7 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 		}
 	}
 	// Restart a full cluster with minikube start
-	startArgs := append([]string{"start", "-p", profile, "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=8", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
