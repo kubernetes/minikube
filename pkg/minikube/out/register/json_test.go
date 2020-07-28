@@ -29,8 +29,8 @@ func TestPrintStep(t *testing.T) {
 	expected += "\n"
 
 	buf := bytes.NewBuffer([]byte{})
-	OutputFile = buf
-	defer func() { OutputFile = os.Stdout }()
+	SetOutputFile(buf)
+	defer func() { SetOutputFile(os.Stdout) }()
 
 	GetUUID = func() string {
 		return "random-id"
@@ -49,8 +49,8 @@ func TestPrintInfo(t *testing.T) {
 	expected += "\n"
 
 	buf := bytes.NewBuffer([]byte{})
-	OutputFile = buf
-	defer func() { OutputFile = os.Stdout }()
+	SetOutputFile(buf)
+	defer func() { SetOutputFile(os.Stdout) }()
 
 	GetUUID = func() string {
 		return "random-id"
@@ -69,8 +69,8 @@ func TestError(t *testing.T) {
 	expected += "\n"
 
 	buf := bytes.NewBuffer([]byte{})
-	OutputFile = buf
-	defer func() { OutputFile = os.Stdout }()
+	SetOutputFile(buf)
+	defer func() { SetOutputFile(os.Stdout) }()
 
 	GetUUID = func() string {
 		return "random-id"
@@ -89,8 +89,8 @@ func TestErrorExitCode(t *testing.T) {
 	expected += "\n"
 
 	buf := bytes.NewBuffer([]byte{})
-	OutputFile = buf
-	defer func() { OutputFile = os.Stdout }()
+	SetOutputFile(buf)
+	defer func() { SetOutputFile(os.Stdout) }()
 
 	GetUUID = func() string {
 		return "random-id"
@@ -107,8 +107,8 @@ func TestWarning(t *testing.T) {
 	expected += "\n"
 
 	buf := bytes.NewBuffer([]byte{})
-	OutputFile = buf
-	defer func() { OutputFile = os.Stdout }()
+	SetOutputFile(buf)
+	defer func() { SetOutputFile(os.Stdout) }()
 
 	GetUUID = func() string {
 		return "random-id"

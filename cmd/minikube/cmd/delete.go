@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
 var deleteAll bool
@@ -125,6 +126,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.UsageT("Usage: minikube delete")
 	}
+	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 	if err != nil {
