@@ -2,7 +2,7 @@ name: KIC_IMAGE
 on:
   pull_request:
     paths:
-      - "hack/images/**"
+      - "deploy/kicbase/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
