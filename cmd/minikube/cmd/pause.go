@@ -62,7 +62,13 @@ func runPause(cmd *cobra.Command, args []string) {
 	ids := []string{}
 
 	for _, n := range co.Config.Nodes {
-		out.T(out.Pause, "Pausing node {{.name}} ... ", out.V{"name": n.Name})
+		// Use node-name if available, falling back to cluster name
+		name := n.Name
+		if n.Name == "" {
+			name = co.Config.Name
+		}
+
+		out.T(out.Pause, "Pausing node {{.name}} ... ", out.V{"name": name})
 
 		host, err := machine.LoadHost(co.API, driver.MachineName(*co.Config, n))
 		if err != nil {

@@ -41,7 +41,7 @@ func StopHost(api libmachine.API, machineName string) error {
 		return errors.Wrapf(err, "load")
 	}
 
-	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": h.DriverName})
+	out.T(out.Stopping, `Stopping node "{{.name}}"  ...`, out.V{"name": machineName})
 	return stop(h)
 }
 

@@ -447,7 +447,7 @@ func clusterState(sts []*Status) ClusterState {
 			case string(register.InitialSetup):
 				transientCondition = Starting
 			case string(register.Done):
-				transientCondition = OK
+				transientCondition = ""
 			case string(register.Stopping):
 				transientCondition = Stopping
 			case string(register.Deleting):

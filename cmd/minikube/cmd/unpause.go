@@ -59,7 +59,14 @@ var unpauseCmd = &cobra.Command{
 
 		for _, n := range co.Config.Nodes {
 			glog.Infof("node: %+v", n)
-			out.T(out.Pause, "Unpausing node {{.name}} ... ", out.V{"name": n.Name})
+
+			// Use node-name if available, falling back to cluster name
+			name := n.Name
+			if n.Name == "" {
+				name = co.Config.Name
+			}
+
+			out.T(out.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
 
 			machineName := driver.MachineName(*co.Config, n)
 			host, err := machine.LoadHost(co.API, machineName)
