@@ -28,9 +28,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
 // unpauseCmd represents the docker-pause command
@@ -39,6 +41,8 @@ var unpauseCmd = &cobra.Command{
 	Short: "unpause Kubernetes",
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
+		register.SetEventLogPath(localpath.EventLog(cname))
+
 		co := mustload.Running(cname)
 
 		for _, n := range co.Config.Nodes {

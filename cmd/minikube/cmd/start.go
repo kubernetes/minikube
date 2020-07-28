@@ -124,6 +124,8 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
+	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+
 	out.SetJSON(viper.GetString(startOutput) == "json")
 	displayVersion(version.GetVersion())
 

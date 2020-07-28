@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,17 +25,21 @@ import (
 	"strings"
 	"text/template"
 
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.etcd.io/etcd/version"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
@@ -59,14 +64,34 @@ const (
 	Irrelevant = "Irrelevant"
 )
 
+type ExperimentalComponent struct {
+	Name string
+	Kind string
+
+	Condition       string
+	ConditionDetail []string
+
+	Step string
+}
+
+type ExperimentalCluster struct {
+	ExperimentalComponent
+	Components map[string]ExperimentalComponent
+}
+
 // Status holds string representations of component states
 type Status struct {
+	Version string
+
 	Name       string
 	Host       string
 	Kubelet    string
 	APIServer  string
 	Kubeconfig string
 	Worker     bool
+
+	// Prototyping for the future
+	ExperimentalCluster ExperimentalCluster
 }
 
 const (
@@ -135,6 +160,8 @@ var statusCmd = &cobra.Command{
 			}
 		}
 
+		addExperimentalFields(statuses[0])
+
 		switch strings.ToLower(output) {
 		case "text":
 			for _, st := range statuses {
@@ -152,6 +179,46 @@ var statusCmd = &cobra.Command{
 
 		os.Exit(exitCode(statuses))
 	},
+}
+
+func readEventLog(name string) ([]cloudevents.Event, error) {
+	path := localpath.EventLog(name)
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "open")
+	}
+	var events []cloudevents.Event
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		var ev cloudevents.Event
+		if err = json.Unmarshal(scanner.Bytes(), &ev); err != nil {
+			return events, err
+		}
+		events = append(events, ev)
+	}
+
+	return events, nil
+}
+
+func addExperimentalFields(st *Status) {
+	st.ExperimentalCluster.Condition = st.APIServer
+
+	evs, err := readEventLog(st.Name)
+	if err != nil {
+		glog.Errorf("unable to read event log: %v", err)
+		return
+	}
+
+	for _, ev := range evs {
+		glog.Infof("read event: %+v", ev)
+		/*		if ev.Type() == "io.k8s.sigs.minikube.step" {
+					st.ExperimentalCluster.Step = ev.Data.Name
+				}
+		*/
+	}
+
 }
 
 func exitCode(statuses []*Status) int {
@@ -176,6 +243,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 	name := driver.MachineName(cc, n)
 
 	st := &Status{
+		Version:    version.Version,
 		Name:       name,
 		Host:       Nonexistent,
 		APIServer:  Nonexistent,

@@ -92,3 +92,5 @@ func (r *Register) currentStep() string {
 func (r *Register) SetStep(s RegStep) {
 	r.current = s
 }
+
+// recordStep records the current step
