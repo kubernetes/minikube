@@ -149,6 +149,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 		deleteContainersAndVolumes(oci.Podman)
 
 		errs := DeleteProfiles(profilesToDelete)
+		register.Reg.SetStep(register.Done)
+
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		} else {
@@ -169,6 +171,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 
 		errs := DeleteProfiles([]*config.Profile{profile})
+		register.Reg.SetStep(register.Done)
+
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		}

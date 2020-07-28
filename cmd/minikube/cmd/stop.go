@@ -78,6 +78,9 @@ func runStop(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		profilesToStop = append(profilesToStop, cname)
 	}
+
+	stoppedNodes := 0
+
 	for _, profile := range profilesToStop {
 		register.Reg.SetStep(register.Stopping)
 
@@ -87,10 +90,10 @@ func runStop(cmd *cobra.Command, args []string) {
 
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
-			nonexistent := stop(api, machineName)
 
+			nonexistent := stop(api, machineName)
 			if !nonexistent {
-				out.T(out.Stopped, `Node "{{.node_name}}" stopped.`, out.V{"node_name": machineName})
+				stoppedNodes += 1
 			}
 		}
 
@@ -102,8 +105,11 @@ func runStop(cmd *cobra.Command, args []string) {
 			exit.WithError("update config", err)
 		}
 	}
-	register.Reg.SetStep(register.Done)
 
+	register.Reg.SetStep(register.Done)
+	if stoppedNodes > 0 {
+		out.T(out.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
+	}
 }
 
 func stop(api libmachine.API, machineName string) bool {
