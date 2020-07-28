@@ -36,6 +36,7 @@ func TestPrintStep(t *testing.T) {
 		return "random-id"
 	}
 
+	Reg.SetStep(InitialSetup)
 	PrintStep("message")
 	actual := buf.String()
 

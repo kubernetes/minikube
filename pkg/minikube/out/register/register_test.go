@@ -24,7 +24,9 @@ import (
 )
 
 func TestSetCurrentStep(t *testing.T) {
-	secondStep := Reg.steps[1]
+	Reg.SetStep(InitialSetup)
+
+	secondStep := Reg.steps[InitialSetup][1]
 	Reg.SetStep(secondStep)
 
 	expected := `{"data":{"currentstep":"1","message":"message","name":"%s","totalsteps":"%v"},"datacontenttype":"application/json","id":"random-id","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.step"}`

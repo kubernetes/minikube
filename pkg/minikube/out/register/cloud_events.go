@@ -38,14 +38,16 @@ var (
 	eventFile *os.File
 )
 
+// SetOutputFile sets the writer to emit all events to
 func SetOutputFile(w io.Writer) {
 	outputFile = w
 }
 
+// SetEventLogPath sets the path of an event log file
 func SetEventLogPath(path string) {
 	if _, err := os.Stat(filepath.Dir(path)); err != nil {
 		if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-			glog.Errorf("Error creating profile directory", err)
+			glog.Errorf("Error creating profile directory: %v", err)
 			return
 		}
 	}
@@ -97,7 +99,6 @@ func printAndRecordCloudEvent(log Log, data map[string]string) {
 }
 
 func storeEvent(bs []byte) {
-	glog.Errorf("writing to eventfile: %s", string(bs))
 	fmt.Fprintln(eventFile, string(bs))
 	if err := eventFile.Sync(); err != nil {
 		glog.Warningf("even file flush failed: %v", err)
@@ -113,7 +114,7 @@ func recordCloudEvent(log Log, data map[string]string) {
 		event := cloudEvent(log, data)
 		bs, err := event.MarshalJSON()
 		if err != nil {
-			glog.Errorf("error marashalling event: %v", err)
+			glog.Errorf("error marshalling event: %v", err)
 			return
 		}
 		storeEvent(bs)

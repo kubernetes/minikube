@@ -28,11 +28,13 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 // StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API, machineName string) error {
+	register.Reg.SetStep(register.Stopping)
 	glog.Infof("StopHost: %v", machineName)
 	h, err := api.Load(machineName)
 	if err != nil {

@@ -127,6 +127,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		exit.UsageT("Usage: minikube delete")
 	}
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	register.Reg.SetStep(register.Deleting)
 
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 	if err != nil {
@@ -266,6 +267,8 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 
 func deleteProfile(profile *config.Profile) error {
 	glog.Infof("Deleting %s", profile.Name)
+	register.Reg.SetStep(register.Deleting)
+
 	viper.Set(config.ProfileName, profile.Name)
 	if profile.Config != nil {
 		glog.Infof("%s configuration: %+v", profile.Name, profile.Config)
@@ -328,6 +331,8 @@ func deleteProfile(profile *config.Profile) error {
 }
 
 func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
+	register.Reg.SetStep(register.Deleting)
+
 	if cc != nil {
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)

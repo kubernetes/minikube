@@ -71,15 +71,15 @@ const (
 	Error   = "Error"   // running but has an error
 	Warning = "Warning" // running but has warnings
 
-	Starting = "Starting"
-	Pausing  = "Pausing"
-	Stopping = "Stopping"
+	Starting  = "Starting"
+	Pausing   = "Pausing"
+	Unpausing = "Unpausing"
+	Stopping  = "Stopping"
+	Deleting  = "Deleting"
 )
 
 // Status holds string representations of component states
 type Status struct {
-	Version string
-
 	Name       string
 	Host       string
 	Kubelet    string
@@ -400,17 +400,28 @@ func clusterState(sts []*Status) ClusterState {
 		},
 
 		Components: map[string]BaseState{
-			"kubeconfig": {Name: "kubeconfig", Condition: sts[0].Kubeconfig},
+			"kubeconfig": {Name: "kubeconfig", Condition: newCondition(sts[0].Kubeconfig)},
 		},
 	}
 
 	for _, st := range sts {
-		cs.Nodes = append(cs.Nodes, NodeState{
+		ns := NodeState{
 			BaseState: BaseState{
 				Name:      st.Name,
-				Condition: st.Kubelet,
+				Condition: newCondition(st.Host),
 			},
-		})
+			Components: map[string]BaseState{
+				"kubelet":   {Name: "kubelet", Kind: "service", Condition: newCondition(st.Kubelet)},
+				"apiserver": {Name: "apiserver", Kind: "service", Condition: newCondition(st.APIServer)},
+			},
+		}
+
+		if st.Worker {
+			ns.Kind = "worker"
+		} else {
+			ns.Kind = "control-plane"
+		}
+		cs.Nodes = append(cs.Nodes, ns)
 	}
 
 	evs, mtime, err := readEventLog(sts[0].Name)
@@ -432,29 +443,50 @@ func clusterState(sts []*Status) ClusterState {
 				continue
 			}
 
-			if data["name"] == string(register.InitialSetup) {
+			switch data["name"] {
+			case string(register.InitialSetup):
 				transientCondition = Starting
-			}
-
-			if data["name"] == string(register.Done) {
+			case string(register.Done):
 				transientCondition = OK
+			case string(register.Stopping):
+				transientCondition = Stopping
+			case string(register.Deleting):
+				transientCondition = Deleting
+			case string(register.Pausing):
+				transientCondition = Pausing
+			case string(register.Unpausing):
+				transientCondition = Unpausing
 			}
 
 			finalStep = data
+			glog.Infof("transient condition %q for step: %+v", transientCondition, data)
 		}
 	}
 
 	if finalStep != nil {
-		cs.Step = strings.TrimSpace(finalStep["name"])
-		cs.StepDetail = strings.TrimSpace(finalStep["message"])
 		if mtime.Before(time.Now().Add(-10 * time.Minute)) {
-			glog.Warningf("event stream is too old (%s) to be considered a transient state")
-		} else if transientCondition != "" {
-			cs.Condition = transientCondition
+			glog.Warningf("event stream is too old (%s) to be considered a transient state", mtime)
+		} else {
+			cs.Step = strings.TrimSpace(finalStep["name"])
+			cs.StepDetail = strings.TrimSpace(finalStep["message"])
+			if transientCondition != "" {
+				cs.Condition = transientCondition
+			}
 		}
 	}
 
 	return cs
+}
+
+func newCondition(st string) string {
+	switch st {
+	case "Running", "Configured":
+		return OK
+	case "Misconfigured":
+		return Error
+	default:
+		return st
+	}
 }
 
 func clusterStatusJSON(statuses []*Status, w io.Writer) error {
