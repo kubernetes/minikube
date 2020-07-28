@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
@@ -32,7 +33,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"go.etcd.io/etcd/version"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -43,10 +43,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/version"
 )
 
 var statusFormat string
 var output string
+var layout string
 
 const (
 	// # Additional states used by kubeconfig:
@@ -62,22 +65,16 @@ const (
 	Nonexistent = "Nonexistent" // ~state.None
 	// Irrelevant is used for statuses that aren't meaningful for worker nodes
 	Irrelevant = "Irrelevant"
+
+	// New status modes
+	OK      = "OK"      // running + passes health checks
+	Error   = "Error"   // running but has an error
+	Warning = "Warning" // running but has warnings
+
+	Starting = "Starting"
+	Pausing  = "Pausing"
+	Stopping = "Stopping"
 )
-
-type ExperimentalComponent struct {
-	Name string
-	Kind string
-
-	Condition       string
-	ConditionDetail []string
-
-	Step string
-}
-
-type ExperimentalCluster struct {
-	ExperimentalComponent
-	Components map[string]ExperimentalComponent
-}
 
 // Status holds string representations of component states
 type Status struct {
@@ -89,9 +86,36 @@ type Status struct {
 	APIServer  string
 	Kubeconfig string
 	Worker     bool
+}
 
-	// Prototyping for the future
-	ExperimentalCluster ExperimentalCluster
+// ClusterState holds a cluster state representation
+type ClusterState struct {
+	BaseState
+
+	BinaryVersion string
+	Components    map[string]BaseState
+	Nodes         []NodeState
+}
+
+// NodeState holds a node state representation
+type NodeState struct {
+	BaseState
+	Components map[string]BaseState `json:",omitempty"`
+}
+
+// BaseState holds a component state representation, such as "apiserver" or "kubeconfig"
+type BaseState struct {
+	Name string
+	Kind string `json:",omitempty"`
+
+	Condition       string
+	ConditionDetail string `json:",omitempty"` // Not yet implemented
+
+	Step       string `json:",omitempty"`
+	StepDetail string `json:",omitempty"`
+
+	Errors   []string `json:",omitempty"` // Not yet implemented
+	Warnings []string `json:",omitempty"` // Not yet implemented
 }
 
 const (
@@ -160,8 +184,6 @@ var statusCmd = &cobra.Command{
 			}
 		}
 
-		addExperimentalFields(statuses[0])
-
 		switch strings.ToLower(output) {
 		case "text":
 			for _, st := range statuses {
@@ -170,8 +192,15 @@ var statusCmd = &cobra.Command{
 				}
 			}
 		case "json":
-			if err := statusJSON(statuses, os.Stdout); err != nil {
-				exit.WithError("status json failure", err)
+			// Layout is currently only supported for JSON mode
+			if layout == "cluster" {
+				if err := clusterStatusJSON(statuses, os.Stdout); err != nil {
+					exit.WithError("status json failure", err)
+				}
+			} else {
+				if err := statusJSON(statuses, os.Stdout); err != nil {
+					exit.WithError("status json failure", err)
+				}
 			}
 		default:
 			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
@@ -179,46 +208,6 @@ var statusCmd = &cobra.Command{
 
 		os.Exit(exitCode(statuses))
 	},
-}
-
-func readEventLog(name string) ([]cloudevents.Event, error) {
-	path := localpath.EventLog(name)
-
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, errors.Wrap(err, "open")
-	}
-	var events []cloudevents.Event
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		var ev cloudevents.Event
-		if err = json.Unmarshal(scanner.Bytes(), &ev); err != nil {
-			return events, err
-		}
-		events = append(events, ev)
-	}
-
-	return events, nil
-}
-
-func addExperimentalFields(st *Status) {
-	st.ExperimentalCluster.Condition = st.APIServer
-
-	evs, err := readEventLog(st.Name)
-	if err != nil {
-		glog.Errorf("unable to read event log: %v", err)
-		return
-	}
-
-	for _, ev := range evs {
-		glog.Infof("read event: %+v", ev)
-		/*		if ev.Type() == "io.k8s.sigs.minikube.step" {
-					st.ExperimentalCluster.Step = ev.Data.Name
-				}
-		*/
-	}
-
 }
 
 func exitCode(statuses []*Status) int {
@@ -243,7 +232,6 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 	name := driver.MachineName(cc, n)
 
 	st := &Status{
-		Version:    version.Version,
 		Name:       name,
 		Host:       Nonexistent,
 		APIServer:  Nonexistent,
@@ -336,6 +324,8 @@ func init() {
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
 	statusCmd.Flags().StringVarP(&output, "output", "o", "text",
 		`minikube status --output OUTPUT. json, text`)
+	statusCmd.Flags().StringVarP(&layout, "layout", "l", "nodes",
+		`output layout (EXPERIMENTAL, JSON only): 'nodes' or 'cluster'`)
 	statusCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.")
 }
 
@@ -370,5 +360,111 @@ func statusJSON(st []*Status, w io.Writer) error {
 		return err
 	}
 	_, err = w.Write(js)
+	return err
+}
+
+func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
+	path := localpath.EventLog(name)
+
+	st, err := os.Stat(path)
+	if err != nil {
+		return nil, time.Time{}, errors.Wrap(err, "stat")
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, st.ModTime(), errors.Wrap(err, "open")
+	}
+	var events []cloudevents.Event
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		ev := cloudevents.NewEvent()
+		if err = json.Unmarshal(scanner.Bytes(), &ev); err != nil {
+			return events, st.ModTime(), err
+		}
+		events = append(events, ev)
+	}
+
+	return events, st.ModTime(), nil
+}
+
+func clusterState(sts []*Status) ClusterState {
+	cs := ClusterState{
+		BinaryVersion: version.GetVersion(),
+
+		BaseState: BaseState{
+			Name:      ClusterFlagValue(),
+			Kind:      "cluster",
+			Condition: sts[0].APIServer,
+		},
+
+		Components: map[string]BaseState{
+			"kubeconfig": {Name: "kubeconfig", Condition: sts[0].Kubeconfig},
+		},
+	}
+
+	for _, st := range sts {
+		cs.Nodes = append(cs.Nodes, NodeState{
+			BaseState: BaseState{
+				Name:      st.Name,
+				Condition: st.Kubelet,
+			},
+		})
+	}
+
+	evs, mtime, err := readEventLog(sts[0].Name)
+	if err != nil {
+		glog.Errorf("unable to read event log: %v", err)
+		return cs
+	}
+
+	var transientCondition string
+	var finalStep map[string]string
+
+	for _, ev := range evs {
+		//		glog.Infof("read event: %+v", ev)
+		if ev.Type() == "io.k8s.sigs.minikube.step" {
+			var data map[string]string
+			err := ev.DataAs(&data)
+			if err != nil {
+				glog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
+				continue
+			}
+
+			if data["name"] == string(register.InitialSetup) {
+				transientCondition = Starting
+			}
+
+			if data["name"] == string(register.Done) {
+				transientCondition = OK
+			}
+
+			finalStep = data
+		}
+	}
+
+	if finalStep != nil {
+		cs.Step = strings.TrimSpace(finalStep["name"])
+		cs.StepDetail = strings.TrimSpace(finalStep["message"])
+		if mtime.Before(time.Now().Add(-10 * time.Minute)) {
+			glog.Warningf("event stream is too old (%s) to be considered a transient state")
+		} else if transientCondition != "" {
+			cs.Condition = transientCondition
+		}
+	}
+
+	return cs
+}
+
+func clusterStatusJSON(statuses []*Status, w io.Writer) error {
+	cs := clusterState(statuses)
+
+	bs, err := json.Marshal(cs)
+	if err != nil {
+		return errors.Wrap(err, "marshal")
+	}
+
+	_, err = w.Write(bs)
 	return err
 }
