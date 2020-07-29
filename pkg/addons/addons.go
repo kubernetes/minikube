@@ -152,8 +152,8 @@ Alternatively to use this addon you can use a vm-based driver:
 To track the update on this work in progress feature please check:
 https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
 		} else if driver.BareMetal(cc.Driver) {
-			exit.UsageT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not supported.
-Try using a supported driver: "--driver=docker", or "--driver=podman", or "--driver=hyperkit"`, out.V{"driver_name": cc.Driver, "addon_name": name})
+			exit.UsageT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not supported. Try using a different driver.`,
+				out.V{"driver_name": cc.Driver, "addon_name": name})
 		}
 	}
 
