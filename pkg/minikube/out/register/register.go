@@ -110,7 +110,8 @@ func (r *Register) currentStep() string {
 
 	// all steps should be registered so this shouldn't happen
 	// can't call exit.WithError as it creates an import dependency loop
-	panic(fmt.Sprintf("%q is in the expected steps for %q: %v", r.current, r.first, steps))
+	glog.Errorf("%q was not found within the registered steps for %q: %v", r.current, r.first, steps)
+	return ""
 }
 
 // SetStep sets the current step
