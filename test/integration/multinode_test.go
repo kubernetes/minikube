@@ -225,7 +225,7 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
 	}
 
-	time.Sleep(Seconds(30))
+	time.Sleep(Seconds(45))
 
 	// Make sure minikube status shows 2 running nodes
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
