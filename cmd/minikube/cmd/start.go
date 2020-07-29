@@ -829,6 +829,10 @@ func validateMemorySize(req int, drvName string) {
 		glog.Warningf("Unable to query memory limits: %v", err)
 	}
 
+	// maximm ram they should allocate to minikube to prevent #8708
+	maxAdvised := 0.79 * float64(sysLimit)
+	minAdvised := 0.50 * float64(sysLimit)
+
 	if req < minUsableMem && !viper.GetBool(force) {
 		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB",
 			out.V{"requested": req, "mininum": minUsableMem})
@@ -855,6 +859,27 @@ func validateMemorySize(req int, drvName string) {
 `, out.V{"container_limit": containerLimit, "system_limit": sysLimit})
 		}
 	}
+
+	if req > sysLimit && !viper.GetBool(force) {
+		out.T(out.Tip, "To suppress memory validations you can use --force flag.")
+		exit.WithCodeT(exit.Config, `Requested memory allocation {{.requested}}MB is more than your system limit {{.system_limit}}MB. Try specifying a lower memory:
+
+	miniube start --memory={{.min_advised}}mb				
+
+`,
+			out.V{"requested": req, "system_limit": sysLimit, "max_advised": int32(maxAdvised), "min_advised": minAdvised})
+
+	}
+
+	if float64(req) > maxAdvised && !viper.GetBool(force) {
+		out.WarningT(`You are allocating {{.requested}}MB to memory and your system only has {{.system_limit}}MB. You might face issues. try specifying a lower memory:
+
+		miniube start --memory={{.min_advised}}mb				
+
+`, out.V{"requested": req, "system_limit": sysLimit, "min_advised": minAdvised})
+		out.T(out.Tip, "To suppress and ignore this warning you can use --force flag.")
+	}
+
 }
 
 // validateCPUCount validates the cpu count matches the minimum recommended
@@ -921,11 +946,6 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateCPUCount(drvName)
 
 	if cmd.Flags().Changed(memory) {
-		req, err := util.CalculateSizeInMB(viper.GetString(memory))
-		if err != nil {
-			exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
-		}
-		validateMemorySize(req, drvName)
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 		}

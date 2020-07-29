@@ -393,6 +393,9 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	cc := *existing
 
+	// validate the memory size in case user changed their system memory limits (example change docker desktop or upgraded memory.)
+	validateMemorySize(cc.Memory, cc.Driver)
+
 	if cmd.Flags().Changed(containerRuntime) {
 		cc.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
 	}
