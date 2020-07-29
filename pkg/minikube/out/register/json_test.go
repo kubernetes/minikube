@@ -24,6 +24,8 @@ import (
 )
 
 func TestPrintStep(t *testing.T) {
+	Reg.SetStep(InitialSetup)
+
 	expected := `{"data":{"currentstep":"0","message":"message","name":"Initial Minikube Setup","totalsteps":"%v"},"datacontenttype":"application/json","id":"random-id","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.step"}`
 	expected = fmt.Sprintf(expected, Reg.totalSteps())
 	expected += "\n"
@@ -36,7 +38,6 @@ func TestPrintStep(t *testing.T) {
 		return "random-id"
 	}
 
-	Reg.SetStep(InitialSetup)
 	PrintStep("message")
 	actual := buf.String()
 
