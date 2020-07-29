@@ -829,8 +829,9 @@ func validateMemorySize(req int, drvName string) {
 		glog.Warningf("Unable to query memory limits: %v", err)
 	}
 
-	// maximm ram they should allocate to minikube to prevent #8708
+	// maximm percent of their ram they could allocate to minikube to prevent #8708
 	maxAdvised := 0.79 * float64(sysLimit)
+	// a more sane alternative to their high memory 80%
 	minAdvised := 0.50 * float64(sysLimit)
 
 	if req < minUsableMem && !viper.GetBool(force) {
