@@ -33,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -60,6 +61,9 @@ func init() {
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
+	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	register.Reg.SetStep(register.Stopping)
+
 	// new code
 	var profilesToStop []string
 	if stopAll {
@@ -74,17 +78,22 @@ func runStop(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		profilesToStop = append(profilesToStop, cname)
 	}
+
+	stoppedNodes := 0
+
 	for _, profile := range profilesToStop {
+		register.Reg.SetStep(register.Stopping)
+
 		// end new code
 		api, cc := mustload.Partial(profile)
 		defer api.Close()
 
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
-			nonexistent := stop(api, machineName)
 
+			nonexistent := stop(api, machineName)
 			if !nonexistent {
-				out.T(out.Stopped, `Node "{{.node_name}}" stopped.`, out.V{"node_name": machineName})
+				stoppedNodes++
 			}
 		}
 
@@ -95,6 +104,11 @@ func runStop(cmd *cobra.Command, args []string) {
 		if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
 			exit.WithError("update config", err)
 		}
+	}
+
+	register.Reg.SetStep(register.Done)
+	if stoppedNodes > 0 {
+		out.T(out.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
 	}
 }
 

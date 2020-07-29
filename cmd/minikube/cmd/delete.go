@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
 var deleteAll bool
@@ -125,6 +126,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.UsageT("Usage: minikube delete")
 	}
+	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	register.Reg.SetStep(register.Deleting)
 
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 	if err != nil {
@@ -146,6 +149,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 		deleteContainersAndVolumes(oci.Podman)
 
 		errs := DeleteProfiles(profilesToDelete)
+		register.Reg.SetStep(register.Done)
+
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		} else {
@@ -166,6 +171,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 
 		errs := DeleteProfiles([]*config.Profile{profile})
+		register.Reg.SetStep(register.Done)
+
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		}
@@ -264,6 +271,8 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 
 func deleteProfile(profile *config.Profile) error {
 	glog.Infof("Deleting %s", profile.Name)
+	register.Reg.SetStep(register.Deleting)
+
 	viper.Set(config.ProfileName, profile.Name)
 	if profile.Config != nil {
 		glog.Infof("%s configuration: %+v", profile.Name, profile.Config)
@@ -326,6 +335,8 @@ func deleteProfile(profile *config.Profile) error {
 }
 
 func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
+	register.Reg.SetStep(register.Deleting)
+
 	if cc != nil {
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
