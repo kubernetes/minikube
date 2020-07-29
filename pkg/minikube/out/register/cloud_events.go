@@ -60,6 +60,7 @@ func SetEventLogPath(path string) {
 	eventFile = f
 }
 
+// cloudEvent creates a CloudEvent from a log object & associated data
 func cloudEvent(log Log, data map[string]string) cloudevents.Event {
 	event := cloudevents.NewEvent()
 	event.SetSource("https://minikube.sigs.k8s.io/")
@@ -72,6 +73,7 @@ func cloudEvent(log Log, data map[string]string) cloudevents.Event {
 	return event
 }
 
+// print JSON output to configured writer
 func printAsCloudEvent(log Log, data map[string]string) {
 	event := cloudEvent(log, data)
 
@@ -83,6 +85,7 @@ func printAsCloudEvent(log Log, data map[string]string) {
 	fmt.Fprintln(outputFile, string(bs))
 }
 
+// print JSON output to configured writer, and record it to disk
 func printAndRecordCloudEvent(log Log, data map[string]string) {
 	event := cloudEvent(log, data)
 
@@ -105,6 +108,7 @@ func storeEvent(bs []byte) {
 	}
 }
 
+// record cloud event to disk
 func recordCloudEvent(log Log, data map[string]string) {
 	if eventFile == nil {
 		return

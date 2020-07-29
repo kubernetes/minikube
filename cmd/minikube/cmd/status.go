@@ -52,30 +52,56 @@ var output string
 var layout string
 
 const (
-	// # Additional states used by kubeconfig:
-
+	// Additional legacy states:
 	// Configured means configured
 	Configured = "Configured" // ~state.Saved
 	// Misconfigured means misconfigured
 	Misconfigured = "Misconfigured" // ~state.Error
-
-	// # Additional states used for clarity:
-
-	// Nonexistent means nonexistent
+	// Nonexistent means the resource does not exist
 	Nonexistent = "Nonexistent" // ~state.None
 	// Irrelevant is used for statuses that aren't meaningful for worker nodes
 	Irrelevant = "Irrelevant"
 
-	// New status modes
-	OK      = "OK"      // running + passes health checks
-	Error   = "Error"   // running but has an error
-	Warning = "Warning" // running but has warnings
+	// New status modes, based roughly on HTTP/SMTP standards
+	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
+	Starting  = 100
+	Pausing   = 101
+	Unpausing = 102
+	Stopping  = 110
+	Deleting  = 120
 
-	Starting  = "Starting"
-	Pausing   = "Pausing"
-	Unpausing = "Unpausing"
-	Stopping  = "Stopping"
-	Deleting  = "Deleting"
+	// 2xx signifies that the API Server is able to service requests
+	OK      = 200
+	Warning = 203
+
+	// 4xx signifies an error that requires help from the client to resolve
+	NotFound = 404
+	Stopped  = 405
+	Paused   = 418 // I'm a teapot!
+
+	// 5xx signifies a server-side error (that may be retryable)
+	Error   = 500
+	Unknown = 520
+)
+
+var (
+	codeNames = map[int]string{
+		100: "Starting",
+		101: "Pausing",
+		102: "Unpausing",
+		110: "Stopping",
+		103: "Deleting",
+
+		200: "OK",
+		203: "Warning",
+
+		404: "NotFound",
+		405: "Stopped",
+		418: "Paused",
+
+		500: "Error",
+		520: "Unknown",
+	}
 )
 
 // Status holds string representations of component states
@@ -105,17 +131,20 @@ type NodeState struct {
 
 // BaseState holds a component state representation, such as "apiserver" or "kubeconfig"
 type BaseState struct {
+	// Name is the name of the object
 	Name string
-	Kind string `json:",omitempty"`
 
-	Condition       string
-	ConditionDetail string `json:",omitempty"` // Not yet implemented
+	// StatusCode is an HTTP-like status code for this object
+	StatusCode int
+	// Name is a human-readable name for the status code
+	StatusName string
+	// StatusDetail is long human-readable string describing why this particular status code was chosen
+	StatusDetail string `json:",omitempty"` // Not yet implemented
 
-	Step       string `json:",omitempty"`
+	// Step is which workflow step the object is at.
+	Step string `json:",omitempty"`
+	// StepDetail is a long human-readable string describing the step
 	StepDetail string `json:",omitempty"`
-
-	Errors   []string `json:",omitempty"` // Not yet implemented
-	Warnings []string `json:",omitempty"` // Not yet implemented
 }
 
 const (
@@ -162,7 +191,7 @@ var statusCmd = &cobra.Command{
 				exit.WithError("retrieving node", err)
 			}
 
-			st, err := status(api, *cc, *n)
+			st, err := nodeStatus(api, *cc, *n)
 			if err != nil {
 				glog.Errorf("status error: %v", err)
 			}
@@ -171,7 +200,7 @@ var statusCmd = &cobra.Command{
 			for _, n := range cc.Nodes {
 				machineName := driver.MachineName(*cc, n)
 				glog.Infof("checking status of %s ...", machineName)
-				st, err := status(api, *cc, n)
+				st, err := nodeStatus(api, *cc, n)
 				glog.Infof("%s status: %+v", machineName, st)
 
 				if err != nil {
@@ -210,6 +239,7 @@ var statusCmd = &cobra.Command{
 	},
 }
 
+// exitCode calcluates the appropriate exit code given a set of status messages
 func exitCode(statuses []*Status) int {
 	c := 0
 	for _, st := range statuses {
@@ -226,7 +256,8 @@ func exitCode(statuses []*Status) int {
 	return c
 }
 
-func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
+// nodeStatus looks up the status of a node
+func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 
 	controlPlane := n.ControlPlane
 	name := driver.MachineName(cc, n)
@@ -363,6 +394,7 @@ func statusJSON(st []*Status, w io.Writer) error {
 	return err
 }
 
+// readEventLog reads cloudevent logs from $MINIKUBE_HOME/profiles/<name>/events.json
 func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 	path := localpath.EventLog(name)
 
@@ -389,38 +421,43 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 	return events, st.ModTime(), nil
 }
 
+// clusterState converts Status structs into a ClusterState struct
 func clusterState(sts []*Status) ClusterState {
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
 		BaseState: BaseState{
-			Name:      ClusterFlagValue(),
-			Kind:      "cluster",
-			Condition: sts[0].APIServer,
+			Name:       ClusterFlagValue(),
+			StatusCode: statusCode(sts[0].APIServer),
 		},
 
 		Components: map[string]BaseState{
-			"kubeconfig": {Name: "kubeconfig", Condition: newCondition(sts[0].Kubeconfig)},
+			"kubeconfig": {Name: "kubeconfig", StatusCode: statusCode(sts[0].Kubeconfig)},
 		},
 	}
 
 	for _, st := range sts {
 		ns := NodeState{
 			BaseState: BaseState{
-				Name:      st.Name,
-				Condition: newCondition(st.Host),
+				Name:       st.Name,
+				StatusCode: statusCode(st.Host),
 			},
 			Components: map[string]BaseState{
-				"kubelet":   {Name: "kubelet", Kind: "service", Condition: newCondition(st.Kubelet)},
-				"apiserver": {Name: "apiserver", Kind: "service", Condition: newCondition(st.APIServer)},
+				"kubelet": {Name: "kubelet", StatusCode: statusCode(st.Kubelet)},
 			},
 		}
 
-		if st.Worker {
-			ns.Kind = "worker"
-		} else {
-			ns.Kind = "control-plane"
+		if st.APIServer != Irrelevant {
+			ns.Components["apiserver"] = BaseState{Name: "apiserver", StatusCode: statusCode(st.APIServer)}
 		}
+
+		// Convert status codes to status names
+		ns.StatusName = codeNames[ns.StatusCode]
+		for k, v := range ns.Components {
+			v.StatusName = codeNames[v.StatusCode]
+			ns.Components[k] = v
+		}
+
 		cs.Nodes = append(cs.Nodes, ns)
 	}
 
@@ -430,7 +467,7 @@ func clusterState(sts []*Status) ClusterState {
 		return cs
 	}
 
-	var transientCondition string
+	transientCode := 0
 	var finalStep map[string]string
 
 	for _, ev := range evs {
@@ -445,21 +482,22 @@ func clusterState(sts []*Status) ClusterState {
 
 			switch data["name"] {
 			case string(register.InitialSetup):
-				transientCondition = Starting
+				transientCode = Starting
 			case string(register.Done):
-				transientCondition = ""
+				transientCode = 0
 			case string(register.Stopping):
-				transientCondition = Stopping
+				glog.Infof("%q == %q", data["name"], register.Stopping)
+				transientCode = Stopping
 			case string(register.Deleting):
-				transientCondition = Deleting
+				transientCode = Deleting
 			case string(register.Pausing):
-				transientCondition = Pausing
+				transientCode = Pausing
 			case string(register.Unpausing):
-				transientCondition = Unpausing
+				transientCode = Unpausing
 			}
 
 			finalStep = data
-			glog.Infof("transient condition %q for step: %+v", transientCondition, data)
+			glog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
 		}
 	}
 
@@ -469,24 +507,34 @@ func clusterState(sts []*Status) ClusterState {
 		} else {
 			cs.Step = strings.TrimSpace(finalStep["name"])
 			cs.StepDetail = strings.TrimSpace(finalStep["message"])
-			if transientCondition != "" {
-				cs.Condition = transientCondition
+			if transientCode != 0 {
+				cs.StatusCode = transientCode
 			}
 		}
 	}
 
+	cs.StatusName = codeNames[cs.StatusCode]
 	return cs
 }
 
-func newCondition(st string) string {
+// statusCode returns a status code number given a name
+func statusCode(st string) int {
+	// legacy names
 	switch st {
 	case "Running", "Configured":
 		return OK
 	case "Misconfigured":
 		return Error
-	default:
-		return st
 	}
+
+	// new names
+	for code, name := range codeNames {
+		if name == st {
+			return code
+		}
+	}
+
+	return Unknown
 }
 
 func clusterStatusJSON(statuses []*Status, w io.Writer) error {
