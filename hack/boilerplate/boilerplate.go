@@ -138,7 +138,7 @@ func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
 func filesToCheck(rootDir string, extensions map[string][]byte) ([]string, error) {
 	var outFiles []string
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		// remove current workdir from the beginig of the path in case it matches the skipped path
+		// remove current workdir from the beginning of the path in case it matches the skipped path
 		cwd, _ := os.Getwd()
 		// replace "\" with "\\" for windows style path
 		re := regexp.MustCompile(`\\`)
