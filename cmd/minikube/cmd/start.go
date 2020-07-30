@@ -202,6 +202,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	if existing != nil && existing.KubernetesConfig.ContainerRuntime == "crio" && driver.IsKIC(existing.Driver) {
+		// Stop and start again if it's crio because crio is bad and dumb
+		out.WarningT("CRI-O currently has an issue and your cluster needs to be restarted.")
+		stopProfile(existing.Name)
+		starter, err = provisionWithDriver(cmd, ds, existing)
+	}
+
 	kubeconfig, err := startWithDriver(cmd, starter, existing)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)

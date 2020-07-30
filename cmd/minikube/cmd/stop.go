@@ -80,36 +80,42 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	stoppedNodes := 0
-
 	for _, profile := range profilesToStop {
-		register.Reg.SetStep(register.Stopping)
-
-		// end new code
-		api, cc := mustload.Partial(profile)
-		defer api.Close()
-
-		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(*cc, n)
-
-			nonexistent := stop(api, machineName)
-			if !nonexistent {
-				stoppedNodes++
-			}
-		}
-
-		if err := killMountProcess(); err != nil {
-			out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
-		}
-
-		if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
-			exit.WithError("update config", err)
-		}
+		stoppedNodes = stopProfile(profile)
 	}
 
 	register.Reg.SetStep(register.Done)
 	if stoppedNodes > 0 {
 		out.T(out.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
 	}
+}
+
+func stopProfile(profile string) int {
+	stoppedNodes := 0
+	register.Reg.SetStep(register.Stopping)
+
+	// end new code
+	api, cc := mustload.Partial(profile)
+	defer api.Close()
+
+	for _, n := range cc.Nodes {
+		machineName := driver.MachineName(*cc, n)
+
+		nonexistent := stop(api, machineName)
+		if !nonexistent {
+			stoppedNodes++
+		}
+	}
+
+	if err := killMountProcess(); err != nil {
+		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
+	}
+
+	if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
+		exit.WithError("update config", err)
+	}
+
+	return stoppedNodes
 }
 
 func stop(api libmachine.API, machineName string) bool {

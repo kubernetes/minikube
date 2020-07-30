@@ -12,25 +12,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     docker.io \
     openssh-server \
     dnsutils \
+    runc \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0 \
     # removing kind's crictl config
     && rm /etc/crictl.yaml
 
-# install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
-RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+# Install cri-o/podman dependencies:
+RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \ 
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && apt-get update && \
-    apt-get install -y --no-install-recommends cri-o-1.17
+    apt-get install -y --no-install-recommends containers-common catatonit conmon containernetworking-plugins podman-plugins varlink
+
+# install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
+RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.3/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.3/xUbuntu_20.04/Release.key && \
+    apt-key add - < Release.key && apt-get update && \
+    apt-get install -y --no-install-recommends cri-o=1.18.3~2
 
 # install podman
 RUN sh -c "echo 'deb https://dl.bintray.com/afbjorklund/podman focal main' > /etc/apt/sources.list.d/podman.list" && \
     curl -L https://bintray.com/user/downloadSubjectPublicKey?username=afbjorklund -o afbjorklund-public.key.asc && \
     apt-key add - < afbjorklund-public.key.asc && apt-get update && \
-    apt-get install -y --no-install-recommends podman=1.8.2~2
+    apt-get install -y --no-install-recommends podman=1.9.3~1
 
-# install varlink
-RUN apt-get install -y --no-install-recommends varlink
+RUN mkdir -p /usr/lib/cri-o-runc/sbin && cp /usr/local/sbin/runc /usr/lib/cri-o-runc/sbin/runc
 
 COPY entrypoint /usr/local/bin/entrypoint
 # automount service
