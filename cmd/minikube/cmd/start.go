@@ -207,6 +207,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		out.WarningT("CRI-O currently has an issue and your cluster needs to be restarted.")
 		stopProfile(existing.Name)
 		starter, err = provisionWithDriver(cmd, ds, existing)
+		if err != nil {
+			exit.WithError("error provisioning host", err)
+		}
 	}
 
 	kubeconfig, err := startWithDriver(cmd, starter, existing)
