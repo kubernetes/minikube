@@ -79,7 +79,7 @@ func printAsCloudEvent(log Log, data map[string]string) {
 
 	bs, err := event.MarshalJSON()
 	if err != nil {
-		glog.Errorf("error marashalling event: %v", err)
+		glog.Errorf("error marshalling event: %v", err)
 		return
 	}
 	fmt.Fprintln(outputFile, string(bs))
@@ -91,7 +91,7 @@ func printAndRecordCloudEvent(log Log, data map[string]string) {
 
 	bs, err := event.MarshalJSON()
 	if err != nil {
-		glog.Errorf("error marashalling event: %v", err)
+		glog.Errorf("error marshalling event: %v", err)
 		return
 	}
 	fmt.Fprintln(outputFile, string(bs))
