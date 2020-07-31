@@ -203,7 +203,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if existing != nil && existing.KubernetesConfig.ContainerRuntime == "crio" && driver.IsKIC(existing.Driver) {
-		// Stop and start again if it's crio becuase it's broken above v1.17.3
+		// Stop and start again if it's crio because it's broken above v1.17.3
 		out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
 		out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
 		stopProfile(existing.Name)
