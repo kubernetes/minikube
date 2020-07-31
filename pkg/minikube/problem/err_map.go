@@ -331,7 +331,7 @@ var vmProblems = map[string]match{
 	},
 	"VBOX_NOT_FOUND": {
 		Regexp: re(`VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path`),
-		Advice: "Install VirtualBox, or select an alternative value for --driver",
+		Advice: "Install VirtualBox and ensure it is in the path, or select an alternative value for --driver",
 		URL:    "https://minikube.sigs.k8s.io/docs/start/",
 		Issues: []int{3784},
 	},
