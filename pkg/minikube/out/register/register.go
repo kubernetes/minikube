@@ -81,7 +81,7 @@ func init() {
 			Stopping:  []RegStep{Stopping, Done},
 			Pausing:   []RegStep{Pausing, Done},
 			Unpausing: []RegStep{Unpausing, Done},
-			Deleting:  []RegStep{Deleting, Done},
+			Deleting:  []RegStep{Deleting, Stopping, Deleting, Done},
 		},
 	}
 }
@@ -108,9 +108,8 @@ func (r *Register) currentStep() string {
 		}
 	}
 
-	// all steps should be registered so this shouldn't happen
-	// can't call exit.WithError as it creates an import dependency loop
-	glog.Errorf("%q was not found within the registered steps for %q: %v", r.current, r.first, steps)
+	// Warn, as sometimes detours happen: "start" may cause "stopping" and "deleting"
+	glog.Warningf("%q was not found within the registered steps for %q: %v", r.current, r.first, steps)
 	return ""
 }
 
