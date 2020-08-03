@@ -34,6 +34,9 @@ var gitCommitID = ""
 // isoVersion is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.isoVersion=vX.Y.Z"
 var isoVersion = "v0.0.0-unset"
 
+// storageProvisionerVersion is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.storageProvisionerVersion=<storage-provisioner-version>"
+var storageProvisionerVersion = ""
+
 // GetVersion returns the current minikube version
 func GetVersion() string {
 	return version
@@ -52,4 +55,9 @@ func GetISOVersion() string {
 // GetSemverVersion returns the current minikube semantic version (semver)
 func GetSemverVersion() (semver.Version, error) {
 	return semver.Make(strings.TrimPrefix(GetVersion(), VersionPrefix))
+}
+
+// GetStorageProvisionerVersion returns the storage provisioner version
+func GetStorageProvisionerVersion() string {
+	return storageProvisionerVersion
 }
