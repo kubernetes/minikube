@@ -92,7 +92,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	//	create a test pod that will mount the persistent volume
-	createPVTestPod(t, ctx, profile)
+	createPVTestPod(ctx, t, profile)
 
 	// write to the persistent volume
 	podName := "sp-pod"
@@ -107,7 +107,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 		t.Fatalf("kubectl delete pod.yaml failed: args %q: %v", rr.Command(), err)
 	}
 	// recreate the pod
-	createPVTestPod(t, ctx, profile)
+	createPVTestPod(ctx, t, profile)
 
 	// make sure the file we previously wrote to the persistent volume is still there
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", podName, "--", "ls", "/tmp/mount"))
@@ -119,7 +119,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 }
 
-func createPVTestPod(t *testing.T, ctx context.Context, profile string) {
+func createPVTestPod(ctx context.Context, t *testing.T, profile string) {
 	// Deploy a pod that will mount the PV
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", path.Join(*testdataDir, "storage-provisioner", "pod.yaml")))
 	if err != nil {
