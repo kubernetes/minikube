@@ -126,7 +126,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.UsageT("Usage: minikube delete")
 	}
-	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	//register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Deleting)
 
 	validProfiles, invalidProfiles, err := config.ListProfiles()
