@@ -686,8 +686,6 @@ github.com/machine-drivers/docker-machine-driver-vmware v0.1.1 h1:+E1IKKk+6kaQrC
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.1/go.mod h1:ej014C83EmSnxJeJ8PtVb8OLJ91PJKO1Q8Y7sM5CK0o=
 github.com/machine-drivers/machine v0.7.1-0.20200323212942-41eb826190d8 h1:CIddS19fAKG4rUkZAotX0WPQtx/v/SdLhhDU3MVhLy0=
 github.com/machine-drivers/machine v0.7.1-0.20200323212942-41eb826190d8/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
-github.com/machine-drivers/machine v0.16.2 h1:v7+AQ3SdVC5TytHfEf/ivCJbyaxIj+MxNFXFPvqFdc8=
-github.com/machine-drivers/machine v0.16.2/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
 github.com/magiconair/properties v1.7.6/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1 h1:ZC2Vc7/ZFkGmsVC9KvOjumD+G5lXy2RtTKyzRKO2BQ4=
