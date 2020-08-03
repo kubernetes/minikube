@@ -30,7 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
-type hostInfo struct {
+type HostInfo struct {
 	Memory   int64
 	CPUs     int
 	DiskSize int64
@@ -40,24 +40,26 @@ func megs(bytes uint64) int64 {
 	return int64(bytes / 1024 / 1024)
 }
 
-func getHostInfo() (*hostInfo, error) {
-	i, err := cpu.Info()
+// CachedHostInfo returns system information such as memory,CPU, DiskSize
+func CachedHostInfo() (*HostInfo, error) {
+	i, err := cachedCPUInfo()
 	if err != nil {
 		glog.Warningf("Unable to get CPU info: %v", err)
 		return nil, err
 	}
-	v, err := mem.VirtualMemory()
+	v, err := cachedSysMemLimit()
 	if err != nil {
 		glog.Warningf("Unable to get mem info: %v", err)
 		return nil, err
 	}
-	d, err := disk.Usage("/")
+
+	d, err := cachedDisInfo()
 	if err != nil {
 		glog.Warningf("Unable to get disk info: %v", err)
 		return nil, err
 	}
 
-	var info hostInfo
+	var info HostInfo
 	info.CPUs = len(i)
 	info.Memory = megs(v.Total)
 	info.DiskSize = megs(d.Total)
@@ -96,4 +98,46 @@ func logRemoteOsRelease(r command.Runner) {
 	}
 
 	glog.Infof("Remote host: %s", osReleaseInfo.PrettyName)
+}
+
+var cachedSystemMemoryLimit *mem.VirtualMemoryStat
+var cachedSystemMemoryErr *error
+
+//  cachedSysMemLimit will return a chaced limit for the system's virtual memory.
+func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
+	if cachedSystemMemoryLimit == nil {
+		v, err := mem.VirtualMemory()
+		cachedSystemMemoryLimit = v
+		cachedSystemMemoryErr = &err
+	}
+	return cachedSystemMemoryLimit, *cachedSystemMemoryErr
+}
+
+var cachedDiskInfo *disk.UsageStat
+var cachedDiskInfoeErr *error
+
+//  cachedSysMemLimit will return a cached disk usage info
+func cachedDisInfo() (disk.UsageStat, error) {
+	if cachedDiskInfo == nil {
+		d, err := disk.Usage("/")
+		cachedDiskInfo = d
+		cachedDiskInfoeErr = &err
+	}
+	return *cachedDiskInfo, *cachedDiskInfoeErr
+}
+
+var cachedCPU *[]cpu.InfoStat
+var cachedCPUErr *error
+
+//  cachedCPUInfo will return a cached cpu info
+func cachedCPUInfo() ([]cpu.InfoStat, error) {
+	if cachedCPU == nil {
+		i, err := cpu.Info()
+		cachedCPU = &i
+		cachedCPUErr = &err
+		if err != nil {
+			return nil, *cachedCPUErr
+		}
+	}
+	return *cachedCPU, *cachedCPUErr
 }
