@@ -24,7 +24,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"path/filepath"
+	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,13 +65,14 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	// Now create a testpvc
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "pvc.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", path.Join(*testdataDir, "storage-provisioner", "pvc.yaml")))
 	if err != nil {
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
 
+	// make sure the pvc is Bound
 	checkStoragePhase := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", "testpvc", "-o=json"))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", "myclaim", "-o=json"))
 		if err != nil {
 			return err
 		}
@@ -87,5 +89,44 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 
 	if err := retry.Expo(checkStoragePhase, 2*time.Second, Minutes(4)); err != nil {
 		t.Fatalf("failed to check storage phase: %v", err)
+	}
+
+	//	create a test pod that will mount the persistent volume
+	createPVTestPod(t, ctx, profile)
+
+	// write to the persistent volume
+	podName := "sp-pod"
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", podName, "--", "touch", "/tmp/mount/foo"))
+	if err != nil {
+		t.Fatalf("creating file in pv: args %q: %v", rr.Command(), err)
+	}
+
+	// kill the pod
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "-f", path.Join(*testdataDir, "storage-provisioner", "pod.yaml")))
+	if err != nil {
+		t.Fatalf("kubectl delete pod.yaml failed: args %q: %v", rr.Command(), err)
+	}
+	// recreate the pod
+	createPVTestPod(t, ctx, profile)
+
+	// make sure the file we previously wrote to the persistent volume is still there
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", podName, "--", "ls", "/tmp/mount"))
+	if err != nil {
+		t.Fatalf("creating file in pv: args %q: %v", rr.Command(), err)
+	}
+	if !strings.Contains(rr.Output(), "foo") {
+		t.Fatalf("expected file foo to persist in pvc, instead got [%v] as files in pv", rr.Output())
+	}
+}
+
+func createPVTestPod(t *testing.T, ctx context.Context, profile string) {
+	// Deploy a pod that will mount the PV
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", path.Join(*testdataDir, "storage-provisioner", "pod.yaml")))
+	if err != nil {
+		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
+	}
+	// wait for pod to be running
+	if _, err := PodWait(ctx, t, profile, "default", "test=storage-provisioner", Minutes(1)); err != nil {
+		t.Fatalf("failed waiting for pod: %v", err)
 	}
 }
