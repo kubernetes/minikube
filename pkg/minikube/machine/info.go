@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
+// HostInfo holds information on the user's machine
 type HostInfo struct {
 	Memory   int64
 	CPUs     int
@@ -103,7 +104,7 @@ func logRemoteOsRelease(r command.Runner) {
 var cachedSystemMemoryLimit *mem.VirtualMemoryStat
 var cachedSystemMemoryErr *error
 
-//  cachedSysMemLimit will return a chaced limit for the system's virtual memory.
+//  cachedSysMemLimit will return a cached limit for the system's virtual memory.
 func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
 	if cachedSystemMemoryLimit == nil {
 		v, err := mem.VirtualMemory()
@@ -116,7 +117,7 @@ func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
 var cachedDiskInfo *disk.UsageStat
 var cachedDiskInfoeErr *error
 
-//  cachedSysMemLimit will return a cached disk usage info
+// cachedDisInfo will return a cached disk usage info
 func cachedDisInfo() (disk.UsageStat, error) {
 	if cachedDiskInfo == nil {
 		d, err := disk.Usage("/")
