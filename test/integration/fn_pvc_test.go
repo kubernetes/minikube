@@ -109,7 +109,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	// recreate the pod
 	createPVTestPod(ctx, t, profile)
 
-	// make sure the file we previously wrote to the persistent volume is still there
+	// make sure the file we previously wrote to the persistent volume still exists
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", podName, "--", "ls", "/tmp/mount"))
 	if err != nil {
 		t.Fatalf("creating file in pv: args %q: %v", rr.Command(), err)
