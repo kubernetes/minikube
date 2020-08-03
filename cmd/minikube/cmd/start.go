@@ -826,7 +826,7 @@ func validateMemoryHardLimit(drvName string) {
 	s, c, err := memoryLimits(drvName)
 	if err != nil {
 		glog.Warningf("Unable to query memory limits: %v", err)
-		out.T(out.Conflict, "Failed to verify system memory limits.")
+		out.WarningT("Failed to verify system memory limits.")
 	}
 	if s < 2200 {
 		out.WarningT("Your system has only {{.memory_amount}}MB memory. This might not work minimum required is 2000MB.", out.V{"memory_amount": s})
