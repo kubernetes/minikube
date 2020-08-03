@@ -1,5 +1,57 @@
 # Release Notes
 
+## Version 1.12.2 - 2020-08-03
+
+Features:
+* Automated GCP Credentials Addon Prototype [#8682](https://github.com/kubernetes/minikube/pull/8682)
+* status: Add experimental cluster JSON status with state transition support [#8868](https://github.com/kubernetes/minikube/pull/8868)
+* Add support for Error type to JSON output [#8796](https://github.com/kubernetes/minikube/pull/8796)
+* Implement Warning type for JSON output [#8793](https://github.com/kubernetes/minikube/pull/8793)
+* Add stopping as a possible state in deleting, change errorf to warningf [#8896](https://github.com/kubernetes/minikube/pull/8896)
+* Use preloaded tarball for cri-o container runtime [#8588](https://github.com/kubernetes/minikube/pull/8588)
+
+Bug Fixes:
+* docker/podman: warn if allocated memory is below limit [#8718](https://github.com/kubernetes/minikube/pull/8718)
+* Make sure to prepare the kic volume after creation [#8777](https://github.com/kubernetes/minikube/pull/8777)
+* Generate cri-o container runtime preload tarball [#8581](https://github.com/kubernetes/minikube/pull/8581)
+* Enabling metrics addon when someone enables dashboard [#8842](https://github.com/kubernetes/minikube/pull/8842)
+* make base-image respect --image-repository [#8880](https://github.com/kubernetes/minikube/pull/8880)
+* restart kubelet if config changes [#8817](https://github.com/kubernetes/minikube/pull/8817)
+* UI: suggest to enable `metric-server` for full feature dashboard addon. [#8863](https://github.com/kubernetes/minikube/pull/8863)
+* Add minimal minikube-automount to the kic image [#8780](https://github.com/kubernetes/minikube/pull/8780)
+* regenerate config on retry [#8782](https://github.com/kubernetes/minikube/pull/8782)
+* Stop kube-system containers before applying configuration updates [#8804](https://github.com/kubernetes/minikube/pull/8804)
+* kic entrypoint: retryable update-alternatives, move earlier into execution [#8864](https://github.com/kubernetes/minikube/pull/8864)
+
+Version changes:
+* update crio to 1.18.3 and kicbase to ubuntu 20.04 [#8895](https://github.com/kubernetes/minikube/pull/8895)
+* Podman downgrade to 1.9.3 for the build command [#8774](https://github.com/kubernetes/minikube/pull/8774)
+* Upgrade kicbase to v0.0.11 [#8899](https://github.com/kubernetes/minikube/pull/8899)
+* update golang version [#8781](https://github.com/kubernetes/minikube/pull/8781)
+* Update external-provisioner for storage provisioner for Kubernetes 1.18 [#8610](https://github.com/kubernetes/minikube/pull/8610)
+
+Thank you to our contributors for this release!
+- Ajitesh13
+- Alonyb
+- Anders F Björklund
+- Andrii Volin
+- Dean Coakley
+- Joel Smith
+- Johannes M. Scheuermann
+- Jose Donizetti
+- Lu Fengqi
+- Medya Ghazizadeh
+- Pablo Caderno
+- Priya Wadhwa
+- RA489
+- Sedat Gokcen
+- Sharif Elgamal
+- Shubham
+- Thomas Strömberg
+- Yang Keao
+- dddddai
+- niedhui
+
 ## Version 1.12.1 - 2020-07-17
 
 Features:
