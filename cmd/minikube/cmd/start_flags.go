@@ -236,11 +236,11 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 				exit.UsageT("{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
 			}
 
+			validateMemorySize(mem, drvName)
+
 		} else {
 			glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 		}
-
-		validateMemorySize(mem, drvName)
 
 		diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
