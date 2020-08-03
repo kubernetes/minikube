@@ -29,6 +29,7 @@ Version changes:
 * Upgrade kicbase to v0.0.11 [#8899](https://github.com/kubernetes/minikube/pull/8899)
 * update golang version [#8781](https://github.com/kubernetes/minikube/pull/8781)
 * Update external-provisioner for storage provisioner for Kubernetes 1.18 [#8610](https://github.com/kubernetes/minikube/pull/8610)
+* Upgrade storage provisioner image  [#8909](https://github.com/kubernetes/minikube/pull/8909)
 
 Thank you to our contributors for this release!
 - Ajitesh13
