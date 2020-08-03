@@ -950,6 +950,11 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 		}
+		req, err := util.CalculateSizeInMB(viper.GetString(memory))
+		if err != nil {
+			exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		}
+		validateMemorySize(req, drvName)
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
