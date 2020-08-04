@@ -258,7 +258,7 @@ docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test
-	go test -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test
