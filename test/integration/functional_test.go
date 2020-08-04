@@ -901,12 +901,13 @@ func localEmptyCertPath() string {
 func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
-	err := copy.Copy("./testdata/sync.test", p)
+	syncFile := filepath.Join(*testdataDir, "sync.test")
+	err := copy.Copy(syncFile, p)
 	if err != nil {
-		t.Fatalf("failed to copy ./testdata/sync.test: %v", err)
+		t.Fatalf("failed to copy testdata/sync.test: %v", err)
 	}
 
-	testPem := "./testdata/minikube_test.pem"
+	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
 
 	// Write to a temp file for an atomic write
 	tmpPem := localTestCertPath() + ".pem"
@@ -955,9 +956,10 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 	got := rr.Stdout.String()
 	t.Logf("file sync test content: %s", got)
 
-	expected, err := ioutil.ReadFile("./testdata/sync.test")
+	syncFile := filepath.Join(*testdataDir, "sync.test")
+	expected, err := ioutil.ReadFile(syncFile)
 	if err != nil {
-		t.Errorf("failed to read test file '/testdata/sync.test' : %v", err)
+		t.Errorf("failed to read test file 'testdata/sync.test' : %v", err)
 	}
 
 	if diff := cmp.Diff(string(expected), got); diff != "" {
@@ -973,7 +975,8 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 
-	want, err := ioutil.ReadFile("./testdata/minikube_test.pem")
+	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
+	want, err := ioutil.ReadFile(testPem)
 	if err != nil {
 		t.Errorf("test file not found: %v", err)
 	}
