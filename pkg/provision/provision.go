@@ -101,7 +101,7 @@ func configureAuth(p miniProvisioner) error {
 	}
 
 	// The Host IP is always added to the certificate's SANs list
-	hosts := append(authOptions.ServerCertSANs, ip, "localhost", "127.0.0.1")
+	hosts := append(authOptions.ServerCertSANs, ip, "localhost", "127.0.0.1", "minikube", machineName)
 	glog.Infof("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
 		authOptions.ServerCertPath,
 		authOptions.CaCertPath,
