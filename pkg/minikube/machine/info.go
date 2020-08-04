@@ -54,7 +54,7 @@ func CachedHostInfo() (*HostInfo, error) {
 		return nil, err
 	}
 
-	d, err := cachedDisInfo()
+	d, err := cachedDiskInfo()
 	if err != nil {
 		glog.Warningf("Unable to get disk info: %v", err)
 		return nil, err
@@ -114,17 +114,17 @@ func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
 	return cachedSystemMemoryLimit, *cachedSystemMemoryErr
 }
 
-var cachedDiskInfo *disk.UsageStat
+var cachedDisk *disk.UsageStat
 var cachedDiskInfoeErr *error
 
-// cachedDisInfo will return a cached disk usage info
-func cachedDisInfo() (disk.UsageStat, error) {
-	if cachedDiskInfo == nil {
+// cachedDiskInfo will return a cached disk usage info
+func cachedDiskInfo() (disk.UsageStat, error) {
+	if cachedDisk == nil {
 		d, err := disk.Usage("/")
-		cachedDiskInfo = d
+		cachedDisk = d
 		cachedDiskInfoeErr = &err
 	}
-	return *cachedDiskInfo, *cachedDiskInfoeErr
+	return *cachedDisk, *cachedDiskInfoeErr
 }
 
 var cachedCPU *[]cpu.InfoStat
