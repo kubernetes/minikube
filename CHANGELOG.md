@@ -3,7 +3,7 @@
 ## Version 1.12.2 - 2020-08-03
 
 Features:
-* Automated GCP Credentials Addon Prototype [#8682](https://github.com/kubernetes/minikube/pull/8682)
+* New Addon: Automated GCP Credentials [#8682](https://github.com/kubernetes/minikube/pull/8682)
 * status: Add experimental cluster JSON status with state transition support [#8868](https://github.com/kubernetes/minikube/pull/8868)
 * Add support for Error type to JSON output [#8796](https://github.com/kubernetes/minikube/pull/8796)
 * Implement Warning type for JSON output [#8793](https://github.com/kubernetes/minikube/pull/8793)
@@ -18,7 +18,7 @@ Bug Fixes:
 * make base-image respect --image-repository [#8880](https://github.com/kubernetes/minikube/pull/8880)
 * restart kubelet if config changes [#8817](https://github.com/kubernetes/minikube/pull/8817)
 * UI: suggest to enable `metric-server` for full feature dashboard addon. [#8863](https://github.com/kubernetes/minikube/pull/8863)
-* Add minimal minikube-automount to the kic image [#8780](https://github.com/kubernetes/minikube/pull/8780)
+* Fix mount issues with Docker/Podman drivers [#8780](https://github.com/kubernetes/minikube/pull/8780)
 * regenerate config on retry [#8782](https://github.com/kubernetes/minikube/pull/8782)
 * Stop kube-system containers before applying configuration updates [#8804](https://github.com/kubernetes/minikube/pull/8804)
 * kic entrypoint: retryable update-alternatives, move earlier into execution [#8864](https://github.com/kubernetes/minikube/pull/8864)
