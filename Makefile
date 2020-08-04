@@ -193,7 +193,7 @@ e2e-darwin-amd64: out/e2e-darwin-amd64 ## Execute end-to-end testing for Darwin 
 e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## Execute end-to-end testing for Windows 64bit
 
 out/e2e-%: out/minikube-%
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go test -ldflags="${MINIKUBE_LDFLAGS}" -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
 
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
@@ -258,7 +258,7 @@ docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test
-	go test -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test
@@ -266,7 +266,7 @@ integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Tr
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing
-	go test -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
