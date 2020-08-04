@@ -12,16 +12,12 @@ Features:
 
 Bug Fixes:
 * docker/podman: warn if allocated memory is below limit [#8718](https://github.com/kubernetes/minikube/pull/8718)
-* Make sure to prepare the kic volume after creation [#8777](https://github.com/kubernetes/minikube/pull/8777)
-* Generate cri-o container runtime preload tarball [#8581](https://github.com/kubernetes/minikube/pull/8581)
 * Enabling metrics addon when someone enables dashboard [#8842](https://github.com/kubernetes/minikube/pull/8842)
 * make base-image respect --image-repository [#8880](https://github.com/kubernetes/minikube/pull/8880)
-* restart kubelet if config changes [#8817](https://github.com/kubernetes/minikube/pull/8817)
 * UI: suggest to enable `metric-server` for full feature dashboard addon. [#8863](https://github.com/kubernetes/minikube/pull/8863)
 * Fix mount issues with Docker/Podman drivers [#8780](https://github.com/kubernetes/minikube/pull/8780)
-* regenerate config on retry [#8782](https://github.com/kubernetes/minikube/pull/8782)
-* Stop kube-system containers before applying configuration updates [#8804](https://github.com/kubernetes/minikube/pull/8804)
-* kic entrypoint: retryable update-alternatives, move earlier into execution [#8864](https://github.com/kubernetes/minikube/pull/8864)
+* Fix upgrading from minikube 1.9 and older [#8782](https://github.com/kubernetes/minikube/pull/8782)
+* Make restarts in Docker/Podman drivers more reliable [#8864](https://github.com/kubernetes/minikube/pull/8864)
 
 Version changes:
 * update crio to 1.18.3 and kicbase to ubuntu 20.04 [#8895](https://github.com/kubernetes/minikube/pull/8895)
