@@ -523,6 +523,9 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		}
 		ds := driver.Status(d)
 		if ds.Name == "" {
+			if d == "kvm" {
+				d = "kvm2"
+			}
 			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
@@ -533,6 +536,9 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	if d := viper.GetString("vm-driver"); d != "" {
 		ds := driver.Status(viper.GetString("vm-driver"))
 		if ds.Name == "" {
+			if d == "kvm" {
+				d = "kvm2"
+			}
 			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
