@@ -235,7 +235,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=virtualbox --memory=5000MB"  -test.run TestFunctional -test.timeout=17m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=virtualbox --memory-size-multiplier=2"  -test.run TestFunctional -test.timeout=17m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -360,7 +360,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker --memory=5000MB" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker --memory-size-multiplier=2" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -497,7 +497,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv --memory=5000MB" --test.timeout=15m --timeout-multiplier=1.5 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv --memory-size-multiplier=2" --test.timeout=15m --timeout-multiplier=1.5 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
