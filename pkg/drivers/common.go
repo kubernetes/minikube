@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/mcnutils"
@@ -52,6 +53,12 @@ func (d *CommonDriver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	return nil
 }
 
+func diskSizeInMiB(diskSizeMB int) int64 {
+	result := int64(diskSizeMB)
+	result *= units.MiB
+	return result
+}
+
 func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 	tarBuf, err := mcnutils.MakeDiskImage(sshKeyPath)
 	if err != nil {
@@ -74,7 +81,7 @@ func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 		return errors.Wrapf(err, "closing file %s", diskPath)
 	}
 
-	if err := os.Truncate(diskPath, int64(diskSizeMb*1000000)); err != nil {
+	if err := os.Truncate(diskPath, diskSizeInMiB(diskSizeMb)); err != nil {
 		return errors.Wrap(err, "truncate")
 	}
 	return nil
