@@ -9,6 +9,7 @@ Features:
 * Implement Warning type for JSON output [#8793](https://github.com/kubernetes/minikube/pull/8793)
 * Add stopping as a possible state in deleting, change errorf to warningf [#8896](https://github.com/kubernetes/minikube/pull/8896)
 * Use preloaded tarball for cri-o container runtime [#8588](https://github.com/kubernetes/minikube/pull/8588)
+* Add SCH_PRIO, SCH_SFQ and CLS_BASIC kernel module to add filter on traffic control [#8670](https://github.com/kubernetes/minikube/pull/8670)
 
 Bug Fixes:
 * docker/podman: warn if allocated memory is below limit [#8718](https://github.com/kubernetes/minikube/pull/8718)
