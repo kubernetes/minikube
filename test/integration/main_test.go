@@ -39,6 +39,7 @@ var cleanup = flag.Bool("cleanup", true, "cleanup failed test run")
 var enableGvisor = flag.Bool("gvisor", false, "run gvisor integration test (slow)")
 var postMortemLogs = flag.Bool("postmortem-logs", true, "show logs after a failed test run")
 var timeOutMultiplier = flag.Float64("timeout-multiplier", 1, "multiply the timeout for the tests")
+var memSizeMultiplier = flag.Float64("memory-size-multiplier", 1, "multiply the memory size for minikube start. (for larger CI machines use more than 1)")
 
 // Paths to files - normally set for CI
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
@@ -154,6 +155,14 @@ func Minutes(n int) time.Duration {
 // Seconds will return timeout in minutes based on how slow the machine is
 func Seconds(n int) time.Duration {
 	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Second
+}
+
+// Megabytes returns megabytes multiplied by memSizeMultiplier
+// usefull for scaling minikube test to lower or higher footprint based on the CI machine
+// for eaxmple when running all tests in paralell keep it at 1,
+// but if only running functional test you can multiply the memory by 2 for faster result
+func Megabytes(n int) string {
+	return fmt.Sprintf("%d", int(*memSizeMultiplier*float64(n)))
 }
 
 // TestingKicBaseImage will return true if the integraiton test is running against a passed --base-image flag

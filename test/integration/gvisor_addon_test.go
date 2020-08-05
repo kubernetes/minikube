@@ -47,7 +47,7 @@ func TestGvisorAddon(t *testing.T) {
 		CleanupWithLogs(t, profile, cancel)
 	}()
 
-	startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--container-runtime=containerd", "--docker-opt", "containerd=/var/run/containerd/containerd.sock"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=" + Megabytes(2200), "--container-runtime=containerd", "--docker-opt", "containerd=/var/run/containerd/containerd.sock"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to start minikube: args %q: %v", rr.Command(), err)

@@ -93,7 +93,7 @@ func TestStartStop(t *testing.T) {
 					waitFlag = "--wait=apiserver,system_pods,default_sa"
 				}
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", waitFlag}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=" + Megabytes(2200), "--alsologtostderr", waitFlag}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
 
