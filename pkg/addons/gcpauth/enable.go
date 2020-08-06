@@ -26,6 +26,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -57,7 +58,7 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
-		return err
+		exit.WithError("Could not find any GCP credentials. Either run `gcloud auth login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.", err)
 	}
 
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
@@ -81,7 +82,12 @@ func enableAddon(cfg *config.ClusterConfig) error {
 		return r.Copy(f)
 	}
 
-	return nil
+	out.WarningT("Could not determine a Google Cloud project, which might be ok.")
+	out.WarningT("If you want it set, either set the GOOGLE_CLOUD_PROJECT environment variable or run `gcloud config set project <project name>`")
+
+	// Copy an empty file in to avoid errors about missing files
+	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
+	return r.Copy(emptyFile)
 }
 
 func disableAddon(cfg *config.ClusterConfig) error {
