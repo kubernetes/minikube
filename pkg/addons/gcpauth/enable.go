@@ -83,7 +83,11 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	out.WarningT("Could not determine a Google Cloud project, which might be ok.")
-	out.WarningT("If you want it set, either set the GOOGLE_CLOUD_PROJECT environment variable or run `gcloud config set project <project name>`")
+	out.T(out.Tip, `To set your Google Cloud project,  run: 
+
+		gcloud config set project <project name>
+
+or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 
 	// Copy an empty file in to avoid errors about missing files
 	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
@@ -113,7 +117,13 @@ func disableAddon(cfg *config.ClusterConfig) error {
 
 // DisplayAddonMessage display an gcp auth addon specific message to the user
 func DisplayAddonMessage(cfg *config.ClusterConfig, name string, val string) error {
-	out.T(out.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cfg.Name})
-	out.T(out.Notice, "If you don't want credential mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+	if enable {
+		out.T(out.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cfg.Name})
+		out.T(out.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
+	}
 	return nil
 }
