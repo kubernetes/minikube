@@ -472,6 +472,74 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "volumesnapshots"),
+	"csi-hostpath-driver": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-attacher.yaml",
+			vmpath.GuestAddonsDir,
+			"rbac-external-attacher.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-provisioner.yaml",
+			vmpath.GuestAddonsDir,
+			"rbac-external-provisioner.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-resizer.yaml",
+			vmpath.GuestAddonsDir,
+			"rbac-external-resizer.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-snapshotter.yaml",
+			vmpath.GuestAddonsDir,
+			"rbac-external-snapshotter.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-attacher.yaml",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-attacher.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-driverinfo.yaml",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-driverinfo.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-plugin.yaml",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-plugin.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-provisioner.yaml",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-provisioner.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-resizer.yaml",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-resizer.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-snapshotter.yaml",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-snapshotter.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-storageclass.yaml",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-storageclass.yaml",
+			"0640",
+			false),
+	}, false, "csi-hostpath-driver"),
 }
 
 // GenerateTemplateData generates template data for template assets
