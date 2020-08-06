@@ -412,3 +412,7 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	glog.Infof("all images are preloaded for containerd runtime.")
 	return true
 }
+
+func (r *Containerd) ImagesPreloaded(images []string) bool {
+	return containerdImagesPreloaded(r.Runner, images)
+}
