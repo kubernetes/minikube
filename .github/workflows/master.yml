@@ -336,7 +336,7 @@ jobs:
           echo "------------------------"
           docker volume ls
           echo "------------------------"
-          docker system info --format {{json .}}
+          docker system info --format '{{json .}}'
           echo "------------------------"
       - uses: actions/setup-go@v2
         with:
