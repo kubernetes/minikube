@@ -42,7 +42,7 @@ func TestAddons(t *testing.T) {
 
 	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm"}, StartArgs()...)
 	if !NoneDriver() { // none doesn't support ingress
-		args = append("--addons=ingress")
+		args = append(args, "--addons=ingress")
 	}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
