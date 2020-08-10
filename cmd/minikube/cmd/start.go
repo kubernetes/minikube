@@ -857,8 +857,8 @@ func validateMemorySize(req int, drvName string) {
 	minAdvised := 0.50 * float64(sysLimit)
 
 	if req < minUsableMem && !viper.GetBool(force) {
-		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB",
-			out.V{"requested": req, "mininum": minUsableMem})
+		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum_memory}}MB",
+			out.V{"requested": req, "minimum_memory": minUsableMem})
 	}
 	if req < minRecommendedMem && !viper.GetBool(force) {
 		out.WarningT("Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
