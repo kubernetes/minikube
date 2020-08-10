@@ -65,6 +65,11 @@ func legacyStartArgs() []string {
 
 // TestRunningBinaryUpgrade does an upgrade test on a running cluster
 func TestRunningBinaryUpgrade(t *testing.T) {
+	// not supported till v1.10, and passing new images to old releases isn't supported anyways
+	if TestingKicBaseImage() {
+		t.Skipf("Skipping, test does not make sense with --base-image")
+	}
+
 	MaybeParallel(t)
 	profile := UniqueProfileName("running-upgrade")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
@@ -105,6 +110,10 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 
 // TestStoppedBinaryUpgrade does an upgrade test on a stopped cluster
 func TestStoppedBinaryUpgrade(t *testing.T) {
+	// not supported till v1.10, and passing new images to old releases isn't supported anyways
+	if TestingKicBaseImage() {
+		t.Skipf("Skipping, test does not make sense with --base-image")
+	}
 
 	MaybeParallel(t)
 	profile := UniqueProfileName("stopped-upgrade")
@@ -223,6 +232,11 @@ func TestKubernetesUpgrade(t *testing.T) {
 func TestMissingContainerUpgrade(t *testing.T) {
 	if !DockerDriver() {
 		t.Skipf("This test is only for Docker")
+	}
+
+	// not supported till v1.10, and passing new images to old releases isn't supported anyways
+	if TestingKicBaseImage() {
+		t.Skipf("Skipping, test does not make sense with --base-image")
 	}
 
 	MaybeParallel(t)

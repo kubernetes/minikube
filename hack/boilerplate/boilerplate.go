@@ -32,7 +32,7 @@ var (
 	boilerplatedir = flag.String("boilerplate-dir", ".", "Boilerplate directory for boilerplate files")
 	rootdir        = flag.String("rootdir", "../../", "Root directory to examine")
 	verbose        = flag.Bool("v", false, "Verbose")
-	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
+	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy|test/integration/testdata`)
 	windowdNewLine = regexp.MustCompile(`\r`)
 	txtExtension   = regexp.MustCompile(`\.txt`)
 	goBuildTag     = regexp.MustCompile(`(?m)^(// \+build.*\n)+\n`)
@@ -138,7 +138,7 @@ func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
 func filesToCheck(rootDir string, extensions map[string][]byte) ([]string, error) {
 	var outFiles []string
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		// remove current workdir from the beginig of the path in case it matches the skipped path
+		// remove current workdir from the beginning of the path in case it matches the skipped path
 		cwd, _ := os.Getwd()
 		// replace "\" with "\\" for windows style path
 		re := regexp.MustCompile(`\\`)

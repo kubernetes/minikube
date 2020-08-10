@@ -99,6 +99,10 @@ func PrepareContainerNode(p CreateParams) error {
 		return errors.Wrapf(err, "creating volume for %s container", p.Name)
 	}
 	glog.Infof("Successfully created a %s volume %s", p.OCIBinary, p.Name)
+	if err := prepareVolume(p.OCIBinary, p.Image, p.Name); err != nil {
+		return errors.Wrapf(err, "preparing volume for %s container", p.Name)
+	}
+	glog.Infof("Successfully prepared a %s volume %s", p.OCIBinary, p.Name)
 	return nil
 }
 
@@ -226,14 +230,14 @@ func CreateContainerNode(p CreateParams) error {
 		return nil
 	}
 
-	// retry up to up 13 seconds to make sure the created container status is running.
-	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*13); err != nil {
-		LogContainerDebug(p.OCIBinary, p.Name)
+	if err := retry.Expo(checkRunning, 15*time.Millisecond, 25*time.Second); err != nil {
+		excerpt := LogContainerDebug(p.OCIBinary, p.Name)
 		_, err := DaemonInfo(p.OCIBinary)
 		if err != nil {
 			return errors.Wrapf(ErrDaemonInfo, "container name %q", p.Name)
 		}
-		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q", p.Name)
+
+		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q: log: %s", p.Name, excerpt)
 	}
 
 	return nil
@@ -301,7 +305,12 @@ func StartContainer(ociBin string, container string) error {
 func ContainerID(ociBin string, nameOrID string) (string, error) {
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "-f", "{{.Id}}", nameOrID))
 	if err != nil { // don't return error if not found, only return empty string
-		if strings.Contains(rr.Stdout.String(), "Error: No such object:") || strings.Contains(rr.Stdout.String(), "unable to find") {
+		if strings.Contains(rr.Stdout.String(), "Error: No such object:") ||
+			strings.Contains(rr.Stdout.String(), "Error: No such container:") ||
+			strings.Contains(rr.Stdout.String(), "unable to find") ||
+			strings.Contains(rr.Stdout.String(), "Error: error inspecting object") ||
+			strings.Contains(rr.Stdout.String(), "Error: error looking up container") ||
+			strings.Contains(rr.Stdout.String(), "no such container") {
 			err = nil
 		}
 		return "", err

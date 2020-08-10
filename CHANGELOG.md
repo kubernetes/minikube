@@ -1,5 +1,55 @@
 # Release Notes
 
+## Version 1.12.2 - 2020-08-03
+
+Features:
+* New Addon: Automated GCP Credentials [#8682](https://github.com/kubernetes/minikube/pull/8682)
+* status: Add experimental cluster JSON status with state transition support [#8868](https://github.com/kubernetes/minikube/pull/8868)
+* Add support for Error type to JSON output [#8796](https://github.com/kubernetes/minikube/pull/8796)
+* Implement Warning type for JSON output [#8793](https://github.com/kubernetes/minikube/pull/8793)
+* Add stopping as a possible state in deleting, change errorf to warningf [#8896](https://github.com/kubernetes/minikube/pull/8896)
+* Use preloaded tarball for cri-o container runtime [#8588](https://github.com/kubernetes/minikube/pull/8588)
+* Add SCH_PRIO, SCH_SFQ and CLS_BASIC kernel module to add filter on traffic control [#8670](https://github.com/kubernetes/minikube/pull/8670)
+
+Bug Fixes:
+* docker/podman: warn if allocated memory is below limit [#8718](https://github.com/kubernetes/minikube/pull/8718)
+* Enabling metrics addon when someone enables dashboard [#8842](https://github.com/kubernetes/minikube/pull/8842)
+* make base-image respect --image-repository [#8880](https://github.com/kubernetes/minikube/pull/8880)
+* UI: suggest to enable `metric-server` for full feature dashboard addon. [#8863](https://github.com/kubernetes/minikube/pull/8863)
+* Fix mount issues with Docker/Podman drivers [#8780](https://github.com/kubernetes/minikube/pull/8780)
+* Fix upgrading from minikube 1.9 and older [#8782](https://github.com/kubernetes/minikube/pull/8782)
+* Make restarts in Docker/Podman drivers more reliable [#8864](https://github.com/kubernetes/minikube/pull/8864)
+
+Version changes:
+* update crio to 1.18.3 and kicbase to ubuntu 20.04 [#8895](https://github.com/kubernetes/minikube/pull/8895)
+* Podman downgrade to 1.9.3 for the build command [#8774](https://github.com/kubernetes/minikube/pull/8774)
+* Upgrade kicbase to v0.0.11 [#8899](https://github.com/kubernetes/minikube/pull/8899)
+* update golang version [#8781](https://github.com/kubernetes/minikube/pull/8781)
+* Update external-provisioner for storage provisioner for Kubernetes 1.18 [#8610](https://github.com/kubernetes/minikube/pull/8610)
+* Upgrade storage provisioner image  [#8909](https://github.com/kubernetes/minikube/pull/8909)
+
+Thank you to our contributors for this release!
+- Ajitesh13
+- Alonyb
+- Anders F Björklund
+- Andrii Volin
+- Dean Coakley
+- Joel Smith
+- Johannes M. Scheuermann
+- Jose Donizetti
+- Lu Fengqi
+- Medya Ghazizadeh
+- Pablo Caderno
+- Priya Wadhwa
+- RA489
+- Sedat Gokcen
+- Sharif Elgamal
+- Shubham
+- Thomas Strömberg
+- Yang Keao
+- dddddai
+- niedhui
+
 ## Version 1.12.1 - 2020-07-17
 
 Features:

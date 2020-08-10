@@ -1,0 +1,13 @@
+[Unit]
+Description=minikube automount
+Requires=local-fs.target
+Before=docker.service
+After=local-fs.target
+
+[Service]
+ExecStart=/usr/sbin/minikube-automount
+Type=oneshot
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

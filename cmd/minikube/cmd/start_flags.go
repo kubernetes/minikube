@@ -217,7 +217,7 @@ func ClusterFlagValue() string {
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
 func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
-	if existing != nil { // create profile config first time
+	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
 		glog.Info("no existing cluster config was found, will generate one from the flags ")
@@ -232,8 +232,12 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			if err != nil {
 				exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 			}
+			if driver.IsKIC(drvName) && mem > containerLimit {
+				exit.UsageT("{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
+			}
 
 		} else {
+			validateMemorySize(mem, drvName)
 			glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 		}
 
@@ -404,20 +408,35 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.MinikubeISO = viper.GetString(isoURL)
 	}
 
+	if cc.Memory == 0 {
+		glog.Info("Existing config file was missing memory. (could be an old minikube config), will use the default value")
+		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+		if err != nil {
+			glog.Warningf("error calculate memory size in mb : %v", err)
+		}
+		cc.Memory = memInMB
+	}
+
 	if cmd.Flags().Changed(memory) {
 		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 		if err != nil {
 			glog.Warningf("error calculate memory size in mb : %v", err)
 		}
-		if memInMB != existing.Memory {
+		if memInMB != cc.Memory {
 			out.WarningT("You cannot change the memory size for an exiting minikube cluster. Please first delete the cluster.")
 		}
-
 	}
 
+	// validate the memory size in case user changed their system memory limits (example change docker desktop or upgraded memory.)
+	validateMemorySize(cc.Memory, cc.Driver)
+
+	if cc.CPUs == 0 {
+		glog.Info("Existing config file was missing cpu. (could be an old minikube config), will use the default value")
+		cc.CPUs = viper.GetInt(cpus)
+	}
 	if cmd.Flags().Changed(cpus) {
-		if viper.GetInt(cpus) != existing.CPUs {
-			out.WarningT("You cannot change the CPUs for an exiting minikube cluster. Please first delete the cluster.")
+		if viper.GetInt(cpus) != cc.CPUs {
+			out.WarningT("You cannot change the CPUs for an existing minikube cluster. Please first delete the cluster.")
 		}
 	}
 

@@ -28,9 +28,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
 // unpauseCmd represents the docker-pause command
@@ -39,9 +41,33 @@ var unpauseCmd = &cobra.Command{
 	Short: "unpause Kubernetes",
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
+		register.SetEventLogPath(localpath.EventLog(cname))
+
 		co := mustload.Running(cname)
+		register.Reg.SetStep(register.Unpausing)
+
+		glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+		if allNamespaces {
+			namespaces = nil //all
+		} else {
+			if len(namespaces) == 0 {
+				exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
+			}
+		}
+
+		ids := []string{}
 
 		for _, n := range co.Config.Nodes {
+			glog.Infof("node: %+v", n)
+
+			// Use node-name if available, falling back to cluster name
+			name := n.Name
+			if n.Name == "" {
+				name = co.Config.Name
+			}
+
+			out.T(out.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
+
 			machineName := driver.MachineName(*co.Config, n)
 			host, err := machine.LoadHost(co.API, machineName)
 			if err != nil {
@@ -58,27 +84,20 @@ var unpauseCmd = &cobra.Command{
 				exit.WithError("Failed runtime", err)
 			}
 
-			glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
-			if allNamespaces {
-				namespaces = nil //all
-			} else {
-				if len(namespaces) == 0 {
-					exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
-				}
-			}
-
-			ids, err := cluster.Unpause(cr, r, namespaces)
+			uids, err := cluster.Unpause(cr, r, namespaces)
 			if err != nil {
 				exit.WithError("Pause", err)
 			}
-
-			if namespaces == nil {
-				out.T(out.Pause, "Unpaused kubelet and {{.count}} containers", out.V{"count": len(ids)})
-			} else {
-				out.T(out.Pause, "Unpaused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
-			}
+			ids = append(ids, uids...)
 		}
 
+		register.Reg.SetStep(register.Done)
+
+		if namespaces == nil {
+			out.T(out.Pause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
+		} else {
+			out.T(out.Pause, "Unpaused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+		}
 	},
 }
 

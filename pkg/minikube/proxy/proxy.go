@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -160,7 +161,21 @@ func SetDockerEnv() []string {
 			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
 			k = strings.ToUpper(k)
 			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-				if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
+				isLocalProxy := func(url string) bool {
+					return strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "127.0")
+				}
+
+				normalizedURL := v
+				if !strings.Contains(v, "://") {
+					normalizedURL = "http://" + v // by default, assumes the url is HTTP scheme
+				}
+				u, err := url.Parse(normalizedURL)
+				if err != nil {
+					out.WarningT("Error parsing {{.name}}={{.value}}, {{.err}}", out.V{"name": k, "value": v, "err": err})
+					continue
+				}
+
+				if isLocalProxy(u.Host) {
 					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
 					continue
 				}
