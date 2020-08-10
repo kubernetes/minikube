@@ -142,18 +142,18 @@ func CreateContainerNode(p CreateParams) error {
 		"--label", p.NodeLabel,
 	}
 
-	// network
-	if p.OCIBinary == Docker && runtime.GOOS == "linux" { // for now only docker on linux
-		runArgs = append(runArgs, "--network", p.Network)
-		runArgs = append(runArgs, "--ip", p.IP)
-	}
-
 	// volume
 	if p.OCIBinary == Podman { // enable execing in /var
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 	}
 	if p.OCIBinary == Docker {
+		// on linux, we can provide a static IP for docker
+		if runtime.GOOS == "linux" && p.Network != "" && p.IP != "" {
+			runArgs = append(runArgs, "--network", p.Network)
+			runArgs = append(runArgs, "--ip", p.IP)
+		}
+
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")

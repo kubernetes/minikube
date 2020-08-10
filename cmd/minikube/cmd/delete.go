@@ -252,7 +252,7 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	}
 
 	// TODO: move to oci.DeleteContainer?
-	defaultNetwork := fmt.Sprintf("%s-network", cname)
+	defaultNetwork := cname
 	err = oci.RemoveNetwork(defaultNetwork)
 	if err != nil {
 		glog.Warningf("error deleting network. :%v", errs)

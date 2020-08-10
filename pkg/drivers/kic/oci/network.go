@@ -165,12 +165,15 @@ func dockerContainerIP(name string) (string, string, error) {
 
 // CreateNetwork creates a network
 func CreateNetwork(name, ipRange string) error {
-	// TODO: validate if exist?
+	// check if the network already exists
+	if networkExists(name) {
+		return nil
+	}
 	// TODO: subnet conflict
 	// TODO: configure gateway explictly
 
 	subnet := fmt.Sprintf("--subnet=%s", ipRange)
-	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, name))
+	_, err = runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, name))
 	if err != nil {
 		return errors.Wrapf(err, "error creating network")
 	}
@@ -180,12 +183,23 @@ func CreateNetwork(name, ipRange string) error {
 
 // RemoveNetwork removes a network
 func RemoveNetwork(name string) error {
-	// TODO: check if exist?
-
-	_, err := runCmd(exec.Command(Docker, "network", "remove", name))
-	if err != nil {
-		return errors.Wrapf(err, "error removing network")
+	if !networkExists {
+		return nil
 	}
+	_, err := runCmd(exec.Command(Docker, "network", "remove", name))
+	return err
+}
 
-	return nil
+func networkExists(name string) bool {
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--format", "{{.Name}}"))
+	if err != nil {
+		return errors.Wrap(err, "listing networks")
+	}
+	networks := strings.Split(rr.Output(), "\n")
+	for _, n := range networks {
+		if n == name {
+			return true
+		}
+	}
+	return false
 }
