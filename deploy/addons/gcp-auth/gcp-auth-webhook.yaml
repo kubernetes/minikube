@@ -1,0 +1,150 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: minikube-gcp-auth-certs
+  namespace: gcp-auth
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: minikube-gcp-auth-certs
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - list
+      - get
+      - create
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - mutatingwebhookconfigurations
+    verbs:
+      - get
+      - update
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: minikube-gcp-auth-certs
+  namespace: metadata
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: minikube-gcp-auth-certs
+subjects:
+  - kind: ServiceAccount
+    name: minikube-gcp-auth-certs
+    namespace: gcp-auth
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gcp-auth-certs-create
+  namespace: gcp-auth
+spec:
+  template:
+    metadata:
+      name: gcp-auth-certs-create
+    spec:
+      serviceAccountName: minikube-gcp-auth-certs
+      containers:
+        - name: create
+          image: jettech/kube-webhook-certgen:v1.3.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - create
+            - --host=gcp-auth,gcp-auth.gcp-auth,gcp-auth.gcp-auth.svc
+            - --namespace=gcp-auth
+            - --secret-name=gcp-auth-certs
+      restartPolicy: OnFailure
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcp-auth
+  namespace: gcp-auth
+spec:
+  selector:
+    matchLabels:
+      app: gcp-auth
+  template:
+    metadata:
+      labels:
+        app: gcp-auth
+        kubernetes.io/minikube-addons: gcp-auth
+    spec:
+      containers:
+        - name: gcp-auth
+          image: gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+          - name: webhook-certs
+            mountPath: /etc/webhook/certs
+            readOnly: true
+          - name: gcp-project
+            mountPath: /var/lib/minikube/google_cloud_project
+            readOnly: true
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: gcp-auth-certs
+      - name: gcp-project
+        hostPath:
+          path: /var/lib/minikube/google_cloud_project
+          type: File
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gcp-auth-certs-patch
+  namespace: gcp-auth
+spec:
+  template:
+    metadata:
+      name: gcp-auth-certs-patch
+    spec:
+      serviceAccountName: minikube-gcp-auth-certs
+      containers:
+        - name: patch
+          image: jettech/kube-webhook-certgen:v1.3.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - patch
+            - --secret-name=gcp-auth-certs
+            - --namespace=gcp-auth
+            - --patch-validating=false
+            - --webhook-name=gcp-auth-webhook-cfg
+      restartPolicy: OnFailure
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: gcp-auth-webhook-cfg
+  labels:
+    app: gcp-auth
+webhooks:
+- name: gcp-auth-mutate.k8s.io
+  objectSelector:
+    matchExpressions:
+      - key: gcp-auth-skip-secret
+        operator: DoesNotExist
+  sideEffects: None
+  admissionReviewVersions: ["v1","v1beta1"]
+  clientConfig:
+    service:
+      name: gcp-auth
+      namespace: gcp-auth
+      path: "/mutate"
+  rules:
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: ["*"]
+    apiVersions: ["*"]
+    resources: ["pods"]
+    scope: "*"

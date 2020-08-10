@@ -109,7 +109,7 @@ func (d DriverDef) String() string {
 
 type driverRegistry struct {
 	drivers map[string]DriverDef
-	lock    sync.Mutex
+	lock    sync.RWMutex
 }
 
 func newRegistry() *driverRegistry {
@@ -133,8 +133,8 @@ func (r *driverRegistry) Register(def DriverDef) error {
 
 // List returns a list of registered drivers
 func (r *driverRegistry) List() []DriverDef {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 
 	result := make([]DriverDef, 0, len(r.drivers))
 
@@ -147,7 +147,7 @@ func (r *driverRegistry) List() []DriverDef {
 
 // Driver returns a driver given a name
 func (r *driverRegistry) Driver(name string) DriverDef {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 	return r.drivers[name]
 }

@@ -40,14 +40,23 @@ const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v4"
+	PreloadVersion = "v5"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
 
 // TarballName returns name of the tarball
 func TarballName(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-overlay2-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, runtime.GOARCH)
+	if containerRuntime == "crio" {
+		containerRuntime = "cri-o"
+	}
+	var storageDriver string
+	if containerRuntime == "cri-o" {
+		storageDriver = "overlay"
+	} else {
+		storageDriver = "overlay2"
+	}
+	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, runtime.GOARCH)
 }
 
 // returns the name of the checksum file
@@ -77,13 +86,6 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bool {
-
-	// and https://github.com/kubernetes/minikube/issues/6934
-	// to track status of adding crio
-	if containerRuntime == "crio" {
-		glog.Info("crio is not supported yet, skipping preload")
-		return false
-	}
 
 	// TODO (#8166): Get rid of the need for this and viper at all
 	force := false

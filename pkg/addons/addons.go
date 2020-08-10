@@ -141,15 +141,20 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
-	// to match both ingress and ingress-dns adons
-	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
-		exit.UsageT(`Due to {{.driver_name}} networking limitations on {{.os_name}}, {{.addon_name}} addon is not supported for this driver.
+	// to match both ingress and ingress-dns addons
+	if strings.HasPrefix(name, "ingress") && enable {
+		if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
+			exit.UsageT(`Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
 Alternatively to use this addon you can use a vm-based driver:
 
 	'minikube start --vm=true'
 
 To track the update on this work in progress feature please check:
 https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
+		} else if driver.BareMetal(cc.Driver) {
+			exit.UsageT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not supported. Try using a different driver.`,
+				out.V{"driver_name": cc.Driver, "addon_name": name})
+		}
 	}
 
 	if strings.HasPrefix(name, "istio") && enable {
@@ -250,11 +255,9 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		}
 	}
 
-	command := kubectlCommand(cc, deployFiles, enable)
-
 	// Retry, because sometimes we race against an apiserver restart
 	apply := func() error {
-		_, err := cmd.RunCmd(command)
+		_, err := cmd.RunCmd(kubectlCommand(cc, deployFiles, enable))
 		if err != nil {
 			glog.Warningf("apply failed, will retry: %v", err)
 		}
@@ -315,6 +318,14 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 }
 
 func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
+	return verifyAddonStatusInternal(cc, name, val, "kube-system")
+}
+
+func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
+	return verifyAddonStatusInternal(cc, name, val, "gcp-auth")
+}
+
+func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string) error {
 	glog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
@@ -329,7 +340,7 @@ func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error 
 			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
 		}
 
-		err = kapi.WaitForPods(client, "kube-system", label, time.Minute*3)
+		err = kapi.WaitForPods(client, ns, label, time.Minute*3)
 		if err != nil {
 			return errors.Wrapf(err, "verifying %s addon pods : %v", name, err)
 		}

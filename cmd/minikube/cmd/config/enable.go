@@ -17,8 +17,11 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -41,6 +44,19 @@ var addonsEnableCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("enable failed", err)
 		}
+		if addon == "dashboard" {
+			tipProfileArg := ""
+			if ClusterFlagValue() != constants.DefaultClusterName {
+				tipProfileArg = fmt.Sprintf(" -p %s", ClusterFlagValue())
+			}
+			out.T(out.Tip, `Some dashboard features require the metrics-server addon. To enable all features please run:
+
+	minikube{{.profileArg}} addons enable metrics-server	
+
+`, out.V{"profileArg": tipProfileArg})
+
+		}
+
 		out.T(out.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
 	},
 }
