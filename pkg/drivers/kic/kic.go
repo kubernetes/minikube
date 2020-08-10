@@ -83,7 +83,7 @@ func (d *Driver) Create() error {
 	if err := oci.CreateNetwork(d.MachineName, defaultIPRange); err != nil {
 		glog.Warningf("unable to create docker network; node ip may not be stable: %v", err)
 	} else {
-		params.Network = defaultNetwork
+		params.Network = defaultIPRange
 		params.IP = "192.168.39.2"
 	}
 

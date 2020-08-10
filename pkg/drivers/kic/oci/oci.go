@@ -86,7 +86,7 @@ func DeleteContainer(ociBin string, name string) error {
 		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
 
-	if err := RemoveNetwork(name); err != nil {
+	if err := removeNetwork(name); err != nil {
 		glog.Warningf("error deleting network: %v", err)
 	}
 
