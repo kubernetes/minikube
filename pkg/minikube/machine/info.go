@@ -42,28 +42,32 @@ func megs(bytes uint64) int64 {
 }
 
 // CachedHostInfo returns system information such as memory,CPU, DiskSize
-func CachedHostInfo() (*HostInfo, error) {
+func CachedHostInfo() (*HostInfo, []error) {
+	var hostInfoErrs []error
 	i, err := cachedCPUInfo()
 	if err != nil {
 		glog.Warningf("Unable to get CPU info: %v", err)
-		return nil, err
+		hostInfoErrs = append(hostInfoErrs, err)
 	}
 	v, err := cachedSysMemLimit()
 	if err != nil {
 		glog.Warningf("Unable to get mem info: %v", err)
-		return nil, err
+		hostInfoErrs = append(hostInfoErrs, err)
 	}
 
 	d, err := cachedDiskInfo()
 	if err != nil {
 		glog.Warningf("Unable to get disk info: %v", err)
-		return nil, err
+		hostInfoErrs = append(hostInfoErrs, err)
 	}
 
 	var info HostInfo
 	info.CPUs = len(i)
 	info.Memory = megs(v.Total)
 	info.DiskSize = megs(d.Total)
+	if len(hostInfoErrs) > 0 {
+		return &info, hostInfoErrs
+	}
 	return &info, nil
 }
 
