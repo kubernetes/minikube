@@ -121,8 +121,8 @@ func TestDisplayJSON(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.p.ID, func(t *testing.T) {
 			buf := bytes.NewBuffer([]byte{})
-			register.OutputFile = buf
-			defer func() { register.OutputFile = os.Stdout }()
+			register.SetOutputFile(buf)
+			defer func() { register.SetOutputFile(os.Stdout) }()
 
 			register.GetUUID = func() string {
 				return "random-id"

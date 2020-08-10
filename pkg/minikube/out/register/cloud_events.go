@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/golang/glog"
@@ -31,11 +32,36 @@ const (
 )
 
 var (
-	OutputFile io.Writer = os.Stdout
+	outputFile io.Writer = os.Stdout
 	GetUUID              = randomID
+
+	eventFile *os.File
 )
 
-func printAsCloudEvent(log Log, data map[string]string) {
+// SetOutputFile sets the writer to emit all events to
+func SetOutputFile(w io.Writer) {
+	outputFile = w
+}
+
+// SetEventLogPath sets the path of an event log file
+func SetEventLogPath(path string) {
+	if _, err := os.Stat(filepath.Dir(path)); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+			glog.Errorf("Error creating profile directory: %v", err)
+			return
+		}
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		glog.Errorf("unable to write to %s: %v", path, err)
+		return
+	}
+	eventFile = f
+}
+
+// cloudEvent creates a CloudEvent from a log object & associated data
+func cloudEvent(log Log, data map[string]string) cloudevents.Event {
 	event := cloudevents.NewEvent()
 	event.SetSource("https://minikube.sigs.k8s.io/")
 	event.SetType(log.Type())
@@ -44,11 +70,59 @@ func printAsCloudEvent(log Log, data map[string]string) {
 		glog.Warningf("error setting data: %v", err)
 	}
 	event.SetID(GetUUID())
-	json, err := event.MarshalJSON()
+	return event
+}
+
+// print JSON output to configured writer
+func printAsCloudEvent(log Log, data map[string]string) {
+	event := cloudEvent(log, data)
+
+	bs, err := event.MarshalJSON()
 	if err != nil {
-		glog.Warningf("error marashalling event: %v", err)
+		glog.Errorf("error marshalling event: %v", err)
+		return
 	}
-	fmt.Fprintln(OutputFile, string(json))
+	fmt.Fprintln(outputFile, string(bs))
+}
+
+// print JSON output to configured writer, and record it to disk
+func printAndRecordCloudEvent(log Log, data map[string]string) {
+	event := cloudEvent(log, data)
+
+	bs, err := event.MarshalJSON()
+	if err != nil {
+		glog.Errorf("error marshalling event: %v", err)
+		return
+	}
+	fmt.Fprintln(outputFile, string(bs))
+
+	if eventFile != nil {
+		go storeEvent(bs)
+	}
+}
+
+func storeEvent(bs []byte) {
+	fmt.Fprintln(eventFile, string(bs))
+	if err := eventFile.Sync(); err != nil {
+		glog.Warningf("even file flush failed: %v", err)
+	}
+}
+
+// record cloud event to disk
+func recordCloudEvent(log Log, data map[string]string) {
+	if eventFile == nil {
+		return
+	}
+
+	go func() {
+		event := cloudEvent(log, data)
+		bs, err := event.MarshalJSON()
+		if err != nil {
+			glog.Errorf("error marshalling event: %v", err)
+			return
+		}
+		storeEvent(bs)
+	}()
 }
 
 func randomID() string {

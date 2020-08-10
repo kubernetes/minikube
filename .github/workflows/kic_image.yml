@@ -2,14 +2,14 @@ name: KIC_IMAGE
 on:
   pull_request:
     paths:
-      - "hack/images/**"
+      - "deploy/kicbase/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
   build_test_kic_image:
-    runs-on: [self-hosted, Ubuntu, kvm, iso]
+    runs-on: [self-hosted, debian9, gcp]
     steps:
-      - name: Clean up workspace
+      - name: Clean up 
         shell: bash
         run: |
           pwd
@@ -17,6 +17,7 @@ jobs:
           rm -rf out
           ls -lah
           df -h
+          sudo rm -f /etc/cron.hourly/cleanup_and_reboot || true
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
@@ -26,7 +27,7 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
-          sudo apt-get update
+          sudo apt-get update	
           sudo apt-get install -y make build-essential
           make linux
           make e2e-linux-amd64
@@ -41,9 +42,15 @@ jobs:
           echo $(which jq)
       - name: Build Image
         run: |          
-          sudo apt-get install -y docker.io
+          docker images
           make kic-base-image
           docker images
+      - name: Info
+        shell: bash
+        run: |
+          hostname
+          uname -r
+          lsb_release -a
       - name: Install kubectl
         shell: bash
         run: |
@@ -56,24 +63,21 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
           sudo apt-get install -y jq
-      - name: Install docker
-        shell: bash
-        run: |
-          sudo apt-get install -y docker.io
+          rm -f gopogh-linux-amd64 || true
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
+          KIC_VERSION=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+          KIC_IMG_HEAD="local/kicbase:${KIC_VERSION}-snapshot"
           cd out
           mkdir -p report
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KIC_VERSION=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
-          KIC_IMG_HEAD="local/kicbase:${KIC_VERSION}-snapshot"
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker   --base-image=${KIC_IMG_HEAD}" -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker   --base-image=${KIC_IMG_HEAD}"  -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -86,10 +90,10 @@ jobs:
           cd out
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(/usr/local/bin/gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
-          FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          FailNum=$(echo $STAT | jq '.NumberOfFail' || true)
+          TestsNum=$(echo $STAT | jq '.NumberOfTests' || true)
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}

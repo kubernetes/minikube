@@ -78,6 +78,7 @@ func T(style StyleEnum, format string, a ...V) {
 		register.PrintStep(outStyled)
 		return
 	}
+	register.RecordStep(outStyled)
 	String(outStyled)
 }
 
@@ -137,6 +138,8 @@ func Err(format string, a ...interface{}) {
 		register.PrintError(format)
 		return
 	}
+	register.RecordError(format)
+
 	if errFile == nil {
 		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
