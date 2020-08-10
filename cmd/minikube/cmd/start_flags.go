@@ -91,6 +91,7 @@ const (
 	dryRun                  = "dry-run"
 	interactive             = "interactive"
 	waitTimeout             = "wait-timeout"
+	startHostTimeout        = "starthost-timeout"
 	nativeSSH               = "native-ssh"
 	minUsableMem            = 1024 // Kubernetes will not start with less than 1GB
 	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
@@ -114,7 +115,6 @@ func initMinikubeFlags() {
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
-
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
@@ -137,6 +137,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=bridge")
 	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)")
 	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
+	startCmd.Flags().Duration(startHostTimeout, 4*time.Minute, "max time to wait per host to start.")
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
@@ -309,6 +310,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			HostDNSResolver:         viper.GetBool(hostDNSResolver),
 			HostOnlyNicType:         viper.GetString(hostOnlyNicType),
 			NatNicType:              viper.GetString(natNicType),
+			StartHostTimeout:        viper.GetDuration(startHostTimeout),
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),
