@@ -22,6 +22,7 @@ import (
 
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
@@ -47,18 +48,18 @@ func CachedHostInfo() (*HostInfo, []error) {
 	i, err := cachedCPUInfo()
 	if err != nil {
 		glog.Warningf("Unable to get CPU info: %v", err)
-		hostInfoErrs = append(hostInfoErrs, err)
+		hostInfoErrs = append(hostInfoErrs, errors.Wrap(err, "cpuInfo"))
 	}
 	v, err := cachedSysMemLimit()
 	if err != nil {
 		glog.Warningf("Unable to get mem info: %v", err)
-		hostInfoErrs = append(hostInfoErrs, err)
+		hostInfoErrs = append(hostInfoErrs, errors.Wrap(err, "memInfo"))
 	}
 
 	d, err := cachedDiskInfo()
 	if err != nil {
 		glog.Warningf("Unable to get disk info: %v", err)
-		hostInfoErrs = append(hostInfoErrs, err)
+		hostInfoErrs = append(hostInfoErrs, errors.Wrap(err, "diskInfo"))
 	}
 
 	var info HostInfo
