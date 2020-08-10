@@ -86,6 +86,10 @@ func DeleteContainer(ociBin string, name string) error {
 		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
 
+	if err := RemoveNetwork(name); err != nil {
+		glog.Warningf("error deleting network: %v", err)
+	}
+
 	if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
 		return errors.Wrapf(err, "delete %s", name)
 	}
@@ -146,7 +150,6 @@ func CreateContainerNode(p CreateParams) error {
 		"--label", p.NodeLabel,
 	}
 
-	// volume
 	if p.OCIBinary == Podman { // enable execing in /var
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))

@@ -169,8 +169,6 @@ func CreateNetwork(name, ipRange string) error {
 	if networkExists(name) {
 		return nil
 	}
-	// TODO: subnet conflict
-	// TODO: configure gateway explictly
 
 	subnet := fmt.Sprintf("--subnet=%s", ipRange)
 	_, err = runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, name))
