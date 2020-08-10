@@ -171,7 +171,7 @@ func CreateNetwork(name, ipRange string) error {
 	}
 
 	subnet := fmt.Sprintf("--subnet=%s", ipRange)
-	_, err = runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, name))
+	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, name))
 	if err != nil {
 		return errors.Wrapf(err, "error creating network")
 	}
@@ -179,9 +179,9 @@ func CreateNetwork(name, ipRange string) error {
 	return nil
 }
 
-// RemoveNetwork removes a network
-func RemoveNetwork(name string) error {
-	if !networkExists {
+// removeNetwork removes a network
+func removeNetwork(name string) error {
+	if !networkExists(name) {
 		return nil
 	}
 	_, err := runCmd(exec.Command(Docker, "network", "remove", name))
@@ -191,7 +191,8 @@ func RemoveNetwork(name string) error {
 func networkExists(name string) bool {
 	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--format", "{{.Name}}"))
 	if err != nil {
-		return errors.Wrap(err, "listing networks")
+		glog.Warningf("error listing networks: %v", err)
+		return false
 	}
 	networks := strings.Split(rr.Output(), "\n")
 	for _, n := range networks {
