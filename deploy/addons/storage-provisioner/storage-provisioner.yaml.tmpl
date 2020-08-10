@@ -40,7 +40,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: system::leader-locking-storage-provisioner
+  name: system:persistent-volume-provisioner
   namespace: kube-system
   labels:
     addonmanager.kubernetes.io/mode: EnsureExists
@@ -51,6 +51,7 @@ rules:
   - endpoints
   verbs:
   - watch
+  - create
 - apiGroups:
   - ""
   resourceNames:
@@ -60,18 +61,19 @@ rules:
   verbs:
   - get
   - update
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: leader-locking-storage-provisioner
+  name: system:persistent-volume-provisioner
   namespace: kube-system
   labels:
     addonmanager.kubernetes.io/mode: EnsureExists
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: system::leader-locking-storage-provisioner
+  name: system:persistent-volume-provisioner
 subjects:
   - kind: ServiceAccount
     name: storage-provisioner
@@ -98,7 +100,7 @@ spec:
   hostNetwork: true
   containers:
   - name: storage-provisioner
-    image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/storage-provisioner{{.ExoticArch}}:v1.8.1
+    image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/storage-provisioner{{.ExoticArch}}:{{.StorageProvisionerVersion}}
     command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
     volumeMounts:
