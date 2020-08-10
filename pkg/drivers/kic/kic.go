@@ -67,15 +67,6 @@ func NewDriver(c Config) *Driver {
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
-	defaultNetwork := fmt.Sprintf("%s-network", d.MachineName)
-	defaultIPRange := "192.168.39.0/24"
-
-	err := oci.CreateNetwork(defaultNetwork, defaultIPRange)
-	if err != nil {
-		// use k8s network? fail?
-		return err
-	}
-
 	params := oci.CreateParams{
 		Name:          d.NodeConfig.MachineName,
 		Image:         d.NodeConfig.ImageDigest,
@@ -87,8 +78,13 @@ func (d *Driver) Create() error {
 		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
 		OCIBinary:     d.NodeConfig.OCIBinary,
 		APIServerPort: d.NodeConfig.APIServerPort,
-		Network:       defaultNetwork,
-		IP:            "192.168.39.2",
+	}
+
+	if err := oci.CreateNetwork(d.MachineName, defaultIPRange); err != nil {
+		glog.Warningf("unable to create docker network; node ip may not be stable: %v", err)
+	} else {
+		params.Network = defaultNetwork
+		params.IP = "192.168.39.2"
 	}
 
 	// control plane specific options
