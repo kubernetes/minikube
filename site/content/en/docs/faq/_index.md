@@ -20,6 +20,6 @@ Alternatively, configure `sudo` to never prompt for the commands issued by minik
 
 ## How to ignore system verification?
 
-minikube's bootstrapper, [Kubeadm] (https://github.com/kubernetes/kubeadm) verifies a list of features on the host system before installing Kubernetes. in case you get this error, and you still want to try minikube anyways despite your system's limitation you can skip the verification by starting minikube with this extra option:
+minikube's bootstrapper, [Kubeadm](https://github.com/kubernetes/kubeadm) verifies a list of features on the host system before installing Kubernetes. in case you get this error, and you still want to try minikube anyways despite your system's limitation you can skip the verification by starting minikube with this extra option:
 
 `minikube start --extra-config kubeadm.ignore-preflight-errors=SystemVerification`
