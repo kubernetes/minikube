@@ -247,7 +247,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
 	}
 
-	softStartArgs := []string{"start", "-p", profile}
+	softStartArgs := []string{"start", "-p", profile, "--alsologtstderr", "-v=8"}
 	c := exec.CommandContext(ctx, Target(), softStartArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
