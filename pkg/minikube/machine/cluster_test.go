@@ -68,6 +68,7 @@ var defaultClusterConfig = config.ClusterConfig{
 	Driver:    driver.Mock,
 	DockerEnv: []string{"MOCK_MAKE_IT_PROVISION=true"},
 	Nodes:     []config.Node{{Name: "minikube"}},
+	StartHostTimeout: 4 * time.Minute,
 }
 
 func TestCreateHost(t *testing.T) {
@@ -281,6 +282,7 @@ func TestStartHostConfig(t *testing.T) {
 		Driver:    driver.Mock,
 		DockerEnv: []string{"FOO=BAR"},
 		DockerOpt: []string{"param=value"},
+		StartHostTimeout: 4 * time.Minute,
 	}
 
 	h, _, err := StartHost(api, &cfg, &config.Node{Name: "minikube"})

@@ -87,6 +87,7 @@ minikube start [flags]
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
+      --starthost-timeout duration        max time to wait per host to start. (default 4m0s)
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers
       --vm-driver driver                  DEPRECATED, use driver instead.
