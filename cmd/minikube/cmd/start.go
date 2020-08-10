@@ -827,9 +827,11 @@ func validateMemoryHardLimit(drvName string) {
 	if err != nil {
 		glog.Warningf("Unable to query memory limits: %v", err)
 		out.WarningT("Failed to verify system memory limits.")
+		return
 	}
 	if s < 2200 {
 		out.WarningT("Your system has only {{.memory_amount}}MB memory. This might not work minimum required is 2000MB.", out.V{"memory_amount": s})
+		return
 	}
 	if driver.IsDockerDesktop(drvName) {
 		// in Docker Desktop if you allocate 2 GB the docker info shows:  Total Memory: 1.945GiB which becomes 1991 when we calculate the MBs
