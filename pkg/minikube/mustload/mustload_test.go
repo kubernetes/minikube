@@ -14,27 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cruntime
+package mustload
 
 import (
+	"path/filepath"
 	"testing"
 )
 
-func TestAddRepoTagToImageName(t *testing.T) {
-	var tests = []struct {
-		imgName string
-		want    string
-	}{
-		{"kubernetesui/dashboard:v2.0.1", "docker.io/kubernetesui/dashboard:v2.0.1"},
-		{"kubernetesui/metrics-scraper:v1.0.4", "docker.io/kubernetesui/metrics-scraper:v1.0.4"},
-		{"gcr.io/k8s-minikube/storage-provisioner:v2", "gcr.io/k8s-minikube/storage-provisioner:v2"},
+func TestPartial(t *testing.T) {
+	path := filepath.Join("..", "config", "testdata", "profile", ".minikube")
+	name := "p1"
+	api, cc := Partial(name, path)
+
+	if cc.Name != name {
+		t.Fatalf("cc.Name expected to be same as name(%s), but got %s", name, cc.Name)
 	}
-	for _, tc := range tests {
-		t.Run(tc.imgName, func(t *testing.T) {
-			got := addRepoTagToImageName(tc.imgName)
-			if got != tc.want {
-				t.Errorf("expected image name to be: %q but got %q", tc.want, got)
-			}
-		})
+	if api == nil {
+		t.Fatalf("expected to get not empty api struct")
 	}
 }

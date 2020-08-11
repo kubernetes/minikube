@@ -1,6 +1,6 @@
 ## Experimental
 
-This is an experimental driver. Please use it only for experimental reasons until it has reached maturity. For a more reliable minikube experience, use a non-experimental driver, like [Docker]({{< ref "/docs/drivers/docker.md" >}}).
+This is an experimental driver. Please use it only for experimental reasons until it has reached maturity. For a more reliable minikube experience, use a non-experimental driver, like [Docker](https://minikube.sigs.k8s.io/docs/drivers/docker/).
 
 ## Usage
 
