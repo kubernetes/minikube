@@ -135,6 +135,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	displayEnviron(os.Environ())
+	if viper.GetBool(force) {
+		out.WarningT("minikube skips various validations when --force is supplied; this may lead to unexpected behavior")
+	}
 
 	// if --registry-mirror specified when run minikube start,
 	// take arg precedence over MINIKUBE_REGISTRY_MIRROR
@@ -846,6 +849,9 @@ func validateMemoryHardLimit(drvName string) {
 
 // validateMemorySize validates the memory size matches the minimum recommended
 func validateMemorySize(req int, drvName string) {
+	if viper.GetBool(force) {
+		return
+	}
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
 		glog.Warningf("Unable to query memory limits: %v", err)
@@ -941,7 +947,6 @@ func validateCPUCount(drvName string) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
 	if viper.GetBool(force) {
-		out.WarningT("minikube skips flag validations when --force is supplied; this may lead to unexpected behavior")
 		return
 	}
 	if cmd.Flags().Changed(humanReadableDiskSize) {
