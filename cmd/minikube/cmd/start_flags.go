@@ -222,12 +222,12 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		glog.Info("no existing cluster config was found, will generate one from the flags ")
 		sysLimit, containerLimit, err := memoryLimits(drvName)
 		if err != nil {
-			glog.Warningf("Unable to query memory limits: %v", err)
+			glog.Warningf("Unable to query memory limits: %+v", err)
 		}
 
 		mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 		if cmd.Flags().Changed(memory) {
-			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
+			mem, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 			if err != nil {
 				exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 			}

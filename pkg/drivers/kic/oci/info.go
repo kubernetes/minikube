@@ -42,6 +42,9 @@ func CachedDaemonInfo(ociBin string) (SysInfo, error) {
 		cachedSysInfo = &si
 		cachedSysInfoErr = &err
 	}
+	if cachedSysInfoErr == nil {
+		return *cachedSysInfo, nil
+	}
 	return *cachedSysInfo, *cachedSysInfoErr
 }
 

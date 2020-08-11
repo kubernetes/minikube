@@ -765,10 +765,18 @@ func validateUser(drvName string) {
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor , the return value is in MB
 func memoryLimits(drvName string) (int, int, error) {
-	info, err := machine.CachedHostInfo()
-	if err != nil {
-		return -1, -1, err
+	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
+	if cpuErr != nil {
+		glog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
+	if diskErr != nil {
+		glog.Warningf("could not get system disk info while verifying memory limits, which might be okay: %v", diskErr)
+	}
+
+	if memErr != nil {
+		return -1, -1, memErr
+	}
+
 	sysLimit := int(info.Memory)
 	containerLimit := 0
 
@@ -827,9 +835,11 @@ func validateMemoryHardLimit(drvName string) {
 	if err != nil {
 		glog.Warningf("Unable to query memory limits: %v", err)
 		out.WarningT("Failed to verify system memory limits.")
+		return
 	}
 	if s < 2200 {
 		out.WarningT("Your system has only {{.memory_amount}}MB memory. This might not work minimum required is 2000MB.", out.V{"memory_amount": s})
+		return
 	}
 	if driver.IsDockerDesktop(drvName) {
 		// in Docker Desktop if you allocate 2 GB the docker info shows:  Total Memory: 1.945GiB which becomes 1991 when we calculate the MBs
