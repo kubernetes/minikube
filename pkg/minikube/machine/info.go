@@ -22,7 +22,6 @@ import (
 
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
@@ -43,33 +42,27 @@ func megs(bytes uint64) int64 {
 }
 
 // CachedHostInfo returns system information such as memory,CPU, DiskSize
-func CachedHostInfo() (*HostInfo, []error) {
-	var hostInfoErrs []error
-	i, err := cachedCPUInfo()
-	if err != nil {
-		glog.Warningf("Unable to get CPU info: %v", err)
-		hostInfoErrs = append(hostInfoErrs, errors.Wrap(err, "cpuInfo"))
+func CachedHostInfo() (*HostInfo, error, error, error) {
+	var cpuErr, memErr, diskErr error
+	i, cpuErr := cachedCPUInfo()
+	if cpuErr != nil {
+		glog.Warningf("Unable to get CPU info: %v", cpuErr)
 	}
-	v, err := cachedSysMemLimit()
-	if err != nil {
-		glog.Warningf("Unable to get mem info: %v", err)
-		hostInfoErrs = append(hostInfoErrs, errors.Wrap(err, "memInfo"))
+	v, memErr := cachedSysMemLimit()
+	if memErr != nil {
+		glog.Warningf("Unable to get mem info: %v", memErr)
 	}
 
-	d, err := cachedDiskInfo()
-	if err != nil {
-		glog.Warningf("Unable to get disk info: %v", err)
-		hostInfoErrs = append(hostInfoErrs, errors.Wrap(err, "diskInfo"))
+	d, diskErr := cachedDiskInfo()
+	if diskErr != nil {
+		glog.Warningf("Unable to get disk info: %v", diskErr)
 	}
 
 	var info HostInfo
 	info.CPUs = len(i)
 	info.Memory = megs(v.Total)
 	info.DiskSize = megs(d.Total)
-	if len(hostInfoErrs) > 0 {
-		return &info, hostInfoErrs
-	}
-	return &info, nil
+	return &info, cpuErr, memErr, diskErr
 }
 
 // showLocalOsRelease shows systemd information about the current linux distribution, on the local host
@@ -123,19 +116,19 @@ func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
 }
 
 var cachedDisk *disk.UsageStat
-var cachedDiskInfoeErr *error
+var cachedDiskInfoErr *error
 
 // cachedDiskInfo will return a cached disk usage info
 func cachedDiskInfo() (disk.UsageStat, error) {
 	if cachedDisk == nil {
 		d, err := disk.Usage("/")
 		cachedDisk = d
-		cachedDiskInfoeErr = &err
+		cachedDiskInfoErr = &err
 	}
-	if cachedDiskInfoeErr == nil {
+	if cachedDiskInfoErr == nil {
 		return *cachedDisk, nil
 	}
-	return *cachedDisk, *cachedDiskInfoeErr
+	return *cachedDisk, *cachedDiskInfoErr
 }
 
 var cachedCPU *[]cpu.InfoStat
