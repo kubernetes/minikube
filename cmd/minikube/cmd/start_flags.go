@@ -220,9 +220,9 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
 		glog.Info("no existing cluster config was found, will generate one from the flags ")
-		sysLimit, containerLimit, errs := memoryLimits(drvName)
-		if errs != nil {
-			glog.Warningf("Unable to query memory limits: %+v", errs)
+		sysLimit, containerLimit, err := memoryLimits(drvName)
+		if err != nil {
+			glog.Warningf("Unable to query memory limits: %+v", err)
 		}
 
 		mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))

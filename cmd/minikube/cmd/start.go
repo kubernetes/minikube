@@ -764,18 +764,26 @@ func validateUser(drvName string) {
 }
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor , the return value is in MB
-func memoryLimits(drvName string) (int, int, []error) {
-	info, err := machine.CachedHostInfo()
-	if err != nil {
-		return -1, -1, err
+func memoryLimits(drvName string) (int, int, error) {
+	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
+	if cpuErr != nil {
+		glog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
+	if diskErr != nil {
+		glog.Warningf("could not get system disk info while verifying memory limits, which might be okay: %v", diskErr)
+	}
+
+	if memErr != nil {
+		return -1, -1, memErr
+	}
+
 	sysLimit := int(info.Memory)
 	containerLimit := 0
 
 	if driver.IsKIC(drvName) {
 		s, err := oci.CachedDaemonInfo(drvName)
 		if err != nil {
-			return -1, -1, []error{err}
+			return -1, -1, err
 		}
 		containerLimit = int(s.TotalMemory / 1024 / 1024)
 	}
