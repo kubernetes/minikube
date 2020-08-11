@@ -680,11 +680,17 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.4"))
 	if err != nil {
-		t.Logf("%q failed: %v (may not be an error).", rr.Command(), err)
+		t.Logf("%q failed: %v (may not be an error)\n%v.", rr.Command(), err, rr.Output())
+	}
+	if err == context.DeadlineExceeded {
+		t.Fatalf("deadline exceeded")
 	}
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
 	if err != nil {
-		t.Logf("%q failed: %v (may not be an error)", rr.Command(), err)
+		t.Logf("%q failed: %v (may not be an error)\n%v", rr.Command(), err, rr.Output())
+	}
+	if err == context.DeadlineExceeded {
+		t.Fatalf("deadline exceeded")
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
