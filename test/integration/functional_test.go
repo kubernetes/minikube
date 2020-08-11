@@ -699,10 +699,10 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
 	if err != nil {
-		t.Errorf("failed to do service list. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed to do service list. args %q : %v\n%v", rr.Command(), err, rr.Output())
 	}
 	if !strings.Contains(rr.Stdout.String(), "hello-node") {
-		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
+		t.Fatalf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
 	}
 
 	if NeedsPortForward() {
