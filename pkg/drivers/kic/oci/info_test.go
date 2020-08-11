@@ -1,6 +1,13 @@
 package oci
 
-import "testing"
+import (
+	"testing"
+)
+
+var daemonResponseMock string
+var daemonInfoGetterMock = func() (string, error) {
+	return daemonResponseMock, nil
+}
 
 func TestDockerSystemInfo(t *testing.T) {
 	testCases := []struct {
@@ -109,7 +116,12 @@ func TestDockerSystemInfo(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			s, err := DaemonInfo(tc.OciBin, tc.RawJSON)
+			daemonResponseMock = tc.RawJSON
+			// setting up mock funcs
+			dockerInfoGetter = daemonInfoGetterMock
+			podmanInfoGetter = daemonInfoGetterMock
+			s, err := DaemonInfo(tc.OciBin)
+
 			if err != nil && !tc.ShouldError {
 				t.Errorf("Expected not to have error but got %v", err)
 			}

@@ -46,13 +46,13 @@ func CachedDaemonInfo(ociBin string) (SysInfo, error) {
 }
 
 // DaemonInfo returns common docker/podman daemon system info that minikube cares about
-func DaemonInfo(ociBin string, mockTest ...string) (SysInfo, error) {
+func DaemonInfo(ociBin string) (SysInfo, error) {
 	if ociBin == Podman {
-		p, err := podmanSystemInfo(mockTest...)
+		p, err := podmanSystemInfo()
 		cachedSysInfo = &SysInfo{CPUs: p.Host.Cpus, TotalMemory: p.Host.MemTotal, OSType: p.Host.Os}
 		return *cachedSysInfo, err
 	}
-	d, err := dockerSystemInfo(mockTest...)
+	d, err := dockerSystemInfo()
 	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType}
 	return *cachedSysInfo, err
 }
@@ -224,20 +224,18 @@ type podmanSysInfo struct {
 	} `json:"store"`
 }
 
-// dockerSystemInfo returns docker system info --format '{{json .}}'
-func dockerSystemInfo(mockTest ...string) (dockerSysInfo, error) {
-	var ds dockerSysInfo
-	var rawJson string
-	if len(mockTest) > 0 {
-		rawJson = mockTest[0]
-	} else {
-		rr, err := runCmd(exec.Command(Docker, "system", "info", "--format", "{{json .}}"))
-		if err != nil {
-			return ds, errors.Wrap(err, "get docker system info")
-		}
-		rawJson = rr.Stdout.String()
-	}
+var dockerInfoGetter = func() (string, error) {
+	rr, err := runCmd(exec.Command(Docker, "system", "info", "--format", "{{json .}}"))
+	return rr.Stdout.String(), err
+}
 
+// dockerSystemInfo returns docker system info --format '{{json .}}'
+func dockerSystemInfo() (dockerSysInfo, error) {
+	var ds dockerSysInfo
+	rawJson, err := dockerInfoGetter()
+	if err != nil {
+		return ds, errors.Wrap(err, "docker system info")
+	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJson)), &ds); err != nil {
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
@@ -245,18 +243,17 @@ func dockerSystemInfo(mockTest ...string) (dockerSysInfo, error) {
 	return ds, nil
 }
 
+var podmanInfoGetter = func() (string, error) {
+	rr, err := runCmd(exec.Command(Podman, "system", "info", "--format", "json"))
+	return rr.Stdout.String(), err
+}
+
 // podmanSysInfo returns podman system info --format '{{json .}}'
-func podmanSystemInfo(mockTest ...string) (podmanSysInfo, error) {
+func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
-	var rawJson string
-	if len(mockTest) > 0 {
-		rawJson = mockTest[0]
-	} else {
-		rr, err := runCmd(exec.Command(Podman, "system", "info", "--format", "json"))
-		if err != nil {
-			return ps, errors.Wrap(err, "get podman system info")
-		}
-		rawJson = rr.Stdout.String()
+	rawJson, err := podmanInfoGetter()
+	if err != nil {
+		return ps, errors.Wrap(err, "podman system info")
 	}
 
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJson)), &ps); err != nil {
