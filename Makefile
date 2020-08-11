@@ -34,6 +34,7 @@ GO_VERSION ?= 1.14.6
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2019.02.11
 REGISTRY?=gcr.io/k8s-minikube
+REGISTRY_GH?=docker.pkg.github.com/kubernetes/minikube
 
 # Get git commit id
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
@@ -46,7 +47,9 @@ BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSIO
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 
-KIC_BASE_IMAGE ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
+KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
+KIC_BASE_IMAGE_GH ?= $(REGISTRY_GH)/kicbase:$(KIC_VERSION)
+KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 
 ISO_BUCKET ?= minikube/iso
 
@@ -135,6 +138,8 @@ HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -
 
 # don't ask for user confirmation
 IN_CI=false
+# autopush artefacts
+AUTOPUSH ?=
 
 # $(call user_confirm, message)
 define user_confirm
@@ -544,9 +549,12 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
-	docker rmi -f $(KIC_BASE_IMAGE)-snapshot || true
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE) --target base ./deploy/kicbase
-	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE)-snapshot
+	docker rmi -f $(KIC_BASE_IMAGE_GCR)-snapshot || true
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) --target base ./deploy/kicbase
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)-snapshot
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_HUB)
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GH)
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
@@ -556,11 +564,34 @@ upload-preloaded-images-tar: out/minikube # Upload the preloaded images for olde
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
 	gcloud docker -- push $(STORAGE_PROVISIONER_IMAGE)
 
+.PHONY: push-docker
+push-docker: # Push docker image base on to IMAGE variable
+	(docker pull $(IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry")
+ifndef AUTOPUSH
+	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
+endif
+	docker push $(IMAGE) || gcloud docker -- push $(IMAGE)
+
+.PHONY: push-kic-base-image-gcr
+push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
+	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GCR)
+
+.PHONY: push-kic-base-image-gh
+push-kic-base-image-gh: kic-base-image ## Push kic-base to github
+	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GH)
+
+.PHONY: push-kic-base-image-hub
+push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
+	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
+
 .PHONY: push-kic-base-image
-push-kic-base-image: kic-base-image ## Push kic-base docker image using gcloud
-	(docker pull $(KIC_BASE_IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry")
-	$(call user_confirm, 'Are you sure you want to push $(KIC_BASE_IMAGE) ?')
-	gcloud docker -- push $(KIC_BASE_IMAGE)
+push-kic-base-image: ## Push kic-base to all registries
+ifndef AUTOPUSH
+	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
+	$(MAKE) push-kic-base-image AUTOPUSH=true
+else
+	$(MAKE) push-kic-base-image-gh push-kic-base-image-gcr push-kic-base-image-hub
+endif
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
