@@ -326,6 +326,10 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	return true
 }
 
+func (r *CRIO) ImagesPreloaded(images []string) bool {
+	return crioImagesPreloaded(r.Runner, images)
+}
+
 // UpdateCRIONet updates CRIO CNI network configuration and restarts it
 func UpdateCRIONet(r CommandRunner, cidr string) error {
 	glog.Infof("Updating CRIO to use CIDR: %q", cidr)

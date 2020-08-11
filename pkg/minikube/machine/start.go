@@ -157,7 +157,10 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	cstart := time.Now()
 	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
 
-	if err := timedCreateHost(h, api, 4*time.Minute); err != nil {
+	if cfg.StartHostTimeout == 0 {
+		cfg.StartHostTimeout = 6 * time.Minute
+	}
+	if err := timedCreateHost(h, api, cfg.StartHostTimeout); err != nil {
 		return nil, errors.Wrap(err, "creating host")
 	}
 	glog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
@@ -251,8 +254,8 @@ func acquireMachinesLock(name string) (mutex.Releaser, error) {
 func showHostInfo(cfg config.ClusterConfig) {
 	machineType := driver.MachineType(cfg.Driver)
 	if driver.BareMetal(cfg.Driver) {
-		info, err := getHostInfo()
-		if err == nil {
+		info, cpuErr, memErr, DiskErr := CachedHostInfo()
+		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningLocalhost)
 			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}

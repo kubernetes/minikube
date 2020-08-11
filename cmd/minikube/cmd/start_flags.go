@@ -114,7 +114,6 @@ func initMinikubeFlags() {
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
-
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
@@ -137,7 +136,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=bridge")
 	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)")
 	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
-	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
+	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes or host to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
@@ -223,12 +222,12 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		glog.Info("no existing cluster config was found, will generate one from the flags ")
 		sysLimit, containerLimit, err := memoryLimits(drvName)
 		if err != nil {
-			glog.Warningf("Unable to query memory limits: %v", err)
+			glog.Warningf("Unable to query memory limits: %+v", err)
 		}
 
 		mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 		if cmd.Flags().Changed(memory) {
-			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
+			mem, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 			if err != nil {
 				exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 			}
@@ -237,10 +236,9 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			}
 
 		} else {
+			validateMemorySize(mem, drvName)
 			glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 		}
-
-		validateMemorySize(mem, drvName)
 
 		diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
@@ -310,6 +308,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			HostDNSResolver:         viper.GetBool(hostDNSResolver),
 			HostOnlyNicType:         viper.GetString(hostOnlyNicType),
 			NatNicType:              viper.GetString(natNicType),
+			StartHostTimeout:        viper.GetDuration(waitTimeout),
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),
@@ -409,19 +408,34 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.MinikubeISO = viper.GetString(isoURL)
 	}
 
+	if cc.Memory == 0 {
+		glog.Info("Existing config file was missing memory. (could be an old minikube config), will use the default value")
+		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+		if err != nil {
+			glog.Warningf("error calculate memory size in mb : %v", err)
+		}
+		cc.Memory = memInMB
+	}
+
 	if cmd.Flags().Changed(memory) {
 		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 		if err != nil {
 			glog.Warningf("error calculate memory size in mb : %v", err)
 		}
-		if memInMB != existing.Memory {
+		if memInMB != cc.Memory {
 			out.WarningT("You cannot change the memory size for an exiting minikube cluster. Please first delete the cluster.")
 		}
-
 	}
 
+	// validate the memory size in case user changed their system memory limits (example change docker desktop or upgraded memory.)
+	validateMemorySize(cc.Memory, cc.Driver)
+
+	if cc.CPUs == 0 {
+		glog.Info("Existing config file was missing cpu. (could be an old minikube config), will use the default value")
+		cc.CPUs = viper.GetInt(cpus)
+	}
 	if cmd.Flags().Changed(cpus) {
-		if viper.GetInt(cpus) != existing.CPUs {
+		if viper.GetInt(cpus) != cc.CPUs {
 			out.WarningT("You cannot change the CPUs for an existing minikube cluster. Please first delete the cluster.")
 		}
 	}

@@ -244,6 +244,7 @@ github.com/coreos/etcd v3.3.13+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=
 github.com/coreos/go-oidc v2.1.0+incompatible/go.mod h1:CgnwVTmzoESiwO9qyAFEMiHoZ1nMCKZlZ9V6mm3/LKc=
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
+github.com/coreos/go-semver v0.3.0 h1:wkHLiw0WNATZnSG7epLsujiMCgPAc9xhjJ4tgnAxmfM=
 github.com/coreos/go-semver v0.3.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/coreos/go-systemd v0.0.0-20180511133405-39ca1b05acc7/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
@@ -683,8 +684,8 @@ github.com/lucas-clemente/quic-go v0.10.2/go.mod h1:hvaRS9IHjFLMq76puFJeWNfmn+H7
 github.com/lucas-clemente/quic-go-certificates v0.0.0-20160823095156-d2f86524cced/go.mod h1:NCcRLrOTZbzhZvixZLlERbJtDtYsmMw8Jc4vS8Z0g58=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.1 h1:+E1IKKk+6kaQrCPg6edJZ/zISZijuZTPnzy6RE4C/Ho=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.1/go.mod h1:ej014C83EmSnxJeJ8PtVb8OLJ91PJKO1Q8Y7sM5CK0o=
-github.com/machine-drivers/machine v0.7.1-0.20200323212942-41eb826190d8 h1:CIddS19fAKG4rUkZAotX0WPQtx/v/SdLhhDU3MVhLy0=
-github.com/machine-drivers/machine v0.7.1-0.20200323212942-41eb826190d8/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
+github.com/machine-drivers/machine v0.7.1-0.20200810185219-7d42fed1b770 h1:jc5SzpD28ZqDb+PoA4FxOwkl+slv593qJjrMVM35JFQ=
+github.com/machine-drivers/machine v0.7.1-0.20200810185219-7d42fed1b770/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
 github.com/magiconair/properties v1.7.6/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1 h1:ZC2Vc7/ZFkGmsVC9KvOjumD+G5lXy2RtTKyzRKO2BQ4=
@@ -1030,6 +1031,7 @@ github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097 h1:Ucx5I1l1+TWXvqFm
 github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097/go.mod h1:lFZSWRIpCfE/pt91hHBBpV6+x87YlCjsp+aIR2qCPPU=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
+go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738 h1:VcrIfasaLFkyjk6KNlXQSzO+B0fZcnECiDrKJsfxka0=
 go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mIZCrds/GIG4ncV9HhK5PX7jPg=
 go.mongodb.org/mongo-driver v1.0.3/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=
 go.mongodb.org/mongo-driver v1.1.1/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=
