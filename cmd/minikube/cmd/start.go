@@ -940,6 +940,10 @@ func validateCPUCount(drvName string) {
 
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
+	if viper.GetBool(force) {
+		out.WarningT("minikube skips flag validations when --force is supplied; this may lead to unexpected behavior")
+		return
+	}
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
