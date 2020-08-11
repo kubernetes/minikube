@@ -139,7 +139,7 @@ HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -
 AUTOPUSH ?=
 
 # don't ask for user confirmation
-IN_CI=false
+IN_CI := false
 
 # $(call user_confirm, message)
 define user_confirm
