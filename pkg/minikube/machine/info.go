@@ -111,10 +111,13 @@ var cachedSystemMemoryErr *error
 
 //  cachedSysMemLimit will return a cached limit for the system's virtual memory.
 func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
-	if cachedSystemMemoryLimit == nil || cachedSystemMemoryErr != nil {
+	if cachedSystemMemoryLimit == nil {
 		v, err := mem.VirtualMemory()
 		cachedSystemMemoryLimit = v
 		cachedSystemMemoryErr = &err
+	}
+	if cachedSystemMemoryErr == nil {
+		return cachedSystemMemoryLimit, nil
 	}
 	return cachedSystemMemoryLimit, *cachedSystemMemoryErr
 }
@@ -124,10 +127,13 @@ var cachedDiskInfoeErr *error
 
 // cachedDiskInfo will return a cached disk usage info
 func cachedDiskInfo() (disk.UsageStat, error) {
-	if cachedDisk == nil || cachedDiskInfoeErr != nil {
+	if cachedDisk == nil {
 		d, err := disk.Usage("/")
 		cachedDisk = d
 		cachedDiskInfoeErr = &err
+	}
+	if cachedDiskInfoeErr == nil {
+		return *cachedDisk, nil
 	}
 	return *cachedDisk, *cachedDiskInfoeErr
 }
@@ -137,13 +143,13 @@ var cachedCPUErr *error
 
 //  cachedCPUInfo will return a cached cpu info
 func cachedCPUInfo() ([]cpu.InfoStat, error) {
-	if cachedCPU == nil || cachedCPUErr != nil {
+	if cachedCPU == nil {
 		i, err := cpu.Info()
 		cachedCPU = &i
 		cachedCPUErr = &err
-		if err != nil {
-			return nil, *cachedCPUErr
-		}
+	}
+	if cachedCPUErr == nil {
+		return *cachedCPU, nil
 	}
 	return *cachedCPU, *cachedCPUErr
 }
