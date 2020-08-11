@@ -673,7 +673,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
-		skipErrorIfForceEnabled(exit.Unavailable, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
+		exitIfNotForced(exit.Unavailable, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
 	}
 }
 
@@ -857,7 +857,7 @@ func validateMemorySize(req int, drvName string) {
 	minAdvised := 0.50 * float64(sysLimit)
 
 	if req < minUsableMem {
-		skipErrorIfForceEnabled(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
+		exitIfNotForced(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
 	}
 	if req < minRecommendedMem {
 		out.WarningT("Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
@@ -878,7 +878,7 @@ func validateMemorySize(req int, drvName string) {
 		miniube start --memory={{.min_advised}}mb				
 	
 `
-		skipErrorIfForceEnabled(exit.Config, message, out.V{"requested": req, "system_limit": sysLimit, "max_advised": int32(maxAdvised), "min_advised": minAdvised})
+		exitIfNotForced(exit.Config, message, out.V{"requested": req, "system_limit": sysLimit, "max_advised": int32(maxAdvised), "min_advised": minAdvised})
 	}
 
 	if float64(req) > maxAdvised {
@@ -906,7 +906,7 @@ func validateCPUCount(drvName string) {
 		cpuCount = viper.GetInt(cpus)
 	}
 	if cpuCount < minimumCPUS {
-		skipErrorIfForceEnabled(exit.BadUsage, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
+		exitIfNotForced(exit.BadUsage, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
 	if driver.IsKIC((drvName)) {
@@ -928,7 +928,7 @@ func validateCPUCount(drvName string) {
 				`)
 			}
 			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
-			skipErrorIfForceEnabled(exit.BadUsage, "Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
+			exitIfNotForced(exit.BadUsage, "Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
 		}
 	}
 }
@@ -939,11 +939,11 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			skipErrorIfForceEnabled(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
+			exitIfNotForced(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
 
 		if diskSizeMB < minimumDiskSize {
-			skipErrorIfForceEnabled(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
+			exitIfNotForced(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
 		}
 	}
 
@@ -961,7 +961,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 		req, err := util.CalculateSizeInMB(viper.GetString(memory))
 		if err != nil {
-			skipErrorIfForceEnabled(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+			exitIfNotForced(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 		}
 		validateMemorySize(req, drvName)
 	}
@@ -1139,7 +1139,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 	if nvs.LT(oldestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
-		skipErrorIfForceEnabled(exit.Data, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+		exitIfNotForced(exit.Data, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
@@ -1203,7 +1203,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	return version.VersionPrefix + nvs.String()
 }
 
-func skipErrorIfForceEnabled(code int, message string, v out.V) {
+func exitIfNotForced(code int, message string, v out.V) {
 	if !viper.GetBool(force) {
 		exit.WithCodeT(code, message, v)
 	}
