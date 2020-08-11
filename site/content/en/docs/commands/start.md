@@ -91,7 +91,7 @@ minikube start [flags]
       --vm                                Filter to use only VM Drivers
       --vm-driver driver                  DEPRECATED, use driver instead.
       --wait strings                      comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
-      --wait-timeout duration             max time to wait per Kubernetes core services to be healthy. (default 6m0s)
+      --wait-timeout duration             max time to wait per Kubernetes or host to be healthy. (default 6m0s)
 ```
 
 ### Options inherited from parent commands

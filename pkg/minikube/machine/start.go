@@ -157,7 +157,10 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	cstart := time.Now()
 	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
 
-	if err := timedCreateHost(h, api, 4*time.Minute); err != nil {
+	if cfg.StartHostTimeout == 0 {
+		cfg.StartHostTimeout = 6 * time.Minute
+	}
+	if err := timedCreateHost(h, api, cfg.StartHostTimeout); err != nil {
 		return nil, errors.Wrap(err, "creating host")
 	}
 	glog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
