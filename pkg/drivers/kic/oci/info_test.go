@@ -119,6 +119,9 @@ func TestDockerSystemInfo(t *testing.T) {
 			if s.TotalMemory != tc.Memory {
 				t.Errorf("Expected Memory to be %d but got %d", tc.Memory, s.TotalMemory)
 			}
+			if s.OSType != tc.OS {
+				t.Errorf("Expected OS type to be %q but got %q", tc.OS, s.OSType)
+			}
 
 		})
 
