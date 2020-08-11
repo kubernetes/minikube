@@ -101,6 +101,9 @@ func String(format string, a ...interface{}) {
 		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
+
+	glog.Infof(format, a...)
+
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
 		glog.Errorf("Fprintf failed: %v", err)
@@ -144,6 +147,9 @@ func Err(format string, a ...interface{}) {
 		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
+
+	glog.Warningf(format, a...)
+
 	_, err := fmt.Fprintf(errFile, format, a...)
 	if err != nil {
 		glog.Errorf("Fprint failed: %v", err)
