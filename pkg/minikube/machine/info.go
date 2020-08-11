@@ -42,29 +42,27 @@ func megs(bytes uint64) int64 {
 }
 
 // CachedHostInfo returns system information such as memory,CPU, DiskSize
-func CachedHostInfo() (*HostInfo, error) {
-	i, err := cachedCPUInfo()
-	if err != nil {
-		glog.Warningf("Unable to get CPU info: %v", err)
-		return nil, err
+func CachedHostInfo() (*HostInfo, error, error, error) {
+	var cpuErr, memErr, diskErr error
+	i, cpuErr := cachedCPUInfo()
+	if cpuErr != nil {
+		glog.Warningf("Unable to get CPU info: %v", cpuErr)
 	}
-	v, err := cachedSysMemLimit()
-	if err != nil {
-		glog.Warningf("Unable to get mem info: %v", err)
-		return nil, err
+	v, memErr := cachedSysMemLimit()
+	if memErr != nil {
+		glog.Warningf("Unable to get mem info: %v", memErr)
 	}
 
-	d, err := cachedDiskInfo()
-	if err != nil {
-		glog.Warningf("Unable to get disk info: %v", err)
-		return nil, err
+	d, diskErr := cachedDiskInfo()
+	if diskErr != nil {
+		glog.Warningf("Unable to get disk info: %v", diskErr)
 	}
 
 	var info HostInfo
 	info.CPUs = len(i)
 	info.Memory = megs(v.Total)
 	info.DiskSize = megs(d.Total)
-	return &info, nil
+	return &info, cpuErr, memErr, diskErr
 }
 
 // showLocalOsRelease shows systemd information about the current linux distribution, on the local host
@@ -111,20 +109,26 @@ func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
 		cachedSystemMemoryLimit = v
 		cachedSystemMemoryErr = &err
 	}
+	if cachedSystemMemoryErr == nil {
+		return cachedSystemMemoryLimit, nil
+	}
 	return cachedSystemMemoryLimit, *cachedSystemMemoryErr
 }
 
 var cachedDisk *disk.UsageStat
-var cachedDiskInfoeErr *error
+var cachedDiskInfoErr *error
 
 // cachedDiskInfo will return a cached disk usage info
 func cachedDiskInfo() (disk.UsageStat, error) {
 	if cachedDisk == nil {
 		d, err := disk.Usage("/")
 		cachedDisk = d
-		cachedDiskInfoeErr = &err
+		cachedDiskInfoErr = &err
 	}
-	return *cachedDisk, *cachedDiskInfoeErr
+	if cachedDiskInfoErr == nil {
+		return *cachedDisk, nil
+	}
+	return *cachedDisk, *cachedDiskInfoErr
 }
 
 var cachedCPU *[]cpu.InfoStat
@@ -136,9 +140,9 @@ func cachedCPUInfo() ([]cpu.InfoStat, error) {
 		i, err := cpu.Info()
 		cachedCPU = &i
 		cachedCPUErr = &err
-		if err != nil {
-			return nil, *cachedCPUErr
-		}
+	}
+	if cachedCPUErr == nil {
+		return *cachedCPU, nil
 	}
 	return *cachedCPU, *cachedCPUErr
 }

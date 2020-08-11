@@ -254,8 +254,8 @@ func acquireMachinesLock(name string) (mutex.Releaser, error) {
 func showHostInfo(cfg config.ClusterConfig) {
 	machineType := driver.MachineType(cfg.Driver)
 	if driver.BareMetal(cfg.Driver) {
-		info, err := CachedHostInfo()
-		if err == nil {
+		info, cpuErr, memErr, DiskErr := CachedHostInfo()
+		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningLocalhost)
 			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
