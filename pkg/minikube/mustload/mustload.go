@@ -60,14 +60,13 @@ type ControlPlane struct {
 }
 
 // Partial is a cmd-friendly way to load a cluster which may or may not be running
-func Partial(name string) (libmachine.API, *config.ClusterConfig) {
+func Partial(name string, miniHome ...string) (libmachine.API, *config.ClusterConfig) {
 	glog.Infof("Loading cluster: %s", name)
-	api, err := machine.NewAPIClient()
+	api, err := machine.NewAPIClient(miniHome...)
 	if err != nil {
 		exit.WithError("libmachine failed", err)
 	}
-
-	cc, err := config.Load(name)
+	cc, err := config.Load(name, miniHome...)
 	if err != nil {
 		if config.IsNotExist(err) {
 			out.T(out.Shrug, `There is no local cluster named "{{.cluster}}"`, out.V{"cluster": name})

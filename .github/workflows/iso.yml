@@ -1,15 +1,15 @@
-name: KIC_IMAGE
+name: ISO
 on:
   pull_request:
     paths:
-      - "deploy/kicbase/**"
+      - "deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
-  build_test_kic_image:
+  build_test_iso:
     runs-on: [self-hosted, debian9, gcp]
     steps:
-      - name: Clean up 
+      - name: Clean up workspace
         shell: bash
         run: |
           pwd
@@ -17,7 +17,6 @@ jobs:
           rm -rf out
           ls -lah
           df -h
-          sudo rm -f /etc/cron.hourly/cleanup_and_reboot || true
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
@@ -25,10 +24,35 @@ jobs:
           stable: true
       - name: Download Dependencies
         run: go mod download
+      - name: Install KVM 
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
+      - name: Install ISO build tools
+        run: |
+          sudo apt-get update \
+          && sudo apt-get install -y apt dpkg apt-utils ca-certificates \
+          && sudo apt-get upgrade -y \
+          && sudo apt-get install -y \
+            build-essential \
+            git \
+            wget \
+            cpio \
+            python \
+            unzip \
+            bc \
+            gcc-multilib \
+            automake \
+            libtool \
+            gnupg2 \
+            p7zip-full \
+            locales \
+            rsync \
+            dumb-init \
+            libpcre3-dev
+          sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
       - name: Build Binaries
         run: |
-          sudo apt-get update	
-          sudo apt-get install -y make build-essential
           make linux
           make e2e-linux-amd64
           cp -r test/integration/testdata ./out
@@ -40,17 +64,20 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - name: Build Image
-        run: |          
-          docker images
-          make kic-base-image
-          docker images
-      - name: Info
-        shell: bash
+      # iso needs golang 1.11.3 
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.11.13'
+          stable: true
+      - name: Build ISO
         run: |
-          hostname
-          uname -r
-          lsb_release -a
+          whoami
+          make minikube_iso &> ./out/iso.log
+          make checksum
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+          stable: true
       - name: Install kubectl
         shell: bash
         run: |
@@ -63,21 +90,19 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
           sudo apt-get install -y jq
-          rm -f gopogh-linux-amd64 || true
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
-          KIC_VERSION=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
-          KIC_IMG_HEAD="local/kicbase:${KIC_VERSION}-snapshot"
           cd out
+          ls -lah
           mkdir -p report
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker   --base-image=${KIC_IMG_HEAD}"  -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=kvm2 --iso-url=file://$(pwd)/minikube.iso" -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -90,18 +115,22 @@ jobs:
           cd out
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(/usr/local/bin/gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
-          FailNum=$(echo $STAT | jq '.NumberOfFail' || true)
-          TestsNum=$(echo $STAT | jq '.NumberOfTests' || true)
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}
       - uses: actions/upload-artifact@v1
         with:
-          name: kic_image_functional_test_docker_ubuntu
+          name: iso_functional_test_kvm2_ubuntu
           path: out/report
-      - name: The End Result build_test_kic_image_docker_ubuntu
+      - uses: actions/upload-artifact@v1
+        with:
+          name: iso log
+          path: out/iso.log
+      - name: The End Result iso_functional_test_kvm2_ubuntu
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
@@ -116,4 +145,5 @@ jobs:
           numPass=$(echo $STAT | jq '.NumberOfPass')
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 32 ];then echo "*** Failed to pass at least 32 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi

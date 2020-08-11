@@ -37,7 +37,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -124,6 +123,8 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
+	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+
 	out.SetJSON(viper.GetString(startOutput) == "json")
 	displayVersion(version.GetVersion())
 
@@ -197,6 +198,17 @@ func runStart(cmd *cobra.Command, args []string) {
 			if !success {
 				exit.WithError("error provisioning host", err)
 			}
+		}
+	}
+
+	if existing != nil && existing.KubernetesConfig.ContainerRuntime == "crio" && driver.IsKIC(existing.Driver) {
+		// Stop and start again if it's crio because it's broken above v1.17.3
+		out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
+		out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
+		stopProfile(existing.Name)
+		starter, err = provisionWithDriver(cmd, ds, existing)
+		if err != nil {
+			exit.WithError("error provisioning host", err)
 		}
 	}
 
@@ -751,13 +763,13 @@ func validateUser(drvName string) {
 	}
 }
 
-// memoryLimits returns the amount of memory allocated to the system and hypervisor
+// memoryLimits returns the amount of memory allocated to the system and hypervisor , the return value is in MB
 func memoryLimits(drvName string) (int, int, error) {
-	v, err := mem.VirtualMemory()
+	info, err := machine.CachedHostInfo()
 	if err != nil {
 		return -1, -1, err
 	}
-	sysLimit := int(v.Total / 1024 / 1024)
+	sysLimit := int(info.Memory)
 	containerLimit := 0
 
 	if driver.IsKIC(drvName) {
@@ -809,6 +821,29 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 	return suggested
 }
 
+// validateMemoryHardLimit checks if the user system has enough memory at all !
+func validateMemoryHardLimit(drvName string) {
+	s, c, err := memoryLimits(drvName)
+	if err != nil {
+		glog.Warningf("Unable to query memory limits: %v", err)
+		out.WarningT("Failed to verify system memory limits.")
+	}
+	if s < 2200 {
+		out.WarningT("Your system has only {{.memory_amount}}MB memory. This might not work minimum required is 2000MB.", out.V{"memory_amount": s})
+	}
+	if driver.IsDockerDesktop(drvName) {
+		// in Docker Desktop if you allocate 2 GB the docker info shows:  Total Memory: 1.945GiB which becomes 1991 when we calculate the MBs
+		// thats why it is not same number as other drivers which is 2 GB
+		if c < 1991 {
+			out.WarningT(`Increase Docker for Desktop memory to at least 2.5GB or more:
+			
+	Docker for Desktop > Settings > Resources > Memory
+
+`)
+		}
+	}
+}
+
 // validateMemorySize validates the memory size matches the minimum recommended
 func validateMemorySize(req int, drvName string) {
 	sysLimit, containerLimit, err := memoryLimits(drvName)
@@ -816,32 +851,48 @@ func validateMemorySize(req int, drvName string) {
 		glog.Warningf("Unable to query memory limits: %v", err)
 	}
 
+	// maximm percent of their ram they could allocate to minikube to prevent #8708
+	maxAdvised := 0.79 * float64(sysLimit)
+	// a more sane alternative to their high memory 80%
+	minAdvised := 0.50 * float64(sysLimit)
+
 	if req < minUsableMem && !viper.GetBool(force) {
-		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB",
-			out.V{"requested": req, "mininum": minUsableMem})
+		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum_memory}}MB",
+			out.V{"requested": req, "minimum_memory": minUsableMem})
 	}
 	if req < minRecommendedMem && !viper.GetBool(force) {
 		out.WarningT("Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
 			out.V{"requested": req, "recommended": minRecommendedMem})
 	}
 
-	if driver.IsDockerDesktop(drvName) {
-		// in Docker Desktop if you allocate 2 GB the docker info shows:  Total Memory: 1.945GiB which becomes 1991 when we calculate the MBs
-		// thats why it is not same number as other drivers which is 2 GB
-		if containerLimit < 1991 {
-			out.WarningT(`Increase Docker for Desktop memory to at least 2.5GB or more:
-			
-	Docker for Desktop > Settings > Resources > Memory
-
-`)
-		} else if containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
-			out.WarningT(`Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3GB.
+	if driver.IsDockerDesktop(drvName) && containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
+		out.WarningT(`Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3GB.
 
 	Docker for Desktop  > Settings > Resources > Memory
 
 `, out.V{"container_limit": containerLimit, "system_limit": sysLimit})
-		}
 	}
+
+	if req > sysLimit && !viper.GetBool(force) {
+		out.T(out.Tip, "To suppress memory validations you can use --force flag.")
+		exit.WithCodeT(exit.Config, `Requested memory allocation {{.requested}}MB is more than your system limit {{.system_limit}}MB. Try specifying a lower memory:
+
+	miniube start --memory={{.min_advised}}mb				
+
+`,
+			out.V{"requested": req, "system_limit": sysLimit, "max_advised": int32(maxAdvised), "min_advised": minAdvised})
+
+	}
+
+	if float64(req) > maxAdvised && !viper.GetBool(force) {
+		out.WarningT(`You are allocating {{.requested}}MB to memory and your system only has {{.system_limit}}MB. You might face issues. try specifying a lower memory:
+
+		miniube start --memory={{.min_advised}}mb				
+
+`, out.V{"requested": req, "system_limit": sysLimit, "min_advised": minAdvised})
+		out.T(out.Tip, "To suppress and ignore this warning you can use --force flag.")
+	}
+
 }
 
 // validateCPUCount validates the cpu count matches the minimum recommended
@@ -906,16 +957,17 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 	validateCPUCount(drvName)
+	validateMemoryHardLimit(drvName)
 
 	if cmd.Flags().Changed(memory) {
+		if !driver.HasResourceLimits(drvName) {
+			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
+		}
 		req, err := util.CalculateSizeInMB(viper.GetString(memory))
 		if err != nil {
 			exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 		}
 		validateMemorySize(req, drvName)
-		if !driver.HasResourceLimits(drvName) {
-			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
-		}
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {

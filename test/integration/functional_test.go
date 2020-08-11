@@ -211,7 +211,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=2800", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -247,7 +247,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
 	}
 
-	softStartArgs := []string{"start", "-p", profile}
+	softStartArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=8"}
 	c := exec.CommandContext(ctx, Target(), softStartArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
@@ -901,12 +901,13 @@ func localEmptyCertPath() string {
 func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
-	err := copy.Copy("./testdata/sync.test", p)
+	syncFile := filepath.Join(*testdataDir, "sync.test")
+	err := copy.Copy(syncFile, p)
 	if err != nil {
-		t.Fatalf("failed to copy ./testdata/sync.test: %v", err)
+		t.Fatalf("failed to copy testdata/sync.test: %v", err)
 	}
 
-	testPem := "./testdata/minikube_test.pem"
+	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
 
 	// Write to a temp file for an atomic write
 	tmpPem := localTestCertPath() + ".pem"
@@ -955,9 +956,10 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 	got := rr.Stdout.String()
 	t.Logf("file sync test content: %s", got)
 
-	expected, err := ioutil.ReadFile("./testdata/sync.test")
+	syncFile := filepath.Join(*testdataDir, "sync.test")
+	expected, err := ioutil.ReadFile(syncFile)
 	if err != nil {
-		t.Errorf("failed to read test file '/testdata/sync.test' : %v", err)
+		t.Errorf("failed to read test file 'testdata/sync.test' : %v", err)
 	}
 
 	if diff := cmp.Diff(string(expected), got); diff != "" {
@@ -973,7 +975,8 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 
-	want, err := ioutil.ReadFile("./testdata/minikube_test.pem")
+	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
+	want, err := ioutil.ReadFile(testPem)
 	if err != nil {
 		t.Errorf("test file not found: %v", err)
 	}
