@@ -232,11 +232,11 @@ var dockerInfoGetter = func() (string, error) {
 // dockerSystemInfo returns docker system info --format '{{json .}}'
 func dockerSystemInfo() (dockerSysInfo, error) {
 	var ds dockerSysInfo
-	rawJson, err := dockerInfoGetter()
+	rawJSON, err := dockerInfoGetter()
 	if err != nil {
 		return ds, errors.Wrap(err, "docker system info")
 	}
-	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJson)), &ds); err != nil {
+	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ds); err != nil {
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
 
@@ -251,12 +251,12 @@ var podmanInfoGetter = func() (string, error) {
 // podmanSysInfo returns podman system info --format '{{json .}}'
 func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
-	rawJson, err := podmanInfoGetter()
+	rawJSON, err := podmanInfoGetter()
 	if err != nil {
 		return ps, errors.Wrap(err, "podman system info")
 	}
 
-	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJson)), &ps); err != nil {
+	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ps); err != nil {
 		return ps, errors.Wrapf(err, "unmarshal podman system info")
 	}
 	return ps, nil
