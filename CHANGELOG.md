@@ -1,6 +1,5 @@
 # Release Notes
 
-
 ## Version 1.12.3 - 2020-08-12
 
 Features:
@@ -10,6 +9,7 @@ Features:
 Bug Fixes:
 
 * Ignore localhost proxy started with scheme. [#8885](https://github.com/kubernetes/minikube/pull/8885)
+* Improve error handling for validating memory limits [#8959](https://github.com/kubernetes/minikube/pull/8959)
 * Skip validations if --force is supplied [#8969](https://github.com/kubernetes/minikube/pull/8969)
 * Fix handling of parseIP error [#8820](https://github.com/kubernetes/minikube/pull/8820)
 
@@ -17,9 +17,7 @@ Improvements:
 
 * GCP Auth Addon: Exit with better error messages [#8932](https://github.com/kubernetes/minikube/pull/8932)
 * Add warning for ingress addon enabled with driver of none [#8870](https://github.com/kubernetes/minikube/pull/8870)
-* Improve error handling for validating memory limits [#8959](https://github.com/kubernetes/minikube/pull/8959)
 * Update Japanese translation [#8967](https://github.com/kubernetes/minikube/pull/8967)
-* Update Japanese translation [#8878](https://github.com/kubernetes/minikube/pull/8878)
 * Fix for a few typos in polish translations [#8950](https://github.com/kubernetes/minikube/pull/8950)
 
 Thank you to our contributors for this release! 
