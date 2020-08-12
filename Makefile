@@ -567,7 +567,7 @@ push-storage-provisioner-image: storage-provisioner-image ## Push storage-provis
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable
-	(docker pull $(IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry")
+	docker pull $(IMAGE) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry"
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
 endif
