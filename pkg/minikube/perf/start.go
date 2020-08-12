@@ -58,7 +58,7 @@ func collectResults(ctx context.Context, binaries []*Binary, driver string) (*re
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
 			rm.addResult(binary, r)
-			r, err = timeEnableIngress(ctx, binary, driver)
+			r, err = timeEnableIngress(ctx, binary)
 			if err != nil {
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
@@ -91,7 +91,7 @@ func timeMinikubeStart(ctx context.Context, binary *Binary, driver string) (*res
 
 // timeEnableIngress returns the time it takes to execute `minikube addons enable ingress`
 // It deletes the VM after `minikube addons enable ingress`.
-func timeEnableIngress(ctx context.Context, binary *Binary, driver string) (*result, error) {
+func timeEnableIngress(ctx context.Context, binary *Binary) (*result, error) {
 	enableCmd := exec.CommandContext(ctx, binary.path, "addons enable ingress")
 	enableCmd.Stderr = os.Stderr
 
