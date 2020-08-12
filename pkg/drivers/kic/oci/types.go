@@ -31,6 +31,10 @@ const (
 	nodeRoleLabelKey = "role.minikube.sigs.k8s.io"
 	// CreatedByLabelKey is applied to any container/volume that is created by minikube created_by.minikube.sigs.k8s.io=true
 	CreatedByLabelKey = "created_by.minikube.sigs.k8s.io"
+	// DefaultGateway is the default gateway for the docker network created by the kic driver on linux
+	DefaultGateway = "192.168.39.1"
+	// DefaultIPRange is the default IP range for the docker network created by the kic driver on linux
+	DefaultIPRange = "192.168.39.0/24"
 )
 
 // CreateParams are parameters needed to create a container

@@ -62,15 +62,14 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 // gets the ip from user's host docker
 func dockerGatewayIP(profile string) (net.IP, error) {
 	// check if using custom network first
-	network := "bridge"
 	if networkExists(profile) {
-		network = profile
+		ip := net.ParseIP(DefaultGateway)
+		return ip, nil
 	}
-	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", fmt.Sprintf("name=%s", network), "--format", "{{.ID}}"))
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
 	if err != nil {
-		return nil, errors.Wrapf(err, "get network %s", network)
+		return nil, errors.Wrapf(err, "get network bridge")
 	}
-	fmt.Printf("%s\n%s\n", rr.Args, rr.Output())
 
 	bridgeID := strings.TrimSpace(rr.Stdout.String())
 	rr, err = runCmd(exec.Command(Docker, "network", "inspect",
@@ -78,9 +77,7 @@ func dockerGatewayIP(profile string) (net.IP, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect IP bridge network %q.", bridgeID)
 	}
-	fmt.Printf("%s\n%s\n", rr.Args, rr.Output())
 
-	fmt.Println(rr.Stdout.String())
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
 	glog.Infof("got host ip for mount in container by inspect docker network: %s", ip.String())
 	return ip, nil
@@ -172,14 +169,14 @@ func dockerContainerIP(name string) (string, string, error) {
 }
 
 // CreateNetwork creates a network
-func CreateNetwork(name, ipRange string) error {
+func CreateNetwork(name, ipRange, gateway string) error {
 	// check if the network already exists
 	if networkExists(name) {
 		return nil
 	}
 
 	subnet := fmt.Sprintf("--subnet=%s", ipRange)
-	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, name))
+	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet,"--gateway", gateway, name))
 	if err != nil {
 		return errors.Wrapf(err, "error creating network")
 	}
