@@ -571,7 +571,7 @@ push-docker: # Push docker image base on to IMAGE variable
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
 endif
-	docker push $(IMAGE) || gcloud docker -- push $(IMAGE)
+	docker push $(IMAGE)
 
 .PHONY: push-kic-base-image-gcr
 push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
