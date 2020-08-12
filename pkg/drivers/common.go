@@ -23,13 +23,13 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util"
 )
 
 // This file is for common code shared among internal machine drivers
@@ -51,12 +51,6 @@ func (d *CommonDriver) GetCreateFlags() []mcnflag.Flag {
 // SetConfigFromFlags is not implemented yet
 func (d *CommonDriver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	return nil
-}
-
-func diskSizeInMiB(diskSizeMB int) int64 {
-	result := int64(diskSizeMB)
-	result *= units.MiB
-	return result
 }
 
 func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
@@ -81,7 +75,7 @@ func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 		return errors.Wrapf(err, "closing file %s", diskPath)
 	}
 
-	if err := os.Truncate(diskPath, diskSizeInMiB(diskSizeMb)); err != nil {
+	if err := os.Truncate(diskPath, util.ConvertMBToBytes(diskSizeMb)); err != nil {
 		return errors.Wrap(err, "truncate")
 	}
 	return nil

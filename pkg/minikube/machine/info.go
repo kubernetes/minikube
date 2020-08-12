@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"os/exec"
 
-	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/golang/glog"
 	"github.com/shirou/gopsutil/cpu"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util"
 )
 
 // HostInfo holds information on the user's machine
@@ -37,10 +37,6 @@ type HostInfo struct {
 	Memory   int64
 	CPUs     int
 	DiskSize int64
-}
-
-func megs(bytes uint64) int64 {
-	return int64(bytes / units.MiB)
 }
 
 // CachedHostInfo returns system information such as memory,CPU, DiskSize
@@ -62,8 +58,8 @@ func CachedHostInfo() (*HostInfo, error, error, error) {
 
 	var info HostInfo
 	info.CPUs = len(i)
-	info.Memory = megs(v.Total)
-	info.DiskSize = megs(d.Total)
+	info.Memory = util.ConvertUnsignedBytesToMB(v.Total)
+	info.DiskSize = util.ConvertUnsignedBytesToMB(d.Total)
 	return &info, cpuErr, memErr, diskErr
 }
 
