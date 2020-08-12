@@ -111,12 +111,13 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 
 	// Block until the mount succeeds to avoid file race
 	checkMount := func() error {
-		_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p"))
+		t.Log(rr.Output())
 		return err
 	}
 
 	start := time.Now()
-	if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
+	if err := retry.Expo(checkMount, 5*time.Second, Seconds(15)); err != nil {
 		// For local testing, allow macOS users to click prompt. If they don't, skip the test.
 		if runtime.GOOS == "darwin" {
 			t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
