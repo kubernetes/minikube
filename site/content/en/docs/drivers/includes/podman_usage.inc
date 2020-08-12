@@ -4,7 +4,7 @@ This is an experimental driver. Please use it only for experimental reasons unti
 
 ## Usage
 
-It's recommended to run minikube with the podman driver and [CRI-O container runtime](https://https://cri-o.io/): 
+It's recommended to run minikube with the podman driver and [CRI-O container runtime](https://cri-o.io/): 
 
 ```shell
 minikube start --driver=podman --container-runtime=cri-o
