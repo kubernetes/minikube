@@ -68,8 +68,9 @@ func dockerGatewayIP(profile string) (net.IP, error) {
 	}
 	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", fmt.Sprintf("name=%s", network), "--format", "{{.ID}}"))
 	if err != nil {
-		return nil, errors.Wrapf(err, "get network bridge")
+		return nil, errors.Wrapf(err, "get network %s", network)
 	}
+	fmt.Printf("%s\n%s\n", rr.Args, rr.Output())
 
 	bridgeID := strings.TrimSpace(rr.Stdout.String())
 	rr, err = runCmd(exec.Command(Docker, "network", "inspect",
@@ -77,7 +78,9 @@ func dockerGatewayIP(profile string) (net.IP, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect IP bridge network %q.", bridgeID)
 	}
+	fmt.Printf("%s\n%s\n", rr.Args, rr.Output())
 
+	fmt.Println(rr.Stdout.String())
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
 	glog.Infof("got host ip for mount in container by inspect docker network: %s", ip.String())
 	return ip, nil
