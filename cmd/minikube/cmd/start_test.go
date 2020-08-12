@@ -18,12 +18,14 @@ package cmd
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/proxy"
 )
 
 func TestGetKubernetesVersion(t *testing.T) {
@@ -168,6 +170,20 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 			proxyIgnored: true,
 		},
 		{
+			description:  "http_proxy=http://localhost:3128",
+			proxy:        "http://localhost:3128",
+			proxyIgnored: true,
+		},
+		{
+			description:  "http_proxy=http://127.0.0.1:3128",
+			proxy:        "http://127.0.0.1:3128",
+			proxyIgnored: true,
+		},
+		{
+			description: "http_proxy=http://1.2.127.0:3128",
+			proxy:       "http://1.2.127.0:3128",
+		},
+		{
 			description: "http_proxy=1.2.3.4:3128",
 			proxy:       "1.2.3.4:3128",
 		},
@@ -181,14 +197,42 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
 				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
 			}
+
+			cfg.DockerEnv = []string{} // clear docker env to avoid pollution
+			proxy.SetDockerEnv()
 			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
-			// ignored proxy should not be in config
-			for _, v := range config.DockerEnv {
-				if v == test.proxy && test.proxyIgnored {
-					t.Fatalf("Value %v not expected in dockerEnv but occurred", v)
+			envPrefix := "HTTP_PROXY="
+			proxyEnv := envPrefix + test.proxy
+			if test.proxy == "" {
+				// If test.proxy is not set, ensure HTTP_PROXY is empty
+				for _, v := range config.DockerEnv {
+					if strings.HasPrefix(v, envPrefix) && len(v) > len(envPrefix) {
+						t.Fatalf("HTTP_PROXY should be empty but got %s", v)
+					}
+				}
+			} else {
+				if test.proxyIgnored {
+					// ignored proxy should not in config
+					for _, v := range config.DockerEnv {
+						if v == proxyEnv {
+							t.Fatalf("Value %v not expected in dockerEnv but occurred", test.proxy)
+						}
+					}
+				} else {
+					// proxy must in config
+					found := false
+					for _, v := range config.DockerEnv {
+						if v == proxyEnv {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Fatalf("Value %s expected in dockerEnv but not occurred", test.proxy)
+					}
 				}
 			}
 		})
