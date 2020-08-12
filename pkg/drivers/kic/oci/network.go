@@ -176,7 +176,7 @@ func CreateNetwork(name, ipRange, gateway string) error {
 	}
 
 	subnet := fmt.Sprintf("--subnet=%s", ipRange)
-	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet,"--gateway", gateway, name))
+	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, "--gateway", gateway, name))
 	if err != nil {
 		return errors.Wrapf(err, "error creating network")
 	}
