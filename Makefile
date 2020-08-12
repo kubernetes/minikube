@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 12
-VERSION_BUILD ?= 2
+VERSION_BUILD ?= 3
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -576,6 +576,10 @@ endif
 .PHONY: push-kic-base-image-gcr
 push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
 	docker login gcr.io/k8s-minikube
+	(docker pull $(IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry")
+ifndef AUTOPUSH
+	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
+endif
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GCR)
 
 .PHONY: push-kic-base-image-gh
