@@ -111,8 +111,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 
 	// Block until the mount succeeds to avoid file race
 	checkMount := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p"))
-		t.Log(rr.Output())
+		_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p"))
 		return err
 	}
 
