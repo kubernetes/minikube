@@ -53,6 +53,9 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 	}
 
 	for _, c := range cs {
+		if err := removeNetwork(c); err != nil {
+			deleteErrs = append(deleteErrs, errors.Wrap(err, "removing network"))
+		}
 		_, err := ContainerStatus(ociBin, c)
 		// only try to delete if docker/podman inspect returns
 		// if it doesn't it means docker daemon is stuck and needs restart
@@ -84,10 +87,6 @@ func DeleteContainer(ociBin string, name string) error {
 	// try to delete anyways
 	if err := ShutDown(ociBin, name); err != nil {
 		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
-	}
-
-	if err := removeNetwork(name); err != nil {
-		glog.Warningf("error deleting network: %v", err)
 	}
 
 	if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
