@@ -196,7 +196,7 @@ func networkExists(name string) bool {
 	}
 	networks := strings.Split(rr.Output(), "\n")
 	for _, n := range networks {
-		if n == name {
+		if strings.Trim(n, "\n") == name {
 			return true
 		}
 	}
