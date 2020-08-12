@@ -33,7 +33,7 @@ import (
 func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, error) {
 	if ociBin == Docker {
 		if runtime.GOOS == "linux" {
-			return dockerGatewayIP()
+			return dockerGatewayIP(containerName)
 		}
 		// for windows and mac, the gateway ip is not routable so we use dns trick.
 		return digDNS(ociBin, containerName, "host.docker.internal")
@@ -60,8 +60,13 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 
 // dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
 // gets the ip from user's host docker
-func dockerGatewayIP() (net.IP, error) {
-	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
+func dockerGatewayIP(profile string) (net.IP, error) {
+	// check if using custom network first
+	network := "bridge"
+	if networkExists(profile) {
+		network = profile
+	}
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", fmt.Sprintf("name=%s", network), "--format", "{{.ID}}"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "get network bridge")
 	}
