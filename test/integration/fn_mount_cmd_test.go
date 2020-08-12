@@ -116,7 +116,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	}
 
 	start := time.Now()
-	if err := retry.Expo(checkMount, 5*time.Second, Seconds(15)); err != nil {
+	if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
 		// For local testing, allow macOS users to click prompt. If they don't, skip the test.
 		if runtime.GOOS == "darwin" {
 			t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
