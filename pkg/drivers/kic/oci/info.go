@@ -42,6 +42,9 @@ func CachedDaemonInfo(ociBin string) (SysInfo, error) {
 		cachedSysInfo = &si
 		cachedSysInfoErr = &err
 	}
+	if cachedSysInfoErr == nil {
+		return *cachedSysInfo, nil
+	}
 	return *cachedSysInfo, *cachedSysInfoErr
 }
 
@@ -224,30 +227,39 @@ type podmanSysInfo struct {
 	} `json:"store"`
 }
 
+var dockerInfoGetter = func() (string, error) {
+	rr, err := runCmd(exec.Command(Docker, "system", "info", "--format", "{{json .}}"))
+	return rr.Stdout.String(), err
+}
+
 // dockerSystemInfo returns docker system info --format '{{json .}}'
 func dockerSystemInfo() (dockerSysInfo, error) {
 	var ds dockerSysInfo
-	rr, err := runCmd(exec.Command(Docker, "system", "info", "--format", "{{json .}}"))
+	rawJSON, err := dockerInfoGetter()
 	if err != nil {
-		return ds, errors.Wrap(err, "get docker system info")
+		return ds, errors.Wrap(err, "docker system info")
 	}
-
-	if err := json.Unmarshal([]byte(strings.TrimSpace(rr.Stdout.String())), &ds); err != nil {
+	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ds); err != nil {
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
 
 	return ds, nil
 }
 
+var podmanInfoGetter = func() (string, error) {
+	rr, err := runCmd(exec.Command(Podman, "system", "info", "--format", "json"))
+	return rr.Stdout.String(), err
+}
+
 // podmanSysInfo returns podman system info --format '{{json .}}'
 func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
-	rr, err := runCmd(exec.Command(Podman, "system", "info", "--format", "json"))
+	rawJSON, err := podmanInfoGetter()
 	if err != nil {
-		return ps, errors.Wrap(err, "get podman system info")
+		return ps, errors.Wrap(err, "podman system info")
 	}
 
-	if err := json.Unmarshal([]byte(strings.TrimSpace(rr.Stdout.String())), &ps); err != nil {
+	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ps); err != nil {
 		return ps, errors.Wrapf(err, "unmarshal podman system info")
 	}
 	return ps, nil
