@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -793,7 +794,7 @@ func memoryLimits(drvName string) (int, int, error) {
 		if err != nil {
 			return -1, -1, err
 		}
-		containerLimit = int(s.TotalMemory / 1024 / 1024)
+		containerLimit = int(s.TotalMemory / units.MiB)
 	}
 
 	return sysLimit, containerLimit, nil

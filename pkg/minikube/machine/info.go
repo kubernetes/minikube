@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 
+	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/golang/glog"
 	"github.com/shirou/gopsutil/cpu"
@@ -39,7 +40,7 @@ type HostInfo struct {
 }
 
 func megs(bytes uint64) int64 {
-	return int64(bytes / 1024 / 1024)
+	return int64(bytes / units.MiB)
 }
 
 // CachedHostInfo returns system information such as memory,CPU, DiskSize
