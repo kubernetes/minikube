@@ -576,10 +576,6 @@ endif
 .PHONY: push-kic-base-image-gcr
 push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
 	docker login gcr.io/k8s-minikube
-	(docker pull $(IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry")
-ifndef AUTOPUSH
-	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
-endif
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GCR)
 
 .PHONY: push-kic-base-image-gh
