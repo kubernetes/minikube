@@ -27,8 +27,6 @@ const (
 	Version = "v0.0.11"
 	// SHA of the kic base image
 	baseImageSHA = "6fee59db7d67ed8ae6835e4bcb02f32056dc95f11cb369c51e352b62dd198aa0"
-
-	defaultIPRange = "192.168.39.0/24"
 )
 
 var (
