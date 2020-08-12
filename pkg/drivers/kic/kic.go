@@ -85,7 +85,7 @@ func (d *Driver) Create() error {
 		glog.Warningf("unable to create docker network; node ip may not be stable: %v", err)
 	} else {
 		params.Network = defaultNetwork
-		params.IP = "192.168.39.2"
+		params.IP = oci.DefaultIP
 	}
 
 	// control plane specific options
