@@ -43,7 +43,7 @@ function check_and_install_golang() {
       install_golang "$VERSION_TO_INSTALL" "$INSTALL_PATH"
     fi
   else
-    echo "ERROR: Failed to parse golang version: $HOST_VERSION"
+    echo "ERROR: Failed to parse golang version: $(go version)"
     return
   fi
 }

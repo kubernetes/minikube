@@ -141,15 +141,20 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
-	// to match both ingress and ingress-dns adons
-	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
-		exit.UsageT(`Due to {{.driver_name}} networking limitations on {{.os_name}}, {{.addon_name}} addon is not supported for this driver.
+	// to match both ingress and ingress-dns addons
+	if strings.HasPrefix(name, "ingress") && enable {
+		if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
+			exit.UsageT(`Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
 Alternatively to use this addon you can use a vm-based driver:
 
 	'minikube start --vm=true'
 
 To track the update on this work in progress feature please check:
 https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
+		} else if driver.BareMetal(cc.Driver) {
+			exit.UsageT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not supported. Try using a different driver.`,
+				out.V{"driver_name": cc.Driver, "addon_name": name})
+		}
 	}
 
 	if strings.HasPrefix(name, "istio") && enable {

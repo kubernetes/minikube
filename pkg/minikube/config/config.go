@@ -150,8 +150,8 @@ func encode(w io.Writer, m MinikubeConfig) error {
 }
 
 // Load loads the Kubernetes and machine config for the current machine
-func Load(profile string) (*ClusterConfig, error) {
-	return DefaultLoader.LoadConfigFromFile(profile)
+func Load(profile string, miniHome ...string) (*ClusterConfig, error) {
+	return DefaultLoader.LoadConfigFromFile(profile, miniHome...)
 }
 
 // Write writes the Kubernetes and machine config for the current machine
