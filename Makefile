@@ -567,22 +567,25 @@ push-storage-provisioner-image: storage-provisioner-image ## Push storage-provis
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable
-	(docker pull $(IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry")
+	@docker pull $(IMAGE) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry"
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
 endif
-	docker push $(IMAGE) || gcloud docker -- push $(IMAGE)
+	docker push $(IMAGE)
 
 .PHONY: push-kic-base-image-gcr
 push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
+	docker login gcr.io/k8s-minikube
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GCR)
 
 .PHONY: push-kic-base-image-gh
 push-kic-base-image-gh: kic-base-image ## Push kic-base to github
+	docker login docker.pkg.github.com
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GH)
 
 .PHONY: push-kic-base-image-hub
 push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
+	docker login
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
 
 .PHONY: push-kic-base-image
