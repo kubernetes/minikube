@@ -343,6 +343,18 @@ func TestUpdateIP(t *testing.T) {
 			if test.status != statusActual {
 				t.Errorf("Expected status %t, but got %t", test.status, statusActual)
 			}
+
+			actual, err := readOrNew(configFilename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expected, err := decode(test.expCfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !configEquals(actual, expected) {
+				t.Errorf("Expected cfg %v, but got %v", expected, actual)
+			}
 		})
 
 	}
