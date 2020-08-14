@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: extdns-etcd
+  namespace: kube-system
+  labels:
+    app: extdns-etcd
+spec:
+  selector:
+    app: extdns-etcd
+  clusterIP: None
+  ports:
+  - name: etcd-client
+    port: 2379
+  - name: etcd-server
+    port: 2380
+  publishNotReadyAddresses: true
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: extdns-etcd
+  namespace: kube-system
+  labels:
+    app: extdns-etcd
+spec:
+  selector:
+    matchLabels:
+      app: extdns-etcd
+  serviceName: extdns-etcd
+  template:
+    metadata:
+      labels:
+        app: extdns-etcd
+    spec:
+      containers:
+      - name: etcd
+        image: k8s.gcr.io/etcd:3.4.3-0
+        command:
+        - etcd
+        - --data-dir=/etcd-data
+        - --name=$(HOSTNAME)
+        - --initial-advertise-peer-urls=http://$(HOSTNAME).extdns-etcd:2380
+        - --listen-peer-urls=http://0.0.0.0:2380
+        - --advertise-client-urls=http://$(HOSTNAME).extdns-etcd:2379
+        - --listen-client-urls=http://0.0.0.0:2379
+        - --initial-cluster=$(HOSTNAME)=http://$(HOSTNAME).extdns-etcd:2380
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: extdns-etcd
+          mountPath: /etcd-data
+        ports:
+        - name: etcd-client
+          containerPort: 2379
+        - name: etcd-server
+          containerPort: 2380
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -ec
+            - ETCDCTL_API=3 etcdctl endpoint health
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -ec
+            - ETCDCTL_API=3 etcdctl endpoint health
+          failureThreshold: 3
+          initialDelaySeconds: 1
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: extdns-etcd
+      labels:
+        app: extdns-etcd
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi

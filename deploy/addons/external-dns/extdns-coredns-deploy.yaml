@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extdns-coredns
+  namespace: kube-system
+  labels:
+    app: extdns-coredns
+spec:
+  selector:
+    matchLabels:
+      app: extdns-coredns
+  template:
+    metadata:
+      labels:
+        app: extdns-coredns
+    spec:
+      containers:
+      - name: coredns
+        image: k8s.gcr.io/coredns:1.6.7
+        args:
+        - -conf
+        - /etc/coredns/Corefile
+        volumeMounts:
+        - mountPath: /etc/coredns
+          name: config-volume
+        ports:
+        - containerPort: 53
+          name: dns
+          protocol: UDP
+          # hostIP: {{.NodeIP}} ???
+          # hostPort: 53
+        - containerPort: 53
+          name: dns-tcp
+          protocol: TCP
+          # hostIP: {{.NodeIP}} ???
+          # hostPort: 53
+        - containerPort: 9153
+          name: metrics
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8181
+            scheme: HTTP
+          periodSeconds: 10
+          failureThreshold: 3
+          successThreshold: 1
+          timeoutSeconds: 1
+      volumes:
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: Corefile
+            path: Corefile
+          name: extdns-coredns
+        name: config-volume

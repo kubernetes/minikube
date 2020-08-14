@@ -182,4 +182,9 @@ var Addons = []*Addon{
 		validations: []setFn{IsVolumesnapshotsEnabled},
 		callbacks:   []setFn{enableOrDisableAddon, verifyAddonStatus},
 	},
+	{
+		name:      "external-dns",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 }

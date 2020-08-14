@@ -540,6 +540,32 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "csi-hostpath-driver"),
+	"external-dns": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/external-dns/extdns-etcd-statefulset.yaml",
+			vmpath.GuestAddonsDir,
+			"extdns-etcd-statefulset.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/external-dns/extdns-coredns-deploy.yaml",
+			vmpath.GuestAddonsDir,
+			"extdns-coredns-deploy.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/external-dns/extdns-coredns-configmap.yaml",
+			vmpath.GuestAddonsDir,
+			"extdns-coredns-configmap.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/external-dns/external-dns.yaml",
+			vmpath.GuestAddonsDir,
+			"external-dns.yaml",
+			"0640",
+			false),
+	}, false, "external-dns"),
 }
 
 // GenerateTemplateData generates template data for template assets
