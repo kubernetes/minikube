@@ -75,8 +75,9 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	_, callingCmd := filepath.Split(os.Args[0])
+
 	if callingCmd == "kubectl" {
-		os.Args = append([]string{"minikube", callingCmd}, os.Args[1:]...)
+		os.Args = append([]string{RootCmd.Use, callingCmd}, os.Args[1:]...)
 	}
 	for _, c := range RootCmd.Commands() {
 		c.Short = translate.T(c.Short)
