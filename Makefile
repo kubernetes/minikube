@@ -563,7 +563,8 @@ upload-preloaded-images-tar: out/minikube # Upload the preloaded images for olde
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
-	gcloud docker -- push $(STORAGE_PROVISIONER_IMAGE)
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(STORAGE_PROVISIONER_IMAGE)
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable
@@ -607,7 +608,8 @@ gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
-	gcloud docker -- push $(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum  ## Build and release .iso file
