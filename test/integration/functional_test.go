@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	//	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -86,6 +87,7 @@ func TestFunctional(t *testing.T) {
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
+			{"MinikubeKubectlCmdDirectly",validateMinikubeKubectlDirectCall},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -305,6 +307,26 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 	if err != nil {
 		t.Fatalf("failed to get pods. args %q: %v", rr.Command(), err)
 	}
+}
+
+// validateMinikubeKubectlDirectCall validates that calling minikube's kubectl
+func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+	dir := filepath.Dir(Target())
+	dstfn := filepath.Join(dir, "kubectl")
+	err := os.Link(Target(), dstfn)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(dstfn) // clean up
+
+	kubectlArgs := []string{"-p", profile, "--", "--context", profile, "get", "pods"}
+	rr, err := Run(t, exec.CommandContext(ctx, dstfn, kubectlArgs...))
+	if err != nil {
+		t.Fatalf("failed to run kubectl directl. args %q: %v", rr.Command(), err)
+	}
+
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
