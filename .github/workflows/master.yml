@@ -349,6 +349,8 @@ jobs:
           (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
+          choco install -y caffeine
+          caffeine
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
         continue-on-error: true
@@ -485,6 +487,8 @@ jobs:
           (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
           choco install -y kubernetes-cli
           choco install -y jq
+          choco install -y caffeine
+          caffeine
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
         continue-on-error: true
