@@ -87,7 +87,7 @@ func TestFunctional(t *testing.T) {
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
-			{"MinikubeKubectlCmdDirectly",validateMinikubeKubectlDirectCall},
+			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 		}
 		for _, tc := range tests {
 			tc := tc
