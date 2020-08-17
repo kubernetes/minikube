@@ -1248,7 +1248,3 @@ jobs:
         with:
           name: all_reports
           path: all_reports
-      - uses: actions/upload-artifact@v1
-        with:
-          name: all_reports
-          path: all_reports
