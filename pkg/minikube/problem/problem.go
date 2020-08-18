@@ -104,6 +104,7 @@ func FromError(err error, goos string) *Problem {
 		netProblems,
 		deployProblems,
 		stateProblems,
+		dockerProblems,
 	}
 
 	var osMatch *Problem

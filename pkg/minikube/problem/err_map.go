@@ -578,3 +578,12 @@ var stateProblems = map[string]match{
 		Issues: []int{7256},
 	},
 }
+
+// dockerProblems are issues relating to issues with the docker driver
+var dockerProblems = map[string]match{
+	"NO_SPACE_ON_DEVICE": {
+		Regexp: re(`No space left on device`),
+		Advice: "Run 'docker system prune' to delete unused data and free up space on the device",
+		Issues: []int{9024},
+	},
+}
