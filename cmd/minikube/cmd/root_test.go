@@ -115,7 +115,7 @@ func hideEnv(t *testing.T) func(t *testing.T) {
 func TestPreRunDirectories(t *testing.T) {
 	// Make sure we create the required directories.
 	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
+	defer tests.RemoveTempDir(tempDir)
 
 	runCommand(RootCmd.PersistentPreRun)
 

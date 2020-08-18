@@ -18,11 +18,13 @@ package node
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -66,12 +68,44 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, errors.Wrap(err, "retrieve")
 	}
 
+	m := driver.MachineName(cc, *n)
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return n, err
 	}
 
-	err = machine.DeleteHost(api, driver.MachineName(cc, *n))
+	// grab control plane to use kubeconfig
+	host, err := machine.LoadHost(api, cc.Name)
+	if err != nil {
+		return n, err
+	}
+
+	runner, err := machine.CommandRunner(host)
+	if err != nil {
+		return n, err
+	}
+
+	// kubectl drain
+	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
+	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "drain", m)
+	if _, err := runner.RunCmd(cmd); err != nil {
+		glog.Warningf("unable to scale coredns replicas to 1: %v", err)
+	} else {
+		glog.Infof("successfully scaled coredns replicas to 1")
+	}
+
+	// kubectl delete
+	client, err := kapi.Client(cc.Name)
+	if err != nil {
+		return n, err
+	}
+
+	err = client.CoreV1().Nodes().Delete(m, nil)
+	if err != nil {
+		return n, err
+	}
+
+	err = machine.DeleteHost(api, m)
 	if err != nil {
 		return n, err
 	}

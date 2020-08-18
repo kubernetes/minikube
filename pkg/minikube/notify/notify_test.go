@@ -43,7 +43,7 @@ func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
 
 func TestShouldCheckURL(t *testing.T) {
 	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
+	defer tests.RemoveTempDir(tempDir)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
@@ -152,7 +152,7 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 
 func TestMaybePrintUpdateText(t *testing.T) {
 	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
+	defer tests.RemoveTempDir(tempDir)
 	outputBuffer := tests.NewFakeFile()
 	out.SetErrFile(outputBuffer)
 

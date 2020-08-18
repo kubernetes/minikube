@@ -19,18 +19,15 @@ package machine
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
+	testutil "k8s.io/minikube/pkg/minikube/tests"
 )
 
 const vboxConfig = `
@@ -113,24 +110,9 @@ func TestLocalClientNewHost(t *testing.T) {
 	}
 }
 
-func makeTempDir() string {
-	tempDir, err := ioutil.TempDir("", "minipath")
-	if err != nil {
-		log.Fatal(err)
-	}
-	tempDir = filepath.Join(tempDir, ".minikube")
-	os.Setenv(localpath.MinikubeHome, tempDir)
-	return localpath.MiniPath()
-}
-
 func TestRunNotDriver(t *testing.T) {
-	tempDir := makeTempDir()
-	defer func() { //clean up tempdir
-		err := os.RemoveAll(tempDir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", tempDir)
-		}
-	}()
+	tempDir := testutil.MakeTempDir()
+	defer testutil.RemoveTempDir(tempDir)
 	StartDriver()
 	if !localbinary.CurrentBinaryIsDockerMachine {
 		t.Fatal("CurrentBinaryIsDockerMachine not set. This will break driver initialization.")
@@ -140,8 +122,8 @@ func TestRunNotDriver(t *testing.T) {
 func TestRunDriver(t *testing.T) {
 	// This test is a bit complicated. It verifies that when the root command is
 	// called with the proper environment variables, we setup the libmachine driver.
-	tempDir := makeTempDir()
-	defer os.RemoveAll(tempDir)
+	tempDir := testutil.MakeTempDir()
+	defer testutil.RemoveTempDir(tempDir)
 
 	os.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)
 	os.Setenv(localbinary.PluginEnvDriverName, driver.VirtualBox)

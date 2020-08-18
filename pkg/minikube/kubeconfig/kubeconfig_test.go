@@ -263,6 +263,7 @@ func TestVerifyEndpoint(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
+			defer os.Remove(configFilename)
 			err := VerifyEndpoint("minikube", test.hostname, test.port, configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
@@ -330,6 +331,7 @@ func TestUpdateIP(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
+			defer os.Remove(configFilename)
 			statusActual, err := UpdateEndpoint("minikube", test.hostname, test.port, configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
@@ -372,7 +374,12 @@ func TestNewConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() {
+		err := os.RemoveAll(dir)
+		if err != nil {
+			t.Errorf("Failed to remove dir %q: %v", dir, err)
+		}
+	}()
 
 	// setup minikube config
 	expected := api.NewConfig()
@@ -419,6 +426,7 @@ func Test_Endpoint(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			configFilename := tempFile(t, test.cfg)
+			defer os.Remove(configFilename)
 			hostname, port, err := Endpoint("minikube", configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)

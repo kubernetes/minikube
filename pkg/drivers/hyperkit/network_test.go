@@ -20,7 +20,6 @@ package hyperkit
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -51,7 +50,7 @@ var validLeases = []byte(`{
 
 func Test_getIpAddressFromFile(t *testing.T) {
 	tmpdir := tests.MakeTempDir()
-	defer os.RemoveAll(tmpdir)
+	defer tests.RemoveTempDir(tmpdir)
 
 	dhcpFile := filepath.Join(tmpdir, "dhcp")
 	if err := ioutil.WriteFile(dhcpFile, validLeases, 0644); err != nil {

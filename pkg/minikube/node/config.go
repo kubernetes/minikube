@@ -32,17 +32,19 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
+	register.Reg.SetStep(register.PreparingKubernetes)
 	out.T(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 	for _, v := range config.DockerOpt {
-		out.T(out.Option, "opt {{.docker_option}}", out.V{"docker_option": v})
+		out.Infof("opt {{.docker_option}}", out.V{"docker_option": v})
 	}
 	for _, v := range config.DockerEnv {
-		out.T(out.Option, "env {{.docker_env}}", out.V{"docker_env": v})
+		out.Infof("env {{.docker_env}}", out.V{"docker_env": v})
 	}
 }
 

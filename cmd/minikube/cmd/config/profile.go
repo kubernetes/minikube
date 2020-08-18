@@ -30,7 +30,7 @@ import (
 // ProfileCmd represents the profile command
 var ProfileCmd = &cobra.Command{
 	Use:   "profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikube profile by running `minikube profile default`",
-	Short: "Get or list the the current profiles (clusters)",
+	Short: "Get or list the current profiles (clusters)",
 	Long:  "profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -47,7 +47,7 @@ var ProfileCmd = &cobra.Command{
 		// Check whether the profile name is container friendly
 		if !config.ProfileNameValid(profile) {
 			out.WarningT("Profile name '{{.profilename}}' is not valid", out.V{"profilename": profile})
-			exit.UsageT("Only alphanumeric, dots, underscores and dashes '-' are permitted. Minimum 2 characters, starting by alphanumeric.")
+			exit.UsageT("Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
 		}
 		/**
 		we need to add code over here to check whether the profile

@@ -64,8 +64,13 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
 	// Skip loading images if images already exist
-	if cruntime.ImagesPreloaded(cc.KubernetesConfig.ContainerRuntime, runner, images) {
+	if cr.ImagesPreloaded(images) {
 		glog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
@@ -78,15 +83,12 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 
 	var g errgroup.Group
 
-	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
-	if err != nil {
-		return errors.Wrap(err, "runtime")
-	}
-
-	imgClient, err := client.NewClientWithOpts(client.FromEnv) // image client
-	if err != nil {
-		glog.Infof("couldn't get a local image daemon which might be ok: %v", err)
-		imgClient = nil
+	var imgClient *client.Client
+	if cr.Name() == "Docker" {
+		imgClient, err = client.NewClientWithOpts(client.FromEnv) // image client
+		if err != nil {
+			glog.Infof("couldn't get a local image daemon which might be ok: %v", err)
+		}
 	}
 
 	for _, image := range images {

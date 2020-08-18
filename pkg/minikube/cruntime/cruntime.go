@@ -107,6 +107,8 @@ type Manager interface {
 	SystemLogCmd(int) string
 	// Preload preloads the container runtime with k8s images
 	Preload(config.KubernetesConfig) error
+	// ImagesPreloaded returns true if all images have been preloaded
+	ImagesPreloaded([]string) bool
 }
 
 // Config is runtime configuration
@@ -226,15 +228,4 @@ func enableIPForwarding(cr CommandRunner) error {
 		return errors.Wrapf(err, "ip_forward")
 	}
 	return nil
-}
-
-// ImagesPreloaded returns true if all images have been preloaded
-func ImagesPreloaded(containerRuntime string, runner command.Runner, images []string) bool {
-	if containerRuntime == "docker" {
-		return dockerImagesPreloaded(runner, images)
-	}
-	if containerRuntime == "containerd" {
-		return containerdImagesPreloaded(runner, images)
-	}
-	return false
 }

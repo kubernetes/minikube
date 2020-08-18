@@ -3,7 +3,7 @@
 os: linux
 language: go
 go:
-  - 1.13.9
+  - 1.14.6
 env:
   global:
     - GOPROXY=https://proxy.golang.org
@@ -11,7 +11,7 @@ matrix:
   include:
     - language: go
       name: Code Lint
-      go: 1.13.9
+      go: 1.14.6
       env:
         - TESTSUITE=lintall
       before_install:
@@ -20,7 +20,7 @@ matrix:
 
     - language: go
       name: Unit Test
-      go: 1.13.9
+      go: 1.14.6
       env:
         - TESTSUITE=unittest
       before_install:
@@ -29,7 +29,7 @@ matrix:
 
     - language: go
       name: Build
-      go: 1.13.9
+      go: 1.14.6
       script: make
 after_success:
   - bash <(curl -s https://codecov.io/bash)

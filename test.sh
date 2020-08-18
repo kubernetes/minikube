@@ -67,6 +67,7 @@ then
         ${pkgs} \
         && echo ok || ((exitcode += 32))
     tail -n +2 "${cov_tmp}" >>"${COVERAGE_PATH}"
+    rm ${cov_tmp}
 fi
 
 exit "${exitcode}"

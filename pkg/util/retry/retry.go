@@ -36,6 +36,7 @@ func Local(callback func() error, maxTime time.Duration) error {
 	b.InitialInterval = 250 * time.Millisecond
 	b.RandomizationFactor = 0.25
 	b.Multiplier = 1.25
+	b.MaxElapsedTime = maxTime
 	return backoff.RetryNotify(callback, b, notify)
 }
 

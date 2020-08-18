@@ -53,6 +53,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
@@ -161,11 +162,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 
-		glog.Infof("Will wait %s for node ...", waitTimeout)
-		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
-			return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
-		}
-
 	} else {
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
 			return nil, errors.Wrap(err, "update node")
@@ -196,6 +192,11 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
+	glog.Infof("Will wait %s for node ...", waitTimeout)
+	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
+		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
+	}
+
 	glog.Infof("waiting for startup goroutines ...")
 	wg.Wait()
 
@@ -205,7 +206,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 // Provision provisions the machine/container for the node
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
-
+	register.Reg.SetStep(register.StartingNode)
 	name := driver.MachineName(*cc, *n)
 	if apiServer {
 		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
@@ -288,7 +289,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		exit.WithError("Failed to get bootstrapper", err)
 	}
 	for _, eo := range config.ExtraOptions {
-		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
+		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
 	// update cluster and set up certs
@@ -423,7 +424,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 				out.T(out.Internet, "Found network options:")
 				optSeen = true
 			}
-			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
+			out.Infof("{{.key}}={{.value}}", out.V{"key": k, "value": v})
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
 			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
@@ -509,6 +510,7 @@ func tryRegistry(r command.Runner, driverName string, imageRepository string) {
 
 // prepareNone prepares the user and host for the joy of the "none" driver
 func prepareNone() {
+	register.Reg.SetStep(register.ConfiguringLHEnv)
 	out.T(out.StartingNone, "Configuring local host environment ...")
 	if viper.GetBool(config.WantNoneDriverWarning) {
 		out.ErrT(out.Empty, "")

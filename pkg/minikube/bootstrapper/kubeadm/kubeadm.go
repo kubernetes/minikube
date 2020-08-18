@@ -55,6 +55,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
@@ -224,9 +225,15 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	conf := bsutil.KubeadmYamlPath
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
+	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
+	defer cancel()
+	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	if _, err := k.c.RunCmd(c); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return ErrInitTimedout
+		}
+
 		if strings.Contains(err.Error(), "'kubeadm': Permission denied") {
 			return ErrNoExecLinux
 		}
@@ -389,15 +396,15 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 
-	if !n.ControlPlane {
-		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
-		return nil
-	}
-
+	register.Reg.SetStep(register.VerifyingKubernetes)
 	out.T(out.HealthCheck, "Verifying Kubernetes components...")
 
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
-	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &n, cfg.Driver)
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "get primary control plane")
+	}
+	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
 	}
@@ -422,31 +429,33 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
 	}
 
-	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
-		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
-			return errors.Wrap(err, "wait for apiserver proc")
+	if n.ControlPlane {
+		if cfg.VerifyComponents[kverify.APIServerWaitKey] {
+			if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
+				return errors.Wrap(err, "wait for apiserver proc")
+			}
+
+			if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
+				return errors.Wrap(err, "wait for healthy API server")
+			}
 		}
 
-		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
-			return errors.Wrap(err, "wait for healthy API server")
+		if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
+			if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
+				return errors.Wrap(err, "waiting for system pods")
+			}
 		}
-	}
 
-	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
-		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
-			return errors.Wrap(err, "waiting for system pods")
+		if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+			if err := kverify.WaitForDefaultSA(client, timeout); err != nil {
+				return errors.Wrap(err, "waiting for default service account")
+			}
 		}
-	}
 
-	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
-		if err := kverify.WaitForDefaultSA(client, timeout); err != nil {
-			return errors.Wrap(err, "waiting for default service account")
-		}
-	}
-
-	if cfg.VerifyComponents[kverify.AppsRunningKey] {
-		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
-			return errors.Wrap(err, "waiting for apps_running")
+		if cfg.VerifyComponents[kverify.AppsRunningKey] {
+			if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
+				return errors.Wrap(err, "waiting for apps_running")
+			}
 		}
 	}
 
@@ -545,6 +554,14 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		return nil
 	}
 
+	if err := k.stopKubeSystem(cfg); err != nil {
+		glog.Warningf("Failed to stop kube-system containers: port conflicts may arise: %v", err)
+	}
+
+	if err := sysinit.New(k.c).Stop("kubelet"); err != nil {
+		glog.Warningf("Failed to stop kubelet, this might cause upgrade errors: %v", err)
+	}
+
 	if err := k.clearStaleConfigs(cfg); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
 	}
@@ -555,6 +572,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 
 	baseCmd := fmt.Sprintf("%s %s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), phase)
 	cmds := []string{
+		fmt.Sprintf("%s phase kubelet-start --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase certs all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, conf),
@@ -722,7 +740,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) er
 	return err
 }
 
-// UpdateCluster updates the cluster.
+// UpdateCluster updates the control plane with cluster-level info.
 func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
@@ -745,11 +763,14 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		}
 	}
 
-	for _, n := range cfg.Nodes {
-		err := k.UpdateNode(cfg, n, r)
-		if err != nil {
-			return errors.Wrap(err, "updating node")
-		}
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "getting control plane")
+	}
+
+	err = k.UpdateNode(cfg, cp, r)
+	if err != nil {
+		return errors.Wrap(err, "updating control plane")
 	}
 
 	return nil
@@ -827,8 +848,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
 	nameLbl := "minikube.k8s.io/name=" + cfg.Name
 
-	// Allow no more than 5 seconds for applying labels
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
 	defer cancel()
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl label nodes minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
@@ -837,6 +857,9 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 
 	if _, err := k.c.RunCmd(cmd); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return errors.Wrapf(err, "timeout apply labels")
+		}
 		return errors.Wrapf(err, "applying node labels")
 	}
 	return nil
@@ -850,7 +873,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	}()
 
 	// Allow no more than 5 seconds for creating cluster role bindings
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
 	defer cancel()
 	rbacName := "minikube-rbac"
 	// kubectl create clusterrolebinding minikube-rbac --clusterrole=cluster-admin --serviceaccount=kube-system:default
@@ -859,10 +882,14 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return errors.Wrapf(err, "timeout apply sa")
+		}
 		// Error from server (AlreadyExists): clusterrolebindings.rbac.authorization.k8s.io "minikube-rbac" already exists
 		if strings.Contains(rr.Output(), "Error from server (AlreadyExists)") {
 			glog.Infof("rbac %q already exists not need to re-create.", rbacName)
-			return nil
+		} else {
+			return errors.Wrapf(err, "apply sa")
 		}
 	}
 
@@ -882,6 +909,27 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		// retry up to make sure SA is created
 		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
 			return errors.Wrap(err, "ensure sa was created")
+		}
+	}
+	return nil
+}
+
+// stopKubeSystem stops all the containers in the kube-system to prevent #8740 when doing hot upgrade
+func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
+	glog.Info("stopping kube-system containers ...")
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return errors.Wrap(err, "new cruntime")
+	}
+
+	ids, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
+	if err != nil {
+		return errors.Wrap(err, "list")
+	}
+
+	if len(ids) > 0 {
+		if err := cr.StopContainers(ids); err != nil {
+			return errors.Wrap(err, "stop")
 		}
 	}
 	return nil

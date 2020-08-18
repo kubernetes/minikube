@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pmezard/go-difflib/difflib"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -108,6 +109,10 @@ nnetworking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 	versions := []string{"v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	fcr := command.NewFakeCommandRunner()
+	fcr.SetCommandToOutput(map[string]string{
+		"docker info --format {{.CgroupDriver}}": "systemd\n",
+	})
 	tests := []struct {
 		name      string
 		runtime   string
@@ -118,7 +123,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
-			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime})
+			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime, Runner: fcr})
 			if err != nil {
 				t.Fatalf("runtime: %v", err)
 			}
@@ -174,6 +179,12 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 	if err != nil {
 		t.Errorf("versions: %v", err)
 	}
+	fcr := command.NewFakeCommandRunner()
+	fcr.SetCommandToOutput(map[string]string{
+		"docker info --format {{.CgroupDriver}}": "systemd\n",
+		"crio config":                            "cgroup_manager = \"systemd\"\n",
+		"sudo crictl info":                       "{\"config\": {\"systemdCgroup\": true}}",
+	})
 	tests := []struct {
 		name      string
 		runtime   string
@@ -192,7 +203,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
-			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime})
+			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime, Runner: fcr})
 			if err != nil {
 				t.Fatalf("runtime: %v", err)
 			}

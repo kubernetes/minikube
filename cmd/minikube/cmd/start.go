@@ -37,7 +37,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -57,6 +56,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
+
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/util"
@@ -122,6 +123,9 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
+	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+
+	out.SetJSON(viper.GetString(startOutput) == "json")
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
@@ -131,6 +135,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	displayEnviron(os.Environ())
+	if viper.GetBool(force) {
+		out.WarningT("minikube skips various validations when --force is supplied; this may lead to unexpected behavior")
+	}
 
 	// if --registry-mirror specified when run minikube start,
 	// take arg precedence over MINIKUBE_REGISTRY_MIRROR
@@ -145,19 +152,24 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	if !config.ProfileNameValid(ClusterFlagValue()) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
-		exit.UsageT("Only alphanumeric, dots, underscores and dashes '-' are permitted. Minimum 2 characters, starting by alphanumeric.")
+		exit.UsageT("Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
 	}
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
+	if existing != nil {
+		upgradeExistingConfig(existing)
+	}
+
 	validateSpecifiedDriver(existing)
+	validateKubernetesVersion(existing)
 	ds, alts, specified := selectDriver(existing)
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)
-		machine.MaybeDisplayAdvice(err, viper.GetString("driver"))
+		machine.MaybeDisplayAdvice(err, ds.Name)
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
 			exit.WithError("error provisioning host", err)
@@ -192,7 +204,18 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubeconfig, err := startWithDriver(starter, existing)
+	if existing != nil && existing.KubernetesConfig.ContainerRuntime == "crio" && driver.IsKIC(existing.Driver) {
+		// Stop and start again if it's crio because it's broken above v1.17.3
+		out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
+		out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
+		stopProfile(existing.Name)
+		starter, err = provisionWithDriver(cmd, ds, existing)
+		if err != nil {
+			exit.WithError("error provisioning host", err)
+		}
+	}
+
+	kubeconfig, err := startWithDriver(cmd, starter, existing)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)
 		exit.WithError("failed to start node", err)
@@ -271,10 +294,10 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}, nil
 }
 
-func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
+func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
 	kubeconfig, err := node.Start(starter, true)
 	if err != nil {
-		kubeconfig, err = maybeDeleteAndRetry(*starter.Cfg, *starter.Node, starter.ExistingAddons, err)
+		kubeconfig, err = maybeDeleteAndRetry(cmd, *starter.Cfg, *starter.Node, starter.ExistingAddons, err)
 		if err != nil {
 			return nil, err
 		}
@@ -347,6 +370,7 @@ func displayVersion(version string) {
 		prefix = fmt.Sprintf("[%s] ", ClusterFlagValue())
 	}
 
+	register.Reg.SetStep(register.InitialSetup)
 	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
 }
 
@@ -357,12 +381,13 @@ func displayEnviron(env []string) {
 		k := bits[0]
 		v := bits[1]
 		if strings.HasPrefix(k, "MINIKUBE_") || k == constants.KubeconfigEnvVar {
-			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
+			out.Infof("{{.key}}={{.value}}", out.V{"key": k, "value": v})
 		}
 	}
 }
 
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
+	register.Reg.SetStep(register.Done)
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
 	} else {
@@ -401,20 +426,22 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	return nil
 }
 
-func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
+func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) (*kubeconfig.Settings, error) {
 	if viper.GetBool(deleteOnFailure) {
 		out.WarningT("Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
 		// Start failed, delete the cluster and try again
-		profile, err := config.LoadProfile(cc.Name)
+		profile, err := config.LoadProfile(existing.Name)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cc.Name})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
 		}
 
 		err = deleteProfile(profile)
 		if err != nil {
-			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
+			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": existing.Name})
 		}
 
+		// Re-generate the cluster config, just in case the failure was related to an old config format
+		cc := updateExistingConfigFromFlags(cmd, &existing)
 		var kubeconfig *kubeconfig.Settings
 		for _, n := range cc.Nodes {
 			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane, false)
@@ -475,7 +502,7 @@ func kubectlVersion(path string) (string, error) {
 func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState, bool) {
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
-
+	register.Reg.SetStep(register.SelectingDriver)
 	// By default, the driver is whatever we used last time
 	if existing != nil {
 		old := hostDriver(existing)
@@ -519,7 +546,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	if pick.Name == "" {
 		out.T(out.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
 		for _, r := range rejects {
-			out.T(out.Option, "{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
 		}
 		out.T(out.Workaround, "Try specifying a --driver, or see https://minikube.sigs.k8s.io/docs/start/")
 		os.Exit(exit.Unavailable)
@@ -556,7 +583,10 @@ func hostDriver(existing *config.ClusterConfig) string {
 	machineName := driver.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
-		glog.Warningf("selectDriver api.Load: %v", err)
+		glog.Warningf("api.Load failed for %s: %v", machineName, err)
+		if existing.VMDriver != "" {
+			return existing.VMDriver
+		}
 		return existing.Driver
 	}
 
@@ -635,7 +665,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		}
 		out.ErrLn("")
 
-		if !st.Installed && !viper.GetBool(force) {
+		if !st.Installed {
 			if existing != nil {
 				if old := hostDriver(existing); name == old {
 					exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
@@ -643,10 +673,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
-
-		if !viper.GetBool(force) {
-			exit.WithCodeT(exit.Unavailable, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
-		}
+		exitIfNotForced(exit.Unavailable, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
 	}
 }
 
@@ -736,22 +763,31 @@ func validateUser(drvName string) {
 	}
 }
 
-// memoryLimits returns the amount of memory allocated to the system and hypervisor
+// memoryLimits returns the amount of memory allocated to the system and hypervisor , the return value is in MB
 func memoryLimits(drvName string) (int, int, error) {
-	v, err := mem.VirtualMemory()
-	if err != nil {
-		return -1, -1, err
+	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
+	if cpuErr != nil {
+		glog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
-	sysLimit := int(v.Total / 1024 / 1024)
+	if diskErr != nil {
+		glog.Warningf("could not get system disk info while verifying memory limits, which might be okay: %v", diskErr)
+	}
+
+	if memErr != nil {
+		return -1, -1, memErr
+	}
+
+	sysLimit := int(info.Memory)
 	containerLimit := 0
 
 	if driver.IsKIC(drvName) {
-		s, err := oci.DaemonInfo(drvName)
+		s, err := oci.CachedDaemonInfo(drvName)
 		if err != nil {
 			return -1, -1, err
 		}
 		containerLimit = int(s.TotalMemory / 1024 / 1024)
 	}
+
 	return sysLimit, containerLimit, nil
 }
 
@@ -793,26 +829,82 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 	return suggested
 }
 
-// validateMemorySize validates the memory size matches the minimum recommended
-func validateMemorySize() {
-	req, err := util.CalculateSizeInMB(viper.GetString(memory))
+// validateMemoryHardLimit checks if the user system has enough memory at all !
+func validateMemoryHardLimit(drvName string) {
+	s, c, err := memoryLimits(drvName)
 	if err != nil {
-		exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		glog.Warningf("Unable to query memory limits: %v", err)
+		out.WarningT("Failed to verify system memory limits.")
+		return
 	}
-	if req < minUsableMem && !viper.GetBool(force) {
-		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB",
-			out.V{"requested": req, "mininum": minUsableMem})
+	if s < 2200 {
+		out.WarningT("Your system has only {{.memory_amount}}MB memory. This might not work minimum required is 2000MB.", out.V{"memory_amount": s})
+		return
 	}
-	if req < minRecommendedMem && !viper.GetBool(force) {
-		out.T(out.Notice, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
-			out.V{"requested": req, "recommended": minRecommendedMem})
+	if driver.IsDockerDesktop(drvName) {
+		// in Docker Desktop if you allocate 2 GB the docker info shows:  Total Memory: 1.945GiB which becomes 1991 when we calculate the MBs
+		// thats why it is not same number as other drivers which is 2 GB
+		if c < 1991 {
+			out.WarningT(`Increase Docker for Desktop memory to at least 2.5GB or more:
+			
+	Docker for Desktop > Settings > Resources > Memory
+
+`)
+		}
 	}
 }
 
+// validateMemorySize validates the memory size matches the minimum recommended
+func validateMemorySize(req int, drvName string) {
+	sysLimit, containerLimit, err := memoryLimits(drvName)
+	if err != nil {
+		glog.Warningf("Unable to query memory limits: %v", err)
+	}
+
+	// maximm percent of their ram they could allocate to minikube to prevent #8708
+	maxAdvised := 0.79 * float64(sysLimit)
+	// a more sane alternative to their high memory 80%
+	minAdvised := 0.50 * float64(sysLimit)
+
+	if req < minUsableMem {
+		exitIfNotForced(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
+	}
+	if req < minRecommendedMem {
+		out.WarningT("Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
+			out.V{"requested": req, "recommended": minRecommendedMem})
+	}
+
+	if driver.IsDockerDesktop(drvName) && containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
+		out.WarningT(`Your system has {{.system_limit}}MB memory but Docker has only {{.container_limit}}MB. For a better performance increase to at least 3GB.
+
+	Docker for Desktop  > Settings > Resources > Memory
+
+`, out.V{"container_limit": containerLimit, "system_limit": sysLimit})
+	}
+
+	if req > sysLimit {
+		message := `Requested memory allocation {{.requested}}MB is more than your system limit {{.system_limit}}MB. Try specifying a lower memory:
+
+		miniube start --memory={{.min_advised}}mb				
+	
+`
+		exitIfNotForced(exit.Config, message, out.V{"requested": req, "system_limit": sysLimit, "max_advised": int32(maxAdvised), "min_advised": minAdvised})
+	}
+
+	if float64(req) > maxAdvised {
+		out.WarningT(`You are allocating {{.requested}}MB to memory and your system only has {{.system_limit}}MB. You might face issues. try specifying a lower memory:
+
+		miniube start --memory={{.min_advised}}mb				
+
+`, out.V{"requested": req, "system_limit": sysLimit, "min_advised": minAdvised})
+	}
+
+}
+
 // validateCPUCount validates the cpu count matches the minimum recommended
-func validateCPUCount(local bool) {
+func validateCPUCount(drvName string) {
 	var cpuCount int
-	if local {
+	if driver.BareMetal(drvName) {
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
@@ -823,36 +915,65 @@ func validateCPUCount(local bool) {
 	} else {
 		cpuCount = viper.GetInt(cpus)
 	}
-	if cpuCount < minimumCPUS && !viper.GetBool(force) {
-		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
+	if cpuCount < minimumCPUS {
+		exitIfNotForced(exit.BadUsage, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
+	}
+
+	if driver.IsKIC((drvName)) {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			out.T(out.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
+			si, err = oci.DaemonInfo(drvName)
+			if err != nil {
+				exit.UsageT("Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+			}
+
+		}
+		if si.CPUs < 2 {
+			if drvName == oci.Docker {
+				out.T(out.Conflict, `Your Docker Desktop has less than 2 CPUs. Increase CPUs for Docker Desktop. 
+	
+	Docker icon > Settings > Resources > CPUs
+				
+				`)
+			}
+			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
+			exitIfNotForced(exit.BadUsage, "Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
+		}
 	}
 }
 
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
+
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			exit.WithCodeT(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
+			exitIfNotForced(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
 
-		if diskSizeMB < minimumDiskSize && !viper.GetBool(force) {
-			exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
+		if diskSizeMB < minimumDiskSize {
+			exitIfNotForced(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
 		}
 	}
 
 	if cmd.Flags().Changed(cpus) {
-		validateCPUCount(driver.BareMetal(drvName))
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --cpus flag", out.V{"name": drvName})
 		}
 	}
+	validateCPUCount(drvName)
+	validateMemoryHardLimit(drvName)
 
 	if cmd.Flags().Changed(memory) {
-		validateMemorySize()
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 		}
+		req, err := util.CalculateSizeInMB(viper.GetString(memory))
+		if err != nil {
+			exitIfNotForced(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		}
+		validateMemorySize(req, drvName)
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
@@ -920,6 +1041,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
+	if s := viper.GetString(startOutput); s != "text" && s != "json" {
+		exit.UsageT("Sorry, please set the --output flag to one of the following valid options: [text,json]")
+	}
+
 	validateRegistryMirror()
 }
 
@@ -979,6 +1104,10 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	hints := driver.FlagDefaults(drvName)
 	if len(hints.ExtraOptions) > 0 {
 		for _, eo := range hints.ExtraOptions {
+			if config.ExtraOptions.Exists(eo) {
+				glog.Infof("skipping extra-config %q.", eo)
+				continue
+			}
 			glog.Infof("auto setting extra-config to %q.", eo)
 			err = config.ExtraOptions.Set(eo)
 			if err != nil {
@@ -1005,26 +1134,9 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	return err
 }
 
-// getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *config.ClusterConfig) string {
-	paramVersion := viper.GetString(kubernetesVersion)
-
-	// try to load the old version first if the user didn't specify anything
-	if paramVersion == "" && old != nil {
-		paramVersion = old.KubernetesConfig.KubernetesVersion
-	}
-
-	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
-		paramVersion = constants.DefaultKubernetesVersion
-	} else if strings.EqualFold(paramVersion, "latest") {
-		paramVersion = constants.NewestKubernetesVersion
-	}
-
-	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
-	if err != nil {
-		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
-	}
-	nv := version.VersionPrefix + nvs.String()
+// validateKubernetesVersion ensures that the requested version is reasonable
+func validateKubernetesVersion(old *config.ClusterConfig) {
+	nvs, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(old), version.VersionPrefix))
 
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
@@ -1037,15 +1149,14 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 
 	if nvs.LT(oldestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
-		if viper.GetBool(force) {
-			out.WarningT("Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
-		} else {
-			exit.WithCodeT(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube. To use this version anyway, use the `--force` flag.", out.V{"version": nvs})
+		if !viper.GetBool(force) {
+			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}
+		exitIfNotForced(exit.Data, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv
+		return
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
@@ -1054,7 +1165,6 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 
 	if nvs.LT(ovs) {
-		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
 		if old.Name != constants.DefaultClusterName {
 			profileArg = fmt.Sprintf(" -p %s", old.Name)
@@ -1082,5 +1192,33 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	if defaultVersion.GT(nvs) {
 		out.T(out.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
-	return nv
+}
+
+func getKubernetesVersion(old *config.ClusterConfig) string {
+	paramVersion := viper.GetString(kubernetesVersion)
+
+	// try to load the old version first if the user didn't specify anything
+	if paramVersion == "" && old != nil {
+		paramVersion = old.KubernetesConfig.KubernetesVersion
+	}
+
+	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
+		paramVersion = constants.DefaultKubernetesVersion
+	} else if strings.EqualFold(paramVersion, "latest") {
+		paramVersion = constants.NewestKubernetesVersion
+	}
+
+	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
+	if err != nil {
+		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
+	}
+
+	return version.VersionPrefix + nvs.String()
+}
+
+func exitIfNotForced(code int, message string, v out.V) {
+	if !viper.GetBool(force) {
+		exit.WithCodeT(code, message, v)
+	}
+	out.WarningT(message, v)
 }

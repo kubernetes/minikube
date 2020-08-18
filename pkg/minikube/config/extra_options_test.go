@@ -79,6 +79,29 @@ func TestValidFlags(t *testing.T) {
 	}
 }
 
+func TestExists(t *testing.T) {
+	extraOptions := ExtraOptionSlice{
+		ExtraOption{Component: "c1", Key: "bar", Value: "c1-bar"},
+		ExtraOption{Component: "c1", Key: "baz", Value: "c1-baz"},
+		ExtraOption{Component: "c2", Key: "bar", Value: "c2-bar"},
+	}
+
+	for _, tc := range []struct {
+		searchString string
+		expRes       bool
+	}{
+		{"c1.bar=bar", true},
+		{"c1.foo=foo", false},
+		{"c2.bar=bar", true},
+		{"c2.baz=baz", false},
+		{"c3.baz=baz", false},
+	} {
+		if res := extraOptions.Exists(tc.searchString); res != tc.expRes {
+			t.Errorf("Unexpected value. Expected %t, got %t", tc.expRes, res)
+		}
+	}
+}
+
 func TestGet(t *testing.T) {
 	extraOptions := ExtraOptionSlice{
 		ExtraOption{Component: "c1", Key: "bar", Value: "c1-bar"},

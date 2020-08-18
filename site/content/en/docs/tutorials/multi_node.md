@@ -49,7 +49,7 @@ multinode-demo-m02   Ready    <none>   33s   v1.18.2
 
 - You can also check the status of your nodes:
 ```
-$ minikube status
+$ minikube status -p multinode-demo
 multinode-demo
 type: Control Plane
 host: Running
@@ -75,7 +75,7 @@ deployment "hello" successfully rolled out
 
 - Deploy our hello world service, which just spits back the IP address the request was served from:
 ```
-kubectl apply -f hello-svc.yml
+kubectl apply -f hello-svc.yaml
 service/hello created
 ```
 
@@ -90,7 +90,7 @@ hello-c7b8df44f-xv4v6   1/1     Running   0          31s   10.244.0.2   multinod
 
 - Look at our service, to know what URL to hit
 ```
-minikube service list
+minikube service list -p multinode-demo
 |-------------|------------|--------------|-----------------------------|
 |  NAMESPACE  |    NAME    | TARGET PORT  |             URL             |
 |-------------|------------|--------------|-----------------------------|

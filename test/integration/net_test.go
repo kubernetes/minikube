@@ -54,6 +54,8 @@ func TestNetworkPlugins(t *testing.T) {
 			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", true},
 			{"false", []string{"--cni=false"}, "", "", false},
 			{"custom-weave", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "weavenet.yaml"))}, "cni", "", true},
+			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", true},
+			{"cilium", []string{"--cni=cilium"}, "cni", "k8s-app=cilium", true},
 		}
 
 		for _, tc := range tests {
@@ -90,7 +92,16 @@ func TestNetworkPlugins(t *testing.T) {
 				}
 				if !t.Failed() {
 					t.Run("KubeletFlags", func(t *testing.T) {
-						rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
+						var rr *RunResult
+						var err error
+
+						// none does not support 'minikube ssh'
+						if NoneDriver() {
+							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
+						} else {
+							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
+						}
+
 						if err != nil {
 							t.Fatalf("ssh failed: %v", err)
 						}
@@ -147,7 +158,7 @@ func TestNetworkPlugins(t *testing.T) {
 						}
 
 						// If the coredns process was stable, this retry wouldn't be necessary.
-						if err := retry.Expo(nslookup, 1*time.Second, Minutes(2)); err != nil {
+						if err := retry.Expo(nslookup, 1*time.Second, Minutes(6)); err != nil {
 							t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
 						}
 

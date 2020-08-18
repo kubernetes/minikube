@@ -19,10 +19,12 @@ package problem
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
 type buffFd struct {
@@ -91,6 +93,45 @@ func TestDisplay(t *testing.T) {
 			errStr := buffErr.String()
 			if strings.TrimSpace(errStr) != strings.TrimSpace(tc.expected) {
 				t.Fatalf("Expected errString:\n%v\ngot:\n%v\n", tc.expected, errStr)
+			}
+		})
+	}
+}
+
+func TestDisplayJSON(t *testing.T) {
+	defer out.SetJSON(false)
+	out.SetJSON(true)
+
+	tcs := []struct {
+		p        *Problem
+		expected string
+	}{
+		{
+			p: &Problem{
+				Err:    fmt.Errorf("my error"),
+				Advice: "fix me!",
+				Issues: []int{1, 2},
+				URL:    "url",
+				ID:     "BUG",
+			},
+			expected: `{"data":{"advice":"fix me!","exitcode":"4","issues":"https://github.com/kubernetes/minikube/issues/1,https://github.com/kubernetes/minikube/issues/2,","message":"my error","name":"BUG","url":"url"},"datacontenttype":"application/json","id":"random-id","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.error"}
+`,
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.p.ID, func(t *testing.T) {
+			buf := bytes.NewBuffer([]byte{})
+			register.SetOutputFile(buf)
+			defer func() { register.SetOutputFile(os.Stdout) }()
+
+			register.GetUUID = func() string {
+				return "random-id"
+			}
+
+			tc.p.DisplayJSON(4)
+			actual := buf.String()
+			if actual != tc.expected {
+				t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", tc.expected, actual)
 			}
 		})
 	}

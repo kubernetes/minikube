@@ -30,7 +30,7 @@ import (
 
 func TestSetupCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
+	defer tests.RemoveTempDir(tempDir)
 
 	k8s := config.KubernetesConfig{
 		APIServerName: constants.APIServerName,

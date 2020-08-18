@@ -23,6 +23,7 @@ import (
 	"runtime"
 
 	"github.com/blang/semver"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Pause returns the image name to pull for a given Kubernetes version
@@ -127,7 +128,7 @@ func auxiliary(mirror string) []string {
 
 // storageProvisioner returns the minikube storage provisioner image
 func storageProvisioner(mirror string) string {
-	return path.Join(minikubeRepo(mirror), "storage-provisioner"+archTag(false)+"v1.8.1")
+	return path.Join(minikubeRepo(mirror), "storage-provisioner"+archTag(false)+version.GetStorageProvisionerVersion())
 }
 
 // dashboardFrontend returns the image used for the dashboard frontend

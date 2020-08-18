@@ -11,7 +11,7 @@ aliases:
 This driver is experimental and in active development. Help wanted!
 {{% /pageinfo %}}
 
-The podman driver is an alternative container runtime to the [Docker]({{< ref "/docs/drivers/docker.md >}}) driver.
+The podman driver is an alternative container runtime to the [Docker]({{< ref "/docs/drivers/docker.md" >}}) driver.
 
 ## Requirements
 
@@ -24,6 +24,7 @@ The podman driver is an alternative container runtime to the [Docker]({{< ref "/
 ## Known Issues
 
 - Podman driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/_index.md" >}}) 
+- Podman v2 driver is not supported yet.
 - Podman requirements passwordless running of sudo. If you run into an error about sudo, do the following: 
 
 ```shell

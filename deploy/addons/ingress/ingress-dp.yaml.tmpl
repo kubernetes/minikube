@@ -48,7 +48,7 @@ spec:
       serviceAccountName: ingress-nginx
       containers:
         - name: controller
-          image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.32.0
+          image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.33.0
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
@@ -212,7 +212,7 @@ spec:
     spec:
       containers:
         - name: create
-          image: jettech/kube-webhook-certgen:v1.2.0
+          image: jettech/kube-webhook-certgen:v1.2.2
           imagePullPolicy: IfNotPresent
           args:
             - create
@@ -247,7 +247,7 @@ spec:
     spec:
       containers:
         - name: patch
-          image: jettech/kube-webhook-certgen:v1.2.0
+          image: jettech/kube-webhook-certgen:v1.2.2
           imagePullPolicy:
           args:
             - patch

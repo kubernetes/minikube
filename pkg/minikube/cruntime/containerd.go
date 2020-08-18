@@ -370,7 +370,7 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	if err != nil {
 		return false
 	}
-	type containerdImages struct {
+	type crictlImages struct {
 		Images []struct {
 			ID          string      `json:"id"`
 			RepoTags    []string    `json:"repoTags"`
@@ -381,7 +381,7 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 		} `json:"images"`
 	}
 
-	var jsonImages containerdImages
+	var jsonImages crictlImages
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
 	if err != nil {
 		glog.Errorf("failed to unmarshal images, will assume images are not preloaded")
@@ -413,14 +413,6 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	return true
 }
 
-// addRepoTagToImageName makes sure the image name has a repo tag in it.
-// in crictl images list have the repo tag prepended to them
-// for example "kubernetesui/dashboard:v2.0.0 will show up as "docker.io/kubernetesui/dashboard:v2.0.0"
-// warning this is only meant for kuberentes images where we know the GCR addreses have .io in them
-// not mean to be used for public images
-func addRepoTagToImageName(imgName string) string {
-	if !strings.Contains(imgName, ".io/") {
-		return "docker.io/" + imgName
-	} // else it already has repo name dont add anything
-	return imgName
+func (r *Containerd) ImagesPreloaded(images []string) bool {
+	return containerdImagesPreloaded(r.Runner, images)
 }

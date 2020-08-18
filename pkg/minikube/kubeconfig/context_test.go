@@ -26,6 +26,7 @@ import (
 func TestDeleteContext(t *testing.T) {
 	// See kubeconfig_test
 	fn := tempFile(t, kubeConfigWithoutHTTPS)
+	defer os.Remove(fn)
 	if err := DeleteContext("la-croix", fn); err != nil {
 		t.Fatal(err)
 	}
