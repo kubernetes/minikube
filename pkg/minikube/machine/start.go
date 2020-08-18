@@ -23,6 +23,8 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -202,6 +204,27 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 	}
 }
 
+// postStartValidations are validations against the host after it is created
+func postStartValidations(h *host.Host, drvName string) error {
+	if !driver.IsKIC(drvName) {
+		return nil
+	}
+	// make sure /var isn't full, otherwise warn
+	output, err := h.RunSSHCommand("df -h /var | awk 'NR==2{print $5}'")
+	if err != nil {
+		return errors.Wrap(err, "df")
+	}
+	output = strings.Trim(output, "\n")
+	percentageFull, err := strconv.Atoi(output[:len(output)-1])
+	if err != nil {
+		return err
+	}
+	if percentageFull >= 99 {
+		out.WarningT("The docker daemon is almost out of memory, run 'docker system prune' to free up space.")
+	}
+	return nil
+}
+
 // postStart are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	glog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
@@ -212,6 +235,11 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 
 	if driver.IsMock(h.DriverName) {
 		return nil
+	}
+
+	// first, run post start validations
+	if err := postStartValidations(h, mc.Driver); err != nil {
+		return errors.Wrap(err, "post-start validations")
 	}
 
 	glog.Infof("creating required directories: %v", requiredDirectories)
