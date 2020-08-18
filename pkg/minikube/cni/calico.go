@@ -711,6 +711,8 @@ spec:
               value: "info"
             - name: FELIX_HEALTHENABLED
               value: "true"
+            - name: IP_AUTODETECTION_METHOD
+              value: interface=eth.*
           securityContext:
             privileged: true
           resources:
