@@ -17,7 +17,7 @@ Example:
 
 `minikube start --alsologtostderr --v=2` will start minikube and output all the important debug logs to stderr.
 
-## Post-mortem debug logs
+## Post-mortem minikube debug logs
 
 minikube stores post-mortem INFO logs in the temporary directory of your system. On macOS or Linux, it's easy to get a list of recent INFO logs: 
 
@@ -25,7 +25,7 @@ minikube stores post-mortem INFO logs in the temporary directory of your system.
 
 For instance, this shows:
 
-`75318976        8 -rw-r--r--    1 tstromberg       primarygroup          718 Aug 18 12:40 /var/folders/n1/qxvd9kc11w15mc4qv6g43x80000kt3/T//minikube.tstromberg-macbookpro.tstromberg.log.INFO.20200818-124017.63501`
+`-rw-r--r-- 1 user  grp  718 Aug 18 12:40 /var/folders/n1/qxvd9kc/T//minikube.mac.user.log.INFO.20200818-124017.63501`
 
 These are plain text log files: you may rename them to "<filename>.log" and then drag/drop them into a GitHub issue for further analysis by the minikube team. You can quickly inspect the final lines of any of these logs via:
   
