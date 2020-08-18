@@ -17,6 +17,29 @@ Example:
 
 `minikube start --alsologtostderr --v=2` will start minikube and output all the important debug logs to stderr.
 
+## Post-mortem debug logs
+
+minikube stores post-mortem INFO logs in the temporary directory of your system. On macOS or Linux, it's easy to get a list of recent INFO logs: 
+
+`find $TMPDIR -mtime -1 -type f -name "*minikube*INFO*" -ls  2>/dev/null`
+
+For instance, this shows:
+
+`75318976        8 -rw-r--r--    1 tstromberg       primarygroup          718 Aug 18 12:40 /var/folders/n1/qxvd9kc11w15mc4qv6g43x80000kt3/T//minikube.tstromberg-macbookpro.tstromberg.log.INFO.20200818-124017.63501`
+
+These are plain text log files: you may rename them to "<filename>.log" and then drag/drop them into a GitHub issue for further analysis by the minikube team. You can quickly inspect the final lines of any of these logs via:
+  
+`tail -n 10 <filename>`
+
+for example, this shows:
+
+```
+I0818 12:40:17.027317   63501 out.go:197] Setting ErrFile to fd 2...
+I0818 12:40:17.027321   63501 out.go:231] isatty.IsTerminal(2) = true
+I0818 12:40:17.027423   63501 root.go:272] Updating PATH: /Users/tstromberg/.minikube/bin
+I0818 12:40:17.027715   63501 mustload.go:64] Loading cluster: minikube
+```
+
 ## Gathering VM logs
 
 To debug issues where Kubernetes failed to deploy, it is very useful to collect the Kubernetes pod and kernel logs:
