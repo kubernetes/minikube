@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -213,15 +214,19 @@ func postStartValidations(h *host.Host, drvName string) {
 	// make sure /var isn't full, otherwise warn
 	output, err := h.RunSSHCommand("df -h /var | awk 'NR==2{print $5}'")
 	if err != nil {
-		glog.Warning("error running df -h /var: %v", err)
+		glog.Warningf("error running df -h /var: %v", err)
 	}
 	output = strings.Trim(output, "\n")
 	percentageFull, err := strconv.Atoi(output[:len(output)-1])
 	if err != nil {
-		glog.Warning("error getting % of /var that is free: %v", err)
+		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 	if percentageFull >= 99 {
-		out.WarningT("The docker daemon is almost out of memory, run 'docker system prune' to free up space.")
+		exit.WithError("", fmt.Errorf("docker daemon out of memory. No space left on device"))
+	}
+
+	if percentageFull > 80 {
+		out.WarningT("The docker daemon is almost out of memory, run 'docker system prune' to free up space")
 	}
 }
 
