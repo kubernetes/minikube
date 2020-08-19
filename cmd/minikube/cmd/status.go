@@ -440,12 +440,15 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 
 // clusterState converts Status structs into a ClusterState struct
 func clusterState(sts []*Status) ClusterState {
+	sc := statusCode(sts[0].Host)
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
 		BaseState: BaseState{
-			Name:       ClusterFlagValue(),
-			StatusCode: statusCode(sts[0].APIServer),
+			Name:         ClusterFlagValue(),
+			StatusCode:   sc,
+			StatusName:   sts[0].Host,
+			StatusDetail: codeDetails[sc],
 		},
 
 		Components: map[string]BaseState{
