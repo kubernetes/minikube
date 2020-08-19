@@ -228,7 +228,7 @@ func postStartValidations(h *host.Host, drvName string) {
 	}
 
 	if percentageFull > 80 {
-		out.Err("The docker daemon is almost out of memory, run 'docker system prune' to free up space")
+		out.ErrT(out.Tip, "The docker daemon is almost out of memory, run 'docker system prune' to free up space")
 	}
 }
 
