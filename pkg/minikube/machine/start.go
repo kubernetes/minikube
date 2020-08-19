@@ -209,6 +209,7 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 }
 
 // postStartValidations are validations against the host after it is created
+// TODO: Add validations for VM drivers as well, see issue #9035
 func postStartValidations(h *host.Host, drvName string) {
 	if !driver.IsKIC(drvName) {
 		return

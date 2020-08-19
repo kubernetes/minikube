@@ -1007,14 +1007,86 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
-	if err != nil {
-		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
+	tests := []struct {
+		name       string
+		kubeconfig []byte
+		want       []byte
+	}{
+		{
+			name:       "no changes",
+			kubeconfig: nil,
+			want:       []byte("No changes"),
+		},
+		{
+			name: "no minikube cluster",
+			kubeconfig: []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/apiserver.crt
+    server: 192.168.1.1:8080
+  name: la-croix
+contexts:
+- context:
+    cluster: la-croix
+    user: la-croix
+  name: la-croix
+current-context: la-croix
+kind: Config
+preferences: {}
+users:
+- name: la-croix
+  user:
+    client-certificate: /home/la-croix/apiserver.crt
+    client-key: /home/la-croix/apiserver.key
+`),
+			want: []byte("context has been updated"),
+		},
+		{
+			name: "no clusters",
+			kubeconfig: []byte(`
+apiVersion: v1
+clusters:
+contexts:
+kind: Config
+preferences: {}
+users:
+`),
+			want: []byte("context has been updated"),
+		},
 	}
 
-	want := []byte("No changes")
-	if !bytes.Contains(rr.Stdout.Bytes(), want) {
-		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2")
+			if tc.kubeconfig != nil {
+				tf, err := ioutil.TempFile("", "kubeconfig")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if err := ioutil.WriteFile(tf.Name(), tc.kubeconfig, 0644); err != nil {
+					t.Fatal(err)
+				}
+
+				t.Cleanup(func() {
+					os.Remove(tf.Name())
+				})
+
+				c.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", tf.Name()))
+			}
+
+			rr, err := Run(t, c)
+			if err != nil {
+				t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
+			}
+
+			if !bytes.Contains(rr.Stdout.Bytes(), tc.want) {
+				t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), tc.want)
+			}
+		})
 	}
 }
 
