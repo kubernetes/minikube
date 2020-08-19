@@ -42,6 +42,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	mkerrors "k8s.io/minikube/pkg/minikube/out/errors"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -211,23 +212,35 @@ func postStartValidations(h *host.Host, drvName string) {
 	if !driver.IsKIC(drvName) {
 		return
 	}
-	// make sure /var isn't full, otherwise warn
-	output, err := h.RunSSHCommand("df -h /var | awk 'NR==2{print $5}'")
+	r, err := CommandRunner(h)
 	if err != nil {
-		glog.Warningf("error running df -h /var: %v", err)
+		glog.Warningf("error getting command runner: %v", err)
 	}
-	output = strings.Trim(output, "\n")
-	percentageFull, err := strconv.Atoi(output[:len(output)-1])
+	// make sure /var isn't full, otherwise warn
+	percentageFull, err := MemoryCapacity(r, "/var")
 	if err != nil {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 	if percentageFull >= 99 {
-		exit.WithError("", fmt.Errorf("docker daemon out of memory. No space left on device"))
+		exit.WithError("", mkerrors.ErrDockerOOM)
 	}
 
 	if percentageFull > 80 {
-		out.WarningT("The docker daemon is almost out of memory, run 'docker system prune' to free up space")
+		out.Err("The docker daemon is almost out of memory, run 'docker system prune' to free up space")
 	}
+}
+
+// MemoryCapacity returns the capacity of dir in the VM/container
+func MemoryCapacity(cr command.Runner, dir string) (int, error) {
+	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -h %s | awk 'NR==2{print $5}'", dir)))
+	if err != nil {
+		glog.Warningf("error running df -h /var: %v", err)
+		fmt.Println(output.Output())
+		return 0, errors.Wrap(err, "CRY")
+	}
+	percentage := string(output.Stdout.Bytes())
+	percentage = strings.Trim(percentage, "\n")
+	return strconv.Atoi(percentage[:len(percentage)-1])
 }
 
 // postStart are functions shared between startHost and fixHost
