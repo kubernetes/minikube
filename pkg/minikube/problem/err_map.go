@@ -583,7 +583,10 @@ var stateProblems = map[string]match{
 var dockerProblems = map[string]match{
 	"NO_SPACE_ON_DEVICE": {
 		Regexp: re(`No space left on device`),
-		Advice: "Run 'docker system prune' to delete unused data and free up space on the device",
+		Advice: `Run 'docker system prune' to free up space on the device, or increase amount of memory allocated to Docker for Desktop via
+		
+	Docker icon > Settings > Resources > Disk Image Size
+`,
 		Issues: []int{9024},
 	},
 }
