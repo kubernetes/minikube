@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "deploy/kicbase/**"
+      - ".github/workflows/kic_image.yml"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
