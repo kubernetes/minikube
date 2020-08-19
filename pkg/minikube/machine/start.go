@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -232,13 +233,16 @@ func postStartValidations(h *host.Host, drvName string) {
 
 // MemoryCapacity returns the capacity of dir in the VM/container
 func MemoryCapacity(cr command.Runner, dir string) (int, error) {
+	if s := os.Getenv(constants.TestMemoryCapacityEnv); s != "" {
+		return strconv.Atoi(s)
+	}
 	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -h %s | awk 'NR==2{print $5}'", dir)))
 	if err != nil {
 		glog.Warningf("error running df -h /var: %v", err)
 		fmt.Println(output.Output())
 		return 0, errors.Wrap(err, "CRY")
 	}
-	percentage := string(output.Stdout.Bytes())
+	percentage := output.Stdout.String()
 	percentage = strings.Trim(percentage, "\n")
 	return strconv.Atoi(percentage[:len(percentage)-1])
 }

@@ -72,6 +72,8 @@ const (
 	MinikubeActivePodmanEnv = "MINIKUBE_ACTIVE_PODMAN"
 	// MinikubeForceSystemdEnv is used to force systemd as cgroup manager for the container runtime
 	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
+	// TestMemoryCapacityEnv is used in integration tests for insufficient storage with 'minikube status'
+	TestMemoryCapacityEnv = "MINIKUBE_TEST_MEMORY_CAPACITY"
 )
 
 var (
