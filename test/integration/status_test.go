@@ -50,7 +50,7 @@ func TestInsufficientStorage(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected command to fail, but it succeeded: %v\n%v", rr.Command(), err)
 	}
-	stdout := runStatusCmd(t, ctx, profile)
+	stdout := runStatusCmd(ctx, t, profile)
 	verifyClusterState(t, stdout)
 
 	// try deleting events.json and make sure this still works
@@ -58,12 +58,12 @@ func TestInsufficientStorage(t *testing.T) {
 	if err := os.Remove(eventsFile); err != nil {
 		t.Fatalf("removing %s", eventsFile)
 	}
-	stdout = runStatusCmd(t, ctx, profile)
+	stdout = runStatusCmd(ctx, t, profile)
 	verifyClusterState(t, stdout)
 }
 
 // runStatusCmd runs the status command and returns stdout
-func runStatusCmd(t *testing.T, ctx context.Context, profile string) []byte {
+func runStatusCmd(ctx context.Context, t *testing.T, profile string) []byte {
 	// make sure minikube status shows insufficient storage
 	c := exec.CommandContext(ctx, Target(), "status", "-p", profile, "--output=json", "--layout=cluster")
 	// artificially set /var to 100% capacity
