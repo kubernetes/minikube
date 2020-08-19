@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func createTestProfile(t *testing.T) string {
@@ -129,6 +130,10 @@ func TestSetAndSave(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
+	// this test will write a config.json into MinikubeHome, create a temp dir for it
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	cc := &config.ClusterConfig{
 		Name:             "start",
 		CPUs:             2,
