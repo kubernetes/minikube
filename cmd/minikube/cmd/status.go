@@ -441,6 +441,7 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 // clusterState converts Status structs into a ClusterState struct
 func clusterState(sts []*Status) ClusterState {
 	sc := statusCode(sts[0].Host)
+	glog.Infof("Initial status code is %v", sc)
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
@@ -499,6 +500,7 @@ func clusterState(sts []*Status) ClusterState {
 				glog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
 				continue
 			}
+			glog.Infof("looking at step %v", data["name"])
 
 			switch data["name"] {
 			case string(register.InitialSetup):
@@ -531,6 +533,7 @@ func clusterState(sts []*Status) ClusterState {
 			case mkerrors.ErrDockerOOM.Error():
 				transientCode = InsufficientStorage
 			default:
+				glog.Infof("skipping error we don't have info about")
 				continue
 			}
 			for _, n := range cs.Nodes {
@@ -549,6 +552,7 @@ func clusterState(sts []*Status) ClusterState {
 			cs.Step = strings.TrimSpace(finalStep["name"])
 			cs.StepDetail = strings.TrimSpace(finalStep["message"])
 			if transientCode != 0 {
+				glog.Infof("resetting status code to transient code %v", transientCode)
 				cs.StatusCode = transientCode
 			}
 		}
