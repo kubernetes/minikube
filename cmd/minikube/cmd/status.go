@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -43,7 +44,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
-	mkerrors "k8s.io/minikube/pkg/minikube/out/errors"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/version"
 )
@@ -528,14 +528,12 @@ func clusterState(sts []*Status) ClusterState {
 				glog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
 				continue
 			}
-			msg := strings.Trim(data["message"], "\n")
-			switch msg {
-			case mkerrors.ErrDockerOOM.Error():
-				transientCode = InsufficientStorage
-			default:
-				glog.Infof("skipping error we don't have info about")
+			exitCode, err := strconv.Atoi(data["exitcode"])
+			if err != nil {
+				glog.Errorf("unable to convert exit code to int: %v", err)
 				continue
 			}
+			transientCode = exitCode
 			for _, n := range cs.Nodes {
 				n.StatusCode = transientCode
 				n.StatusName = codeNames[n.StatusCode]
