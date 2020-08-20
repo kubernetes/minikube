@@ -23,6 +23,8 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -37,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -149,6 +152,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
 	}
+	defer postStartValidations(h, cfg.Driver)
 
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
@@ -199,6 +203,31 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 		return nil
 	case <-timeout:
 		return fmt.Errorf("create host timed out in %f seconds", t.Seconds())
+	}
+}
+
+// postStartValidations are validations against the host after it is created
+// TODO: Add validations for VM drivers as well, see issue #9035
+func postStartValidations(h *host.Host, drvName string) {
+	if !driver.IsKIC(drvName) {
+		return
+	}
+	// make sure /var isn't full, otherwise warn
+	output, err := h.RunSSHCommand("df -h /var | awk 'NR==2{print $5}'")
+	if err != nil {
+		glog.Warningf("error running df -h /var: %v", err)
+	}
+	output = strings.Trim(output, "\n")
+	percentageFull, err := strconv.Atoi(output[:len(output)-1])
+	if err != nil {
+		glog.Warningf("error getting percentage of /var that is free: %v", err)
+	}
+	if percentageFull >= 99 {
+		exit.WithError("", fmt.Errorf("docker daemon out of memory. No space left on device"))
+	}
+
+	if percentageFull > 80 {
+		out.WarningT("The docker daemon is almost out of memory, run 'docker system prune' to free up space")
 	}
 }
 
