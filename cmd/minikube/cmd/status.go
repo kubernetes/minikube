@@ -429,7 +429,9 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		ev := cloudevents.NewEvent()
-		if err = json.Unmarshal(scanner.Bytes(), &ev); err != nil {
+		b := scanner.Bytes()
+		if err = json.Unmarshal(b, &ev); err != nil {
+			glog.Infof("error unmarshalling data: %v\n%v", err, string(b))
 			return events, st.ModTime(), err
 		}
 		events = append(events, ev)
@@ -487,6 +489,8 @@ func clusterState(sts []*Status) ClusterState {
 		glog.Errorf("unable to read event log: %v", err)
 		return cs
 	}
+	glog.Infof("Found %v events in event log", len(evs))
+	glog.Infof("%v", evs)
 
 	transientCode := 0
 	var finalStep map[string]string
@@ -528,9 +532,11 @@ func clusterState(sts []*Status) ClusterState {
 				glog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
 				continue
 			}
-			exitCode, err := strconv.Atoi(data["exitcode"])
+			glog.Infof("exit code is %v", data["exitcode"])
+			exitCode, err := strconv.Atoi(strings.Trim(data["exitcode"], "\n"))
 			if err != nil {
 				glog.Errorf("unable to convert exit code to int: %v", err)
+				glog.Error("(event) ", data)
 				continue
 			}
 			transientCode = exitCode
