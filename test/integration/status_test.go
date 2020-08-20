@@ -30,7 +30,6 @@ import (
 	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/out/errors"
 )
 
 func TestInsufficientStorage(t *testing.T) {
@@ -51,13 +50,6 @@ func TestInsufficientStorage(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected command to fail, but it succeeded: %v\n%v", rr.Command(), err)
 	}
-	// make sure last event is the error we expect
-	ces, err := cloudEvents(t, rr)
-	if err != nil {
-		t.Fatalf("error marshalling into cloud events: %v", err)
-	}
-	last := ces[len(ces)-1]
-	last.validateData(t, "message", errors.ErrDockerOOM.Error())
 
 	// make sure 'minikube status' has correct output
 	stdout := runStatusCmd(ctx, t, profile)

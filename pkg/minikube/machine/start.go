@@ -43,7 +43,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
-	mkerrors "k8s.io/minikube/pkg/minikube/out/errors"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -224,7 +223,7 @@ func postStartValidations(h *host.Host, drvName string) {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 	if percentageFull >= 99 {
-		exit.WithError("", mkerrors.ErrDockerOOM)
+		exit.WithCodeT(exit.InsufficientStorage, "docker daemon out of memory. No space left on device")
 	}
 
 	if percentageFull > 80 {
