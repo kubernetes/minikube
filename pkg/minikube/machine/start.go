@@ -70,7 +70,7 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 	machineName := driver.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
-	releaser, err := acquireMachinesLock(machineName)
+	releaser, err := acquireMachinesLock(machineName, cfg.Driver)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "boot lock")
 	}
@@ -265,10 +265,14 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
-func acquireMachinesLock(name string) (mutex.Releaser, error) {
+func acquireMachinesLock(name string, drver string) (mutex.Releaser, error) {
 	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
 	// NOTE: Provisioning generally completes within 60 seconds
 	spec.Timeout = 15 * time.Minute
+	if driver.IsKIC(drver) {
+		spec.Timeout = 20 * time.Second
+
+	}
 
 	glog.Infof("acquiring machines lock for %s: %+v", name, spec)
 	start := time.Now()
