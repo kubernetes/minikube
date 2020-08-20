@@ -14,9 +14,8 @@ jobs:
         shell: bash
         run: |
           pwd
-          cd ..
           ls -lah
-          rm -rf minikube
+          rm -rf out
           ls -lah
           df -h
           sudo rm -f /etc/cron.hourly/cleanup_and_reboot || true
@@ -29,6 +28,9 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
+          ls -lah
+          echo "------"
+          ls -lah minikube || true
           git log --pretty=oneline
           sudo apt-get update	
           sudo apt-get install -y make build-essential
