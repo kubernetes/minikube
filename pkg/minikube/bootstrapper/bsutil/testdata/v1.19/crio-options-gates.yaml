@@ -41,6 +41,8 @@ dns:
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
+    extraArgs:
+      proxy-refresh-interval: "70000"
 controllerManager:
   extraArgs:
     "leader-elect": "false"
