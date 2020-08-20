@@ -885,7 +885,7 @@ func validateMemorySize(req int, drvName string) {
 	if req > sysLimit {
 		message := `Requested memory allocation {{.requested}}MB is more than your system limit {{.system_limit}}MB. Try specifying a lower memory:
 
-		miniube start --memory={{.min_advised}}mb				
+		minikube start --memory={{.min_advised}}mb				
 	
 `
 		exitIfNotForced(exit.Config, message, out.V{"requested": req, "system_limit": sysLimit, "max_advised": int32(maxAdvised), "min_advised": minAdvised})
@@ -894,7 +894,7 @@ func validateMemorySize(req int, drvName string) {
 	if float64(req) > maxAdvised {
 		out.WarningT(`You are allocating {{.requested}}MB to memory and your system only has {{.system_limit}}MB. You might face issues. try specifying a lower memory:
 
-		miniube start --memory={{.min_advised}}mb				
+		minikube start --memory={{.min_advised}}mb				
 
 `, out.V{"requested": req, "system_limit": sysLimit, "min_advised": minAdvised})
 	}

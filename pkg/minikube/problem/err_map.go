@@ -578,3 +578,18 @@ var stateProblems = map[string]match{
 		Issues: []int{7256},
 	},
 }
+
+// dockerProblems are issues relating to issues with the docker driver
+var dockerProblems = map[string]match{
+	"NO_SPACE_ON_DEVICE": {
+		Regexp: re(`.*docker.*No space left on device.*`),
+		Advice: `Try at least one of the following to free up space on the device:
+
+	1. Run "docker system prune" to remove unused docker data
+	2. Increase the amount of memory allocated to Docker for Desktop via 
+		Docker icon > Preferences > Resources > Disk Image Size
+	3. Run "minikube ssh -- docker system prune" if using the docker container runtime
+`,
+		Issues: []int{9024},
+	},
+}
