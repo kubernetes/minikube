@@ -265,12 +265,13 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
-func acquireMachinesLock(name string, drver string) (mutex.Releaser, error) {
+func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
 	// NOTE: Provisioning generally completes within 60 seconds
-	spec.Timeout = 15 * time.Minute
-	if driver.IsKIC(drver) {
-		spec.Timeout = 20 * time.Second
+	// however in para;lel integration testing it might take longe
+	spec.Timeout = 13 * time.Minute
+	if driver.IsKIC(drv) {
+		spec.Timeout = 10 * time.Minute
 
 	}
 
