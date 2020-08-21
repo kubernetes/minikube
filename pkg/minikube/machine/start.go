@@ -217,8 +217,9 @@ func postStartValidations(h *host.Host, drvName string) {
 	if err != nil {
 		glog.Warningf("error running df -h /var: %v", err)
 	}
-	output = strings.Trim(output, "\n")
-	percentageFull, err := strconv.Atoi(output[:len(output)-1])
+	output = strings.TrimSpace(output)
+	output = strings.Trim(output, "%")
+	percentageFull, err := strconv.Atoi(output)
 	if err != nil {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
