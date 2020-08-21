@@ -87,6 +87,16 @@ TODO add supporting docs for Linux OS that do not use `systemctl`
 
 See https://linux.die.net/man/5/resolver
 
+When you are using Network Manager with the dnsmasq plugin, you can add an additional configuration file, but you need
+to restart NetworkManager to activate the change.
+
+```bash
+echo "server=/test/$(minikube ip)" >/etc/NetworkManager/dnsmasq.d/minikube.conf
+systemctl restart NetworkManager.service
+```
+
+Also see `dns=` in [NetworkManager.conf](https://developer.gnome.org/NetworkManager/stable/NetworkManager.conf.html).
+
 #### Windows
 
 TODO
