@@ -267,6 +267,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
 func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 	lockPath := filepath.Join(localpath.MiniPath(), "machines", drv)
+	// "With KIC, it's safe to provision multiple hosts simultaneously"
 	if driver.IsKIC(drv) {
 		lockPath = filepath.Join(localpath.MiniPath(), "machines", drv, name)
 	}
