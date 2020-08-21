@@ -322,7 +322,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	}
 
 	// Check storage
-	p, err := machine.MemoryCapacity(cr, "/var")
+	p, err := machine.StorageCapacity(cr, "/var")
 	if err != nil {
 		glog.Errorf("failed to get memory capacity of /var: %v", err)
 		st.Host = state.Error.String()
