@@ -44,7 +44,7 @@ func TestInsufficientStorage(t *testing.T) {
 	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	// artificially set /var to 100% capacity
-	c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestStorageCapacityEnv))
+	c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
 
 	rr, err := Run(t, c)
 	if err == nil {
@@ -69,7 +69,7 @@ func runStatusCmd(ctx context.Context, t *testing.T, profile string) []byte {
 	// make sure minikube status shows insufficient storage
 	c := exec.CommandContext(ctx, Target(), "status", "-p", profile, "--output=json", "--layout=cluster")
 	// artificially set /var to 100% capacity
-	c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestStorageCapacityEnv))
+	c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
 	rr, err := Run(t, c)
 	// status exits non-0 if status isn't Running
 	if err == nil {
