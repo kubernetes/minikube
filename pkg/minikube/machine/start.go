@@ -218,7 +218,7 @@ func postStartValidations(h *host.Host, drvName string) {
 		glog.Warningf("error getting command runner: %v", err)
 	}
 	// make sure /var isn't full, otherwise warn
-	percentageFull, err := MemoryCapacity(r, "/var")
+	percentageFull, err := StorageCapacity(r, "/var")
 	if err != nil {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
@@ -231,9 +231,9 @@ func postStartValidations(h *host.Host, drvName string) {
 	}
 }
 
-// MemoryCapacity returns the capacity of dir in the VM/container
-func MemoryCapacity(cr command.Runner, dir string) (int, error) {
-	if s := os.Getenv(constants.TestMemoryCapacityEnv); s != "" {
+// StorageCapacity returns the capacity of dir in the VM/container as a percentage
+func StorageCapacity(cr command.Runner, dir string) (int, error) {
+	if s := os.Getenv(constants.TestStorageCapacityEnv); s != "" {
 		return strconv.Atoi(s)
 	}
 	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -h %s | awk 'NR==2{print $5}'", dir)))
