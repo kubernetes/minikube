@@ -238,9 +238,8 @@ func StorageCapacity(cr command.Runner, dir string) (int, error) {
 	}
 	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -h %s | awk 'NR==2{print $5}'", dir)))
 	if err != nil {
-		glog.Warningf("error running df -h /var: %v", err)
-		fmt.Println(output.Output())
-		return 0, errors.Wrap(err, "CRY")
+		glog.Warningf("error running df -h /var: %v\n%v", err, output.Output())
+		return 0, err
 	}
 	percentage := output.Stdout.String()
 	percentage = strings.Trim(percentage, "\n")
