@@ -371,7 +371,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, del
 	if err == nil {
 		return host, exists, nil
 	}
-
+	glog.Warningf("error starting host: %v", err)
 	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
 	if !exists {
 		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
@@ -386,6 +386,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, del
 	}
 
 	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
+	glog.Info("Will try again in 5 seconds ...")
 	// Try again, but just once to avoid making the logs overly confusing
 	time.Sleep(5 * time.Second)
 
