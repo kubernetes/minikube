@@ -268,7 +268,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
 	// NOTE: Provisioning generally completes within 60 seconds
-	// however in para;lel integration testing it might take longe
+	// however in parallel integration testing it might take longe
 	spec.Timeout = 13 * time.Minute
 	if driver.IsKIC(drv) {
 		spec.Timeout = 10 * time.Minute
