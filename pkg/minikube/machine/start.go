@@ -273,7 +273,7 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 	}
 	spec := lock.PathMutexSpec(lockPath)
 	// NOTE: Provisioning generally completes within 60 seconds
-	// however in parallel integration testing it might take longe
+	// however in parallel integration testing it might take longer
 	spec.Timeout = 13 * time.Minute
 	if driver.IsKIC(drv) {
 		spec.Timeout = 10 * time.Minute
