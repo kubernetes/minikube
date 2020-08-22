@@ -71,7 +71,7 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 	machineName := driver.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
-	releaser, err := acquireMachinesLock(machineName)
+	releaser, err := acquireMachinesLock(machineName, cfg.Driver)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "boot lock")
 	}
@@ -241,9 +241,9 @@ func DiskUsed(cr command.Runner, dir string) (int, error) {
 		glog.Warningf("error running df -h /var: %v\n%v", err, output.Output())
 		return 0, err
 	}
-	percentage := output.Stdout.String()
-	percentage = strings.Trim(percentage, "\n")
-	return strconv.Atoi(percentage[:len(percentage)-1])
+	percentage := strings.TrimSpace(output.Stdout.String())
+	percentage = strings.Trim(percentage, "%")
+	return strconv.Atoi(percentage)
 }
 
 // postStart are functions shared between startHost and fixHost
@@ -280,10 +280,20 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
-func acquireMachinesLock(name string) (mutex.Releaser, error) {
-	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
+func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
+	lockPath := filepath.Join(localpath.MiniPath(), "machines", drv)
+	// "With KIC, it's safe to provision multiple hosts simultaneously"
+	if driver.IsKIC(drv) {
+		lockPath = filepath.Join(localpath.MiniPath(), "machines", drv, name)
+	}
+	spec := lock.PathMutexSpec(lockPath)
 	// NOTE: Provisioning generally completes within 60 seconds
-	spec.Timeout = 15 * time.Minute
+	// however in parallel integration testing it might take longer
+	spec.Timeout = 13 * time.Minute
+	if driver.IsKIC(drv) {
+		spec.Timeout = 10 * time.Minute
+
+	}
 
 	glog.Infof("acquiring machines lock for %s: %+v", name, spec)
 	start := time.Now()
