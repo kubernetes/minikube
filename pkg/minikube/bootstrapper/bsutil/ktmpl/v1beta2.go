@@ -63,11 +63,10 @@ dns:
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
-{{- if .EtcdExtraArgs}}
     extraArgs:
+      proxy-refresh-interval: "70000"
 {{- range $i, $val := printMapInOrder .EtcdExtraArgs ": " }}
       {{$val}}
-{{- end}}
 {{- end}}
 controllerManager:
   extraArgs:

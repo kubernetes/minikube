@@ -27,9 +27,11 @@ import (
 
 // SysInfo Info represents common system Information between docker and podman that minikube cares
 type SysInfo struct {
-	CPUs        int    // CPUs is Number of CPUs
-	TotalMemory int64  // TotalMemory Total available ram
-	OSType      string // container's OsType (windows or linux)
+	CPUs          int    // CPUs is Number of CPUs
+	TotalMemory   int64  // TotalMemory Total available ram
+	OSType        string // container's OsType (windows or linux)
+	Swarm         bool   // Weather or not the docker swarm is active
+	StorageDriver string // the storage driver for the daemon  (for example overlay2)
 }
 
 var cachedSysInfo *SysInfo
@@ -52,11 +54,11 @@ func CachedDaemonInfo(ociBin string) (SysInfo, error) {
 func DaemonInfo(ociBin string) (SysInfo, error) {
 	if ociBin == Podman {
 		p, err := podmanSystemInfo()
-		cachedSysInfo = &SysInfo{CPUs: p.Host.Cpus, TotalMemory: p.Host.MemTotal, OSType: p.Host.Os}
+		cachedSysInfo = &SysInfo{CPUs: p.Host.Cpus, TotalMemory: p.Host.MemTotal, OSType: p.Host.Os, Swarm: false, StorageDriver: p.Store.GraphDriverName}
 		return *cachedSysInfo, err
 	}
 	d, err := dockerSystemInfo()
-	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType}
+	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType, Swarm: d.Swarm.LocalNodeState == "active", StorageDriver: d.Driver}
 	return *cachedSysInfo, err
 }
 
