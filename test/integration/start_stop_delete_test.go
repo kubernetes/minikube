@@ -78,6 +78,7 @@ func TestStartStop(t *testing.T) {
 
 		for _, tc := range tests {
 			tc := tc
+
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)
@@ -116,6 +117,10 @@ func TestStartStop(t *testing.T) {
 						tcName := tc.name
 						tcVersion := tc.version
 						stc := stc
+						if ctx.Err() == context.DeadlineExceeded {
+							t.Fatalf("Unable to run more tests (deadline exceeded)")
+						}
+
 						t.Run(stc.name, func(t *testing.T) {
 							stc.validator(ctx, t, profile, tcName, tcVersion, startArgs)
 						})
