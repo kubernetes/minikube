@@ -6,7 +6,7 @@ aliases:
   - /docs/start
 ---
 
-minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes. 
+minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes.
 
 All you need is Docker (or similarly compatible) container or a Virtual Machine environment, and Kubernetes is a single command away: `minikube start`
 
@@ -24,7 +24,22 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 {{% tabs %}}
 {{% tab "Linux" %}}
 
-For Linux users, we provide 3 easy download options:
+For Linux users, we provide 4 easy download options:
+
+### Homebrew package
+
+If [Homebrew](https://brew.sh/) installed:
+
+```shell
+brew install minikube
+```
+
+If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
+
+```
+brew cask remove minikube
+brew link minikube
+```
 
 ### Binary download
 
@@ -50,7 +65,7 @@ sudo rpm -ivh minikube-latest.x86_64.rpm
 {{% /tab %}}
 {{% tab "macOS" %}}
 
-If the [Brew Package Manager](https://brew.sh/) installed:
+If [Homebrew](https://brew.sh/) installed:
 
 ```shell
 brew install minikube
@@ -148,7 +163,7 @@ Tada! Your application is now available at [http://localhost:7080/](http://local
 To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
 
 ```shell
-kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4  
+kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment balanced --type=LoadBalancer --port=8000
 ```
 
