@@ -17,12 +17,17 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
+	"time"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
@@ -35,28 +40,75 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/version"
 )
 
 var statusFormat string
 var output string
+var layout string
 
 const (
-	// # Additional states used by kubeconfig:
-
+	// Additional legacy states:
 	// Configured means configured
 	Configured = "Configured" // ~state.Saved
 	// Misconfigured means misconfigured
 	Misconfigured = "Misconfigured" // ~state.Error
-
-	// # Additional states used for clarity:
-
-	// Nonexistent means nonexistent
+	// Nonexistent means the resource does not exist
 	Nonexistent = "Nonexistent" // ~state.None
 	// Irrelevant is used for statuses that aren't meaningful for worker nodes
 	Irrelevant = "Irrelevant"
+
+	// New status modes, based roughly on HTTP/SMTP standards
+	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
+	Starting  = 100
+	Pausing   = 101
+	Unpausing = 102
+	Stopping  = 110
+	Deleting  = 120
+
+	// 2xx signifies that the API Server is able to service requests
+	OK      = 200
+	Warning = 203
+
+	// 4xx signifies an error that requires help from the client to resolve
+	NotFound = 404
+	Stopped  = 405
+	Paused   = 418 // I'm a teapot!
+
+	// 5xx signifies a server-side error (that may be retryable)
+	Error               = 500
+	InsufficientStorage = 507
+	Unknown             = 520
+)
+
+var (
+	codeNames = map[int]string{
+		100: "Starting",
+		101: "Pausing",
+		102: "Unpausing",
+		110: "Stopping",
+		103: "Deleting",
+
+		200: "OK",
+		203: "Warning",
+
+		404: "NotFound",
+		405: "Stopped",
+		418: "Paused",
+
+		500: "Error",
+		507: "InsufficientStorage",
+		520: "Unknown",
+	}
+
+	codeDetails = map[int]string{
+		507: "/var is almost out of disk space",
+	}
 )
 
 // Status holds string representations of component states
@@ -67,6 +119,39 @@ type Status struct {
 	APIServer  string
 	Kubeconfig string
 	Worker     bool
+}
+
+// ClusterState holds a cluster state representation
+type ClusterState struct {
+	BaseState
+
+	BinaryVersion string
+	Components    map[string]BaseState
+	Nodes         []NodeState
+}
+
+// NodeState holds a node state representation
+type NodeState struct {
+	BaseState
+	Components map[string]BaseState `json:",omitempty"`
+}
+
+// BaseState holds a component state representation, such as "apiserver" or "kubeconfig"
+type BaseState struct {
+	// Name is the name of the object
+	Name string
+
+	// StatusCode is an HTTP-like status code for this object
+	StatusCode int
+	// Name is a human-readable name for the status code
+	StatusName string
+	// StatusDetail is long human-readable string describing why this particular status code was chosen
+	StatusDetail string `json:",omitempty"` // Not yet implemented
+
+	// Step is which workflow step the object is at.
+	Step string `json:",omitempty"`
+	// StepDetail is a long human-readable string describing the step
+	StepDetail string `json:",omitempty"`
 }
 
 const (
@@ -113,7 +198,7 @@ var statusCmd = &cobra.Command{
 				exit.WithError("retrieving node", err)
 			}
 
-			st, err := status(api, *cc, *n)
+			st, err := nodeStatus(api, *cc, *n)
 			if err != nil {
 				glog.Errorf("status error: %v", err)
 			}
@@ -122,7 +207,7 @@ var statusCmd = &cobra.Command{
 			for _, n := range cc.Nodes {
 				machineName := driver.MachineName(*cc, n)
 				glog.Infof("checking status of %s ...", machineName)
-				st, err := status(api, *cc, n)
+				st, err := nodeStatus(api, *cc, n)
 				glog.Infof("%s status: %+v", machineName, st)
 
 				if err != nil {
@@ -143,8 +228,15 @@ var statusCmd = &cobra.Command{
 				}
 			}
 		case "json":
-			if err := statusJSON(statuses, os.Stdout); err != nil {
-				exit.WithError("status json failure", err)
+			// Layout is currently only supported for JSON mode
+			if layout == "cluster" {
+				if err := clusterStatusJSON(statuses, os.Stdout); err != nil {
+					exit.WithError("status json failure", err)
+				}
+			} else {
+				if err := statusJSON(statuses, os.Stdout); err != nil {
+					exit.WithError("status json failure", err)
+				}
 			}
 		default:
 			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
@@ -154,6 +246,7 @@ var statusCmd = &cobra.Command{
 	},
 }
 
+// exitCode calcluates the appropriate exit code given a set of status messages
 func exitCode(statuses []*Status) int {
 	c := 0
 	for _, st := range statuses {
@@ -170,8 +263,8 @@ func exitCode(statuses []*Status) int {
 	return c
 }
 
-func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
-
+// nodeStatus looks up the status of a node
+func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 	controlPlane := n.ControlPlane
 	name := driver.MachineName(cc, n)
 
@@ -228,6 +321,17 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 		return st, err
 	}
 
+	// Check storage
+	p, err := machine.DiskUsed(cr, "/var")
+	if err != nil {
+		glog.Errorf("failed to get storage capacity of /var: %v", err)
+		st.Host = state.Error.String()
+		return st, err
+	}
+	if p >= 99 {
+		st.Host = codeNames[InsufficientStorage]
+	}
+
 	stk := kverify.KubeletStatus(cr)
 	glog.Infof("%s kubelet status = %s", name, stk)
 	st.Kubelet = stk.String()
@@ -268,6 +372,8 @@ func init() {
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
 	statusCmd.Flags().StringVarP(&output, "output", "o", "text",
 		`minikube status --output OUTPUT. json, text`)
+	statusCmd.Flags().StringVarP(&layout, "layout", "l", "nodes",
+		`output layout (EXPERIMENTAL, JSON only): 'nodes' or 'cluster'`)
 	statusCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.")
 }
 
@@ -302,5 +408,184 @@ func statusJSON(st []*Status, w io.Writer) error {
 		return err
 	}
 	_, err = w.Write(js)
+	return err
+}
+
+// readEventLog reads cloudevent logs from $MINIKUBE_HOME/profiles/<name>/events.json
+func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
+	path := localpath.EventLog(name)
+
+	st, err := os.Stat(path)
+	if err != nil {
+		return nil, time.Time{}, errors.Wrap(err, "stat")
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, st.ModTime(), errors.Wrap(err, "open")
+	}
+	var events []cloudevents.Event
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		ev := cloudevents.NewEvent()
+		if err = json.Unmarshal(scanner.Bytes(), &ev); err != nil {
+			return events, st.ModTime(), err
+		}
+		events = append(events, ev)
+	}
+
+	return events, st.ModTime(), nil
+}
+
+// clusterState converts Status structs into a ClusterState struct
+func clusterState(sts []*Status) ClusterState {
+	sc := statusCode(sts[0].Host)
+	cs := ClusterState{
+		BinaryVersion: version.GetVersion(),
+
+		BaseState: BaseState{
+			Name:         ClusterFlagValue(),
+			StatusCode:   sc,
+			StatusName:   sts[0].Host,
+			StatusDetail: codeDetails[sc],
+		},
+
+		Components: map[string]BaseState{
+			"kubeconfig": {Name: "kubeconfig", StatusCode: statusCode(sts[0].Kubeconfig)},
+		},
+	}
+
+	for _, st := range sts {
+		ns := NodeState{
+			BaseState: BaseState{
+				Name:       st.Name,
+				StatusCode: statusCode(st.Host),
+			},
+			Components: map[string]BaseState{
+				"kubelet": {Name: "kubelet", StatusCode: statusCode(st.Kubelet)},
+			},
+		}
+
+		if st.APIServer != Irrelevant {
+			ns.Components["apiserver"] = BaseState{Name: "apiserver", StatusCode: statusCode(st.APIServer)}
+		}
+
+		// Convert status codes to status names
+		ns.StatusName = codeNames[ns.StatusCode]
+		for k, v := range ns.Components {
+			v.StatusName = codeNames[v.StatusCode]
+			ns.Components[k] = v
+		}
+
+		cs.Nodes = append(cs.Nodes, ns)
+	}
+
+	evs, mtime, err := readEventLog(sts[0].Name)
+	if err != nil {
+		glog.Errorf("unable to read event log: %v", err)
+		return cs
+	}
+
+	transientCode := 0
+	var finalStep map[string]string
+
+	for _, ev := range evs {
+		//		glog.Infof("read event: %+v", ev)
+		if ev.Type() == "io.k8s.sigs.minikube.step" {
+			var data map[string]string
+			err := ev.DataAs(&data)
+			if err != nil {
+				glog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
+				continue
+			}
+
+			switch data["name"] {
+			case string(register.InitialSetup):
+				transientCode = Starting
+			case string(register.Done):
+				transientCode = 0
+			case string(register.Stopping):
+				glog.Infof("%q == %q", data["name"], register.Stopping)
+				transientCode = Stopping
+			case string(register.Deleting):
+				transientCode = Deleting
+			case string(register.Pausing):
+				transientCode = Pausing
+			case string(register.Unpausing):
+				transientCode = Unpausing
+			}
+
+			finalStep = data
+			glog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
+		}
+		if ev.Type() == "io.k8s.sigs.minikube.error" {
+			var data map[string]string
+			err := ev.DataAs(&data)
+			if err != nil {
+				glog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
+				continue
+			}
+			exitCode, err := strconv.Atoi(data["exitcode"])
+			if err != nil {
+				glog.Errorf("unable to convert exit code to int: %v", err)
+				continue
+			}
+			transientCode = exitCode
+			for _, n := range cs.Nodes {
+				n.StatusCode = transientCode
+				n.StatusName = codeNames[n.StatusCode]
+			}
+
+			glog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
+		}
+	}
+
+	if finalStep != nil {
+		if mtime.Before(time.Now().Add(-10 * time.Minute)) {
+			glog.Warningf("event stream is too old (%s) to be considered a transient state", mtime)
+		} else {
+			cs.Step = strings.TrimSpace(finalStep["name"])
+			cs.StepDetail = strings.TrimSpace(finalStep["message"])
+			if transientCode != 0 {
+				cs.StatusCode = transientCode
+			}
+		}
+	}
+
+	cs.StatusName = codeNames[cs.StatusCode]
+	cs.StatusDetail = codeDetails[cs.StatusCode]
+	return cs
+}
+
+// statusCode returns a status code number given a name
+func statusCode(st string) int {
+	// legacy names
+	switch st {
+	case "Running", "Configured":
+		return OK
+	case "Misconfigured":
+		return Error
+	}
+
+	// new names
+	for code, name := range codeNames {
+		if name == st {
+			return code
+		}
+	}
+
+	return Unknown
+}
+
+func clusterStatusJSON(statuses []*Status, w io.Writer) error {
+	cs := clusterState(statuses)
+
+	bs, err := json.Marshal(cs)
+	if err != nil {
+		return errors.Wrap(err, "marshal")
+	}
+
+	_, err = w.Write(bs)
 	return err
 }

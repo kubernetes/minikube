@@ -19,6 +19,8 @@ package register
 
 import (
 	"fmt"
+
+	"github.com/golang/glog"
 )
 
 const (
@@ -35,6 +37,11 @@ const (
 	VerifyingKubernetes  RegStep = "Verifying Kubernetes"
 	EnablingAddons       RegStep = "Enabling Addons"
 	Done                 RegStep = "Done"
+
+	Stopping  RegStep = "Stopping"
+	Deleting  RegStep = "Deleting"
+	Pausing   RegStep = "Pausing"
+	Unpausing RegStep = "Unpausing"
 )
 
 // RegStep is a type representing a distinct step of `minikube start`
@@ -43,7 +50,8 @@ type RegStep string
 // Register holds all of the steps we could see in `minikube start`
 // and keeps track of the current step
 type Register struct {
-	steps   []RegStep
+	steps   map[RegStep][]RegStep
+	first   RegStep
 	current RegStep
 }
 
@@ -52,43 +60,71 @@ var Reg Register
 
 func init() {
 	Reg = Register{
-		steps: []RegStep{
-			InitialSetup,
-			SelectingDriver,
-			DownloadingArtifacts,
-			StartingNode,
-			RunningLocalhost,
-			LocalOSRelease,
-			CreatingContainer,
-			CreatingVM,
-			PreparingKubernetes,
-			ConfiguringLHEnv,
-			VerifyingKubernetes,
-			EnablingAddons,
-			Done,
+		// Expected step orders, organized by the initial step seen
+		steps: map[RegStep][]RegStep{
+			InitialSetup: []RegStep{
+				InitialSetup,
+				SelectingDriver,
+				DownloadingArtifacts,
+				StartingNode,
+				RunningLocalhost,
+				LocalOSRelease,
+				CreatingContainer,
+				CreatingVM,
+				PreparingKubernetes,
+				ConfiguringLHEnv,
+				VerifyingKubernetes,
+				EnablingAddons,
+				Done,
+			},
+
+			Stopping:  []RegStep{Stopping, Done},
+			Pausing:   []RegStep{Pausing, Done},
+			Unpausing: []RegStep{Unpausing, Done},
+			Deleting:  []RegStep{Deleting, Stopping, Deleting, Done},
 		},
-		current: InitialSetup,
 	}
 }
 
 // totalSteps returns the total number of steps in the register
 func (r *Register) totalSteps() string {
-	return fmt.Sprintf("%d", len(r.steps)-1)
+	return fmt.Sprintf("%d", len(r.steps[r.first])-1)
 }
 
 // currentStep returns the current step we are on
 func (r *Register) currentStep() string {
-	for i, s := range r.steps {
+	if r.first == RegStep("") {
+		return ""
+	}
+
+	steps, ok := r.steps[r.first]
+	if !ok {
+		return "unknown"
+	}
+
+	for i, s := range r.steps[r.first] {
 		if r.current == s {
 			return fmt.Sprintf("%d", i)
 		}
 	}
-	// all steps should be registered so this shouldn't happen
-	// can't call exit.WithError as it creates an import dependency loop
-	panic(fmt.Sprintf("%v is not a registered step", r.current))
+
+	// Warn, as sometimes detours happen: "start" may cause "stopping" and "deleting"
+	glog.Warningf("%q was not found within the registered steps for %q: %v", r.current, r.first, steps)
+	return ""
 }
 
 // SetStep sets the current step
 func (r *Register) SetStep(s RegStep) {
+	if r.first == RegStep("") {
+		_, ok := r.steps[s]
+		if ok {
+			r.first = s
+		} else {
+			glog.Errorf("unexpected first step: %q", r.first)
+		}
+	}
+
 	r.current = s
 }
+
+// recordStep records the current step

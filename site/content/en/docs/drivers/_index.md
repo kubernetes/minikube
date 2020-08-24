@@ -22,8 +22,8 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 
 ## macOS
 
-* [Hyperkit]({{<ref "hyperkit.md">}}) - VM (preferred)
-* [Docker]({{<ref "docker.md">}}) - VM + Container
+* [Docker]({{<ref "docker.md">}}) - VM + Container (preferred)
+* [Hyperkit]({{<ref "hyperkit.md">}}) - VM
 * [VirtualBox]({{<ref "virtualbox.md">}}) - FVM
 * [Parallels]({{<ref "parallels.md">}}) - VM
 * [VMware]({{<ref "vmware.md">}}) - VM

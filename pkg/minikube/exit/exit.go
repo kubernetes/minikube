@@ -29,16 +29,17 @@ import (
 
 // Exit codes based on sysexits(3)
 const (
-	Failure     = 1  // Failure represents a general failure code
-	Interrupted = 2  // Ctrl-C (SIGINT)
-	BadUsage    = 64 // Usage represents an incorrect command line
-	Data        = 65 // Data represents incorrect data supplied by the user
-	NoInput     = 66 // NoInput represents that the input file did not exist or was not readable
-	Unavailable = 69 // Unavailable represents when a service was unavailable
-	Software    = 70 // Software represents an internal software error.
-	IO          = 74 // IO represents an I/O error
-	Config      = 78 // Config represents an unconfigured or misconfigured state
-	Permissions = 77 // Permissions represents a permissions error
+	Failure             = 1   // Failure represents a general failure code
+	Interrupted         = 2   // Ctrl-C (SIGINT)
+	BadUsage            = 64  // Usage represents an incorrect command line
+	Data                = 65  // Data represents incorrect data supplied by the user
+	NoInput             = 66  // NoInput represents that the input file did not exist or was not readable
+	Unavailable         = 69  // Unavailable represents when a service was unavailable
+	Software            = 70  // Software represents an internal software error.
+	IO                  = 74  // IO represents an I/O error
+	Permissions         = 77  // Permissions represents a permissions error
+	Config              = 78  // Config represents an unconfigured or misconfigured state
+	InsufficientStorage = 507 // InsufficientStorage represents insufficient storage in the VM/container
 )
 
 // UsageT outputs a templated usage error and exits with error code 64
@@ -57,10 +58,12 @@ func WithCodeT(code int, format string, a ...out.V) {
 func WithError(msg string, err error) {
 	glog.Infof("WithError(%s)=%v called from:\n%s", msg, err, debug.Stack())
 	p := problem.FromError(err, runtime.GOOS)
-	if p != nil && out.JSON {
-		p.DisplayJSON(Config)
-		os.Exit(Config)
-	} else {
+
+	if p != nil {
+		if out.JSON {
+			p.DisplayJSON(Config)
+			os.Exit(Config)
+		}
 		WithProblem(msg, err, p)
 		os.Exit(Config)
 	}

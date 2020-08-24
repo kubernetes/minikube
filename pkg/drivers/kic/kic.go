@@ -80,6 +80,14 @@ func (d *Driver) Create() error {
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
+	defaultNetwork := d.MachineName
+	if err := oci.CreateNetwork(defaultNetwork, oci.DefaultIPRange, oci.DefaultGateway); err != nil {
+		glog.Warningf("unable to create docker network; node ip may not be stable: %v", err)
+	} else {
+		params.Network = defaultNetwork
+		params.IP = oci.DefaultIP
+	}
+
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
 		ListenAddress: oci.DefaultBindIPV4,
@@ -167,6 +175,18 @@ func (d *Driver) prepareSSH() error {
 	if err := cmder.Copy(f); err != nil {
 		return errors.Wrap(err, "copying pub key")
 	}
+
+	// Double-check that the container has not crashed so that we may give a better error message
+	s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
+	if err != nil {
+		return err
+	}
+
+	if s != state.Running {
+		excerpt := oci.LogContainerDebug(d.OCIBinary, d.MachineName)
+		return errors.Wrapf(oci.ErrExitedUnexpectedly, "container name %q state %s: log: %s", d.MachineName, s, excerpt)
+	}
+
 	if rr, err := cmder.RunCmd(exec.Command("chown", "docker:docker", "/home/docker/.ssh/authorized_keys")); err != nil {
 		return errors.Wrapf(err, "apply authorized_keys file ownership, output %s", rr.Output())
 	}
@@ -320,13 +340,13 @@ func (d *Driver) Start() error {
 	}
 
 	if err := retry.Expo(checkRunning, 500*time.Microsecond, time.Second*30); err != nil {
-		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
+		excerpt := oci.LogContainerDebug(d.OCIBinary, d.MachineName)
 		_, err := oci.DaemonInfo(d.OCIBinary)
 		if err != nil {
 			return errors.Wrapf(oci.ErrDaemonInfo, "container name %q", d.MachineName)
 		}
 
-		return errors.Wrapf(oci.ErrExitedUnexpectedly, "container name %q", d.MachineName)
+		return errors.Wrapf(oci.ErrExitedUnexpectedly, "container name %q: log: %s", d.MachineName, excerpt)
 	}
 	return nil
 }

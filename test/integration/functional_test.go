@@ -89,6 +89,9 @@ func TestFunctional(t *testing.T) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
@@ -126,6 +129,10 @@ func TestFunctional(t *testing.T) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
 				tc.validator(ctx, t, profile)
@@ -211,7 +218,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=2800", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -247,7 +254,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
 	}
 
-	softStartArgs := []string{"start", "-p", profile}
+	softStartArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=8"}
 	c := exec.CommandContext(ctx, Target(), softStartArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
@@ -311,26 +318,40 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
+	// The ComponentStatus API is deprecated in v1.19, so do the next closest thing.
+	found := map[string]bool{
+		"etcd":                    false,
+		"kube-apiserver":          false,
+		"kube-controller-manager": false,
+		"kube-scheduler":          false,
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
 	}
-	cs := api.ComponentStatusList{}
+	cs := api.PodList{}
 	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
 	if err := d.Decode(&cs); err != nil {
 		t.Fatalf("failed to decode kubectl json output: args %q : %v", rr.Command(), err)
 	}
 
 	for _, i := range cs.Items {
-		status := api.ConditionFalse
-		for _, c := range i.Conditions {
-			if c.Type != api.ComponentHealthy {
-				continue
+		for _, l := range i.Labels {
+			t.Logf("%s phase: %s", l, i.Status.Phase)
+			_, ok := found[l]
+			if ok {
+				found[l] = true
+				if i.Status.Phase != "Running" {
+					t.Errorf("%s is not Running: %+v", l, i.Status)
+				}
 			}
-			status = c.Status
 		}
-		if status != api.ConditionTrue {
-			t.Errorf("unexpected status: %v - item: %+v", status, i)
+	}
+
+	for k, v := range found {
+		if !v {
+			t.Errorf("expected component %q was not found", k)
 		}
 	}
 }
@@ -901,12 +922,13 @@ func localEmptyCertPath() string {
 func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
-	err := copy.Copy("./testdata/sync.test", p)
+	syncFile := filepath.Join(*testdataDir, "sync.test")
+	err := copy.Copy(syncFile, p)
 	if err != nil {
-		t.Fatalf("failed to copy ./testdata/sync.test: %v", err)
+		t.Fatalf("failed to copy testdata/sync.test: %v", err)
 	}
 
-	testPem := "./testdata/minikube_test.pem"
+	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
 
 	// Write to a temp file for an atomic write
 	tmpPem := localTestCertPath() + ".pem"
@@ -955,9 +977,10 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 	got := rr.Stdout.String()
 	t.Logf("file sync test content: %s", got)
 
-	expected, err := ioutil.ReadFile("./testdata/sync.test")
+	syncFile := filepath.Join(*testdataDir, "sync.test")
+	expected, err := ioutil.ReadFile(syncFile)
 	if err != nil {
-		t.Errorf("failed to read test file '/testdata/sync.test' : %v", err)
+		t.Errorf("failed to read test file 'testdata/sync.test' : %v", err)
 	}
 
 	if diff := cmp.Diff(string(expected), got); diff != "" {
@@ -973,7 +996,8 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 
-	want, err := ioutil.ReadFile("./testdata/minikube_test.pem")
+	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
+	want, err := ioutil.ReadFile(testPem)
 	if err != nil {
 		t.Errorf("test file not found: %v", err)
 	}
@@ -1004,14 +1028,91 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
-	if err != nil {
-		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
+	tests := []struct {
+		name       string
+		kubeconfig []byte
+		want       []byte
+	}{
+		{
+			name:       "no changes",
+			kubeconfig: nil,
+			want:       []byte("No changes"),
+		},
+		{
+			name: "no minikube cluster",
+			kubeconfig: []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/apiserver.crt
+    server: 192.168.1.1:8080
+  name: la-croix
+contexts:
+- context:
+    cluster: la-croix
+    user: la-croix
+  name: la-croix
+current-context: la-croix
+kind: Config
+preferences: {}
+users:
+- name: la-croix
+  user:
+    client-certificate: /home/la-croix/apiserver.crt
+    client-key: /home/la-croix/apiserver.key
+`),
+			want: []byte("context has been updated"),
+		},
+		{
+			name: "no clusters",
+			kubeconfig: []byte(`
+apiVersion: v1
+clusters:
+contexts:
+kind: Config
+preferences: {}
+users:
+`),
+			want: []byte("context has been updated"),
+		},
 	}
 
-	want := []byte("No changes")
-	if !bytes.Contains(rr.Stdout.Bytes(), want) {
-		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
+	for _, tc := range tests {
+		tc := tc
+
+		if ctx.Err() == context.DeadlineExceeded {
+			t.Fatalf("Unable to run more tests (deadline exceeded)")
+		}
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2")
+			if tc.kubeconfig != nil {
+				tf, err := ioutil.TempFile("", "kubeconfig")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if err := ioutil.WriteFile(tf.Name(), tc.kubeconfig, 0644); err != nil {
+					t.Fatal(err)
+				}
+
+				t.Cleanup(func() {
+					os.Remove(tf.Name())
+				})
+
+				c.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", tf.Name()))
+			}
+
+			rr, err := Run(t, c)
+			if err != nil {
+				t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
+			}
+
+			if !bytes.Contains(rr.Stdout.Bytes(), tc.want) {
+				t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), tc.want)
+			}
+		})
 	}
 }
 

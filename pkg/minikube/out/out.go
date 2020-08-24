@@ -78,6 +78,7 @@ func T(style StyleEnum, format string, a ...V) {
 		register.PrintStep(outStyled)
 		return
 	}
+	register.RecordStep(outStyled)
 	String(outStyled)
 }
 
@@ -100,6 +101,9 @@ func String(format string, a ...interface{}) {
 		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
+
+	glog.Infof(format, a...)
+
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
 		glog.Errorf("Fprintf failed: %v", err)
@@ -137,10 +141,15 @@ func Err(format string, a ...interface{}) {
 		register.PrintError(format)
 		return
 	}
+	register.RecordError(format)
+
 	if errFile == nil {
 		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
+
+	glog.Warningf(format, a...)
+
 	_, err := fmt.Fprintf(errFile, format, a...)
 	if err != nil {
 		glog.Errorf("Fprint failed: %v", err)
