@@ -30,7 +30,6 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -423,44 +422,6 @@ func TestStatus(t *testing.T) {
 		t.Errorf("StopHost failed: %v", err)
 	}
 	checkState(state.Stopped.String(), m)
-}
-
-func TestCreateSSHShell(t *testing.T) {
-	api := tests.NewMockAPI(t)
-	// Setting the default ssh client to native for test stability.
-	ssh.SetDefaultClient(ssh.Native)
-
-	s, _ := tests.NewSSHServer(t)
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %v", err)
-	}
-
-	m := viper.GetString("profile")
-
-	d := &tests.MockDriver{
-		Port:         port,
-		CurrentState: state.Running,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:   "127.0.0.1",
-			SSHKeyPath:  "",
-			MachineName: m,
-		},
-		T: t,
-	}
-	api.Hosts[m] = &host.Host{Driver: d}
-
-	cc := defaultClusterConfig
-	cc.Name = viper.GetString("profile")
-
-	cliArgs := []string{"exit"}
-	if err := CreateSSHShell(api, cc, config.Node{Name: "minikube"}, cliArgs, true); err != nil {
-		t.Fatalf("Error running ssh command: %v", err)
-	}
-
-	if !s.IsSessionRequested() {
-		t.Fatalf("Expected ssh session to be run")
-	}
 }
 
 func TestGuestClockDelta(t *testing.T) {
