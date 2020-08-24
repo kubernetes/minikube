@@ -68,15 +68,6 @@ func TestSkaffold(t *testing.T) {
 		t.Fatalf("unable to determine abs path: %v", err)
 	}
 
-	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", fmt.Sprintf("%s:%s", filepath.Dir(abs), os.Getenv("PATH")))
-	defer func() {
-		os.Setenv("PATH", oldPath)
-		t.Logf("PATH is now %s", os.Getenv("PATH"))
-	}()
-
-	t.Logf("PATH is now %s", os.Getenv("PATH"))
-
 	if filepath.Base(Target()) != "minikube" {
 		new := filepath.Join(filepath.Dir(abs), "minikube")
 		t.Logf("copying %s to %s", Target(), new)
@@ -92,6 +83,12 @@ func TestSkaffold(t *testing.T) {
 			t.Fatalf("%q is not in path", binary)
 		}
 	}
+
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", fmt.Sprintf("%s:%s", filepath.Dir(abs), os.Getenv("PATH")))
+	defer func() {
+		os.Setenv("PATH", oldPath)
+	}()
 
 	// make sure "skaffold run" exits without failure
 	cmd := exec.CommandContext(ctx, tf.Name(), "run", "--minikube-profile", profile, "--kube-context", profile, "--status-check=true", "--port-forward=false")
