@@ -80,7 +80,7 @@ spec:
     spec:
       containers:
         - name: gcp-auth
-          image: gcr.io/k8s-minikube/gcp-auth-webhook:latest
+          image: gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.1
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443

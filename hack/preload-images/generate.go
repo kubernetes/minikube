@@ -173,11 +173,11 @@ func createImageTarball(tarballFilename, containerRuntime string) error {
 	}
 
 	if containerRuntime == "containerd" {
-		dirs = append(dirs, fmt.Sprintf("./lib/containerd"))
+		dirs = append(dirs, "./lib/containerd")
 	}
 
 	if containerRuntime == "cri-o" {
-		dirs = append(dirs, fmt.Sprintf("./lib/containers"))
+		dirs = append(dirs, "./lib/containers")
 	}
 
 	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename}

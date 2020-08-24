@@ -6,6 +6,8 @@ on:
       - "**.yml"
       - "**.yaml"
       - "Makefile"
+      - "!deploy/kicbase/**"
+      - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
@@ -307,7 +309,9 @@ jobs:
           name: minikube_binaries
       - name: Start Docker Desktop
         shell: powershell
+        continue-on-error: true
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           docker ps 2>&1 | Out-Null
           $docker_running = $?
           if (!$docker_running) {
@@ -330,6 +334,8 @@ jobs:
           echo "------------------------"
           docker volume ls
           echo "------------------------"
+          docker system info --format '{{json .}}'
+          echo "------------------------"
       - uses: actions/setup-go@v2
         with:
           go-version: '1.14.6'
@@ -341,6 +347,7 @@ jobs:
           (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
+          choco install -y caffeine
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
         continue-on-error: true
@@ -353,7 +360,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=10m --timeout-multiplier=1 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -440,7 +447,9 @@ jobs:
           name: minikube_binaries
       - name: Start Docker Desktop
         shell: powershell
+        continue-on-error: true
         run: |
+          $ErrorActionPreference = "SilentlyContinue"
           docker ps 2>&1 | Out-Null
           $docker_running = $?
           if (!$docker_running) {
@@ -475,6 +484,7 @@ jobs:
           (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
           choco install -y kubernetes-cli
           choco install -y jq
+          choco install -y caffeine
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
         continue-on-error: true
@@ -487,7 +497,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=13m --timeout-multiplier=1.5 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=20m --timeout-multiplier=1.5 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -688,7 +698,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions|TestSkaffold)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -726,7 +736,7 @@ jobs:
           echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
   addons_certs_virtualbox_macos:
     runs-on: macos-10.15
     env:
@@ -781,9 +791,10 @@ jobs:
           mkdir -p report
           mkdir -p testhome
           chmod a+x e2e-*
-          chmod a+x minikube-*
+          cp minikube-darwin-amd64 minikube
+          chmod a+x minikube*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "(TestAddons|TestCertOptions)" -test.timeout=15m -test.v -timeout-multiplier=3 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "(TestAddons|TestCertOptions|TestSkaffold)" -test.timeout=20m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -821,7 +832,7 @@ jobs:
           echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 5 ];then echo "*** Failed to pass at least 5 ! ***";exit 2;fi
+          if [ "$numPass" -lt 6 ];then echo "*** Failed to pass at least 6 ! ***";exit 2;fi
   multinode_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
@@ -879,7 +890,7 @@ jobs:
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "TestMultiNode" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "TestMultiNode" -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -969,7 +980,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--driver=virtualbox  -test.run "TestMultiNode" -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--driver=virtualbox  -test.run "TestMultiNode" -test.timeout=17m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))

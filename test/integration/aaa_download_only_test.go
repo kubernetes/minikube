@@ -165,7 +165,10 @@ func TestDownloadOnlyKic(t *testing.T) {
 	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr"}
 	args = append(args, StartArgs()...)
 
-	if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+	cmd := exec.CommandContext(ctx, Target(), args...)
+	// make sure this works even if docker daemon isn't running
+	cmd.Env = append(os.Environ(), "DOCKER_HOST=/does/not/exist")
+	if _, err := Run(t, cmd); err != nil {
 		t.Errorf("start with download only failed %q : %v", args, err)
 	}
 

@@ -404,3 +404,7 @@ func dockerBoundToContainerd(runner command.Runner) bool {
 
 	return false
 }
+
+func (r *Docker) ImagesPreloaded(images []string) bool {
+	return dockerImagesPreloaded(r.Runner, images)
+}

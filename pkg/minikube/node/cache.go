@@ -88,13 +88,13 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 }
 
 // CacheKubectlBinary caches the kubectl binary
-func CacheKubectlBinary(k8sVerison string) (string, error) {
+func CacheKubectlBinary(k8sVersion string) (string, error) {
 	binary := "kubectl"
 	if runtime.GOOS == "windows" {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
+	return download.Binary(binary, k8sVersion, runtime.GOOS, runtime.GOARCH)
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
@@ -117,16 +117,19 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	glog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 	out.T(out.Pulling, "Pulling base image ...")
 	g.Go(func() error {
-		// TODO #8004 : make base-image respect --image-repository
+		baseImg := cc.KicBaseImage
+		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
+			baseImg = strings.Replace(baseImg, "gcr.io/k8s-minikube", cc.KubernetesConfig.ImageRepository, 1)
+		}
 		var finalImg string
 		// If we end up using a fallback image, notify the user
 		defer func() {
-			if finalImg != "" && finalImg != cc.KicBaseImage {
+			if finalImg != "" && finalImg != baseImg {
 				out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(cc.KicBaseImage), image.Tag(finalImg)))
 				cc.KicBaseImage = finalImg
 			}
 		}()
-		for _, img := range append([]string{cc.KicBaseImage}, kic.FallbackImages...) {
+		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			if err := image.LoadFromTarball(driver.Docker, img); err == nil {
 				glog.Infof("successfully loaded %s from cached tarball", img)
 				// strip the digest from the img before saving it in the config

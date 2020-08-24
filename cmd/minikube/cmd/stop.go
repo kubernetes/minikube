@@ -33,10 +33,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 var stopAll bool
+var keepActive bool
 
 // stopCmd represents the stop command
 var stopCmd = &cobra.Command{
@@ -50,6 +52,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 func init() {
 
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
+	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
@@ -60,6 +63,9 @@ func init() {
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
+	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	register.Reg.SetStep(register.Stopping)
+
 	// new code
 	var profilesToStop []string
 	if stopAll {
@@ -74,28 +80,46 @@ func runStop(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		profilesToStop = append(profilesToStop, cname)
 	}
+
+	stoppedNodes := 0
 	for _, profile := range profilesToStop {
-		// end new code
-		api, cc := mustload.Partial(profile)
-		defer api.Close()
+		stoppedNodes = stopProfile(profile)
+	}
 
-		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(*cc, n)
-			nonexistent := stop(api, machineName)
+	register.Reg.SetStep(register.Done)
+	if stoppedNodes > 0 {
+		out.T(out.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
+	}
+}
 
-			if !nonexistent {
-				out.T(out.Stopped, `Node "{{.node_name}}" stopped.`, out.V{"node_name": machineName})
-			}
+func stopProfile(profile string) int {
+	stoppedNodes := 0
+	register.Reg.SetStep(register.Stopping)
+
+	// end new code
+	api, cc := mustload.Partial(profile)
+	defer api.Close()
+
+	for _, n := range cc.Nodes {
+		machineName := driver.MachineName(*cc, n)
+
+		nonexistent := stop(api, machineName)
+		if !nonexistent {
+			stoppedNodes++
 		}
+	}
 
-		if err := killMountProcess(); err != nil {
-			out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
-		}
+	if err := killMountProcess(); err != nil {
+		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
+	}
 
+	if !keepActive {
 		if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
 			exit.WithError("update config", err)
 		}
 	}
+
+	return stoppedNodes
 }
 
 func stop(api libmachine.API, machineName string) bool {
