@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -80,8 +81,9 @@ const (
 	Paused   = 418 // I'm a teapot!
 
 	// 5xx signifies a server-side error (that may be retryable)
-	Error   = 500
-	Unknown = 520
+	Error               = 500
+	InsufficientStorage = 507
+	Unknown             = 520
 )
 
 var (
@@ -100,7 +102,12 @@ var (
 		418: "Paused",
 
 		500: "Error",
+		507: "InsufficientStorage",
 		520: "Unknown",
+	}
+
+	codeDetails = map[int]string{
+		507: "/var is almost out of disk space",
 	}
 )
 
@@ -258,7 +265,6 @@ func exitCode(statuses []*Status) int {
 
 // nodeStatus looks up the status of a node
 func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
-
 	controlPlane := n.ControlPlane
 	name := driver.MachineName(cc, n)
 
@@ -313,6 +319,17 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	cr, err := machine.CommandRunner(host)
 	if err != nil {
 		return st, err
+	}
+
+	// Check storage
+	p, err := machine.DiskUsed(cr, "/var")
+	if err != nil {
+		glog.Errorf("failed to get storage capacity of /var: %v", err)
+		st.Host = state.Error.String()
+		return st, err
+	}
+	if p >= 99 {
+		st.Host = codeNames[InsufficientStorage]
 	}
 
 	stk := kverify.KubeletStatus(cr)
@@ -423,12 +440,15 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 
 // clusterState converts Status structs into a ClusterState struct
 func clusterState(sts []*Status) ClusterState {
+	sc := statusCode(sts[0].Host)
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
 		BaseState: BaseState{
-			Name:       ClusterFlagValue(),
-			StatusCode: statusCode(sts[0].APIServer),
+			Name:         ClusterFlagValue(),
+			StatusCode:   sc,
+			StatusName:   sts[0].Host,
+			StatusDetail: codeDetails[sc],
 		},
 
 		Components: map[string]BaseState{
@@ -499,6 +519,26 @@ func clusterState(sts []*Status) ClusterState {
 			finalStep = data
 			glog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
 		}
+		if ev.Type() == "io.k8s.sigs.minikube.error" {
+			var data map[string]string
+			err := ev.DataAs(&data)
+			if err != nil {
+				glog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
+				continue
+			}
+			exitCode, err := strconv.Atoi(data["exitcode"])
+			if err != nil {
+				glog.Errorf("unable to convert exit code to int: %v", err)
+				continue
+			}
+			transientCode = exitCode
+			for _, n := range cs.Nodes {
+				n.StatusCode = transientCode
+				n.StatusName = codeNames[n.StatusCode]
+			}
+
+			glog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
+		}
 	}
 
 	if finalStep != nil {
@@ -514,6 +554,7 @@ func clusterState(sts []*Status) ClusterState {
 	}
 
 	cs.StatusName = codeNames[cs.StatusCode]
+	cs.StatusDetail = codeDetails[cs.StatusCode]
 	return cs
 }
 

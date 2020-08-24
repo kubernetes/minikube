@@ -97,7 +97,7 @@ func printAndRecordCloudEvent(log Log, data map[string]string) {
 	fmt.Fprintln(outputFile, string(bs))
 
 	if eventFile != nil {
-		go storeEvent(bs)
+		storeEvent(bs)
 	}
 }
 
