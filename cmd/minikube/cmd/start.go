@@ -1223,20 +1223,19 @@ func validateDockerStorageDriver(drvName string) {
 	if !driver.IsKIC(drvName) {
 		return
 	}
-	if _, err := exec.LookPath("docker"); err != nil {
-		exit.WithCodeT(exit.BadUsage, "Please make sure docker is available on your PATH")
+	if _, err := exec.LookPath(drvName); err != nil {
+		exit.WithCodeT(exit.BadUsage, "Please make sure {{.DriverName}} is available on your PATH", out.V{"DriverName": drvName})
 	}
-	j, err := exec.Command("docker", "info", "--format", "{{.Driver}}").Output()
+	si, err := oci.DaemonInfo(drvName)
 	if err != nil {
-		glog.Warningf("Unable to confirm that docker is using overlay2; setting preload=false")
+		glog.Warningf("Unable to confirm that %s is using overlay2 storage driver; setting preload=false", drvName)
 		viper.Set(preload, false)
 		return
 	}
-	driver := strings.Trim(string(j), "\n")
-	if driver == "overlay2" {
+	if si.StorageDriver == "overlay2" {
 		return
 	}
-	out.WarningT("Docker is currently using the {{.Driver}} storage driver. Consider switching to overlay2 for better performance.", out.V{"Driver": driver})
+	out.WarningT("{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance", out.V{"StorageDriver": si.StorageDriver, "Driver": drvName})
 	viper.Set(preload, false)
 }
 
