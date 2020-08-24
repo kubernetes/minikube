@@ -56,6 +56,9 @@ RUN echo 'root:root' |chpasswd
 RUN sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
 
+# minikube relies on /etc/hosts for control-plane discovery. This prevents nefarious DNS servers from breaking it.
+RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
+
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
 RUN adduser --ingroup docker --disabled-password --gecos '' docker 
