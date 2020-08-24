@@ -89,6 +89,9 @@ func TestFunctional(t *testing.T) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
@@ -126,6 +129,10 @@ func TestFunctional(t *testing.T) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
 				tc.validator(ctx, t, profile)
@@ -311,26 +318,40 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
+	// The ComponentStatus API is deprecated in v1.19, so do the next closest thing.
+	found := map[string]bool{
+		"etcd":                    false,
+		"kube-apiserver":          false,
+		"kube-controller-manager": false,
+		"kube-scheduler":          false,
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
 	}
-	cs := api.ComponentStatusList{}
+	cs := api.PodList{}
 	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
 	if err := d.Decode(&cs); err != nil {
 		t.Fatalf("failed to decode kubectl json output: args %q : %v", rr.Command(), err)
 	}
 
 	for _, i := range cs.Items {
-		status := api.ConditionFalse
-		for _, c := range i.Conditions {
-			if c.Type != api.ComponentHealthy {
-				continue
+		for _, l := range i.Labels {
+			t.Logf("%s phase: %s", l, i.Status.Phase)
+			_, ok := found[l]
+			if ok {
+				found[l] = true
+				if i.Status.Phase != "Running" {
+					t.Errorf("%s is not Running: %+v", l, i.Status)
+				}
 			}
-			status = c.Status
 		}
-		if status != api.ConditionTrue {
-			t.Errorf("unexpected status: %v - item: %+v", status, i)
+	}
+
+	for k, v := range found {
+		if !v {
+			t.Errorf("expected component %q was not found", k)
 		}
 	}
 }
@@ -1058,6 +1079,11 @@ users:
 
 	for _, tc := range tests {
 		tc := tc
+
+		if ctx.Err() == context.DeadlineExceeded {
+			t.Fatalf("Unable to run more tests (deadline exceeded)")
+		}
+
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			c := exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2")
