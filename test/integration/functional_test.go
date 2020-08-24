@@ -89,6 +89,9 @@ func TestFunctional(t *testing.T) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
@@ -126,6 +129,10 @@ func TestFunctional(t *testing.T) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
 				tc.validator(ctx, t, profile)
@@ -1072,6 +1079,11 @@ users:
 
 	for _, tc := range tests {
 		tc := tc
+
+		if ctx.Err() == context.DeadlineExceeded {
+			t.Fatalf("Unable to run more tests (deadline exceeded)")
+		}
+
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			c := exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2")
