@@ -49,8 +49,6 @@ sudo rpm -ivh minikube-latest.x86_64.rpm
 
 ### Homebrew package
 
-If [Homebrew](https://brew.sh/) installed:
-
 ```shell
 brew install minikube
 ```
