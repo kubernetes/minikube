@@ -69,6 +69,9 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
