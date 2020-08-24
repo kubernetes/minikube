@@ -26,21 +26,6 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 For Linux users, we provide 4 easy download options:
 
-### Homebrew package
-
-If [Homebrew](https://brew.sh/) installed:
-
-```shell
-brew install minikube
-```
-
-If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
-
-```
-brew cask remove minikube
-brew link minikube
-```
-
 ### Binary download
 
 ```shell
@@ -60,6 +45,21 @@ sudo dpkg -i minikube_latest_amd64.deb
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
 sudo rpm -ivh minikube-latest.x86_64.rpm
+```
+
+### Homebrew package
+
+If [Homebrew](https://brew.sh/) installed:
+
+```shell
+brew install minikube
+```
+
+If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
+
+```
+brew cask remove minikube
+brew link minikube
 ```
 
 {{% /tab %}}
