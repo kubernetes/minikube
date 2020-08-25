@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Download Dependencies
         run: go mod download
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install libvirt
         run: |
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install libvirt
         run: |
@@ -109,10 +109,10 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 
@@ -192,10 +192,10 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 
@@ -338,7 +338,7 @@ jobs:
           echo "------------------------"
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -474,7 +474,7 @@ jobs:
           Get-WmiObject -class Win32_ComputerSystem
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -577,10 +577,10 @@ jobs:
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 
@@ -672,10 +672,10 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 
@@ -752,10 +752,10 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 
@@ -862,10 +862,10 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 
@@ -944,10 +944,10 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 
@@ -1048,10 +1048,10 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 
@@ -1128,10 +1128,10 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      # go 1.15.0+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.0'
           stable: true
       - name: Install gopogh
 

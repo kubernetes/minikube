@@ -31,7 +31,7 @@ export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.14.6" "/usr/local" || true
+sudo ./installers/check_install_golang.sh "1.15.0" "/usr/local" || true
 
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 docker volume prune -f || true
