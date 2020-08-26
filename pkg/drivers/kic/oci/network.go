@@ -198,7 +198,7 @@ func attemptCreateNework(subnet *net.IPNet, name string) error {
 	gateway[3]++ // first ip for gateway
 	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnet, name, gateway)
 	// options documenation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
-	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--gateway=%s", gateway), "-o", "com.docker.network.bridge.enable_ip_masquerade=true", "-o", "com.docker.network.bridge.enable_icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
+	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
 		if strings.Contains(rr.Output(), "Pool overlaps with other one on this address space") {
 			return ErrNetworkSubnetTaken
