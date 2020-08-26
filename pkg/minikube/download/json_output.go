@@ -69,7 +69,7 @@ func (r *jsonReader) Read(p []byte) (n int, err error) {
 	r.current += int64(n)
 	progress := float64(r.current) / float64(r.total)
 	// print progress every second so user isn't overwhelmed with events
-	if t := time.Now(); t.Sub(r.Time) > time.Second {
+	if t := time.Now(); t.Sub(r.Time) > time.Second || progress == 1 {
 		register.PrintDownloadProgress(r.artifact, fmt.Sprintf("%v", progress))
 		r.Time = t
 	}
