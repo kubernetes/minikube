@@ -40,6 +40,12 @@ func deleteOrphanedKIC(ociBin string, name string) {
 		return
 	}
 
+	defer func() { // networks should be deleted after containers
+		if err := oci.RemoveNetwork(name); err != nil {
+			glog.Infof("couldn't delete network %s (might be okay): %v", name, err)
+		}
+	}()
+
 	_, err := oci.ContainerStatus(ociBin, name)
 	if err != nil {
 		glog.Infof("couldn't inspect container %q before deleting: %v", name, err)
@@ -49,16 +55,13 @@ func deleteOrphanedKIC(ociBin string, name string) {
 	if err := oci.ShutDown(ociBin, name); err != nil {
 		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
-	// allow no more than 10 seconds for deleting the container
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// allow no more than 5 seconds for deleting the container
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)
 	err = cmd.Run()
 	if err == nil {
 		glog.Infof("Found stale kic container and successfully cleaned it up!")
-	}
-	if err := oci.RemoveNetwork(name); err != nil {
-		glog.Infof("couldn't delete network ", name, err)
 	}
 
 }

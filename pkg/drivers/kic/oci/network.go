@@ -46,7 +46,7 @@ func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, erro
 	}
 
 	if runtime.GOOS == "linux" {
-		return containerGatewayIP(ociBin, containerName)
+		return podmanGatewayIP(containerName)
 	}
 
 	return nil, fmt.Errorf("RoutableHostIPFromInside is currently only implemented for linux")
@@ -64,29 +64,9 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	return ip, nil
 }
 
-// dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
-// gets the ip from user's host docker
-func dockerGatewayIP(profile string) (net.IP, error) {
-	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
-	if err != nil {
-		return nil, errors.Wrapf(err, "get network bridge")
-	}
-
-	bridgeID := strings.TrimSpace(rr.Stdout.String())
-	rr, err = runCmd(exec.Command(Docker, "network", "inspect",
-		"--format", "{{(index .IPAM.Config 0).Gateway}}", bridgeID))
-	if err != nil {
-		return nil, errors.Wrapf(err, "inspect IP bridge network %q.", bridgeID)
-	}
-
-	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
-	glog.Infof("got host ip for mount in container by inspect docker network: %s", ip.String())
-	return ip, nil
-}
-
-// containerGatewayIP gets the default gateway ip for the container
-func containerGatewayIP(ociBin, containerName string) (net.IP, error) {
-	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
+// podmanGatewayIP gets the default gateway ip for the container
+func podmanGatewayIP(containerName string) (net.IP, error) {
+	rr, err := runCmd(exec.Command(Podman, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect gateway")
 	}
@@ -214,7 +194,6 @@ func attemptCreateNework(subnet *net.IPNet, name string) error {
 	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnet, name, gateway)
 	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--gateway=%s", gateway), "-o", "com.docker.network.bridge.enable_ip_masquerade=true", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
-		fmt.Printf("failed to created newrok: %v", err)
 		if strings.Contains(rr.Output(), "Pool overlaps with other one on this address space") {
 			return ErrNetworkSubnetTaken
 		}
@@ -266,19 +245,18 @@ func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
 		return nil, nil, err
 	}
 	// results looks like 172.17.0.0/16,172.17.0.1
-	ips := strings.Split(rr.Stdout.String(), ",")
+	ips := strings.Split(strings.TrimSpace(rr.Stdout.String()), ",")
 	if len(ips) == 0 {
 		return nil, nil, fmt.Errorf("invalid network info")
 	}
-
 	_, subnet, err := net.ParseCIDR(ips[0])
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "parse subnet for %s", name)
 	}
-	if len(ips) == 1 {
-		return subnet, nil, nil
+	var gateway net.IP
+	if len(ips) > 0 {
+		gateway = net.ParseIP(ips[1])
 	}
-	gateway := net.ParseIP(ips[1])
 	return subnet, gateway, nil
 }
 

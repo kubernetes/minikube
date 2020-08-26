@@ -117,6 +117,7 @@ var mountCmd = &cobra.Command{
 			}
 		}
 		port, err := getPort()
+		fmt.Println("port is ", ip)
 		if err != nil {
 			exit.WithError("Error finding port for mount", err)
 		}
@@ -147,6 +148,7 @@ var mountCmd = &cobra.Command{
 		}
 
 		bindIP := ip.String() // the ip to listen on the user's host machine
+		fmt.Println("bind ip is", bindIP)
 		if driver.IsKIC(co.CP.Host.Driver.DriverName()) && runtime.GOOS != "linux" {
 			bindIP = "127.0.0.1"
 		}
