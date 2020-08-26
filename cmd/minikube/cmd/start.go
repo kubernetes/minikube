@@ -49,6 +49,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -156,7 +157,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
-		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
+		exit.WithCodeT(exitcode.ProgramConfig, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
 	if existing != nil {
@@ -313,7 +314,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 	}
 	if numNodes > 1 {
 		if driver.BareMetal(starter.Cfg.Driver) {
-			exit.WithCodeT(exit.Config, "The none driver is not compatible with multi-node clusters.")
+			exit.WithCodeT(exitcode.DriverConflict, "The none driver is not compatible with multi-node clusters.")
 		} else {
 			// Only warn users on first start.
 			if existing == nil {
@@ -525,7 +526,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		}
 		ds := driver.Status(d)
 		if ds.Name == "" {
-			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+			exit.WithCodeT(exitcode.DriverUnsupported, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
@@ -535,7 +536,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	if d := viper.GetString("vm-driver"); d != "" {
 		ds := driver.Status(viper.GetString("vm-driver"))
 		if ds.Name == "" {
-			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+			exit.WithCodeT(exitcode.DriverUnsupported, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
@@ -549,7 +550,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
 		}
 		out.T(out.Workaround, "Try specifying a --driver, or see https://minikube.sigs.k8s.io/docs/start/")
-		os.Exit(exit.Unavailable)
+		os.Exit(exitcode.DriverNotFound)
 	}
 
 	if len(alts) > 1 {
@@ -629,7 +630,7 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 2) Start the existing "{{.name}}" cluster using: '{{.command}} --driver={{.old}}'
 `, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "delcommand": mustload.ExampleCmd(existing.Name, "delete"), "old": old, "name": existing.Name})
 
-	exit.WithCodeT(exit.Config, "Exiting.")
+	exit.WithCodeT(exitcode.GuestConflict, "Exiting.")
 }
 
 // validateDriver validates that the selected driver appears sane, exits if not
@@ -637,7 +638,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
 	glog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+		exit.WithCodeT(exitcode.DriverUnsupported, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
 	// if we are only downloading artifacts for a driver, we can stop validation here
@@ -668,12 +669,12 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		if !st.Installed {
 			if existing != nil {
 				if old := hostDriver(existing); name == old {
-					exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+					exit.WithCodeT(exitcode.DriverUnavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
 				}
 			}
-			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
+			exit.WithCodeT(exitcode.DriverUnavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
-		exitIfNotForced(exit.Unavailable, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
+		exitIfNotForced(exitcode.DriverError, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
 	}
 }
 
@@ -739,7 +740,7 @@ func validateUser(drvName string) {
 	useForce := viper.GetBool(force)
 
 	if driver.NeedsRoot(drvName) && u.Uid != "0" && !useForce {
-		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo -E minikube start --driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
+		exit.WithCodeT(exitcode.DriverPermission, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo -E minikube start --driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
 	}
 
 	if driver.NeedsRoot(drvName) || u.Uid != "0" {
@@ -751,15 +752,17 @@ func validateUser(drvName string) {
 	out.ErrT(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
 	if !useForce {
-		os.Exit(exit.Permissions)
+		os.Exit(exitcode.DriverPermission)
 	}
 	cname := ClusterFlagValue()
 	_, err = config.Load(cname)
 	if err == nil || !config.IsNotExist(err) {
 		out.ErrT(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
 	}
+
+	// TODO: Why is this here?
 	if !useForce {
-		exit.WithCodeT(exit.Permissions, "Exiting")
+		exit.WithCodeT(exitcode.DriverPermission, "Exiting")
 	}
 }
 
@@ -867,7 +870,7 @@ func validateMemorySize(req int, drvName string) {
 	minAdvised := 0.50 * float64(sysLimit)
 
 	if req < minUsableMem {
-		exitIfNotForced(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
+		exitIfNotForced(exitcode.InsufficientMemory, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
 	}
 	if req < minRecommendedMem {
 		out.WarningT("Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
@@ -888,7 +891,7 @@ func validateMemorySize(req int, drvName string) {
 		minikube start --memory={{.min_advised}}mb				
 	
 `
-		exitIfNotForced(exit.Config, message, out.V{"requested": req, "system_limit": sysLimit, "max_advised": int32(maxAdvised), "min_advised": minAdvised})
+		exitIfNotForced(exitcode.InsufficientMemory, message, out.V{"requested": req, "system_limit": sysLimit, "max_advised": int32(maxAdvised), "min_advised": minAdvised})
 	}
 
 	if float64(req) > maxAdvised {
@@ -916,7 +919,7 @@ func validateCPUCount(drvName string) {
 		cpuCount = viper.GetInt(cpus)
 	}
 	if cpuCount < minimumCPUS {
-		exitIfNotForced(exit.BadUsage, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
+		exitIfNotForced(exitcode.InsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
 	if driver.IsKIC((drvName)) {
@@ -938,7 +941,7 @@ func validateCPUCount(drvName string) {
 				`)
 			}
 			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
-			exitIfNotForced(exit.BadUsage, "Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
+			exitIfNotForced(exitcode.InsufficientCores, "Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
 		}
 	}
 }
@@ -949,11 +952,11 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			exitIfNotForced(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
+			exitIfNotForced(exitcode.ProgramUsage, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
 
 		if diskSizeMB < minimumDiskSize {
-			exitIfNotForced(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
+			exitIfNotForced(exitcode.InsufficientStorage, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
 		}
 	}
 
@@ -971,7 +974,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 		req, err := util.CalculateSizeInMB(viper.GetString(memory))
 		if err != nil {
-			exitIfNotForced(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+			exitIfNotForced(exitcode.ProgramConfig, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 		}
 		validateMemorySize(req, drvName)
 	}
@@ -1002,7 +1005,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	if driver.BareMetal(drvName) {
 		if ClusterFlagValue() != constants.DefaultClusterName {
-			exit.WithCodeT(exit.Config, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
+			exit.WithCodeT(exitcode.DriverConflict, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}
 
 		runtime := viper.GetString(containerRuntime)
@@ -1014,7 +1017,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {
-				exit.WithCodeT(exit.Config, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
+				exit.WithCodeT(exitcode.GuestConfig, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
 			}
 		}
 	}
@@ -1027,7 +1030,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 			out.V{"invalid_extra_opts": invalidOpts},
 		)
 		exit.WithCodeT(
-			exit.Config,
+			exitcode.ProgramConfig,
 			"Valid components are: {{.valid_extra_opts}}",
 			out.V{"valid_extra_opts": bsutil.KubeadmExtraConfigOpts},
 		)
@@ -1140,11 +1143,11 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
+		exit.WithCodeT(exitcode.ProgramError, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
 	}
 	defaultVersion, err := semver.Make(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCodeT(exit.Data, "Unable to parse default Kubernetes version from constants: {{.error}}", out.V{"error": err})
+		exit.WithCodeT(exitcode.ProgramError, "Unable to parse default Kubernetes version from constants: {{.error}}", out.V{"error": err})
 	}
 
 	if nvs.LT(oldestVersion) {
@@ -1152,7 +1155,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 		if !viper.GetBool(force) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}
-		exitIfNotForced(exit.Data, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+		exitIfNotForced(exitcode.ServiceUnsupported, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
@@ -1172,7 +1175,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 		suggestedName := old.Name + "2"
 		out.T(out.Conflict, "You have selected Kubernetes {{.new}}, but the existing cluster is running Kubernetes {{.old}}", out.V{"new": nvs, "old": ovs, "profile": profileArg})
-		exit.WithCodeT(exit.Config, `Non-destructive downgrades are not supported, but you can proceed with one of the following options:
+		exit.WithCodeT(exitcode.ServiceConflict, `Non-destructive downgrades are not supported, but you can proceed with one of the following options:
 
   1) Recreate the cluster with Kubernetes {{.new}}, by running:
 
@@ -1210,7 +1213,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 
 	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
+		exit.WithCodeT(exitcode.ProgramUsage, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
 	}
 
 	return version.VersionPrefix + nvs.String()

@@ -24,6 +24,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
@@ -53,7 +54,7 @@ var sshCmd = &cobra.Command{
 		} else {
 			n, _, err = node.Retrieve(*co.Config, nodeName)
 			if err != nil {
-				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
+				exit.WithCodeT(exitcode.GuestNotFound, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
 			}
 		}
 
@@ -62,7 +63,7 @@ var sshCmd = &cobra.Command{
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
 			// It'd be nice if we could pass up the correct error code here :(
-			os.Exit(exit.Failure)
+			os.Exit(exitcode.Failure)
 		}
 	},
 }

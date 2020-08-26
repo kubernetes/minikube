@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -79,7 +80,7 @@ var logsCmd = &cobra.Command{
 			out.Ln("")
 			// Avoid exit.WithError, since it outputs the issue URL
 			out.WarningT("{{.error}}", out.V{"error": err})
-			os.Exit(exit.Unavailable)
+			os.Exit(exitcode.ServiceError)
 		}
 	},
 }

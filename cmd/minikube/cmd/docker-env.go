@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -123,7 +124,7 @@ func isDockerActive(r command.Runner) bool {
 
 func mustRestartDocker(name string, runner command.Runner) {
 	if err := sysinit.New(runner).Restart("docker"); err != nil {
-		exit.WithCodeT(exit.Unavailable, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+		exit.WithCodeT(exitcode.RuntimeError, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
 	}
 }
 
@@ -153,11 +154,11 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if len(co.Config.Nodes) > 1 {
-			exit.WithCodeT(exit.BadUsage, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
+			exit.WithCodeT(exitcode.ProgramUsage, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
 		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
-			exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
+			exit.WithCodeT(exitcode.ProgramUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
@@ -171,7 +172,7 @@ var dockerEnvCmd = &cobra.Command{
 		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
-				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
+				exit.WithCodeT(exitcode.LocalNetworkError, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
 			}
 		}
 

@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -56,7 +57,7 @@ func runPause(cmd *cobra.Command, args []string) {
 	if allNamespaces {
 		namespaces = nil //all
 	} else if len(namespaces) == 0 {
-		exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
+		exit.WithCodeT(exitcode.ProgramUsage, "Use -A to specify all namespaces")
 	}
 
 	ids := []string{}

@@ -42,6 +42,8 @@ type Problem struct {
 	Issues []int
 	// Hide the new issue link: it isn't our problem, and we won't be able to suggest additional assistance.
 	ShowIssueLink bool
+	// ExitCode to be used (defaults to 1)
+	ExitCode int
 }
 
 // match maps a regular expression to problem metadata.
@@ -54,6 +56,8 @@ type match struct {
 	GOOS []string
 	// Hide the new issue link: it isn't our problem, and we won't be able to suggest additional assistance.
 	ShowIssueLink bool
+	// ExitCode to be used (defaults to 1)
+	ExitCode int
 }
 
 // Display problem metadata to the console
@@ -96,16 +100,23 @@ func (p *Problem) DisplayJSON(exitcode int) {
 	register.PrintErrorExitCode(p.Err.Error(), exitcode, extraArgs)
 }
 
+
+func problemMap() map[string]match{} {
+	maps := []map[string]match){
+		ProgramErrors,
+		ResourceErrors,
+		HostErrors,
+	}
+}
+
+
+// FromError returns a known problem from anID
+func FromError(id string) *Problem {
+	maps := []map[string]match{
+
 // FromError returns a known problem from an error on an OS
 func FromError(err error, goos string) *Problem {
-	maps := []map[string]match{
-		osProblems,
-		vmProblems,
-		netProblems,
-		deployProblems,
-		stateProblems,
-		dockerProblems,
-	}
+
 
 	var osMatch *Problem
 	var genericMatch *Problem

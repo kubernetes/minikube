@@ -23,29 +23,15 @@ import (
 	"runtime/debug"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/problem"
 )
 
-// Exit codes based on sysexits(3)
-const (
-	Failure             = 1   // Failure represents a general failure code
-	Interrupted         = 2   // Ctrl-C (SIGINT)
-	BadUsage            = 64  // Usage represents an incorrect command line
-	Data                = 65  // Data represents incorrect data supplied by the user
-	NoInput             = 66  // NoInput represents that the input file did not exist or was not readable
-	Unavailable         = 69  // Unavailable represents when a service was unavailable
-	Software            = 70  // Software represents an internal software error.
-	IO                  = 74  // IO represents an I/O error
-	Permissions         = 77  // Permissions represents a permissions error
-	Config              = 78  // Config represents an unconfigured or misconfigured state
-	InsufficientStorage = 507 // InsufficientStorage represents insufficient storage in the VM/container
-)
-
 // UsageT outputs a templated usage error and exits with error code 64
 func UsageT(format string, a ...out.V) {
-	out.ErrWithExitCode(out.Usage, format, BadUsage, a...)
-	os.Exit(BadUsage)
+	out.ErrWithExitCode(out.Usage, format, exitcode.ProgramUsage, a...)
+	os.Exit(exitcode.ProgramUsage)
 }
 
 // WithCodeT outputs a templated fatal error message and exits with the supplied error code.
@@ -56,23 +42,33 @@ func WithCodeT(code int, format string, a ...out.V) {
 
 // WithError outputs an error and exits.
 func WithError(msg string, err error) {
-	glog.Infof("WithError(%s)=%v called from:\n%s", msg, err, debug.Stack())
+	glog.Infof("WithError(%s, %v) called from:\n%s", msg, err, debug.Stack())
 	p := problem.FromError(err, runtime.GOOS)
-
-	if p != nil {
-		if out.JSON {
-			p.DisplayJSON(Config)
-			os.Exit(Config)
-		}
-		WithProblem(msg, err, p)
-		os.Exit(Config)
+	exitcode := exitcode.ProgramError
+	if p == nil {
+		out.DisplayError(msg, err)
+		os.Exit(exitcode)
 	}
-	out.DisplayError(msg, err)
-	os.Exit(Software)
+
+	if p.exitcode > 0 {
+		exitcode = p.ExitCode
+	}
+
+	if out.JSON {
+		p.DisplayJSON()
+	} else {
+		showProblem(msg, err, p)
+	}
+	os.Exit(exitcode)
 }
 
-// WithProblem outputs info related to a known problem and exits.
-func WithProblem(msg string, err error, p *problem.Problem) {
+// WithProblem outputs an error specifically associated to a problem
+func WithProblem(id string, msg string) {
+	glog.Infof("WithProblem(%s, %v) called from:\n%s", id, msg, debug.Stack())
+}
+
+// showProblem outputs info related to a known problem
+func showProblem(msg string, err error, p *problem.Problem) {
 	out.ErrT(out.Empty, "")
 	out.FailureT("[{{.id}}] {{.msg}} {{.error}}", out.V{"msg": msg, "id": p.ID, "error": p.Err})
 	p.Display()

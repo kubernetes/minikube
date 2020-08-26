@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/version"
 )
@@ -61,7 +62,7 @@ var versionCmd = &cobra.Command{
 			}
 			out.Ln(string(yaml))
 		default:
-			exit.WithCodeT(exit.BadUsage, "error: --output must be 'yaml' or 'json'")
+			exit.WithCodeT(exitcode.ProgramUsage, "error: --output must be 'yaml' or 'json'")
 		}
 	},
 }

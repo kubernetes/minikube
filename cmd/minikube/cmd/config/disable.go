@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -34,7 +35,7 @@ var addonsDisableCmd = &cobra.Command{
 
 		addon := args[0]
 		if addon == "heapster" {
-			exit.WithCodeT(exit.Unavailable, "The heapster addon is depreciated. please try to disable metrics-server instead")
+			exit.WithCodeT(exitcode.ProgramUnsupported, "The heapster addon is depreciated. please try to disable metrics-server instead")
 		}
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
 		if err != nil {
