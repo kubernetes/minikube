@@ -44,6 +44,8 @@ killall java
 # clean docker left overs
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 docker volume prune -f || true
+docker system prune -f || true
+docker network prune -f || true
 docker volume ls || true
 docker system df || true
 
