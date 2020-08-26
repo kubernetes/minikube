@@ -39,6 +39,9 @@ var ErrWindowsContainers = &FailFastError{errors.New("docker container type is w
 // ErrCPUCountLimit is thrown when docker daemon doesn't have enough CPUs for the requested container
 var ErrCPUCountLimit = &FailFastError{errors.New("not enough CPUs is available for container")}
 
+// ErrIPinUse is thrown when the container been given an IP used by another container
+var ErrIPinUse = &FailFastError{errors.New("can't create with that IP, address already in use")}
+
 // ErrExitedUnexpectedly is thrown when container is created/started without error but later it exists and it's status is not running anymore.
 var ErrExitedUnexpectedly = errors.New("container exited unexpectedly")
 

@@ -276,6 +276,10 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 		if strings.Contains(rr.Output(), "Range of CPUs is from") && strings.Contains(rr.Output(), "CPUs available") { // CPUs available
 			return ErrCPUCountLimit
 		}
+		// example: docker: Error response from daemon: Address already in use.
+		if strings.Contains(rr.Output(), "Address already in use") {
+			return ErrIPinUse
+		}
 		return err
 	}
 
