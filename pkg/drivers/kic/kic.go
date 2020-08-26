@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -65,6 +66,18 @@ func NewDriver(c Config) *Driver {
 	return d
 }
 
+// machineOrder returns the order of the container based on it is name
+func machineOrder(machineName string) int {
+	// minikube-m02
+	sp := strings.Split(machineName, "-")
+	m := strings.Trim(sp[len(sp)-1], "m") // m02
+	i, err := strconv.Atoi(m)
+	if err != nil {
+		return 1
+	}
+	return i
+}
+
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	params := oci.CreateParams{
@@ -80,15 +93,17 @@ func (d *Driver) Create() error {
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
-	defaultNetwork := d.MachineName
-	if subnet, err := oci.CreateNetwork(defaultNetwork); err != nil {
-		glog.Errorf("unable to create docker network; node ip may not be stable: %v", err)
+	// one network bridge per cluster.
+	defaultNetwork := d.NodeConfig.ClusterName
+	if gateway, err := oci.CreateNetwork(d.OCIBinary, defaultNetwork); err != nil {
+		glog.Warningf("failed to create network: %v", err)
+		out.WarningT("Unable to create dedicated network, This might result in cluster IP change after restart.")
 	} else {
 		params.Network = defaultNetwork
-		ip := subnet.IP.To4()
-		if ip != nil {
-			ip[3]++
-		}
+		ip := gateway.To4()
+		i := machineOrder(d.NodeConfig.MachineName)
+		ip[3] = ip[3] + byte(i)
+		glog.Infof("calculated static IP %q for the %q container ", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
 

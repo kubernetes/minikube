@@ -32,10 +32,10 @@ import (
 
 // RoutableHostIPFromInside returns the ip/dns of the host that container lives on
 // is routable from inside the container
-func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, error) {
+func RoutableHostIPFromInside(ociBin string, clusterName string, containerName string) (net.IP, error) {
 	if ociBin == Docker {
 		if runtime.GOOS == "linux" {
-			_, gateway, err := dockerNetworkInspect(containerName)
+			_, gateway, err := dockerNetworkInspect(clusterName)
 			if err != nil {
 				return gateway, errors.Wrap(err, "network inspect")
 			}
@@ -149,14 +149,17 @@ func dockerContainerIP(name string) (string, string, error) {
 	return ips[0], ips[1], nil
 }
 
-// CreateNetwork creates a network returns subnet and error
-func CreateNetwork(name string) (*net.IPNet, error) {
-	// check if the network already exists
-	subnet, _, err := dockerNetworkInspect(name)
-	if err == nil {
-		return subnet, nil
+// CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
+func CreateNetwork(ociBin string, name string) (net.IP, error) {
+	if ociBin != Docker {
+		return nil, fmt.Errorf("Podman network not implemented yet", ociBin)
 	}
-
+	// check if the network already exists
+	subnet, gateway, err := dockerNetworkInspect(name)
+	if err == nil {
+		glog.Info("Found existing network with subnet %q and gatway %q.", subnet, gateway)
+		return gateway, nil
+	}
 	// simple way to create networks, subnet is taken, try one bigger
 	attempt := 0
 	_, subnet, err = net.ParseCIDR(defaultSubnet)
@@ -164,7 +167,7 @@ func CreateNetwork(name string) (*net.IPNet, error) {
 		return nil, errors.Wrapf(err, "parse default subnet %s", defaultSubnet)
 	}
 
-	err = attemptCreateNework(subnet, name)
+	gateway, err = attemptCreateNework(subnet, name)
 	if err != nil {
 		if err != ErrNetworkSubnetTaken {
 			return nil, errors.Wrapf(err, "error creating network")
@@ -180,9 +183,9 @@ func CreateNetwork(name string) (*net.IPNet, error) {
 			// this is large enough to try more and not too small to not try enough
 			// can be tuned in the next iterations
 			subnet.IP.To4()[2] += 10
-			err := attemptCreateNework(subnet, name)
+			gateway, err := attemptCreateNework(subnet, name)
 			if err == nil {
-				return subnet, nil
+				return gateway, nil
 			}
 			if err == ErrNetworkSubnetTaken {
 				continue
@@ -190,10 +193,10 @@ func CreateNetwork(name string) (*net.IPNet, error) {
 		}
 
 	}
-	return subnet, nil
+	return gateway, nil
 }
 
-func attemptCreateNework(subnet *net.IPNet, name string) error {
+func attemptCreateNework(subnet *net.IPNet, name string) (net.IP, error) {
 	gateway := subnet.IP.To4()
 	gateway[3]++ // first ip for gateway
 	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnet, name, gateway)
@@ -201,14 +204,14 @@ func attemptCreateNework(subnet *net.IPNet, name string) error {
 	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
 		if strings.Contains(rr.Output(), "Pool overlaps with other one on this address space") {
-			return ErrNetworkSubnetTaken
+			return nil, ErrNetworkSubnetTaken
 		}
 		if strings.Contains(rr.Output(), "failed to allocate gateway") && strings.Contains(rr.Output(), "Address already in use") {
-			return ErrNetworkGatewayTaken
+			return nil, ErrNetworkGatewayTaken
 		}
-		return errors.Wrapf(err, "error creating network")
+		return nil, errors.Wrapf(err, "error creating network")
 	}
-	return nil
+	return gateway, nil
 }
 
 // RemoveNetwork removes a network
@@ -255,6 +258,7 @@ func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
 	if len(ips) == 0 {
 		return nil, nil, fmt.Errorf("invalid network info")
 	}
+
 	_, subnet, err := net.ParseCIDR(ips[0])
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "parse subnet for %s", name)

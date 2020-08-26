@@ -34,12 +34,12 @@ import (
 )
 
 // HostIP gets the ip address to be used for mapping host -> VM and VM -> host
-func HostIP(host *host.Host) (net.IP, error) {
+func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 	switch host.DriverName {
 	case driver.Docker:
-		return oci.RoutableHostIPFromInside(oci.Docker, host.Name)
+		return oci.RoutableHostIPFromInside(oci.Docker, clusterName, host.Name)
 	case driver.Podman:
-		return oci.RoutableHostIPFromInside(oci.Podman, host.Name)
+		return oci.RoutableHostIPFromInside(oci.Podman, clusterName, host.Name)
 	case driver.KVM2:
 		return net.ParseIP("192.168.39.1"), nil
 	case driver.HyperV:
