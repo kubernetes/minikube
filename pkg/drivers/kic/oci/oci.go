@@ -88,7 +88,7 @@ func DeleteContainer(ociBin string, name string) error {
 	if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
 		return errors.Wrapf(err, "delete %s", name)
 	}
-	if err := removeNetwork(name); err != nil {
+	if err := RemoveNetwork(name); err != nil {
 		return errors.Wrap(err, "removing network")
 	}
 	return nil
@@ -153,8 +153,10 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 	}
 	if p.OCIBinary == Docker {
-		if p.Network != "" {
+		// to provide a static IP for docker
+		if p.Network != "" && p.IP != "" {
 			runArgs = append(runArgs, "--network", p.Network)
+			runArgs = append(runArgs, "--ip", p.IP)
 		}
 
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))

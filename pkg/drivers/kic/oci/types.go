@@ -31,6 +31,8 @@ const (
 	nodeRoleLabelKey = "role.minikube.sigs.k8s.io"
 	// CreatedByLabelKey is applied to any container/volume that is created by minikube created_by.minikube.sigs.k8s.io=true
 	CreatedByLabelKey = "created_by.minikube.sigs.k8s.io"
+	// DefaultSubnet subnet to be used on first cluster
+	defaultSubnet = "192.168.39.0/24"
 )
 
 // CreateParams are parameters needed to create a container

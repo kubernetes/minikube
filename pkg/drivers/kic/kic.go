@@ -85,14 +85,10 @@ func (d *Driver) Create() error {
 		glog.Errorf("unable to create docker network; node ip may not be stable: %v", err)
 	} else {
 		params.Network = defaultNetwork
-		fmt.Println("subnet is", subnet)
-		ip := net.ParseIP(strings.Split(subnet, "/")[0])
-		fmt.Println("the ip is", ip)
-		// make sure it's only 4 bytes
-		ip = ip.To4()
-		// check ip != nil
-		ip[3]++
-		ip[3]++
+		ip := subnet.IP.To4()
+		if ip != nil {
+			ip[3]++
+		}
 		params.IP = ip.String()
 	}
 

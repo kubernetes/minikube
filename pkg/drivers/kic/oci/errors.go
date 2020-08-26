@@ -48,6 +48,15 @@ var ErrDaemonInfo = errors.New("daemon info not responding")
 // ErrNetworkSubnetTaken is thrown when a subnet is taken by another network
 var ErrNetworkSubnetTaken = errors.New("subnet is taken")
 
+// ErrNetworkNotFound is when given network was not found
+var ErrNetworkNotFound = errors.New("kic network not found")
+
+// ErrNetworkGatewayTaken is when given network gatway is taken
+var ErrNetworkGatewayTaken = errors.New("network gateway is taken")
+
+// ErrNetworkInUse is when trying to delete a network which is attached to another container
+var ErrNetworkInUse = errors.New("can't delete network attached to a running container")
+
 // LogContainerDebug will print relevant docker/podman infos after a container fails
 func LogContainerDebug(ociBin string, name string) string {
 	rr, err := containerInspect(ociBin, name)

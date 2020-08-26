@@ -119,6 +119,11 @@ func deleteContainersAndVolumes(ociBin string) {
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
+
+	errs = oci.DeleteAllNetworksByKIC()
+	if errs != nil {
+		glog.Warningf("error deleting left over networks (might be okay).\nTo see the list of netowrks: 'docker network ls'\n:%v", errs)
+	}
 }
 
 // runDelete handles the executes the flow of "minikube delete"
@@ -256,6 +261,11 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	errs := oci.DeleteAllVolumesByLabel(bin, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
 		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+	}
+
+	errs = oci.DeleteAllNetworksByKIC()
+	if errs != nil {
+		glog.Warningf("error deleting left over networks (might be okay).\nTo see the list of netowrks: 'docker network ls'\n:%v", errs)
 	}
 
 	if bin == oci.Podman {

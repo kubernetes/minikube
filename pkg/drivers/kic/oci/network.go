@@ -17,6 +17,8 @@ limitations under the License.
 package oci
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 	"os/exec"
@@ -33,7 +35,11 @@ import (
 func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, error) {
 	if ociBin == Docker {
 		if runtime.GOOS == "linux" {
-			return dockerGatewayIP(containerName)
+			_, gateway, err := dockerNetworkInspect(containerName)
+			if err != nil {
+				return gateway, errors.Wrap(err, "routable gateway")
+			}
+			return gateway, nil
 		}
 		// for windows and mac, the gateway ip is not routable so we use dns trick.
 		return digDNS(ociBin, containerName, "host.docker.internal")
@@ -164,24 +170,29 @@ func dockerContainerIP(name string) (string, string, error) {
 }
 
 // CreateNetwork creates a network returns subnet and error
-func CreateNetwork(name string) (string, error) {
+func CreateNetwork(name string) (*net.IPNet, error) {
 	// check if the network already exists
-	if networkExists(name) {
-		return "", nil
+	subnet, _, err := dockerNetworkInspect(name)
+	if err == nil {
+		return subnet, nil
 	}
 
 	// simple way to create networks, subnet is taken, try one bigger
 	attempt := 0
-	subnet := fmt.Sprintf("192.168.%d.0/24", 39)
-	fmt.Println("about to create network with", subnet)
-	err := attemptCreateNework(subnet, name)
+	_, subnet, err = net.ParseCIDR(defaultSubnet)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parse default subnet %s", defaultSubnet)
+	}
+
+	err = attemptCreateNework(subnet, name)
 	if err != nil {
 		if err == ErrNetworkSubnetTaken {
-			for attempt < 10 {
+			// try up tp 13 times
+			for attempt < 13 {
 				attempt++
-				glog.Warningf("Couldn't create network %q at %q subnet will try a new subnet", name, subnet)
-				// increase by 10 each time
-				subnet = fmt.Sprintf(fmt.Sprintf("192.168.%d.0/24", 39+10*attempt))
+				glog.Infof("Couldn't create network %q at %q subnet will try again a new subnet ...", name, subnet)
+				// increase 2nd digit by 10 each time
+				subnet.IP.To4()[2] += 10
 				err := attemptCreateNework(subnet, name)
 				if err == nil {
 					return subnet, nil
@@ -191,53 +202,121 @@ func CreateNetwork(name string) (string, error) {
 				}
 			}
 		}
-		return "", errors.Wrapf(err, "error creating network")
+		return nil, errors.Wrapf(err, "error creating network")
 
 	}
-	fmt.Println("created newrok", name, subnet)
-
 	return subnet, nil
 }
 
-func attemptCreateNework(subnet string, name string) error {
-	fmt.Println("inside attempt", subnet, name)
-	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), "-o", "com.docker.network.bridge.enable_ip_masquerade=true", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
+func attemptCreateNework(subnet *net.IPNet, name string) error {
+	gateway := subnet.IP.To4()
+	gateway[3]++ // first ip for gateway
+	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnet, name, gateway)
+	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--gateway=%s", gateway), "-o", "com.docker.network.bridge.enable_ip_masquerade=true", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
 		fmt.Printf("failed to created newrok: %v", err)
 		if strings.Contains(rr.Output(), "Pool overlaps with other one on this address space") {
 			return ErrNetworkSubnetTaken
+		}
+		if strings.Contains(rr.Output(), "failed to allocate gateway") && strings.Contains(rr.Output(), "Address already in use") {
+			return ErrNetworkGatewayTaken
 		}
 		return errors.Wrapf(err, "error creating network")
 	}
 	return nil
 }
 
-// removeNetwork removes a network
-func removeNetwork(name string) error {
-	fmt.Println("inside remove container", name)
+// RemoveNetwork removes a network
+func RemoveNetwork(name string) error {
 	if !networkExists(name) {
 		return nil
 	}
-	_, err := runCmd(exec.Command(Docker, "network", "remove", name))
-	fmt.Printf("ran : %v\n", err)
+	rr, err := runCmd(exec.Command(Docker, "network", "remove", name))
+	if err != nil {
+		if strings.Contains(rr.Output(), "No such network:") {
+			return ErrNetworkNotFound
+		}
+		// Error response from daemon: error while removing network: network mynet123 id f9e1c50b89feb0b8f4b687f3501a81b618252c9907bc20666e386d0928322387 has active endpoints
+		if strings.Contains(rr.Output(), "has active endpoints") {
+			return ErrNetworkInUse
+		}
+	}
 
-	// TODO: handel this error for multinode med@xmac:~/workspace/minikube (nework_delete)$ docker network rm mynet123
-	// Error response from daemon: error while removing network: network mynet123 id f9e1c50b89feb0b8f4b687f3501a81b618252c9907bc20666e386d0928322387 has active endpoints
 	return err
 }
 
 func networkExists(name string) bool {
-	fmt.Println("inside networkExists", name)
-	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--format", "{{.Name}}"))
-	if err != nil {
-		glog.Warningf("error listing networks: %v", err)
+	if _, _, err := dockerNetworkInspect(name); err != nil {
+		if err == ErrNetworkNotFound {
+			return false
+		}
+		glog.Warningf("error inspecting network %s: %v", name, err)
 		return false
 	}
-	networks := strings.Split(rr.Output(), "\n")
-	for _, n := range networks {
-		if strings.Trim(n, "\n") == name {
-			return true
+	return true
+}
+
+// returns subnet and gate if exists
+func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
+	rr, err := runCmd(exec.Command(Docker, "network", "inspect", name, "--format", "{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}}"))
+	if err != nil {
+		if strings.Contains(rr.Output(), "No such network:") {
+			return nil, nil, ErrNetworkNotFound
+		}
+		return nil, nil, err
+	}
+	// results looks like 172.17.0.0/16,172.17.0.1
+	ips := strings.Split(rr.Stdout.String(), ",")
+	if len(ips) == 0 {
+		return nil, nil, fmt.Errorf("invalid network info")
+	}
+
+	_, subnet, err := net.ParseCIDR(ips[0])
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "parse subnet for %s", name)
+	}
+	if len(ips) == 1 {
+		return subnet, nil, nil
+	}
+	gateway := net.ParseIP(ips[1])
+	return subnet, gateway, nil
+}
+
+// returns all network names created by a label
+func allNetworkByLabel(ociBin string, label string) ([]string, error) {
+	if ociBin != Docker {
+		return nil, fmt.Errorf("%s not supported", ociBin)
+	}
+
+	// docker network ls --filter='label=created_by.minikube.sigs.k8s.io=true' --format '{{.Name}}
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", fmt.Sprintf("--filter=label=%s", label), "--format", "{{.Name}}"))
+	if err != nil {
+		return nil, err
+	}
+	var lines []string
+	scanner := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
+	for scanner.Scan() {
+		lines = append(lines, strings.TrimSpace(scanner.Text()))
+	}
+
+	return lines, nil
+}
+
+// DeleteAllNetworksByKIC delets all networks created by kic
+func DeleteAllNetworksByKIC() []error {
+	var errs []error
+	ns, err := allNetworkByLabel(Docker, CreatedByLabelKey+"=true")
+	if err != nil {
+		return []error{errors.Wrap(err, "list all volume")}
+	}
+	for _, n := range ns {
+		err := RemoveNetwork(n)
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
-	return false
+	if len(errs) > 0 {
+		return errs
+	}
+	return nil
 }
