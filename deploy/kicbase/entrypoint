@@ -82,7 +82,7 @@ fix_cgroup_mounts() {
 
   # NOTE: This extracts fields 4 and on
   # See https://man7.org/linux/man-pages/man5/proc.5.html for field names
-  cgroup_mounts=$(egrep -o '(/docker|libpod_parent).*/sys/fs/cgroup.*' /proc/self/mountinfo || true)
+  cgroup_mounts=$(egrep -o '(/docker|libpod_parent|/kubepods).*/sys/fs/cgroup.*' /proc/self/mountinfo || true)
 
   if [[ -n "${cgroup_mounts}" ]]; then
     local mount_root
