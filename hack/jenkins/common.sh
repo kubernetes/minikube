@@ -35,7 +35,10 @@ sudo ./installers/check_install_golang.sh "1.14.6" "/usr/local" || true
 
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 docker volume prune -f || true
+docker network prune -f || true
+docker system prune -f || true
 docker system df || true
+
 
 echo ">> Starting at $(date)"
 echo ""

@@ -37,7 +37,7 @@ func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, erro
 		if runtime.GOOS == "linux" {
 			_, gateway, err := dockerNetworkInspect(containerName)
 			if err != nil {
-				return gateway, errors.Wrap(err, "routable gateway")
+				return gateway, errors.Wrap(err, "network inspect")
 			}
 			return gateway, nil
 		}
@@ -166,23 +166,28 @@ func CreateNetwork(name string) (*net.IPNet, error) {
 
 	err = attemptCreateNework(subnet, name)
 	if err != nil {
-		if err == ErrNetworkSubnetTaken {
-			// try up tp 13 times
-			for attempt < 13 {
-				attempt++
-				glog.Infof("Couldn't create network %q at %q subnet will try again a new subnet ...", name, subnet)
-				// increase 2nd digit by 10 each time
-				subnet.IP.To4()[2] += 10
-				err := attemptCreateNework(subnet, name)
-				if err == nil {
-					return subnet, nil
-				}
-				if err == ErrNetworkSubnetTaken {
-					continue
-				}
+		if err != ErrNetworkSubnetTaken {
+			return nil, errors.Wrapf(err, "error creating network")
+		}
+		// try up to 13 times
+		// we can try up to 255
+		for attempt < 13 {
+			attempt++
+			glog.Infof("Couldn't create network %q at %q subnet will try again with a new subnet ...", name, subnet)
+			// increase 3nd digit by 10 each time
+			// 13 times adding 10 defaultSubnet "192.168.39.0/24"
+			// at most it will add up to 169 which is still less than max allowed 255
+			// this is large enough to try more and not too small to not try enough
+			// can be tuned in the next iterations
+			subnet.IP.To4()[2] += 10
+			err := attemptCreateNework(subnet, name)
+			if err == nil {
+				return subnet, nil
+			}
+			if err == ErrNetworkSubnetTaken {
+				continue
 			}
 		}
-		return nil, errors.Wrapf(err, "error creating network")
 
 	}
 	return subnet, nil
@@ -192,7 +197,8 @@ func attemptCreateNework(subnet *net.IPNet, name string) error {
 	gateway := subnet.IP.To4()
 	gateway[3]++ // first ip for gateway
 	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnet, name, gateway)
-	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--gateway=%s", gateway), "-o", "com.docker.network.bridge.enable_ip_masquerade=true", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
+	// options documenation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
+	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--gateway=%s", gateway), "-o", "com.docker.network.bridge.enable_ip_masquerade=true", "-o", "com.docker.network.bridge.enable_icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
 		if strings.Contains(rr.Output(), "Pool overlaps with other one on this address space") {
 			return ErrNetworkSubnetTaken
