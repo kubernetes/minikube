@@ -45,6 +45,9 @@ var ErrExitedUnexpectedly = errors.New("container exited unexpectedly")
 // ErrDaemonInfo is thrown when docker/podman info is failing or not responding
 var ErrDaemonInfo = errors.New("daemon info not responding")
 
+// ErrNetworkSubnetTaken is thrown when a subnet is taken by another network
+var ErrNetworkSubnetTaken = errors.New("subnet is taken")
+
 // LogContainerDebug will print relevant docker/podman infos after a container fails
 func LogContainerDebug(ociBin string, name string) string {
 	rr, err := containerInspect(ociBin, name)

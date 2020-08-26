@@ -81,11 +81,19 @@ func (d *Driver) Create() error {
 	}
 
 	defaultNetwork := d.MachineName
-	if err := oci.CreateNetwork(defaultNetwork, oci.DefaultIPRange, oci.DefaultGateway); err != nil {
-		glog.Warningf("unable to create docker network; node ip may not be stable: %v", err)
+	if subnet, err := oci.CreateNetwork(defaultNetwork); err != nil {
+		glog.Errorf("unable to create docker network; node ip may not be stable: %v", err)
 	} else {
 		params.Network = defaultNetwork
-		params.IP = oci.DefaultIP
+		fmt.Println("subnet is", subnet)
+		ip := net.ParseIP(strings.Split(subnet, "/")[0])
+		fmt.Println("the ip is", ip)
+		// make sure it's only 4 bytes
+		ip = ip.To4()
+		// check ip != nil
+		ip[3]++
+		ip[3]++
+		params.IP = ip.String()
 	}
 
 	// control plane specific options

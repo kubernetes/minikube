@@ -153,10 +153,8 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 	}
 	if p.OCIBinary == Docker {
-		// on linux, we can provide a static IP for docker
-		if runtime.GOOS == "linux" && p.Network != "" && p.IP != "" {
+		if p.Network != "" {
 			runArgs = append(runArgs, "--network", p.Network)
-			runArgs = append(runArgs, "--ip", p.IP)
 		}
 
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
