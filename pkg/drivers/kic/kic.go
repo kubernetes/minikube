@@ -101,8 +101,8 @@ func (d *Driver) Create() error {
 	} else {
 		params.Network = defaultNetwork
 		ip := gateway.To4()
-		i := machineOrder(d.NodeConfig.MachineName)
-		ip[3] = ip[3] + byte(i)
+		// calculate the container IP based on its machine order
+		ip[3] = ip[3] + byte(machineOrder(d.NodeConfig.MachineName))
 		glog.Infof("calculated static IP %q for the %q container ", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
