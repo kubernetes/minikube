@@ -74,7 +74,7 @@ var ProfileCmd = &cobra.Command{
 
 		err := Set(config.ProfileName, profile)
 		if err != nil {
-			exit.WithError("Setting profile failed", err)
+			exit.WithError(exit.ProgramError, "Setting profile failed", err)
 		}
 		cc, err := config.Load(profile)
 		// might err when loading older version of cfg file that doesn't have KeepContext field

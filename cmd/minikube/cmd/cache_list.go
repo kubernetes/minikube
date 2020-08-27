@@ -42,10 +42,10 @@ var listCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		images, err := cmdConfig.ListConfigMap(cacheImageConfigKey)
 		if err != nil {
-			exit.WithError("Failed to get image map", err)
+			exit.WithError(exit.ProgramError, "Failed to get image map", err)
 		}
 		if err := cacheList(images); err != nil {
-			exit.WithError("Failed to list cached images", err)
+			exit.WithError(exit.ProgramError, "Failed to list cached images", err)
 		}
 	},
 }

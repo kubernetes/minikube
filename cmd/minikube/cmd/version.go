@@ -51,13 +51,13 @@ var versionCmd = &cobra.Command{
 		case "json":
 			json, err := json.Marshal(data)
 			if err != nil {
-				exit.WithError("version json failure", err)
+				exit.WithError(exit.ProgramError, "version json failure", err)
 			}
 			out.Ln(string(json))
 		case "yaml":
 			yaml, err := yaml.Marshal(data)
 			if err != nil {
-				exit.WithError("version yaml failure", err)
+				exit.WithError(exit.ProgramError, "version yaml failure", err)
 			}
 			out.Ln(string(yaml))
 		default:

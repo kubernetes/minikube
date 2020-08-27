@@ -217,18 +217,18 @@ func postStartValidations(h *host.Host, drvName string) {
 	if err != nil {
 		glog.Warningf("error getting command runner: %v", err)
 	}
-	// make sure /var isn't full, otherwise warn
+
+	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
-
 	if percentageFull >= 99 {
-		exit.WithKnownIssue(exit.DockerInsufficientStorage, `Sorry, Docker is out of disk space ({{.p}}%% of capacity)`, out.V{"p": percentageFull})
+		exit.WithKnownIssue(exit.DockerInsufficientStorage, `Docker is out of disk space ({{.p}}%% of capacity in-use)`, out.V{"p": percentageFull})
 	}
 
 	if percentageFull >= 89 {
-		out.ErrT(out.Tip, `Docker is nearly out of disk space ({{.p}}% of capacity), run 'docker system prune' to reclaim unused resources`, out.V{"p": percentageFull})
+		out.ErrT(out.Tip, `Docker is nearly out of disk space ({{.p}}% of capacity in-use), run 'docker system prune' to reclaim unused resources`, out.V{"p": percentageFull})
 	}
 }
 

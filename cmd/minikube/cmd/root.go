@@ -57,14 +57,14 @@ var RootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
-				exit.WithError("Error creating minikube directory", err)
+				exit.WithError(exit.ProgramError, "Error creating minikube directory", err)
 			}
 		}
 
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
 			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
-				exit.WithError("logdir set failed", err)
+				exit.WithError(exit.ProgramError, "logdir set failed", err)
 			}
 		}
 	},
@@ -152,7 +152,7 @@ func setFlagsUsingViper() {
 		// Viper will give precedence first to calls to the Set command,
 		// then to values from the config.yml
 		if err := a.Value.Set(viper.GetString(a.Name)); err != nil {
-			exit.WithError(fmt.Sprintf("failed to set value for %q", a.Name), err)
+			exit.WithError(exit.ProgramError, fmt.Sprintf("failed to set value for %q", a.Name), err)
 		}
 		a.Changed = true
 	}
@@ -229,7 +229,7 @@ func init() {
 
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
-		exit.WithError("Unable to bind flags", err)
+		exit.WithError(exit.ProgramError, "Unable to bind flags", err)
 	}
 	cobra.OnInitialize(initConfig)
 

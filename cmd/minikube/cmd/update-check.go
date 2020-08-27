@@ -32,7 +32,7 @@ var updateCheckCmd = &cobra.Command{
 		url := notify.GithubMinikubeReleasesURL
 		r, err := notify.GetAllVersionsFromURL(url)
 		if err != nil {
-			exit.WithError("Unable to fetch latest version info", err)
+			exit.WithError(exit.ProgramError, "Unable to fetch latest version info", err)
 		}
 
 		if len(r) < 1 {

@@ -97,7 +97,7 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 				out.T(out.Celebrate, "Opening Kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
 				for _, url := range urlString {
 					if err := browser.OpenURL(url); err != nil {
-						exit.WithError(fmt.Sprintf("browser failed to open url %s", url), err)
+						exit.WithError(exit.ProgramError, fmt.Sprintf("browser failed to open url %s", url), err)
 					}
 				}
 			}

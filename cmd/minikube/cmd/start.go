@@ -77,7 +77,7 @@ func init() {
 	initDriverFlags()
 	initNetworkingFlags()
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
-		exit.WithError("unable to bind flags", err)
+		exit.WithError(exit.ProgramError, "unable to bind flags", err)
 	}
 }
 
@@ -172,7 +172,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		machine.MaybeDisplayAdvice(err, ds.Name)
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
-			exit.WithError("error provisioning host", err)
+			exit.WithError(exit.ProgramError, "error provisioning host", err)
 		} else {
 			success := false
 			// Walk down the rest of the options
@@ -199,7 +199,7 @@ func runStart(cmd *cobra.Command, args []string) {
 				}
 			}
 			if !success {
-				exit.WithError("error provisioning host", err)
+				exit.WithError(exit.ProgramError, "error provisioning host", err)
 			}
 		}
 	}
@@ -211,14 +211,14 @@ func runStart(cmd *cobra.Command, args []string) {
 		stopProfile(existing.Name)
 		starter, err = provisionWithDriver(cmd, ds, existing)
 		if err != nil {
-			exit.WithError("error provisioning host", err)
+			exit.WithError(exit.ProgramError, "error provisioning host", err)
 		}
 	}
 
 	kubeconfig, err := startWithDriver(cmd, starter, existing)
 	if err != nil {
 		node.MaybeExitWithAdvice(err)
-		exit.WithError("failed to start node", err)
+		exit.WithError(exit.ProgramError, "failed to start node", err)
 	}
 
 	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
@@ -668,12 +668,12 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		if !st.Installed {
 			if existing != nil {
 				if old := hostDriver(existing); name == old {
-					exit.WithCodeT(exit.DriverUnavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+					exit.WithCodeT(exit.ProviderNotFound, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
 				}
 			}
-			exit.WithCodeT(exit.DriverUnavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
+			exit.WithCodeT(exit.ProviderNotFound, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
-		exitIfNotForced(exit.DriverError, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
+		exitIfNotForced(exit.ProviderUnavailable, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
 	}
 }
 

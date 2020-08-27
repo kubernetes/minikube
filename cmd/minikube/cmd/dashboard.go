@@ -76,7 +76,7 @@ var dashboardCmd = &cobra.Command{
 			// Enable the dashboard add-on
 			err = addons.SetAndSave(cname, "dashboard", "true")
 			if err != nil {
-				exit.WithError("Unable to enable dashboard", err)
+				exit.WithError(exit.ProgramError, "Unable to enable dashboard", err)
 			}
 		}
 
@@ -92,7 +92,7 @@ var dashboardCmd = &cobra.Command{
 		out.ErrT(out.Launch, "Launching proxy ...")
 		p, hostPort, err := kubectlProxy(kubectlVersion, cname)
 		if err != nil {
-			exit.WithError("kubectl proxy", err)
+			exit.WithError(exit.ProgramError, "kubectl proxy", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
@@ -105,7 +105,7 @@ var dashboardCmd = &cobra.Command{
 		//check if current user is root
 		user, err := user.Current()
 		if err != nil {
-			exit.WithError("Unable to get current user", err)
+			exit.WithError(exit.ProgramError, "Unable to get current user", err)
 		}
 		if dashboardURLMode || user.Uid == "0" {
 			out.Ln(url)

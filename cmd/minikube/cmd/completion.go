@@ -80,17 +80,17 @@ var completionCmd = &cobra.Command{
 		} else if args[0] == "bash" {
 			err := GenerateBashCompletion(os.Stdout, cmd.Parent())
 			if err != nil {
-				exit.WithError("bash completion failed", err)
+				exit.WithError(exit.ProgramError, "bash completion failed", err)
 			}
 		} else if args[0] == "zsh" {
 			err := GenerateZshCompletion(os.Stdout, cmd.Parent())
 			if err != nil {
-				exit.WithError("zsh completion failed", err)
+				exit.WithError(exit.ProgramError, "zsh completion failed", err)
 			}
 		} else {
 			err := GenerateFishCompletion(os.Stdout, cmd.Parent())
 			if err != nil {
-				exit.WithError("fish completion failed", err)
+				exit.WithError(exit.ProgramError, "fish completion failed", err)
 			}
 		}
 

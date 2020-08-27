@@ -245,7 +245,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
-		exit.WithError("Failed runtime", err)
+		exit.WithError(exit.ProgramError, "Failed runtime", err)
 	}
 
 	disableOthers := true
@@ -265,14 +265,14 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 			}
 
 			if err := machine.CacheImagesForBootstrapper(cc.KubernetesConfig.ImageRepository, cc.KubernetesConfig.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-				exit.WithError("Failed to cache images", err)
+				exit.WithError(exit.ProgramError, "Failed to cache images", err)
 			}
 		}
 	}
 
 	err = cr.Enable(disableOthers, forceSystemd())
 	if err != nil {
-		exit.WithError("Failed to enable container runtime", err)
+		exit.WithError(exit.ProgramError, "Failed to enable container runtime", err)
 	}
 
 	return cr
@@ -286,7 +286,7 @@ func forceSystemd() bool {
 func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) bootstrapper.Bootstrapper {
 	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, r)
 	if err != nil {
-		exit.WithError("Failed to get bootstrapper", err)
+		exit.WithError(exit.ProgramError, "Failed to get bootstrapper", err)
 	}
 	for _, eo := range config.ExtraOptions {
 		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
@@ -295,11 +295,11 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	// update cluster and set up certs
 
 	if err := bs.UpdateCluster(cfg); err != nil {
-		exit.WithError("Failed to update cluster", err)
+		exit.WithError(exit.ProgramError, "Failed to update cluster", err)
 	}
 
 	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
-		exit.WithError("Failed to setup certs", err)
+		exit.WithError(exit.ProgramError, "Failed to setup certs", err)
 	}
 
 	return bs
@@ -308,7 +308,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) *kubeconfig.Settings {
 	addr, err := apiServerURL(*h, *cc, *n)
 	if err != nil {
-		exit.WithError("Failed to get API Server URL", err)
+		exit.WithError(exit.ProgramError, "Failed to get API Server URL", err)
 	}
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {

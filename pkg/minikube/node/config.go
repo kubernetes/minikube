@@ -70,9 +70,9 @@ func configureMounts(wg *sync.WaitGroup) {
 		mountCmd.Stderr = os.Stderr
 	}
 	if err := mountCmd.Start(); err != nil {
-		exit.WithError("Error starting mount", err)
+		exit.WithError(exit.ProgramError, "Error starting mount", err)
 	}
 	if err := lock.WriteFile(filepath.Join(localpath.MiniPath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
-		exit.WithError("Error writing mount pid", err)
+		exit.WithError(exit.ProgramError, "Error writing mount pid", err)
 	}
 }

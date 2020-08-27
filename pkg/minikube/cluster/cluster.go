@@ -38,7 +38,7 @@ import (
 // see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
 	if err := flag.Set("logtostderr", "false"); err != nil {
-		exit.WithError("unable to set logtostderr", err)
+		exit.WithError(exit.ProgramError, "unable to set logtostderr", err)
 	}
 
 	// Setting the default client to native gives much better performance.

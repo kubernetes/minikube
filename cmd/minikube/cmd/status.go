@@ -195,7 +195,7 @@ var statusCmd = &cobra.Command{
 		if nodeName != "" || statusFormat != defaultStatusFormat && len(cc.Nodes) > 1 {
 			n, _, err := node.Retrieve(*cc, nodeName)
 			if err != nil {
-				exit.WithError("retrieving node", err)
+				exit.WithError(exit.ProgramError, "retrieving node", err)
 			}
 
 			st, err := nodeStatus(api, *cc, *n)
@@ -224,18 +224,18 @@ var statusCmd = &cobra.Command{
 		case "text":
 			for _, st := range statuses {
 				if err := statusText(st, os.Stdout); err != nil {
-					exit.WithError("status text failure", err)
+					exit.WithError(exit.ProgramError, "status text failure", err)
 				}
 			}
 		case "json":
 			// Layout is currently only supported for JSON mode
 			if layout == "cluster" {
 				if err := clusterStatusJSON(statuses, os.Stdout); err != nil {
-					exit.WithError("status json failure", err)
+					exit.WithError(exit.ProgramError, "status json failure", err)
 				}
 			} else {
 				if err := statusJSON(statuses, os.Stdout); err != nil {
-					exit.WithError("status json failure", err)
+					exit.WithError(exit.ProgramError, "status json failure", err)
 				}
 			}
 		default:

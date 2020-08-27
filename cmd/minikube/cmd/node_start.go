@@ -43,7 +43,7 @@ var nodeStartCmd = &cobra.Command{
 
 		n, _, err := node.Retrieve(*cc, name)
 		if err != nil {
-			exit.WithError("retrieving node", err)
+			exit.WithError(exit.ProgramError, "retrieving node", err)
 		}
 
 		machineName := driver.MachineName(*cc, *n)
@@ -54,7 +54,7 @@ var nodeStartCmd = &cobra.Command{
 
 		r, p, m, h, err := node.Provision(cc, n, false, viper.GetBool(deleteOnFailure))
 		if err != nil {
-			exit.WithError("provisioning host for node", err)
+			exit.WithError(exit.ProgramError, "provisioning host for node", err)
 		}
 
 		s := node.Starter{
@@ -72,7 +72,7 @@ var nodeStartCmd = &cobra.Command{
 			_, err := maybeDeleteAndRetry(cmd, *cc, *n, nil, err)
 			if err != nil {
 				node.MaybeExitWithAdvice(err)
-				exit.WithError("failed to start node", err)
+				exit.WithError(exit.ProgramError, "failed to start node", err)
 			}
 		}
 		out.T(out.Happy, "Successfully started node {{.name}}!", out.V{"name": machineName})

@@ -250,7 +250,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		if strings.ToLower(repository) == "auto" || (mirrorCountry != "" && repository == "") {
 			found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)))
 			if err != nil {
-				exit.WithError("Failed to check main repository and mirrors for images", err)
+				exit.WithError(exit.ProgramError, "Failed to check main repository and mirrors for images", err)
 			}
 
 			if !found {

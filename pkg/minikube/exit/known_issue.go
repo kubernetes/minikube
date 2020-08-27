@@ -31,36 +31,26 @@ const issueBase = "https://github.com/kubernetes/minikube/issues"
 type KnownIssue struct {
 	// ID is an arbitrary unique and stable string describing this issue
 	ID string
-	// Err is the original error
-	Err error
+	// Regexp is which regular expression this issue matches
+	Regexp *regexp.Regexp
+	// Operating systems this error is specific to
+	GOOS []string
+
 	// Advice is actionable text that the user should follow
 	Advice string
 	// URL is a reference URL for more information
 	URL string
 	// Issues are a list of related issues to this KnownIssue
 	Issues []int
-	// Hide the new issue link: it isn't our KnownIssue, and we won't be able to suggest additional assistance.
-	ShowIssueLink bool
-	// ExitCode to be used (defaults to 1)
-	ExitCode int
-}
-
-// match maps a regular expression to KnownIssue metadata.
-type match struct {
-	Regexp *regexp.Regexp
-	Advice string
-	URL    string
-	Issues []int
-	// GOOS is what platforms this KnownIssue may be specific to, when disambiguation is necessary.
-	GOOS []string
-	// Hide the new issue link: it isn't our KnownIssue, and we won't be able to suggest additional assistance.
-	ShowIssueLink bool
+	// Show the new issue link
+	ShowNewIssueLink bool
 	// ExitCode to be used (defaults to 1)
 	ExitCode int
 }
 
 // Display KnownIssue metadata to the console
-func (ki *KnownIssue) Display() {
+func (ki *KnownIssue) DisplayText() {
+
 	out.ErrT(out.Tip, "Suggestion: {{.advice}}", out.V{"advice": translate.T(ki.Advice)})
 	if ki.URL != "" {
 		out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": ki.URL})
@@ -85,7 +75,7 @@ func (ki *KnownIssue) Display() {
 }
 
 // DisplayJSON displays KnownIssue metadata in JSON format
-func (ki *KnownIssue) DisplayJSON(exitcode int) {
+func (ki *KnownIssue) DisplayJSON() {
 	var issues string
 	for _, i := range ki.Issues {
 		issues += fmt.Sprintf("https://github.com/kubernetes/minikube/issues/%v,", i)
@@ -96,63 +86,48 @@ func (ki *KnownIssue) DisplayJSON(exitcode int) {
 		"url":    ki.URL,
 		"issues": issues,
 	}
-	register.PrintErrorExitCode(ki.Err.Error(), exitcode, extraArgs)
+	register.PrintErrorExitCode("???", ki.ExitCode, extraArgs)
 }
 
-
-func KnownIssueMap() map[string]match{} {
-	maps := []map[string]match){
-		ProgramErrors,
-		ResourceErrors,
-		HostErrors,
-	}
+func knownIssues() []KnownIssue {
+	kis := []KnownIssue{}
+	// This is intentionally in dependency order
+	kis = append(kis, ProgramIssues...)
+	kis = append(kis, ResourceIssues...)
+	kis = append(kis, HostIssues...)
+	kis = append(kis, ProviderIssues...)
+	kis = append(kis, DriverIssues...)
+	kis = append(kis, LocalNetworkIssues...)
+	kis = append(kis, InternetIssues...)
+	kis = append(kis, GuestIssues...)
+	kis = append(kis, RuntimeIssues...)
+	kis = append(kis, ControlPlaneIssues...)
+	kis = append(kis, ServiceIssues...)
+	return kis
 }
-
 
 // KnownIssueFromError returns a known issue from an error on an OS
 func KnownIssueFromError(err error, goos string) *KnownIssue {
-	var osMatch *KnownIssue
 	var genericMatch *KnownIssue
 
-	for _, m := range maps {
-		for id, match := range m {
-			if !match.Regexp.MatchString(err.Error()) {
-				continue
-			}
+	for _, ki := range knownIssues() {
+		ki := ki
+		if !ki.Regexp.MatchString(err.Error()) {
+			continue
+		}
 
-			// Does this match require an OS matchup?
-			if len(match.GOOS) > 0 {
-				foundOS := false
-				for _, o := range match.GOOS {
-					if o == goos {
-						foundOS = true
-					}
-				}
-				if !foundOS {
-					continue
+		// Does this match require an OS matchup?
+		if len(ki.GOOS) > 0 {
+			for _, o := range ki.GOOS {
+				if o == goos {
+					return &ki
 				}
 			}
-
-			p := &KnownIssue{
-				Err:           err,
-				Advice:        match.Advice,
-				URL:           match.URL,
-				ID:            id,
-				Issues:        match.Issues,
-				ShowIssueLink: match.ShowIssueLink,
-			}
-
-			if len(match.GOOS) > 0 {
-				osMatch = p
-			} else {
-				genericMatch = p
-			}
+		}
+		if genericMatch == nil {
+			genericMatch = &ki
 		}
 	}
 
-	// Prioritize operating-system specific matches over general ones
-	if osMatch != nil {
-		return osMatch
-	}
 	return genericMatch
 }

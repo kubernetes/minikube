@@ -72,22 +72,22 @@ func runPause(cmd *cobra.Command, args []string) {
 
 		host, err := machine.LoadHost(co.API, driver.MachineName(*co.Config, n))
 		if err != nil {
-			exit.WithError("Error getting host", err)
+			exit.WithError(exit.ProgramError, "Error getting host", err)
 		}
 
 		r, err := machine.CommandRunner(host)
 		if err != nil {
-			exit.WithError("Failed to get command runner", err)
+			exit.WithError(exit.ProgramError, "Failed to get command runner", err)
 		}
 
 		cr, err := cruntime.New(cruntime.Config{Type: co.Config.KubernetesConfig.ContainerRuntime, Runner: r})
 		if err != nil {
-			exit.WithError("Failed runtime", err)
+			exit.WithError(exit.ProgramError, "Failed runtime", err)
 		}
 
 		uids, err := cluster.Pause(cr, r, namespaces)
 		if err != nil {
-			exit.WithError("Pause", err)
+			exit.WithError(exit.ProgramError, "Pause", err)
 		}
 		ids = append(ids, uids...)
 	}

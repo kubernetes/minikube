@@ -41,7 +41,7 @@ var nodeDeleteCmd = &cobra.Command{
 
 		n, err := node.Delete(*co.Config, name)
 		if err != nil {
-			exit.WithError("deleting node", err)
+			exit.WithError(exit.ProgramError, "deleting node", err)
 		}
 
 		if driver.IsKIC(co.Config.Driver) {

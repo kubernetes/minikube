@@ -66,12 +66,12 @@ var nodeAddCmd = &cobra.Command{
 		if err := node.Add(cc, n, false); err != nil {
 			_, err := maybeDeleteAndRetry(cmd, *cc, n, nil, err)
 			if err != nil {
-				exit.WithError("failed to add node", err)
+				exit.WithError(exit.ProgramError, "failed to add node", err)
 			}
 		}
 
 		if err := config.SaveProfile(cc.Name, cc); err != nil {
-			exit.WithError("failed to save config", err)
+			exit.WithError(exit.ProgramError, "failed to save config", err)
 		}
 
 		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})

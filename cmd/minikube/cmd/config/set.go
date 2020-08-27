@@ -39,7 +39,7 @@ var configSetCmd = &cobra.Command{
 		}
 		err := Set(args[0], args[1])
 		if err != nil {
-			exit.WithError("Set failed", err)
+			exit.WithError(exit.ProgramError, "Set failed", err)
 		}
 	},
 }

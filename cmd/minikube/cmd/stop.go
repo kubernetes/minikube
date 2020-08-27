@@ -55,7 +55,7 @@ func init() {
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
-		exit.WithError("unable to bind flags", err)
+		exit.WithError(exit.ProgramError, "unable to bind flags", err)
 	}
 
 	RootCmd.AddCommand(stopCmd)
@@ -115,7 +115,7 @@ func stopProfile(profile string) int {
 
 	if !keepActive {
 		if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
-			exit.WithError("update config", err)
+			exit.WithError(exit.ProgramError, "update config", err)
 		}
 	}
 
@@ -143,7 +143,7 @@ func stop(api libmachine.API, machineName string) bool {
 	}
 
 	if err := retry.Expo(tryStop, 1*time.Second, 120*time.Second, 5); err != nil {
-		exit.WithError("Unable to stop VM", err)
+		exit.WithError(exit.ProgramError, "Unable to stop VM", err)
 	}
 
 	return nonexistent

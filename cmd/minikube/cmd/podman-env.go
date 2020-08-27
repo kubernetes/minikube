@@ -114,7 +114,7 @@ var podmanEnvCmd = &cobra.Command{
 
 		if podmanUnset {
 			if err := podmanUnsetScript(PodmanEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
-				exit.WithError("Error generating unset output", err)
+				exit.WithError(exit.ProgramError, "Error generating unset output", err)
 			}
 			return
 		}
@@ -137,7 +137,7 @@ var podmanEnvCmd = &cobra.Command{
 
 		client, err := createExternalSSHClient(co.CP.Host.Driver)
 		if err != nil {
-			exit.WithError("Error getting ssh client", err)
+			exit.WithError(exit.ProgramError, "Error getting ssh client", err)
 		}
 
 		ec := PodmanEnvConfig{
@@ -150,12 +150,12 @@ var podmanEnvCmd = &cobra.Command{
 		if ec.Shell == "" {
 			ec.Shell, err = shell.Detect()
 			if err != nil {
-				exit.WithError("Error detecting shell", err)
+				exit.WithError(exit.ProgramError, "Error detecting shell", err)
 			}
 		}
 
 		if err := podmanSetScript(ec, os.Stdout); err != nil {
-			exit.WithError("Error generating set output", err)
+			exit.WithError(exit.ProgramError, "Error generating set output", err)
 		}
 	},
 }

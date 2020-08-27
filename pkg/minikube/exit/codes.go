@@ -31,6 +31,7 @@ const (
 	// <source> + Error			0	(~EX_SOFTWARE)
 	// <source> + Conflict		1	(~EX_OSERR)
 	// <source> + Timeout		2	(~EX_INTERRUPTED)
+	// <source> + NotRunning    3
 	// <source> + Usage			4	(~EX_USAGE)
 	// <source> + NotFound		5	(~EX_DATAERR)
 	// <source> + Unsupported   6   (~EX_PROTOCOL)
@@ -41,12 +42,12 @@ const (
 	// NOTE: "3" and "6" are available for your own use
 
 	// Error codes specific to the minikube program
-	ProgramError       = 10
-	ProgramUsage       = 14
-	ProgramConflict    = 11
-	ProgramNotFound    = 15
+	ProgramError       = 10 // generic error
+	ProgramUsage       = 14 // bad command-line options
+	ProgramConflict    = 11 // can't do what you want because of existing data
+	ProgramNotFound    = 15 // something was not found
 	ProgramUnsupported = 16 // unsupported features
-	ProgramConfig      = 18
+	ProgramConfig      = 18 // bad configuration specified
 
 	// Error codes specific to resource limits (exit code layout follows no rules)
 	InsufficientMemory     = 23
@@ -75,6 +76,8 @@ const (
 	// Error codes specific to the libmachine driver
 	DriverError       = 50
 	DriverConflict    = 51
+	DriverTimeout     = 52
+	DriverUsage       = 54
 	DriverNotFound    = 55
 	DriverUnsupported = 56
 	DriverPermission  = 57
@@ -82,9 +85,11 @@ const (
 	DriverUnavailable = 59
 
 	// Error codes specific to the driver provider
-	ProviderError       = 60
-	ProviderConflict    = 61
-	ProviderTimeout     = 62
+	ProviderError      = 60
+	ProviderConflict   = 61
+	ProviderTimeout    = 62
+	ProviderNotRunning = 63
+	// Reserve 64 for the moment as it used to be usage
 	ProviderNotFound    = 65
 	ProviderUnsupported = 66
 	ProviderPermission  = 67
@@ -102,7 +107,8 @@ const (
 
 	// Error codes specific to the guest host
 	GuestError       = 80
-	GuestConflict    = 71
+	GuestConflict    = 81
+	GuestNotRunning  = 83
 	GuestNotFound    = 85
 	GuestPermission  = 87
 	GuestConfig      = 88
@@ -110,19 +116,29 @@ const (
 
 	// Error codes specific to the container runtime
 	RuntimeError       = 90
+	RuntimeNotRunning  = 93
 	RuntimeNotFound    = 95
 	RuntimeUnavailable = 99
 
-	// Error codes specific to Kubernetes and/or its services
-	ServiceError       = 100
-	ServiceNotFound    = 151
-	ServiceUnavailable = 192
-	ServiceTimeout     = 123
-	ServiceConflict    = 114
-	ServicePermission  = 175
-	ServiceConfig      = 186
-	ServiceUsage       = 147
-	ServiceUnsupported = 108
+	// Error codes specific to the Kubernetes control plane
+	ControlPlaneError       = 100
+	ControlPlaneConflict    = 101
+	ControlPlaneTimeout     = 102
+	ControlPlaneNotRunning  = 103
+	ControlPlaneNotFound    = 105
+	ControlPlaneConfig      = 108
+	ControlPlaneUnavailable = 109
+
+	// Error codes specific to a Kubernetes service
+	ServiceError       = 110
+	ServiceConflict    = 111
+	ServiceTimeout     = 112
+	ServiceNotRunning  = 113
+	ServiceNotFound    = 115
+	ServiceUnsupported = 116
+	ServicePermission  = 117
+	ServiceConfig      = 118
+	ServiceUnavailable = 119
 
 	// Reserve 128+ for OS signal based exit codes
 )

@@ -38,7 +38,7 @@ var addonsDisableCmd = &cobra.Command{
 		}
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
 		if err != nil {
-			exit.WithError("disable failed", err)
+			exit.WithError(exit.ProgramError, "disable failed", err)
 		}
 		out.T(out.AddonDisable, `"The '{{.minikube_addon}}' addon is disabled`, out.V{"minikube_addon": addon})
 	},

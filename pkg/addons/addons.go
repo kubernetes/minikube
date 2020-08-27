@@ -177,7 +177,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 
 	cp, err := config.PrimaryControlPlane(cc)
 	if err != nil {
-		exit.WithError("Error getting primary control plane", err)
+		exit.WithError(exit.ProgramError, "Error getting primary control plane", err)
 	}
 
 	mName := driver.MachineName(*cc, cp)

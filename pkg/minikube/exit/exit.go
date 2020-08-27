@@ -28,8 +28,9 @@ import (
 
 // UsageT outputs a templated usage error and exits with error code 64
 func UsageT(format string, a ...out.V) {
-	out.ErrWithExitCode(out.Usage, format, exit.ProgramUsage, a...)
-	os.Exit(exit.ProgramUsage)
+	exitcode := ProgramUsage
+	out.ErrWithExitCode(out.Usage, format, exitcode, a...)
+	os.Exit(exitcode)
 }
 
 // WithCodeT outputs a templated fatal error message and exits with the supplied error code.
@@ -39,31 +40,35 @@ func WithCodeT(code int, format string, a ...out.V) {
 }
 
 // WithError outputs an error and exits.
-func WithError(msg string, err error) {
+func WithError(code int, msg string, err error) {
 	glog.Infof("WithError(%s, %v) called from:\n%s", msg, err, debug.Stack())
 	ki := KnownIssueFromError(err, runtime.GOOS)
 	if ki != nil {
-		WithKnownIssue(ki, msg)
+		WithKnownIssue(*ki, msg)
 	} else {
 		out.DisplayError(msg, err)
-		os.Exit(ProgramError)
+		os.Exit(code)
 	}
 }
 
 // WithKnownIssue outputs an error and exits.
-func WithKnownIssue(ki *KnownIssue, msg string) {
-	glog.Infof("WithKnownIssue(%s, %+v) called from:\n%s", msg, ki, debug.Stack())
-	exitcode := exit.ProgramError
-	if ki.exitcode > 0 {
-		exitcode = p.ExitCode
+func WithKnownIssue(ki KnownIssue, format string, a ...out.V) {
+	glog.Infof("WithKnownIssue(%+v, %s, %s) called from:\n%s", ki, format, a, debug.Stack())
+
+	code := ki.ExitCode
+	if code == 0 {
+		code = ProgramError
 	}
+
+	out.ErrWithExitCode(out.FailureType, format, code, a...)
 
 	if out.JSON {
 		ki.DisplayJSON()
 	} else {
 		ki.DisplayText()
 	}
-	os.Exit(exitcode)
+
+	os.Exit(code)
 }
 
 /*
