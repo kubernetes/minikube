@@ -108,7 +108,8 @@ var (
 	}
 	// KubernetesReleaseBinaries are Kubernetes release binaries required for
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
-	KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
+	KubeadmReleaseBinaries    = []string{"kubelet", "kubeadm"}
+	KubernetesReleaseBinaries = append(KubeadmReleaseBinaries, "kubectl")
 	// ImageCacheDir is the path to the image cache directory
 	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 

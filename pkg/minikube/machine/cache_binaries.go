@@ -21,16 +21,35 @@ import (
 	"runtime"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 )
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
 func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) error {
 	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
+
+	// If --download-only, skip kubeadm and kubelet
+	if viper.GetBool("download-only") {
+		var cBin []string
+		for _, bin := range binaries {
+			excluded := false
+			for _, exclBin := range constants.KubeadmReleaseBinaries {
+				if bin == exclBin {
+					excluded = true
+				}
+			}
+			if !excluded {
+				cBin = append(cBin, bin)
+			}
+		}
+		binaries = cBin
+	}
 
 	var g errgroup.Group
 	for _, bin := range binaries {
