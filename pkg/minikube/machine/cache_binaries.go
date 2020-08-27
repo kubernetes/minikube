@@ -36,7 +36,7 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 
 	// If --download-only, skip kubeadm and kubelet
 	if viper.GetBool("download-only") {
-		var cBin []string
+		var cBinaries []string
 		for _, bin := range binaries {
 			excluded := false
 			for _, exclBin := range constants.KubeadmReleaseBinaries {
@@ -45,10 +45,10 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 				}
 			}
 			if !excluded {
-				cBin = append(cBin, bin)
+				cBinaries = append(cBinaries, bin)
 			}
 		}
-		binaries = cBin
+		binaries = cBinaries
 	}
 
 	var g errgroup.Group

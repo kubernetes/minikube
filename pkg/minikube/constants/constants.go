@@ -106,9 +106,11 @@ var (
 		"global": {""},
 		"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
 	}
+	// KubeadmReleaseBinaries are Kubernetes release binaries required for kubeadm
+	KubeadmReleaseBinaries = []string{"kubelet", "kubeadm"}
+
 	// KubernetesReleaseBinaries are Kubernetes release binaries required for
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
-	KubeadmReleaseBinaries    = []string{"kubelet", "kubeadm"}
 	KubernetesReleaseBinaries = append(KubeadmReleaseBinaries, "kubectl")
 	// ImageCacheDir is the path to the image cache directory
 	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
