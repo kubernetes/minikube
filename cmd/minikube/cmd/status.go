@@ -39,7 +39,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -240,7 +239,7 @@ var statusCmd = &cobra.Command{
 				}
 			}
 		default:
-			exit.WithCodeT(exitcode.ProgramUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
+			exit.WithCodeT(exit.ProgramUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
 		}
 
 		os.Exit(exitCode(statuses))

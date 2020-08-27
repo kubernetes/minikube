@@ -33,7 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
@@ -129,11 +128,11 @@ var podmanEnvCmd = &cobra.Command{
 		}
 
 		if len(co.Config.Nodes) > 1 {
-			exit.WithCodeT(exitcode.ProgramUsage, `The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
+			exit.WithCodeT(exit.ProgramUsage, `The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
 		if ok := isPodmanAvailable(co.CP.Runner); !ok {
-			exit.WithCodeT(exitcode.ServiceUnavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
+			exit.WithCodeT(exit.ServiceUnavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
 
 		client, err := createExternalSSHClient(co.CP.Host.Driver)

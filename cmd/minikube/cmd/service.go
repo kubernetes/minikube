@@ -37,7 +37,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -85,7 +84,7 @@ var serviceCmd = &cobra.Command{
 		if err != nil {
 			var s *service.SVCNotFoundError
 			if errors.As(err, &s) {
-				exit.WithCodeT(exitcode.ServiceNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
+				exit.WithCodeT(exit.ServiceNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
 You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
 			}
 			exit.WithError("Error opening service", err)

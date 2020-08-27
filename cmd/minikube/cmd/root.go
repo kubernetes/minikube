@@ -33,7 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
@@ -106,7 +105,7 @@ func Execute() {
 
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
-		os.Exit(exitcode.ProgramUsage)
+		os.Exit(exit.ProgramUsage)
 	}
 }
 

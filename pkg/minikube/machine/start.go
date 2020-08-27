@@ -41,7 +41,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -225,12 +224,11 @@ func postStartValidations(h *host.Host, drvName string) {
 	}
 
 	if percentageFull >= 99 {
-		// TODO: Add problem support
-		exit.WithCodeT(exitcode.InsufficientStorage, `Sorry, Docker is out of disk space ({{.percent}}%% of capacity)`, out.V{"percent": percentageFull})
+		exit.WithKnownIssue(exit.DockerInsufficientStorage, `Sorry, Docker is out of disk space ({{.p}}%% of capacity)`, out.V{"p": percentageFull})
 	}
 
 	if percentageFull >= 89 {
-		out.ErrT(out.Tip, `Docker is nearly out of disk space ({{.percent}}% of capacity), run 'docker system prune' to reclaim unused resources`, out.V{"percent": percentageFull})
+		out.ErrT(out.Tip, `Docker is nearly out of disk space ({{.p}}% of capacity), run 'docker system prune' to reclaim unused resources`, out.V{"p": percentageFull})
 	}
 }
 

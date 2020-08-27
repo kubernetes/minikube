@@ -36,7 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -231,7 +230,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			var err error
 			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
 			if err != nil {
-				exit.WithCodeT(exitcode.ProgramUsage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+				exit.WithCodeT(exit.ProgramUsage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 			}
 			if driver.IsKIC(drvName) && mem > containerLimit {
 				exit.UsageT("{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
@@ -243,7 +242,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 		diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			exit.WithCodeT(exitcode.ProgramUsage, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
+			exit.WithCodeT(exit.ProgramUsage, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
 
 		repository := viper.GetString(imageRepository)
@@ -256,7 +255,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 			if !found {
 				if autoSelectedRepository == "" {
-					exit.WithCodeT(exitcode.InternetUnavailable, "None of the known repositories are accessible. Consider specifying an alternative image repository with --image-repository flag")
+					exit.WithCodeT(exit.InternetUnavailable, "None of the known repositories are accessible. Consider specifying an alternative image repository with --image-repository flag")
 				} else {
 					out.WarningT("None of the known repositories in your location are accessible. Using {{.image_repository_name}} as fallback.", out.V{"image_repository_name": autoSelectedRepository})
 				}

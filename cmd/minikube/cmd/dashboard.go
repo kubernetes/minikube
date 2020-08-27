@@ -31,7 +31,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -87,7 +86,7 @@ var dashboardCmd = &cobra.Command{
 		checkSVC := func() error { return service.CheckService(cname, ns, svc) }
 		// for slow machines or parallels in CI to avoid #7503
 		if err = retry.Expo(checkSVC, 100*time.Microsecond, time.Minute*10); err != nil {
-			exit.WithCodeT(exitcode.ServiceTimeout, "dashboard service is not running: {{.error}}", out.V{"error": err})
+			exit.WithCodeT(exit.ServiceTimeout, "dashboard service is not running: {{.error}}", out.V{"error": err})
 		}
 
 		out.ErrT(out.Launch, "Launching proxy ...")
@@ -100,7 +99,7 @@ var dashboardCmd = &cobra.Command{
 		out.ErrT(out.Verifying, "Verifying proxy health ...")
 		chkURL := func() error { return checkURL(url) }
 		if err = retry.Expo(chkURL, 100*time.Microsecond, 10*time.Minute); err != nil {
-			exit.WithCodeT(exitcode.ServiceUnavailable, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
+			exit.WithCodeT(exit.ServiceUnavailable, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
 		}
 
 		//check if current user is root
@@ -113,7 +112,7 @@ var dashboardCmd = &cobra.Command{
 		} else {
 			out.T(out.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
 			if err = browser.OpenURL(url); err != nil {
-				exit.WithCodeT(exitcode.HostError, "failed to open browser: {{.error}}", out.V{"error": err})
+				exit.WithCodeT(exit.HostError, "failed to open browser: {{.error}}", out.V{"error": err})
 			}
 		}
 

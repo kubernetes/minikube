@@ -25,7 +25,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -61,7 +60,7 @@ func MaybeExitWithAdvice(err error) {
 		}
 
 		// TODO: Use a problem
-		exit.WithCodeT(exitcode.InsufficientCores, "Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
+		exit.WithCodeT(exit.InsufficientCores, "Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
 	}
 
 	if errors.Is(err, kubeadm.ErrNoExecLinux) {

@@ -24,7 +24,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
@@ -63,14 +62,14 @@ var addonsOpenCmd = &cobra.Command{
 
 		addon, ok := assets.Addons[addonName] // validate addon input
 		if !ok {
-			exit.WithCodeT(exitcode.ProgramUsage, `addon '{{.name}}' is not a valid addon packaged with minikube.
+			exit.WithCodeT(exit.ProgramUsage, `addon '{{.name}}' is not a valid addon packaged with minikube.
 To see the list of available addons run:
 minikube addons list`, out.V{"name": addonName})
 		}
 
 		enabled := addon.IsEnabled(co.Config)
 		if !enabled {
-			exit.WithCodeT(exitcode.ProgramConflict, `addon '{{.name}}' is currently not enabled.
+			exit.WithCodeT(exit.ProgramConflict, `addon '{{.name}}' is currently not enabled.
 To enable this addon run:
 minikube addons enable {{.name}}`, out.V{"name": addonName})
 		}
@@ -80,10 +79,10 @@ minikube addons enable {{.name}}`, out.V{"name": addonName})
 
 		serviceList, err := service.GetServiceListByLabel(cname, namespace, key, addonName)
 		if err != nil {
-			exit.WithCodeT(exitcode.ServiceUnavailable, "Error getting service with namespace: {{.namespace}} and labels {{.labelName}}:{{.addonName}}: {{.error}}", out.V{"namespace": namespace, "labelName": key, "addonName": addonName, "error": err})
+			exit.WithCodeT(exit.ServiceUnavailable, "Error getting service with namespace: {{.namespace}} and labels {{.labelName}}:{{.addonName}}: {{.error}}", out.V{"namespace": namespace, "labelName": key, "addonName": addonName, "error": err})
 		}
 		if len(serviceList.Items) == 0 {
-			exit.WithCodeT(exitcode.ServiceNotFound, `This addon does not have an endpoint defined for the 'addons open' command.
+			exit.WithCodeT(exit.ServiceNotFound, `This addon does not have an endpoint defined for the 'addons open' command.
 You can add one by annotating a service with the label {{.labelName}}:{{.addonName}}`, out.V{"labelName": key, "addonName": addonName})
 		}
 		for i := range serviceList.Items {
@@ -91,7 +90,7 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 			var urlString []string
 
 			if urlString, err = service.WaitForService(co.API, co.Config.Name, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
-				exit.WithCodeT(exitcode.ServiceTimeout, "Wait failed: {{.error}}", out.V{"error": err})
+				exit.WithCodeT(exit.ServiceTimeout, "Wait failed: {{.error}}", out.V{"error": err})
 			}
 
 			if len(urlString) != 0 {

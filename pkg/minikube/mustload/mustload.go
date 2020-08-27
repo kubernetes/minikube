@@ -32,7 +32,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -71,7 +70,7 @@ func Partial(name string, miniHome ...string) (libmachine.API, *config.ClusterCo
 	if err != nil {
 		if config.IsNotExist(err) {
 			out.T(out.Shrug, `There is no local cluster named "{{.cluster}}"`, out.V{"cluster": name})
-			exitTip("start", name, exitcode.GuestNotFound)
+			exitTip("start", name, exit.GuestNotFound)
 		}
 		exit.WithError("Error getting cluster config", err)
 	}
@@ -96,17 +95,17 @@ func Running(name string) ClusterController {
 
 	if hs == state.None.String() {
 		out.T(out.Shrug, `The control plane node "{{.name}}" does not exist.`, out.V{"name": cp.Name})
-		exitTip("start", name, exitcode.GuestNotFound)
+		exitTip("start", name, exit.GuestNotFound)
 	}
 
 	if hs == state.Stopped.String() {
 		out.T(out.Shrug, `The control plane node must be running for this command`)
-		exitTip("start", name, exitcode.GuestUnavailable)
+		exitTip("start", name, exit.GuestUnavailable)
 	}
 
 	if hs != state.Running.String() {
 		out.T(out.Shrug, `The control plane node is not running (state={{.state}})`, out.V{"name": cp.Name, "state": hs})
-		exitTip("start", name, exitcode.ServiceUnavailable)
+		exitTip("start", name, exit.ServiceUnavailable)
 	}
 
 	host, err := machine.LoadHost(api, name)
@@ -145,18 +144,18 @@ func Healthy(name string) ClusterController {
 	as, err := kverify.APIServerStatus(co.CP.Runner, co.CP.Hostname, co.CP.Port)
 	if err != nil {
 		out.FailureT(`Unable to get control plane status: {{.error}}`, out.V{"error": err})
-		exitTip("delete", name, exitcode.ServiceError)
+		exitTip("delete", name, exit.ServiceError)
 	}
 
 	if as == state.Paused {
 		out.T(out.Shrug, `The control plane for "{{.name}}" is paused!`, out.V{"name": name})
-		exitTip("unpause", name, exitcode.ServiceConfig)
+		exitTip("unpause", name, exit.ServiceConfig)
 	}
 
 	if as != state.Running {
 		out.T(out.Shrug, `This control plane is not running! (state={{.state}})`, out.V{"state": as.String()})
 		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
-		exitTip("start", name, exitcode.ServiceUnavailable)
+		exitTip("start", name, exit.ServiceUnavailable)
 	}
 	return co
 }

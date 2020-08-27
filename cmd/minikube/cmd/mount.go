@@ -33,7 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/third_party/go9p/ufs"
@@ -86,7 +85,7 @@ var mountCmd = &cobra.Command{
 		vmPath := mountString[idx+1:]
 		if _, err := os.Stat(hostPath); err != nil {
 			if os.IsNotExist(err) {
-				exit.WithCodeT(exitcode.HostError, "Cannot find directory {{.path}} for mount", out.V{"path": hostPath})
+				exit.WithCodeT(exit.HostError, "Cannot find directory {{.path}} for mount", out.V{"path": hostPath})
 			} else {
 				exit.WithError("stat failed", err)
 			}
@@ -114,7 +113,7 @@ var mountCmd = &cobra.Command{
 		} else {
 			ip = net.ParseIP(mountIP)
 			if ip == nil {
-				exit.WithCodeT(exitcode.LocalNetworkConfig, "error parsing the input ip address for mount")
+				exit.WithCodeT(exit.LocalNetworkConfig, "error parsing the input ip address for mount")
 			}
 		}
 		port, err := getPort()
@@ -182,7 +181,7 @@ var mountCmd = &cobra.Command{
 				if err != nil {
 					out.FailureT("Failed unmount: {{.error}}", out.V{"error": err})
 				}
-				exit.WithCodeT(exitcode.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
+				exit.WithCodeT(exit.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
 			}
 		}()
 

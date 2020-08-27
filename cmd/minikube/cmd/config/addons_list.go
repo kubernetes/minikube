@@ -29,7 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/exitcode"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -58,7 +57,7 @@ var addonsListCmd = &cobra.Command{
 		case "json":
 			printAddonsJSON(cc)
 		default:
-			exit.WithCodeT(exitcode.ProgramUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'list', 'json'", addonListOutput))
+			exit.WithCodeT(exit.ProgramUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'list', 'json'", addonListOutput))
 		}
 	},
 }
