@@ -225,7 +225,7 @@ func postStartValidations(h *host.Host, drvName string) {
 		exit.WithKnownIssue(exit.DockerInsufficientStorage, `Docker is out of disk space! ({{.p}}% of capacity)`, out.V{"p": percentageFull})
 	}
 
-	if percentageFull >= 1 {
+	if percentageFull >= 85 {
 		out.Ln("")
 		out.ErrT(out.Warning, `Docker is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"p": percentageFull})
 		out.T(out.Tip, "Run 'docker system prune' to reclaim unused Docker resources")
