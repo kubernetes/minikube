@@ -19,6 +19,7 @@ package exit
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -48,45 +49,44 @@ type KnownIssue struct {
 	ExitCode int
 }
 
-// Display KnownIssue metadata to the console
-func (ki *KnownIssue) DisplayText() {
+func (ki *KnownIssue) issueURLs() []string {
+	is := []string{}
+	for _, i := range ki.Issues {
+		is = append(is, fmt.Sprintf("%s/%d", issueBase, i))
+	}
+	return is
+}
 
+// Display a known issue
+func (ki *KnownIssue) Display() {
 	out.ErrT(out.Tip, "Suggestion: {{.advice}}", out.V{"advice": translate.T(ki.Advice)})
 	if ki.URL != "" {
 		out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": ki.URL})
 	}
-	if len(ki.Issues) == 0 {
-		return
+
+	issueURLs := ki.issueURLs()
+	if len(issueURLs) > 0 {
+		out.ErrT(out.Issues, "Related issues:")
+		for _, i := range issueURLs {
+			out.ErrT(out.Issue, "{{.url}}", out.V{"url": i})
+		}
 	}
 
-	if len(ki.Issues) == 1 {
-		out.ErrT(out.Issues, "Related issue: {{.url}}", out.V{"url": fmt.Sprintf("%s/%d", issueBase, ki.Issues[0])})
-		return
-	}
-
-	out.ErrT(out.Issues, "Related issues:")
-	issues := ki.Issues
-	if len(issues) > 3 {
-		issues = issues[0:3]
-	}
-	for _, i := range issues {
-		out.ErrT(out.Issue, "{{.url}}", out.V{"url": fmt.Sprintf("%s/%d", issueBase, i)})
+	if ki.ShowNewIssueLink {
+		out.ErrT(out.Empty, "")
+		out.ErrT(out.Sad, "If the above advice does not help, please let us know: ")
+		out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 	}
 }
 
-// DisplayJSON displays KnownIssue metadata in JSON format
-func (ki *KnownIssue) DisplayJSON() {
-	var issues string
-	for _, i := range ki.Issues {
-		issues += fmt.Sprintf("https://github.com/kubernetes/minikube/issues/%v,", i)
-	}
-	extraArgs := map[string]string{
+func (ki *KnownIssue) DisplayJSON(format string, a ...out.V) {
+	msg := out.ApplyTemplateFormatting(out.FailureType, false, format, a...)
+	register.PrintErrorExitCode(strings.TrimSpace(msg), ki.ExitCode, map[string]string{
 		"name":   ki.ID,
 		"advice": ki.Advice,
 		"url":    ki.URL,
-		"issues": issues,
-	}
-	register.PrintErrorExitCode("???", ki.ExitCode, extraArgs)
+		"issues": strings.Join(ki.issueURLs(), ","),
+	})
 }
 
 func knownIssues() []KnownIssue {

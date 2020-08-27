@@ -50,21 +50,19 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-var (
-	// requiredDirectories are directories to create on the host during setup
-	requiredDirectories = []string{
-		vmpath.GuestAddonsDir,
-		vmpath.GuestManifestsDir,
-		vmpath.GuestEphemeralDir,
-		vmpath.GuestPersistentDir,
-		vmpath.GuestKubernetesCertsDir,
-		path.Join(vmpath.GuestPersistentDir, "images"),
-		path.Join(vmpath.GuestPersistentDir, "binaries"),
-		vmpath.GuestGvisorDir,
-		vmpath.GuestCertAuthDir,
-		vmpath.GuestCertStoreDir,
-	}
-)
+// requiredDirectories are directories to create on the host during setup
+var requiredDirectories = []string{
+	vmpath.GuestAddonsDir,
+	vmpath.GuestManifestsDir,
+	vmpath.GuestEphemeralDir,
+	vmpath.GuestPersistentDir,
+	vmpath.GuestKubernetesCertsDir,
+	path.Join(vmpath.GuestPersistentDir, "images"),
+	path.Join(vmpath.GuestPersistentDir, "binaries"),
+	vmpath.GuestGvisorDir,
+	vmpath.GuestCertAuthDir,
+	vmpath.GuestCertStoreDir,
+}
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
@@ -224,11 +222,14 @@ func postStartValidations(h *host.Host, drvName string) {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 	if percentageFull >= 99 {
-		exit.WithKnownIssue(exit.DockerInsufficientStorage, `Docker is out of disk space ({{.p}}%% of capacity in-use)`, out.V{"p": percentageFull})
+		exit.WithKnownIssue(exit.DockerInsufficientStorage, `Docker is out of disk space! ({{.p}}% of capacity)`, out.V{"p": percentageFull})
 	}
 
-	if percentageFull >= 89 {
-		out.ErrT(out.Tip, `Docker is nearly out of disk space ({{.p}}% of capacity in-use), run 'docker system prune' to reclaim unused resources`, out.V{"p": percentageFull})
+	if percentageFull >= 1 {
+		out.Ln("")
+		out.ErrT(out.Warning, `Docker is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"p": percentageFull})
+		out.T(out.Tip, "Run 'docker system prune' to reclaim unused Docker resources")
+		out.Ln("")
 	}
 }
 
@@ -293,7 +294,6 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 	spec.Timeout = 13 * time.Minute
 	if driver.IsKIC(drv) {
 		spec.Timeout = 10 * time.Minute
-
 	}
 
 	glog.Infof("acquiring machines lock for %s: %+v", name, spec)

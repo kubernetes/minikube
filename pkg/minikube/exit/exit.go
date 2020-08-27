@@ -44,7 +44,7 @@ func WithError(code int, msg string, err error) {
 	glog.Infof("WithError(%s, %v) called from:\n%s", msg, err, debug.Stack())
 	ki := KnownIssueFromError(err, runtime.GOOS)
 	if ki != nil {
-		WithKnownIssue(*ki, msg)
+		WithKnownIssue(*ki, "Error: {{.err}}", out.V{"err": err})
 	} else {
 		out.DisplayError(msg, err)
 		os.Exit(code)
@@ -55,38 +55,16 @@ func WithError(code int, msg string, err error) {
 func WithKnownIssue(ki KnownIssue, format string, a ...out.V) {
 	glog.Infof("WithKnownIssue(%+v, %s, %s) called from:\n%s", ki, format, a, debug.Stack())
 
-	code := ki.ExitCode
-	if code == 0 {
-		code = ProgramError
+	if ki.ExitCode == 0 {
+		ki.ExitCode = ProgramError
 	}
-
-	out.ErrWithExitCode(out.FailureType, format, code, a...)
 
 	if out.JSON {
-		ki.DisplayJSON()
+		ki.DisplayJSON(format, a...)
 	} else {
-		ki.DisplayText()
+		out.ErrT(out.FailureType, format, a...)
+		ki.Display()
 	}
 
-	os.Exit(code)
+	os.Exit(ki.ExitCode)
 }
-
-/*
-// WithProblem outputs an error specifically associated to a problem
-func WithProblem(id string, msg string) {
-	glog.Infof("WithProblem(%s, %v) called from:\n%s", id, msg, debug.Stack())
-}
-*/
-/*
-// showProblem outputs info related to a known problem
-func showProblem(msg string, err error, ki *KnownIssue) {
-	out.ErrT(out.Empty, "")
-	out.FailureT("[{{.id}}] {{.msg}} {{.error}}", out.V{"msg": msg, "id": p.ID, "error": p.Err})
-	p.Display()
-	if p.ShowIssueLink {
-		out.ErrT(out.Empty, "")
-		out.ErrT(out.Sad, "If the above advice does not help, please let us know: ")
-		out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
-	}
-}
-*/

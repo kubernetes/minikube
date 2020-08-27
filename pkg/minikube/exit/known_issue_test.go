@@ -37,7 +37,7 @@ func (b buffFd) Fd() uintptr { return b.uptr }
 func TestDisplay(t *testing.T) {
 	buffErr := buffFd{}
 	out.SetErrFile(&buffErr)
-	var tests = []struct {
+	tests := []struct {
 		description string
 		issue       KnownIssue
 		expected    string
@@ -72,24 +72,11 @@ func TestDisplay(t *testing.T) {
   - https://github.com/kubernetes/minikube/issues/1
 `,
 		},
-		// 6 issues should be trimmed to 3
-		{
-			issue:       KnownIssue{ID: "example", URL: "example.com", Issues: []int{0, 1, 2, 3, 4, 5}},
-			description: "with 6 issues",
-			expected: `
-* Suggestion: 
-* Documentation: example.com
-* Related issues:
-  - https://github.com/kubernetes/minikube/issues/0
-  - https://github.com/kubernetes/minikube/issues/1
-  - https://github.com/kubernetes/minikube/issues/2
-`,
-		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			buffErr.Truncate(0)
-			tc.issue.DisplayText()
+			tc.issue.Display()
 			errStr := buffErr.String()
 			if strings.TrimSpace(errStr) != strings.TrimSpace(tc.expected) {
 				t.Fatalf("Expected errString:\n%v\ngot:\n%v\n", tc.expected, errStr)
@@ -108,12 +95,13 @@ func TestDisplayJSON(t *testing.T) {
 	}{
 		{
 			p: &KnownIssue{
-				Advice: "fix me!",
-				Issues: []int{1, 2},
-				URL:    "url",
-				ID:     "BUG",
+				Advice:   "fix me!",
+				Issues:   []int{1, 2},
+				ExitCode: 4,
+				URL:      "url",
+				ID:       "BUG",
 			},
-			expected: `{"data":{"advice":"fix me!","exitcode":"4","issues":"https://github.com/kubernetes/minikube/issues/1,https://github.com/kubernetes/minikube/issues/2,","message":"my error","name":"BUG","url":"url"},"datacontenttype":"application/json","id":"random-id","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.error"}
+			expected: `{"data":{"advice":"fix me!","exitcode":"4","issues":"https://github.com/kubernetes/minikube/issues/1,https://github.com/kubernetes/minikube/issues/2","message":"my error","name":"BUG","url":"url"},"datacontenttype":"application/json","id":"random-id","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.error"}
 `,
 		},
 	}
@@ -127,7 +115,7 @@ func TestDisplayJSON(t *testing.T) {
 				return "random-id"
 			}
 
-			tc.p.DisplayJSON()
+			tc.p.DisplayJSON("my error")
 			actual := buf.String()
 			if actual != tc.expected {
 				t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", tc.expected, actual)
@@ -137,7 +125,7 @@ func TestDisplayJSON(t *testing.T) {
 }
 
 func TestFromError(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		issue int
 		os    string
 		want  string
