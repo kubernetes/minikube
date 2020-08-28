@@ -831,7 +831,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "host alias")
 	}
 
-	return sm.Start("kubelet")
+	return nil
 }
 
 // kubectlPath returns the path to the kubelet
