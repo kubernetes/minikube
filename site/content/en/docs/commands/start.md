@@ -83,7 +83,7 @@ minikube start [flags]
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
       --no-vtx-check                      Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)
   -n, --nodes int                         The number of nodes to spin up. Defaults to 1. (default 1)
-      --output string                     Format to print stdout in. Options include: [text,json] (default "text")
+  -o, --output string                     Format to print stdout in. Options include: [text,json] (default "text")
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
