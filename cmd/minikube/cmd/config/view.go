@@ -43,7 +43,7 @@ var configViewCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := View()
 		if err != nil {
-			exit.WithError("config view failed", err)
+			exit.WithError("MK_CONFIG_VIEW", "config view failed", err)
 		}
 	},
 }
@@ -64,12 +64,12 @@ func View() error {
 	for k, v := range cfg {
 		tmpl, err := template.New("view").Parse(viewFormat)
 		if err != nil {
-			exit.WithError("Error creating view template", err)
+			exit.WithError("MK_VIEW_TMPL", "Error creating view template", err)
 		}
 		viewTmplt := ViewTemplate{k, v}
 		err = tmpl.Execute(os.Stdout, viewTmplt)
 		if err != nil {
-			exit.WithError("Error executing view template", err)
+			exit.WithError("MK_VIEW_EXECUTE", "Error executing view template", err)
 		}
 	}
 	return nil
