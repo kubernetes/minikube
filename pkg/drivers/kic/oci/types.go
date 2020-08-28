@@ -31,12 +31,6 @@ const (
 	nodeRoleLabelKey = "role.minikube.sigs.k8s.io"
 	// CreatedByLabelKey is applied to any container/volume that is created by minikube created_by.minikube.sigs.k8s.io=true
 	CreatedByLabelKey = "created_by.minikube.sigs.k8s.io"
-	// DefaultGateway is the default gateway for the docker network created by the kic driver on linux
-	DefaultGateway = "192.168.39.1"
-	// DefaultIPRange is the default IP range for the docker network created by the kic driver on linux
-	DefaultIPRange = "192.168.39.0/24"
-	// DefaultIP is the default IP for the docker network created by the kic driver on linux
-	DefaultIP = "192.168.39.2"
 )
 
 // CreateParams are parameters needed to create a container
@@ -54,8 +48,6 @@ type CreateParams struct {
 	Envs          map[string]string // environment variables to pass to the container
 	ExtraArgs     []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	OCIBinary     string            // docker or podman
-	Network       string            // network used by the container
-	IP            string            // container ip address
 }
 
 // createOpt is an option for Create
