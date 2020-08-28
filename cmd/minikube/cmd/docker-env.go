@@ -139,7 +139,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		if dockerUnset {
 			if err := dockerUnsetScript(DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
-				exit.WithError("MK_UNSET_SCRIPT", "Error generating unset output", err)
+				exit.WithError("Error generating unset output", err)
 			}
 			return
 		}
@@ -153,11 +153,11 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if len(co.Config.Nodes) > 1 {
-			exit.WithCodeT("RUNTIME_MULTINODE_CONFLICT", `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
+			exit.WithCodeT(exit.BadUsage, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
 		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
-			exit.WithCodeT("RUNTIME_ENV_CONFLICT", `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
+			exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
@@ -188,7 +188,7 @@ var dockerEnvCmd = &cobra.Command{
 		if ec.Shell == "" {
 			ec.Shell, err = shell.Detect()
 			if err != nil {
-				exit.WithError("MK_SHELL_DETECT", "Error detecting shell", err)
+				exit.WithError("Error detecting shell", err)
 			}
 		}
 
@@ -208,7 +208,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if err := dockerSetScript(ec, os.Stdout); err != nil {
-			exit.WithError("MK_SET_SCRIPT", "Error generating set output", err)
+			exit.WithError("Error generating set output", err)
 		}
 	},
 }
