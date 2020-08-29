@@ -49,6 +49,7 @@ func NewErrISOFeature(missing string) *ErrISOFeature {
 		missing: missing,
 	}
 }
+
 func (e *ErrISOFeature) Error() string {
 	return e.missing
 }
@@ -154,7 +155,6 @@ func (r *Docker) LoadImage(path string) error {
 		return errors.Wrap(err, "loadimage docker.")
 	}
 	return nil
-
 }
 
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")

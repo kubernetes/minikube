@@ -29,9 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-var (
-	mockMode = false
-)
+var mockMode = false
 
 // EnableMock allows tests to selectively enable if downloads are mocked
 func EnableMock(b bool) {
@@ -58,7 +56,7 @@ func download(src string, dst string) error {
 		},
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
 

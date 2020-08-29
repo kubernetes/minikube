@@ -28,7 +28,7 @@ func TestListProfiles(t *testing.T) {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
 	// test cases for valid profiles
-	var testCasesValidProfs = []struct {
+	testCasesValidProfs := []struct {
 		index      int
 		expectName string
 		vmDriver   string
@@ -38,7 +38,7 @@ func TestListProfiles(t *testing.T) {
 	}
 
 	// test cases for invalid profiles
-	var testCasesInValidProfs = []struct {
+	testCasesInValidProfs := []struct {
 		index      int
 		expectName string
 		vmDriver   string
@@ -73,7 +73,7 @@ func TestListProfiles(t *testing.T) {
 }
 
 func TestProfileNameValid(t *testing.T) {
-	var testCases = map[string]bool{
+	testCases := map[string]bool{
 		"profile":             true,
 		"pro-file":            true,
 		"profile1":            true,
@@ -108,7 +108,7 @@ func TestProfileNameValid(t *testing.T) {
 }
 
 func TestProfileNameInReservedKeywords(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name     string
 		expected bool
 	}{
@@ -139,7 +139,7 @@ func TestProfileExists(t *testing.T) {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
 
-	var testCases = []struct {
+	testCases := []struct {
 		name     string
 		expected bool
 	}{
@@ -157,7 +157,6 @@ func TestProfileExists(t *testing.T) {
 		}
 
 	}
-
 }
 
 func TestCreateEmptyProfile(t *testing.T) {
@@ -166,7 +165,7 @@ func TestCreateEmptyProfile(t *testing.T) {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
 
-	var testCases = []struct {
+	testCases := []struct {
 		name      string
 		expectErr bool
 	}{
@@ -188,7 +187,6 @@ func TestCreateEmptyProfile(t *testing.T) {
 		}()
 
 	}
-
 }
 
 func TestCreateProfile(t *testing.T) {
@@ -197,17 +195,20 @@ func TestCreateProfile(t *testing.T) {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
 
-	var testCases = []struct {
+	testCases := []struct {
 		name      string
 		cfg       *ClusterConfig
 		expectErr bool
 	}{
 		{"p_empty_config", &ClusterConfig{}, false},
 		{"p_partial_config", &ClusterConfig{KubernetesConfig: KubernetesConfig{
-			ShouldLoadCachedImages: false}}, false},
+			ShouldLoadCachedImages: false,
+		}}, false},
 		{"p_partial_config2", &ClusterConfig{
 			KeepContext: false, KubernetesConfig: KubernetesConfig{
-				ShouldLoadCachedImages: false}}, false},
+				ShouldLoadCachedImages: false,
+			},
+		}, false},
 	}
 	for _, tc := range testCases {
 		n := tc.name // capturing  loop variable
@@ -224,7 +225,6 @@ func TestCreateProfile(t *testing.T) {
 			}
 		}()
 	}
-
 }
 
 func TestDeleteProfile(t *testing.T) {
@@ -238,7 +238,7 @@ func TestDeleteProfile(t *testing.T) {
 		t.Errorf("error setting up TestDeleteProfile %v", err)
 	}
 
-	var testCases = []struct {
+	testCases := []struct {
 		name      string
 		expectErr bool
 	}{
@@ -251,7 +251,6 @@ func TestDeleteProfile(t *testing.T) {
 			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
 		}
 	}
-
 }
 
 func TestGetPrimaryControlPlane(t *testing.T) {
@@ -260,7 +259,7 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		description  string
 		profile      string
 		expectedIP   string
@@ -295,5 +294,4 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		}
 
 	}
-
 }

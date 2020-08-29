@@ -33,7 +33,7 @@ func (f FakeNoProxyGetter) GetNoProxyVar() (string, string) {
 }
 
 func TestGenerateDockerScripts(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		shell         string
 		config        DockerEnvConfig
 		noProxyGetter *FakeNoProxyGetter
@@ -255,7 +255,6 @@ MINIKUBE_ACTIVE_DOCKERD=noneshell
 			if diff := cmp.Diff(tc.wantUnset, got); diff != "" {
 				t.Errorf("unsetScript(%+v) mismatch (-want +got):\n%s\n\nraw output:\n%s\nquoted: %q", tc.config, diff, got, got)
 			}
-
 		})
 	}
 }

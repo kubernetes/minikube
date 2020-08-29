@@ -43,7 +43,6 @@ func TestBinaryName(t *testing.T) {
 				t.Fatalf("Binary name(%v) doesn't match expected name(%v)", name, test.expected)
 			}
 		})
-
 	}
 }
 

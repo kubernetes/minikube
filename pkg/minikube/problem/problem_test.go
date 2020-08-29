@@ -37,7 +37,7 @@ func (b buffFd) Fd() uintptr { return b.uptr }
 func TestDisplay(t *testing.T) {
 	buffErr := buffFd{}
 	out.SetErrFile(&buffErr)
-	var tests = []struct {
+	tests := []struct {
 		description string
 		problem     Problem
 		expected    string
@@ -138,7 +138,7 @@ func TestDisplayJSON(t *testing.T) {
 }
 
 func TestFromError(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		issue int
 		os    string
 		want  string

@@ -28,7 +28,7 @@ var (
 )
 
 func TestSplitHyperKitVersion(t *testing.T) {
-	var tc = []struct {
+	tc := []struct {
 		desc, version, expect string
 	}{
 		{
@@ -63,7 +63,7 @@ func TestSplitHyperKitVersion(t *testing.T) {
 }
 
 func TestConvertVersionToDate(t *testing.T) {
-	var tc = []struct {
+	tc := []struct {
 		desc, versionOutput, expect string
 	}{
 		{
@@ -93,7 +93,7 @@ func TestConvertVersionToDate(t *testing.T) {
 }
 
 func TestIsNewerVersion(t *testing.T) {
-	var tc = []struct {
+	tc := []struct {
 		desc, currentVersion, specificVersion string
 		isNew                                 bool
 	}{

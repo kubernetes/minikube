@@ -26,7 +26,7 @@ import (
 )
 
 func TestIsValidEnv(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		env  string
 		want bool
 	}{
@@ -42,11 +42,10 @@ func TestIsValidEnv(t *testing.T) {
 			}
 		})
 	}
-
 }
-func TestIsInBlock(t *testing.T) {
 
-	var testCases = []struct {
+func TestIsInBlock(t *testing.T) {
+	testCases := []struct {
 		ip        string
 		block     string
 		want      bool
@@ -75,13 +74,12 @@ func TestIsInBlock(t *testing.T) {
 			if got != tc.want {
 				t.Errorf("isInBlock(%v,%v) got %v; want %v", tc.ip, tc.block, got, tc.want)
 			}
-
 		})
 	}
 }
 
 func TestUpdateEnv(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		ip      string
 		env     string
 		wantErr bool
@@ -107,14 +105,12 @@ func TestUpdateEnv(t *testing.T) {
 			if err != nil && tc.env != "" {
 				t.Errorf("Error reverting the env var (%s) to its original value (%s)", tc.env, origVal)
 			}
-
 		})
 	}
-
 }
 
 func TestCheckEnv(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		ip           string
 		envName      string
 		want         bool
@@ -150,11 +146,10 @@ func TestCheckEnv(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestIsIPExcluded(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		ip, env  string
 		excluded bool
 	}{
@@ -185,7 +180,7 @@ func TestIsIPExcluded(t *testing.T) {
 }
 
 func TestExcludeIP(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		ip, env  string
 		wantAErr bool
 	}{
@@ -247,7 +242,6 @@ func TestUpdateTransport(t *testing.T) {
 		if rt == rc.WrapTransport(transport) {
 			t.Fatalf("Expected to reuse existing RoundTripper(%v) but found %v", rt, transport)
 		}
-
 	})
 	t.Run("nil", func(t *testing.T) {
 		rc := rest.Config{}

@@ -23,7 +23,7 @@ import (
 )
 
 func TestSetPreferredLanguage(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		input string
 		want  language.Tag
 	}{
@@ -49,11 +49,10 @@ func TestSetPreferredLanguage(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestT(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description, input, expected string
 		langDef, langPref            language.Tag
 		translations                 map[string]interface{}

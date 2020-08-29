@@ -102,7 +102,7 @@ var dashboardCmd = &cobra.Command{
 			exit.WithCodeT(exit.Unavailable, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
 		}
 
-		//check if current user is root
+		// check if current user is root
 		user, err := user.Current()
 		if err != nil {
 			exit.WithError("Unable to get current user", err)

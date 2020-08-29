@@ -18,19 +18,17 @@ package kubeadm
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"os/exec"
 	"path"
 	"runtime"
-	"sync"
-
-	"fmt"
-	"net"
-
-	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
-
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
@@ -217,7 +215,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 
 	if driver.IsKIC(cfg.Driver) { // to bypass this error: /proc/sys/net/bridge/bridge-nf-call-iptables does not exist
 		ignore = append(ignore, "FileContent--proc-sys-net-bridge-bridge-nf-call-iptables")
-
 	}
 
 	if err := k.clearStaleConfigs(cfg); err != nil {
@@ -275,7 +272,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 
 // applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.
 func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
-
 	cnm, err := cni.New(cfg)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
@@ -302,7 +298,6 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 
 // unpause unpauses any Kubernetes backplane components
 func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
-
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return err
@@ -747,8 +742,10 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "kubeadm images")
 	}
 
-	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime,
-		Runner: k.c, Socket: cfg.KubernetesConfig.CRISocket})
+	r, err := cruntime.New(cruntime.Config{
+		Type:   cfg.KubernetesConfig.ContainerRuntime,
+		Runner: k.c, Socket: cfg.KubernetesConfig.CRISocket,
+	})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}

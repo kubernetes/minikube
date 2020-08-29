@@ -46,7 +46,6 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 		return enableAddon(cfg)
 	}
 	return disableAddon(cfg)
-
 }
 
 func enableAddon(cfg *config.ClusterConfig) error {

@@ -60,5 +60,4 @@ func MaybeDisplayAdvice(err error, driver string) {
 		minikube start --driver={{.driver_name}}`, out.V{"driver_name": driver})
 		// TODO #8348: maybe advice user if to set the --force-systemd https://github.com/kubernetes/minikube/issues/8348
 	}
-
 }

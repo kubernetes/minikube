@@ -71,5 +71,4 @@ func MaybeExitWithAdvice(err error) {
 
 `)
 	}
-
 }

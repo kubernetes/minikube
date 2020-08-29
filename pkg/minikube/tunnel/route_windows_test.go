@@ -21,10 +21,9 @@ package tunnel
 import (
 	"net"
 	"os/exec"
-	"testing"
-
 	"reflect"
 	"strings"
+	"testing"
 )
 
 func TestWindowsRouteFailsOnConflictIntegrationTest(t *testing.T) {
@@ -149,7 +148,6 @@ Persistent Routes:
 	if !reflect.DeepEqual(rt.String(), expectedRt.String()) {
 		t.Errorf("expected:\n %s\ngot\n %s", expectedRt.String(), rt.String())
 	}
-
 }
 
 func addRoute(t *testing.T, dstIP string, dstMask string, gw string) {

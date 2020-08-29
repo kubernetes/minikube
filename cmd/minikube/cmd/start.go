@@ -224,7 +224,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
-
 }
 
 func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
@@ -898,7 +897,6 @@ func validateMemorySize(req int, drvName string) {
 
 `, out.V{"requested": req, "system_limit": sysLimit, "min_advised": minAdvised})
 	}
-
 }
 
 // validateCPUCount validates the cpu count matches the minimum recommended
@@ -945,7 +943,6 @@ func validateCPUCount(drvName string) {
 
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
-
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
@@ -1051,7 +1048,6 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 // This function validates if the --registry-mirror
 // args match the format of http://localhost
 func validateRegistryMirror() {
-
 	if len(registryMirror) > 0 {
 		for _, loc := range registryMirror {
 			URL, err := url.Parse(loc)

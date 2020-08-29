@@ -99,8 +99,10 @@ func logRemoteOsRelease(r command.Runner) {
 	glog.Infof("Remote host: %s", osReleaseInfo.PrettyName)
 }
 
-var cachedSystemMemoryLimit *mem.VirtualMemoryStat
-var cachedSystemMemoryErr *error
+var (
+	cachedSystemMemoryLimit *mem.VirtualMemoryStat
+	cachedSystemMemoryErr   *error
+)
 
 //  cachedSysMemLimit will return a cached limit for the system's virtual memory.
 func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
@@ -115,8 +117,10 @@ func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
 	return cachedSystemMemoryLimit, *cachedSystemMemoryErr
 }
 
-var cachedDisk *disk.UsageStat
-var cachedDiskInfoErr *error
+var (
+	cachedDisk        *disk.UsageStat
+	cachedDiskInfoErr *error
+)
 
 // cachedDiskInfo will return a cached disk usage info
 func cachedDiskInfo() (disk.UsageStat, error) {
@@ -131,8 +135,10 @@ func cachedDiskInfo() (disk.UsageStat, error) {
 	return *cachedDisk, *cachedDiskInfoErr
 }
 
-var cachedCPU *[]cpu.InfoStat
-var cachedCPUErr *error
+var (
+	cachedCPU    *[]cpu.InfoStat
+	cachedCPUErr *error
+)
 
 //  cachedCPUInfo will return a cached cpu info
 func cachedCPUInfo() ([]cpu.InfoStat, error) {

@@ -63,7 +63,6 @@ func Test_portExtraction(t *testing.T) {
 }
 
 func testEq(a, b []int) bool {
-
 	if a == nil && b == nil {
 		return true
 	}

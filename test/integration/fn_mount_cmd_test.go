@@ -56,7 +56,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	}
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(tempDir)
 		if err != nil {
 			t.Errorf("failed to clean up %q temp folder.", tempDir)
@@ -102,7 +102,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	wantFromTest := []byte(testMarker)
 	for _, name := range []string{createdByTest, createdByTestRemovedByPod, testMarker} {
 		p := filepath.Join(tempDir, name)
-		err := ioutil.WriteFile(p, wantFromTest, 0644)
+		err := ioutil.WriteFile(p, wantFromTest, 0o644)
 		t.Logf("wrote %q to %s", wantFromTest, p)
 		if err != nil {
 			t.Errorf("WriteFile %s: %v", p, err)

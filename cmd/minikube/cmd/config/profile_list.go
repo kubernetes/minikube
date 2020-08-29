@@ -34,16 +34,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	output string
-)
+var output string
 
 var profileListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all minikube profiles.",
 	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		switch strings.ToLower(output) {
 		case "json":
 			printProfilesJSON()
@@ -52,12 +49,10 @@ var profileListCmd = &cobra.Command{
 		default:
 			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
 		}
-
 	},
 }
 
 var printProfilesTable = func() {
-
 	var validData [][]string
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status"})
@@ -105,7 +100,6 @@ var printProfilesTable = func() {
 	if err != nil {
 		glog.Warningf("error loading profiles: %v", err)
 	}
-
 }
 
 var printProfilesJSON = func() {
@@ -143,7 +137,7 @@ var printProfilesJSON = func() {
 		invalid = []*config.Profile{}
 	}
 
-	var body = map[string]interface{}{}
+	body := map[string]interface{}{}
 
 	if err == nil || config.IsNotExist(err) {
 		body["valid"] = valid

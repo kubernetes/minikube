@@ -40,9 +40,7 @@ const (
 	SharedNetAddrKey = "Shared_Net_Address"
 )
 
-var (
-	leadingZeroRegexp = regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
-)
+var leadingZeroRegexp = regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
 
 // DHCPEntry holds a parsed DNS entry
 type DHCPEntry struct {

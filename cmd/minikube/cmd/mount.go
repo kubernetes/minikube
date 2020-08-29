@@ -46,15 +46,17 @@ const (
 )
 
 // placeholders for flag values
-var mountIP string
-var mountVersion string
-var mountType string
-var isKill bool
-var uid string
-var gid string
-var mSize int
-var options []string
-var mode uint
+var (
+	mountIP      string
+	mountVersion string
+	mountType    string
+	isKill       bool
+	uid          string
+	gid          string
+	mSize        int
+	options      []string
+	mode         uint
+)
 
 // supportedFilesystems is a map of filesystem types to not warn against.
 var supportedFilesystems = map[string]bool{nineP: true}
@@ -203,7 +205,7 @@ func init() {
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
 	mountCmd.Flags().StringVar(&uid, "uid", "docker", "Default user id used for the mount")
 	mountCmd.Flags().StringVar(&gid, "gid", "docker", "Default group id used for the mount")
-	mountCmd.Flags().UintVar(&mode, "mode", 0755, "File permissions used for the mount")
+	mountCmd.Flags().UintVar(&mode, "mode", 0o755, "File permissions used for the mount")
 	mountCmd.Flags().StringSliceVar(&options, "options", []string{}, "Additional mount options, such as cache=fscache")
 	mountCmd.Flags().IntVar(&mSize, "msize", defaultMsize, "The number of bytes to use for 9p packet payload")
 }

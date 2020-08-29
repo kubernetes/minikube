@@ -62,7 +62,7 @@ func TestShouldCheckURL(t *testing.T) {
 	// test that update notifications get triggered if it has been longer than 24 hours
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
 
-	//time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
+	// time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
 	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Time{}); err != nil {
 		t.Errorf("write failed: %v", err)
 	}
@@ -77,7 +77,6 @@ func TestShouldCheckURL(t *testing.T) {
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
 		t.Fatalf("shouldCheckURLVersion returned true even though less than 24 hours since last update")
 	}
-
 }
 
 type URLHandlerCorrect struct {
@@ -156,7 +155,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	outputBuffer := tests.NewFakeFile()
 	out.SetErrFile(outputBuffer)
 
-	var tc = []struct {
+	tc := []struct {
 		len                     int
 		wantUpdateNotification  bool
 		latestVersionFromURL    string

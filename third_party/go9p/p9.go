@@ -486,7 +486,6 @@ func UnpackDir(buf []byte, dotu bool) (d *Dir, b []byte, amt int, err error) {
 	}
 
 	return d, b, len(buf) - len(b), nil
-
 }
 
 // Allocates a new Fcall.

@@ -58,12 +58,12 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 func (p *hostPathProvisioner) Provision(options controller.ProvisionOptions) (*core.PersistentVolume, error) {
 	glog.Infof("Provisioning volume %v", options)
 	path := path.Join(p.pvDir, options.PVC.Name)
-	if err := os.MkdirAll(path, 0777); err != nil {
+	if err := os.MkdirAll(path, 0o777); err != nil {
 		return nil, err
 	}
 
 	// Explicitly chmod created dir, so we know mode is set to 0777 regardless of umask
-	if err := os.Chmod(path, 0777); err != nil {
+	if err := os.Chmod(path, 0o777); err != nil {
 		return nil, err
 	}
 

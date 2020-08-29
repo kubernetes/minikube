@@ -67,7 +67,7 @@ func TestLocalClientNewHost(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		driver      string
 		rawDriver   []byte

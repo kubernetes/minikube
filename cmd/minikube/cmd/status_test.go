@@ -23,7 +23,7 @@ import (
 )
 
 func TestExitCode(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name  string
 		want  int
 		state *Status
@@ -44,7 +44,7 @@ func TestExitCode(t *testing.T) {
 }
 
 func TestStatusText(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name  string
 		state *Status
 		want  string
@@ -82,7 +82,7 @@ func TestStatusText(t *testing.T) {
 }
 
 func TestStatusJSON(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name  string
 		state *Status
 	}{

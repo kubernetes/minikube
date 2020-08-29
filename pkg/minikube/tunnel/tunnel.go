@@ -19,7 +19,6 @@ package tunnel
 import (
 	"fmt"
 	"os"
-
 	"os/exec"
 	"regexp"
 
@@ -51,7 +50,6 @@ func newTunnel(machineName string, machineAPI libmachine.API, configLoader confi
 		configLoader: configLoader,
 	}
 	state, route, err := ci.getStateAndRoute()
-
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine cluster info: %s", err)
 	}
@@ -81,7 +79,6 @@ func newTunnel(machineName string, machineAPI libmachine.API, configLoader confi
 			out: os.Stdout,
 		},
 	}, nil
-
 }
 
 type tunnel struct {
@@ -188,7 +185,6 @@ func setupRoute(t *tunnel, h *host.Host) {
 		t.status.RouteError = errorTunnelAlreadyExists(existingTunnel)
 		return
 	}
-
 }
 
 func setupBridge(t *tunnel) {

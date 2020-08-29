@@ -81,7 +81,7 @@ func Test_get(t *testing.T) {
 		t.Fatalf("Error decoding config : %v", err)
 	}
 
-	var testcases = []struct {
+	testcases := []struct {
 		key string
 		val string
 		err bool

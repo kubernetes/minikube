@@ -47,15 +47,13 @@ type PodmanShellConfig struct {
 	MinikubePodmanProfile string
 }
 
-var (
-	podmanUnset bool
-)
+var podmanUnset bool
 
 // podmanShellCfgSet generates context variables for "podman-env"
 func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShellConfig {
 	profile := ec.profile
 	const usgPlz = "To point your shell to minikube's podman service, run:"
-	var usgCmd = fmt.Sprintf("minikube -p %s podman-env", profile)
+	usgCmd := fmt.Sprintf("minikube -p %s podman-env", profile)
 	s := &PodmanShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}

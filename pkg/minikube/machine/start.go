@@ -50,21 +50,19 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-var (
-	// requiredDirectories are directories to create on the host during setup
-	requiredDirectories = []string{
-		vmpath.GuestAddonsDir,
-		vmpath.GuestManifestsDir,
-		vmpath.GuestEphemeralDir,
-		vmpath.GuestPersistentDir,
-		vmpath.GuestKubernetesCertsDir,
-		path.Join(vmpath.GuestPersistentDir, "images"),
-		path.Join(vmpath.GuestPersistentDir, "binaries"),
-		vmpath.GuestGvisorDir,
-		vmpath.GuestCertAuthDir,
-		vmpath.GuestCertStoreDir,
-	}
-)
+// requiredDirectories are directories to create on the host during setup
+var requiredDirectories = []string{
+	vmpath.GuestAddonsDir,
+	vmpath.GuestManifestsDir,
+	vmpath.GuestEphemeralDir,
+	vmpath.GuestPersistentDir,
+	vmpath.GuestKubernetesCertsDir,
+	path.Join(vmpath.GuestPersistentDir, "images"),
+	path.Join(vmpath.GuestPersistentDir, "binaries"),
+	vmpath.GuestGvisorDir,
+	vmpath.GuestCertAuthDir,
+	vmpath.GuestCertStoreDir,
+}
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
@@ -292,7 +290,6 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 	spec.Timeout = 13 * time.Minute
 	if driver.IsKIC(drv) {
 		spec.Timeout = 10 * time.Minute
-
 	}
 
 	glog.Infof("acquiring machines lock for %s: %+v", name, spec)

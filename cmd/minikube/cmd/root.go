@@ -56,7 +56,7 @@ var RootCmd = &cobra.Command{
 	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
-			if err := os.MkdirAll(path, 0777); err != nil {
+			if err := os.MkdirAll(path, 0o777); err != nil {
 				exit.WithError("Error creating minikube directory", err)
 			}
 		}
@@ -143,7 +143,7 @@ func usageTemplate() string {
 // by setting them directly, using values from viper when not passed in as args
 func setFlagsUsingViper() {
 	for _, config := range []string{"alsologtostderr", "log_dir", "v"} {
-		var a = pflag.Lookup(config)
+		a := pflag.Lookup(config)
 		viper.SetDefault(a.Name, a.DefValue)
 		// If the flag is set, override viper value
 		if a.Changed {
@@ -232,7 +232,6 @@ func init() {
 		exit.WithError("Unable to bind flags", err)
 	}
 	cobra.OnInitialize(initConfig)
-
 }
 
 // initConfig reads in config file and ENV variables if set.

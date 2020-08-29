@@ -123,7 +123,6 @@ var addonsConfigureCmd = &cobra.Command{
 					"cloud":                         "ecr",
 					"kubernetes.io/minikube-addons": "registry-creds",
 				})
-
 			if err != nil {
 				out.FailureT("ERROR creating `registry-creds-ecr` secret: {{.error}}", out.V{"error": err})
 			}

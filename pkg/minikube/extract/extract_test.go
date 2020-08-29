@@ -36,7 +36,7 @@ func TestExtract(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Creating temp dir: %v", err)
 	}
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(tempdir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", tempdir)
@@ -49,7 +49,7 @@ func TestExtract(t *testing.T) {
 	}
 
 	tempfile := filepath.Join(tempdir, "tmpdata.json")
-	err = ioutil.WriteFile(tempfile, src, 0666)
+	err = ioutil.WriteFile(tempfile, src, 0o666)
 	if err != nil {
 		t.Fatalf("Writing temp json file: %v", err)
 	}
@@ -82,5 +82,4 @@ func TestExtract(t *testing.T) {
 	if !reflect.DeepEqual(expected, got) {
 		t.Fatalf("Translation JSON not equal: expected %v, got %v", expected, got)
 	}
-
 }

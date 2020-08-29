@@ -45,7 +45,7 @@ func permToString(perm uint32) string {
 		ret += "L"
 	}
 
-	ret += fmt.Sprintf("%o", perm&0777)
+	ret += fmt.Sprintf("%o", perm&0o777)
 	return ret
 }
 

@@ -134,5 +134,5 @@ func saveDocForCommand(command *cobra.Command, contents []byte, path string) err
 	if err := os.Remove(fp); err != nil {
 		glog.Warningf("error removing %s", fp)
 	}
-	return ioutil.WriteFile(fp, contents, 0644)
+	return ioutil.WriteFile(fp, contents, 0o644)
 }

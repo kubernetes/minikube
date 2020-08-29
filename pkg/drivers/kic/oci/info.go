@@ -34,8 +34,10 @@ type SysInfo struct {
 	StorageDriver string // the storage driver for the daemon  (for example overlay2)
 }
 
-var cachedSysInfo *SysInfo
-var cachedSysInfoErr *error
+var (
+	cachedSysInfo    *SysInfo
+	cachedSysInfoErr *error
+)
 
 // CachedDaemonInfo will run and return a docker/podman info only once per minikube run time. to avoid performance
 func CachedDaemonInfo(ociBin string) (SysInfo, error) {

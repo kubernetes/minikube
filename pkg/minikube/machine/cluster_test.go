@@ -234,7 +234,6 @@ func TestStartStoppedHost(t *testing.T) {
 	if !api.SaveCalled {
 		t.Fatalf("Machine must be saved after starting.")
 	}
-
 }
 
 func TestStartHost(t *testing.T) {
@@ -298,7 +297,6 @@ func TestStartHostConfig(t *testing.T) {
 			t.Fatal("Docker flags were not set!")
 		}
 	}
-
 }
 
 func TestStopHostError(t *testing.T) {

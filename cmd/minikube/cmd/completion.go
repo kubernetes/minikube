@@ -93,7 +93,6 @@ var completionCmd = &cobra.Command{
 				exit.WithError("fish completion failed", err)
 			}
 		}
-
 	},
 }
 

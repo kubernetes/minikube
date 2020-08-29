@@ -106,7 +106,6 @@ func TestFlagDefaults(t *testing.T) {
 }
 
 func TestSuggest(t *testing.T) {
-
 	tests := []struct {
 		def     registry.DriverDef
 		choices []string
@@ -197,7 +196,6 @@ func TestSuggest(t *testing.T) {
 			if diff := cmp.Diff(gotRejects, tc.rejects); diff != "" {
 				t.Errorf("rejects mismatch (-want +got):\n%s", diff)
 			}
-
 		})
 	}
 }

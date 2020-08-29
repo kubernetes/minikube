@@ -116,7 +116,6 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 
 // Retrieve finds the node by name in the given cluster
 func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
-
 	for i, n := range cc.Nodes {
 		if n.Name == name {
 			return &n, i, nil

@@ -43,7 +43,6 @@ func TestPersistentRegistryNullableMetadata(t *testing.T) {
 		Route: unsafeParseRoute("1.2.3.4", "10.96.0.0/12"),
 	}
 	err := registry.Register(route)
-
 	if err != nil {
 		t.Errorf("metadata should be nullable, expected no error, got %s", err)
 	}
@@ -143,6 +142,7 @@ func TestListAfterRegister(t *testing.T) {
 		t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
 	}
 }
+
 func TestRegisterRemoveList(t *testing.T) {
 	file := tmpFile(t)
 	reg := &persistentRegistry{

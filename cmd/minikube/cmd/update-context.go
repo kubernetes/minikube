@@ -43,6 +43,5 @@ var updateContextCmd = &cobra.Command{
 		} else {
 			out.T(out.Meh, `No changes required for the "{{.context}}" context`, out.V{"context": cname})
 		}
-
 	},
 }

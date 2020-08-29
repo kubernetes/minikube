@@ -56,6 +56,7 @@ func (r *fakeRouter) EnsureRouteIsAdded(route *Route) error {
 	}
 	return r.errorResponse
 }
+
 func (r *fakeRouter) Cleanup(route *Route) error {
 	glog.V(4).Infof("fake router cleanup: %v\n", route)
 	if r.errorResponse == nil {

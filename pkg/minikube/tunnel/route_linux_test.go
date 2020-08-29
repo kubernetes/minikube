@@ -34,7 +34,8 @@ func TestLinuxRouteFailsOnConflictIntegrationTest(t *testing.T) {
 		DestCIDR: &net.IPNet{
 			IP:   net.IPv4(10, 96, 0, 0),
 			Mask: net.IPv4Mask(255, 240, 0, 0),
-		}})
+		},
+	})
 	if err == nil {
 		t.Errorf("add should have error, but it is nil")
 	}
@@ -66,7 +67,6 @@ func TestLinuxRouteIdempotentIntegrationTest(t *testing.T) {
 }
 
 func TestLinuxRouteCleanupIdempontentIntegrationTest(t *testing.T) {
-
 	r := &osRouter{}
 	route := &Route{
 		Gateway: net.IPv4(127, 0, 0, 1),
@@ -89,7 +89,6 @@ func TestLinuxRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 }
 
 func TestParseTable(t *testing.T) {
-
 	const table = `default via 172.31.126.254 dev eno1 proto dhcp metric 100
 10.96.0.0/12 via 192.168.39.47 dev virbr1
 10.110.0.0/16 via 127.0.0.1 dev lo

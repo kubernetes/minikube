@@ -116,7 +116,6 @@ func TestNetworkPlugins(t *testing.T) {
 								t.Errorf("expected --network-plugin=%s, got %s", tc.kubeletPlugin, out)
 							}
 						}
-
 					})
 				}
 
@@ -139,7 +138,6 @@ func TestNetworkPlugins(t *testing.T) {
 						if _, err := PodWait(ctx, t, profile, "default", "app=netcat", Minutes(15)); err != nil {
 							t.Fatalf("failed waiting for netcat pod: %v", err)
 						}
-
 					})
 				}
 

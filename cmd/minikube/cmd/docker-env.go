@@ -73,7 +73,7 @@ type EnvNoProxyGetter struct{}
 func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShellConfig {
 	profile := ec.profile
 	const usgPlz = "To point your shell to minikube's docker-daemon, run:"
-	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
+	usgCmd := fmt.Sprintf("minikube -p %s docker-env", profile)
 	s := &DockerShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}

@@ -220,7 +220,6 @@ func (api *LocalClient) Create(h *host.Host) error {
 	}
 
 	for _, step := range steps {
-
 		if err := step.f(); err != nil {
 			return errors.Wrap(err, step.name)
 		}

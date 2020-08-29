@@ -17,13 +17,12 @@ limitations under the License.
 package tunnel
 
 import (
-	"testing"
-
-	"k8s.io/minikube/pkg/util"
-
 	"net"
 	"reflect"
 	"strings"
+	"testing"
+
+	"k8s.io/minikube/pkg/util"
 
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
@@ -77,7 +76,6 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 	}
 
 	s, r, err := inspector.getStateAndRoute()
-
 	if err != nil {
 		t.Errorf("`error` is not nil")
 	}
@@ -107,7 +105,8 @@ func TestUnparseableCIDR(t *testing.T) {
 	cfg := config.ClusterConfig{
 		KubernetesConfig: config.KubernetesConfig{
 			ServiceCIDR: "bad.cidr.0.0/12",
-		}}
+		},
+	}
 	h := &host.Host{
 		Driver: &tests.MockDriver{
 			IP: "192.168.1.1",
@@ -138,7 +137,6 @@ func TestRouteIPDetection(t *testing.T) {
 	}
 
 	routerConfig, err := getRoute(h, cfg)
-
 	if err != nil {
 		t.Errorf("expected no errors but got: %s", err)
 	}
@@ -150,5 +148,4 @@ func TestRouteIPDetection(t *testing.T) {
 	if routerConfig.Gateway.String() != expectedGatewayIP {
 		t.Errorf("add gateway IP doesn't match, expected '%s', got '%s'", expectedGatewayIP, routerConfig.Gateway)
 	}
-
 }

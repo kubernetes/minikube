@@ -119,7 +119,6 @@ func concealableAskForStaticValue(readWriter io.ReadWriter, promptString string,
 
 // AskForPasswordValue asks for a password value, while hiding the input
 func AskForPasswordValue(s string) string {
-
 	stdInFd := int(os.Stdin.Fd())
 	oldState, err := terminal.MakeRaw(stdInFd)
 	if err != nil {

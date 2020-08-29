@@ -37,8 +37,10 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-var stopAll bool
-var keepActive bool
+var (
+	stopAll    bool
+	keepActive bool
+)
 
 // stopCmd represents the stop command
 var stopCmd = &cobra.Command{
@@ -50,7 +52,6 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 }
 
 func init() {
-
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 

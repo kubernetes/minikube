@@ -54,10 +54,8 @@ const (
 	Parallels = "parallels"
 )
 
-var (
-	// systemdResolvConf is path to systemd's DNS configuration. https://github.com/kubernetes/minikube/issues/3511
-	systemdResolvConf = "/run/systemd/resolve/resolv.conf"
-)
+// systemdResolvConf is path to systemd's DNS configuration. https://github.com/kubernetes/minikube/issues/3511
+var systemdResolvConf = "/run/systemd/resolve/resolv.conf"
 
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
@@ -286,7 +284,6 @@ func Status(name string) registry.DriverState {
 func SetLibvirtURI(v string) {
 	glog.Infof("Setting default libvirt URI to %s", v)
 	os.Setenv("LIBVIRT_DEFAULT_URI", v)
-
 }
 
 // MachineName returns the name of the machine, as seen by the hypervisor given the cluster and node names

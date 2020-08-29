@@ -264,7 +264,6 @@ func (m *BinAsset) IsTemplate() bool {
 func (m *BinAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
 	if !m.IsTemplate() {
 		return nil, errors.Errorf("the asset %s is not a template", m.SourcePath)
-
 	}
 
 	var buf bytes.Buffer

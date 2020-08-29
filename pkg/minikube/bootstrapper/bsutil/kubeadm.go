@@ -116,7 +116,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		EtcdDataDir:       EtcdDataDir(),
 		EtcdExtraArgs:     etcdExtraArgs(k8s.ExtraOptions),
 		ClusterName:       cc.Name,
-		//kubeadm uses NodeName as the --hostname-override parameter, so this needs to be the name of the machine
+		// kubeadm uses NodeName as the --hostname-override parameter, so this needs to be the name of the machine
 		NodeName:            KubeNodeName(cc, n),
 		CRISocket:           r.SocketPath(),
 		ImageRepository:     k8s.ImageRepository,

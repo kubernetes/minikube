@@ -35,7 +35,7 @@ func TestOutT(t *testing.T) {
 		"Installing Kubernetes version {{.version}} ...": "... {{.version}} تثبيت Kubernetes الإصدار",
 	}
 
-	var testCases = []struct {
+	testCases := []struct {
 		style     StyleEnum
 		message   string
 		params    V
@@ -74,7 +74,7 @@ func TestOutT(t *testing.T) {
 func TestOut(t *testing.T) {
 	os.Setenv(OverrideEnv, "")
 
-	var testCases = []struct {
+	testCases := []struct {
 		format string
 		arg    interface{}
 		want   string

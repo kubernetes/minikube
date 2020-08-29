@@ -38,7 +38,6 @@ func DoSomeStuff() {
 }
 
 func DoSomeOtherStuff(choice bool, i int, s string) {
-
 	// Let's try an if statement
 	if choice {
 		PrintToScreen("This was a choice: %s", s)
@@ -51,7 +50,6 @@ func DoSomeOtherStuff(choice bool, i int, s string) {
 			i = i + 1
 		}
 	}
-
 }
 
 func PrintToScreenNoInterface(s string) {

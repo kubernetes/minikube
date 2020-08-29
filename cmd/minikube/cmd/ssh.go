@@ -30,9 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-var (
-	nativeSSHClient bool
-)
+var nativeSSHClient bool
 
 // sshCmd represents the docker-ssh command
 var sshCmd = &cobra.Command{

@@ -30,7 +30,6 @@ var nodeDeleteCmd = &cobra.Command{
 	Short: "Deletes a node from a cluster.",
 	Long:  "Deletes a node from a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if len(args) == 0 {
 			exit.UsageT("Usage: minikube node delete [name]")
 		}

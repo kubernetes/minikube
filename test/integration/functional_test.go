@@ -58,7 +58,6 @@ var apiPortTest = 8441
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
-
 	profile := UniqueProfileName("functional")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer func() {
@@ -205,7 +204,6 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Output(), expectedImgInside) {
 		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
 	}
-
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
@@ -270,7 +268,6 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	if afterCfg.Config.KubernetesConfig.NodePort != apiPortTest {
 		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortTest, afterCfg.Config.KubernetesConfig.NodePort)
 	}
-
 }
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
@@ -509,14 +506,12 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			if !strings.Contains(rr.Output(), "1.28.4-glibc") {
 				t.Errorf("expected '1.28.4-glibc' to be in the output but got *%s*", rr.Output())
 			}
-
 		})
 
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
-
 			if err != nil {
 				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
 			}
@@ -615,7 +610,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		for profileK := range profileJSON {
 			for _, p := range profileJSON[profileK] {
-				var name = p["Name"]
+				name := p["Name"]
 				if name == nonexistentProfile {
 					t.Errorf("minikube profile %s should not exist", nonexistentProfile)
 				}
@@ -667,7 +662,6 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 		if !profileExists {
 			t.Errorf("expected the json of 'profile list' to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
 		}
-
 	})
 }
 
@@ -1093,7 +1087,7 @@ users:
 					t.Fatal(err)
 				}
 
-				if err := ioutil.WriteFile(tf.Name(), tc.kubeconfig, 0644); err != nil {
+				if err := ioutil.WriteFile(tf.Name(), tc.kubeconfig, 0o644); err != nil {
 					t.Fatal(err)
 				}
 

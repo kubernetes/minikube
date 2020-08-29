@@ -32,7 +32,7 @@ import (
 )
 
 func TestName(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		runtime string
 		want    string
 	}{
@@ -57,7 +57,7 @@ func TestName(t *testing.T) {
 }
 
 func TestImageExists(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		runtime string
 		name    string
 		sha     string
@@ -84,7 +84,7 @@ func TestImageExists(t *testing.T) {
 }
 
 func TestCGroupDriver(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		runtime string
 		want    string
 	}{
@@ -111,7 +111,7 @@ func TestCGroupDriver(t *testing.T) {
 }
 
 func TestKubeletOptions(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		runtime string
 		want    map[string]string
 	}{
@@ -444,7 +444,6 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 		if arg == "service" {
 			svcs = args[i+1:]
 		}
-
 	}
 
 	for _, svc := range svcs {
@@ -484,7 +483,7 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 				out += "[Unit]\n"
 				out += "Description=Docker Application Container Engine\n"
 				out += "Documentation=https://docs.docker.com\n"
-				//out += "BindsTo=containerd.service\n"
+				// out += "BindsTo=containerd.service\n"
 				return out, nil
 			}
 			return out, fmt.Errorf("%s cat unimplemented", svc)
@@ -503,7 +502,7 @@ func (f *FakeRunner) which(args []string, root bool) (string, error) { // nolint
 }
 
 func TestVersion(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		runtime string
 		want    string
 	}{
@@ -545,7 +544,7 @@ var allServices = map[string]serviceState{
 }
 
 func TestDisable(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		runtime string
 		want    []string
 	}{
@@ -575,39 +574,47 @@ func TestDisable(t *testing.T) {
 }
 
 func TestEnable(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		runtime  string
 		services map[string]serviceState
 		want     map[string]serviceState
 	}{
-		{"docker", defaultServices,
+		{
+			"docker", defaultServices,
 			map[string]serviceState{
 				"docker":        SvcRunning,
 				"containerd":    SvcExited,
 				"crio":          SvcExited,
 				"crio-shutdown": SvcExited,
-			}},
-		{"docker", allServices,
+			},
+		},
+		{
+			"docker", allServices,
 			map[string]serviceState{
 				"docker":        SvcRestarted,
 				"containerd":    SvcExited,
 				"crio":          SvcExited,
 				"crio-shutdown": SvcExited,
-			}},
-		{"containerd", defaultServices,
+			},
+		},
+		{
+			"containerd", defaultServices,
 			map[string]serviceState{
 				"docker":        SvcExited,
 				"containerd":    SvcRestarted,
 				"crio":          SvcExited,
 				"crio-shutdown": SvcExited,
-			}},
-		{"crio", defaultServices,
+			},
+		},
+		{
+			"crio", defaultServices,
 			map[string]serviceState{
 				"docker":        SvcExited,
 				"containerd":    SvcExited,
 				"crio":          SvcRunning,
 				"crio-shutdown": SvcExited,
-			}},
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
@@ -631,7 +638,7 @@ func TestEnable(t *testing.T) {
 }
 
 func TestContainerFunctions(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		runtime string
 	}{
 		{"docker"},

@@ -94,11 +94,11 @@ func downloadBinary(url, path string) error {
 	}
 	defer resp.Body.Close()
 
-	if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0777)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o777)
 	if err != nil {
 		return err
 	}

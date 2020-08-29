@@ -143,7 +143,6 @@ func (l *LoadBalancerEmulator) cleanupService(restClient rest.Interface, svc cor
 	result, err := l.requestSender.send(request)
 	glog.Infof("Removed load balancer ingress from %s.", svc.Name)
 	return result, err
-
 }
 
 // NewLoadBalancerEmulator creates a new LoadBalancerEmulator

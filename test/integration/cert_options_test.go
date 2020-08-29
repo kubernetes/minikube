@@ -76,5 +76,4 @@ func TestCertOptions(t *testing.T) {
 	if !strings.Contains(rr.Stdout.String(), "8555") {
 		t.Errorf("apiserver server port incorrect. Output of 'kubectl config view' = %q", rr.Output())
 	}
-
 }

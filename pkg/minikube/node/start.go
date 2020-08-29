@@ -161,7 +161,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if starter.Cfg.Driver == driver.None && len(starter.Cfg.Nodes) == 1 {
 			prepareNone()
 		}
-
 	} else {
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
 			return nil, errors.Wrap(err, "update node")
@@ -232,7 +231,6 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	waitDownloadKicBaseImage(&kicGroup)
 
 	return startMachine(cc, n, delOnFail)
-
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.

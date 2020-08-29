@@ -100,7 +100,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 
 	if warn { // convert exec.Command to with context
 		cmdWithCtx := exec.CommandContext(ctx, cmd.Args[0], cmd.Args[1:]...)
-		cmdWithCtx.Stdout = cmd.Stdout //copying the original command
+		cmdWithCtx.Stdout = cmd.Stdout // copying the original command
 		cmdWithCtx.Stderr = cmd.Stderr
 		cmd = cmdWithCtx
 	}

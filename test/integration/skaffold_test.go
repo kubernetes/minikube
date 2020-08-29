@@ -126,7 +126,7 @@ func installSkaffold() (f *os.File, err error) {
 	}
 
 	if runtime.GOOS != "windows" {
-		if err := os.Chmod(tf.Name(), 0700); err != nil {
+		if err := os.Chmod(tf.Name(), 0o700); err != nil {
 			return tf, err
 		}
 	}

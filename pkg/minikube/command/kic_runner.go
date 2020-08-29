@@ -128,7 +128,6 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		rr.ExitCode = exitError.ExitCode()
 	}
 	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
-
 }
 
 // Copy copies a file and its permissions

@@ -42,7 +42,7 @@ func createTestProfile(t *testing.T) string {
 
 	// Not necessary, but it is a handy random alphanumeric
 	name := filepath.Base(td)
-	if err := os.MkdirAll(config.ProfileFolderPath(name), 0777); err != nil {
+	if err := os.MkdirAll(config.ProfileFolderPath(name), 0o777); err != nil {
 		t.Fatalf("error creating temporary directory")
 	}
 
@@ -72,7 +72,6 @@ func TestIsAddonAlreadySet(t *testing.T) {
 	if assets.Addons["ingress"].IsEnabled(cc) {
 		t.Errorf("expected ingress to not be enabled")
 	}
-
 }
 
 func TestDisableUnknownAddon(t *testing.T) {

@@ -172,13 +172,13 @@ func writeToFile(config runtime.Object, configPath ...string) error {
 	// create parent dir if doesn't exist
 	dir := filepath.Dir(fPath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err = os.MkdirAll(dir, 0755); err != nil {
+		if err = os.MkdirAll(dir, 0o755); err != nil {
 			return errors.Wrapf(err, "Error creating directory: %s", dir)
 		}
 	}
 
 	// write with restricted permissions
-	if err := lock.WriteFile(fPath, data, 0600); err != nil {
+	if err := lock.WriteFile(fPath, data, 0o600); err != nil {
 		return errors.Wrapf(err, "Error writing file %s", fPath)
 	}
 

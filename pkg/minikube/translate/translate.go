@@ -98,7 +98,6 @@ func DetermineLocale() {
 	if err != nil {
 		glog.Infof("Failed to populate translation map: %v", err)
 	}
-
 }
 
 // setPreferredLanguageTag configures which language future messages should use.

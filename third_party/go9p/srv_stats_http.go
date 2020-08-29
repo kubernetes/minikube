@@ -9,9 +9,11 @@ import (
 	"sync"
 )
 
-var mux sync.RWMutex
-var stat map[string]http.Handler
-var httponce sync.Once
+var (
+	mux      sync.RWMutex
+	stat     map[string]http.Handler
+	httponce sync.Once
+)
 
 func register(s string, h http.Handler) {
 	mux.Lock()
@@ -26,6 +28,7 @@ func register(s string, h http.Handler) {
 	}
 	mux.Unlock()
 }
+
 func (srv *Srv) statsRegister() {
 	httponce.Do(func() {
 		http.HandleFunc("/go9p/", StatsHandler)

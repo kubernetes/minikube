@@ -176,7 +176,6 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 			}
 
 		}
-
 	}
 	glog.Info("Successfully downloaded all kic artifacts")
 }

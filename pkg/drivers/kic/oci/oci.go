@@ -17,12 +17,16 @@ limitations under the License.
 package oci
 
 import (
-	"context"
-	"os"
-	"time"
-
 	"bufio"
 	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -30,12 +34,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
-
-	"fmt"
-	"os/exec"
-	"runtime"
-	"strconv"
-	"strings"
 )
 
 // DeleteContainersByLabel deletes all containers that have a specific label

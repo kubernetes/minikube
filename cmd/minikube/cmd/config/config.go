@@ -140,7 +140,7 @@ var settings = []Setting{
 	},
 	{
 		name: Bootstrapper,
-		set:  SetString, //TODO(r2d4): more validation here?
+		set:  SetString, // TODO(r2d4): more validation here?
 	},
 	{
 		name: config.ShowDriverDeprecationNotification,

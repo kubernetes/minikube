@@ -24,7 +24,6 @@ import (
 )
 
 func TestEnable(t *testing.T) {
-
 	tests := []struct {
 		service   string
 		shouldErr bool

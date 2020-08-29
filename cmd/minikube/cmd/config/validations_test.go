@@ -39,8 +39,7 @@ func runValidations(t *testing.T, tests []validationTest, name string, f func(st
 }
 
 func TestDriver(t *testing.T) {
-
-	var tests = []validationTest{
+	tests := []validationTest{
 		{
 			value:     "vkasdhfasjdf",
 			shouldErr: true,
@@ -52,11 +51,10 @@ func TestDriver(t *testing.T) {
 	}
 
 	runValidations(t, tests, "driver", IsValidDriver)
-
 }
 
 func TestValidCIDR(t *testing.T) {
-	var tests = []validationTest{
+	tests := []validationTest{
 		{
 			value:     "0.0.0.0/0",
 			shouldErr: false,
@@ -99,7 +97,7 @@ func TestValidCIDR(t *testing.T) {
 }
 
 func TestValidRuntime(t *testing.T) {
-	var tests = []validationTest{
+	tests := []validationTest{
 		{
 			value:     "", // default
 			shouldErr: false,
@@ -126,7 +124,6 @@ func TestValidRuntime(t *testing.T) {
 }
 
 func TestIsURLExists(t *testing.T) {
-
 	self, err := os.Executable()
 	if err != nil {
 		t.Error(err)

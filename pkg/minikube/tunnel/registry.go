@@ -110,7 +110,7 @@ func (r *persistentRegistry) Register(tunnel *ID) (rerr error) {
 
 	glog.V(5).Infof("json marshalled: %v, %s\n", tunnels, bytes)
 
-	f, err := os.OpenFile(r.path, os.O_RDWR|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(r.path, os.O_RDWR|os.O_TRUNC, 0o600)
 	if err != nil {
 		if os.IsNotExist(err) {
 			f, err = os.Create(r.path)
@@ -154,7 +154,7 @@ func (r *persistentRegistry) Remove(route *Route) (rerr error) {
 	}
 	tunnels = append(tunnels[:idx], tunnels[idx+1:]...)
 	glog.V(4).Infof("tunnels after remove: %s", tunnels)
-	f, err := os.OpenFile(r.path, os.O_RDWR|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(r.path, os.O_RDWR|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("error removing tunnel %s", err)
 	}
@@ -177,6 +177,7 @@ func (r *persistentRegistry) Remove(route *Route) (rerr error) {
 
 	return nil
 }
+
 func (r *persistentRegistry) List() ([]*ID, error) {
 	f, err := os.Open(r.path)
 	if err != nil {

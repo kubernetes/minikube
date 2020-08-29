@@ -48,9 +48,11 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
-var statusFormat string
-var output string
-var layout string
+var (
+	statusFormat string
+	output       string
+	layout       string
+)
 
 const (
 	// Additional legacy states:
@@ -182,7 +184,6 @@ var statusCmd = &cobra.Command{
 	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if output != "text" && statusFormat != defaultStatusFormat {
 			exit.UsageT("Cannot use both --output and --format options")
 		}

@@ -31,6 +31,7 @@ var (
 	cp     bool
 	worker bool
 )
+
 var nodeAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Adds a node to the given cluster.",

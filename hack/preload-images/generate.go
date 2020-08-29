@@ -53,7 +53,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	baseDir := filepath.Dir(driver.GetSSHKeyPath())
 	defer os.Remove(baseDir)
 
-	if err := os.MkdirAll(baseDir, 0755); err != nil {
+	if err := os.MkdirAll(baseDir, 0o755); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
 	if err := driver.Create(); err != nil {

@@ -79,9 +79,11 @@ type ClntList struct {
 	clntList, clntLast *Clnt
 }
 
-var clnts *ClntList
-var DefaultDebuglevel int
-var DefaultLogger *Logger
+var (
+	clnts             *ClntList
+	DefaultDebuglevel int
+	DefaultLogger     *Logger
+)
 
 func (clnt *Clnt) Rpcnb(r *Req) error {
 	var tag uint16

@@ -117,7 +117,6 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	o := strings.TrimSpace(rr.Stdout.String())
 	o = strings.Trim(o, "'")
 	p, err := strconv.Atoi(o)
-
 	if err != nil {
 		return p, errors.Wrapf(err, "convert host-port %q to number", p)
 	}

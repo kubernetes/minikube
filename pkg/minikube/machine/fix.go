@@ -177,7 +177,6 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 
 	`, out.V{"profile_name": name})
 	}
-
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync

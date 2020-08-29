@@ -38,5 +38,5 @@ func Driver(name string, destination string, v semver.Version) error {
 	}
 
 	// Give downloaded drivers a baseline decent file permission
-	return os.Chmod(destination, 0755)
+	return os.Chmod(destination, 0o755)
 }

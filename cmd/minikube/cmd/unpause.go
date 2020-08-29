@@ -48,7 +48,7 @@ var unpauseCmd = &cobra.Command{
 
 		glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
 		if allNamespaces {
-			namespaces = nil //all
+			namespaces = nil // all
 		} else {
 			if len(namespaces) == 0 {
 				exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")

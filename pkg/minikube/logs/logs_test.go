@@ -21,7 +21,7 @@ import (
 )
 
 func TestIsProblem(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name  string
 		want  bool
 		input string

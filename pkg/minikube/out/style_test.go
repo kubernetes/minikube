@@ -23,8 +23,7 @@ import (
 )
 
 func TestApplyPrefix(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		prefix, format, expected, description string
 	}{
 		{
@@ -51,8 +50,7 @@ func TestApplyPrefix(t *testing.T) {
 }
 
 func TestLowPrefix(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		expected    string
 		description string
 		style       style
@@ -88,8 +86,7 @@ func TestLowPrefix(t *testing.T) {
 }
 
 func TestApplyStyle(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		expected    string
 		description string
 		styleEnum   StyleEnum
@@ -130,8 +127,7 @@ func TestApplyStyle(t *testing.T) {
 }
 
 func TestApplyTemplateFormating(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		expected    string
 		description string
 		styleEnum   StyleEnum

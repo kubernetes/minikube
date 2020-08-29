@@ -23,8 +23,10 @@ import (
 	"syscall"
 )
 
-var checkIfRunning func(pid int) (bool, error)
-var getPid func() int
+var (
+	checkIfRunning func(pid int) (bool, error)
+	getPid         func() int
+)
 
 func init() {
 	checkIfRunning = osCheckIfRunning
