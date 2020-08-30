@@ -175,22 +175,30 @@ else
 	PATHSEP = :
 endif
 
+v_at_0 = yes
+v_at_ = $(v_at_1)
+quiet := $(v_at_$(V))
+Q=$(if $(quiet),@)
 
 out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) go.mod
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) /usr/bin/make $@)
 else
-	go build $(MINIKUBE_GOFLAGS) -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)go build $(MINIKUBE_GOFLAGS) -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
 endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
-	cp $< $@
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
 
 out/minikube-linux-x86_64: out/minikube-linux-amd64
-	cp $< $@
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
 
 out/minikube-linux-aarch64: out/minikube-linux-arm64
-	cp $< $@
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
 
 .PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
 minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux 64bit
@@ -202,7 +210,8 @@ out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" \
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
@@ -297,7 +306,8 @@ generate-docs: out/minikube ## Automatically generate commands documentation.
 
 .PHONY: gotest
 gotest: $(SOURCE_GENERATED) ## Trigger minikube test
-	go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
+	$(if $(quiet),@echo "  TEST     $@")
+	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
 
 .PHONY: extract
 extract: ## Compile extract tool
@@ -308,9 +318,10 @@ pkg/minikube/assets/assets.go: $(shell find "deploy/addons" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 endif
-	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
-	-gofmt -s -w $@
+	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	$(if $(quiet),@echo "  GEN      $@")
+	$(Q)PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
+	$(Q)-gofmt -s -w $@
 	@#golint: Dns should be DNS (compat sed)
 	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
 	@#golint: Html should be HTML (compat sed)
@@ -320,9 +331,10 @@ pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 endif
-	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
-	-gofmt -s -w $@
+	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	$(if $(quiet),@echo "  GEN      $@")
+	$(Q)PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
+	$(Q)-gofmt -s -w $@
 	@#golint: Json should be JSON (compat sed)
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
@@ -475,7 +487,8 @@ TAR_TARGETS_linux-amd64   := out/minikube-linux-amd64 out/docker-machine-driver-
 TAR_TARGETS_darwin-amd64  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
 TAR_TARGETS_windows-amd64 := out/minikube-windows-amd64.exe
 out/minikube-%.tar.gz: $$(TAR_TARGETS_$$*)
-	tar -cvzf $@ $^
+	$(if $(quiet),@echo "  TAR      $@")
+	$(Q)tar -cvzf $@ $^
 
 .PHONY: cross-tars
 cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-windows-amd64.tar.gz out/minikube-darwin-amd64.tar.gz ## Cross-compile minikube
@@ -502,7 +515,8 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 		-v $(PWD):/app -v $(GOPATH):/go --init --entrypoint "" \
 		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
 else
-	GOOS=darwin CGO_ENABLED=1 go build \
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOOS=darwin CGO_ENABLED=1 go build \
 		-ldflags="$(HYPERKIT_LDFLAGS)"   \
 		-o $@ k8s.io/minikube/cmd/drivers/hyperkit
 endif
@@ -534,13 +548,15 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner: out/storage-provisioner-$(GOARCH)
-	cp $< $@
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
 
 out/storage-provisioner-%: cmd/storage-provisioner/main.go pkg/storage/storage_provisioner.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-	CGO_ENABLED=0 GOOS=linux GOARCH=$* go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)CGO_ENABLED=0 GOOS=linux GOARCH=$* go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 endif
 
 .PHONY: storage-provisioner-image
@@ -600,7 +616,8 @@ endif
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
-	GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
 gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
@@ -622,13 +639,16 @@ release-minikube: out/minikube checksum ## Minikube release
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-amd64
-	cp $< $@
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
 
 out/docker-machine-driver-kvm2-x86_64: out/docker-machine-driver-kvm2-amd64
-	cp $< $@
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
 
 out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
-	cp $< $@
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
 
 out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -637,7 +657,8 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
 else
-	GOARCH=$* \
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOARCH=$* \
 	go build \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
