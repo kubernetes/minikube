@@ -20,6 +20,8 @@ package integration
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -31,13 +33,24 @@ func TestDockerFlags(t *testing.T) {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")
 	}
 	MaybeParallel(t)
-
 	profile := UniqueProfileName("docker-flags")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+	tempDirPath, err := ioutil.TempDir("", profile)
+	if err != nil {
+		t.Errorf("Fail to create temporary dir: " + err.Error())
+	}
+
+	defer func() {
+		err := os.RemoveAll(tempDirPath)
+		if err != nil {
+			t.Errorf("Fail to remove temporary dir: " + err.Error())
+		}
+	}()
+	driverMount := fmt.Sprintf("%s:%s", tempDirPath, tempDirPath)
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
-	args := append([]string{"start", "-p", profile, "--cache-images=false", "--memory=1800", "--install-addons=false", "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true", "--alsologtostderr", "-v=5"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--cache-images=false", "--memory=1800", "--install-addons=false", "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true", "--driver-mounts", driverMount, "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
@@ -62,6 +75,15 @@ func TestDockerFlags(t *testing.T) {
 		if !strings.Contains(rr.Stdout.String(), opt) {
 			t.Fatalf("expected %q output to have include *%s* . output: %q", rr.Command(), opt, rr.Stdout)
 		}
+	}
+
+	args = []string{"inspect", profile, "--format", "{{.HostConfig.Binds}}"}
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", args...))
+	if err != nil {
+		t.Error("Fail to inspect docker container: " + err.Error())
+	}
+	if !strings.Contains(rr.Stdout.String(), driverMount) {
+		t.Error("Fail to check docker mounts: " + rr.Stdout.String())
 	}
 }
 
