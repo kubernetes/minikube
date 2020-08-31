@@ -107,10 +107,6 @@ func newBinaryFromPR(pr string) (*Binary, error) {
 	return b, nil
 }
 
-func remoteMinikubeURL(pr int) string {
-	return fmt.Sprintf("https://storage.googleapis.com/minikube-builds/%d/minikube-linux-amd64", pr)
-}
-
 func localMinikubePath(pr int) string {
 	return fmt.Sprintf("%s/minikube-binaries/%d/minikube", constants.DefaultMinipath, pr)
 }
