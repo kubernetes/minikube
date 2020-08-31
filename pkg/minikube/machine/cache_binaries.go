@@ -34,13 +34,13 @@ import (
 func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) error {
 	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
 
-	// If --download-only, skip kubeadm and kubelet
+	// If --download-only, skip KubernetesReleaseBinaries
 	if viper.GetBool("download-only") {
 		var cBinaries []string
 		for _, bin := range binaries {
 			excluded := false
-			for _, exclBin := range constants.KubeadmReleaseBinaries {
-				if bin == exclBin {
+			for _, excludedBin := range constants.KubernetesReleaseBinaries {
+				if bin == excludedBin {
 					excluded = true
 				}
 			}
