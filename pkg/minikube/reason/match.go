@@ -50,7 +50,7 @@ func knownIssues() []match {
 	return ps
 }
 
-// FindMatch returns a known issue from an error on an OS
+// MatchKnownIssue returns a known issue from an error on an OS
 func MatchKnownIssue(r Kind, err error, goos string) *Kind {
 	// The kind passed in has specified that it should not be rematched
 	if r.NoMatch {
