@@ -874,7 +874,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 			r = reason.RsrcInsufficientWindowsDockerMemory
 		}
 		r.Style = style.Improvement
-		out.WarnReason(r, "Docker Desktop only has access to {{.size}}MiB of the {{.sys}}MiB of available system memory. For better performance, consider increasing this allocation.", out.V{"size": containerLimit, "sys": sysLimit, "recommend": "3 GB"})
+		out.WarnReason(r, "Docker Desktop has access to only {{.size}}MiB of the {{.sys}}MiB in available system memory. Consider increasing this for improved performance.", out.V{"size": containerLimit, "sys": sysLimit, "recommend": "3 GB"})
 	}
 
 	advised := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
