@@ -224,7 +224,7 @@ func postStartValidations(h *host.Host, drvName string) {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 	if percentageFull >= 99 {
-		exit.Message(reason.RsrcInsufficientDockerStorage, `Docker is out of disk space! ({{.p}}% of capacity)`, out.V{"p": percentageFull})
+		exit.Message(reason.RsrcInsufficientDockerStorage, `Docker is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"p": percentageFull})
 	}
 
 	if percentageFull >= 85 {
