@@ -34,11 +34,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-var stopAll bool
-var keepActive bool
+var (
+	stopAll    bool
+	keepActive bool
+)
 
 // stopCmd represents the stop command
 var stopCmd = &cobra.Command{
@@ -50,12 +54,11 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 }
 
 func init() {
-
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
-		exit.WithError("unable to bind flags", err)
+		exit.Error(reason.InternalFlagsBind, "unable to bind flags", err)
 	}
 
 	RootCmd.AddCommand(stopCmd)
@@ -88,7 +91,7 @@ func runStop(cmd *cobra.Command, args []string) {
 
 	register.Reg.SetStep(register.Done)
 	if stoppedNodes > 0 {
-		out.T(out.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
+		out.T(style.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
 	}
 }
 
@@ -115,7 +118,7 @@ func stopProfile(profile string) int {
 
 	if !keepActive {
 		if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
-			exit.WithError("update config", err)
+			exit.Error(reason.HostKubeconfigUnset, "update config", err)
 		}
 	}
 
@@ -134,7 +137,7 @@ func stop(api libmachine.API, machineName string) bool {
 
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
+			out.T(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
 			nonexistent = true
 			return nil
 		default:
@@ -143,7 +146,7 @@ func stop(api libmachine.API, machineName string) bool {
 	}
 
 	if err := retry.Expo(tryStop, 1*time.Second, 120*time.Second, 5); err != nil {
-		exit.WithError("Unable to stop VM", err)
+		exit.Error(reason.GuestStopTimeout, "Unable to stop VM", err)
 	}
 
 	return nonexistent

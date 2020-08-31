@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 // This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
@@ -38,7 +39,7 @@ import (
 // see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
 	if err := flag.Set("logtostderr", "false"); err != nil {
-		exit.WithError("unable to set logtostderr", err)
+		exit.Error(reason.InternalFlagSet, "unable to set logtostderr", err)
 	}
 
 	// Setting the default client to native gives much better performance.

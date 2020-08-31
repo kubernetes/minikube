@@ -20,56 +20,46 @@ import (
 	"runtime"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
-// MaybeExitWithAdvice before exiting will try to check for different error types and provide advice if we know for sure what the error is
-func MaybeExitWithAdvice(err error) {
+// ExitIfFatal before exiting will try to check for different error types and provide advice if we know for sure what the error is
+func ExitIfFatal(err error) {
 	if err == nil {
 		return
 	}
 
 	if errors.Is(err, oci.ErrWindowsContainers) {
-		out.ErrLn("")
-		out.ErrT(out.Conflict, "Your Docker Desktop container OS type is Windows but Linux is required.")
-		out.T(out.Warning, "Please change Docker settings to use Linux containers instead of Windows containers.")
-		out.T(out.Documentation, "https://minikube.sigs.k8s.io/docs/drivers/docker/#verify-docker-container-type-is-linux")
-		exit.UsageT(`You can verify your Docker container type by running:
-{{.command}}
-	`, out.V{"command": "docker info --format '{{.OSType}}'"})
+		exit.Message(reason.Kind{
+			ID:       "PROVIDER_DOCKER_CONTAINER_OS",
+			ExitCode: reason.ExProviderConflict,
+			Style:    style.Conflict,
+			URL:      "https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers",
+			Advice:   "From the Docker Desktop menu, select 'Switch to Linux containers'",
+		}, "Docker Desktop is configured for Windows containers, but Linux containers are required for minikube")
 	}
 
 	if errors.Is(err, oci.ErrCPUCountLimit) {
-		out.ErrLn("")
-		out.ErrT(out.Conflict, "{{.name}} doesn't have enough CPUs. ", out.V{"name": driver.FullName(viper.GetString("driver"))})
-		if runtime.GOOS != "linux" && viper.GetString("driver") == "docker" {
-			out.T(out.Warning, "Please consider changing your Docker Desktop's resources.")
-			out.T(out.Documentation, "https://docs.docker.com/config/containers/resource_constraints/")
-		} else {
-			cpuCount := viper.GetInt(cpus)
-			if cpuCount == 2 {
-				out.T(out.Tip, "Please ensure your system has {{.cpu_counts}} CPU cores.", out.V{"cpu_counts": viper.GetInt(cpus)})
-			} else {
-				out.T(out.Tip, "Please ensure your {{.driver_name}} system has access to {{.cpu_counts}} CPU cores or reduce the number of the specified CPUs", out.V{"driver_name": driver.FullName(viper.GetString("driver")), "cpu_counts": viper.GetInt(cpus)})
-			}
+		if runtime.GOOS == "darwin" {
+			exit.Message(reason.RsrcInsufficientDarwinDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
 		}
-		exit.UsageT("Ensure your {{.driver_name}} system has enough CPUs. The minimum allowed is 2 CPUs.", out.V{"driver_name": viper.GetString("driver")})
+		if runtime.GOOS == "windows" {
+			exit.Message(reason.RsrcInsufficientWindowsDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
+		}
+		exit.Message(reason.RsrcInsufficientCores, "Docker has less than 2 CPUs available, but Kubernetes requires at least 2 to be available")
 	}
 
 	if errors.Is(err, kubeadm.ErrNoExecLinux) {
-		out.ErrLn("")
-		out.ErrT(out.Conflict, "kubeadm binary is not executable !")
-		out.T(out.Documentation, "Try the solution in this link: https://github.com/kubernetes/minikube/issues/8327#issuecomment-651288459")
-		exit.UsageT(`Ensure the binaries are not mounted with "noexec" option. To check run:
-
-	$ findmnt
-
-`)
+		exit.Message(reason.Kind{
+			ID:       "PROVIDER_DOCKER_NOEXEC",
+			ExitCode: reason.ExProviderPermission,
+			Style:    style.Permissions,
+			Issues:   []int{8327},
+			Advice:   "Ensure that your Docker mountpoints do not have the 'noexec' flag set",
+		}, "The kubeadm binary within the Docker container is not executable")
 	}
-
 }

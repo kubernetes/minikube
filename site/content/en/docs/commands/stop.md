@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube stop
 
 Stops a running local Kubernetes cluster

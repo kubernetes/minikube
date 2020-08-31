@@ -20,65 +20,49 @@ package exit
 import (
 	"os"
 	"runtime"
-	"runtime/debug"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/problem"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
-// Exit codes based on sysexits(3)
-const (
-	Failure             = 1   // Failure represents a general failure code
-	Interrupted         = 2   // Ctrl-C (SIGINT)
-	BadUsage            = 64  // Usage represents an incorrect command line
-	Data                = 65  // Data represents incorrect data supplied by the user
-	NoInput             = 66  // NoInput represents that the input file did not exist or was not readable
-	Unavailable         = 69  // Unavailable represents when a service was unavailable
-	Software            = 70  // Software represents an internal software error.
-	IO                  = 74  // IO represents an I/O error
-	Permissions         = 77  // Permissions represents a permissions error
-	Config              = 78  // Config represents an unconfigured or misconfigured state
-	InsufficientStorage = 507 // InsufficientStorage represents insufficient storage in the VM/container
-)
-
-// UsageT outputs a templated usage error and exits with error code 64
-func UsageT(format string, a ...out.V) {
-	out.ErrWithExitCode(out.Usage, format, BadUsage, a...)
-	os.Exit(BadUsage)
-}
-
-// WithCodeT outputs a templated fatal error message and exits with the supplied error code.
-func WithCodeT(code int, format string, a ...out.V) {
-	out.ErrWithExitCode(out.FatalType, format, code, a...)
-	os.Exit(code)
-}
-
-// WithError outputs an error and exits.
-func WithError(msg string, err error) {
-	glog.Infof("WithError(%s)=%v called from:\n%s", msg, err, debug.Stack())
-	p := problem.FromError(err, runtime.GOOS)
-
-	if p != nil {
-		if out.JSON {
-			p.DisplayJSON(Config)
-			os.Exit(Config)
-		}
-		WithProblem(msg, err, p)
-		os.Exit(Config)
+// Message outputs a templated fatal error message and exits with the supplied error code.
+func Message(r reason.Kind, format string, args ...out.V) {
+	if r.ID == "" {
+		glog.Errorf("supplied reason has no ID: %+v", r)
 	}
-	out.DisplayError(msg, err)
-	os.Exit(Software)
+
+	if r.Style == style.None {
+		r.Style = style.Failure
+	}
+
+	if r.ExitCode == 0 {
+		r.ExitCode = reason.ExProgramError
+	}
+
+	if len(args) == 0 {
+		args = append(args, out.V{})
+	}
+	args[0]["fatal_msg"] = out.Fmt(format, args...)
+	args[0]["fatal_code"] = r.ID
+	out.Error(r, "Exiting due to {{.fatal_code}}: {{.fatal_msg}}", args...)
+	os.Exit(r.ExitCode)
 }
 
-// WithProblem outputs info related to a known problem and exits.
-func WithProblem(msg string, err error, p *problem.Problem) {
-	out.ErrT(out.Empty, "")
-	out.FailureT("[{{.id}}] {{.msg}} {{.error}}", out.V{"msg": msg, "id": p.ID, "error": p.Err})
-	p.Display()
-	if p.ShowIssueLink {
-		out.ErrT(out.Empty, "")
-		out.ErrT(out.Sad, "If the above advice does not help, please let us know: ")
-		out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+// Advice is syntactic sugar to output a message with dynamically generated advice
+func Advice(r reason.Kind, msg string, advice string, a ...out.V) {
+	r.Advice = out.Fmt(advice, a...)
+	Message(r, msg, a...)
+}
+
+// Error outputs an error and exits.
+func Error(r reason.Kind, msg string, err error) {
+	ki := reason.MatchKnownIssue(r, err, runtime.GOOS)
+	if ki != nil {
+		Message(*ki, err.Error())
 	}
+	// By default, unmatched errors should show a link
+	r.NewIssueLink = true
+	Message(r, err.Error())
 }

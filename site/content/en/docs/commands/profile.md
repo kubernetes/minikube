@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube profile
 
 Get or list the current profiles (clusters)

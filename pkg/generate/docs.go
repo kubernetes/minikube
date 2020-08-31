@@ -124,7 +124,7 @@ func writeSubcommands(command *cobra.Command, w io.Writer) error {
 
 func generateTitle(command *cobra.Command, w io.Writer) error {
 	date := time.Now().Format("2006-01-02")
-	title := out.ApplyTemplateFormatting(9999, false, title, out.V{"Command": command.Name(), "Description": command.Short, "Date": date})
+	title := out.Fmt(title, out.V{"Command": command.Name(), "Description": command.Short, "Date": date})
 	_, err := w.Write([]byte(title))
 	return err
 }
@@ -134,5 +134,5 @@ func saveDocForCommand(command *cobra.Command, contents []byte, path string) err
 	if err := os.Remove(fp); err != nil {
 		glog.Warningf("error removing %s", fp)
 	}
-	return ioutil.WriteFile(fp, contents, 0644)
+	return ioutil.WriteFile(fp, contents, 0o644)
 }

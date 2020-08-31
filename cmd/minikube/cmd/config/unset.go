@@ -21,6 +21,7 @@ import (
 	config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 var configUnsetCmd = &cobra.Command{
@@ -29,11 +30,11 @@ var configUnsetCmd = &cobra.Command{
 	Long:  "unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.UsageT("usage: minikube config unset PROPERTY_NAME")
+			exit.Message(reason.Usage, "usage: minikube config unset PROPERTY_NAME")
 		}
 		err := Unset(args[0])
 		if err != nil {
-			exit.WithError("unset failed", err)
+			exit.Error(reason.InternalConfigUnset, "unset failed", err)
 		}
 	},
 }

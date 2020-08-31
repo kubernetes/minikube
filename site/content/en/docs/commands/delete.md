@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube delete
 
 Deletes a local Kubernetes cluster
