@@ -53,10 +53,6 @@ func TestNewBinary(t *testing.T) {
 		errExpected  bool
 	}{
 		{
-			input: prPrefix + "42",
-			prNum: "42",
-		},
-		{
 			input: "42",
 			prNum: "42",
 		},
