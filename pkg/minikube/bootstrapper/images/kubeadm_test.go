@@ -50,7 +50,7 @@ func TestKubeadmImages(t *testing.T) {
 			"mirror.k8s.io/etcd:3.3.15-0",
 			"mirror.k8s.io/pause:3.1",
 			"mirror.k8s.io/storage-provisioner:v2",
-			"mirror.k8s.io/dashboard:v2.0.1",
+			"mirror.k8s.io/dashboard:v2.0.3",
 			"mirror.k8s.io/metrics-scraper:v1.0.4",
 		}},
 		{"v1.15.0", "", []string{
