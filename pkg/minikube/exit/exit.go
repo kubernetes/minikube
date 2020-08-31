@@ -27,7 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
-// Message outputs a templated fatal error message and exits with the supplied error code.
+// Message outputs a templated message and exits without interpretation
 func Message(r reason.Kind, format string, args ...out.V) {
 	if r.ID == "" {
 		glog.Errorf("supplied reason has no ID: %+v", r)
@@ -63,7 +63,7 @@ func Advice(r reason.Kind, msg string, advice string, a ...out.V) {
 	Message(r, msg, a...)
 }
 
-// Error outputs an error and exits.
+// Error takes a fatal error, matches it against known issues, and outputs the best message for it
 func Error(r reason.Kind, msg string, err error) {
 	ki := reason.MatchKnownIssue(r, err, runtime.GOOS)
 	if ki != nil {
