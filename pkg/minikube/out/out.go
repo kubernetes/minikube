@@ -225,6 +225,11 @@ func wantsColor(fd uintptr) bool {
 		}
 	}
 
+	// New Windows Terminal
+	if os.Getenv("WT_SESSION") != "" {
+		return true
+	}
+
 	term := os.Getenv("TERM")
 	colorTerm := os.Getenv("COLORTERM")
 	// Example: term-256color
