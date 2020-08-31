@@ -572,9 +572,9 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 
 	baseCmd := fmt.Sprintf("%s %s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), phase)
 	cmds := []string{
-		fmt.Sprintf("%s phase kubelet-start --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase certs all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, conf),
+		fmt.Sprintf("%s phase kubelet-start --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, conf),
 		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, conf),
 	}
@@ -831,7 +831,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "host alias")
 	}
 
-	return sm.Start("kubelet")
+	return nil
 }
 
 // kubectlPath returns the path to the kubelet

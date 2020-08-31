@@ -563,26 +563,30 @@ upload-preloaded-images-tar: out/minikube # Upload the preloaded images for olde
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
-	gcloud docker -- push $(STORAGE_PROVISIONER_IMAGE)
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(STORAGE_PROVISIONER_IMAGE)
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable
-	(docker pull $(IMAGE) && (echo "Image already exist"; exit 1) || echo "Image doesn't exist in registry")
+	@docker pull $(IMAGE) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry"
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
 endif
-	docker push $(IMAGE) || gcloud docker -- push $(IMAGE)
+	docker push $(IMAGE)
 
 .PHONY: push-kic-base-image-gcr
 push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
+	docker login gcr.io/k8s-minikube
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GCR)
 
 .PHONY: push-kic-base-image-gh
 push-kic-base-image-gh: kic-base-image ## Push kic-base to github
+	docker login docker.pkg.github.com
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GH)
 
 .PHONY: push-kic-base-image-hub
 push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
+	docker login
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
 
 .PHONY: push-kic-base-image
@@ -604,7 +608,8 @@ gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
-	gcloud docker -- push $(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum  ## Build and release .iso file

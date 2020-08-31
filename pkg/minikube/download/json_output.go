@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/go-getter"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -44,6 +45,7 @@ func (cpb *jsonOutput) TrackProgress(src string, currentSize, totalSize int64, s
 			artifact: src,
 			current:  currentSize,
 			total:    totalSize,
+			Time:     time.Now(),
 		},
 		close: func() error {
 			cpb.lock.Lock()
@@ -59,12 +61,17 @@ type jsonReader struct {
 	current  int64
 	total    int64
 	io.Reader
+	time.Time
 }
 
 func (r *jsonReader) Read(p []byte) (n int, err error) {
 	n, err = r.Reader.Read(p)
 	r.current += int64(n)
 	progress := float64(r.current) / float64(r.total)
-	register.PrintDownloadProgress(r.artifact, fmt.Sprintf("%v", progress))
+	// print progress every second so user isn't overwhelmed with events
+	if t := time.Now(); t.Sub(r.Time) > time.Second || progress == 1 {
+		register.PrintDownloadProgress(r.artifact, fmt.Sprintf("%v", progress))
+		r.Time = t
+	}
 	return
 }

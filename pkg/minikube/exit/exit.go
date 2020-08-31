@@ -29,16 +29,17 @@ import (
 
 // Exit codes based on sysexits(3)
 const (
-	Failure     = 1  // Failure represents a general failure code
-	Interrupted = 2  // Ctrl-C (SIGINT)
-	BadUsage    = 64 // Usage represents an incorrect command line
-	Data        = 65 // Data represents incorrect data supplied by the user
-	NoInput     = 66 // NoInput represents that the input file did not exist or was not readable
-	Unavailable = 69 // Unavailable represents when a service was unavailable
-	Software    = 70 // Software represents an internal software error.
-	IO          = 74 // IO represents an I/O error
-	Config      = 78 // Config represents an unconfigured or misconfigured state
-	Permissions = 77 // Permissions represents a permissions error
+	Failure             = 1   // Failure represents a general failure code
+	Interrupted         = 2   // Ctrl-C (SIGINT)
+	BadUsage            = 64  // Usage represents an incorrect command line
+	Data                = 65  // Data represents incorrect data supplied by the user
+	NoInput             = 66  // NoInput represents that the input file did not exist or was not readable
+	Unavailable         = 69  // Unavailable represents when a service was unavailable
+	Software            = 70  // Software represents an internal software error.
+	IO                  = 74  // IO represents an I/O error
+	Permissions         = 77  // Permissions represents a permissions error
+	Config              = 78  // Config represents an unconfigured or misconfigured state
+	InsufficientStorage = 507 // InsufficientStorage represents insufficient storage in the VM/container
 )
 
 // UsageT outputs a templated usage error and exits with error code 64
@@ -73,7 +74,6 @@ func WithError(msg string, err error) {
 // WithProblem outputs info related to a known problem and exits.
 func WithProblem(msg string, err error, p *problem.Problem) {
 	out.ErrT(out.Empty, "")
-	glog.Errorf("%+v\n", p)
 	out.FailureT("[{{.id}}] {{.msg}} {{.error}}", out.V{"msg": msg, "id": p.ID, "error": p.Err})
 	p.Display()
 	if p.ShowIssueLink {

@@ -347,6 +347,7 @@ jobs:
           (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
+          choco install -y caffeine
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
         continue-on-error: true
@@ -483,6 +484,7 @@ jobs:
           (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
           choco install -y kubernetes-cli
           choco install -y jq
+          choco install -y caffeine
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
         continue-on-error: true
@@ -888,7 +890,7 @@ jobs:
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "TestMultiNode" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "TestMultiNode" -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
