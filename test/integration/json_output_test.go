@@ -123,7 +123,7 @@ func TestJSONOutputError(t *testing.T) {
 		t.Fatalf("last cloud event is not of type error: %v", last)
 	}
 	last.validateData(t, "exitcode", fmt.Sprintf("%v", reason.ExDriverUnsupported))
-	last.validateData(t, "message", fmt.Sprintf("The driver 'fail' is not supported on %s\n", runtime.GOOS))
+	last.validateData(t, "message", fmt.Sprintf("The driver 'fail' is not supported on %s", runtime.GOOS))
 }
 
 type cloudEvent struct {
@@ -149,7 +149,7 @@ func (c *cloudEvent) validateData(t *testing.T, key, value string) {
 		t.Fatalf("expected key %s does not exist in cloud event", key)
 	}
 	if v != value {
-		t.Fatalf("values in cloud events do not match:\nActual:\n%v\nExpected:\n%v\n", v, value)
+		t.Fatalf("values in cloud events do not match:\nActual:\n'%v'\nExpected:\n'%v'\n", v, value)
 	}
 }
 

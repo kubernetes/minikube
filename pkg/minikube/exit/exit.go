@@ -44,9 +44,16 @@ func Message(r reason.Kind, format string, args ...out.V) {
 	if len(args) == 0 {
 		args = append(args, out.V{})
 	}
-	args[0]["fatal_msg"] = out.Fmt(format, args...)
-	args[0]["fatal_code"] = r.ID
-	out.Error(r, "Exiting due to {{.fatal_code}}: {{.fatal_msg}}", args...)
+
+	// No need to manipulate the message for JSON output
+	if out.JSON {
+		out.Error(r, format, args...)
+	} else {
+		args[0]["fatal_msg"] = out.Fmt(format, args...)
+		args[0]["fatal_code"] = r.ID
+		out.Error(r, "Exiting due to {{.fatal_code}}: {{.fatal_msg}}", args...)
+	}
+
 	os.Exit(r.ExitCode)
 }
 
