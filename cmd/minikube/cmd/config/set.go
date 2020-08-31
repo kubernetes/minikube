@@ -23,6 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 var configSetCmd = &cobra.Command{
@@ -32,14 +33,14 @@ var configSetCmd = &cobra.Command{
 	These values can be overwritten by flags or environment variables at runtime.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
-			exit.UsageT("not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
+			exit.Message(reason.Usage, "not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
 		if len(args) > 2 {
-			exit.UsageT("toom any arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
+			exit.Message(reason.Usage, "toom any arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
 		err := Set(args[0], args[1])
 		if err != nil {
-			exit.WithError("Set failed", err)
+			exit.Error(reason.InternalConfigSet, "Set failed", err)
 		}
 	},
 }

@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube status
 
 Gets the status of a local Kubernetes cluster

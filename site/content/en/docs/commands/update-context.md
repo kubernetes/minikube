@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube update-context
 
 Update kubeconfig in case of an IP or port change
