@@ -55,7 +55,7 @@ var Config = map[Enum]Options{
 	Empty:         {Prefix: "", LowPrefix: ""},
 	Happy:         {Prefix: "😄  "},
 	Issue:         {Prefix: "    ▪ ", LowPrefix: LowIndent}, // Indented bullet
-	Issues:        {Prefix: "⁉️   "},
+	Issues:        {Prefix: "🍿  "},
 	Launch:        {Prefix: "🚀  "},
 	LogEntry:      {Prefix: "    "}, // Indent
 	New:           {Prefix: "🆕  "},
@@ -80,17 +80,18 @@ var Config = map[Enum]Options{
 	Workaround:    {Prefix: "👉  ", LowPrefix: LowIndent},
 
 	// Fail emoji's
-	Conflict:    {Prefix: "💢  ", LowPrefix: LowWarning},
-	Failure:     {Prefix: "❌  ", LowPrefix: LowError},
-	Fatal:       {Prefix: "💣  ", LowPrefix: LowError},
-	Warning:     {Prefix: "❗  ", LowPrefix: LowWarning},
-	KnownIssue:  {Prefix: "🧯  ", LowPrefix: LowError},
-	NoEntry:     {Prefix: "⛔  ", LowPrefix: LowError},
-	Embarrassed: {Prefix: "🤦  ", LowPrefix: LowWarning},
-	Sad:         {Prefix: "😿  "},
-	Shrug:       {Prefix: "🤷  "},
-	Improvement: {Prefix: "🏎️   ", LowPrefix: LowWarning},
-	SeeNoEvil:   {Prefix: "🙈  ", LowPrefix: LowError},
+	Conflict:         {Prefix: "💢  ", LowPrefix: LowWarning},
+	Failure:          {Prefix: "❌  ", LowPrefix: LowError},
+	Fatal:            {Prefix: "💣  ", LowPrefix: LowError},
+	Warning:          {Prefix: "❗  ", LowPrefix: LowWarning},
+	KnownIssue:       {Prefix: "🧯  ", LowPrefix: LowError},
+	UnmetRequirement: {Prefix: "⛔  ", LowPrefix: LowError},
+	NotAllowed:       {Prefix: "🚫  ", LowPrefix: LowError},
+	Embarrassed:      {Prefix: "🤦  ", LowPrefix: LowWarning},
+	Sad:              {Prefix: "😿  "},
+	Shrug:            {Prefix: "🤷  "},
+	Improvement:      {Prefix: "💨  ", LowPrefix: LowWarning},
+	SeeNoEvil:        {Prefix: "🙈  ", LowPrefix: LowError},
 
 	// Specialized purpose styles
 	AddonDisable:     {Prefix: "🌑  "},

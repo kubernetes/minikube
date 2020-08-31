@@ -64,7 +64,7 @@ const (
 	MountOptions
 	New
 	Notice
-	NoEntry
+	NotAllowed
 	Option
 	Pause
 	Permissions
@@ -90,6 +90,7 @@ const (
 	Tip
 	Unmount
 	Unpause
+	UnmetRequirement
 	Unsupported
 	URL
 	Usage

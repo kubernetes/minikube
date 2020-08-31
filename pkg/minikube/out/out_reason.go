@@ -100,7 +100,11 @@ func displayText(k reason.Kind, format string, a ...V) {
 	}
 
 	issueURLs := k.IssueURLs()
-	if len(issueURLs) > 0 {
+	if len(issueURLs) == 1 {
+		ErrT(style.Issues, "Related issue: {{.url}}", V{"url": issueURLs[0]})
+	}
+
+	if len(issueURLs) > 1 {
 		ErrT(style.Issues, "Related issues:")
 		for _, i := range issueURLs {
 			ErrT(style.Issue, "{{.url}}", V{"url": i})

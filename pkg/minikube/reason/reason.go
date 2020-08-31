@@ -114,7 +114,7 @@ var (
 	InternalCredsNotFound    = Kind{ID: "MK_CREDENTIALS_NOT_FOUND", ExitCode: ExProgramNotFound, Style: style.Shrug}
 	InternalSemverParse      = Kind{ID: "MK_SEMVER_PARSE", ExitCode: ExProgramError}
 
-	RsrcInsufficientCores             = Kind{ID: "RSRC_INSUFFICIENT_CORES", ExitCode: ExInsufficientCores, Style: style.NoEntry}
+	RsrcInsufficientCores             = Kind{ID: "RSRC_INSUFFICIENT_CORES", ExitCode: ExInsufficientCores, Style: style.UnmetRequirement}
 	RsrcInsufficientDarwinDockerCores = Kind{
 		ID:       "RSRC_DOCKER_CORES",
 		ExitCode: ExInsufficientCores,
@@ -123,7 +123,7 @@ var (
 			3. Click "Resources"
 			4. Increase "CPUs" slider bar to 2 or higher
 			5. Click "Apply & Restart"`,
-		Style: style.NoEntry,
+		Style: style.UnmetRequirement,
 		URL:   "https://docs.docker.com/docker-for-mac/#resources",
 	}
 
@@ -136,12 +136,12 @@ var (
 		4. Increase "CPUs" slider bar to 2 or higher
 		5. Click "Apply & Restart"`,
 		URL:   "https://docs.docker.com/docker-for-windows/#resources",
-		Style: style.NoEntry,
+		Style: style.UnmetRequirement,
 	}
 
-	RsrcInsufficientReqMemory           = Kind{ID: "RSRC_INSUFFICIENT_REQ_MEMORY", ExitCode: ExInsufficientMemory, Style: style.NoEntry}
-	RsrcInsufficientSysMemory           = Kind{ID: "RSRC_INSUFFICIENT_SYS_MEMORY", ExitCode: ExInsufficientMemory, Style: style.NoEntry}
-	RsrcInsufficientContainerMemory     = Kind{ID: "RSRC_INSUFFICIENT_CONTAINER_MEMORY", ExitCode: ExInsufficientMemory, Style: style.NoEntry}
+	RsrcInsufficientReqMemory           = Kind{ID: "RSRC_INSUFFICIENT_REQ_MEMORY", ExitCode: ExInsufficientMemory, Style: style.UnmetRequirement}
+	RsrcInsufficientSysMemory           = Kind{ID: "RSRC_INSUFFICIENT_SYS_MEMORY", ExitCode: ExInsufficientMemory, Style: style.UnmetRequirement}
+	RsrcInsufficientContainerMemory     = Kind{ID: "RSRC_INSUFFICIENT_CONTAINER_MEMORY", ExitCode: ExInsufficientMemory, Style: style.UnmetRequirement}
 	RsrcInsufficientWindowsDockerMemory = Kind{
 		ID:       "RSRC_DOCKER_MEMORY",
 		ExitCode: ExInsufficientMemory,
@@ -151,7 +151,7 @@ var (
 		4. Increase "Memory" slider bar to {{.recommend}} or higher
 		5. Click "Apply & Restart"`,
 		URL:   "https://docs.docker.com/docker-for-windows/#resources",
-		Style: style.NoEntry,
+		Style: style.UnmetRequirement,
 	}
 	RsrcInsufficientDarwinDockerMemory = Kind{
 		ID:       "RSRC_DOCKER_MEMORY",
@@ -161,7 +161,7 @@ var (
 			3. Click "Resources"
 			4. Increase "Memory" slider bar to {{.recommend}} or higher
 			5. Click "Apply & Restart"`,
-		Style: style.NoEntry,
+		Style: style.UnmetRequirement,
 		URL:   "https://docs.docker.com/docker-for-mac/#resources",
 	}
 
@@ -177,7 +177,7 @@ var (
 		Issues: []int{9024},
 	}
 
-	RsrcInsufficientStorage = Kind{ID: "RSRC_INSUFFICIENT_STORAGE", ExitCode: ExInsufficientStorage, Style: style.NoEntry}
+	RsrcInsufficientStorage = Kind{ID: "RSRC_INSUFFICIENT_STORAGE", ExitCode: ExInsufficientStorage, Style: style.UnmetRequirement}
 
 	HostHomeMkdir        = Kind{ID: "HOST_HOME_MKDIR", ExitCode: ExHostPermission}
 	HostHomeChown        = Kind{ID: "HOST_HOME_CHOWN", ExitCode: ExHostPermission}

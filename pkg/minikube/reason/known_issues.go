@@ -34,6 +34,8 @@ package reason
 
 import (
 	"regexp"
+
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // links used by multiple known issues
@@ -152,8 +154,9 @@ var hostIssues = []match{
 		Kind: Kind{
 			ID:       "HOST_KUBECONFIG_PERMISSION",
 			ExitCode: ExHostPermission,
-			Advice:   "Run: 'chmod 600 $HOME/.kube/config'",
+			Advice:   "Run: 'sudo chown $USER $HOME/.kube/config && chmod 600 $HOME/.kube/config'",
 			Issues:   []int{5714},
+			Style:    style.NotAllowed,
 		},
 		Regexp: re(`.kube/config: permission denied`),
 		GOOS:   []string{"darwin", "linux"},
