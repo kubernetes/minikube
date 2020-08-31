@@ -121,7 +121,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
 		if err := kubeconfig.Update(kcs); err != nil {
-			return nil, errors.Wrap(err, "Failed to update kubeconfig file.")
+			return nil, errors.Wrap(err, "Failed kubeconfig update")
 		}
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)

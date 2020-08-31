@@ -472,7 +472,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 		return kubeconfig, nil
 	}
 	// Don't delete the cluster unless they ask
-	return nil, errors.Wrap(originalErr, "startup failed")
+	return nil, originalErr
 }
 
 func kubectlVersion(path string) (string, error) {
@@ -669,10 +669,18 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": name, "error": st.Error})
 	}
 
+	id := fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	code := reason.ExProviderUnavailable
+
+	if !st.Running {
+		id = fmt.Sprintf("PROVIDER_%s_NOT_RUNNING", strings.ToUpper(name))
+		code = reason.ExProviderNotRunning
+	}
+
 	exitIfNotForced(reason.Kind{
-		ID:       fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name)),
+		ID:       id,
 		Advice:   translate.T(st.Fix),
-		ExitCode: reason.ExProviderNotFound,
+		ExitCode: code,
 		URL:      st.Doc,
 		Style:    style.Fatal,
 	}, st.Error.Error())
