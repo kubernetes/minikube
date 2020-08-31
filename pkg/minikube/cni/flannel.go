@@ -18,9 +18,12 @@ package cni
 
 import (
 	"os/exec"
+	"path/filepath"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 // From https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
@@ -644,6 +647,14 @@ func (c Flannel) Apply(r Runner) error {
 	_, err := r.RunCmd(exec.Command("stat", "/opt/cni/bin/portmap"))
 	if err != nil {
 		return errors.Wrap(err, "required 'portmap' CNI plug-in not found")
+	}
+
+	if driver.IsKIC(c.cc.Driver) {
+		conflict := "/etc/cni/net.d/100-crio-bridge.conf"
+		_, err := r.RunCmd(exec.Command("sudo", "mv", conflict, filepath.Join(filepath.Dir(conflict), "DISABLED-"+filepath.Base(conflict))))
+		if err != nil {
+			glog.Errorf("unable to disable %s: %v", conflict, err)
+		}
 	}
 
 	return applyManifest(c.cc, r, manifestAsset([]byte(flannelTmpl)))

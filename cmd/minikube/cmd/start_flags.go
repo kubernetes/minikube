@@ -144,7 +144,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
-	startCmd.Flags().String(startOutput, "text", "Format to print stdout in. Options include: [text,json]")
+	startCmd.Flags().StringP(startOutput, "o", "text", "Format to print stdout in. Options include: [text,json]")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -227,14 +227,14 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 		mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 		if cmd.Flags().Changed(memory) {
-			mem, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+			var err error
+			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
 			if err != nil {
 				exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 			}
 			if driver.IsKIC(drvName) && mem > containerLimit {
 				exit.UsageT("{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
 			}
-
 		} else {
 			validateMemorySize(mem, drvName)
 			glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)

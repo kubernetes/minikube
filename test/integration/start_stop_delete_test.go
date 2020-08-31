@@ -113,9 +113,14 @@ func TestStartStop(t *testing.T) {
 						{"Pause", validatePauseAfterSart},
 					}
 					for _, stc := range serialTests {
+						if ctx.Err() == context.DeadlineExceeded {
+							t.Fatalf("Unable to run more tests (deadline exceeded)")
+						}
+
 						tcName := tc.name
 						tcVersion := tc.version
 						stc := stc
+
 						t.Run(stc.name, func(t *testing.T) {
 							stc.validator(ctx, t, profile, tcName, tcVersion, startArgs)
 						})

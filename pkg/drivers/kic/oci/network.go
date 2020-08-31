@@ -33,7 +33,7 @@ import (
 func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, error) {
 	if ociBin == Docker {
 		if runtime.GOOS == "linux" {
-			return dockerGatewayIP()
+			return dockerGatewayIP(containerName)
 		}
 		// for windows and mac, the gateway ip is not routable so we use dns trick.
 		return digDNS(ociBin, containerName, "host.docker.internal")
@@ -60,7 +60,12 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 
 // dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
 // gets the ip from user's host docker
-func dockerGatewayIP() (net.IP, error) {
+func dockerGatewayIP(profile string) (net.IP, error) {
+	// check if using custom network first
+	if networkExists(profile) {
+		ip := net.ParseIP(DefaultGateway)
+		return ip, nil
+	}
 	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "get network bridge")
@@ -161,4 +166,44 @@ func dockerContainerIP(name string) (string, string, error) {
 	}
 
 	return ips[0], ips[1], nil
+}
+
+// CreateNetwork creates a network
+func CreateNetwork(name, ipRange, gateway string) error {
+	// check if the network already exists
+	if networkExists(name) {
+		return nil
+	}
+
+	subnet := fmt.Sprintf("--subnet=%s", ipRange)
+	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, "--gateway", gateway, name))
+	if err != nil {
+		return errors.Wrapf(err, "error creating network")
+	}
+
+	return nil
+}
+
+// removeNetwork removes a network
+func removeNetwork(name string) error {
+	if !networkExists(name) {
+		return nil
+	}
+	_, err := runCmd(exec.Command(Docker, "network", "remove", name))
+	return err
+}
+
+func networkExists(name string) bool {
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--format", "{{.Name}}"))
+	if err != nil {
+		glog.Warningf("error listing networks: %v", err)
+		return false
+	}
+	networks := strings.Split(rr.Output(), "\n")
+	for _, n := range networks {
+		if strings.Trim(n, "\n") == name {
+			return true
+		}
+	}
+	return false
 }

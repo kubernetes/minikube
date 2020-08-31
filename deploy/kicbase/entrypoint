@@ -65,7 +65,7 @@ fix_mount() {
   mount --make-rshared /
 }
 
-fix_cgroup() {
+fix_cgroup_mounts() {
   echo 'INFO: fix cgroup mounts for all subsystems'
   # For each cgroup subsystem, Docker does a bind mount from the current
   # cgroup to the root of the cgroup subsystem. For instance:
@@ -78,30 +78,38 @@ fix_cgroup() {
   # This is because `/proc/<pid>/cgroup` is not affected by the bind mount.
   # The following is a workaround to recreate the original cgroup
   # environment by doing another bind mount for each subsystem.
-  local docker_cgroup_mounts
-  docker_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep docker || true)
-  if [[ -n "${docker_cgroup_mounts}" ]]; then
-    local docker_cgroup cgroup_subsystems subsystem
-    docker_cgroup=$(echo "${docker_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
-    cgroup_subsystems=$(echo "${docker_cgroup_mounts}" | cut -d' ' -f 5)
-    echo "${cgroup_subsystems}" |
-    while IFS= read -r subsystem; do
-      mkdir -p "${subsystem}${docker_cgroup}"
-      mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
+  local cgroup_mounts
+
+  # NOTE: This extracts fields 4 and on
+  # See https://man7.org/linux/man-pages/man5/proc.5.html for field names
+  cgroup_mounts=$(egrep -o '(/docker|libpod_parent|/kubepods).*/sys/fs/cgroup.*' /proc/self/mountinfo || true)
+
+  if [[ -n "${cgroup_mounts}" ]]; then
+    local mount_root
+    mount_root=$(echo "${cgroup_mounts}" | head -n 1 | cut -d' ' -f1)
+
+    for mount_point in $(echo "${cgroup_mounts}" | cut -d' ' -f 2); do
+      # bind mount each mount_point to mount_point + mount_root
+      # mount --bind /sys/fs/cgroup/cpu /sys/fs/cgroup/cpu/docker/fb07bb6daf7730a3cb14fc7ff3e345d1e47423756ce54409e66e01911bab2160
+      local target="${mount_point}${mount_root}"
+
+      if ! findmnt "${target}"; then
+        mkdir -p "${target}"
+        mount --bind "${mount_point}" "${target}"
+      fi
     done
   fi
-  local podman_cgroup_mounts
-  podman_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep libpod_parent || true)
-  if [[ -n "${podman_cgroup_mounts}" ]]; then
-    local podman_cgroup cgroup_subsystems subsystem
-    podman_cgroup=$(echo "${podman_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
-    cgroup_subsystems=$(echo "${podman_cgroup_mounts}" | cut -d' ' -f 5)
-    echo "${cgroup_subsystems}" |
-    while IFS= read -r subsystem; do
-      mkdir -p "${subsystem}${podman_cgroup}"
-      mount --bind "${subsystem}" "${subsystem}${podman_cgroup}"
+}
+
+retryable_fix_cgroup_mounts() {
+    for i in $(seq 0 10); do
+      fix_cgroup_mounts && return || echo "fix_cgroup failed with exit code $? (retry $i)"
+      echo "fix_cgroup diagnostics information below:"
+      mount
+      sleep 1
     done
-  fi
+
+    exit 31
 }
 
 fix_machine_id() {
@@ -256,7 +264,7 @@ enable_network_magic(){
 select_iptables
 fix_kmsg
 fix_mount
-fix_cgroup
+retryable_fix_cgroup_mounts
 fix_machine_id
 fix_product_name
 fix_product_uuid

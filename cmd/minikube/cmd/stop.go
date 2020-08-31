@@ -38,6 +38,7 @@ import (
 )
 
 var stopAll bool
+var keepActive bool
 
 // stopCmd represents the stop command
 var stopCmd = &cobra.Command{
@@ -51,6 +52,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 func init() {
 
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
+	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
@@ -111,8 +113,10 @@ func stopProfile(profile string) int {
 		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
-		exit.WithError("update config", err)
+	if !keepActive {
+		if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
+			exit.WithError("update config", err)
+		}
 	}
 
 	return stoppedNodes
