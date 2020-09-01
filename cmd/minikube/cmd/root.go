@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -56,15 +57,15 @@ var RootCmd = &cobra.Command{
 	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
-			if err := os.MkdirAll(path, 0777); err != nil {
-				exit.WithError("Error creating minikube directory", err)
+			if err := os.MkdirAll(path, 0o777); err != nil {
+				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
 		}
 
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
 			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
-				exit.WithError("logdir set failed", err)
+				exit.Error(reason.InternalFlagSet, "logdir set failed", err)
 			}
 		}
 	},
@@ -105,7 +106,7 @@ func Execute() {
 
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
-		os.Exit(exit.BadUsage)
+		os.Exit(reason.ExProgramUsage)
 	}
 }
 
@@ -143,7 +144,7 @@ func usageTemplate() string {
 // by setting them directly, using values from viper when not passed in as args
 func setFlagsUsingViper() {
 	for _, config := range []string{"alsologtostderr", "log_dir", "v"} {
-		var a = pflag.Lookup(config)
+		a := pflag.Lookup(config)
 		viper.SetDefault(a.Name, a.DefValue)
 		// If the flag is set, override viper value
 		if a.Changed {
@@ -152,7 +153,7 @@ func setFlagsUsingViper() {
 		// Viper will give precedence first to calls to the Set command,
 		// then to values from the config.yml
 		if err := a.Value.Set(viper.GetString(a.Name)); err != nil {
-			exit.WithError(fmt.Sprintf("failed to set value for %q", a.Name), err)
+			exit.Error(reason.InternalFlagSet, fmt.Sprintf("failed to set value for %q", a.Name), err)
 		}
 		a.Changed = true
 	}
@@ -229,10 +230,9 @@ func init() {
 
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
-		exit.WithError("Unable to bind flags", err)
+		exit.Error(reason.InternalBindFlags, "Unable to bind flags", err)
 	}
 	cobra.OnInitialize(initConfig)
-
 }
 
 // initConfig reads in config file and ENV variables if set.

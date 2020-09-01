@@ -38,6 +38,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -92,8 +94,8 @@ const (
 	interactive             = "interactive"
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
-	minUsableMem            = 1024 // Kubernetes will not start with less than 1GB
-	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
+	minUsableMem            = 1024 // In MiB: Kubernetes will not start with less than 1GiB
+	minRecommendedMem       = 2000 // In MiB: Warn at no lower than existing configurations
 	minimumCPUS             = 2
 	minimumDiskSize         = 2000
 	autoUpdate              = "auto-update-drivers"
@@ -230,19 +232,19 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			var err error
 			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
 			if err != nil {
-				exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+				exit.Message(reason.Usage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
 			}
 			if driver.IsKIC(drvName) && mem > containerLimit {
-				exit.UsageT("{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
+				exit.Message(reason.Usage, "{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
 			}
 		} else {
-			validateMemorySize(mem, drvName)
+			validateRequestedMemorySize(mem, drvName)
 			glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 		}
 
 		diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			exit.WithCodeT(exit.Config, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
+			exit.Message(reason.Usage, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
 
 		repository := viper.GetString(imageRepository)
@@ -250,12 +252,12 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		if strings.ToLower(repository) == "auto" || (mirrorCountry != "" && repository == "") {
 			found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)))
 			if err != nil {
-				exit.WithError("Failed to check main repository and mirrors for images", err)
+				exit.Error(reason.InetRepo, "Failed to check main repository and mirrors for images", err)
 			}
 
 			if !found {
 				if autoSelectedRepository == "" {
-					exit.WithCodeT(exit.Failure, "None of the known repositories is accessible. Consider specifying an alternative image repository with --image-repository flag")
+					exit.Message(reason.InetReposUnavailable, "None of the known repositories are accessible. Consider specifying an alternative image repository with --image-repository flag")
 				} else {
 					out.WarningT("None of the known repositories in your location are accessible. Using {{.image_repository_name}} as fallback.", out.V{"image_repository_name": autoSelectedRepository})
 				}
@@ -265,7 +267,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 
 		if cmd.Flags().Changed(imageRepository) || cmd.Flags().Changed(imageMirrorCountry) {
-			out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
+			out.T(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
 		}
 
 		// Backwards compatibility with --enable-default-cni
@@ -428,7 +430,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	// validate the memory size in case user changed their system memory limits (example change docker desktop or upgraded memory.)
-	validateMemorySize(cc.Memory, cc.Driver)
+	validateRequestedMemorySize(cc.Memory, cc.Driver)
 
 	if cc.CPUs == 0 {
 		glog.Info("Existing config file was missing cpu. (could be an old minikube config), will use the default value")

@@ -45,26 +45,26 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-var (
-	// requiredDirectories are directories to create on the host during setup
-	requiredDirectories = []string{
-		vmpath.GuestAddonsDir,
-		vmpath.GuestManifestsDir,
-		vmpath.GuestEphemeralDir,
-		vmpath.GuestPersistentDir,
-		vmpath.GuestKubernetesCertsDir,
-		path.Join(vmpath.GuestPersistentDir, "images"),
-		path.Join(vmpath.GuestPersistentDir, "binaries"),
-		vmpath.GuestGvisorDir,
-		vmpath.GuestCertAuthDir,
-		vmpath.GuestCertStoreDir,
-	}
-)
+// requiredDirectories are directories to create on the host during setup
+var requiredDirectories = []string{
+	vmpath.GuestAddonsDir,
+	vmpath.GuestManifestsDir,
+	vmpath.GuestEphemeralDir,
+	vmpath.GuestPersistentDir,
+	vmpath.GuestKubernetesCertsDir,
+	path.Join(vmpath.GuestPersistentDir, "images"),
+	path.Join(vmpath.GuestPersistentDir, "binaries"),
+	vmpath.GuestGvisorDir,
+	vmpath.GuestCertAuthDir,
+	vmpath.GuestCertStoreDir,
+}
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
@@ -217,17 +217,18 @@ func postStartValidations(h *host.Host, drvName string) {
 	if err != nil {
 		glog.Warningf("error getting command runner: %v", err)
 	}
-	// make sure /var isn't full, otherwise warn
+
+	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 	if percentageFull >= 99 {
-		exit.WithCodeT(exit.InsufficientStorage, "docker daemon out of memory. No space left on device")
+		exit.Message(reason.RsrcInsufficientDockerStorage, `Docker is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"p": percentageFull})
 	}
 
-	if percentageFull > 80 {
-		out.ErrT(out.Tip, "The docker daemon is almost out of memory, run 'docker system prune' to free up space")
+	if percentageFull >= 85 {
+		out.WarnReason(reason.RsrcInsufficientDockerStorage, `Docker is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"p": percentageFull})
 	}
 }
 
@@ -292,7 +293,6 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 	spec.Timeout = 13 * time.Minute
 	if driver.IsKIC(drv) {
 		spec.Timeout = 10 * time.Minute
-
 	}
 
 	glog.Infof("acquiring machines lock for %s: %+v", name, spec)
@@ -311,17 +311,17 @@ func showHostInfo(cfg config.ClusterConfig) {
 		info, cpuErr, memErr, DiskErr := CachedHostInfo()
 		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningLocalhost)
-			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+			out.T(style.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 		return
 	}
 	if driver.IsKIC(cfg.Driver) { // TODO:medyagh add free disk space on docker machine
 		register.Reg.SetStep(register.CreatingContainer)
-		out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
+		out.T(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
 		return
 	}
 	register.Reg.SetStep(register.CreatingVM)
-	out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
+	out.T(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
 }
 
 // AddHostAlias makes fine adjustments to pod resources that aren't possible via kubeadm config.

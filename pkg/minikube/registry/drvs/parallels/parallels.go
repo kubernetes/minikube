@@ -59,5 +59,5 @@ func status() registry.State {
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install docker-machine-driver-parallels", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/parallels/"}
 	}
-	return registry.State{Installed: true, Healthy: true}
+	return registry.State{Installed: true, Healthy: true, Running: true}
 }

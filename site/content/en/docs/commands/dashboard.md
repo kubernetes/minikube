@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube dashboard
 
 Access the Kubernetes dashboard running within the minikube cluster

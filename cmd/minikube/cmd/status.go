@@ -45,12 +45,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/version"
 )
 
-var statusFormat string
-var output string
-var layout string
+var (
+	statusFormat string
+	output       string
+	layout       string
+)
 
 const (
 	// Additional legacy states:
@@ -182,9 +185,8 @@ var statusCmd = &cobra.Command{
 	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if output != "text" && statusFormat != defaultStatusFormat {
-			exit.UsageT("Cannot use both --output and --format options")
+			exit.Message(reason.Usage, "Cannot use both --output and --format options")
 		}
 
 		cname := ClusterFlagValue()
@@ -195,7 +197,7 @@ var statusCmd = &cobra.Command{
 		if nodeName != "" || statusFormat != defaultStatusFormat && len(cc.Nodes) > 1 {
 			n, _, err := node.Retrieve(*cc, nodeName)
 			if err != nil {
-				exit.WithError("retrieving node", err)
+				exit.Error(reason.GuestNodeRetrieve, "retrieving node", err)
 			}
 
 			st, err := nodeStatus(api, *cc, *n)
@@ -224,22 +226,22 @@ var statusCmd = &cobra.Command{
 		case "text":
 			for _, st := range statuses {
 				if err := statusText(st, os.Stdout); err != nil {
-					exit.WithError("status text failure", err)
+					exit.Error(reason.InternalStatusText, "status text failure", err)
 				}
 			}
 		case "json":
 			// Layout is currently only supported for JSON mode
 			if layout == "cluster" {
 				if err := clusterStatusJSON(statuses, os.Stdout); err != nil {
-					exit.WithError("status json failure", err)
+					exit.Error(reason.InternalStatusJSON, "status json failure", err)
 				}
 			} else {
 				if err := statusJSON(statuses, os.Stdout); err != nil {
-					exit.WithError("status json failure", err)
+					exit.Error(reason.InternalStatusJSON, "status json failure", err)
 				}
 			}
 		default:
-			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
+			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
 		}
 
 		os.Exit(exitCode(statuses))

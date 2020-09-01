@@ -33,6 +33,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -57,7 +59,7 @@ func configureMounts(wg *sync.WaitGroup) {
 		return
 	}
 
-	out.T(out.Mounting, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
+	out.T(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
 	path := os.Args[0]
 	mountDebugVal := 0
 	if glog.V(8) {
@@ -70,9 +72,9 @@ func configureMounts(wg *sync.WaitGroup) {
 		mountCmd.Stderr = os.Stderr
 	}
 	if err := mountCmd.Start(); err != nil {
-		exit.WithError("Error starting mount", err)
+		exit.Error(reason.GuestMount, "Error starting mount", err)
 	}
-	if err := lock.WriteFile(filepath.Join(localpath.MiniPath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
-		exit.WithError("Error writing mount pid", err)
+	if err := lock.WriteFile(filepath.Join(localpath.MiniPath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0o644); err != nil {
+		exit.Error(reason.HostMountPid, "Error writing mount pid", err)
 	}
 }

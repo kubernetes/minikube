@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube config
 
 Modify persistent configuration values

@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube update-check
 
 Print current and latest version number

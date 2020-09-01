@@ -23,6 +23,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -51,17 +52,17 @@ var versionCmd = &cobra.Command{
 		case "json":
 			json, err := json.Marshal(data)
 			if err != nil {
-				exit.WithError("version json failure", err)
+				exit.Error(reason.InternalJSONMarshal, "version json failure", err)
 			}
 			out.Ln(string(json))
 		case "yaml":
 			yaml, err := yaml.Marshal(data)
 			if err != nil {
-				exit.WithError("version yaml failure", err)
+				exit.Error(reason.InternalYamlMarshal, "version yaml failure", err)
 			}
 			out.Ln(string(yaml))
 		default:
-			exit.WithCodeT(exit.BadUsage, "error: --output must be 'yaml' or 'json'")
+			exit.Message(reason.InternalOutputUsage, "error: --output must be 'yaml' or 'json'")
 		}
 	},
 }

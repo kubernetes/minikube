@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -122,7 +123,7 @@ func GetServiceURLs(api libmachine.API, cname string, namespace string, t *templ
 	return serviceURLs, nil
 }
 
-// GetServiceURLsForService returns a SvcUrl object for a service in a namespace. Supports optional formatting.
+// GetServiceURLsForService returns a SvcURL object for a service in a namespace. Supports optional formatting.
 func GetServiceURLsForService(api libmachine.API, cname string, namespace, service string, t *template.Template) (SvcURL, error) {
 	host, err := machine.LoadHost(api, cname)
 	if err != nil {
@@ -286,7 +287,7 @@ func WaitForService(api libmachine.API, cname string, namespace string, service 
 	}
 
 	if len(serviceURL.URLs) == 0 {
-		out.T(out.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
+		out.T(style.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
 		return urlList, nil
 	}
 

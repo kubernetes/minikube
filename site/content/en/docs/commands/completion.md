@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube completion
 
 Generate command completion for a shell

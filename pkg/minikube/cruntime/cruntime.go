@@ -27,7 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
@@ -76,7 +76,7 @@ type Manager interface {
 	// Available returns an error if it is not possible to use this runtime on a host
 	Available() error
 	// Style is an associated StyleEnum for Name()
-	Style() out.StyleEnum
+	Style() style.Enum
 
 	// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
 	CGroupDriver() (string, error)
@@ -175,7 +175,6 @@ func ContainerStatusCommand() string {
 
 // disableOthers disables all other runtimes except for me.
 func disableOthers(me Manager, cr CommandRunner) error {
-
 	// valid values returned by manager.Name()
 	runtimes := []string{"containerd", "crio", "docker"}
 	for _, name := range runtimes {
