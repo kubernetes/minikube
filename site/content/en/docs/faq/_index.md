@@ -32,5 +32,5 @@ Please allocate sufficient resources for Knative setup using minikube, especiall
 
 ## Do I need to install kubectl locally?
 
-No, minikube comes with built-in kubectl [see minikube's kubectl documentation]({{< ref "docs/handbook/kubectl.md"}}). 
+No, minikube comes with built-in kubectl [see minikube's kubectl documentation]({{< ref "docs/handbook/kubectl.md" >}}). 
 
