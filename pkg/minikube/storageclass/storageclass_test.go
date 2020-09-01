@@ -33,18 +33,23 @@ import (
 type mockStorageV1InterfaceOk struct {
 	storagev1.StorageV1Interface
 }
+
 type mockStorageV1InterfaceListErr struct {
 	storagev1.StorageV1Interface
 }
+
 type mockStorageV1InterfaceWithBadItem struct {
 	storagev1.StorageV1Interface
 }
+
 type mockStorageClassInterfaceOk struct {
 	storagev1.StorageClassInterface
 }
+
 type mockStorageClassInterfaceListErr struct {
 	storagev1.StorageClassInterface
 }
+
 type mockStorageClassInterfaceWithBadItem struct {
 	storagev1.StorageClassInterface
 }
@@ -53,10 +58,12 @@ func testStoragev1Ok() (storagev1.StorageV1Interface, error) {
 	client := fake.Clientset{Fake: testing_client.Fake{}}
 	return mockStorageV1InterfaceOk{client.StorageV1()}, nil
 }
+
 func testStoragev1ListErr() (storagev1.StorageV1Interface, error) {
 	client := fake.Clientset{Fake: testing_client.Fake{}}
 	return mockStorageV1InterfaceListErr{client.StorageV1()}, nil
 }
+
 func testStoragev1WithBadItem() (storagev1.StorageV1Interface, error) {
 	client := fake.Clientset{Fake: testing_client.Fake{}}
 	return mockStorageV1InterfaceWithBadItem{client.StorageV1()}, nil
@@ -95,6 +102,7 @@ func (m mockStorageClassInterfaceWithBadItem) List(opts metav1.ListOptions) (*v1
 	scl.Items = append(scl.Items, sc)
 	return &scl, nil
 }
+
 func (mockStorageClassInterfaceListErr) List(opts metav1.ListOptions) (*v1.StorageClassList, error) {
 	return nil, fmt.Errorf("mocked list error")
 }
@@ -114,7 +122,7 @@ func (mockStorageClassInterfaceWithBadItem) Update(sc *v1.StorageClass) (*v1.Sto
 }
 
 func TestDisableDefaultStorageClass(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		class       string
 		err         bool
@@ -154,7 +162,7 @@ func TestDisableDefaultStorageClass(t *testing.T) {
 }
 
 func TestSetDefaultStorageClass(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		class       string
 		err         bool
@@ -213,7 +221,7 @@ users:
 `
 
 func TestGetStoragev1(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		config      string
 		err         bool
@@ -254,7 +262,7 @@ func TestGetStoragev1(t *testing.T) {
 func setK8SConfig(config, kubeconfigPath string) error {
 	mockK8sConfigByte := []byte(config)
 	mockK8sConfigPath := kubeconfigPath
-	err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
+	err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0o644)
 	if err != nil {
 		return fmt.Errorf("Unexpected error when writing to file %v. Error: %v", kubeconfigPath, err)
 	}

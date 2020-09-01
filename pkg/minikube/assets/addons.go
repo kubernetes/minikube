@@ -444,7 +444,6 @@ var Addons = map[string]*Addon{
 
 // GenerateTemplateData generates template data for template assets
 func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
-
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
 	// for  less common architectures blank suffix for amd64

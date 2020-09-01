@@ -84,7 +84,6 @@ func validateMultiNodeStart(ctx context.Context, t *testing.T, profile string) {
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
 	}
-
 }
 
 func validateAddNodeToMultiNode(ctx context.Context, t *testing.T, profile string) {
@@ -263,7 +262,6 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 }
 
 func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile string) {
-
 	// Start the node back up
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "delete", ThirdNodeName))
 	if err != nil {
@@ -293,5 +291,4 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 			t.Errorf("docker volume was not properly deleted: %s", rr.Stdout.String())
 		}
 	}
-
 }

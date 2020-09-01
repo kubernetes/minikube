@@ -84,7 +84,6 @@ func (srv *Srv) auth(req *SrvReq) {
 	} else {
 		req.RespondError(Enoauth)
 	}
-
 }
 
 func (srv *Srv) authPost(req *SrvReq) {

@@ -59,7 +59,8 @@ func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, er
 	return &MockCoreClient{
 		servicesMap:  m.servicesMap,
 		endpointsMap: m.endpointsMap,
-		secretsMap:   m.secretsMap}, nil
+		secretsMap:   m.secretsMap,
+	}, nil
 }
 
 func (m *MockCoreClient) Secrets(ns string) typed_core.SecretInterface {
@@ -294,7 +295,7 @@ func TestPrintURLsForService(t *testing.T) {
 		servicesMap:  serviceNamespaces,
 		endpointsMap: endpointNamespaces,
 	}
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		serviceName    string
 		namespace      string
@@ -354,8 +355,7 @@ func TestPrintURLsForService(t *testing.T) {
 }
 
 func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		description                     string
 		bareURLString                   string
 		https                           bool
@@ -424,7 +424,7 @@ func TestGetServiceURLs(t *testing.T) {
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 	viper.Set(config.ProfileName, constants.DefaultClusterName)
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		api         libmachine.API
 		namespace   string
@@ -497,7 +497,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 	viper.Set(config.ProfileName, constants.DefaultClusterName)
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		api         libmachine.API
 		namespace   string
@@ -581,7 +581,7 @@ preferences: {}
 users:
 - name: minikube
 `
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		kubeconfigPath string
 		config         string
@@ -611,7 +611,7 @@ users:
 		t.Run(test.description, func(t *testing.T) {
 			mockK8sConfigByte := []byte(test.config)
 			mockK8sConfigPath := test.kubeconfigPath
-			err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
+			err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0o644)
 			defer os.Remove(mockK8sConfigPath)
 			if err != nil {
 				t.Fatalf("Unexpected error when writing to file %v. Error: %v", test.kubeconfigPath, err)
@@ -648,7 +648,7 @@ func TestPrintServiceList(t *testing.T) {
 }
 
 func TestGetServiceListByLabel(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description, ns, name, label string
 		items                        int
 		failedGetClient, err         bool
@@ -701,7 +701,7 @@ func TestGetServiceListByLabel(t *testing.T) {
 }
 
 func TestCheckService(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description, ns, name string
 		failedGetClient, err  bool
 	}{
@@ -746,7 +746,7 @@ func TestCheckService(t *testing.T) {
 }
 
 func TestDeleteSecret(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description, ns, name string
 		failedGetClient, err  bool
 	}{
@@ -785,7 +785,7 @@ func TestDeleteSecret(t *testing.T) {
 }
 
 func TestCreateSecret(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description, ns, name string
 		failedGetClient, err  bool
 	}{
@@ -836,7 +836,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 	}
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		api         libmachine.API
 		namespace   string
@@ -935,7 +935,6 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 					}
 				}
 			}
-
 		})
 	}
 }
@@ -953,7 +952,7 @@ func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 	}
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		api         libmachine.API
 		namespace   string
@@ -986,7 +985,6 @@ func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 			if !test.err && err != nil {
 				t.Fatalf("WaitForService not expected to fail but got err: %v", err)
 			}
-
 		})
 	}
 }

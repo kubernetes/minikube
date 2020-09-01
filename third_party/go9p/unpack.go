@@ -29,9 +29,11 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 	fc.Tag, p = gint16(p)
 
 	if int(fc.Size) > len(buf) || fc.Size < 7 {
-		return nil, &Error{fmt.Sprintf("buffer too short: %d expected %d",
-				len(buf), fc.Size),
-				EINVAL},
+		return nil, &Error{
+				fmt.Sprintf("buffer too short: %d expected %d",
+					len(buf), fc.Size),
+				EINVAL,
+			},
 			0
 	}
 
@@ -218,7 +220,7 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 		goto szerror
 	}
 
-	return //NOSONAR
+	return // NOSONAR
 
 szerror:
 	return nil, &Error{"invalid size", EINVAL}, 0

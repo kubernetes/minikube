@@ -141,9 +141,7 @@ func TestStartStop(t *testing.T) {
 							t.Errorf("expected exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
 						}
 					}
-
 				})
-
 			})
 		}
 	})
@@ -187,7 +185,6 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
-
 }
 
 func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
@@ -202,7 +199,6 @@ func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcNa
 	if got != state.Running.String() {
 		t.Errorf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
 	}
-
 }
 
 // validateAppExistsAfterStop verifies that a user's app will not vanish after a minikube stop
@@ -213,7 +209,6 @@ func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile strin
 	} else if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
 		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 	}
-
 }
 
 // validateAddonAfterStop validates that an addon which was enabled when minikube is stopped will be enabled and working..
@@ -352,7 +347,6 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 	if got != state.Running.String() {
 		t.Errorf("post-unpause kubelet status = %q; want = %q", got, state.Running)
 	}
-
 }
 
 // defaultImage returns true if this image is expected in a default minikube install

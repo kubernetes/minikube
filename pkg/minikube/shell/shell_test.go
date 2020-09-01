@@ -24,7 +24,7 @@ import (
 )
 
 func TestGenerateUsageHint(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		ec       EnvConfig
 		expected string
 	}{
@@ -55,7 +55,7 @@ func TestGenerateUsageHint(t *testing.T) {
 }
 
 func TestCfgSet(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		plz, cmd string
 		ec       EnvConfig
 		expected string
@@ -82,7 +82,7 @@ func TestCfgSet(t *testing.T) {
 }
 
 func TestUnsetScript(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		vars     []string
 		ec       EnvConfig
 		expected string

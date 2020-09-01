@@ -25,7 +25,7 @@ import (
 )
 
 func main() {
-	if err := os.MkdirAll("./out/docs", os.FileMode(0755)); err != nil {
+	if err := os.MkdirAll("./out/docs", os.FileMode(0o755)); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

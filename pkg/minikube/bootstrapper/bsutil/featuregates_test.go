@@ -50,7 +50,6 @@ func TestParseFeatureArgs(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			kubeadm, component, err := parseFeatureArgs(test.featureGates)
-
 			if err != nil {
 				t.Fatalf("Error parsing feature args: %v", err)
 			}
@@ -67,7 +66,6 @@ func TestParseFeatureArgs(t *testing.T) {
 }
 
 func TestSupport(t *testing.T) {
-
 	tests := []struct {
 		name     string
 		expected bool
@@ -90,5 +88,4 @@ func TestSupport(t *testing.T) {
 			t.Errorf("expected supportedFG(%s) to be %t ! ", tc.name, tc.expected)
 		}
 	}
-
 }

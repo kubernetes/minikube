@@ -23,7 +23,7 @@ import (
 )
 
 func TestUserMutexSpec(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		path        string
 		expected    string

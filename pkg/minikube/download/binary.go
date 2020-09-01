@@ -62,7 +62,7 @@ func Binary(binary, version, osName, archName string) (string, error) {
 	}
 
 	if osName == runtime.GOOS && archName == runtime.GOARCH {
-		if err = os.Chmod(targetFilepath, 0755); err != nil {
+		if err = os.Chmod(targetFilepath, 0o755); err != nil {
 			return "", errors.Wrapf(err, "chmod +x %s", targetFilepath)
 		}
 	}

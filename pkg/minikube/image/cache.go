@@ -101,7 +101,7 @@ func saveToTarFile(iname, rawDest string) error {
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 

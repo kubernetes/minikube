@@ -59,10 +59,8 @@ func BareMetal(name string) bool {
 	return name == None || name == Mock
 }
 
-var (
-	// globalRegistry is a globally accessible driver registry
-	globalRegistry = newRegistry()
-)
+// globalRegistry is a globally accessible driver registry
+var globalRegistry = newRegistry()
 
 // DriverState is metadata relating to a driver and status
 type DriverState struct {

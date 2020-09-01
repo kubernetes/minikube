@@ -74,11 +74,11 @@ func (b *Binary) download() error {
 	}
 	defer rc.Close()
 
-	if err := os.MkdirAll(filepath.Dir(b.path), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(b.path), 0o777); err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(b.path, os.O_CREATE|os.O_RDWR, 0777)
+	f, err := os.OpenFile(b.path, os.O_CREATE|os.O_RDWR, 0o777)
 	if err != nil {
 		return err
 	}

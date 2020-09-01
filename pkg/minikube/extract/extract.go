@@ -121,7 +121,6 @@ func setParentFunc(e *state, f string) {
 // TranslatableStrings finds all strings to that need to be translated in paths and prints them out to all json files in output
 func TranslatableStrings(paths []string, functions []string, output string) error {
 	e, err := newExtractor(functions)
-
 	if err != nil {
 		return errors.Wrap(err, "Initializing")
 	}
@@ -138,7 +137,6 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 				}
 				return nil
 			})
-
 			if err != nil {
 				return errors.Wrap(err, "Extracting strings")
 			}
@@ -283,7 +281,6 @@ func checkArguments(s *ast.CallExpr, e *state) {
 	if !matched {
 		addParentFuncToList(e)
 	}
-
 }
 
 // checkIdentForStringValue takes a identifier and sees if it's a variable assigned to a string
@@ -300,7 +297,6 @@ func checkIdentForStringValue(i *ast.Ident) string {
 		if rhs, ok := as.Rhs[0].(*ast.BasicLit); ok {
 			s = rhs.Value
 		}
-
 	}
 
 	// This Identifier is part of the const or var declaration
@@ -320,7 +316,6 @@ func checkIdentForStringValue(i *ast.Ident) string {
 	}
 
 	return checkString(s)
-
 }
 
 // checkString checks if a string is meant to be translated
@@ -420,7 +415,7 @@ func checkBinaryExpression(b *ast.BinaryExpr) string {
 		}
 	}
 
-	//Check the right side
+	// Check the right side
 	if l, ok := b.Y.(*ast.BasicLit); ok {
 		if x := checkString(l.Value); x != "" {
 			s += x
@@ -504,7 +499,6 @@ func writeStringsToFiles(e *state, output string) error {
 		fmt.Printf(" (%d translated, %d untranslated)\n", t, u)
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -514,7 +508,7 @@ func writeStringsToFiles(e *state, output string) error {
 		return errors.Wrap(err, "marshalling translations")
 	}
 	path := filepath.Join(output, "strings.txt")
-	err = lock.WriteFile(path, c, 0644)
+	err = lock.WriteFile(path, c, 0o644)
 	if err != nil {
 		return errors.Wrap(err, "writing translation file")
 	}

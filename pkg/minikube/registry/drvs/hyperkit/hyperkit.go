@@ -42,10 +42,8 @@ const (
 	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/"
 )
 
-var (
-	// minimumVersion is used by hyperkit versionCheck(whether user's hyperkit is older than this)
-	minimumVersion = "0.20190201"
-)
+// minimumVersion is used by hyperkit versionCheck(whether user's hyperkit is older than this)
+var minimumVersion = "0.20190201"
 
 func init() {
 	if err := registry.Register(registry.DriverDef{

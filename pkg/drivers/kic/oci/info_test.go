@@ -20,10 +20,12 @@ import (
 	"testing"
 )
 
-var daemonResponseMock string
-var daemonInfoGetterMock = func() (string, error) {
-	return daemonResponseMock, nil
-}
+var (
+	daemonResponseMock   string
+	daemonInfoGetterMock = func() (string, error) {
+		return daemonResponseMock, nil
+	}
+)
 
 func TestDockerSystemInfo(t *testing.T) {
 	testCases := []struct {
@@ -71,7 +73,8 @@ func TestDockerSystemInfo(t *testing.T) {
 			OS:            "linux",
 			Swarm:         false,
 			StorageDriver: "overlay2",
-		}, {
+		},
+		{
 			Name:   "podman_1.8_linux",
 			OciBin: "podman",
 			RawJSON: `{
@@ -178,8 +181,6 @@ func TestDockerSystemInfo(t *testing.T) {
 			if s.Swarm != tc.Swarm {
 				t.Errorf("Expected Swarm to be %t but got %t", tc.Swarm, s.Swarm)
 			}
-
 		})
-
 	}
 }

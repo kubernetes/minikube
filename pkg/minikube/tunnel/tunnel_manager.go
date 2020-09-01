@@ -17,11 +17,10 @@ limitations under the License.
 package tunnel
 
 import (
-	"path/filepath"
-	"time"
-
 	"context"
 	"fmt"
+	"path/filepath"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
@@ -65,8 +64,8 @@ func (mgr *Manager) StartTunnel(ctx context.Context, machineName string, machine
 		return nil, fmt.Errorf("error creating tunnel: %s", err)
 	}
 	return mgr.startTunnel(ctx, tunnel)
-
 }
+
 func (mgr *Manager) startTunnel(ctx context.Context, tunnel controller) (done chan bool, err error) {
 	glog.Info("Setting up tunnel...")
 

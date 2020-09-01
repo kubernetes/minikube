@@ -17,9 +17,8 @@ limitations under the License.
 package tunnel
 
 import (
-	"testing"
-
 	"reflect"
+	"testing"
 
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +56,8 @@ func (s *stubServices) List(opts meta.ListOptions) (*core.ServiceList, error) {
 func newStubCoreClient(servicesList *core.ServiceList) *stubCoreClient {
 	if servicesList == nil {
 		servicesList = &core.ServiceList{
-			Items: []core.Service{}}
+			Items: []core.Service{},
+		}
 	}
 	return &stubCoreClient{
 		servicesList: servicesList,
@@ -85,7 +85,8 @@ func (r *recordingPatchConverter) convert(restClient rest.Interface, patch *Patc
 
 func TestEmptyListOfServicesDoesNothing(t *testing.T) {
 	client := newStubCoreClient(&core.ServiceList{
-		Items: []core.Service{}})
+		Items: []core.Service{},
+	})
 
 	patcher := NewLoadBalancerEmulator(client)
 
@@ -94,7 +95,6 @@ func TestEmptyListOfServicesDoesNothing(t *testing.T) {
 	if len(serviceNames) > 0 || err != nil {
 		t.Errorf("Expected: [], nil\n Got: %v, %s", serviceNames, err)
 	}
-
 }
 
 func TestServicesWithNoLoadbalancerType(t *testing.T) {
@@ -120,7 +120,6 @@ func TestServicesWithNoLoadbalancerType(t *testing.T) {
 	if len(serviceNames) > 0 || err != nil {
 		t.Errorf("Expected: [], nil\n Got: %v, %s", serviceNames, err)
 	}
-
 }
 
 func TestServicesWithLoadbalancerType(t *testing.T) {
@@ -233,7 +232,6 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 	if requestSender.requests != 2 {
 		t.Errorf("error in number of requests sent.\nExpected: %v, <nil>\nGot: %v", 2, requestSender.requests)
 	}
-
 }
 
 func TestCleanupPatchedIPs(t *testing.T) {

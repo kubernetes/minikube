@@ -51,7 +51,6 @@ func (s *FakeStore) Load(name string) (*host.Host, error) {
 		return nil, mcnerror.ErrHostDoesNotExist{
 			Name: name,
 		}
-
 	}
 	return h, nil
 }
@@ -63,7 +62,6 @@ func (s *FakeStore) Remove(name string) error {
 		return mcnerror.ErrHostDoesNotExist{
 			Name: name,
 		}
-
 	}
 	delete(s.Hosts, name)
 	return nil

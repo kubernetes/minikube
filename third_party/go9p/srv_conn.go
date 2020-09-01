@@ -165,7 +165,6 @@ func (conn *Conn) recv() {
 			pos -= fcsize
 		}
 	}
-
 }
 
 func (conn *Conn) send() {

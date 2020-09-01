@@ -62,7 +62,6 @@ func init() {
 	provision.Register("Ubuntu", &provision.RegisteredProvisioner{
 		New: NewUbuntuProvisioner,
 	})
-
 }
 
 // NewSystemdProvisioner is our fork of the same name in the upstream provision library, without the packages
@@ -130,7 +129,7 @@ func configureAuth(p miniProvisioner) error {
 func copyHostCerts(authOptions auth.Options) error {
 	glog.Infof("copyHostCerts")
 
-	err := os.MkdirAll(authOptions.StorePath, 0700)
+	err := os.MkdirAll(authOptions.StorePath, 0o700)
 	if err != nil {
 		glog.Errorf("mkdir failed: %v", err)
 	}

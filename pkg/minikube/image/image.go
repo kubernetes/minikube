@@ -120,7 +120,6 @@ func LoadFromTarball(binary, img string) error {
 		_, err = daemon.Write(tag, i)
 		return err
 	}
-
 }
 
 // Tag returns just the image with the tag

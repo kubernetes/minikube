@@ -67,7 +67,6 @@ func main() {
 			fmt.Println(path)
 		}
 	}
-
 }
 
 // extensionToBoilerplate returns a map of file extension to required boilerplate text.

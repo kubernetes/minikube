@@ -38,7 +38,7 @@ func TestSetupCerts(t *testing.T) {
 		ServiceCIDR:   constants.DefaultServiceCIDR,
 	}
 
-	if err := os.Mkdir(filepath.Join(tempDir, "certs"), 0777); err != nil {
+	if err := os.Mkdir(filepath.Join(tempDir, "certs"), 0o777); err != nil {
 		t.Fatalf("error create certificate directory: %v", err)
 	}
 

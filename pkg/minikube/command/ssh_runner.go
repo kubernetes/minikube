@@ -36,9 +36,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-var (
-	layout = "2006-01-02 15:04:05.999999999 -0700"
-)
+var layout = "2006-01-02 15:04:05.999999999 -0700"
 
 // SSHRunner runs commands through SSH.
 //

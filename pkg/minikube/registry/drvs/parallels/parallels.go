@@ -42,7 +42,6 @@ func init() {
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
 	}
-
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {

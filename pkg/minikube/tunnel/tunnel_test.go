@@ -18,24 +18,25 @@ package tunnel
 
 import (
 	"errors"
-
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/tests"
-
 	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-const RunningPid1 = 1234
-const RunningPid2 = 1235
-const NotRunningPid = 1236
-const NotRunningPid2 = 1237
+const (
+	RunningPid1    = 1234
+	RunningPid2    = 1235
+	NotRunningPid  = 1236
+	NotRunningPid2 = 1237
+)
 
 func mockPidChecker(pid int) (bool, error) {
 	if pid == NotRunningPid || pid == NotRunningPid2 {
@@ -276,7 +277,6 @@ func raceCondition1() tunnelTestCase {
 		machineIP:       "1.2.3.4",
 		mockPidHandling: true,
 		call: func(tunnel *tunnel) (*Status, error) {
-
 			err := tunnel.registry.Register(&ID{
 				Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 				MachineName: "testmachine",
@@ -333,7 +333,6 @@ func raceCondition2() tunnelTestCase {
 		machineIP:       "1.2.3.4",
 		mockPidHandling: true,
 		call: func(tunnel *tunnel) (*Status, error) {
-
 			err := tunnel.registry.Register(&ID{
 				Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 				MachineName: "testmachine",
@@ -426,7 +425,8 @@ func TestTunnel(t *testing.T) {
 				c: &config.ClusterConfig{
 					KubernetesConfig: config.KubernetesConfig{
 						ServiceCIDR: tc.serviceCIDR,
-					}},
+					},
+				},
 				e: tc.configLoaderError,
 			}
 
@@ -456,10 +456,8 @@ func TestTunnel(t *testing.T) {
 				routes = append(routes, r.route)
 			}
 			tc.assertion(t, returnedState, reporter.statesRecorded, routes, tunnels)
-
 		})
 	}
-
 }
 
 func TestErrorCreatingTunnel(t *testing.T) {
@@ -481,7 +479,8 @@ func TestErrorCreatingTunnel(t *testing.T) {
 		c: &config.ClusterConfig{
 			KubernetesConfig: config.KubernetesConfig{
 				ServiceCIDR: "10.96.0.0/12",
-			}},
+			},
+		},
 		e: errors.New("error loading machine"),
 	}
 

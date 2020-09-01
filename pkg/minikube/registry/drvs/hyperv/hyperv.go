@@ -91,7 +91,6 @@ func status() registry.State {
 
 	cmd := exec.CommandContext(ctx, path, "@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent")
 	out, err := cmd.CombinedOutput()
-
 	if err != nil {
 		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
 		fixMessage := "Start PowerShell as an Administrator"

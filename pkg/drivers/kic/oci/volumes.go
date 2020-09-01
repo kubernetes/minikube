@@ -35,7 +35,6 @@ func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []er
 	glog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
 
 	vs, err := allVolumesByLabel(ociBin, label)
-
 	if err != nil {
 		return []error{fmt.Errorf("listing volumes by label %q: %v", label, err)}
 	}

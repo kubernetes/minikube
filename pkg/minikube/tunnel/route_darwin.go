@@ -200,7 +200,7 @@ func writeResolverFile(route *Route) error {
 		return errors.Wrap(err, "close")
 	}
 
-	if err = os.Chmod(tf.Name(), 0644); err != nil {
+	if err = os.Chmod(tf.Name(), 0o644); err != nil {
 		return errors.Wrap(err, "chmod")
 	}
 

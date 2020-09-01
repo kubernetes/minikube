@@ -17,10 +17,9 @@ limitations under the License.
 package tunnel
 
 import (
-	"testing"
-
 	"context"
 	"os"
+	"testing"
 	"time"
 
 	"github.com/golang/glog"
@@ -96,7 +95,6 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 					<-ready
 					cancel()
 					check <- true
-
 				}()
 
 				select {
@@ -140,7 +138,6 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 				}
 			}
 		})
-
 	}
 }
 
@@ -220,6 +217,7 @@ func registerNotRunningTunnels(reg *persistentRegistry) (*ID, *ID, error) {
 
 	return notRunningTunnel1, notRunningTunnel2, nil
 }
+
 func TestTunnelManagerCleanup(t *testing.T) {
 	reg, cleanup := createTestRegistry(t)
 	defer cleanup()
@@ -270,7 +268,6 @@ func TestTunnelManagerCleanup(t *testing.T) {
 	}
 
 	tunnels, err := reg.List()
-
 	if err != nil {
 		t.Errorf("expected no error got: %v", err)
 	}
@@ -280,7 +277,6 @@ func TestTunnelManagerCleanup(t *testing.T) {
 		!tunnels[1].Equal(runningTunnel2) {
 		t.Errorf("tunnels are not cleaned up properly, expected only running tunnels to stay, got: %v", tunnels)
 	}
-
 }
 
 type tunnelStub struct {

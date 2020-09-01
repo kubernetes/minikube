@@ -81,13 +81,13 @@ func Enable() error {
 func makeGvisorDirs() error {
 	// Make /run/containerd/runsc to hold logs
 	fp := filepath.Join(nodeDir, "run/containerd/runsc")
-	if err := os.MkdirAll(fp, 0755); err != nil {
+	if err := os.MkdirAll(fp, 0o755); err != nil {
 		return errors.Wrap(err, "creating runsc dir")
 	}
 
 	// Make /tmp/runsc to also hold logs
 	fp = filepath.Join(nodeDir, "tmp/runsc")
-	if err := os.MkdirAll(fp, 0755); err != nil {
+	if err := os.MkdirAll(fp, 0o755); err != nil {
 		return errors.Wrap(err, "creating runsc logs dir")
 	}
 
@@ -143,7 +143,7 @@ func downloadFileToDest(url, dest string) error {
 	if _, err := io.Copy(fi, resp.Body); err != nil {
 		return errors.Wrap(err, "copying binary")
 	}
-	if err := fi.Chmod(0777); err != nil {
+	if err := fi.Chmod(0o777); err != nil {
 		return errors.Wrap(err, "fixing perms")
 	}
 	return nil

@@ -30,7 +30,7 @@ import (
 
 func TestGenerateCACert(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", tmpDir)
@@ -63,7 +63,7 @@ func TestGenerateCACert(t *testing.T) {
 
 func TestGenerateSignedCert(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", tmpDir)
@@ -74,7 +74,7 @@ func TestGenerateSignedCert(t *testing.T) {
 	}
 
 	signerTmpDir, err := ioutil.TempDir("", "")
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(signerTmpDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", signerTmpDir)
@@ -98,7 +98,7 @@ func TestGenerateSignedCert(t *testing.T) {
 	ips := []net.IP{net.ParseIP("192.168.99.100"), net.ParseIP("10.0.0.10")}
 	alternateDNS := []string{"kubernetes.default.svc.cluster.local", "kubernetes.default"}
 
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		signerCertPath string
 		signerKeyPath  string
@@ -159,7 +159,6 @@ func TestGenerateSignedCert(t *testing.T) {
 					t.Errorf("Error parsing certificate: %v", err)
 				}
 			}
-
 		})
 	}
 }

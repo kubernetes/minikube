@@ -30,8 +30,10 @@ import (
 	"github.com/docker/machine/libmachine/log"
 )
 
-var sysFsPCIDevicesPath = "/sys/bus/pci/devices/"
-var sysKernelIOMMUGroupsPath = "/sys/kernel/iommu_groups/"
+var (
+	sysFsPCIDevicesPath      = "/sys/bus/pci/devices/"
+	sysKernelIOMMUGroupsPath = "/sys/kernel/iommu_groups/"
+)
 
 const nvidiaVendorID = "0x10de"
 
@@ -103,7 +105,6 @@ func getDevicesXML() (string, error) {
 // - host doesn't support pci passthrough (IOMMU).
 // - there are no passthorughable NVIDIA devices on the host.
 func getPassthroughableNVIDIADevices() ([]string, error) {
-
 	// Make sure the host supports IOMMU
 	iommuGroups, err := ioutil.ReadDir(sysKernelIOMMUGroupsPath)
 	if err != nil {

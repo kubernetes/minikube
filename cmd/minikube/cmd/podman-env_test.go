@@ -32,7 +32,7 @@ func newFakeClient() *ssh.ExternalClient {
 }
 
 func TestGeneratePodmanScripts(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		shell         string
 		config        PodmanEnvConfig
 		noProxyGetter *FakeNoProxyGetter
@@ -75,7 +75,6 @@ export MINIKUBE_ACTIVE_PODMAN="bash"
 			if diff := cmp.Diff(tc.wantUnset, got); diff != "" {
 				t.Errorf("unsetScript(%+v) mismatch (-want +got):\n%s\n\nraw output:\n%s\nquoted: %q", tc.config, diff, got, got)
 			}
-
 		})
 	}
 }

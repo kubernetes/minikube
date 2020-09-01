@@ -164,5 +164,4 @@ func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 		}
 
 	}
-
 }

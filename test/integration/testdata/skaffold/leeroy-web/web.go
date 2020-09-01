@@ -2,9 +2,8 @@ package main
 
 import (
 	"io"
-	"net/http"
-
 	"log"
+	"net/http"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {

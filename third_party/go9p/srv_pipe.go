@@ -167,7 +167,7 @@ func (*Pipefs) Create(req *SrvReq) {
 	var file *os.File = nil
 	switch {
 	case tc.Perm&DMDIR != 0:
-		e = os.Mkdir(path, os.FileMode(tc.Perm&0777))
+		e = os.Mkdir(path, os.FileMode(tc.Perm&0o777))
 
 	case tc.Perm&DMSYMLINK != 0:
 		e = os.Symlink(tc.Ext, path)
@@ -193,7 +193,7 @@ func (*Pipefs) Create(req *SrvReq) {
 		return
 
 	default:
-		var mode uint32 = tc.Perm & 0777
+		var mode uint32 = tc.Perm & 0o777
 		if req.Conn.Dotu {
 			if tc.Perm&DMSETUID > 0 {
 				mode |= syscall.S_ISUID

@@ -33,7 +33,7 @@ func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error make tmp directory: %v", err)
 	}
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(path)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", path)
@@ -73,7 +73,7 @@ func TestHasWindowsDriveLetter(t *testing.T) {
 }
 
 func TestMiniPath(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		env, basePath string
 	}{
 		{"/tmp/.minikube", "/tmp/"},
@@ -100,7 +100,7 @@ func TestMiniPath(t *testing.T) {
 }
 
 func TestMachinePath(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		miniHome []string
 		contains string
 	}{
@@ -121,7 +121,7 @@ func TestMachinePath(t *testing.T) {
 type propertyFnWithArg func(string) string
 
 func TestPropertyWithNameArg(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		propertyFunc propertyFnWithArg
 		name         string
 	}{
@@ -140,14 +140,13 @@ func TestPropertyWithNameArg(t *testing.T) {
 				t.Errorf("Property %s(%v) doesn't contain passed name %v", tc.name, tc.propertyFunc, mockedName)
 			}
 		})
-
 	}
 }
 
 type propertyFnWithoutArg func() string
 
 func TestPropertyWithoutNameArg(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		propertyFunc propertyFnWithoutArg
 		name         string
 	}{

@@ -19,13 +19,11 @@ limitations under the License.
 package tunnel
 
 import (
+	"fmt"
 	"net"
 	"os/exec"
-	"testing"
-
-	"fmt"
-
 	"reflect"
+	"testing"
 )
 
 func TestDarwinRouteFailsOnConflictIntegrationTest(t *testing.T) {
@@ -75,7 +73,6 @@ func TestDarwinRouteIdempotentIntegrationTest(t *testing.T) {
 }
 
 func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
-
 	cfg := &Route{
 		Gateway: net.IPv4(192, 168, 1, 1),
 		DestCIDR: &net.IPNet{

@@ -33,11 +33,11 @@ func MakeTempDir() string {
 		log.Fatal(err)
 	}
 	tempDir = filepath.Join(tempDir, ".minikube")
-	err = os.MkdirAll(filepath.Join(tempDir, "addons"), 0777)
+	err = os.MkdirAll(filepath.Join(tempDir, "addons"), 0o777)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.MkdirAll(filepath.Join(tempDir, "cache", "iso"), 0777)
+	err = os.MkdirAll(filepath.Join(tempDir, "cache", "iso"), 0o777)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,6 +70,7 @@ func (f *FakeFile) Fd() uintptr {
 func (f *FakeFile) Write(p []byte) (int, error) {
 	return f.b.Write(p)
 }
+
 func (f *FakeFile) String() string {
 	return f.b.String()
 }

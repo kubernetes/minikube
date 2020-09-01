@@ -41,7 +41,7 @@ func newFakeCommandRunnerCopyFail() command.Runner {
 }
 
 func TestCopyBinary(t *testing.T) {
-	var tc = []struct {
+	tc := []struct {
 		lastUpdateCheckFilePath string
 		src, dst, desc          string
 		err                     bool
@@ -93,14 +93,14 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
 
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(minikubeHome)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", minikubeHome)
 		}
 	}()
 
-	var tc = []struct {
+	tc := []struct {
 		version, clusterBootstrapper string
 		minikubeHome                 string
 		err                          bool

@@ -129,13 +129,13 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 	},
 }
 
-var defaultSh = "bash"
-var defaultShell shellData = shellConfigMap[defaultSh]
-
 var (
-	// ForceShell forces a shell name
-	ForceShell string
+	defaultSh              = "bash"
+	defaultShell shellData = shellConfigMap[defaultSh]
 )
+
+// ForceShell forces a shell name
+var ForceShell string
 
 // Detect detects user's current shell.
 func Detect() (string, error) {

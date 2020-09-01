@@ -77,7 +77,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		}
 
 		// change permission to allow driver to be executable
-		err = os.Chmod(filepath.Join(path, "docker-machine-driver-kvm2"), 0700)
+		err = os.Chmod(filepath.Join(path, "docker-machine-driver-kvm2"), 0o700)
 		if err != nil {
 			t.Fatalf("Expected not expected when changing driver permission. test: %s, got: %v", tc.name, err)
 		}
@@ -145,7 +145,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 		}
 
 		// change permission to allow driver to be executable
-		err = os.Chmod(filepath.Join(path, "docker-machine-driver-hyperkit"), 0700)
+		err = os.Chmod(filepath.Join(path, "docker-machine-driver-hyperkit"), 0o700)
 		if err != nil {
 			t.Fatalf("Expected not expected when changing driver permission. test: %s, got: %v", tc.name, err)
 		}

@@ -193,7 +193,7 @@ func TestUpdate(t *testing.T) {
 		KeepContext:          false,
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         *Settings
 		existingCfg []byte
@@ -233,7 +233,7 @@ func TestUpdate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error making temp directory %v", err)
 			}
-			defer func() { //clean up tempdir
+			defer func() { // clean up tempdir
 				err := os.RemoveAll(tmpDir)
 				if err != nil {
 					t.Errorf("failed to clean up temp folder  %q", tmpDir)
@@ -242,7 +242,7 @@ func TestUpdate(t *testing.T) {
 
 			test.cfg.SetPath(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
-				if err := ioutil.WriteFile(test.cfg.filePath(), test.existingCfg, 0600); err != nil {
+				if err := ioutil.WriteFile(test.cfg.filePath(), test.existingCfg, 0o600); err != nil {
 					t.Fatalf("WriteFile: %v", err)
 				}
 			}
@@ -266,13 +266,11 @@ func TestUpdate(t *testing.T) {
 
 			os.RemoveAll(tmpDir)
 		})
-
 	}
 }
 
 func TestVerifyEndpoint(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		description string
 		hostname    string
 		port        int
@@ -343,8 +341,7 @@ func TestVerifyEndpoint(t *testing.T) {
 }
 
 func TestUpdateIP(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		description string
 		hostname    string
 		port        int
@@ -493,8 +490,7 @@ func TestNewConfig(t *testing.T) {
 }
 
 func Test_Endpoint(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         []byte
 		hostname    string
@@ -704,7 +700,7 @@ func contextEquals(aContext, bContext *api.Context) bool {
 }
 
 func TestGetKubeConfigPath(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		input string
 		want  string
 	}{

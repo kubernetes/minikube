@@ -34,15 +34,19 @@ import (
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
 
 // Flags for faster local integration testing
-var forceProfile = flag.String("profile", "", "force tests to run against a particular profile")
-var cleanup = flag.Bool("cleanup", true, "cleanup failed test run")
-var enableGvisor = flag.Bool("gvisor", false, "run gvisor integration test (slow)")
-var postMortemLogs = flag.Bool("postmortem-logs", true, "show logs after a failed test run")
-var timeOutMultiplier = flag.Float64("timeout-multiplier", 1, "multiply the timeout for the tests")
+var (
+	forceProfile      = flag.String("profile", "", "force tests to run against a particular profile")
+	cleanup           = flag.Bool("cleanup", true, "cleanup failed test run")
+	enableGvisor      = flag.Bool("gvisor", false, "run gvisor integration test (slow)")
+	postMortemLogs    = flag.Bool("postmortem-logs", true, "show logs after a failed test run")
+	timeOutMultiplier = flag.Float64("timeout-multiplier", 1, "multiply the timeout for the tests")
+)
 
 // Paths to files - normally set for CI
-var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
-var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
+var (
+	binaryPath  = flag.String("binary", "../../out/minikube", "path to minikube binary")
+	testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
+)
 
 // Node names are consistent, let's store these for easy access later
 const (
@@ -63,7 +67,6 @@ func TestMain(m *testing.M) {
 
 // setMaxParallelism caps the max parallelism. Go assumes 1 core per test, whereas minikube needs 2 cores per test.
 func setMaxParallelism() {
-
 	flagVal := flag.Lookup("test.parallel").Value.String()
 	requested, err := strconv.Atoi(flagVal)
 	if err != nil {

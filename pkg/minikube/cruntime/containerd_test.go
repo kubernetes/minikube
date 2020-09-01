@@ -21,7 +21,7 @@ import (
 )
 
 func TestAddRepoTagToImageName(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		imgName string
 		want    string
 	}{

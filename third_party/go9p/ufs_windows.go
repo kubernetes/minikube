@@ -143,7 +143,7 @@ func (u *Ufs) Wstat(req *SrvReq) {
 
 	dir := &req.Tc.Dir
 	if dir.Mode != 0xFFFFFFFF {
-		mode := dir.Mode & 0777
+		mode := dir.Mode & 0o777
 		if req.Conn.Dotu {
 			if dir.Mode&DMSETUID > 0 {
 				mode |= syscall.S_ISUID

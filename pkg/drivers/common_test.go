@@ -30,7 +30,7 @@ func Test_createDiskImage(t *testing.T) {
 	defer tests.RemoveTempDir(tmpdir)
 
 	sshPath := filepath.Join(tmpdir, "ssh")
-	if err := ioutil.WriteFile(sshPath, []byte("mysshkey"), 0644); err != nil {
+	if err := ioutil.WriteFile(sshPath, []byte("mysshkey"), 0o644); err != nil {
 		t.Fatalf("writefile: %v", err)
 	}
 	diskPath := filepath.Join(tmpdir, "disk")

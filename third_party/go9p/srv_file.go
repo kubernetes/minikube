@@ -105,11 +105,13 @@ type Fsrv struct {
 	Root *srvFile
 }
 
-var lock sync.Mutex
-var qnext uint64
-var Eexist = &Error{"file already exists", EEXIST}
-var Enoent = &Error{"file not found", ENOENT}
-var Enotempty = &Error{"directory not empty", EPERM}
+var (
+	lock      sync.Mutex
+	qnext     uint64
+	Eexist    = &Error{"file already exists", EEXIST}
+	Enoent    = &Error{"file not found", ENOENT}
+	Enotempty = &Error{"directory not empty", EPERM}
+)
 
 // Creates a file server with root as root directory
 func NewsrvFileSrv(root *srvFile) *Fsrv {
@@ -123,7 +125,6 @@ func NewsrvFileSrv(root *srvFile) *Fsrv {
 // Initializes the fields of a file and add it to a directory.
 // Returns nil if successful, or an error.
 func (f *srvFile) Add(dir *srvFile, name string, uid User, gid Group, mode uint32, ops interface{}) error {
-
 	lock.Lock()
 	qpath := qnext
 	qnext++
@@ -478,7 +479,6 @@ func (*Fsrv) Write(req *SrvReq) {
 	} else {
 		req.RespondError(Eperm)
 	}
-
 }
 
 func (*Fsrv) Clunk(req *SrvReq) {

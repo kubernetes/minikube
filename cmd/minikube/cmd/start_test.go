@@ -29,7 +29,7 @@ import (
 )
 
 func TestGetKubernetesVersion(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		expectedVersion string
 		paramVersion    string
@@ -87,7 +87,7 @@ func TestMirrorCountry(t *testing.T) {
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 
 	k8sVersion := constants.DefaultKubernetesVersion
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		k8sVersion      string
 		imageRepository string
@@ -153,7 +153,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 		}
 	}()
 	k8sVersion := constants.NewestKubernetesVersion
-	var tests = []struct {
+	tests := []struct {
 		description  string
 		proxy        string
 		proxyIgnored bool
@@ -240,7 +240,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 }
 
 func TestSuggestMemoryAllocation(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		sysLimit       int
 		containerLimit int

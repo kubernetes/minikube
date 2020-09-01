@@ -323,7 +323,7 @@ func (d *Driver) Create() (err error) {
 	store := d.ResolveStorePath(".")
 	log.Infof("Setting up store path in %s ...", store)
 	// 0755 because it must be accessible by libvirt/qemu across a variety of configs
-	if err := os.MkdirAll(store, 0755); err != nil {
+	if err := os.MkdirAll(store, 0o755); err != nil {
 		return errors.Wrap(err, "creating store")
 	}
 
@@ -365,9 +365,9 @@ func ensureDirPermissions(store string) error {
 			continue
 		}
 		mode := s.Mode()
-		if mode&0011 != 1 {
+		if mode&0o011 != 1 {
 			log.Infof("Setting executable bit set on %s (perms=%s)", dir, mode)
-			mode |= 0011
+			mode |= 0o011
 			if err := os.Chmod(dir, mode); err != nil {
 				return err
 			}

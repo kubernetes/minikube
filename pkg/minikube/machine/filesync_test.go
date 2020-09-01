@@ -85,7 +85,7 @@ func TestAssetsFromDir(t *testing.T) {
 			vmPath: "/",
 		},
 	}
-	var testDirs = make([]string, 0)
+	testDirs := make([]string, 0)
 	defer func() {
 		for _, testDir := range testDirs {
 			err := os.RemoveAll(testDir)
@@ -106,7 +106,7 @@ func TestAssetsFromDir(t *testing.T) {
 			for _, fileDef := range test.files {
 				err := func() error {
 					path := filepath.Join(testFileBaseDir, fileDef.relativePath)
-					err := os.MkdirAll(filepath.Dir(path), 0755)
+					err := os.MkdirAll(filepath.Dir(path), 0o755)
 					want[path] = fileDef.expectedPath
 					if err != nil {
 						return err
@@ -143,7 +143,6 @@ func TestAssetsFromDir(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestSyncDest(t *testing.T) {

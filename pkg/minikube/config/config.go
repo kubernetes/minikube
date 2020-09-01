@@ -199,7 +199,7 @@ func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *ClusterCo
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path, contents, 0644)
+	return ioutil.WriteFile(path, contents, 0o644)
 }
 
 // MultiNode returns true if the cluster has multiple nodes or if the request is asking for multinode
