@@ -28,6 +28,7 @@ import (
 // CreateSSHShell creates a new SSH shell / client
 func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, args []string, native bool) error {
 	machineName := driver.MachineName(cc, n)
+
 	host, err := LoadHost(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")
