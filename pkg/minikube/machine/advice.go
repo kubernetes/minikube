@@ -41,6 +41,7 @@ func MaybeDisplayAdvice(err error, driver string) {
 		out.T(style.Tip, "If you are still interested to make {{.driver_name}} driver work. The following suggestions might help you get passed this issue:", out.V{"driver_name": driver})
 		out.T(style.Empty, `
 	- Prune unused {{.driver_name}} images, volumes, networks and abandoned containers.
+
 		docker system prune --volumes`, out.V{"driver_name": driver})
 		out.T(style.Empty, `
 	- Restart your {{.driver_name}} service`, out.V{"driver_name": driver})
