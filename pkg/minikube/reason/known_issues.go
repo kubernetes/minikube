@@ -92,6 +92,17 @@ var resourceIssues = []match{
 		},
 		Regexp: re(`An existing connection was forcibly closed by the remote host`),
 	},
+	{
+		// Fallback to deliver a good error message even if internal checks are not run
+		Kind: Kind{
+			ID:       "RSRC_INSUFFICIENT_CORES",
+			ExitCode: ExInsufficientCores,
+			Advice:   "Kubernetes requires at least 2 CPU's to start",
+			Issues:   []int{7905},
+			URL:      "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/",
+		},
+		Regexp: re(`ERROR.*the number of available CPUs 1 is less than the required 2`),
+	},
 }
 
 // hostIssues are related to the host operating system or BIOS
