@@ -80,13 +80,14 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"CopySyncFile", setupFileSync},                 // Set file for the file sync test case
-			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
-			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didnt change.
-			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
-			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
-			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
-			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
+			{"CopySyncFile", setupFileSync},            // Set file for the file sync test case
+			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
+			// {"SoftStart", validateSoftStart},                // do a soft start. ensure config didnt change.
+			// {"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
+			{"KubectlGetPods", validateKubectlGetPods}, // Make sure apiserver is up
+			// {"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
+			// {"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
+			{"DockerEnv", validateDockerEnv},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -108,25 +109,24 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"ComponentHealth", validateComponentHealth},
-			{"ConfigCmd", validateConfigCmd},
-			{"DashboardCmd", validateDashboardCmd},
-			{"DryRun", validateDryRun},
-			{"StatusCmd", validateStatusCmd},
-			{"LogsCmd", validateLogsCmd},
-			{"MountCmd", validateMountCmd},
-			{"ProfileCmd", validateProfileCmd},
-			{"ServiceCmd", validateServiceCmd},
-			{"AddonsCmd", validateAddonsCmd},
-			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
-			{"TunnelCmd", validateTunnelCmd},
-			{"SSHCmd", validateSSHCmd},
-			{"MySQL", validateMySQL},
-			{"FileSync", validateFileSync},
-			{"CertSync", validateCertSync},
-			{"UpdateContextCmd", validateUpdateContextCmd},
-			{"DockerEnv", validateDockerEnv},
-			{"NodeLabels", validateNodeLabels},
+			// {"ComponentHealth", validateComponentHealth},
+			// {"ConfigCmd", validateConfigCmd},
+			// {"DashboardCmd", validateDashboardCmd},
+			// {"DryRun", validateDryRun},
+			// {"StatusCmd", validateStatusCmd},
+			// {"LogsCmd", validateLogsCmd},
+			// {"MountCmd", validateMountCmd},
+			// {"ProfileCmd", validateProfileCmd},
+			// {"ServiceCmd", validateServiceCmd},
+			// {"AddonsCmd", validateAddonsCmd},
+			// {"PersistentVolumeClaim", validatePersistentVolumeClaim},
+			// {"TunnelCmd", validateTunnelCmd},
+			// {"SSHCmd", validateSSHCmd},
+			// {"MySQL", validateMySQL},
+			// {"FileSync", validateFileSync},
+			// {"CertSync", validateCertSync},
+			// {"UpdateContextCmd", validateUpdateContextCmd},
+			// {"NodeLabels", validateNodeLabels},
 		}
 		for _, tc := range tests {
 			tc := tc
