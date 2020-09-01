@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
@@ -47,15 +48,13 @@ type PodmanShellConfig struct {
 	MinikubePodmanProfile string
 }
 
-var (
-	podmanUnset bool
-)
+var podmanUnset bool
 
 // podmanShellCfgSet generates context variables for "podman-env"
 func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShellConfig {
 	profile := ec.profile
 	const usgPlz = "To point your shell to minikube's podman service, run:"
-	var usgCmd = fmt.Sprintf("minikube -p %s podman-env", profile)
+	usgCmd := fmt.Sprintf("minikube -p %s podman-env", profile)
 	s := &PodmanShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
@@ -114,7 +113,7 @@ var podmanEnvCmd = &cobra.Command{
 
 		if podmanUnset {
 			if err := podmanUnsetScript(PodmanEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
-				exit.WithError("Error generating unset output", err)
+				exit.Error(reason.InternalEnvScript, "Error generating unset output", err)
 			}
 			return
 		}
@@ -124,20 +123,20 @@ var podmanEnvCmd = &cobra.Command{
 		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {
-			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
+			exit.Message(reason.Usage, `'none' driver does not support 'minikube podman-env' command`)
 		}
 
 		if len(co.Config.Nodes) > 1 {
-			exit.WithCodeT(exit.BadUsage, `The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
+			exit.Message(reason.Usage, `The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
 		if ok := isPodmanAvailable(co.CP.Runner); !ok {
-			exit.WithCodeT(exit.Unavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
+			exit.Message(reason.EnvPodmanUnavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
 
 		client, err := createExternalSSHClient(co.CP.Host.Driver)
 		if err != nil {
-			exit.WithError("Error getting ssh client", err)
+			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
 		}
 
 		ec := PodmanEnvConfig{
@@ -150,12 +149,12 @@ var podmanEnvCmd = &cobra.Command{
 		if ec.Shell == "" {
 			ec.Shell, err = shell.Detect()
 			if err != nil {
-				exit.WithError("Error detecting shell", err)
+				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
 			}
 		}
 
 		if err := podmanSetScript(ec, os.Stdout); err != nil {
-			exit.WithError("Error generating set output", err)
+			exit.Error(reason.InternalEnvScript, "Error generating set output", err)
 		}
 	},
 }

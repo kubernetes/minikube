@@ -40,7 +40,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/service"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 )
 
@@ -64,7 +66,7 @@ var serviceCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("serviceURL").Parse(serviceURLFormat)
 		if err != nil {
-			exit.WithError("The value passed to --format is invalid", err)
+			exit.Error(reason.InternalFormatUsage, "The value passed to --format is invalid", err)
 		}
 		serviceURLTemplate = t
 
@@ -72,7 +74,7 @@ var serviceCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 || len(args) > 1 {
-			exit.UsageT("You must specify a service name")
+			exit.Message(reason.Usage, "You must specify a service name")
 		}
 
 		svc := args[0]
@@ -84,10 +86,10 @@ var serviceCmd = &cobra.Command{
 		if err != nil {
 			var s *service.SVCNotFoundError
 			if errors.As(err, &s) {
-				exit.WithCodeT(exit.Data, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
+				exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
 You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
 			}
-			exit.WithError("Error opening service", err)
+			exit.Error(reason.SvcTimeout, "Error opening service", err)
 		}
 
 		if driver.NeedsPortForward(co.Config.Driver) {
@@ -107,7 +109,6 @@ func init() {
 	serviceCmd.Flags().IntVar(&interval, "interval", service.DefaultInterval, "The initial time interval for each check that wait performs in seconds")
 
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
-
 }
 
 func startKicServiceTunnel(svc, configName string) {
@@ -116,12 +117,12 @@ func startKicServiceTunnel(svc, configName string) {
 
 	clientset, err := kapi.Client(configName)
 	if err != nil {
-		exit.WithError("error creating clientset", err)
+		exit.Error(reason.InternalKubernetesClient, "error creating clientset", err)
 	}
 
 	port, err := oci.ForwardedPort(oci.Docker, configName, 22)
 	if err != nil {
-		exit.WithError("error getting ssh port", err)
+		exit.Error(reason.DrvPortForward, "error getting ssh port", err)
 	}
 	sshPort := strconv.Itoa(port)
 	sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
@@ -129,7 +130,7 @@ func startKicServiceTunnel(svc, configName string) {
 	serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1())
 	urls, err := serviceTunnel.Start(svc, namespace)
 	if err != nil {
-		exit.WithError("error starting tunnel", err)
+		exit.Error(reason.SvcTunnelStart, "error starting tunnel", err)
 	}
 
 	// wait for tunnel to come up
@@ -145,7 +146,7 @@ func startKicServiceTunnel(svc, configName string) {
 
 	err = serviceTunnel.Stop()
 	if err != nil {
-		exit.WithError("error stopping tunnel", err)
+		exit.Error(reason.SvcTunnelStop, "error stopping tunnel", err)
 	}
 }
 
@@ -163,9 +164,9 @@ func openURLs(svc string, urls []string) {
 			continue
 		}
 
-		out.T(out.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+		out.T(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
 		if err := browser.OpenURL(u); err != nil {
-			exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
+			exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
 		}
 	}
 }

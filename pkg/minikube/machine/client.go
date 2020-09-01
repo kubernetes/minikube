@@ -47,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -220,7 +221,6 @@ func (api *LocalClient) Create(h *host.Host) error {
 	}
 
 	for _, step := range steps {
-
 		if err := step.f(); err != nil {
 			return errors.Wrap(err, step.name)
 		}
@@ -281,7 +281,7 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 func registerDriver(drvName string) {
 	def := registry.Driver(drvName)
 	if def.Empty() {
-		exit.UsageT("unsupported or missing driver: {{.name}}", out.V{"name": drvName})
+		exit.Message(reason.Usage, "unsupported or missing driver: {{.name}}", out.V{"name": drvName})
 	}
 	plugin.RegisterDriver(def.Init())
 }

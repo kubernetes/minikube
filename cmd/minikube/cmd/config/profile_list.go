@@ -28,36 +28,33 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 
 	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
-var (
-	output string
-)
+var output string
 
 var profileListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all minikube profiles.",
 	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		switch strings.ToLower(output) {
 		case "json":
 			printProfilesJSON()
 		case "table":
 			printProfilesTable()
 		default:
-			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
+			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
 		}
-
 	},
 }
 
 var printProfilesTable = func() {
-
 	var validData [][]string
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status"})
@@ -67,7 +64,7 @@ var printProfilesTable = func() {
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 
 	if len(validProfiles) == 0 || err != nil {
-		exit.UsageT("No minikube profile was found. You can create one using `minikube start`.")
+		exit.Message(reason.Usage, "No minikube profile was found. You can create one using `minikube start`.")
 	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -78,7 +75,7 @@ var printProfilesTable = func() {
 	for _, p := range validProfiles {
 		cp, err := config.PrimaryControlPlane(p.Config)
 		if err != nil {
-			exit.WithError("error getting primary control plane", err)
+			exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
 		}
 		p.Status, err = machine.Status(api, driver.MachineName(*p.Config, cp))
 		if err != nil {
@@ -93,9 +90,9 @@ var printProfilesTable = func() {
 	if invalidProfiles != nil {
 		out.WarningT("Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
 		for _, p := range invalidProfiles {
-			out.ErrT(out.Empty, "\t "+p.Name)
+			out.ErrT(style.Empty, "\t "+p.Name)
 		}
-		out.ErrT(out.Tip, "You can delete them using the following command(s): ")
+		out.ErrT(style.Tip, "You can delete them using the following command(s): ")
 		for _, p := range invalidProfiles {
 			out.Err(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
 		}
@@ -105,7 +102,6 @@ var printProfilesTable = func() {
 	if err != nil {
 		glog.Warningf("error loading profiles: %v", err)
 	}
-
 }
 
 var printProfilesJSON = func() {
@@ -119,7 +115,7 @@ var printProfilesJSON = func() {
 	for _, v := range validProfiles {
 		cp, err := config.PrimaryControlPlane(v.Config)
 		if err != nil {
-			exit.WithError("error getting primary control plane", err)
+			exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
 		}
 		status, err := machine.Status(api, driver.MachineName(*v.Config, cp))
 		if err != nil {
@@ -143,7 +139,7 @@ var printProfilesJSON = func() {
 		invalid = []*config.Profile{}
 	}
 
-	var body = map[string]interface{}{}
+	body := map[string]interface{}{}
 
 	if err == nil || config.IsNotExist(err) {
 		body["valid"] = valid
@@ -154,7 +150,7 @@ var printProfilesJSON = func() {
 		body["error"] = err
 		jsonString, _ := json.Marshal(body)
 		out.String(string(jsonString))
-		os.Exit(exit.Failure)
+		os.Exit(reason.ExGuestError)
 	}
 }
 

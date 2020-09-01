@@ -46,7 +46,7 @@ func SetOutputFile(w io.Writer) {
 // SetEventLogPath sets the path of an event log file
 func SetEventLogPath(path string) {
 	if _, err := os.Stat(filepath.Dir(path)); err != nil {
-		if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 			glog.Errorf("Error creating profile directory: %v", err)
 			return
 		}

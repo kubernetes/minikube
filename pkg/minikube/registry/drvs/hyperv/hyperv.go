@@ -95,14 +95,14 @@ func status() registry.State {
 	if err != nil {
 		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
 		fixMessage := "Start PowerShell as an Administrator"
-		return registry.State{Installed: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
+		return registry.State{Installed: false, Running: true, Error: errorMessage, Fix: fixMessage, Doc: docURL}
 	}
 
 	// Get-Wmiobject does not return an error code for false
 	if strings.TrimSpace(string(out)) != "True" {
 		errorMessage := fmt.Errorf("%s returned %q", strings.Join(cmd.Args, " "), out)
 		fixMessage := "Enable Hyper-V: Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
-		return registry.State{Installed: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
+		return registry.State{Installed: false, Running: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true}

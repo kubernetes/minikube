@@ -41,7 +41,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/storageclass"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -144,7 +146,7 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	// to match both ingress and ingress-dns addons
 	if strings.HasPrefix(name, "ingress") && enable {
 		if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
-			exit.UsageT(`Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
+			exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
 Alternatively to use this addon you can use a vm-based driver:
 
 	'minikube start --vm=true'
@@ -152,7 +154,7 @@ Alternatively to use this addon you can use a vm-based driver:
 To track the update on this work in progress feature please check:
 https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
 		} else if driver.BareMetal(cc.Driver) {
-			exit.UsageT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not supported. Try using a different driver.`,
+			exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not supported. Try using a different driver.`,
 				out.V{"driver_name": cc.Driver, "addon_name": name})
 		}
 	}
@@ -177,7 +179,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 
 	cp, err := config.PrimaryControlPlane(cc)
 	if err != nil {
-		exit.WithError("Error getting primary control plane", err)
+		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
 	}
 
 	mName := driver.MachineName(*cc, cp)
@@ -193,8 +195,8 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 			if err != nil {
 				return errors.Wrap(err, "registry port")
 			}
-			out.T(out.Tip, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, out.V{"driver": cc.Driver, "port": port})
-			out.T(out.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
+			out.T(style.Tip, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, out.V{"driver": cc.Driver, "port": port})
+			out.T(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
 		}
 	}
 
@@ -334,7 +336,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 
 	label, ok := addonPodLabels[name]
 	if ok && enable {
-		out.T(out.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
+		out.T(style.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
 			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
@@ -395,7 +397,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	defer func() { // making it show after verifications( not perfect till #7613 is closed)
 		register.Reg.SetStep(register.EnablingAddons)
-		out.T(out.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
 	}()
 	for _, a := range toEnableList {
 		awg.Add(1)
