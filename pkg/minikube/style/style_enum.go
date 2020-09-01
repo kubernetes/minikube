@@ -14,14 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package out
+package style
 
-// StyleEnum is an enumeration of Style
-type StyleEnum int
+// Enum is an enumeration of Style
+type Enum int
 
 // All the Style constants available
 const (
-	AddonDisable StyleEnum = iota
+	None Enum = iota
+	AddonDisable
 	AddonEnable
 	Caching
 	Celebrate
@@ -43,17 +44,19 @@ const (
 	Embarrassed
 	Empty
 	Enabling
-	FailureType
-	FatalType
+	Failure
+	Fatal
 	FileDownload
 	Fileserver
 	Happy
 	HealthCheck
+	Improvement
 	Internet
 	ISODownload
 	Issue
 	Issues
 	Kubectl
+	KnownIssue
 	Launch
 	LogEntry
 	Meh
@@ -61,6 +64,7 @@ const (
 	MountOptions
 	New
 	Notice
+	NotAllowed
 	Option
 	Pause
 	Permissions
@@ -72,6 +76,7 @@ const (
 	Restarting
 	Running
 	Sad
+	SeeNoEvil
 	Shrug
 	Shutdown
 	Sparkle
@@ -79,12 +84,14 @@ const (
 	StartingVM
 	Stopped
 	Stopping
-	SuccessType
+	Success
 	ThumbsDown
 	ThumbsUp
 	Tip
 	Unmount
 	Unpause
+	UnmetRequirement
+	Unsupported
 	URL
 	Usage
 	Verifying

@@ -33,7 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
@@ -69,8 +69,8 @@ func (r *CRIO) Name() string {
 }
 
 // Style is the console style for CRIO
-func (r *CRIO) Style() out.StyleEnum {
-	return out.CRIO
+func (r *CRIO) Style() style.Enum {
+	return style.CRIO
 }
 
 // Version retrieves the current version of this runtime
@@ -324,6 +324,10 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 	glog.Infof("all images are preloaded for cri-o runtime.")
 	return true
+}
+
+func (r *CRIO) ImagesPreloaded(images []string) bool {
+	return crioImagesPreloaded(r.Runner, images)
 }
 
 // UpdateCRIONet updates CRIO CNI network configuration and restarts it

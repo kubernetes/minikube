@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/browser"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // OpenURL opens a new browser window pointing to URL.
@@ -29,7 +30,7 @@ func OpenURL(url string) error {
 	if runtime.GOOS == "linux" {
 		_, err := exec.LookPath("xdg-open")
 		if err != nil {
-			out.T(out.URL, url)
+			out.T(style.URL, url)
 			return nil
 		}
 	}

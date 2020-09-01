@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube addons
 
 Enable or disable a minikube addon

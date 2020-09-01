@@ -34,11 +34,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-// minReqPodmanVer is required the mininum version of podman to be installed for podman driver.
+// minReqPodmanVer is required the minimum version of podman to be installed for podman driver.
 var minReqPodmanVer = semver.Version{Major: 1, Minor: 7, Patch: 0}
+
+// podmanVerTwo is required to exit with an error when podman v2 driver is currently installed because it is not supported yet.
+var podmanVerTwo = semver.Version{Major: 2, Minor: 0, Patch: 0}
 
 func init() {
 	priority := registry.Experimental
@@ -100,11 +104,15 @@ func status() registry.State {
 
 		v, err := semver.Make(output)
 		if err != nil {
-			return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
+			return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
 		}
 
 		if v.LT(minReqPodmanVer) {
-			glog.Warningf("Warning ! minimum required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html ", minReqPodmanVer.String(), v.String())
+			out.WarningT(`The minimum required version for podman is "{{.minVersion}}". your version is "{{.currentVersion}}". minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html`,
+				out.V{"minVersion": minReqPodmanVer.String(), "currentVersion": v.String()})
+		} else if v.GTE(podmanVerTwo) {
+			out.WarningT(`Using podman 2 is not supported yet. your version is "{{.currentVersion}}". minikube might not work. use at your own risk.`,
+				out.V{"currentVersion": v.String()})
 		}
 
 		return registry.State{Installed: true, Healthy: true}
@@ -114,7 +122,7 @@ func status() registry.State {
 
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Podman service", Doc: docURL}
+		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Restart the Podman service", Doc: docURL}
 	}
 
 	username := "$USER"

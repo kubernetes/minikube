@@ -25,6 +25,8 @@ minikube start \
   --extra-config=apiserver.oidc-client-id=kubernetes-local
 ```
 
+Note that as stated in the Kubernetes [documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server), for `--extra-config=apiserver.oidc-issuer-url` flag, only URLs which use the `https://` scheme are accepted. Otherwise `kube-apiserver` will not start.
+
 ## Configuring kubectl
 
 You can use the kubectl `oidc` authenticator to create a kubeconfig as shown in the Kubernetes docs: <https://kubernetes.io/docs/reference/access-authn-authz/authentication/#option-1-oidc-authenticator>

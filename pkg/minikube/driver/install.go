@@ -32,6 +32,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -90,7 +91,7 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 		example.WriteString(fmt.Sprintf("    $ %s \n", strings.Join(c.Args, " ")))
 	}
 
-	out.T(out.Permissions, "The '{{.driver}}' driver requires elevated permissions. The following commands will be executed:\n\n{{ .example }}\n", out.V{"driver": name, "example": example.String()})
+	out.T(style.Permissions, "The '{{.driver}}' driver requires elevated permissions. The following commands will be executed:\n\n{{ .example }}\n", out.V{"driver": name, "example": example.String()})
 	for _, c := range cmds {
 		testArgs := append([]string{"-n"}, c.Args[1:]...)
 		test := exec.Command("sudo", testArgs...)

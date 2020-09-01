@@ -25,36 +25,38 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // ProfileCmd represents the profile command
 var ProfileCmd = &cobra.Command{
 	Use:   "profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikube profile by running `minikube profile default`",
-	Short: "Get or list the the current profiles (clusters)",
+	Short: "Get or list the current profiles (clusters)",
 	Long:  "profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			profile := ClusterFlagValue()
-			out.T(out.Empty, profile)
+			out.T(style.Empty, profile)
 			os.Exit(0)
 		}
 
 		if len(args) > 1 {
-			exit.UsageT("usage: minikube profile [MINIKUBE_PROFILE_NAME]")
+			exit.Message(reason.Usage, "usage: minikube profile [MINIKUBE_PROFILE_NAME]")
 		}
 
 		profile := args[0]
 		// Check whether the profile name is container friendly
 		if !config.ProfileNameValid(profile) {
 			out.WarningT("Profile name '{{.profilename}}' is not valid", out.V{"profilename": profile})
-			exit.UsageT("Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
+			exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
 		}
 		/**
 		we need to add code over here to check whether the profile
 		name is in the list of reserved keywords
 		*/
 		if config.ProfileNameInReservedKeywords(profile) {
-			exit.WithCodeT(exit.Config, `Profile name "{{.profilename}}" is reserved keyword. To delete this profile, run: "{{.cmd}}"`, out.V{"profilename": profile, "cmd": mustload.ExampleCmd(profile, "delete")})
+			exit.Message(reason.InternalReservedProfile, `Profile name "{{.profilename}}" is reserved keyword. To delete this profile, run: "{{.cmd}}"`, out.V{"profilename": profile, "cmd": mustload.ExampleCmd(profile, "delete")})
 		}
 
 		if profile == "default" {
@@ -68,18 +70,18 @@ var ProfileCmd = &cobra.Command{
 		}
 
 		if !config.ProfileExists(profile) {
-			out.ErrT(out.Tip, `if you want to create a profile you can by this command: minikube start -p {{.profile_name}}`, out.V{"profile_name": profile})
+			out.ErrT(style.Tip, `if you want to create a profile you can by this command: minikube start -p {{.profile_name}}`, out.V{"profile_name": profile})
 			os.Exit(0)
 		}
 
 		err := Set(config.ProfileName, profile)
 		if err != nil {
-			exit.WithError("Setting profile failed", err)
+			exit.Error(reason.InternalConfigSet, "Setting profile failed", err)
 		}
 		cc, err := config.Load(profile)
 		// might err when loading older version of cfg file that doesn't have KeepContext field
 		if err != nil && !config.IsNotExist(err) {
-			out.ErrT(out.Sad, `Error loading profile config: {{.error}}`, out.V{"error": err})
+			out.ErrT(style.Sad, `Error loading profile config: {{.error}}`, out.V{"error": err})
 		}
 		if err == nil {
 			if cc.KeepContext {
@@ -88,7 +90,7 @@ var ProfileCmd = &cobra.Command{
 			} else {
 				err := kubeconfig.SetCurrentContext(profile, kubeconfig.PathFromEnv())
 				if err != nil {
-					out.ErrT(out.Sad, `Error while setting kubectl current context :  {{.error}}`, out.V{"error": err})
+					out.ErrT(style.Sad, `Error while setting kubectl current context :  {{.error}}`, out.V{"error": err})
 				}
 			}
 			out.SuccessT("minikube profile was successfully set to {{.profile_name}}", out.V{"profile_name": profile})

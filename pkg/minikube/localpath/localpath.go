@@ -61,6 +61,11 @@ func Profile(name string) string {
 	return filepath.Join(MiniPath(), "profiles", name)
 }
 
+// EventLog returns the path to a CloudEvents log
+func EventLog(name string) string {
+	return filepath.Join(Profile(name), "events.json")
+}
+
 // ClientCert returns client certificate path, used by kubeconfig
 func ClientCert(name string) string {
 	new := filepath.Join(Profile(name), "client.crt")

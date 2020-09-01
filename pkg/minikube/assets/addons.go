@@ -22,6 +22,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Addon is a named list of assets, that can be enabled
@@ -452,17 +453,19 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		ea = "-" + runtime.GOARCH
 	}
 	opts := struct {
-		Arch                string
-		ExoticArch          string
-		ImageRepository     string
-		LoadBalancerStartIP string
-		LoadBalancerEndIP   string
+		Arch                      string
+		ExoticArch                string
+		ImageRepository           string
+		LoadBalancerStartIP       string
+		LoadBalancerEndIP         string
+		StorageProvisionerVersion string
 	}{
-		Arch:                a,
-		ExoticArch:          ea,
-		ImageRepository:     cfg.ImageRepository,
-		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
+		Arch:                      a,
+		ExoticArch:                ea,
+		ImageRepository:           cfg.ImageRepository,
+		LoadBalancerStartIP:       cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:         cfg.LoadBalancerEndIP,
+		StorageProvisionerVersion: version.GetStorageProvisionerVersion(),
 	}
 
 	return opts

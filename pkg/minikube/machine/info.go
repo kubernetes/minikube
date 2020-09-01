@@ -27,9 +27,12 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
-type hostInfo struct {
+// HostInfo holds information on the user's machine
+type HostInfo struct {
 	Memory   int64
 	CPUs     int
 	DiskSize int64
@@ -39,28 +42,28 @@ func megs(bytes uint64) int64 {
 	return int64(bytes / 1024 / 1024)
 }
 
-func getHostInfo() (*hostInfo, error) {
-	i, err := cpu.Info()
-	if err != nil {
-		glog.Warningf("Unable to get CPU info: %v", err)
-		return nil, err
+// CachedHostInfo returns system information such as memory,CPU, DiskSize
+func CachedHostInfo() (*HostInfo, error, error, error) {
+	var cpuErr, memErr, diskErr error
+	i, cpuErr := cachedCPUInfo()
+	if cpuErr != nil {
+		glog.Warningf("Unable to get CPU info: %v", cpuErr)
 	}
-	v, err := mem.VirtualMemory()
-	if err != nil {
-		glog.Warningf("Unable to get mem info: %v", err)
-		return nil, err
-	}
-	d, err := disk.Usage("/")
-	if err != nil {
-		glog.Warningf("Unable to get disk info: %v", err)
-		return nil, err
+	v, memErr := cachedSysMemLimit()
+	if memErr != nil {
+		glog.Warningf("Unable to get mem info: %v", memErr)
 	}
 
-	var info hostInfo
+	d, diskErr := cachedDiskInfo()
+	if diskErr != nil {
+		glog.Warningf("Unable to get disk info: %v", diskErr)
+	}
+
+	var info HostInfo
 	info.CPUs = len(i)
 	info.Memory = megs(v.Total)
 	info.DiskSize = megs(d.Total)
-	return &info, nil
+	return &info, cpuErr, memErr, diskErr
 }
 
 // showLocalOsRelease shows systemd information about the current linux distribution, on the local host
@@ -77,7 +80,8 @@ func showLocalOsRelease() {
 		return
 	}
 
-	out.T(out.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+	register.Reg.SetStep(register.LocalOSRelease)
+	out.T(style.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
 }
 
 // logRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
@@ -94,4 +98,58 @@ func logRemoteOsRelease(r command.Runner) {
 	}
 
 	glog.Infof("Remote host: %s", osReleaseInfo.PrettyName)
+}
+
+var (
+	cachedSystemMemoryLimit *mem.VirtualMemoryStat
+	cachedSystemMemoryErr   *error
+)
+
+//  cachedSysMemLimit will return a cached limit for the system's virtual memory.
+func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
+	if cachedSystemMemoryLimit == nil {
+		v, err := mem.VirtualMemory()
+		cachedSystemMemoryLimit = v
+		cachedSystemMemoryErr = &err
+	}
+	if cachedSystemMemoryErr == nil {
+		return cachedSystemMemoryLimit, nil
+	}
+	return cachedSystemMemoryLimit, *cachedSystemMemoryErr
+}
+
+var (
+	cachedDisk        *disk.UsageStat
+	cachedDiskInfoErr *error
+)
+
+// cachedDiskInfo will return a cached disk usage info
+func cachedDiskInfo() (disk.UsageStat, error) {
+	if cachedDisk == nil {
+		d, err := disk.Usage("/")
+		cachedDisk = d
+		cachedDiskInfoErr = &err
+	}
+	if cachedDiskInfoErr == nil {
+		return *cachedDisk, nil
+	}
+	return *cachedDisk, *cachedDiskInfoErr
+}
+
+var (
+	cachedCPU    *[]cpu.InfoStat
+	cachedCPUErr *error
+)
+
+//  cachedCPUInfo will return a cached cpu info
+func cachedCPUInfo() ([]cpu.InfoStat, error) {
+	if cachedCPU == nil {
+		i, err := cpu.Info()
+		cachedCPU = &i
+		cachedCPUErr = &err
+	}
+	if cachedCPUErr == nil {
+		return *cachedCPU, nil
+	}
+	return *cachedCPU, *cachedCPUErr
 }

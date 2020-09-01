@@ -35,6 +35,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
@@ -46,15 +48,17 @@ const (
 )
 
 // placeholders for flag values
-var mountIP string
-var mountVersion string
-var mountType string
-var isKill bool
-var uid string
-var gid string
-var mSize int
-var options []string
-var mode uint
+var (
+	mountIP      string
+	mountVersion string
+	mountType    string
+	isKill       bool
+	uid          string
+	gid          string
+	mSize        int
+	options      []string
+	mode         uint
+)
 
 // supportedFilesystems is a map of filesystem types to not warn against.
 var supportedFilesystems = map[string]bool{nineP: true}
@@ -67,31 +71,31 @@ var mountCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if isKill {
 			if err := killMountProcess(); err != nil {
-				exit.WithError("Error killing mount process", err)
+				exit.Error(reason.HostKillMountProc, "Error killing mount process", err)
 			}
 			os.Exit(0)
 		}
 
 		if len(args) != 1 {
-			exit.UsageT(`Please specify the directory to be mounted: 
+			exit.Message(reason.Usage, `Please specify the directory to be mounted: 
 	minikube mount <source directory>:<target directory>   (example: "/host-home:/vm-home")`)
 		}
 		mountString := args[0]
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
-			exit.UsageT(`mount argument "{{.value}}" must be in form: <source directory>:<target directory>`, out.V{"value": mountString})
+			exit.Message(reason.Usage, `mount argument "{{.value}}" must be in form: <source directory>:<target directory>`, out.V{"value": mountString})
 		}
 		hostPath := mountString[:idx]
 		vmPath := mountString[idx+1:]
 		if _, err := os.Stat(hostPath); err != nil {
 			if os.IsNotExist(err) {
-				exit.WithCodeT(exit.NoInput, "Cannot find directory {{.path}} for mount", out.V{"path": hostPath})
+				exit.Message(reason.HostPathMissing, "Cannot find directory {{.path}} for mount", out.V{"path": hostPath})
 			} else {
-				exit.WithError("stat failed", err)
+				exit.Error(reason.HostPathStat, "stat failed", err)
 			}
 		}
 		if len(vmPath) == 0 || !strings.HasPrefix(vmPath, "/") {
-			exit.UsageT("Target directory {{.path}} must be an absolute path", out.V{"path": vmPath})
+			exit.Message(reason.Usage, "Target directory {{.path}} must be an absolute path", out.V{"path": vmPath})
 		}
 		var debugVal int
 		if glog.V(1) {
@@ -100,7 +104,7 @@ var mountCmd = &cobra.Command{
 
 		co := mustload.Running(ClusterFlagValue())
 		if co.CP.Host.Driver.DriverName() == driver.None {
-			exit.UsageT(`'none' driver does not support 'minikube mount' command`)
+			exit.Message(reason.Usage, `'none' driver does not support 'minikube mount' command`)
 		}
 
 		var ip net.IP
@@ -108,17 +112,17 @@ var mountCmd = &cobra.Command{
 		if mountIP == "" {
 			ip, err = cluster.HostIP(co.CP.Host)
 			if err != nil {
-				exit.WithError("Error getting the host IP address to use from within the VM", err)
+				exit.Error(reason.IfHostIP, "Error getting the host IP address to use from within the VM", err)
 			}
 		} else {
 			ip = net.ParseIP(mountIP)
 			if ip == nil {
-				exit.WithCodeT(exit.Data, "error parsing the input ip address for mount")
+				exit.Message(reason.IfMountIP, "error parsing the input ip address for mount")
 			}
 		}
 		port, err := getPort()
 		if err != nil {
-			exit.WithError("Error finding port for mount", err)
+			exit.Error(reason.IfMountPort, "Error finding port for mount", err)
 		}
 
 		cfg := &cluster.MountConfig{
@@ -150,7 +154,7 @@ var mountCmd = &cobra.Command{
 		if driver.IsKIC(co.CP.Host.Driver.DriverName()) && runtime.GOOS != "linux" {
 			bindIP = "127.0.0.1"
 		}
-		out.T(out.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+		out.T(style.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Infof("Mount type:   {{.name}}", out.V{"type": cfg.Type})
 		out.Infof("User ID:      {{.userID}}", out.V{"userID": cfg.UID})
 		out.Infof("Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
@@ -164,9 +168,9 @@ var mountCmd = &cobra.Command{
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func() {
-				out.T(out.Fileserver, "Userspace file server: ")
+				out.T(style.Fileserver, "Userspace file server: ")
 				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
-				out.T(out.Stopped, "Userspace file server is shutdown")
+				out.T(style.Stopped, "Userspace file server is shutdown")
 				wg.Done()
 			}()
 		}
@@ -176,22 +180,22 @@ var mountCmd = &cobra.Command{
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			for sig := range c {
-				out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
+				out.T(style.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
 				err := cluster.Unmount(co.CP.Runner, vmPath)
 				if err != nil {
 					out.FailureT("Failed unmount: {{.error}}", out.V{"error": err})
 				}
-				exit.WithCodeT(exit.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
+				exit.Message(reason.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
 			}
 		}()
 
 		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
 		if err != nil {
-			exit.WithError("mount failed", err)
+			exit.Error(reason.GuestMount, "mount failed", err)
 		}
-		out.T(out.SuccessType, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+		out.T(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Ln("")
-		out.T(out.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
+		out.T(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
 		wg.Wait()
 	},
 }
@@ -203,7 +207,7 @@ func init() {
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
 	mountCmd.Flags().StringVar(&uid, "uid", "docker", "Default user id used for the mount")
 	mountCmd.Flags().StringVar(&gid, "gid", "docker", "Default group id used for the mount")
-	mountCmd.Flags().UintVar(&mode, "mode", 0755, "File permissions used for the mount")
+	mountCmd.Flags().UintVar(&mode, "mode", 0o755, "File permissions used for the mount")
 	mountCmd.Flags().StringSliceVar(&options, "options", []string{}, "Additional mount options, such as cache=fscache")
 	mountCmd.Flags().IntVar(&mSize, "msize", defaultMsize, "The number of bytes to use for 9p packet payload")
 }
