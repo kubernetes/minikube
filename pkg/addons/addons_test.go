@@ -130,7 +130,8 @@ func TestStart(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	Start(&wg, cc, map[string]bool{}, []string{"dashboard"})
+	wg.Add(1)
+	go Start(&wg, cc, map[string]bool{}, []string{"dashboard"})
 	wg.Wait()
 
 	if !assets.Addons["dashboard"].IsEnabled(cc) {
