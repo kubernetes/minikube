@@ -177,9 +177,14 @@ func CreateContainerNode(p CreateParams) error {
 
 	if p.OCIBinary == Podman && memcgSwap { // swap is required for memory
 		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+		// Disable swap by setting the value to match
+		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 	}
-	if p.OCIBinary == Docker { // swap is only required for --memory-swap
+
+	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+		// Disable swap by setting the value to match
+		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 	}
 
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
