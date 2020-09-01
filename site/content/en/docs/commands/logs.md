@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube logs
 
 Returns logs to debug a local Kubernetes cluster

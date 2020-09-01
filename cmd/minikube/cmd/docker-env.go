@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
@@ -73,7 +74,7 @@ type EnvNoProxyGetter struct{}
 func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShellConfig {
 	profile := ec.profile
 	const usgPlz = "To point your shell to minikube's docker-daemon, run:"
-	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
+	usgCmd := fmt.Sprintf("minikube -p %s docker-env", profile)
 	s := &DockerShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
@@ -123,7 +124,7 @@ func isDockerActive(r command.Runner) bool {
 
 func mustRestartDocker(name string, runner command.Runner) {
 	if err := sysinit.New(runner).Restart("docker"); err != nil {
-		exit.WithCodeT(exit.Unavailable, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+		exit.Message(reason.RuntimeRestart, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
 	}
 }
 
@@ -139,7 +140,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		if dockerUnset {
 			if err := dockerUnsetScript(DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
-				exit.WithError("Error generating unset output", err)
+				exit.Error(reason.InternalEnvScript, "Error generating unset output", err)
 			}
 			return
 		}
@@ -149,15 +150,15 @@ var dockerEnvCmd = &cobra.Command{
 		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {
-			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
+			exit.Message(reason.EnvDriverConflict, `'none' driver does not support 'minikube docker-env' command`)
 		}
 
 		if len(co.Config.Nodes) > 1 {
-			exit.WithCodeT(exit.BadUsage, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
+			exit.Message(reason.EnvMultiConflict, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
 		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
-			exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
+			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
@@ -171,7 +172,7 @@ var dockerEnvCmd = &cobra.Command{
 		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
-				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
+				exit.Message(reason.DrvPortForward, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
 			}
 		}
 
@@ -188,7 +189,7 @@ var dockerEnvCmd = &cobra.Command{
 		if ec.Shell == "" {
 			ec.Shell, err = shell.Detect()
 			if err != nil {
-				exit.WithError("Error detecting shell", err)
+				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
 			}
 		}
 
@@ -208,7 +209,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if err := dockerSetScript(ec, os.Stdout); err != nil {
-			exit.WithError("Error generating set output", err)
+			exit.Error(reason.InternalDockerScript, "Error generating set output", err)
 		}
 	},
 }

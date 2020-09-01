@@ -54,16 +54,16 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 func status() registry.State {
 	_, err := exec.LookPath("iptables")
 	if err != nil {
-		return registry.State{Error: err, Fix: "iptables must be installed", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
+		return registry.State{Running: true, Error: err, Fix: "iptables must be installed", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
 	if _, err := exec.LookPath("docker"); err != nil {
-		return registry.State{Error: err, Installed: false, Fix: "Install docker", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
+		return registry.State{Running: true, Error: err, Installed: false, Fix: "Install docker", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
 	u, err := user.Current()
 	if err != nil {
-		return registry.State{Error: err, Healthy: false, Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
+		return registry.State{Running: true, Error: err, Healthy: false, Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
 	if u.Uid != "0" {

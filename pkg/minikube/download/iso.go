@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
 )
@@ -126,7 +127,7 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 		return nil
 	}
 
-	out.T(out.ISODownload, "Downloading VM boot image ...")
+	out.T(style.ISODownload, "Downloading VM boot image ...")
 
 	urlWithChecksum := isoURL + "?checksum=file:" + isoURL + ".sha256"
 	if skipChecksum {

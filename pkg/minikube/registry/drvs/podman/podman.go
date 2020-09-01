@@ -104,7 +104,7 @@ func status() registry.State {
 
 		v, err := semver.Make(output)
 		if err != nil {
-			return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
+			return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
 		}
 
 		if v.LT(minReqPodmanVer) {
@@ -122,7 +122,7 @@ func status() registry.State {
 
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Podman service", Doc: docURL}
+		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Restart the Podman service", Doc: docURL}
 	}
 
 	username := "$USER"
