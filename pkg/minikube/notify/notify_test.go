@@ -154,7 +154,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 	outputBuffer := tests.NewFakeFile()
-	out.SetErrFile(outputBuffer)
+	out.SetOutFile(outputBuffer)
 
 	var tc = []struct {
 		len                     int
