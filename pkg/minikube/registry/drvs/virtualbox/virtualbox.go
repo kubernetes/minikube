@@ -73,9 +73,10 @@ func status() registry.State {
 	path, err := exec.LookPath(tryPath)
 	if err != nil {
 		return registry.State{
-			Error: fmt.Errorf("unable to find VBoxManage in $PATH"),
-			Fix:   "Install VirtualBox",
-			Doc:   docURL,
+			Error:     fmt.Errorf("unable to find VBoxManage in $PATH"),
+			Fix:       "Install VirtualBox",
+			Installed: false,
+			Doc:       docURL,
 		}
 	}
 
@@ -89,7 +90,7 @@ func status() registry.State {
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {
 		glog.Warningf("%q timed out. ", strings.Join(cmd.Args, " "))
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart VirtualBox", Doc: docURL}
+		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Restart VirtualBox", Doc: docURL}
 	}
 
 	if exitErr, ok := err.(*exec.ExitError); ok {

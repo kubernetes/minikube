@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube ip
 
 Retrieves the IP address of the running cluster

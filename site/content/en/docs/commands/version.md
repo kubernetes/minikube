@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube version
 
 Print the version of minikube

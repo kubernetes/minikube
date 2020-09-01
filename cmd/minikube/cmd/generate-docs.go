@@ -23,6 +23,8 @@ import (
 	"k8s.io/minikube/pkg/generate"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var path string
@@ -35,18 +37,17 @@ var generateDocs = &cobra.Command{
 	Example: "minikube generate-docs --path <FOLDER_PATH>",
 	Hidden:  true,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		// if directory does not exist
 		docsPath, err := os.Stat(path)
 		if err != nil || !docsPath.IsDir() {
-			exit.UsageT("Unable to generate the documentation. Please ensure that the path specified is a directory, exists & you have permission to write to it.")
+			exit.Message(reason.Usage, "Unable to generate the documentation. Please ensure that the path specified is a directory, exists & you have permission to write to it.")
 		}
 
 		// generate docs
 		if err := generate.Docs(RootCmd, path); err != nil {
-			exit.WithError("Unable to generate docs", err)
+			exit.Error(reason.InternalGenerateDocs, "Unable to generate docs", err)
 		}
-		out.T(out.Documentation, "Docs have been saved at - {{.path}}", out.V{"path": path})
+		out.T(style.Documentation, "Docs have been saved at - {{.path}}", out.V{"path": path})
 	},
 }
 

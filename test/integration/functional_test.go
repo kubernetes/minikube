@@ -40,6 +40,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
@@ -450,7 +451,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
-	wantCode := 78 // exit.Config
+	wantCode := reason.ExInsufficientMemory
 	if rr.ExitCode != wantCode {
 		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
 	}

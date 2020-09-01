@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 type sshConn struct {
@@ -68,12 +69,12 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 
 	if askForSudo {
 		out.T(
-			out.Warning,
+			style.Warning,
 			"The service {{.service}} requires privileged ports to be exposed: {{.ports}}",
 			out.V{"service": svc.Name, "ports": fmt.Sprintf("%v", privilegedPorts)},
 		)
 
-		out.T(out.Permissions, "sudo permission will be asked for it.")
+		out.T(style.Permissions, "sudo permission will be asked for it.")
 
 		command = "sudo"
 		sshArgs = append([]string{"ssh"}, sshArgs...)
@@ -130,7 +131,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 }
 
 func (c *sshConn) startAndWait() error {
-	out.T(out.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
+	out.T(style.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
 
 	err := c.cmd.Start()
 	if err != nil {
@@ -144,7 +145,7 @@ func (c *sshConn) startAndWait() error {
 }
 
 func (c *sshConn) stop() error {
-	out.T(out.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
+	out.T(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
 
 	return c.cmd.Process.Kill()
 }

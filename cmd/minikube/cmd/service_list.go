@@ -24,10 +24,11 @@ import (
 	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/service"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var serviceListNamespace string
@@ -43,8 +44,8 @@ var serviceListCmd = &cobra.Command{
 		serviceURLs, err := service.GetServiceURLs(co.API, co.Config.Name, serviceListNamespace, serviceURLTemplate)
 		if err != nil {
 			out.FatalT("Failed to get service URL: {{.error}}", out.V{"error": err})
-			out.ErrT(out.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
-			os.Exit(exit.Unavailable)
+			out.ErrT(style.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
+			os.Exit(reason.ExSvcUnavailable)
 		}
 
 		var data [][]string

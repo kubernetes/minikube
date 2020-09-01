@@ -25,7 +25,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/service"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var addonsConfigureCmd = &cobra.Command{
@@ -34,7 +36,7 @@ var addonsConfigureCmd = &cobra.Command{
 	Long:  "Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list ",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.UsageT("usage: minikube addons configure ADDON_NAME")
+			exit.Message(reason.Usage, "usage: minikube addons configure ADDON_NAME")
 		}
 
 		addon := args[0]
@@ -123,7 +125,6 @@ var addonsConfigureCmd = &cobra.Command{
 					"cloud":                         "ecr",
 					"kubernetes.io/minikube-addons": "registry-creds",
 				})
-
 			if err != nil {
 				out.FailureT("ERROR creating `registry-creds-ecr` secret: {{.error}}", out.V{"error": err})
 			}
@@ -204,7 +205,7 @@ var addonsConfigureCmd = &cobra.Command{
 			}
 
 			if err := config.SaveProfile(profile, cfg); err != nil {
-				out.ErrT(out.FatalType, "Failed to save config {{.profile}}", out.V{"profile": profile})
+				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
 			}
 
 		default:
