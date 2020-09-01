@@ -63,10 +63,20 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	mounts := make([]oci.Mount, len(cc.ContainerVolumeMounts))
+	for i, spec := range cc.ContainerVolumeMounts {
+		var err error
+		mounts[i], err = oci.ParseMountString(spec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       strings.Split(cc.KicBaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
+		Mounts:            mounts,
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Podman,
