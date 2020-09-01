@@ -58,7 +58,7 @@ func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 		return errors.Wrap(err, "make disk image")
 	}
 
-	file, err := os.OpenFile(diskPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	file, err := os.OpenFile(diskPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
 		return errors.Wrap(err, "open")
 	}
