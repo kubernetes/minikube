@@ -639,7 +639,7 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	}()
 
 	// Join the master by specifying its token
-	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, driver.MachineName(cc, n))
+	joinCmd = fmt.Sprintf("%s -v=5 --node-name=%s", joinCmd, driver.MachineName(cc, n))
 
 	join := func() error {
 		// reset first to clear any possibly existing state
