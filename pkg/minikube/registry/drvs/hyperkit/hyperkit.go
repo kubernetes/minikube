@@ -44,7 +44,7 @@ const (
 
 var (
 	// minimumVersion is used by hyperkit versionCheck(whether user's hyperkit is older than this)
-	minimumVersion = "0.20190201"
+	minimumVersion = "0.20200224"
 )
 
 func init() {
@@ -86,7 +86,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 func status() registry.State {
 	path, err := exec.LookPath("hyperkit")
 	if err != nil {
-		return registry.State{Error: err, Fix: "Run 'brew install hyperkit'", Doc: docURL}
+		return registry.State{Error: err, Fix: "Run 'brew install hyperkit' or install the latest Docker Desktop", Doc: docURL}
 	}
 
 	// Allow no more than 2 seconds for querying state
