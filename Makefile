@@ -92,7 +92,7 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # storage provisioner tag to push changes to
-STORAGE_PROVISIONER_TAG ?= v2
+STORAGE_PROVISIONER_TAG ?= v3
 
 # TODO: multi-arch manifest
 ifeq ($(GOARCH),amd64)
