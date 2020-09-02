@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const defaultCacheListFormat = "{{.CacheImage}}\n"
@@ -42,10 +43,10 @@ var listCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		images, err := cmdConfig.ListConfigMap(cacheImageConfigKey)
 		if err != nil {
-			exit.WithError("Failed to get image map", err)
+			exit.Error(reason.InternalListConfig, "Failed to get image map", err)
 		}
 		if err := cacheList(images); err != nil {
-			exit.WithError("Failed to list cached images", err)
+			exit.Error(reason.InternalCacheList, "Failed to list cached images", err)
 		}
 	},
 }

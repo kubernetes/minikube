@@ -49,10 +49,20 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	mounts := make([]oci.Mount, len(cc.ContainerVolumeMounts))
+	for i, spec := range cc.ContainerVolumeMounts {
+		var err error
+		mounts[i], err = oci.ParseMountString(spec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       cc.KicBaseImage,
+		Mounts:            mounts,
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Docker,
@@ -150,17 +160,17 @@ func checkOverlayMod() registry.State {
 // suggestFix matches a stderr with possible fix for the docker driver
 func suggestFix(stderr string, err error) registry.State {
 	if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
+		return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
 	}
 
 	if strings.Contains(stderr, "/pipe/docker_engine: The system cannot find the file specified.") && runtime.GOOS == "windows" {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
+		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
 	}
 
 	if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") || strings.Contains(stderr, "docker daemon is not running") {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
+		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
 	}
 
 	// We don't have good advice, but at least we can provide a good error message
-	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
+	return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Doc: docURL}
 }

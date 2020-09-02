@@ -23,6 +23,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var nodeDeleteCmd = &cobra.Command{
@@ -30,18 +32,17 @@ var nodeDeleteCmd = &cobra.Command{
 	Short: "Deletes a node from a cluster.",
 	Long:  "Deletes a node from a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if len(args) == 0 {
-			exit.UsageT("Usage: minikube node delete [name]")
+			exit.Message(reason.Usage, "Usage: minikube node delete [name]")
 		}
 		name := args[0]
 
 		co := mustload.Healthy(ClusterFlagValue())
-		out.T(out.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
+		out.T(style.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
 
 		n, err := node.Delete(*co.Config, name)
 		if err != nil {
-			exit.WithError("deleting node", err)
+			exit.Error(reason.GuestNodeDelete, "deleting node", err)
 		}
 
 		if driver.IsKIC(co.Config.Driver) {
@@ -49,7 +50,7 @@ var nodeDeleteCmd = &cobra.Command{
 			deletePossibleKicLeftOver(machineName, co.Config.Driver)
 		}
 
-		out.T(out.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})
+		out.T(style.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})
 	},
 }
 

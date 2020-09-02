@@ -66,9 +66,8 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		}
 
 		if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", c)); err != nil {
-			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, err))
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s", c))
 		}
-
 	}
 	return deleteErrs
 }
@@ -88,6 +87,9 @@ func DeleteContainer(ociBin string, name string) error {
 
 	if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
 		return errors.Wrapf(err, "delete %s", name)
+	}
+	if err := removeNetwork(name); err != nil {
+		return errors.Wrap(err, "removing network")
 	}
 	return nil
 }
@@ -151,6 +153,12 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 	}
 	if p.OCIBinary == Docker {
+		// on linux, we can provide a static IP for docker
+		if runtime.GOOS == "linux" && p.Network != "" && p.IP != "" {
+			runArgs = append(runArgs, "--network", p.Network)
+			runArgs = append(runArgs, "--ip", p.IP)
+		}
+
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
@@ -223,14 +231,14 @@ func CreateContainerNode(p CreateParams) error {
 		return nil
 	}
 
-	// retry up to up 13 seconds to make sure the created container status is running.
-	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*13); err != nil {
-		LogContainerDebug(p.OCIBinary, p.Name)
+	if err := retry.Expo(checkRunning, 15*time.Millisecond, 25*time.Second); err != nil {
+		excerpt := LogContainerDebug(p.OCIBinary, p.Name)
 		_, err := DaemonInfo(p.OCIBinary)
 		if err != nil {
 			return errors.Wrapf(ErrDaemonInfo, "container name %q", p.Name)
 		}
-		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q", p.Name)
+
+		return errors.Wrapf(ErrExitedUnexpectedly, "container name %q: log: %s", p.Name, excerpt)
 	}
 
 	return nil

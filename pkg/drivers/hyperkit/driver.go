@@ -397,7 +397,7 @@ func (d *Driver) Stop() error {
 	d.cleanupNfsExports()
 	err := d.sendSignal(syscall.SIGTERM)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("hyperkit sigterm failed"))
+		return errors.Wrap(err, "hyperkit sigterm failed")
 	}
 
 	// wait 5s for graceful shutdown
@@ -406,7 +406,7 @@ func (d *Driver) Stop() error {
 		time.Sleep(time.Second * 1)
 		s, err := d.GetState()
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("hyperkit waiting graceful shutdown failed"))
+			return errors.Wrap(err, "hyperkit waiting graceful shutdown failed")
 		}
 		if s == state.Stopped {
 			return nil
@@ -468,7 +468,7 @@ func (d *Driver) setupNFSShare() error {
 		return err
 	}
 
-	mountCommands := fmt.Sprintf("#/bin/bash\\n")
+	mountCommands := "#/bin/bash\\n"
 	log.Info(d.IPAddress)
 
 	for _, share := range d.NFSShares {

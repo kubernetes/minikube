@@ -17,6 +17,10 @@ as well.
 
 You can also `alias kubectl="minikube kubectl --"` for easier usage.
 
+Alternatively, you can create a symbolic link to minikube's binary named 'kubectl'.
+
+`ln -s $(which minikube) /usr/local/bin/kubectl`
+
 Get pods
 
 `minikube kubectl -- get pods`

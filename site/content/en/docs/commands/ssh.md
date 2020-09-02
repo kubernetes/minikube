@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube ssh
 
 Log into the minikube environment (for debugging)

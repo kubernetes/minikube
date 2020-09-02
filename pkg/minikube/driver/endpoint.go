@@ -17,6 +17,7 @@ limitations under the License.
 package driver
 
 import (
+	"fmt"
 	"net"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -30,6 +31,9 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 		port, err := oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
 		hostname := oci.DefaultBindIPV4
 		ip := net.ParseIP(hostname)
+		if ip == nil {
+			return hostname, ip, port, fmt.Errorf("failed to parse ip for %q", hostname)
+		}
 
 		// https://github.com/kubernetes/minikube/issues/3878
 		if cc.KubernetesConfig.APIServerName != constants.APIServerName {
@@ -43,5 +47,9 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
 		hostname = cc.KubernetesConfig.APIServerName
 	}
-	return hostname, net.ParseIP(cp.IP), cp.Port, nil
+	ip := net.ParseIP(cp.IP)
+	if ip == nil {
+		return hostname, ip, cp.Port, fmt.Errorf("failed to parse ip for %q", cp.IP)
+	}
+	return hostname, ip, cp.Port, nil
 }

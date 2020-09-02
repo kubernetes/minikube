@@ -14,30 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package out
+package style
 
 import (
-	"bytes"
 	"strings"
-	"text/template"
-
-	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 var (
-	// lowBullet is a bullet-point prefix for low-fi mode
-	lowBullet = "* "
-	// lowBullet is an indented bullet-point prefix for low-fi mode
-	lowIndent = "  - "
-	// lowBullet is a warning prefix for low-fi mode
-	lowWarning = "! "
-	// lowBullet is an error prefix for low-fi mode
-	lowError = "X "
+	// LowBullet is a bullet-point prefix for Low-fi mode
+	LowBullet = "* "
+	// LowIndent is an indented bullet-point prefix for Low-fi mode
+	LowIndent = "  - "
+	// LowWarning is a warning prefix for Low-fi mode
+	LowWarning = "! "
+	// LowError is an error prefix for Low-fi mode
+	LowError = "X "
+	// Indented is how far to indent unstyled text
+	Indented = "    "
 )
 
-// style describes how to stylize a message.
-type style struct {
+// Options describes how to stylize a message.
+type Options struct {
 	// Prefix is a string to place in the beginning of a message
 	Prefix string
 	// LowPrefix is the 7-bit compatible prefix we fallback to for less-awesome terminals
@@ -46,46 +43,55 @@ type style struct {
 	OmitNewline bool
 }
 
-// styles is a map of style name to style struct
+// Config is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
-var styles = map[StyleEnum]style{
+var Config = map[Enum]Options{
 	Celebration:   {Prefix: "🎉  "},
 	Check:         {Prefix: "✅  "},
-	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	Conflict:      {Prefix: "💥  ", LowPrefix: lowWarning},
+	Command:       {Prefix: "    ▪ ", LowPrefix: LowIndent}, // Indented bullet
 	Confused:      {Prefix: "😕  "},
 	Deleted:       {Prefix: "💀  "},
 	Documentation: {Prefix: "📘  "},
 	Empty:         {Prefix: "", LowPrefix: ""},
-	FailureType:   {Prefix: "❌  "},
-	FatalType:     {Prefix: "💣  ", LowPrefix: lowError},
 	Happy:         {Prefix: "😄  "},
-	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	Issues:        {Prefix: "⁉️   "},
+	Issue:         {Prefix: "    ▪ ", LowPrefix: LowIndent}, // Indented bullet
+	Issues:        {Prefix: "🍿  "},
 	Launch:        {Prefix: "🚀  "},
 	LogEntry:      {Prefix: "    "}, // Indent
 	New:           {Prefix: "🆕  "},
 	Notice:        {Prefix: "📌  "},
-	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
+	Option:        {Prefix: "    ▪ ", LowPrefix: LowIndent}, // Indented bullet
 	Pause:         {Prefix: "⏸️  "},
 	Provisioning:  {Prefix: "🌱  "},
 	Ready:         {Prefix: "🏄  "},
 	Restarting:    {Prefix: "🔄  "},
 	Running:       {Prefix: "🏃  "},
-	Sad:           {Prefix: "😿  "},
-	Shrug:         {Prefix: "🤷  "},
 	Sparkle:       {Prefix: "✨  "},
 	Stopped:       {Prefix: "🛑  "},
 	Stopping:      {Prefix: "✋  "},
-	SuccessType:   {Prefix: "✅  "},
+	Success:       {Prefix: "✅  "},
 	ThumbsDown:    {Prefix: "👎  "},
 	ThumbsUp:      {Prefix: "👍  "},
 	Unpause:       {Prefix: "⏯️  "},
-	URL:           {Prefix: "👉  ", LowPrefix: lowIndent},
+	URL:           {Prefix: "👉  ", LowPrefix: LowIndent},
 	Usage:         {Prefix: "💡  "},
 	Waiting:       {Prefix: "⌛  "},
-	Warning:       {Prefix: "❗  ", LowPrefix: lowWarning},
-	Workaround:    {Prefix: "👉  ", LowPrefix: lowIndent},
+	Unsupported:   {Prefix: "🚡  "},
+	Workaround:    {Prefix: "👉  ", LowPrefix: LowIndent},
+
+	// Fail emoji's
+	Conflict:         {Prefix: "💢  ", LowPrefix: LowWarning},
+	Failure:          {Prefix: "❌  ", LowPrefix: LowError},
+	Fatal:            {Prefix: "💣  ", LowPrefix: LowError},
+	Warning:          {Prefix: "❗  ", LowPrefix: LowWarning},
+	KnownIssue:       {Prefix: "🧯  ", LowPrefix: LowError},
+	UnmetRequirement: {Prefix: "⛔  ", LowPrefix: LowError},
+	NotAllowed:       {Prefix: "🚫  ", LowPrefix: LowError},
+	Embarrassed:      {Prefix: "🤦  ", LowPrefix: LowWarning},
+	Sad:              {Prefix: "😿  "},
+	Shrug:            {Prefix: "🤷  "},
+	Improvement:      {Prefix: "💨  ", LowPrefix: LowWarning},
+	SeeNoEvil:        {Prefix: "🙈  ", LowPrefix: LowError},
 
 	// Specialized purpose styles
 	AddonDisable:     {Prefix: "🌑  "},
@@ -100,7 +106,6 @@ var styles = map[StyleEnum]style{
 	DeletingHost:     {Prefix: "🔥  "},
 	Docker:           {Prefix: "🐳  "},
 	DryRun:           {Prefix: "🌵  "},
-	Embarrassed:      {Prefix: "🤦  ", LowPrefix: lowWarning},
 	Enabling:         {Prefix: "🔌  "},
 	FileDownload:     {Prefix: "💾  "},
 	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
@@ -108,7 +113,7 @@ var styles = map[StyleEnum]style{
 	Internet:         {Prefix: "🌐  "},
 	ISODownload:      {Prefix: "💿  "},
 	Kubectl:          {Prefix: "💗  "},
-	Meh:              {Prefix: "🙄  ", LowPrefix: lowWarning},
+	Meh:              {Prefix: "🙄  ", LowPrefix: LowWarning},
 	Mounting:         {Prefix: "📁  "},
 	MountOptions:     {Prefix: "💾  "},
 	Permissions:      {Prefix: "🔑  "},
@@ -125,69 +130,13 @@ var styles = map[StyleEnum]style{
 	CNI:              {Prefix: "🔗  "},
 }
 
-// Add a prefix to a string
-func applyPrefix(prefix, format string) string {
-	if prefix == "" {
-		return format
-	}
-	// TODO(tstromberg): Ensure compatibility with RTL languages.
-	return prefix + format
-}
-
-// lowPrefix returns a 7-bit compatible prefix for a style
-func lowPrefix(s style) string {
+// LowPrefix returns a 7-bit compatible prefix for a style
+func LowPrefix(s Options) string {
 	if s.LowPrefix != "" {
 		return s.LowPrefix
 	}
 	if strings.HasPrefix(s.Prefix, "  ") {
-		return lowIndent
+		return LowIndent
 	}
-	return lowBullet
-}
-
-// applyStyle translates the given string if necessary then adds any appropriate style prefix.
-func applyStyle(style StyleEnum, useColor bool, format string) string {
-	format = translate.T(format)
-
-	s, ok := styles[style]
-	if !s.OmitNewline {
-		format += "\n"
-	}
-
-	// Similar to CSS styles, if no style matches, output an unformatted string.
-	if !ok || JSON {
-		return format
-	}
-
-	if !useColor {
-		return applyPrefix(lowPrefix(s), format)
-	}
-	return applyPrefix(s.Prefix, format)
-}
-
-// ApplyTemplateFormatting applies formatting to the provided template
-func ApplyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
-	if a == nil {
-		a = []V{{}}
-	}
-	format = applyStyle(style, useColor, format)
-
-	var buf bytes.Buffer
-	t, err := template.New(format).Parse(format)
-	if err != nil {
-		glog.Errorf("unable to parse %q: %v - returning raw string.", format, err)
-		return format
-	}
-	err = t.Execute(&buf, a[0])
-	if err != nil {
-		glog.Errorf("unable to execute %s: %v - returning raw string.", format, err)
-		return format
-	}
-	outStyled := buf.String()
-
-	// escape any outstanding '%' signs so that they don't get interpreted
-	// as a formatting directive down the line
-	outStyled = strings.Replace(outStyled, "%", "%%", -1)
-
-	return outStyled
+	return LowBullet
 }

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eux -o pipefail
+set -eu -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
@@ -39,5 +39,5 @@ recent=$(git describe --abbrev=0)
 
 "${DIR}/release-notes" kubernetes minikube --since $recent
 
-echo "Huge thank you for this release towards our contributors: "
+echo "Thank you to our contributors for this release! "
 git log "$recent".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'

@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube status
 
 Gets the status of a local Kubernetes cluster
@@ -26,6 +25,7 @@ minikube status [flags]
   -f, --format string   Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
                         For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status (default "{{.Name}}\ntype: Control Plane\nhost: {{.Host}}\nkubelet: {{.Kubelet}}\napiserver: {{.APIServer}}\nkubeconfig: {{.Kubeconfig}}\n\n")
   -h, --help            help for status
+  -l, --layout string   output layout (EXPERIMENTAL, JSON only): 'nodes' or 'cluster' (default "nodes")
   -n, --node string     The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.
   -o, --output string   minikube status --output OUTPUT. json, text (default "text")
 ```

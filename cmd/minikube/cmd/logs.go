@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const (
@@ -55,17 +56,17 @@ var logsCmd = &cobra.Command{
 
 		bs, err := cluster.Bootstrapper(co.API, viper.GetString(cmdcfg.Bootstrapper), *co.Config, co.CP.Runner)
 		if err != nil {
-			exit.WithError("Error getting cluster bootstrapper", err)
+			exit.Error(reason.InternalBootstrapper, "Error getting cluster bootstrapper", err)
 		}
 
 		cr, err := cruntime.New(cruntime.Config{Type: co.Config.KubernetesConfig.ContainerRuntime, Runner: co.CP.Runner})
 		if err != nil {
-			exit.WithError("Unable to get runtime", err)
+			exit.Error(reason.InternalNewRuntime, "Unable to get runtime", err)
 		}
 		if followLogs {
 			err := logs.Follow(cr, bs, *co.Config, co.CP.Runner)
 			if err != nil {
-				exit.WithError("Follow", err)
+				exit.Error(reason.InternalLogFollow, "Follow", err)
 			}
 			return
 		}
@@ -77,9 +78,9 @@ var logsCmd = &cobra.Command{
 		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines)
 		if err != nil {
 			out.Ln("")
-			// Avoid exit.WithError, since it outputs the issue URL
+			// Avoid exit.Error, since it outputs the issue URL
 			out.WarningT("{{.error}}", out.V{"error": err})
-			os.Exit(exit.Unavailable)
+			os.Exit(reason.ExSvcError)
 		}
 	},
 }

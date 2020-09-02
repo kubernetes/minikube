@@ -66,12 +66,12 @@ func TestDeleteProfile(t *testing.T) {
 		t.Fatalf("tempdir: %v", err)
 	}
 
-	defer func() { //clean up tempdir
+	t.Cleanup(func() {
 		err := os.RemoveAll(td)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", td)
 		}
-	}()
+	})
 
 	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-single", td)
 	if err != nil {

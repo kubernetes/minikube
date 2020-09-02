@@ -74,7 +74,8 @@ type StatusChecker func() State
 type State struct {
 	Installed        bool
 	Healthy          bool
-	NeedsImprovement bool // driver is healthy but could be improved
+	Running          bool // it at least appears to be running
+	NeedsImprovement bool // healthy but could be improved
 	Error            error
 	Fix              string
 	Doc              string

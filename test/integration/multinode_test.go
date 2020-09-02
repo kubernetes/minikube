@@ -52,6 +52,9 @@ func TestMultiNode(t *testing.T) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
 			t.Run(tc.name, func(t *testing.T) {
 				defer PostMortemLogs(t, profile)
 				tc.validator(ctx, t, profile)
