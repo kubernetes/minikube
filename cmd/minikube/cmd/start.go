@@ -648,11 +648,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	glog.Infof("status for %s: %+v", name, st)
 
 	if st.NeedsImprovement {
-		out.WarnReason(reason.Kind{
-			ID:     fmt.Sprintf("PROVIDER_%s_IMPROVEMENT", strings.ToUpper(name)),
-			Advice: translate.T(st.Fix),
-			Style:  style.Improvement,
-		}, `The '{{.driver}}' driver reported a performance issue`, out.V{"driver": name})
+		out.T(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
 	}
 
 	if st.Error == nil {
