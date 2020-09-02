@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // rootCauses are regular expressions that match known failures
@@ -148,7 +149,7 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 			lines = lines[len(lines)-maxLines:]
 		}
 		for _, l := range lines {
-			out.T(out.LogEntry, l)
+			out.T(style.LogEntry, l)
 		}
 	}
 }
@@ -167,9 +168,9 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			out.T(out.Empty, "")
+			out.T(style.Empty, "")
 		}
-		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
+		out.T(style.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 		c := exec.Command("/bin/bash", "-c", cmds[name])
 		c.Stdout = &b
@@ -181,7 +182,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		}
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			out.T(out.Empty, scanner.Text())
+			out.T(style.Empty, scanner.Text())
 		}
 	}
 

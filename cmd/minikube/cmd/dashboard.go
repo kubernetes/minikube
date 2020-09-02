@@ -31,12 +31,14 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/style"
 
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -72,47 +74,47 @@ var dashboardCmd = &cobra.Command{
 
 		if !enabled {
 			// Send status messages to stderr for folks re-using this output.
-			out.ErrT(out.Enabling, "Enabling dashboard ...")
+			out.ErrT(style.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
 			err = addons.SetAndSave(cname, "dashboard", "true")
 			if err != nil {
-				exit.WithError("Unable to enable dashboard", err)
+				exit.Error(reason.InternalAddonEnable, "Unable to enable dashboard", err)
 			}
 		}
 
 		ns := "kubernetes-dashboard"
 		svc := "kubernetes-dashboard"
-		out.ErrT(out.Verifying, "Verifying dashboard health ...")
+		out.ErrT(style.Verifying, "Verifying dashboard health ...")
 		checkSVC := func() error { return service.CheckService(cname, ns, svc) }
 		// for slow machines or parallels in CI to avoid #7503
 		if err = retry.Expo(checkSVC, 100*time.Microsecond, time.Minute*10); err != nil {
-			exit.WithCodeT(exit.Unavailable, "dashboard service is not running: {{.error}}", out.V{"error": err})
+			exit.Message(reason.SvcCheckTimeout, "dashboard service is not running: {{.error}}", out.V{"error": err})
 		}
 
-		out.ErrT(out.Launch, "Launching proxy ...")
+		out.ErrT(style.Launch, "Launching proxy ...")
 		p, hostPort, err := kubectlProxy(kubectlVersion, cname)
 		if err != nil {
-			exit.WithError("kubectl proxy", err)
+			exit.Error(reason.HostKubectlProxy, "kubectl proxy", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
-		out.ErrT(out.Verifying, "Verifying proxy health ...")
+		out.ErrT(style.Verifying, "Verifying proxy health ...")
 		chkURL := func() error { return checkURL(url) }
 		if err = retry.Expo(chkURL, 100*time.Microsecond, 10*time.Minute); err != nil {
-			exit.WithCodeT(exit.Unavailable, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
+			exit.Message(reason.SvcURLTimeout, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
 		}
 
-		//check if current user is root
+		// check if current user is root
 		user, err := user.Current()
 		if err != nil {
-			exit.WithError("Unable to get current user", err)
+			exit.Error(reason.HostCurrentUser, "Unable to get current user", err)
 		}
 		if dashboardURLMode || user.Uid == "0" {
 			out.Ln(url)
 		} else {
-			out.T(out.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
+			out.T(style.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
 			if err = browser.OpenURL(url); err != nil {
-				exit.WithCodeT(exit.Software, "failed to open browser: {{.error}}", out.V{"error": err})
+				exit.Message(reason.HostBrowser, "failed to open browser: {{.error}}", out.V{"error": err})
 			}
 		}
 

@@ -27,9 +27,10 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.18.3"
+	DefaultKubernetesVersion = "v1.19.0"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
-	NewestKubernetesVersion = "v1.18.4-rc.0"
+	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
+	NewestKubernetesVersion = "v1.19.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.13.0"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -72,6 +73,8 @@ const (
 	MinikubeActivePodmanEnv = "MINIKUBE_ACTIVE_PODMAN"
 	// MinikubeForceSystemdEnv is used to force systemd as cgroup manager for the container runtime
 	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
+	// TestDiskUsedEnv is used in integration tests for insufficient storage with 'minikube status'
+	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
 )
 
 var (

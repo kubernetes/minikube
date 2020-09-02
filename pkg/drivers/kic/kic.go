@@ -68,6 +68,7 @@ func NewDriver(c Config) *Driver {
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	params := oci.CreateParams{
+		Mounts:        d.NodeConfig.Mounts,
 		Name:          d.NodeConfig.MachineName,
 		Image:         d.NodeConfig.ImageDigest,
 		ClusterLabel:  oci.ProfileLabelKey + "=" + d.MachineName,
@@ -78,6 +79,14 @@ func (d *Driver) Create() error {
 		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
 		OCIBinary:     d.NodeConfig.OCIBinary,
 		APIServerPort: d.NodeConfig.APIServerPort,
+	}
+
+	defaultNetwork := d.MachineName
+	if err := oci.CreateNetwork(defaultNetwork, oci.DefaultIPRange, oci.DefaultGateway); err != nil {
+		glog.Warningf("unable to create docker network; node ip may not be stable: %v", err)
+	} else {
+		params.Network = defaultNetwork
+		params.IP = oci.DefaultIP
 	}
 
 	// control plane specific options

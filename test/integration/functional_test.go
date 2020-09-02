@@ -40,6 +40,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
@@ -86,9 +87,13 @@ func TestFunctional(t *testing.T) {
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
+			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
@@ -126,6 +131,10 @@ func TestFunctional(t *testing.T) {
 		}
 		for _, tc := range tests {
 			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
 				tc.validator(ctx, t, profile)
@@ -307,30 +316,64 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+// validateMinikubeKubectlDirectCall validates that calling minikube's kubectl
+func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+	dir := filepath.Dir(Target())
+	dstfn := filepath.Join(dir, "kubectl")
+	err := os.Link(Target(), dstfn)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(dstfn) // clean up
+
+	kubectlArgs := []string{"get", "pods"}
+	rr, err := Run(t, exec.CommandContext(ctx, dstfn, kubectlArgs...))
+	if err != nil {
+		t.Fatalf("failed to run kubectl directl. args %q: %v", rr.Command(), err)
+	}
+
+}
+
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
+	// The ComponentStatus API is deprecated in v1.19, so do the next closest thing.
+	found := map[string]bool{
+		"etcd":                    false,
+		"kube-apiserver":          false,
+		"kube-controller-manager": false,
+		"kube-scheduler":          false,
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-l", "tier=control-plane", "-n", "kube-system", "-o=json"))
 	if err != nil {
 		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
 	}
-	cs := api.ComponentStatusList{}
+	cs := api.PodList{}
 	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
 	if err := d.Decode(&cs); err != nil {
 		t.Fatalf("failed to decode kubectl json output: args %q : %v", rr.Command(), err)
 	}
 
 	for _, i := range cs.Items {
-		status := api.ConditionFalse
-		for _, c := range i.Conditions {
-			if c.Type != api.ComponentHealthy {
-				continue
+		for _, l := range i.Labels {
+			t.Logf("%s phase: %s", l, i.Status.Phase)
+			_, ok := found[l]
+			if ok {
+				found[l] = true
+				if i.Status.Phase != "Running" {
+					t.Errorf("%s is not Running: %+v", l, i.Status)
+				}
 			}
-			status = c.Status
 		}
-		if status != api.ConditionTrue {
-			t.Errorf("unexpected status: %v - item: %+v", status, i)
+	}
+
+	for k, v := range found {
+		if !v {
+			t.Errorf("expected component %q was not found", k)
 		}
 	}
 }
@@ -429,7 +472,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
-	wantCode := 78 // exit.Config
+	wantCode := reason.ExInsufficientMemory
 	if rr.ExitCode != wantCode {
 		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
 	}
@@ -1007,14 +1050,91 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
-	if err != nil {
-		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
+	tests := []struct {
+		name       string
+		kubeconfig []byte
+		want       []byte
+	}{
+		{
+			name:       "no changes",
+			kubeconfig: nil,
+			want:       []byte("No changes"),
+		},
+		{
+			name: "no minikube cluster",
+			kubeconfig: []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/apiserver.crt
+    server: 192.168.1.1:8080
+  name: la-croix
+contexts:
+- context:
+    cluster: la-croix
+    user: la-croix
+  name: la-croix
+current-context: la-croix
+kind: Config
+preferences: {}
+users:
+- name: la-croix
+  user:
+    client-certificate: /home/la-croix/apiserver.crt
+    client-key: /home/la-croix/apiserver.key
+`),
+			want: []byte("context has been updated"),
+		},
+		{
+			name: "no clusters",
+			kubeconfig: []byte(`
+apiVersion: v1
+clusters:
+contexts:
+kind: Config
+preferences: {}
+users:
+`),
+			want: []byte("context has been updated"),
+		},
 	}
 
-	want := []byte("No changes")
-	if !bytes.Contains(rr.Stdout.Bytes(), want) {
-		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
+	for _, tc := range tests {
+		tc := tc
+
+		if ctx.Err() == context.DeadlineExceeded {
+			t.Fatalf("Unable to run more tests (deadline exceeded)")
+		}
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2")
+			if tc.kubeconfig != nil {
+				tf, err := ioutil.TempFile("", "kubeconfig")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if err := ioutil.WriteFile(tf.Name(), tc.kubeconfig, 0644); err != nil {
+					t.Fatal(err)
+				}
+
+				t.Cleanup(func() {
+					os.Remove(tf.Name())
+				})
+
+				c.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", tf.Name()))
+			}
+
+			rr, err := Run(t, c)
+			if err != nil {
+				t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
+			}
+
+			if !bytes.Contains(rr.Stdout.Bytes(), tc.want) {
+				t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), tc.want)
+			}
+		})
 	}
 }
 

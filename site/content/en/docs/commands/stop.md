@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube stop
 
 Stops a running local Kubernetes cluster
@@ -22,8 +21,9 @@ minikube stop [flags]
 ### Options
 
 ```
-      --all    Set flag to stop all profiles (clusters)
-  -h, --help   help for stop
+      --all                   Set flag to stop all profiles (clusters)
+  -h, --help                  help for stop
+      --keep-context-active   keep the kube-context active after cluster is stopped. Defaults to false.
 ```
 
 ### Options inherited from parent commands

@@ -20,9 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -37,37 +40,38 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-var (
-	// requiredDirectories are directories to create on the host during setup
-	requiredDirectories = []string{
-		vmpath.GuestAddonsDir,
-		vmpath.GuestManifestsDir,
-		vmpath.GuestEphemeralDir,
-		vmpath.GuestPersistentDir,
-		vmpath.GuestKubernetesCertsDir,
-		path.Join(vmpath.GuestPersistentDir, "images"),
-		path.Join(vmpath.GuestPersistentDir, "binaries"),
-		vmpath.GuestGvisorDir,
-		vmpath.GuestCertAuthDir,
-		vmpath.GuestCertStoreDir,
-	}
-)
+// requiredDirectories are directories to create on the host during setup
+var requiredDirectories = []string{
+	vmpath.GuestAddonsDir,
+	vmpath.GuestManifestsDir,
+	vmpath.GuestEphemeralDir,
+	vmpath.GuestPersistentDir,
+	vmpath.GuestKubernetesCertsDir,
+	path.Join(vmpath.GuestPersistentDir, "images"),
+	path.Join(vmpath.GuestPersistentDir, "binaries"),
+	vmpath.GuestGvisorDir,
+	vmpath.GuestCertAuthDir,
+	vmpath.GuestCertStoreDir,
+}
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
 	machineName := driver.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
-	releaser, err := acquireMachinesLock(machineName)
+	releaser, err := acquireMachinesLock(machineName, cfg.Driver)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "boot lock")
 	}
@@ -149,6 +153,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
 	}
+	defer postStartValidations(h, cfg.Driver)
 
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
@@ -202,6 +207,46 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 	}
 }
 
+// postStartValidations are validations against the host after it is created
+// TODO: Add validations for VM drivers as well, see issue #9035
+func postStartValidations(h *host.Host, drvName string) {
+	if !driver.IsKIC(drvName) {
+		return
+	}
+	r, err := CommandRunner(h)
+	if err != nil {
+		glog.Warningf("error getting command runner: %v", err)
+	}
+
+	// make sure /var isn't full,  as pod deployments will fail if it is
+	percentageFull, err := DiskUsed(r, "/var")
+	if err != nil {
+		glog.Warningf("error getting percentage of /var that is free: %v", err)
+	}
+	if percentageFull >= 99 {
+		exit.Message(reason.RsrcInsufficientDockerStorage, `Docker is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"p": percentageFull})
+	}
+
+	if percentageFull >= 85 {
+		out.WarnReason(reason.RsrcInsufficientDockerStorage, `Docker is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"p": percentageFull})
+	}
+}
+
+// DiskUsed returns the capacity of dir in the VM/container as a percentage
+func DiskUsed(cr command.Runner, dir string) (int, error) {
+	if s := os.Getenv(constants.TestDiskUsedEnv); s != "" {
+		return strconv.Atoi(s)
+	}
+	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -h %s | awk 'NR==2{print $5}'", dir)))
+	if err != nil {
+		glog.Warningf("error running df -h /var: %v\n%v", err, output.Output())
+		return 0, err
+	}
+	percentage := strings.TrimSpace(output.Stdout.String())
+	percentage = strings.Trim(percentage, "%")
+	return strconv.Atoi(percentage)
+}
+
 // postStart are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	glog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
@@ -236,10 +281,19 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
-func acquireMachinesLock(name string) (mutex.Releaser, error) {
-	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
+func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
+	lockPath := filepath.Join(localpath.MiniPath(), "machines", drv)
+	// "With KIC, it's safe to provision multiple hosts simultaneously"
+	if driver.IsKIC(drv) {
+		lockPath = filepath.Join(localpath.MiniPath(), "machines", drv, name)
+	}
+	spec := lock.PathMutexSpec(lockPath)
 	// NOTE: Provisioning generally completes within 60 seconds
-	spec.Timeout = 15 * time.Minute
+	// however in parallel integration testing it might take longer
+	spec.Timeout = 13 * time.Minute
+	if driver.IsKIC(drv) {
+		spec.Timeout = 10 * time.Minute
+	}
 
 	glog.Infof("acquiring machines lock for %s: %+v", name, spec)
 	start := time.Now()
@@ -257,17 +311,17 @@ func showHostInfo(cfg config.ClusterConfig) {
 		info, cpuErr, memErr, DiskErr := CachedHostInfo()
 		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningLocalhost)
-			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+			out.T(style.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 		return
 	}
 	if driver.IsKIC(cfg.Driver) { // TODO:medyagh add free disk space on docker machine
 		register.Reg.SetStep(register.CreatingContainer)
-		out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
+		out.T(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
 		return
 	}
 	register.Reg.SetStep(register.CreatingVM)
-	out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
+	out.T(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
 }
 
 // AddHostAlias makes fine adjustments to pod resources that aren't possible via kubeadm config.

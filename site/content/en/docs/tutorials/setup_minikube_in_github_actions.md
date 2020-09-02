@@ -37,7 +37,7 @@ Create workflow:
   jobs:
     job1:
       runs-on: ubuntu-latest
-      name: build example and deploy to minikbue
+      name: build example and deploy to minikube
       steps:
       - uses: actions/checkout@v2
       - name: Start minikube
