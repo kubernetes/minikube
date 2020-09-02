@@ -81,14 +81,6 @@ func (d *Driver) Create() error {
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
-	defaultNetwork := d.MachineName
-	if err := oci.CreateNetwork(defaultNetwork, oci.DefaultIPRange, oci.DefaultGateway); err != nil {
-		glog.Warningf("unable to create docker network; node ip may not be stable: %v", err)
-	} else {
-		params.Network = defaultNetwork
-		params.IP = oci.DefaultIP
-	}
-
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
 		ListenAddress: oci.DefaultBindIPV4,
