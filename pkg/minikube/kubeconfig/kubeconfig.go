@@ -125,6 +125,7 @@ func UpdateEndpoint(contextName string, hostname string, port int, confpath stri
 
 	// if the cluster setting is missed in the kubeconfig, create new one
 	if _, ok := cfg.Clusters[contextName]; !ok {
+		glog.Infof("%q context is missing from %s - will repair!", contextName, confpath)
 		lp := localpath.Profile(contextName)
 		gp := localpath.MiniPath()
 		kcs := &Settings{

@@ -155,7 +155,7 @@ var (
 	}
 	RsrcInsufficientDarwinDockerMemory = Kind{
 		ID:       "RSRC_DOCKER_MEMORY",
-		ExitCode: ExInsufficientCores,
+		ExitCode: ExInsufficientMemory,
 		Advice: `1. Click on "Docker for Desktop" menu icon
 			2. Click "Preferences"
 			3. Click "Resources"

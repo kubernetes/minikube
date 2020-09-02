@@ -51,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -536,6 +537,12 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "control plane")
+	}
+
+	// Save the costly tax of reinstalling Kubernetes if the only issue is a missing kube context
+	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv())
+	if err != nil {
+		glog.Warningf("unable to update kubeconfig (cluster will likely require a reset): %v", err)
 	}
 
 	client, err := k.client(hostname, port)

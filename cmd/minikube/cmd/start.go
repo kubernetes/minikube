@@ -273,15 +273,15 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		}
 	}
 
-	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
-	if err != nil {
-		return node.Starter{}, err
-	}
-
 	if viper.GetBool(nativeSSH) {
 		ssh.SetDefaultClient(ssh.Native)
 	} else {
 		ssh.SetDefaultClient(ssh.External)
+	}
+
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
+	if err != nil {
+		return node.Starter{}, err
 	}
 
 	return node.Starter{
@@ -421,7 +421,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		out.Ln("")
 		out.WarningT("{{.path}} is version {{.client_version}}, which may be incompatible with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
-		out.ErrT(style.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
+		out.WarningT("You can also use 'minikube kubectl -- get pods' to invoke a matching version",
 			out.V{"path": path, "client_version": client})
 	}
 	return nil

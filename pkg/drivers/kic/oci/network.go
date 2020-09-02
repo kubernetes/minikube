@@ -58,20 +58,43 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	return ip, nil
 }
 
+// profileInContainers checks whether the profile is within the containers list
+func profileInContainers(profile string, containers []string) bool {
+	for _, container := range containers {
+		if container == profile {
+			return true
+		}
+	}
+	return false
+}
+
 // dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
 // gets the ip from user's host docker
 func dockerGatewayIP(profile string) (net.IP, error) {
-	// check if using custom network first
-	if networkExists(profile) {
-		ip := net.ParseIP(DefaultGateway)
-		return ip, nil
-	}
+	var bridgeID string
 	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "get network bridge")
 	}
+	networksOutput := strings.TrimSpace(rr.Stdout.String())
+	networksSlice := strings.Fields(networksOutput)
+	// Look for the minikube container within each docker network
+	for _, net := range networksSlice {
+		// get all containers in the network
+		rs, err := runCmd(exec.Command(Docker, "network", "inspect", net, "-f", "{{range $k, $v := .Containers}}{{$v.Name}} {{end}}"))
+		if err != nil {
+			return nil, errors.Wrapf(err, "get containers in network")
+		}
+		containersSlice := strings.Fields(rs.Stdout.String())
+		if profileInContainers(profile, containersSlice) {
+			bridgeID = net
+			break
+		}
+	}
 
-	bridgeID := strings.TrimSpace(rr.Stdout.String())
+	if bridgeID == "" {
+		return nil, errors.Errorf("unable to determine bridge network id from %q", networksOutput)
+	}
 	rr, err = runCmd(exec.Command(Docker, "network", "inspect",
 		"--format", "{{(index .IPAM.Config 0).Gateway}}", bridgeID))
 	if err != nil {
@@ -166,44 +189,4 @@ func dockerContainerIP(name string) (string, string, error) {
 	}
 
 	return ips[0], ips[1], nil
-}
-
-// CreateNetwork creates a network
-func CreateNetwork(name, ipRange, gateway string) error {
-	// check if the network already exists
-	if networkExists(name) {
-		return nil
-	}
-
-	subnet := fmt.Sprintf("--subnet=%s", ipRange)
-	_, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", subnet, "--gateway", gateway, name))
-	if err != nil {
-		return errors.Wrapf(err, "error creating network")
-	}
-
-	return nil
-}
-
-// removeNetwork removes a network
-func removeNetwork(name string) error {
-	if !networkExists(name) {
-		return nil
-	}
-	_, err := runCmd(exec.Command(Docker, "network", "remove", name))
-	return err
-}
-
-func networkExists(name string) bool {
-	rr, err := runCmd(exec.Command(Docker, "network", "ls", "--format", "{{.Name}}"))
-	if err != nil {
-		glog.Warningf("error listing networks: %v", err)
-		return false
-	}
-	networks := strings.Split(rr.Output(), "\n")
-	for _, n := range networks {
-		if strings.Trim(n, "\n") == name {
-			return true
-		}
-	}
-	return false
 }
