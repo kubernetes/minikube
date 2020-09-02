@@ -518,7 +518,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 
 			img := "minikube-local-cache-test:" + profile
-			rr, err := Run(t, exec.CommandContext(ctx, "docker", "build", "-t", img, dname))
+			_, err := Run(t, exec.CommandContext(ctx, "docker", "build", "-t", img, dname))
 			if err != nil {
 				t.Errorf("failed to build docker image: %v", err)
 			}
