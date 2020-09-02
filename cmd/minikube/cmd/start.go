@@ -647,6 +647,10 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	st := ds.State
 	glog.Infof("status for %s: %+v", name, st)
 
+	if st.NeedsImprovement {
+		out.T(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
+	}
+
 	if st.Error == nil {
 		return
 	}
@@ -659,14 +663,6 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 			URL:      st.Doc,
 			Style:    style.Shrug,
 		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": name, "error": st.Error})
-	}
-
-	if st.NeedsImprovement {
-		out.WarnReason(reason.Kind{
-			ID:    fmt.Sprintf("PROVIDER_%s_IMPROVEMENT", strings.ToUpper(name)),
-			Style: style.Improvement,
-		},
-			`For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
 	}
 
 	id := fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
