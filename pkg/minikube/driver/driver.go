@@ -180,7 +180,7 @@ func FullName(name string) string {
 		if IsDockerDesktop(name) {
 			return "Docker Desktop"
 		}
-		return "Docker Service"
+		return "Docker"
 	default:
 		return strings.Title(name)
 	}
