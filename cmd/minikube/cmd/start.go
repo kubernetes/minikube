@@ -868,15 +868,6 @@ func validateRequestedMemorySize(req int, drvName string) {
 		out.WarnReason(reason.RsrcInsufficientReqMemory, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommend}}MB. Deployments may fail.", out.V{"requested": req, "recommend": minRecommendedMem})
 	}
 
-	if driver.IsDockerDesktop(drvName) && containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
-		r := reason.RsrcInsufficientDarwinDockerMemory
-		if runtime.GOOS == "Windows" {
-			r = reason.RsrcInsufficientWindowsDockerMemory
-		}
-		r.Style = style.Improvement
-		out.WarnReason(r, "Docker Desktop has access to only {{.size}}MiB of the {{.sys}}MiB in available system memory. Consider increasing this for improved performance.", out.V{"size": containerLimit, "sys": sysLimit, "recommend": "3 GB"})
-	}
-
 	advised := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 	if req > sysLimit {
 		exitIfNotForced(reason.Kind{ID: "RSRC_OVER_ALLOC_MEM", Advice: "Start minikube with less memory allocated: 'minikube start --memory={{.advised}}mb'"},
