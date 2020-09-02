@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -119,42 +120,24 @@ func status() registry.State {
 func checkNeedsImprovement() registry.State {
 	if runtime.GOOS == "linux" {
 		return checkOverlayMod()
-	} // TODO #8540: on non-linux check if docker desktop has enough CPU/memory
+	}
 	return registry.State{Installed: true, Healthy: true}
 }
 
 // checkOverlayMod checks if
 func checkOverlayMod() registry.State {
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "modprobe", "overlay")
-	_, err := cmd.Output()
-	if err != nil {
-		// try a different way
-		cmd = exec.CommandContext(ctx, "uname", "-r")
-		out, err := cmd.Output()
-		if ctx.Err() == context.DeadlineExceeded {
-			glog.Warningf("%q timed out checking for ", strings.Join(cmd.Args, " "))
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
-		}
-		if err != nil {
-			glog.Warningf("couldn't verify the linux distro's uname : %s", err)
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
-		}
-		path := fmt.Sprintf("/lib/modules/%s/modules.builtin", string(out))
-		cmd = exec.CommandContext(ctx, "cat", path)
-		out, err = cmd.Output()
-		if err != nil {
-			glog.Warningf("overlay module was not found in %q", path)
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
-		}
-		if strings.Contains(string(out), "overlay") { // success
-			return registry.State{NeedsImprovement: false, Installed: true, Healthy: true}
-		}
-		glog.Warningf("overlay module was not found")
-		return registry.State{NeedsImprovement: true, Installed: true, Healthy: true}
+	if _, err := os.Stat("/sys/module/overlay"); err == nil {
+		glog.Info("overlay module found")
+		return registry.State{Installed: true, Healthy: true}
 	}
-	return registry.State{Installed: true, Healthy: true}
+
+	if _, err := os.Stat("/sys/module/overlay2"); err == nil {
+		glog.Info("overlay2 module found")
+		return registry.State{Installed: true, Healthy: true}
+	}
+
+	glog.Warningf("overlay modules were not found")
+	return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable the overlay Linux kernel module using 'modprobe overlay'"}
 }
 
 // suggestFix matches a stderr with possible fix for the docker driver
