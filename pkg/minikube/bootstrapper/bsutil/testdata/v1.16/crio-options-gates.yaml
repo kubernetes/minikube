@@ -29,9 +29,11 @@ controllerManager:
   extraArgs:
     feature-gates: "a=b"
     kube-api-burst: "32"
+    leader-elect: "false"
 scheduler:
   extraArgs:
     feature-gates: "a=b"
+    leader-elect: "false"
     scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
@@ -43,12 +45,6 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       listen-metrics-urls: http://127.0.0.1:2381,http://1.1.1.1:2381
-controllerManager:
-  extraArgs:
-    "leader-elect": "false"
-scheduler:
-  extraArgs:
-    "leader-elect": "false"
 kubernetesVersion: v1.16.0
 networking:
   dnsDomain: cluster.local

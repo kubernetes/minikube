@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube service
 
 Returns a URL to connect to a service

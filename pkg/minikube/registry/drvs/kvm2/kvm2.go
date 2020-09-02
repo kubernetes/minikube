@@ -117,6 +117,7 @@ func status() registry.State {
 	if err != nil {
 		return registry.State{
 			Installed: true,
+			Running:   true,
 			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out))),
 			Fix:       "Follow your Linux distribution instructions for configuring KVM",
 			Doc:       docURL,
@@ -129,6 +130,7 @@ func status() registry.State {
 	if err != nil {
 		return registry.State{
 			Installed: true,
+			Running:   true,
 			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out))),
 			Fix:       "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group",
 			Doc:       docURL,

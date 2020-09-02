@@ -40,6 +40,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
@@ -86,6 +87,7 @@ func TestFunctional(t *testing.T) {
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
+			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -314,6 +316,26 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+// validateMinikubeKubectlDirectCall validates that calling minikube's kubectl
+func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+	dir := filepath.Dir(Target())
+	dstfn := filepath.Join(dir, "kubectl")
+	err := os.Link(Target(), dstfn)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(dstfn) // clean up
+
+	kubectlArgs := []string{"get", "pods"}
+	rr, err := Run(t, exec.CommandContext(ctx, dstfn, kubectlArgs...))
+	if err != nil {
+		t.Fatalf("failed to run kubectl directl. args %q: %v", rr.Command(), err)
+	}
+
+}
+
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
@@ -450,7 +472,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
-	wantCode := 78 // exit.Config
+	wantCode := reason.ExInsufficientMemory
 	if rr.ExitCode != wantCode {
 		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
 	}

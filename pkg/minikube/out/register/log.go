@@ -16,7 +16,10 @@ limitations under the License.
 
 package register
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Log represents the different types of logs that can be output as JSON
 // This includes: Step, Download, DownloadProgress, Warning, Info, Error
@@ -39,7 +42,7 @@ func NewStep(message string) *Step {
 	return &Step{data: map[string]string{
 		"totalsteps":  Reg.totalSteps(),
 		"currentstep": Reg.currentStep(),
-		"message":     message,
+		"message":     strings.TrimSpace(message),
 		"name":        string(Reg.current),
 	}}
 }
@@ -92,7 +95,7 @@ type Warning struct {
 func NewWarning(warning string) *Warning {
 	return &Warning{
 		map[string]string{
-			"message": warning,
+			"message": strings.TrimSpace(warning),
 		},
 	}
 }
@@ -115,7 +118,7 @@ func (s *Info) Type() string {
 func NewInfo(message string) *Info {
 	return &Info{
 		map[string]string{
-			"message": message,
+			"message": strings.TrimSpace(message),
 		},
 	}
 }
@@ -128,18 +131,18 @@ type Error struct {
 func NewError(err string) *Error {
 	return &Error{
 		map[string]string{
-			"message": err,
+			"message": strings.TrimSpace(err),
 		},
 	}
 }
 
 // NewErrorExitCode returns an error that has an associated exit code
 func NewErrorExitCode(err string, exitcode int, additionalData ...map[string]string) *Error {
-	e := NewError(err)
+	e := NewError(strings.TrimSpace(err))
 	e.data["exitcode"] = fmt.Sprintf("%v", exitcode)
 	for _, a := range additionalData {
 		for k, v := range a {
-			e.data[k] = v
+			e.data[k] = strings.TrimSpace(v)
 		}
 	}
 	return e

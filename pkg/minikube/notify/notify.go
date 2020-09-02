@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
 )
@@ -66,8 +67,8 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) bool {
 			glog.Errorf("write time failed: %v", err)
 		}
 		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
-		out.ErrT(out.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
-		out.ErrT(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
+		out.T(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
+		out.T(style.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
 		return true
 	}
 	return false
@@ -133,7 +134,7 @@ func GetAllVersionsFromURL(url string) (Releases, error) {
 }
 
 func writeTimeToFile(path string, inputTime time.Time) error {
-	err := lock.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
+	err := lock.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0o644)
 	if err != nil {
 		return errors.Wrap(err, "Error writing current update time to file: ")
 	}

@@ -24,6 +24,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const defaultConfigViewFormat = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
@@ -43,7 +44,7 @@ var configViewCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := View()
 		if err != nil {
-			exit.WithError("config view failed", err)
+			exit.Error(reason.InternalConfigView, "config view failed", err)
 		}
 	},
 }
@@ -64,12 +65,12 @@ func View() error {
 	for k, v := range cfg {
 		tmpl, err := template.New("view").Parse(viewFormat)
 		if err != nil {
-			exit.WithError("Error creating view template", err)
+			exit.Error(reason.InternalViewTmpl, "Error creating view template", err)
 		}
 		viewTmplt := ViewTemplate{k, v}
 		err = tmpl.Execute(os.Stdout, viewTmplt)
 		if err != nil {
-			exit.WithError("Error executing view template", err)
+			exit.Error(reason.InternalViewExec, "Error executing view template", err)
 		}
 	}
 	return nil

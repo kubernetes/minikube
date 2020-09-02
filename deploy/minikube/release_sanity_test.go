@@ -46,7 +46,7 @@ func getSHAFromURL(url string) (string, error) {
 	return hex.EncodeToString(b[:]), nil
 }
 
-func TestReleasesJson(t *testing.T) {
+func TestReleasesJSON(t *testing.T) {
 	releases, err := notify.GetAllVersionsFromURL(notify.GithubMinikubeReleasesURL)
 	if err != nil {
 		t.Fatalf("Error getting releases.json: %v", err)

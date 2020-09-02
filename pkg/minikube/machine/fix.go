@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // hostRunner is a minimal host.Host based interface for running commands
@@ -112,7 +113,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 		}
 
 		if !me || err == constants.ErrMachineMissing {
-			out.T(out.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+			out.T(style.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 			demolish(api, *cc, *n, h)
 
 			glog.Infof("Sleeping 1 second for extra luck!")
@@ -134,13 +135,13 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 
 	if s == state.Running {
 		if !recreated {
-			out.T(out.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+			out.T(style.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 		}
 		return h, nil
 	}
 
 	if !recreated {
-		out.T(out.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+		out.T(style.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 	}
 	if err := h.Driver.Start(); err != nil {
 		MaybeDisplayAdvice(err, h.DriverName)
@@ -160,7 +161,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 		return
 	}
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
-		out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
+		out.T(style.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		// TODO: refactor docker-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
 		out.WarningT(`Please re-eval your docker-env, To ensure your environment variables have updated ports:
 
@@ -169,7 +170,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	`, out.V{"profile_name": name})
 	}
 	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
-		out.T(out.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
+		out.T(style.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		// TODO: refactor podman-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
 		out.WarningT(`Please re-eval your podman-env, To ensure your environment variables have updated ports:
 
@@ -177,7 +178,6 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 
 	`, out.V{"profile_name": name})
 	}
-
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync

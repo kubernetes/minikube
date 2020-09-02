@@ -22,6 +22,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // updateContextCmd represents the update-context command
@@ -36,13 +38,12 @@ var updateContextCmd = &cobra.Command{
 
 		updated, err := kubeconfig.UpdateEndpoint(cname, co.CP.Hostname, co.CP.Port, kubeconfig.PathFromEnv())
 		if err != nil {
-			exit.WithError("update config", err)
+			exit.Error(reason.HostKubeconfigUpdate, "update config", err)
 		}
 		if updated {
-			out.T(out.Celebrate, `"{{.context}}" context has been updated to point to {{.hostname}}:{{.port}}`, out.V{"context": cname, "hostname": co.CP.Hostname, "port": co.CP.Port})
+			out.T(style.Celebrate, `"{{.context}}" context has been updated to point to {{.hostname}}:{{.port}}`, out.V{"context": cname, "hostname": co.CP.Hostname, "port": co.CP.Port})
 		} else {
-			out.T(out.Meh, `No changes required for the "{{.context}}" context`, out.V{"context": cname})
+			out.T(style.Meh, `No changes required for the "{{.context}}" context`, out.V{"context": cname})
 		}
-
 	},
 }

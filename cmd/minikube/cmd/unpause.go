@@ -33,6 +33,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // unpauseCmd represents the docker-pause command
@@ -48,10 +50,10 @@ var unpauseCmd = &cobra.Command{
 
 		glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
 		if allNamespaces {
-			namespaces = nil //all
+			namespaces = nil // all
 		} else {
 			if len(namespaces) == 0 {
-				exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
+				exit.Message(reason.Usage, "Use -A to specify all namespaces")
 			}
 		}
 
@@ -66,27 +68,27 @@ var unpauseCmd = &cobra.Command{
 				name = co.Config.Name
 			}
 
-			out.T(out.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
+			out.T(style.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
 
 			machineName := driver.MachineName(*co.Config, n)
 			host, err := machine.LoadHost(co.API, machineName)
 			if err != nil {
-				exit.WithError("Error getting host", err)
+				exit.Error(reason.GuestLoadHost, "Error getting host", err)
 			}
 
 			r, err := machine.CommandRunner(host)
 			if err != nil {
-				exit.WithError("Failed to get command runner", err)
+				exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
 			}
 
 			cr, err := cruntime.New(cruntime.Config{Type: co.Config.KubernetesConfig.ContainerRuntime, Runner: r})
 			if err != nil {
-				exit.WithError("Failed runtime", err)
+				exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 			}
 
 			uids, err := cluster.Unpause(cr, r, namespaces)
 			if err != nil {
-				exit.WithError("Pause", err)
+				exit.Error(reason.GuestUnpause, "Pause", err)
 			}
 			ids = append(ids, uids...)
 		}
@@ -94,9 +96,9 @@ var unpauseCmd = &cobra.Command{
 		register.Reg.SetStep(register.Done)
 
 		if namespaces == nil {
-			out.T(out.Pause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
+			out.T(style.Pause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
 		} else {
-			out.T(out.Pause, "Unpaused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+			out.T(style.Pause, "Unpaused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
 		}
 	},
 }

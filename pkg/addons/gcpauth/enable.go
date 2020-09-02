@@ -29,6 +29,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
@@ -46,7 +48,6 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 		return enableAddon(cfg)
 	}
 	return disableAddon(cfg)
-
 }
 
 func enableAddon(cfg *config.ClusterConfig) error {
@@ -58,7 +59,7 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
-		exit.WithCodeT(exit.Failure, "Could not find any GCP credentials. Either run `gcloud auth login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
@@ -83,7 +84,7 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	out.WarningT("Could not determine a Google Cloud project, which might be ok.")
-	out.T(out.Tip, `To set your Google Cloud project,  run: 
+	out.T(style.Tip, `To set your Google Cloud project,  run: 
 
 		gcloud config set project <project name>
 
@@ -122,8 +123,8 @@ func DisplayAddonMessage(cfg *config.ClusterConfig, name string, val string) err
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 	if enable {
-		out.T(out.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cfg.Name})
-		out.T(out.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
+		out.T(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cfg.Name})
+		out.T(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
 	}
 	return nil
 }

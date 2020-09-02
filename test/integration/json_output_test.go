@@ -27,8 +27,8 @@ import (
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 func TestJSONOutput(t *testing.T) {
@@ -122,8 +122,8 @@ func TestJSONOutputError(t *testing.T) {
 	if last.Type() != register.NewError("").Type() {
 		t.Fatalf("last cloud event is not of type error: %v", last)
 	}
-	last.validateData(t, "exitcode", fmt.Sprintf("%v", exit.Unavailable))
-	last.validateData(t, "message", fmt.Sprintf("The driver 'fail' is not supported on %s\n", runtime.GOOS))
+	last.validateData(t, "exitcode", fmt.Sprintf("%v", reason.ExDriverUnsupported))
+	last.validateData(t, "message", fmt.Sprintf("The driver 'fail' is not supported on %s", runtime.GOOS))
 }
 
 type cloudEvent struct {
@@ -149,7 +149,7 @@ func (c *cloudEvent) validateData(t *testing.T, key, value string) {
 		t.Fatalf("expected key %s does not exist in cloud event", key)
 	}
 	if v != value {
-		t.Fatalf("values in cloud events do not match:\nActual:\n%v\nExpected:\n%v\n", v, value)
+		t.Fatalf("values in cloud events do not match:\nActual:\n'%v'\nExpected:\n'%v'\n", v, value)
 	}
 }
 

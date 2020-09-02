@@ -31,7 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
@@ -49,6 +49,7 @@ func NewErrISOFeature(missing string) *ErrISOFeature {
 		missing: missing,
 	}
 }
+
 func (e *ErrISOFeature) Error() string {
 	return e.missing
 }
@@ -66,8 +67,8 @@ func (r *Docker) Name() string {
 }
 
 // Style is the console style for Docker
-func (r *Docker) Style() out.StyleEnum {
-	return out.Docker
+func (r *Docker) Style() style.Enum {
+	return style.Docker
 }
 
 // Version retrieves the current version of this runtime
@@ -154,7 +155,6 @@ func (r *Docker) LoadImage(path string) error {
 		return errors.Wrap(err, "loadimage docker.")
 	}
 	return nil
-
 }
 
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
