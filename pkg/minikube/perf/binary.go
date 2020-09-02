@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -68,7 +69,14 @@ func (b *Binary) download() error {
 		return errors.Wrap(err, "getting storage client")
 	}
 	defer client.Close()
-	rc, err := client.Bucket(bucket).Object(fmt.Sprintf("%d/minikube-linux-amd64", b.pr)).NewReader(ctx)
+
+	// first make sure object exists
+	obj := client.Bucket(bucket).Object(fmt.Sprintf("%d/minikube-%s-amd64", b.pr, runtime.GOOS))
+	if _, err := obj.Attrs(ctx); err != nil {
+		return fmt.Errorf("minikube binary for pr %v does not exist in bucket", b.pr)
+	}
+
+	rc, err := obj.NewReader(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting minikube object from gcs bucket")
 	}
