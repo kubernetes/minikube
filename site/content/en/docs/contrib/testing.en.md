@@ -6,7 +6,25 @@ description: >
   How to run tests
 ---
 
-### Unit Tests
+## Prerequisites
+
+* Go distribution
+  * Specific version depends on minikube version.
+  * The current dependency version can be found here : [master branch's go.mod file](https://github.com/kubernetes/minikube/blob/master/go.mod).
+* If you are on Linux, you will need to install `libvirt-dev`, since unit tests need kvm2 driver:
+
+```shell
+# For Debian based
+sudo apt-get install libvirt-dev
+
+# For Centos
+yum install libvirt-devel
+
+# For Fedora
+dnf install libvirt-devel
+```
+
+## Unit Tests
 
 Unit tests are run on Travis before code is merged. To run as part of a development cycle:
 
@@ -14,9 +32,9 @@ Unit tests are run on Travis before code is merged. To run as part of a developm
 make test
 ```
 
-### Integration Tests
+## Integration Tests
 
-#### The basics
+### The basics
 
 From the minikube root directory, build the binary and run the tests:
 
@@ -30,7 +48,7 @@ You may find it useful to set various options to test only a particular test aga
  env TEST_ARGS="-minikube-start-args=--driver=hyperkit -test.run TestStartStop" make integration
  ```
 
-#### Quickly iterating on a single test
+### Quickly iterating on a single test
 
 Run a single test on an active cluster:
 
@@ -44,13 +62,13 @@ The `--cleanup=false` test arg ensures that the cluster will not be deleted afte
 
 See [main.go](https://github.com/kubernetes/minikube/blob/master/test/integration/main.go) for details.
 
-#### Disabling parallelism
+### Disabling parallelism
 
 ```shell
 make integration -e TEST_ARGS="-test.parallel=1"
 ```
 
-#### Testing philosophy
+### Testing philosophy
 
 - Tests should be so simple as to be correct by inspection
 - Readers should need to read only the test body to understand the test
@@ -58,7 +76,7 @@ make integration -e TEST_ARGS="-test.parallel=1"
 
 Tests are typically read with a great air of skepticism, because chances are they are being read only when things are broken. 
 
-### Conformance Tests
+## Conformance Tests
 
 These are Kubernetes tests that run against an arbitrary cluster and exercise a wide range of Kubernetes features.
 You can run these against minikube by following these steps:
