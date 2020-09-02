@@ -331,7 +331,9 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			},
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
-
+		if viper.GetBool(createMount) && driver.IsKIC(drvName) {
+			cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
+		}
 		cnm, err := cni.New(cc)
 		if err != nil {
 			return cc, config.Node{}, errors.Wrap(err, "cni")

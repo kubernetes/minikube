@@ -27,8 +27,10 @@ apiServer:
 controllerManager:
   extraArgs:
     kube-api-burst: "32"
+    leader-elect: "false"
 scheduler:
   extraArgs:
+    leader-elect: "false"
     scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
@@ -40,12 +42,6 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-controllerManager:
-  extraArgs:
-    "leader-elect": "false"
-scheduler:
-  extraArgs:
-    "leader-elect": "false"
 kubernetesVersion: v1.19.0
 networking:
   dnsDomain: cluster.local
