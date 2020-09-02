@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube unpause
 
 unpause Kubernetes

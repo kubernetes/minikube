@@ -1,3 +1,4 @@
+PODMAN_DUMMY = DUMMY
 PODMAN_VERSION = v1.9.3
 PODMAN_COMMIT = 5d44534fff6877b1cb15b760242279ae6293154c
 PODMAN_SITE = https://github.com/containers/podman/archive

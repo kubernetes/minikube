@@ -28,7 +28,7 @@ RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/lib
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.3/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.3/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && apt-get update && \
-    apt-get install -y --no-install-recommends cri-o=1.18.3~2
+    apt-get install -y --no-install-recommends cri-o=1.18.3~3
 
 # install podman
 RUN sh -c "echo 'deb https://dl.bintray.com/afbjorklund/podman focal main' > /etc/apt/sources.list.d/podman.list" && \
@@ -55,6 +55,9 @@ RUN mkdir /var/run/sshd
 RUN echo 'root:root' |chpasswd
 RUN sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+
+# minikube relies on /etc/hosts for control-plane discovery. This prevents nefarious DNS servers from breaking it.
+RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username

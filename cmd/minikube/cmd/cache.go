@@ -23,6 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 // cacheImageConfigKey is the config field name used to store which images we have previously cached
@@ -43,11 +44,11 @@ var addCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Cache and load images into docker daemon
 		if err := machine.CacheAndLoadImages(args); err != nil {
-			exit.WithError("Failed to cache and load images", err)
+			exit.Error(reason.InternalCacheLoad, "Failed to cache and load images", err)
 		}
 		// Add images to config file
 		if err := cmdConfig.AddToConfigMap(cacheImageConfigKey, args); err != nil {
-			exit.WithError("Failed to update config", err)
+			exit.Error(reason.InternalAddConfig, "Failed to update config", err)
 		}
 	},
 }
@@ -60,11 +61,11 @@ var deleteCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Delete images from config file
 		if err := cmdConfig.DeleteFromConfigMap(cacheImageConfigKey, args); err != nil {
-			exit.WithError("Failed to delete images from config", err)
+			exit.Error(reason.InternalDelConfig, "Failed to delete images from config", err)
 		}
 		// Delete images from cache/images directory
 		if err := image.DeleteFromCacheDir(args); err != nil {
-			exit.WithError("Failed to delete images", err)
+			exit.Error(reason.HostDelCache, "Failed to delete images", err)
 		}
 	},
 }
@@ -77,7 +78,7 @@ var reloadCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := node.CacheAndLoadImagesInConfig()
 		if err != nil {
-			exit.WithError("Failed to reload cached images", err)
+			exit.Error(reason.GuestCacheLoad, "Failed to reload cached images", err)
 		}
 	},
 }

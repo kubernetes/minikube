@@ -123,7 +123,7 @@ Each service will get its own external ip.
 
 If you are on macOS, the tunnel command also allows DNS resolution for Kubernetes services from the host.
 
-NOTE: docker driver doesn't suport DNS resolution
+NOTE: docker driver doesn't support DNS resolution
 
 ### Cleaning up orphaned routes
 

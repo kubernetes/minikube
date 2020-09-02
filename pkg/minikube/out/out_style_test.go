@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 func TestApplyPrefix(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		prefix, format, expected, description string
 	}{
 		{
@@ -50,56 +51,18 @@ func TestApplyPrefix(t *testing.T) {
 	}
 }
 
-func TestLowPrefix(t *testing.T) {
-
-	var tests = []struct {
-		expected    string
-		description string
-		style       style
-	}{
-		{
-			expected:    lowBullet,
-			description: "empty prefix",
-		},
-		{
-			expected:    "bar",
-			style:       style{LowPrefix: "bar"},
-			description: "lowPrefix",
-		},
-		{
-			expected:    lowBullet,
-			style:       style{Prefix: "foo"},
-			description: "prefix without spaces",
-		},
-		{
-			expected:    lowIndent,
-			style:       style{Prefix: "  foo"},
-			description: "prefix with spaces",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			got := lowPrefix(test.style)
-			if got != test.expected {
-				t.Errorf("Expected %v but got %v", test.expected, got)
-			}
-		})
-	}
-}
-
 func TestApplyStyle(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		expected    string
 		description string
-		styleEnum   StyleEnum
+		styleEnum   style.Enum
 		format      string
 		useColor    bool
 	}{
 		{
-			expected:    fmt.Sprintf("%sbar", lowBullet),
+			expected:    fmt.Sprintf("%sbar", style.LowBullet),
 			description: "format bar, empty style, color off",
-			styleEnum:   Empty,
+			styleEnum:   style.Empty,
 			useColor:    false,
 			format:      "bar",
 		},
@@ -111,9 +74,9 @@ func TestApplyStyle(t *testing.T) {
 			format:      "bar",
 		},
 		{
-			expected:    fmt.Sprintf("%sfoo", styles[Ready].Prefix),
+			expected:    fmt.Sprintf("%sfoo", style.Config[style.Ready].Prefix),
 			description: "format foo, ready style, color on",
-			styleEnum:   Ready,
+			styleEnum:   style.Ready,
 			useColor:    true,
 			format:      "foo",
 		},
@@ -130,19 +93,18 @@ func TestApplyStyle(t *testing.T) {
 }
 
 func TestApplyTemplateFormating(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		expected    string
 		description string
-		styleEnum   StyleEnum
+		styleEnum   style.Enum
 		format      string
 		useColor    bool
 		a           []V
 	}{
 		{
-			expected:    fmt.Sprintf("%sbar", lowBullet),
+			expected:    fmt.Sprintf("%sbar", style.LowBullet),
 			description: "format bar, empty style, color off",
-			styleEnum:   Empty,
+			styleEnum:   style.Empty,
 			useColor:    false,
 			format:      "bar",
 		},
@@ -154,30 +116,30 @@ func TestApplyTemplateFormating(t *testing.T) {
 			format:      "bar",
 		},
 		{
-			expected:    fmt.Sprintf("%sfoo", styles[Ready].Prefix),
+			expected:    fmt.Sprintf("%sfoo", style.Config[style.Ready].Prefix),
 			description: "format foo, ready style, color on, a nil",
-			styleEnum:   Ready,
+			styleEnum:   style.Ready,
 			useColor:    true,
 			format:      "foo",
 		},
 		{
-			expected:    fmt.Sprintf("%sfoo", styles[Ready].Prefix),
+			expected:    fmt.Sprintf("%sfoo", style.Config[style.Ready].Prefix),
 			description: "format foo, ready style, color on",
-			styleEnum:   Ready,
+			styleEnum:   style.Ready,
 			useColor:    true,
 			format:      "foo",
 		},
 		{
-			expected:    fmt.Sprintf("%s{{ a }}", styles[Ready].Prefix),
+			expected:    fmt.Sprintf("%s{{ a }}", style.Config[style.Ready].Prefix),
 			description: "bad format",
-			styleEnum:   Ready,
+			styleEnum:   style.Ready,
 			useColor:    true,
 			format:      "{{ a }}",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			rawGot := ApplyTemplateFormatting(test.styleEnum, test.useColor, test.format, test.a...)
+			rawGot := stylized(test.styleEnum, test.useColor, test.format, test.a...)
 			got := strings.TrimSpace(rawGot)
 			if got != test.expected {
 				t.Errorf("Expected '%v' but got '%v'", test.expected, got)

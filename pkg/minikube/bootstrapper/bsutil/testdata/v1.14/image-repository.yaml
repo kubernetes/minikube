@@ -24,6 +24,12 @@ apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
   extraArgs:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+controllerManager:
+  extraArgs:
+    leader-elect: "false"
+scheduler:
+  extraArgs:
+    leader-elect: "false"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 controlPlaneEndpoint: control-plane.minikube.internal:8443
@@ -34,12 +40,6 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       listen-metrics-urls: http://127.0.0.1:2381,http://1.1.1.1:2381
-controllerManager:
-  extraArgs:
-    "leader-elect": "false"
-scheduler:
-  extraArgs:
-    "leader-elect": "false"
 kubernetesVersion: v1.14.0
 networking:
   dnsDomain: cluster.local

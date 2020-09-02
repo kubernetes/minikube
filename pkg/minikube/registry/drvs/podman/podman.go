@@ -63,10 +63,20 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	mounts := make([]oci.Mount, len(cc.ContainerVolumeMounts))
+	for i, spec := range cc.ContainerVolumeMounts {
+		var err error
+		mounts[i], err = oci.ParseMountString(spec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       strings.Split(cc.KicBaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
+		Mounts:            mounts,
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Podman,
@@ -104,7 +114,7 @@ func status() registry.State {
 
 		v, err := semver.Make(output)
 		if err != nil {
-			return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
+			return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
 		}
 
 		if v.LT(minReqPodmanVer) {
@@ -122,7 +132,7 @@ func status() registry.State {
 
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Podman service", Doc: docURL}
+		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Restart the Podman service", Doc: docURL}
 	}
 
 	username := "$USER"

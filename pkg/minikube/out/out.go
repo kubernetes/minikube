@@ -18,7 +18,10 @@ limitations under the License.
 package out
 
 import (
+	"bytes"
 	"fmt"
+	"html"
+	"html/template"
 	"io"
 	"os"
 	"strconv"
@@ -27,6 +30,7 @@ import (
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -35,7 +39,7 @@ import (
 //
 // out.SetOutFile(os.Stdout)
 // out.String("Starting up!")
-// out.T(out.StatusChange, "Configuring things")
+// out.T(style.StatusChange, "Configuring things")
 
 // out.SetErrFile(os.Stderr)
 // out.Fatal("Oh no, everything failed.")
@@ -68,12 +72,12 @@ type fdWriter interface {
 type V map[string]interface{}
 
 // T writes a stylized and templated message to stdout
-func T(style StyleEnum, format string, a ...V) {
-	if style == Option {
+func T(st style.Enum, format string, a ...V) {
+	if st == style.Option {
 		Infof(format, a...)
 		return
 	}
-	outStyled := ApplyTemplateFormatting(style, useColor, format, a...)
+	outStyled := stylized(st, useColor, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
 		return
@@ -84,7 +88,7 @@ func T(style StyleEnum, format string, a ...V) {
 
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
-	outStyled := ApplyTemplateFormatting(Option, useColor, format, a...)
+	outStyled := stylized(style.Option, useColor, format, a...)
 	if JSON {
 		register.PrintInfo(outStyled)
 		return
@@ -101,6 +105,9 @@ func String(format string, a ...interface{}) {
 		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
+
+	glog.Infof(format, a...)
+
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
 		glog.Errorf("Fprintf failed: %v", err)
@@ -116,19 +123,9 @@ func Ln(format string, a ...interface{}) {
 	String(format+"\n", a...)
 }
 
-// ErrWithExitCode includes the exit code in JSON output
-func ErrWithExitCode(style StyleEnum, format string, exitcode int, a ...V) {
-	if JSON {
-		errStyled := ApplyTemplateFormatting(style, useColor, format, a...)
-		register.PrintErrorExitCode(errStyled, exitcode)
-		return
-	}
-	ErrT(style, format, a...)
-}
-
 // ErrT writes a stylized and templated error message to stderr
-func ErrT(style StyleEnum, format string, a ...V) {
-	errStyled := ApplyTemplateFormatting(style, useColor, format, a...)
+func ErrT(st style.Enum, format string, a ...V) {
+	errStyled := stylized(st, useColor, format, a...)
 	Err(errStyled)
 }
 
@@ -144,6 +141,9 @@ func Err(format string, a ...interface{}) {
 		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
+
+	glog.Warningf(format, a...)
+
 	_, err := fmt.Fprintf(errFile, format, a...)
 	if err != nil {
 		glog.Errorf("Fprint failed: %v", err)
@@ -157,26 +157,26 @@ func ErrLn(format string, a ...interface{}) {
 
 // SuccessT is a shortcut for writing a templated success message to stdout
 func SuccessT(format string, a ...V) {
-	T(SuccessType, format, a...)
+	T(style.Success, format, a...)
 }
 
 // FatalT is a shortcut for writing a templated fatal message to stderr
 func FatalT(format string, a ...V) {
-	ErrT(FatalType, format, a...)
+	ErrT(style.Fatal, format, a...)
 }
 
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
 	if JSON {
-		register.PrintWarning(ApplyTemplateFormatting(Warning, useColor, format, a...))
+		register.PrintWarning(stylized(style.Warning, useColor, format, a...))
 		return
 	}
-	ErrT(Warning, format, a...)
+	ErrT(style.Warning, format, a...)
 }
 
 // FailureT is a shortcut for writing a templated failure message to stderr
 func FailureT(format string, a ...V) {
-	ErrT(FailureType, format, a...)
+	ErrT(style.Failure, format, a...)
 }
 
 // SetOutFile configures which writer standard output goes to.
@@ -219,6 +219,11 @@ func wantsColor(fd uintptr) bool {
 		}
 	}
 
+	// New Windows Terminal
+	if os.Getenv("WT_SESSION") != "" {
+		return true
+	}
+
 	term := os.Getenv("TERM")
 	colorTerm := os.Getenv("COLORTERM")
 	// Example: term-256color
@@ -237,12 +242,12 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	DisplayError(msg, err)
 
 	for name, lines := range entries {
-		T(FailureType, "Problems detected in {{.entry}}:", V{"entry": name})
+		T(style.Failure, "Problems detected in {{.entry}}:", V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
-			T(LogEntry, l)
+			T(style.LogEntry, l)
 		}
 	}
 }
@@ -255,9 +260,46 @@ func DisplayError(msg string, err error) {
 		return
 	}
 	// use Warning because Error will display a duplicate message to stderr
-	ErrT(Empty, "")
+	ErrT(style.Empty, "")
 	FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
-	ErrT(Empty, "")
-	ErrT(Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
-	ErrT(URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	ErrT(style.Empty, "")
+	ErrT(style.Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
+	ErrT(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+}
+
+// applyTmpl applies formatting
+func applyTmpl(format string, a ...V) string {
+	if len(a) == 0 {
+		glog.Warningf("no arguments passed for %q - returning raw string", format)
+		return format
+	}
+
+	var buf bytes.Buffer
+	t, err := template.New(format).Parse(format)
+	if err != nil {
+		glog.Errorf("unable to parse %q: %v - returning raw string.", format, err)
+		return format
+	}
+	err = t.Execute(&buf, a[0])
+	if err != nil {
+		glog.Errorf("unable to execute %s: %v - returning raw string.", format, err)
+		return format
+	}
+	out := buf.String()
+
+	// Return quotes back to normal
+	out = html.UnescapeString(out)
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	out = strings.Replace(out, "%", "%%", -1)
+	// avoid doubling up in case this function is called multiple times
+	out = strings.Replace(out, "%%%%", "%%", -1)
+	return out
+}
+
+// Fmt applies formatting and translation
+func Fmt(format string, a ...V) string {
+	format = translate.T(format)
+	return applyTmpl(format, a...)
 }

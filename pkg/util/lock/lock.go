@@ -40,10 +40,7 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 
 	defer releaser.Release()
 
-	if err = ioutil.WriteFile(filename, data, perm); err != nil {
-		return errors.Wrapf(err, "writefile failed for %s", filename)
-	}
-	return err
+	return ioutil.WriteFile(filename, data, perm)
 }
 
 // PathMutexSpec returns a mutex spec for a path

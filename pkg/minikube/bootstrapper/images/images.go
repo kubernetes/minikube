@@ -66,8 +66,10 @@ func componentImage(name string, v semver.Version, mirror string) string {
 func coreDNS(v semver.Version, mirror string) string {
 	// Should match `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	cv := "1.6.7"
+	cv := "1.7.0"
 	switch v.Minor {
+	case 18:
+		cv = "1.6.7"
 	case 17:
 		cv = "1.6.5"
 	case 16:
@@ -94,8 +96,10 @@ func etcd(v semver.Version, mirror string) string {
 
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	ev := "3.4.3-0"
+	ev := "3.4.9-1"
 	switch v.Minor {
+	case 17, 18:
+		ev = "3.4.3-0"
 	case 16:
 		ev = "3.3.15-0"
 	case 14, 15:
@@ -137,7 +141,7 @@ func dashboardFrontend(repo string) string {
 		repo = "kubernetesui"
 	}
 	// See 'kubernetes-dashboard' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "dashboard:v2.0.1")
+	return path.Join(repo, "dashboard:v2.0.3")
 }
 
 // dashboardMetrics returns the image used for the dashboard metrics scraper

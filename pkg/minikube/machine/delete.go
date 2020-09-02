@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // deleteOrphanedKIC attempts to delete an orphaned docker instance for machines without a config file
@@ -95,7 +96,7 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 		time.Sleep(1 * time.Second)
 	}
 
-	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
+	out.T(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
 	return delete(api, host, machineName)
 }
 

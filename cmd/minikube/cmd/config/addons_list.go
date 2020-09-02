@@ -31,6 +31,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var addonListOutput string
@@ -47,7 +49,7 @@ var addonsListCmd = &cobra.Command{
 	Long:  "Lists all available minikube addons as well as their current statuses (enabled/disabled)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
-			exit.UsageT("usage: minikube addons list")
+			exit.Message(reason.Usage, "usage: minikube addons list")
 		}
 
 		_, cc := mustload.Partial(ClusterFlagValue())
@@ -57,7 +59,7 @@ var addonsListCmd = &cobra.Command{
 		case "json":
 			printAddonsJSON(cc)
 		default:
-			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'list', 'json'", addonListOutput))
+			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'list', 'json'", addonListOutput))
 		}
 	},
 }
@@ -115,7 +117,7 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 		glog.Errorf("list profiles returned error: %v", err)
 	}
 	if len(v) > 1 {
-		out.T(out.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
+		out.T(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
 	}
 }
 

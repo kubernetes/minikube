@@ -35,7 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
@@ -130,8 +130,8 @@ func (r *Containerd) Name() string {
 }
 
 // Style is the console style for containerd
-func (r *Containerd) Style() out.StyleEnum {
-	return out.Containerd
+func (r *Containerd) Style() style.Enum {
+	return style.Containerd
 }
 
 // Version retrieves the current version of this runtime
@@ -411,4 +411,8 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 	glog.Infof("all images are preloaded for containerd runtime.")
 	return true
+}
+
+func (r *Containerd) ImagesPreloaded(images []string) bool {
+	return containerdImagesPreloaded(r.Runner, images)
 }
