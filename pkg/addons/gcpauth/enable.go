@@ -17,6 +17,7 @@ limitations under the License.
 package gcpauth
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"os/exec"
@@ -79,7 +80,7 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	// We're currently assuming gcloud is installed and in the user's path
 	project, err := exec.Command("gcloud", "config", "get-value", "project").Output()
 	if err == nil && len(project) > 0 {
-		f := assets.NewMemoryAssetTarget(project, projectPath, "0444")
+		f := assets.NewMemoryAssetTarget(bytes.TrimSpace(project), projectPath, "0444")
 		return r.Copy(f)
 	}
 
