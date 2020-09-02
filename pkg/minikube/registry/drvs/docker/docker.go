@@ -126,41 +126,18 @@ func checkNeedsImprovement() registry.State {
 
 // checkOverlayMod checks if
 func checkOverlayMod() registry.State {
-	if os.Getenv("WSL_DISTRO_NAME") != "" {
-		glog.Infof("Skipping overlay check: WSL does not support kernel modules")
+	if _, err := os.Stat("/sys/modules/overlay"); err == nil {
+		glog.Info("overlay module found")
+		return registry.State{Installed: true, Healthy: true}
 	}
 
-	if _, err := os.Stat("/lib/modules"); err != nil {
-		glog.Infof("Skipping overlay check: distribution does not support kernel modules")
+	if _, err := os.Stat("/sys/modules/overlay2"); err == nil {
+		glog.Info("overlay2 module found")
+		return registry.State{Installed: true, Healthy: true}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "modprobe", "overlay")
-	_, err := cmd.Output()
-	if err != nil {
-		// try a different way
-		cmd = exec.CommandContext(ctx, "uname", "-r")
-		out, err := cmd.Output()
-		if err != nil {
-			glog.Warningf("unable to validate kernel version: %s", err)
-			return registry.State{Installed: true, Healthy: true}
-		}
-
-		path := fmt.Sprintf("/lib/modules/%s/modules.builtin", string(out))
-		cmd = exec.CommandContext(ctx, "cat", path)
-		out, err = cmd.Output()
-		if err != nil {
-			glog.Warningf("overlay module was not found in %q", path)
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable the overlay Linux kernel module using 'modprobe overlay'"}
-		}
-		if strings.Contains(string(out), "overlay") { // success
-			return registry.State{NeedsImprovement: false, Installed: true, Healthy: true}
-		}
-		glog.Warningf("overlay module was not found")
-		return registry.State{NeedsImprovement: true, Installed: true, Healthy: true}
-	}
-	return registry.State{Installed: true, Healthy: true}
+	glog.Warningf("overlay modules were not found")
+	return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable the overlay Linux kernel module using 'modprobe overlay'"}
 }
 
 // suggestFix matches a stderr with possible fix for the docker driver
