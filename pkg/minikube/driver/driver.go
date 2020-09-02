@@ -178,7 +178,7 @@ func FullName(name string) string {
 	switch name {
 	case oci.Docker:
 		if IsDockerDesktop(name) {
-			return "Docker for Desktop"
+			return "Docker Desktop"
 		}
 		return "Docker Service"
 	default:
