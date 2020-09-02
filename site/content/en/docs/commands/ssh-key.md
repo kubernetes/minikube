@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube ssh-key
 
 Retrieve the ssh identity key path of the specified cluster

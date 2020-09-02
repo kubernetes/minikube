@@ -35,6 +35,7 @@ Once you've discovered an issue to work on:
 2. A reviewer will respond to your issue promptly.
 3. If your proposed change is accepted, and you haven't already done so, sign the [Contributor License Agreement (CLA)](https://git.k8s.io/community/CLA.md)
 4. Fork the minikube repository, develop and test your code changes.
+    * Before test, you may need to install some [prerequisites](https://minikube.sigs.k8s.io/docs/contrib/testing/#prerequisites).
 5. Submit a pull request.
 
 ## Contributing larger changes

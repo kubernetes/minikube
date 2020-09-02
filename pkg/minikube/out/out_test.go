@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
@@ -35,20 +36,20 @@ func TestOutT(t *testing.T) {
 		"Installing Kubernetes version {{.version}} ...": "... {{.version}} تثبيت Kubernetes الإصدار",
 	}
 
-	var testCases = []struct {
-		style     StyleEnum
+	testCases := []struct {
+		style     style.Enum
 		message   string
 		params    V
 		want      string
 		wantASCII string
 	}{
-		{Happy, "Happy", nil, "😄  Happy\n", "* Happy\n"},
-		{Option, "Option", nil, "    ▪ Option\n", "  - Option\n"},
-		{Warning, "Warning", nil, "❗  Warning\n", "! Warning\n"},
-		{FatalType, "Fatal: {{.error}}", V{"error": "ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
-		{Issue, "http://i/{{.number}}", V{"number": 10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
-		{Usage, "raw: {{.one}} {{.two}}", V{"one": "'%'", "two": "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
-		{Running, "Installing Kubernetes version {{.version}} ...", V{"version": "v1.13"}, "🏃  ... v1.13 تثبيت Kubernetes الإصدار\n", "* ... v1.13 تثبيت Kubernetes الإصدار\n"},
+		{style.Happy, "Happy", nil, "😄  Happy\n", "* Happy\n"},
+		{style.Option, "Option", nil, "    ▪ Option\n", "  - Option\n"},
+		{style.Warning, "Warning", nil, "❗  Warning\n", "! Warning\n"},
+		{style.Fatal, "Fatal: {{.error}}", V{"error": "ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
+		{style.Issue, "http://i/{{.number}}", V{"number": 10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
+		{style.Usage, "raw: {{.one}} {{.two}}", V{"one": "'%'", "two": "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
+		{style.Running, "Installing Kubernetes version {{.version}} ...", V{"version": "v1.13"}, "🏃  ... v1.13 تثبيت Kubernetes الإصدار\n", "* ... v1.13 تثبيت Kubernetes الإصدار\n"},
 	}
 	for _, tc := range testCases {
 		for _, override := range []bool{true, false} {
@@ -74,7 +75,7 @@ func TestOutT(t *testing.T) {
 func TestOut(t *testing.T) {
 	os.Setenv(OverrideEnv, "")
 
-	var testCases = []struct {
+	testCases := []struct {
 		format string
 		arg    interface{}
 		want   string

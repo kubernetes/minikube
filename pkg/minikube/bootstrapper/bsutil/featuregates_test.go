@@ -30,18 +30,18 @@ func TestParseFeatureArgs(t *testing.T) {
 		expectedComponentFeatureArgs string
 	}{
 		{
-			description:  "CoreDNS enabled",
-			featureGates: "CoreDNS=true",
+			description:  "IPv6DualStack enabled",
+			featureGates: "IPv6DualStack=true",
 			expectedKubeadmFeatureArgs: map[string]bool{
-				"CoreDNS": true,
+				"IPv6DualStack": true,
 			},
 			expectedComponentFeatureArgs: "",
 		},
 		{
-			description:  "CoreDNS disabled",
-			featureGates: "CoreDNS=false",
+			description:  "IPv6DualStack disabled",
+			featureGates: "IPv6DualStack=false",
 			expectedKubeadmFeatureArgs: map[string]bool{
-				"CoreDNS": false,
+				"IPv6DualStack": false,
 			},
 			expectedComponentFeatureArgs: "",
 		},
@@ -73,7 +73,7 @@ func TestSupport(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "CoreDNS",
+			name:     "IPv6DualStack",
 			expected: true,
 		},
 		{

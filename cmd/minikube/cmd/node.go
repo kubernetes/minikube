@@ -19,6 +19,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 // nodeCmd represents the set of node subcommands
@@ -27,6 +28,6 @@ var nodeCmd = &cobra.Command{
 	Short: "Add, remove, or list additional nodes",
 	Long:  "Operations on nodes",
 	Run: func(cmd *cobra.Command, args []string) {
-		exit.UsageT("Usage: minikube node [add|start|stop|delete|list]")
+		exit.Message(reason.Usage, "Usage: minikube node [add|start|stop|delete|list]")
 	},
 }

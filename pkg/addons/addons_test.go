@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func createTestProfile(t *testing.T) string {
@@ -35,6 +36,13 @@ func createTestProfile(t *testing.T) string {
 		t.Fatalf("tempdir: %v", err)
 	}
 
+	t.Cleanup(func() {
+		err := os.RemoveAll(td)
+		t.Logf("remove path %q", td)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", td)
+		}
+	})
 	err = os.Setenv(localpath.MinikubeHome, td)
 	if err != nil {
 		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
@@ -122,6 +130,10 @@ func TestSetAndSave(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
+	// this test will write a config.json into MinikubeHome, create a temp dir for it
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	cc := &config.ClusterConfig{
 		Name:             "start",
 		CPUs:             2,
@@ -130,7 +142,8 @@ func TestStart(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	Start(&wg, cc, map[string]bool{}, []string{"dashboard"})
+	wg.Add(1)
+	go Start(&wg, cc, map[string]bool{}, []string{"dashboard"})
 	wg.Wait()
 
 	if !assets.Addons["dashboard"].IsEnabled(cc) {

@@ -29,8 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/hashicorp/go-getter"
+	"github.com/otiai10/copy"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -38,9 +38,8 @@ func TestSkaffold(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver doesn't support `minikube docker-env`; skaffold depends on this command")
 	}
-	// can't use a unique profile, as skaffold only recognizes the
-	// profile name 'minikube' as a local cluster
-	profile := "minikube"
+
+	profile := UniqueProfileName("skaffold")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
 	defer CleanupWithLogs(t, profile, cancel)
 
@@ -51,32 +50,49 @@ func TestSkaffold(t *testing.T) {
 	}
 	defer os.Remove(tf.Name())
 
-	// start minikube cluster
-	args := append([]string{"start", "-p", profile, "--memory=2200"}, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), "version"))
+	if err != nil {
+		t.Fatalf("error running skaffold version: %v\n%s", err, rr.Output())
+	}
+	t.Logf("skaffold version: %s", rr.Stdout.Bytes())
+
+	args := append([]string{"start", "-p", profile, "--memory=2600"}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
 	}
 
 	// make sure minikube binary is in path so that skaffold can access it
 	abs, err := filepath.Abs(Target())
-	// copy minikube binary to minikube
-	if err := mcnutils.CopyFile(Target(), filepath.Join(filepath.Dir(abs), "minikube")); err != nil {
-		t.Fatalf("error copying to minikube")
-	}
 	if err != nil {
-		t.Fatalf("absolute path to minikube binary: %v", err)
+		t.Fatalf("unable to determine abs path: %v", err)
 	}
-	os.Setenv("PATH", fmt.Sprintf("%s:%s", filepath.Dir(abs), os.Getenv("PATH")))
-	// make sure 'docker' and 'minikube' are on PATH
-	for _, binary := range []string{"minikube", "docker"} {
-		rr, err := Run(t, exec.CommandContext(ctx, "which", binary))
-		if err != nil {
-			t.Fatalf("'which %v' failed: check if %v is on PATH\n%v", binary, binary, rr.Output())
+
+	if filepath.Base(Target()) != "minikube" {
+		new := filepath.Join(filepath.Dir(abs), "minikube")
+		t.Logf("copying %s to %s", Target(), new)
+		if err := copy.Copy(Target(), new); err != nil {
+			t.Fatalf("error copying to minikube")
 		}
 	}
+
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", fmt.Sprintf("%s:%s", filepath.Dir(abs), os.Getenv("PATH")))
+
+	// make sure 'docker' and 'minikube' are now in PATH
+	for _, binary := range []string{"minikube", "docker"} {
+		_, err := exec.LookPath(binary)
+		if err != nil {
+			t.Fatalf("%q is not in path", binary)
+		}
+	}
+
+	defer func() {
+		os.Setenv("PATH", oldPath)
+	}()
+
 	// make sure "skaffold run" exits without failure
-	cmd := exec.CommandContext(ctx, tf.Name(), "run", "--kube-context", profile, "--status-check=true", "--port-forward=false")
+	cmd := exec.CommandContext(ctx, tf.Name(), "run", "--minikube-profile", profile, "--kube-context", profile, "--status-check=true", "--port-forward=false")
 	cmd.Dir = "testdata/skaffold"
 	rr, err = Run(t, cmd)
 	if err != nil {
