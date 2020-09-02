@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // HostInfo holds information on the user's machine
@@ -80,7 +81,7 @@ func showLocalOsRelease() {
 	}
 
 	register.Reg.SetStep(register.LocalOSRelease)
-	out.T(out.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+	out.T(style.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
 }
 
 // logRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
@@ -99,8 +100,10 @@ func logRemoteOsRelease(r command.Runner) {
 	glog.Infof("Remote host: %s", osReleaseInfo.PrettyName)
 }
 
-var cachedSystemMemoryLimit *mem.VirtualMemoryStat
-var cachedSystemMemoryErr *error
+var (
+	cachedSystemMemoryLimit *mem.VirtualMemoryStat
+	cachedSystemMemoryErr   *error
+)
 
 //  cachedSysMemLimit will return a cached limit for the system's virtual memory.
 func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
@@ -115,8 +118,10 @@ func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
 	return cachedSystemMemoryLimit, *cachedSystemMemoryErr
 }
 
-var cachedDisk *disk.UsageStat
-var cachedDiskInfoErr *error
+var (
+	cachedDisk        *disk.UsageStat
+	cachedDiskInfoErr *error
+)
 
 // cachedDiskInfo will return a cached disk usage info
 func cachedDiskInfo() (disk.UsageStat, error) {
@@ -131,8 +136,10 @@ func cachedDiskInfo() (disk.UsageStat, error) {
 	return *cachedDisk, *cachedDiskInfoErr
 }
 
-var cachedCPU *[]cpu.InfoStat
-var cachedCPUErr *error
+var (
+	cachedCPU    *[]cpu.InfoStat
+	cachedCPUErr *error
+)
 
 //  cachedCPUInfo will return a cached cpu info
 func cachedCPUInfo() ([]cpu.InfoStat, error) {

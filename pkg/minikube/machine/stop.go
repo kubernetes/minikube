@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -41,7 +42,7 @@ func StopHost(api libmachine.API, machineName string) error {
 		return errors.Wrapf(err, "load")
 	}
 
-	out.T(out.Stopping, `Stopping node "{{.name}}"  ...`, out.V{"name": machineName})
+	out.T(style.Stopping, `Stopping node "{{.name}}"  ...`, out.V{"name": machineName})
 	return stop(h)
 }
 
@@ -79,7 +80,7 @@ func trySSHPowerOff(h *host.Host) error {
 		return nil
 	}
 
-	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
+	out.T(style.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
 	// differnet for kic because RunSSHCommand is not implemented by kic
 	if driver.IsKIC(h.DriverName) {
 		err := oci.ShutDown(h.DriverName, h.Name)

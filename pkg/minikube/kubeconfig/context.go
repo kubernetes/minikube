@@ -56,10 +56,7 @@ func SetCurrentContext(name string, configPath ...string) error {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	kcfg.CurrentContext = name
-	if err := writeToFile(kcfg, fPath); err != nil {
-		return errors.Wrap(err, "writing kubeconfig")
-	}
-	return nil
+	return writeToFile(kcfg, fPath)
 }
 
 // DeleteContext deletes the specified machine's kubeconfig context

@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const longDescription = `
@@ -73,27 +74,26 @@ var completionCmd = &cobra.Command{
 	Long:  longDescription,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.UsageT("Usage: minikube completion SHELL")
+			exit.Message(reason.Usage, "Usage: minikube completion SHELL")
 		}
 		if args[0] != "bash" && args[0] != "zsh" && args[0] != "fish" {
-			exit.UsageT("Sorry, completion support is not yet implemented for {{.name}}", out.V{"name": args[0]})
+			exit.Message(reason.Usage, "Sorry, completion support is not yet implemented for {{.name}}", out.V{"name": args[0]})
 		} else if args[0] == "bash" {
 			err := GenerateBashCompletion(os.Stdout, cmd.Parent())
 			if err != nil {
-				exit.WithError("bash completion failed", err)
+				exit.Error(reason.InternalCompletion, "bash completion failed", err)
 			}
 		} else if args[0] == "zsh" {
 			err := GenerateZshCompletion(os.Stdout, cmd.Parent())
 			if err != nil {
-				exit.WithError("zsh completion failed", err)
+				exit.Error(reason.InternalCompletion, "zsh completion failed", err)
 			}
 		} else {
 			err := GenerateFishCompletion(os.Stdout, cmd.Parent())
 			if err != nil {
-				exit.WithError("fish completion failed", err)
+				exit.Error(reason.InternalCompletion, "fish completion failed", err)
 			}
 		}
-
 	},
 }
 

@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 var nodeListCmd = &cobra.Command{
@@ -33,7 +34,7 @@ var nodeListCmd = &cobra.Command{
 	Long:  "List existing minikube nodes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
-			exit.UsageT("Usage: minikube node list")
+			exit.Message(reason.Usage, "Usage: minikube node list")
 		}
 
 		cname := ClusterFlagValue()

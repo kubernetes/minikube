@@ -29,3 +29,8 @@ minikube's bootstrapper, [Kubeadm](https://github.com/kubernetes/kubeadm) verifi
 Please allocate sufficient resources for Knative setup using minikube, especially when you run a minikube cluster on your local machine. We recommend allocating at least 6 CPUs and 8G memory.
 
 `minikube start --cpus 6 --memory 8000`
+
+## Do I need to install kubectl locally?
+
+No, minikube comes with built-in kubectl [see minikube's kubectl documentation]({{< ref "docs/handbook/kubectl.md" >}}). 
+

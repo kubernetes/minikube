@@ -17,15 +17,17 @@ limitations under the License.
 package perf
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
+	"google.golang.org/api/option"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -37,6 +39,7 @@ type Binary struct {
 
 const (
 	prPrefix = "pr://"
+	bucket   = "minikube-builds"
 )
 
 // NewBinary returns a new binary type
@@ -58,6 +61,33 @@ func (b *Binary) Name() string {
 	return filepath.Base(b.path)
 }
 
+func (b *Binary) download() error {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return errors.Wrap(err, "getting storage client")
+	}
+	defer client.Close()
+	rc, err := client.Bucket(bucket).Object(fmt.Sprintf("%d/minikube-linux-amd64", b.pr)).NewReader(ctx)
+	if err != nil {
+		return errors.Wrap(err, "getting minikube object from gcs bucket")
+	}
+	defer rc.Close()
+
+	if err := os.MkdirAll(filepath.Dir(b.path), 0777); err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(b.path, os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, rc)
+	return err
+}
+
 // newBinaryFromPR downloads the minikube binary built for the pr by Jenkins from GCS
 func newBinaryFromPR(pr string) (*Binary, error) {
 	pr = strings.TrimPrefix(pr, prPrefix)
@@ -71,39 +101,12 @@ func newBinaryFromPR(pr string) (*Binary, error) {
 		path: localMinikubePath(i),
 		pr:   i,
 	}
-
-	if err := downloadBinary(remoteMinikubeURL(i), b.path); err != nil {
-		return nil, errors.Wrapf(err, "downloading minikube")
+	if err := b.download(); err != nil {
+		return nil, errors.Wrapf(err, "downloading binary")
 	}
-
 	return b, nil
-}
-
-func remoteMinikubeURL(pr int) string {
-	return fmt.Sprintf("https://storage.googleapis.com/minikube-builds/%d/minikube-linux-amd64", pr)
 }
 
 func localMinikubePath(pr int) string {
 	return fmt.Sprintf("%s/minikube-binaries/%d/minikube", constants.DefaultMinipath, pr)
-}
-
-func downloadBinary(url, path string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-		return err
-	}
-
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0777)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(f, resp.Body)
-	return err
 }

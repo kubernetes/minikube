@@ -96,7 +96,7 @@ func status() registry.State {
 	cmd := exec.CommandContext(ctx, path, "-v")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: true, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Run 'brew install hyperkit'", Doc: docURL}
+		return registry.State{Installed: true, Running: false, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Run 'brew install hyperkit'", Doc: docURL}
 	}
 
 	// Split version from v0.YYYYMMDD-HH-xxxxxxx or 0.YYYYMMDD to YYYYMMDD
@@ -105,13 +105,13 @@ func status() registry.State {
 	// If current hyperkit is not newer than minimumVersion, suggest upgrade information
 	isNew, err := isNewerVersion(currentVersion, specificVersion)
 	if err != nil {
-		return registry.State{Installed: true, Healthy: true, Error: fmt.Errorf("hyperkit version check failed:\n%v", err), Doc: docURL}
+		return registry.State{Installed: true, Running: true, Healthy: true, Error: fmt.Errorf("hyperkit version check failed:\n%v", err), Doc: docURL}
 	}
 	if !isNew {
-		return registry.State{Installed: true, Healthy: true, Error: fmt.Errorf("the installed hyperkit version (0.%s) is older than the minimum recommended version (%s)", currentVersion, minimumVersion), Fix: "Run 'brew upgrade hyperkit'", Doc: docURL}
+		return registry.State{Installed: true, Running: true, Healthy: true, Error: fmt.Errorf("the installed hyperkit version (0.%s) is older than the minimum recommended version (%s)", currentVersion, minimumVersion), Fix: "Run 'brew upgrade hyperkit'", Doc: docURL}
 	}
 
-	return registry.State{Installed: true, Healthy: true}
+	return registry.State{Installed: true, Running: true, Healthy: true}
 }
 
 // isNewerVersion checks whether current hyperkit is newer than specific version

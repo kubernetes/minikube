@@ -70,6 +70,9 @@ var defaultClusterConfig = config.ClusterConfig{
 }
 
 func TestCreateHost(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	download.EnableMock(true)
 
 	RegisterMockDriver(t)
@@ -115,6 +118,9 @@ func TestCreateHost(t *testing.T) {
 }
 
 func TestStartHostExists(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	download.EnableMock(true)
 
 	RegisterMockDriver(t)
@@ -154,6 +160,9 @@ func TestStartHostExists(t *testing.T) {
 }
 
 func TestStartHostErrMachineNotExist(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	download.EnableMock(true)
 
 	RegisterMockDriver(t)
@@ -201,6 +210,9 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 }
 
 func TestStartStoppedHost(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	download.EnableMock(true)
 
 	RegisterMockDriver(t)
@@ -238,6 +250,9 @@ func TestStartStoppedHost(t *testing.T) {
 }
 
 func TestStartHost(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	download.EnableMock(true)
 
 	RegisterMockDriver(t)
@@ -268,6 +283,9 @@ func TestStartHost(t *testing.T) {
 }
 
 func TestStartHostConfig(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	download.EnableMock(true)
 
 	RegisterMockDriver(t)
@@ -310,6 +328,9 @@ func TestStopHostError(t *testing.T) {
 }
 
 func TestStopHost(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
@@ -329,6 +350,9 @@ func TestStopHost(t *testing.T) {
 }
 
 func TestDeleteHost(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	if _, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"}); err != nil {
@@ -344,6 +368,9 @@ func TestDeleteHost(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
@@ -360,6 +387,9 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	api.RemoveError = true
@@ -373,6 +403,9 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 }
 
 func TestDeleteHostErrMachineNotExist(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
@@ -388,6 +421,9 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
