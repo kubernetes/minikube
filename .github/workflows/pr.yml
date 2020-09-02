@@ -862,6 +862,8 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
+          docker network inspect bridge || true
+          echo "--------------------------"
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
