@@ -136,7 +136,9 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}
 
 	var wg sync.WaitGroup
-	go configureMounts(&wg)
+	if !driver.IsKIC(starter.Cfg.Driver) {
+		go configureMounts(&wg)
+	}
 
 	wg.Add(1)
 	go func() {
@@ -148,6 +150,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// enable addons, both old and new!
 	if starter.ExistingAddons != nil {
+		wg.Add(1)
 		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 	}
 

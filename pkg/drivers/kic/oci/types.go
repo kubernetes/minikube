@@ -16,6 +16,13 @@ limitations under the License.
 
 package oci
 
+import (
+	"errors"
+	"fmt"
+	"path/filepath"
+	"strings"
+)
+
 const (
 	// DefaultBindIPV4 is The default IP the container will listen on.
 	DefaultBindIPV4 = "127.0.0.1"
@@ -100,6 +107,46 @@ type Mount struct {
 	SelinuxRelabel bool `protobuf:"varint,4,opt,name=selinux_relabel,json=selinuxRelabel,proto3" json:"selinuxRelabel,omitempty"`
 	// Requested propagation mode.
 	Propagation MountPropagation `protobuf:"varint,5,opt,name=propagation,proto3,enum=runtime.v1alpha2.MountPropagation" json:"propagation,omitempty"`
+}
+
+// ParseMountString parses a mount string of format:
+// '[host-path:]container-path[:<options>]' The comma-delimited 'options' are
+// [rw|ro], [Z], [srhared|rslave|rprivate].
+func ParseMountString(spec string) (m Mount, err error) {
+	switch fields := strings.Split(spec, ":"); len(fields) {
+	case 0:
+		err = errors.New("invalid empty spec")
+	case 1:
+		m.ContainerPath = fields[0]
+	case 3:
+		for _, opt := range strings.Split(fields[2], ",") {
+			switch opt {
+			case "Z":
+				m.SelinuxRelabel = true
+			case "ro":
+				m.Readonly = true
+			case "rw":
+				m.Readonly = false
+			case "rslave":
+				m.Propagation = MountPropagationHostToContainer
+			case "rshared":
+				m.Propagation = MountPropagationBidirectional
+			case "private":
+				m.Propagation = MountPropagationNone
+			default:
+				err = fmt.Errorf("unknown mount option: '%s'", opt)
+			}
+		}
+		fallthrough
+	case 2:
+		m.HostPath, m.ContainerPath = fields[0], fields[1]
+		if !filepath.IsAbs(m.ContainerPath) {
+			err = fmt.Errorf("'%s' container path must be absolute", m.ContainerPath)
+		}
+	default:
+		err = errors.New("spec must be in form: <host path>:<container path>[:<options>]")
+	}
+	return m, err
 }
 
 // PortMapping specifies a host port mapped into a container port.
