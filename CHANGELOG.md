@@ -4,11 +4,11 @@
 
 ## Features
 
-* Update default Kubernetes version to v1.19.0 [#9050](https://github.com/kubernetes/minikube/pull/9050)
+* Update default Kubernetes version to v1.19.0 🎉 [#9050](https://github.com/kubernetes/minikube/pull/9050)
 * start: Support for mounting host volumes on start with docker driver [#8159](https://github.com/kubernetes/minikube/pull/8159)
-* kubectl: Invoke kubectl if minikube binary is named 'kubectl' [#8872](https://github.com/kubernetes/minikube/pull/8872)
 * start: Add a machine readable reason to all error paths [#9126](https://github.com/kubernetes/minikube/pull/9126)
 * stop: add --keep-context-active flag [#9044](https://github.com/kubernetes/minikube/pull/9044)
+* kubectl: Invoke kubectl if minikube binary is named 'kubectl' [#8872](https://github.com/kubernetes/minikube/pull/8872)
 
 ## Bug fixes
 
