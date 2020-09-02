@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -119,12 +120,20 @@ func status() registry.State {
 func checkNeedsImprovement() registry.State {
 	if runtime.GOOS == "linux" {
 		return checkOverlayMod()
-	} // TODO #8540: on non-linux check if docker desktop has enough CPU/memory
+	}
 	return registry.State{Installed: true, Healthy: true}
 }
 
 // checkOverlayMod checks if
 func checkOverlayMod() registry.State {
+	if os.Getenv("WSL_DISTRO_NAME") != "" {
+		glog.Infof("Skipping overlay check: WSL does not support kernel modules")
+	}
+
+	if _, err := os.Stat("/lib/modules"); err != nil {
+		glog.Infof("Skipping overlay check: distribution does not support kernel modules")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "modprobe", "overlay")
@@ -138,7 +147,7 @@ func checkOverlayMod() registry.State {
 			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
 		}
 		if err != nil {
-			glog.Warningf("couldn't verify the linux distro's uname : %s", err)
+			glog.Warningf("couldn't verify the linux distro's uname: %s", err)
 			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
 		}
 		path := fmt.Sprintf("/lib/modules/%s/modules.builtin", string(out))
