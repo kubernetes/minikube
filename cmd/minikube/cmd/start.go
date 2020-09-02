@@ -388,18 +388,19 @@ func displayEnviron(env []string) {
 }
 
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
-	register.Reg.SetStep(register.Done)
-	if kcs.KeepContext {
-		out.T(style.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
-	} else {
-		out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": machineName})
-	}
+	// To be shown at the end, regardless of exit path
+	defer func() {
+		register.Reg.SetStep(register.Done)
+		if kcs.KeepContext {
+			out.T(style.Kubectl, "To connect to this cluster, use:  --context={{.name}}", out.V{"name": kcs.ClusterName})
+		} else {
+			out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}" by default`, out.V{"name": machineName})
+		}
+	}()
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		out.ErrT(style.Kubectl, "Kubectl not found in your path")
-		out.ErrT(style.Workaround, "You can use kubectl inside minikube. For more information, visit https://minikube.sigs.k8s.io/docs/handbook/kubectl/")
-		out.ErrT(style.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		out.T(style.Tip, "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'")
 		return nil
 	}
 
@@ -419,10 +420,9 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
-		out.WarningT("{{.path}} is version {{.client_version}}, which may be incompatible with Kubernetes {{.cluster_version}}.",
+		out.WarningT("{{.path}} is version {{.client_version}}, which may have incompatibilites with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
-		out.WarningT("You can also use 'minikube kubectl -- get pods' to invoke a matching version",
-			out.V{"path": path, "client_version": client})
+		out.T(style.Tip, "Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'", out.V{"version": k8sVersion})
 	}
 	return nil
 }
