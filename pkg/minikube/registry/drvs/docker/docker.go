@@ -142,20 +142,17 @@ func checkOverlayMod() registry.State {
 		// try a different way
 		cmd = exec.CommandContext(ctx, "uname", "-r")
 		out, err := cmd.Output()
-		if ctx.Err() == context.DeadlineExceeded {
-			glog.Warningf("%q timed out checking for ", strings.Join(cmd.Args, " "))
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
-		}
 		if err != nil {
-			glog.Warningf("couldn't verify the linux distro's uname: %s", err)
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
+			glog.Warningf("unable to validate kernel version: %s", err)
+			return registry.State{Installed: true, Healthy: true}
 		}
+
 		path := fmt.Sprintf("/lib/modules/%s/modules.builtin", string(out))
 		cmd = exec.CommandContext(ctx, "cat", path)
 		out, err = cmd.Output()
 		if err != nil {
 			glog.Warningf("overlay module was not found in %q", path)
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
+			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable the overlay Linux kernel module using 'modprobe overlay'"}
 		}
 		if strings.Contains(string(out), "overlay") { // success
 			return registry.State{NeedsImprovement: false, Installed: true, Healthy: true}
