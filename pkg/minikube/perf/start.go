@@ -36,9 +36,13 @@ const (
 func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
 	drivers := []string{"kvm2", "docker"}
 	for _, d := range drivers {
+		fmt.Printf("**%s Driver**\n", d)
+		if err := downloadArtifacts(ctx, binaries, d); err != nil {
+			fmt.Printf("error downloading artifacts: %v", err)
+			continue
+		}
 		rm, err := collectResults(ctx, binaries, d)
 		if err != nil {
-			fmt.Printf("**%s Driver**\n", d)
 			fmt.Printf("error collecting results for %s driver: %v\n", d, err)
 			continue
 		}
@@ -74,6 +78,18 @@ func average(nums []float64) float64 {
 		total += a
 	}
 	return total / float64(len(nums))
+}
+
+func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string) error {
+	for _, b := range binaries {
+		c := exec.CommandContext(ctx, b.path, "start", fmt.Sprintf("--driver=%s", driver), "--download-only")
+		c.Stderr = os.Stderr
+		log.Printf("Running: %v...", c.Args)
+		if err := c.Run(); err != nil {
+			return errors.Wrap(err, "downloading artifacts")
+		}
+	}
+	return nil
 }
 
 // timeMinikubeStart returns the time it takes to execute `minikube start`
