@@ -126,12 +126,12 @@ func checkNeedsImprovement() registry.State {
 
 // checkOverlayMod checks if
 func checkOverlayMod() registry.State {
-	if _, err := os.Stat("/sys/modules/overlay"); err == nil {
+	if _, err := os.Stat("/sys/module/overlay"); err == nil {
 		glog.Info("overlay module found")
 		return registry.State{Installed: true, Healthy: true}
 	}
 
-	if _, err := os.Stat("/sys/modules/overlay2"); err == nil {
+	if _, err := os.Stat("/sys/module/overlay2"); err == nil {
 		glog.Info("overlay2 module found")
 		return registry.State{Installed: true, Healthy: true}
 	}
