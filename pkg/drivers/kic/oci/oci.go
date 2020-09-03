@@ -66,8 +66,9 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		}
 
 		if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", c)); err != nil {
-			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s", c))
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, err))
 		}
+
 	}
 	return deleteErrs
 }
@@ -87,9 +88,6 @@ func DeleteContainer(ociBin string, name string) error {
 
 	if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
 		return errors.Wrapf(err, "delete %s", name)
-	}
-	if err := removeNetwork(name); err != nil {
-		return errors.Wrap(err, "removing network")
 	}
 	return nil
 }
@@ -153,12 +151,6 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 	}
 	if p.OCIBinary == Docker {
-		// on linux, we can provide a static IP for docker
-		if runtime.GOOS == "linux" && p.Network != "" && p.IP != "" {
-			runArgs = append(runArgs, "--network", p.Network)
-			runArgs = append(runArgs, "--ip", p.IP)
-		}
-
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
@@ -177,9 +169,14 @@ func CreateContainerNode(p CreateParams) error {
 
 	if p.OCIBinary == Podman && memcgSwap { // swap is required for memory
 		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+		// Disable swap by setting the value to match
+		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 	}
-	if p.OCIBinary == Docker { // swap is only required for --memory-swap
+
+	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+		// Disable swap by setting the value to match
+		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 	}
 
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/

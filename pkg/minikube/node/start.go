@@ -409,7 +409,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, del
 
 	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
-	out.ErrT(style.Sad, `Failed to start {{.driver}} {{.driver_type}}. "{{.cmd}}" may fix it: {{.error}}`, out.V{"driver": drv, "driver_type": driver.MachineType(drv), "cmd": mustload.ExampleCmd(cc.Name, "start"), "error": err})
+	out.ErrT(style.Sad, `Failed to start {{.driver}} {{.driver_type}}. Running "{{.cmd}}" may fix it: {{.error}}`, out.V{"driver": drv, "driver_type": driver.MachineType(drv), "cmd": mustload.ExampleCmd(cc.Name, "delete"), "error": err})
 	return host, exists, err
 }
 
