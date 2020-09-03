@@ -206,14 +206,27 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if existing != nil && existing.KubernetesConfig.ContainerRuntime == "crio" && driver.IsKIC(existing.Driver) {
-		// Stop and start again if it's crio because it's broken above v1.17.3
-		out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
-		out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
-		stopProfile(existing.Name)
-		starter, err = provisionWithDriver(cmd, ds, existing)
-		if err != nil {
-			exit.Error(reason.GuestProvision, "error provisioning host", err)
+	if existing != nil && driver.IsKIC(existing.Driver) {
+		if viper.GetBool(createMount) {
+			mount := viper.GetString(mountString)
+			if len(existing.ContainerVolumeMounts) != 1 || existing.ContainerVolumeMounts[0] != mount {
+				exit.Message(reason.GuestMountConflict, "Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'", out.V{
+					"driver": existing.Driver,
+					"new":    mount,
+					"old":    existing.ContainerVolumeMounts[0],
+				})
+			}
+		}
+
+		if existing.KubernetesConfig.ContainerRuntime == "crio" {
+			// Stop and start again if it's crio because it's broken above v1.17.3
+			out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
+			out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
+			stopProfile(existing.Name)
+			starter, err = provisionWithDriver(cmd, ds, existing)
+			if err != nil {
+				exit.Error(reason.GuestProvision, "error provisioning host", err)
+			}
 		}
 	}
 
@@ -388,18 +401,19 @@ func displayEnviron(env []string) {
 }
 
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
-	register.Reg.SetStep(register.Done)
-	if kcs.KeepContext {
-		out.T(style.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
-	} else {
-		out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": machineName})
-	}
+	// To be shown at the end, regardless of exit path
+	defer func() {
+		register.Reg.SetStep(register.Done)
+		if kcs.KeepContext {
+			out.T(style.Kubectl, "To connect to this cluster, use:  --context={{.name}}", out.V{"name": kcs.ClusterName})
+		} else {
+			out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}" by default`, out.V{"name": machineName})
+		}
+	}()
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		out.ErrT(style.Kubectl, "Kubectl not found in your path")
-		out.ErrT(style.Workaround, "You can use kubectl inside minikube. For more information, visit https://minikube.sigs.k8s.io/docs/handbook/kubectl/")
-		out.ErrT(style.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		out.T(style.Tip, "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'")
 		return nil
 	}
 
@@ -419,10 +433,9 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
-		out.WarningT("{{.path}} is version {{.client_version}}, which may be incompatible with Kubernetes {{.cluster_version}}.",
+		out.WarningT("{{.path}} is version {{.client_version}}, which may have incompatibilites with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
-		out.WarningT("You can also use 'minikube kubectl -- get pods' to invoke a matching version",
-			out.V{"path": path, "client_version": client})
+		out.T(style.Tip, "Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'", out.V{"version": k8sVersion})
 	}
 	return nil
 }
@@ -648,11 +661,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	glog.Infof("status for %s: %+v", name, st)
 
 	if st.NeedsImprovement {
-		out.WarnReason(reason.Kind{
-			ID:     fmt.Sprintf("PROVIDER_%s_IMPROVEMENT", strings.ToUpper(name)),
-			Advice: translate.T(st.Fix),
-			Style:  style.Improvement,
-		}, `The '{{.driver}}' driver reported a performance issue`, out.V{"driver": name})
+		out.T(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
 	}
 
 	if st.Error == nil {
@@ -866,15 +875,6 @@ func validateRequestedMemorySize(req int, drvName string) {
 	}
 	if req < minRecommendedMem {
 		out.WarnReason(reason.RsrcInsufficientReqMemory, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommend}}MB. Deployments may fail.", out.V{"requested": req, "recommend": minRecommendedMem})
-	}
-
-	if driver.IsDockerDesktop(drvName) && containerLimit < 2997 && sysLimit > 8000 { // for users with more than 8 GB advice 3 GB
-		r := reason.RsrcInsufficientDarwinDockerMemory
-		if runtime.GOOS == "Windows" {
-			r = reason.RsrcInsufficientWindowsDockerMemory
-		}
-		r.Style = style.Improvement
-		out.WarnReason(r, "Docker Desktop has access to only {{.size}}MiB of the {{.sys}}MiB in available system memory. Consider increasing this for improved performance.", out.V{"size": containerLimit, "sys": sysLimit, "recommend": "3 GB"})
 	}
 
 	advised := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
