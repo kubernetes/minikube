@@ -191,6 +191,25 @@ var hostIssues = []match{
 		},
 		Regexp: re(`Container.*is not running.*chown docker:docker`),
 	},
+	{
+		Kind: Kind{
+			ID:       "HOST_PIDS_CGROUP",
+			ExitCode: ExHostUnsupported,
+			Advice:   "Ensure that the required 'pids' cgroup is enabled on your host: grep pids /proc/cgroups",
+			Issues:   []int{6411},
+		},
+		Regexp: re(`failed to find subsystem mount for required subsystem: pids`),
+		GOOS:   []string{"linux"},
+	},
+	{
+		Kind: Kind{
+			ID:       "HOST_HOME_PERMISSION",
+			ExitCode: ExGuestPermission,
+			Advice:   "Your user lacks permissions to the minikube profile directory. Run: 'sudo chown -R $USER $HOME/.minikube; chmod -R u+wrx $HOME/.minikube' to fix",
+			Issues:   []int{9165},
+		},
+		Regexp: re(`/.minikube/.*: permission denied`),
+	},
 }
 
 // providerIssues are failures relating to a driver provider
@@ -236,6 +255,28 @@ var providerIssues = []match{
 			Issues:   []int{8163},
 		},
 		Regexp: re(`executing "" at <index (index .NetworkSettings.Ports "22/tcp") 0>`),
+	},
+	{
+		Kind: Kind{
+			ID:       "PR_DOCKER_MOUNTS_EOF",
+			ExitCode: ExProviderError,
+			Advice:   "Reset Docker to factory defaults",
+			Issues:   []int{8832},
+			URL:      "https://docs.docker.com/docker-for-mac/#reset",
+		},
+		GOOS:   []string{"darwin"},
+		Regexp: re(`docker:.*Mounts denied: EOF`),
+	},
+	{
+		Kind: Kind{
+			ID:       "PR_DOCKER_MOUNTS_EOF",
+			ExitCode: ExProviderError,
+			Advice:   "Reset Docker to factory defaults",
+			Issues:   []int{8832},
+			URL:      "https://docs.docker.com/docker-for-windows/#reset",
+		},
+		GOOS:   []string{"windows"},
+		Regexp: re(`docker:.*Mounts denied: EOF`),
 	},
 
 	// Hyperkit hypervisor
@@ -301,6 +342,28 @@ var providerIssues = []match{
 			Issues:   []int{7347},
 		},
 		Regexp: re(`The requested operation requires elevation.`),
+		GOOS:   []string{"windows"},
+	},
+	{
+		Kind: Kind{
+			ID:       "PR_POWERSHELL_CONSTRAINED",
+			ExitCode: ExProviderPermission,
+			Advice:   "PowerShell is running in constrained mode, which is incompatible with Hyper-V scripting.",
+			Issues:   []int{7990, 6098},
+			URL:      "https://devblogs.microsoft.com/powershell/powershell-constrained-language-mode/",
+		},
+		Regexp: re(`MethodInvocationNotSupportedInConstrainedLanguage`),
+		GOOS:   []string{"windows"},
+	},
+	{
+		Kind: Kind{
+			ID:       "PR_HYPERV_MODULE_NOT_INSTALLED",
+			ExitCode: ExProviderNotFound,
+			Advice:   "Run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Tools-All'",
+			Issues:   []int{9040},
+			URL:      "https://www.altaro.com/hyper-v/install-hyper-v-powershell-module/",
+		},
+		Regexp: re(`Hyper-V PowerShell Module is not available`),
 		GOOS:   []string{"windows"},
 	},
 
@@ -857,6 +920,33 @@ var guestIssues = []match{
 		Regexp: re(`The process cannot access the file because it is being used by another process`),
 		GOOS:   []string{"windows"},
 	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_NOT_FOUND",
+			ExitCode: ExGuestNotFound,
+			Advice:   "minikube is missing files relating to your guest environment. This can be fixed by running 'minikube delete'",
+			Issues:   []int{9130},
+		},
+		Regexp: re(`config.json: The system cannot find the file specified`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_SSH_CERT_NOT_FOUND",
+			ExitCode: ExGuestNotFound,
+			Advice:   "minikube is missing files relating to your guest environment. This can be fixed by running 'minikube delete'",
+			Issues:   []int{9130},
+		},
+		Regexp: re(`id_rsa: no such file or directory`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_CONFIG_CORRUPT",
+			ExitCode: ExGuestConfig,
+			Advice:   "The existing node configuration appears to be corrupt. Run 'minikube delete'",
+			Issues:   []int{9175},
+		},
+		Regexp: re(`configuration.*corrupt`),
+	},
 }
 
 // runtimeIssues are container runtime issues (containerd, docker, etc)
@@ -865,7 +955,7 @@ var runtimeIssues = []match{
 		Kind: Kind{
 			ID:       "RT_DOCKER_RESTART",
 			ExitCode: ExRuntimeError,
-			Advice:   "Remove the incompatible --docker-opt flag if one was provided",
+			Advice:   "Remove the invalid --docker-opt or --inecure-registry flag if one was provided",
 			Issues:   []int{7070},
 		},
 		Regexp: re(`systemctl -f restart docker`),
@@ -961,6 +1051,16 @@ var controlPlaneIssues = []match{
 			Advice:   "Select a valid value for --dnsdomain",
 		},
 		Regexp: re(`dnsDomain: Invalid`),
+	},
+	{
+		Kind: Kind{
+			ID:           "K8S_INVALID_CERT_HOSTNAME",
+			ExitCode:     ExControlPlaneConfig,
+			Advice:       "The certificate hostname provided appears to be invalid (may be a minikube bug, try 'minikube delete')",
+			NewIssueLink: true,
+			Issues:       []int{9175},
+		},
+		Regexp: re(`apiServer.certSANs: Invalid value`),
 	},
 }
 
