@@ -49,6 +49,8 @@ func TestIsProblem(t *testing.T) {
 		{"regular scheduler services init", false, ` k8s.io/client-go/informers/factory.go:135: Failed to list *v1.Service: services is forbidden: User "system:kube-scheduler" cannot list resource "services" in API group "" at the cluster scope`},
 		{"regular scheduler nodes init", false, `k8s.io/client-go/informers/factory.go:135: Failed to list *v1.Node: nodes is forbidden: User "system:kube-scheduler" cannot list resource "nodes" in API group "" at the cluster scope`},
 		{"kubelet rbac fail", true, `k8s.io/kubernetes/pkg/kubelet/kubelet.go:526: Failed to list *v1.Node: nodes "m01" is forbidden: User "system:node:m01" cannot list resource "nodes" in API group "" at the cluster scope`},
+		{"kubelet pids cgroup", true, `Failed to start ContainerManager failed to initialize top level QOS containers: failed to update top level Burstable QOS cgroup : failed to set supported cgroup subsystems for cgroup [kubepods burstable]: failed to find subsystem mount for required subsystem: pids`},
+		{"docker cgroups v2 fail", true, `failed to start daemon: Devices cgroup isn't mounted`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
