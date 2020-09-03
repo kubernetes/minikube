@@ -955,7 +955,7 @@ var runtimeIssues = []match{
 		Kind: Kind{
 			ID:       "RT_DOCKER_RESTART",
 			ExitCode: ExRuntimeError,
-			Advice:   "Remove the invalid --docker-opt or --inecure-registry flag if one was provided",
+			Advice:   "Remove the invalid --docker-opt or --insecure-registry flag if one was provided",
 			Issues:   []int{7070},
 		},
 		Regexp: re(`systemctl -f restart docker`),
