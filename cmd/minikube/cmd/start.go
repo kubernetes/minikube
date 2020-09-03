@@ -206,14 +206,27 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if existing != nil && existing.KubernetesConfig.ContainerRuntime == "crio" && driver.IsKIC(existing.Driver) {
-		// Stop and start again if it's crio because it's broken above v1.17.3
-		out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
-		out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
-		stopProfile(existing.Name)
-		starter, err = provisionWithDriver(cmd, ds, existing)
-		if err != nil {
-			exit.Error(reason.GuestProvision, "error provisioning host", err)
+	if existing != nil && driver.IsKIC(existing.Driver) {
+		if viper.GetBool(createMount) {
+			mount := viper.GetString(mountString)
+			if len(existing.ContainerVolumeMounts) != 1 || existing.ContainerVolumeMounts[0] != mount {
+				exit.Message(reason.GuestMountConflict, "Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'", out.V{
+					"driver": existing.Driver,
+					"new":    mount,
+					"old":    existing.ContainerVolumeMounts[0],
+				})
+			}
+		}
+
+		if existing.KubernetesConfig.ContainerRuntime == "crio" {
+			// Stop and start again if it's crio because it's broken above v1.17.3
+			out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
+			out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
+			stopProfile(existing.Name)
+			starter, err = provisionWithDriver(cmd, ds, existing)
+			if err != nil {
+				exit.Error(reason.GuestProvision, "error provisioning host", err)
+			}
 		}
 	}
 

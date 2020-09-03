@@ -214,6 +214,7 @@ var (
 	GuestDeletion         = Kind{ID: "GUEST_DELETION", ExitCode: ExGuestError}
 	GuestLoadHost         = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
 	GuestMount            = Kind{ID: "GUEST_MOUNT", ExitCode: ExGuestError}
+	GuestMountConflict    = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}
 	GuestNodeAdd          = Kind{ID: "GUEST_NODE_ADD", ExitCode: ExGuestError}
 	GuestNodeDelete       = Kind{ID: "GUEST_NODE_DELETE", ExitCode: ExGuestError}
 	GuestNodeProvision    = Kind{ID: "GUEST_NODE_PROVISION", ExitCode: ExGuestError}
