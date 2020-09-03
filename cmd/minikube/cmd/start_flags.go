@@ -94,8 +94,8 @@ const (
 	interactive             = "interactive"
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
-	minUsableMem            = 1024 // In MiB: Kubernetes will not start with less than 1GiB
-	minRecommendedMem       = 2000 // In MiB: Warn at no lower than existing configurations
+	minUsableMem            = 953  // 1GB In MiB: Kubernetes will not start with less
+	minRecommendedMem       = 1907 // 2GB In MiB: Warn at no lower than existing configurations
 	minimumCPUS             = 2
 	minimumDiskSize         = 2000
 	autoUpdate              = "auto-update-drivers"
