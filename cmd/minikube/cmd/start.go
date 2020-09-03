@@ -210,7 +210,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		if viper.GetBool(createMount) {
 			mount := viper.GetString(mountString)
 			if len(existing.ContainerVolumeMounts) != 1 || existing.ContainerVolumeMounts[0] != mount {
-				exit.Message(reason.GuestMountConflict, "Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: {{.old}}, new mount: {{.new}})", out.V{
+				exit.Message(reason.GuestMountConflict, "Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'", out.V{
 					"driver": existing.Driver,
 					"new":    mount,
 					"old":    existing.ContainerVolumeMounts[0],
