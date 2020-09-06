@@ -413,7 +413,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		out.T(style.Tip, "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'")
+		out.T(style.Tip, "kubectl not found. If you need it, try: 'minikube kubectl --'")
 		return nil
 	}
 
@@ -435,7 +435,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		out.Ln("")
 		out.WarningT("{{.path}} is version {{.client_version}}, which may have incompatibilites with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
-		out.T(style.Tip, "Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'", out.V{"version": k8sVersion})
+		out.T(style.Tip, "Want kubectl {{.version}}? Try 'minikube kubectl --'", out.V{"version": k8sVersion})
 	}
 	return nil
 }
