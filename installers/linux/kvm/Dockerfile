@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/gcp-runtimes/ubuntu_16_0_4
+FROM gcr.io/gcp-runtimes/ubuntu_18_0_4
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		gcc \
