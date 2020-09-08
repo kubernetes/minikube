@@ -65,7 +65,7 @@ func TestMultiNode(t *testing.T) {
 
 func validateMultiNodeStart(ctx context.Context, t *testing.T, profile string) {
 	// Start a 2 node cluster with the --nodes param
-	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory=2200", "--nodes=2"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory=2200", "--nodes=2", "-v=8", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
@@ -222,11 +222,13 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 		}
 	}
 	// Restart a full cluster with minikube start
-	startArgs := append([]string{"start", "-p", profile, "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=8", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
 	}
+
+	time.Sleep(Seconds(45))
 
 	// Make sure minikube status shows 2 running nodes
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
@@ -241,8 +243,6 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Output())
 	}
-
-	time.Sleep(Seconds(30))
 
 	// Make sure kubectl reports that all nodes are ready
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
@@ -294,4 +294,20 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 		}
 	}
 
+	// Make sure kubectl knows the node is gone
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
+	if err != nil {
+		t.Fatalf("failed to run kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
+	if strings.Count(rr.Stdout.String(), "NotReady") > 0 {
+		t.Errorf("expected 2 nodes to be Ready, got %v", rr.Output())
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes", "-o", `go-template='{{range .items}}{{range .status.conditions}}{{if eq .type "Ready"}} {{.status}}{{"\n"}}{{end}}{{end}}{{end}}'`))
+	if err != nil {
+		t.Fatalf("failed to run kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
+	if strings.Count(rr.Stdout.String(), "True") != 2 {
+		t.Errorf("expected 2 nodes Ready status to be True, got %v", rr.Output())
+	}
 }
