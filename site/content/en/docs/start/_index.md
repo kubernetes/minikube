@@ -108,7 +108,7 @@ Alternatively, minikube can download the appropriate version of kubectl, if you 
 minikube kubectl -- get po -A
 ```
 
-minikube bundles the Kubernetes Dashboard, allowing you to get easily acclimated to your new environment:
+Initially, some services such as the storage-provisioner, may not yet be in a Running state. This is a normal condition during cluster bring-up, and will resolve itself momentarily. For additional insight into your cluster state, minikube bundles the Kubernetes Dashboard, allowing you to get easily acclimated to your new environment:
 
 ```shell
 minikube dashboard
