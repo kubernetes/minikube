@@ -874,7 +874,15 @@ func validateRequestedMemorySize(req int, drvName string) {
 		exitIfNotForced(reason.RsrcInsufficientReqMemory, "Requested memory allocation {{.requested}}MiB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
 	}
 	if req < minRecommendedMem {
-		out.WarnReason(reason.RsrcInsufficientReqMemory, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommend}}MB. Deployments may fail.", out.V{"requested": req, "recommend": minRecommendedMem})
+		if driver.IsDockerDesktop(drvName) {
+			if runtime.GOOS == "darwin" {
+				out.WarnReason(reason.RsrcInsufficientDarwinDockerMemory, "Docker Desktop only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+			} else {
+				out.WarnReason(reason.RsrcInsufficientWindowsDockerMemory, "Docker Desktop only has {{.size}}MiB available, you may encounter application deployment failures.", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
+			}
+		} else {
+			out.WarnReason(reason.RsrcInsufficientReqMemory, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommend}}MB. Deployments may fail.", out.V{"requested": req, "recommend": minRecommendedMem})
+		}
 	}
 
 	advised := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
