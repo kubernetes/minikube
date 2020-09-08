@@ -22,7 +22,7 @@ minikube service [flags] SERVICE
 ```
       --format string      Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
   -h, --help               help for service
-      --https              Open the service URL with https instead of http
+      --https              Open the service URL with https instead of http (defaults to "false")
       --interval int       The initial time interval for each check that wait performs in seconds (default 1)
   -n, --namespace string   The service namespace (default "default")
       --url                Display the Kubernetes service URL in the CLI instead of opening it in the default browser
