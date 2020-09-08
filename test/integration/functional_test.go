@@ -494,6 +494,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
+
 	t.Run("cache", func(t *testing.T) {
 		t.Run("add", func(t *testing.T) {
 			for _, img := range []string{"busybox:latest", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
@@ -503,6 +504,31 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				}
 			}
 		})
+
+		t.Run("add_local", func(t *testing.T) {
+			dname, err := ioutil.TempDir("", profile)
+			if err != nil {
+				t.Fatalf("Cannot create temp dir: %v", err)
+			}
+
+			message := []byte("FROM scratch\nADD Dockerfile /x")
+			err = ioutil.WriteFile(filepath.Join(dname, "Dockerfile"), message, 0644)
+			if err != nil {
+				t.Fatalf("unable to writefile: %v", err)
+			}
+
+			img := "minikube-local-cache-test:" + profile
+			_, err = Run(t, exec.CommandContext(ctx, "docker", "build", "-t", img, dname))
+			if err != nil {
+				t.Errorf("failed to build docker image: %v", err)
+			}
+
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
+			if err != nil {
+				t.Errorf("failed to add local image %q. args %q err %v", img, rr.Command(), err)
+			}
+		})
+
 		t.Run("delete_busybox:1.28.4-glibc", func(t *testing.T) {
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "busybox:1.28.4-glibc"))
 			if err != nil {
