@@ -104,7 +104,7 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the Kubernetes service URL in the CLI instead of opening it in the default browser")
-	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
+	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http (defaults to \"false\")")
 	serviceCmd.Flags().IntVar(&wait, "wait", service.DefaultWait, "Amount of time to wait for a service in seconds")
 	serviceCmd.Flags().IntVar(&interval, "interval", service.DefaultInterval, "The initial time interval for each check that wait performs in seconds")
 
