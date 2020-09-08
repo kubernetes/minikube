@@ -33,12 +33,12 @@ func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error make tmp directory: %v", err)
 	}
-	defer func() { //clean up tempdir
+	defer func(path string) { //clean up tempdir
 		err := os.RemoveAll(path)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", path)
 		}
-	}()
+	}(path)
 
 	if runtime.GOOS != "windows" {
 		// Replace to fake func.

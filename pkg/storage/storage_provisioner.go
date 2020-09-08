@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/v5/controller"
 )
 
 const provisionerName = "k8s.io/minikube-hostpath"
@@ -56,8 +56,8 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *hostPathProvisioner) Provision(options controller.ProvisionOptions) (*core.PersistentVolume, error) {
-	glog.Infof("Provisioning volume %v", options)
-	path := path.Join(p.pvDir, options.PVC.Name)
+	path := path.Join(p.pvDir, options.PVC.Namespace, options.PVC.Name)
+	glog.Infof("Provisioning volume %v to %s", options, path)
 	if err := os.MkdirAll(path, 0777); err != nil {
 		return nil, err
 	}

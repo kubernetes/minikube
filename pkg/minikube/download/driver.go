@@ -23,6 +23,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 func driverWithChecksumURL(name string, v semver.Version) string {
@@ -32,11 +33,11 @@ func driverWithChecksumURL(name string, v semver.Version) string {
 
 // Driver downloads an arbitrary driver
 func Driver(name string, destination string, v semver.Version) error {
-	out.T(out.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": name})
+	out.T(style.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": name})
 	if err := download(driverWithChecksumURL(name, v), destination); err != nil {
 		return errors.Wrap(err, "download")
 	}
 
 	// Give downloaded drivers a baseline decent file permission
-	return os.Chmod(destination, 0755)
+	return os.Chmod(destination, 0o755)
 }

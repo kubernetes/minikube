@@ -26,6 +26,7 @@ import (
 	"testing"
 )
 
+// TestOffline makes sure minikube works without internet, once it the user has already cached the images, This test has to run after TestDownloadOnly!
 func TestOffline(t *testing.T) {
 	t.Run("group", func(t *testing.T) {
 		for _, runtime := range []string{"docker", "crio", "containerd"} {
@@ -49,6 +50,7 @@ func TestOffline(t *testing.T) {
 				env = append(env, "HTTP_PROXY=172.16.1.1:1")
 				env = append(env, "HTTP_PROXYS=172.16.1.1:1")
 				env = append(env, "DOCKER_HOST=172.16.1.1:1")
+
 				c.Env = env
 				rr, err := Run(t, c)
 				if err != nil {

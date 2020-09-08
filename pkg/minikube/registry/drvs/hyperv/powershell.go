@@ -44,6 +44,9 @@ func cmdOut(args ...string) (string, error) {
 	err := cmd.Run()
 	glog.Infof("[stdout =====>] : %s", stdout.String())
 	glog.Infof("[stderr =====>] : %s", stderr.String())
+	if err != nil {
+		glog.Infof("[err =====>] : %v", err)
+	}
 	return stdout.String(), err
 }
 

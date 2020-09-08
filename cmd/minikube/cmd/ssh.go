@@ -28,11 +28,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
-var (
-	nativeSSHClient bool
-)
+var nativeSSHClient bool
 
 // sshCmd represents the docker-ssh command
 var sshCmd = &cobra.Command{
@@ -43,7 +42,7 @@ var sshCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
 		if co.CP.Host.DriverName == driver.None {
-			exit.UsageT("'none' driver does not support 'minikube ssh' command")
+			exit.Message(reason.Usage, "'none' driver does not support 'minikube ssh' command")
 		}
 
 		var err error
@@ -53,7 +52,7 @@ var sshCmd = &cobra.Command{
 		} else {
 			n, _, err = node.Retrieve(*co.Config, nodeName)
 			if err != nil {
-				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
+				exit.Message(reason.GuestNodeRetrieve, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
 			}
 		}
 
@@ -62,7 +61,7 @@ var sshCmd = &cobra.Command{
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
 			// It'd be nice if we could pass up the correct error code here :(
-			os.Exit(exit.Failure)
+			os.Exit(1)
 		}
 	},
 }

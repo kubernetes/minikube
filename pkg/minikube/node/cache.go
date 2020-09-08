@@ -37,6 +37,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
@@ -73,28 +75,28 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 		return
 	}
 	if err := doCacheBinaries(k8sVersion); err != nil {
-		exit.WithError("Failed to cache binaries", err)
+		exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
 	}
 	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
-		exit.WithError("Failed to cache kubectl", err)
+		exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
 	}
 	waitCacheRequiredImages(cacheGroup)
 	waitDownloadKicBaseImage(kicGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
-		exit.WithError("Failed to cache images to tar", err)
+		exit.Error(reason.InetCacheTar, "Failed to cache images to tar", err)
 	}
-	out.T(out.Check, "Download complete!")
+	out.T(style.Check, "Download complete!")
 	os.Exit(0)
 }
 
 // CacheKubectlBinary caches the kubectl binary
-func CacheKubectlBinary(k8sVerison string) (string, error) {
+func CacheKubectlBinary(k8sVersion string) (string, error) {
 	binary := "kubectl"
 	if runtime.GOOS == "windows" {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
+	return download.Binary(binary, k8sVersion, runtime.GOOS, runtime.GOARCH)
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
@@ -115,18 +117,21 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	}
 
 	glog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-	out.T(out.Pulling, "Pulling base image ...")
+	out.T(style.Pulling, "Pulling base image ...")
 	g.Go(func() error {
-		// TODO #8004 : make base-image respect --image-repository
+		baseImg := cc.KicBaseImage
+		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
+			baseImg = strings.Replace(baseImg, "gcr.io/k8s-minikube", cc.KubernetesConfig.ImageRepository, 1)
+		}
 		var finalImg string
 		// If we end up using a fallback image, notify the user
 		defer func() {
-			if finalImg != "" && finalImg != cc.KicBaseImage {
+			if finalImg != "" && finalImg != baseImg {
 				out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(cc.KicBaseImage), image.Tag(finalImg)))
 				cc.KicBaseImage = finalImg
 			}
 		}()
-		for _, img := range append([]string{cc.KicBaseImage}, kic.FallbackImages...) {
+		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			if err := image.LoadFromTarball(driver.Docker, img); err == nil {
 				glog.Infof("successfully loaded %s from cached tarball", img)
 				// strip the digest from the img before saving it in the config
@@ -160,20 +165,19 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 		if err != nil {
 			if errors.Is(err, image.ErrGithubNeedsLogin) {
 				glog.Warningf("Error downloading kic artifacts: %v", err)
-				out.ErrT(out.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": strings.Split(kic.BaseImage, "@")[0]})
+				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": strings.Split(kic.BaseImage, "@")[0]})
 				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
-				out.T(out.Documentation, `Please visit the following link for documentation around this: 
+				out.T(style.Documentation, `Please visit the following link for documentation around this: 
 	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages
 `)
 			}
 			if errors.Is(err, image.ErrGithubNeedsLogin) || errors.Is(err, image.ErrNeedsLogin) {
-				exit.UsageT(`Please either authenticate to the registry or use --base-image flag to use a different registry.`)
+				exit.Message(reason.Usage, `Please either authenticate to the registry or use --base-image flag to use a different registry.`)
 			} else {
 				glog.Errorln("Error downloading kic artifacts: ", err)
 			}
 
 		}
-
 	}
 	glog.Info("Successfully downloaded all kic artifacts")
 }

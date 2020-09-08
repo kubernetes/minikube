@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 12
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 13
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -29,11 +29,12 @@ DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.14.4
+GO_VERSION ?= 1.14.6
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2019.02.11
 REGISTRY?=gcr.io/k8s-minikube
+REGISTRY_GH?=docker.pkg.github.com/kubernetes/minikube
 
 # Get git commit id
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
@@ -42,9 +43,13 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 # NOTE: "latest" as of 2020-05-13. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-2
+BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
+
+KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
+KIC_BASE_IMAGE_GH ?= $(REGISTRY_GH)/kicbase:$(KIC_VERSION)
+KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 
 ISO_BUCKET ?= minikube/iso
 
@@ -55,7 +60,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.107
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.26.0
+GOLINT_VERSION ?= v1.30.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -87,8 +92,7 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # storage provisioner tag to push changes to
-# to update minikubes default, update pkg/minikube/bootstrapper/images
-STORAGE_PROVISIONER_TAG ?= latest
+STORAGE_PROVISIONER_TAG ?= v3
 
 # TODO: multi-arch manifest
 ifeq ($(GOARCH),amd64)
@@ -98,7 +102,7 @@ STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE
 endif
 
 # Set the version information for the Kubernetes servers
-MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
+MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT) -X k8s.io/minikube/pkg/version.storageProvisionerVersion=$(STORAGE_PROVISIONER_TAG)
 PROVISIONER_LDFLAGS := "-X k8s.io/minikube/pkg/storage.version=$(STORAGE_PROVISIONER_TAG) -s -w -extldflags '-static'"
 
 MINIKUBEFILES := ./cmd/minikube/
@@ -130,6 +134,20 @@ KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/
 
 # hyperkit ldflags
 HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/hyperkit.gitCommitID=$(COMMIT)
+
+# autopush artefacts
+AUTOPUSH ?=
+
+# don't ask for user confirmation
+IN_CI := false
+
+# $(call user_confirm, message)
+define user_confirm
+	@if [ "${IN_CI}" = "false" ]; then\
+		echo "⚠️ $(1)";\
+		read -p "Do you want to proceed? (Y/N): " confirm && echo $$confirm | grep -iq "^[yY]" || exit 1;\
+	fi
+endef
 
 # $(call DOCKER, image, command)
 define DOCKER
@@ -194,7 +212,7 @@ e2e-darwin-amd64: out/e2e-darwin-amd64 ## Execute end-to-end testing for Darwin 
 e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## Execute end-to-end testing for Windows 64bit
 
 out/e2e-%: out/minikube-%
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go test -ldflags="${MINIKUBE_LDFLAGS}" -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
 
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
@@ -259,7 +277,7 @@ docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test
-	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test
@@ -267,7 +285,7 @@ integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Tr
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing
-	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
@@ -531,16 +549,54 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
-	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(REGISTRY)/kicbase:$(KIC_VERSION) --target base .
+	docker rmi -f $(KIC_BASE_IMAGE_GCR)-snapshot || true
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) --target base ./deploy/kicbase
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)-snapshot
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_HUB)
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GH)
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
-	go run ./hack/preload-images/*.go 
+	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o out/upload-preload ./hack/preload-images/*.go
+	./out/upload-preload
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
-	gcloud docker -- push $(STORAGE_PROVISIONER_IMAGE)
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(STORAGE_PROVISIONER_IMAGE)
+
+.PHONY: push-docker
+push-docker: # Push docker image base on to IMAGE variable
+	@docker pull $(IMAGE) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry"
+ifndef AUTOPUSH
+	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
+endif
+	docker push $(IMAGE)
+
+.PHONY: push-kic-base-image-gcr
+push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GCR)
+
+.PHONY: push-kic-base-image-gh
+push-kic-base-image-gh: kic-base-image ## Push kic-base to github
+	docker login docker.pkg.github.com
+	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GH)
+
+.PHONY: push-kic-base-image-hub
+push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
+	docker login
+	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
+
+.PHONY: push-kic-base-image
+push-kic-base-image: ## Push kic-base to all registries
+ifndef AUTOPUSH
+	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
+	$(MAKE) push-kic-base-image AUTOPUSH=true
+else
+	$(MAKE) push-kic-base-image-gh push-kic-base-image-gcr push-kic-base-image-hub
+endif
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
@@ -552,7 +608,8 @@ gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
-	gcloud docker -- push $(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum  ## Build and release .iso file

@@ -25,12 +25,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var (
 	cp     bool
 	worker bool
 )
+
 var nodeAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Adds a node to the given cluster.",
@@ -45,7 +48,7 @@ var nodeAddCmd = &cobra.Command{
 
 		name := node.Name(len(cc.Nodes) + 1)
 
-		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		out.T(style.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 
 		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
 		n := config.Node{
@@ -64,17 +67,17 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		if err := node.Add(cc, n, false); err != nil {
-			_, err := maybeDeleteAndRetry(*cc, n, nil, err)
+			_, err := maybeDeleteAndRetry(cmd, *cc, n, nil, err)
 			if err != nil {
-				exit.WithError("failed to add node", err)
+				exit.Error(reason.GuestNodeAdd, "failed to add node", err)
 			}
 		}
 
 		if err := config.SaveProfile(cc.Name, cc); err != nil {
-			exit.WithError("failed to save config", err)
+			exit.Error(reason.HostSaveProfile, "failed to save config", err)
 		}
 
-		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})
+		out.T(style.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})
 	},
 }
 

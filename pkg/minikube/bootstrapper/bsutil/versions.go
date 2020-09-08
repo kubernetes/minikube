@@ -89,7 +89,6 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 		},
 		GreaterThanOrEqual: semver.MustParse("1.14.0-alpha.0"),
 	},
-
 	{
 		Option: config.ExtraOption{
 			Component: Kubelet,
@@ -97,5 +96,21 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 			Value:     "0",
 		},
 		LessThanOrEqual: semver.MustParse("1.11.1000"),
+	},
+	{
+		Option: config.ExtraOption{
+			Component: ControllerManager,
+			Key:       "leader-elect",
+			Value:     "false",
+		},
+		GreaterThanOrEqual: semver.MustParse("1.14.0"),
+	},
+	{
+		Option: config.ExtraOption{
+			Component: Scheduler,
+			Key:       "leader-elect",
+			Value:     "false",
+		},
+		GreaterThanOrEqual: semver.MustParse("1.14.0"),
 	},
 }

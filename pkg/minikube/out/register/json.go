@@ -19,7 +19,13 @@ package register
 // PrintStep prints a Step type in JSON format
 func PrintStep(message string) {
 	s := NewStep(message)
-	printAsCloudEvent(s, s.data)
+	printAndRecordCloudEvent(s, s.data)
+}
+
+// RecordStep records a Step type in JSON format
+func RecordStep(message string) {
+	s := NewStep(message)
+	recordCloudEvent(s, s.data)
 }
 
 // PrintInfo prints an Info type in JSON format
@@ -31,11 +37,35 @@ func PrintInfo(message string) {
 // PrintDownload prints a Download type in JSON format
 func PrintDownload(artifact string) {
 	s := NewDownload(artifact)
-	printAsCloudEvent(s, s.data)
+	printAndRecordCloudEvent(s, s.data)
 }
 
 // PrintDownloadProgress prints a DownloadProgress type in JSON format
 func PrintDownloadProgress(artifact, progress string) {
 	s := NewDownloadProgress(artifact, progress)
 	printAsCloudEvent(s, s.data)
+}
+
+// PrintError prints an Error type in JSON format
+func PrintError(err string) {
+	e := NewError(err)
+	printAndRecordCloudEvent(e, e.data)
+}
+
+// RecordError records a Record type in JSON format
+func RecordError(err string) {
+	e := NewError(err)
+	recordCloudEvent(e, e.data)
+}
+
+// PrintErrorExitCode prints an error in JSON format and includes an exit code
+func PrintErrorExitCode(err string, exitcode int, additionalArgs ...map[string]string) {
+	e := NewErrorExitCode(err, exitcode, additionalArgs...)
+	printAndRecordCloudEvent(e, e.data)
+}
+
+// PrintWarning prints a Warning type in JSON format
+func PrintWarning(warning string) {
+	w := NewWarning(warning)
+	printAndRecordCloudEvent(w, w.data)
 }

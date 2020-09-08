@@ -28,9 +28,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var (
@@ -47,40 +51,54 @@ var pauseCmd = &cobra.Command{
 
 func runPause(cmd *cobra.Command, args []string) {
 	co := mustload.Running(ClusterFlagValue())
+	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	register.Reg.SetStep(register.Pausing)
+
+	glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+	if allNamespaces {
+		namespaces = nil // all
+	} else if len(namespaces) == 0 {
+		exit.Message(reason.Usage, "Use -A to specify all namespaces")
+	}
+
+	ids := []string{}
 
 	for _, n := range co.Config.Nodes {
+		// Use node-name if available, falling back to cluster name
+		name := n.Name
+		if n.Name == "" {
+			name = co.Config.Name
+		}
+
+		out.T(style.Pause, "Pausing node {{.name}} ... ", out.V{"name": name})
+
 		host, err := machine.LoadHost(co.API, driver.MachineName(*co.Config, n))
 		if err != nil {
-			exit.WithError("Error getting host", err)
+			exit.Error(reason.GuestLoadHost, "Error getting host", err)
 		}
 
 		r, err := machine.CommandRunner(host)
 		if err != nil {
-			exit.WithError("Failed to get command runner", err)
+			exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
 		}
 
 		cr, err := cruntime.New(cruntime.Config{Type: co.Config.KubernetesConfig.ContainerRuntime, Runner: r})
 		if err != nil {
-			exit.WithError("Failed runtime", err)
+			exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 		}
 
-		glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
-		if allNamespaces {
-			namespaces = nil //all
-		} else if len(namespaces) == 0 {
-			exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
-		}
-
-		ids, err := cluster.Pause(cr, r, namespaces)
+		uids, err := cluster.Pause(cr, r, namespaces)
 		if err != nil {
-			exit.WithError("Pause", err)
+			exit.Error(reason.GuestPause, "Pause", err)
 		}
+		ids = append(ids, uids...)
+	}
 
-		if namespaces == nil {
-			out.T(out.Unpause, "Paused kubelet and {{.count}} containers", out.V{"count": len(ids)})
-		} else {
-			out.T(out.Unpause, "Paused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
-		}
+	register.Reg.SetStep(register.Done)
+	if namespaces == nil {
+		out.T(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
+	} else {
+		out.T(style.Unpause, "Paused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
 	}
 }
 

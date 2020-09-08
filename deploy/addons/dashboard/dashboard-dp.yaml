@@ -90,7 +90,7 @@ spec:
       containers:
         - name: kubernetes-dashboard
           # WARNING: This must match pkg/minikube/bootstrapper/images/images.go
-          image: kubernetesui/dashboard:v2.0.1
+          image: kubernetesui/dashboard:v2.0.3
           ports:
             - containerPort: 9090
               protocol: TCP

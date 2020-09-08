@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -49,10 +50,20 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	mounts := make([]oci.Mount, len(cc.ContainerVolumeMounts))
+	for i, spec := range cc.ContainerVolumeMounts {
+		var err error
+		mounts[i], err = oci.ParseMountString(spec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return kic.NewDriver(kic.Config{
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       cc.KicBaseImage,
+		Mounts:            mounts,
 		CPU:               cc.CPUs,
 		Memory:            cc.Memory,
 		OCIBinary:         oci.Docker,
@@ -109,58 +120,40 @@ func status() registry.State {
 func checkNeedsImprovement() registry.State {
 	if runtime.GOOS == "linux" {
 		return checkOverlayMod()
-	} // TODO #8540: on non-linux check if docker desktop has enough CPU/memory
+	}
 	return registry.State{Installed: true, Healthy: true}
 }
 
 // checkOverlayMod checks if
 func checkOverlayMod() registry.State {
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "modprobe", "overlay")
-	_, err := cmd.Output()
-	if err != nil {
-		// try a different way
-		cmd = exec.CommandContext(ctx, "uname", "-r")
-		out, err := cmd.Output()
-		if ctx.Err() == context.DeadlineExceeded {
-			glog.Warningf("%q timed out checking for ", strings.Join(cmd.Args, " "))
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
-		}
-		if err != nil {
-			glog.Warningf("couldn't verify the linux distro's uname : %s", err)
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
-		}
-		path := fmt.Sprintf("/lib/modules/%s/modules.builtin", string(out))
-		cmd = exec.CommandContext(ctx, "cat", path)
-		out, err = cmd.Output()
-		if err != nil {
-			glog.Warningf("overlay module was not found in %q", path)
-			return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable overlayfs kernel module on your Linux"}
-		}
-		if strings.Contains(string(out), "overlay") { // success
-			return registry.State{NeedsImprovement: false, Installed: true, Healthy: true}
-		}
-		glog.Warningf("overlay module was not found")
-		return registry.State{NeedsImprovement: true, Installed: true, Healthy: true}
+	if _, err := os.Stat("/sys/module/overlay"); err == nil {
+		glog.Info("overlay module found")
+		return registry.State{Installed: true, Healthy: true}
 	}
-	return registry.State{Installed: true, Healthy: true}
+
+	if _, err := os.Stat("/sys/module/overlay2"); err == nil {
+		glog.Info("overlay2 module found")
+		return registry.State{Installed: true, Healthy: true}
+	}
+
+	glog.Warningf("overlay modules were not found")
+	return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable the overlay Linux kernel module using 'modprobe overlay'"}
 }
 
 // suggestFix matches a stderr with possible fix for the docker driver
 func suggestFix(stderr string, err error) registry.State {
 	if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
+		return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
 	}
 
 	if strings.Contains(stderr, "/pipe/docker_engine: The system cannot find the file specified.") && runtime.GOOS == "windows" {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
+		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
 	}
 
 	if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") || strings.Contains(stderr, "docker daemon is not running") {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
+		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
 	}
 
 	// We don't have good advice, but at least we can provide a good error message
-	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
+	return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Doc: docURL}
 }

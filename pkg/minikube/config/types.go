@@ -18,6 +18,7 @@ package config
 
 import (
 	"net"
+	"time"
 
 	"github.com/blang/semver"
 )
@@ -44,6 +45,7 @@ type ClusterConfig struct {
 	HyperkitVpnKitSock      string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts      []string // Only used by the Hyperkit driver
 	DockerEnv               []string // Each entry is formatted as KEY=VALUE.
+	ContainerVolumeMounts   []string // Only used by container drivers: Docker, Podman
 	InsecureRegistry        []string
 	RegistryMirror          []string
 	HostOnlyCIDR            string // Only used by the virtualbox driver
@@ -68,6 +70,7 @@ type ClusterConfig struct {
 	Nodes                   []Node
 	Addons                  map[string]bool
 	VerifyComponents        map[string]bool // map of components to verify and wait for after start.
+	StartHostTimeout        time.Duration
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

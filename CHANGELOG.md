@@ -1,5 +1,165 @@
 # Release Notes
 
+## Version 1.13.0 - TBD
+
+## Features
+
+* Update default Kubernetes version to v1.19.0 🎉 [#9050](https://github.com/kubernetes/minikube/pull/9050)
+* start: Support for mounting host volumes on start with docker driver [#8159](https://github.com/kubernetes/minikube/pull/8159)
+* start: Add a machine readable reason to all error paths [#9126](https://github.com/kubernetes/minikube/pull/9126)
+* stop: add --keep-context-active flag [#9044](https://github.com/kubernetes/minikube/pull/9044)
+* kubectl: Invoke kubectl if minikube binary is named 'kubectl' [#8872](https://github.com/kubernetes/minikube/pull/8872)
+
+## Bug fixes
+
+* docker: Choose the appropriate bridge interface when multiple exist [#9062](https://github.com/kubernetes/minikube/pull/9062)
+* cache: Fix "cache add" for local images by cherry-picking go-containerregistry fix [#9160](https://github.com/kubernetes/minikube/pull/9160)
+* update-context: Fix nil pointer dereference [#8989](https://github.com/kubernetes/minikube/pull/8989)
+* start: Fix --extra-config for scheduler/controllerManager by removing hardcoded values [#9136](https://github.com/kubernetes/minikube/pull/9136)
+* start: Fix --memory flag parsing in minikube start [#9033](https://github.com/kubernetes/minikube/pull/9033)
+* start: Improve overlay module check (behavior & UX) [#9163](https://github.com/kubernetes/minikube/pull/9163)
+* gcp-auth addon: trim whitespace when setting gcp project id [#9164](https://github.com/kubernetes/minikube/pull/9164)
+* cni: Allow flannel CNI to work with kicbase by fixing IP conflict [#9046](https://github.com/kubernetes/minikube/pull/9046)
+* cni: fix multiple node calico-node not ready [#9019](https://github.com/kubernetes/minikube/pull/9019)
+* kic: Retry fix_cgroup on failure [#8974](https://github.com/kubernetes/minikube/pull/8974)
+* json: fix type for kubectl version mismatch to warning [#9157](https://github.com/kubernetes/minikube/pull/9157)
+* json: fix type for latest minikube availability message [#9109](https://github.com/kubernetes/minikube/pull/9109)
+* addon-manager: Add namespace to persistent volume path [#9128](https://github.com/kubernetes/minikube/pull/9128)
+* ssh: respect native-ssh flag [#8907](https://github.com/kubernetes/minikube/pull/8907)
+
+## Other improvements
+
+* kic: Disable swap in Docker & podman containers [#9149](https://github.com/kubernetes/minikube/pull/9149)
+* kic: prioritize /etc/hosts over dns [#9029](https://github.com/kubernetes/minikube/pull/9029)
+* start: Repair kubecontext before checking cluster health [#9143](https://github.com/kubernetes/minikube/pull/9143)
+* start: Don't enable kubelet until after kubeadm generates config [#9111](https://github.com/kubernetes/minikube/pull/9111)
+* start: Add -o shorthand option for --output [#9097](https://github.com/kubernetes/minikube/pull/9097)
+* ux: Add MINIKUBE_IN_STYLE auto-detection for Windows terminal [#9127](https://github.com/kubernetes/minikube/pull/9127)
+* ux: Warn if /var disk space is full and add a solution message [#9028](https://github.com/kubernetes/minikube/pull/9028)
+* iso Upgrade falco-module to version 0.24.0 [#9068](https://github.com/kubernetes/minikube/pull/9068)
+* status: `minikube status` should display InsufficientStorage status  [#9034](https://github.com/kubernetes/minikube/pull/9034)
+* perf: set proxy-refresh-interval=70000 for etcd to improve CPU overhead [#8850](https://github.com/kubernetes/minikube/pull/8850)
+* json: buffer download progress every second [#9099](https://github.com/kubernetes/minikube/pull/9099)
+* localization: Fix typos in pl translation [#9168](https://github.com/kubernetes/minikube/pull/9168)
+* dashboard: Update dashboard to v2.0.3 [#9129](https://github.com/kubernetes/minikube/pull/9129) 
+
+Thank you to our many wonderful contributors for this release!
+
+- AlexanderChen1989
+- Ambor
+- Anders F Björklund
+- Anshul Sirur
+- Asare Worae
+- Chang-Woo Rhee
+- Evgeny Shmarnev
+- Jose Donizetti
+- Kazuki Suda
+- Li Zhijian
+- Marcin Niemira
+- Markus Frosch
+- Medya Ghazizadeh
+- Pablo Caderno
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- anencore94
+- mckrl
+- ollipa
+- staticdev
+- vinu2003
+- zhanwang
+
+## Version 1.12.3 - 2020-08-12
+
+Features:
+
+* Make waiting for Host configurable via --wait-timeout flag [#8948](https://github.com/kubernetes/minikube/pull/8948)
+
+Bug Fixes:
+
+* Ignore localhost proxy started with scheme. [#8885](https://github.com/kubernetes/minikube/pull/8885)
+* Improve error handling for validating memory limits [#8959](https://github.com/kubernetes/minikube/pull/8959)
+* Skip validations if --force is supplied [#8969](https://github.com/kubernetes/minikube/pull/8969)
+* Fix handling of parseIP error [#8820](https://github.com/kubernetes/minikube/pull/8820)
+
+Improvements:
+
+* GCP Auth Addon: Exit with better error messages [#8932](https://github.com/kubernetes/minikube/pull/8932)
+* Add warning for ingress addon enabled with driver of none [#8870](https://github.com/kubernetes/minikube/pull/8870)
+* Update Japanese translation [#8967](https://github.com/kubernetes/minikube/pull/8967)
+* Fix for a few typos in polish translations [#8950](https://github.com/kubernetes/minikube/pull/8950)
+
+Thank you to our contributors for this release! 
+
+- Anders F Björklund
+- Andrej Guran
+- Chris Paika
+- Dean Coakley
+- Evgeny Shmarnev
+- Ling Samuel
+- Ma Xinjian
+- Marcin Niemira
+- Medya Ghazizadeh
+- Pablo Caderno
+- Priya Wadhwa
+- RA489
+- Sharif Elgamal
+- TAKAHASHI Shuuji
+- Thomas Strömberg
+- inductor
+- priyawadhwa
+- programistka
+
+## Version 1.12.2 - 2020-08-03
+
+Features:
+* New Addon: Automated GCP Credentials [#8682](https://github.com/kubernetes/minikube/pull/8682)
+* status: Add experimental cluster JSON status with state transition support [#8868](https://github.com/kubernetes/minikube/pull/8868)
+* Add support for Error type to JSON output [#8796](https://github.com/kubernetes/minikube/pull/8796)
+* Implement Warning type for JSON output [#8793](https://github.com/kubernetes/minikube/pull/8793)
+* Add stopping as a possible state in deleting, change errorf to warningf [#8896](https://github.com/kubernetes/minikube/pull/8896)
+* Use preloaded tarball for cri-o container runtime [#8588](https://github.com/kubernetes/minikube/pull/8588)
+* Add SCH_PRIO, SCH_SFQ and CLS_BASIC kernel module to add filter on traffic control [#8670](https://github.com/kubernetes/minikube/pull/8670)
+
+Bug Fixes:
+* docker/podman: warn if allocated memory is below limit [#8718](https://github.com/kubernetes/minikube/pull/8718)
+* Enabling metrics addon when someone enables dashboard [#8842](https://github.com/kubernetes/minikube/pull/8842)
+* make base-image respect --image-repository [#8880](https://github.com/kubernetes/minikube/pull/8880)
+* UI: suggest to enable `metric-server` for full feature dashboard addon. [#8863](https://github.com/kubernetes/minikube/pull/8863)
+* Fix mount issues with Docker/Podman drivers [#8780](https://github.com/kubernetes/minikube/pull/8780)
+* Fix upgrading from minikube 1.9 and older [#8782](https://github.com/kubernetes/minikube/pull/8782)
+* Make restarts in Docker/Podman drivers more reliable [#8864](https://github.com/kubernetes/minikube/pull/8864)
+
+Version changes:
+* update crio to 1.18.3 and kicbase to ubuntu 20.04 [#8895](https://github.com/kubernetes/minikube/pull/8895)
+* Podman downgrade to 1.9.3 for the build command [#8774](https://github.com/kubernetes/minikube/pull/8774)
+* Upgrade kicbase to v0.0.11 [#8899](https://github.com/kubernetes/minikube/pull/8899)
+* update golang version [#8781](https://github.com/kubernetes/minikube/pull/8781)
+* Update external-provisioner for storage provisioner for Kubernetes 1.18 [#8610](https://github.com/kubernetes/minikube/pull/8610)
+* Upgrade storage provisioner image  [#8909](https://github.com/kubernetes/minikube/pull/8909)
+
+Thank you to our contributors for this release!
+- Ajitesh13
+- Alonyb
+- Anders F Björklund
+- Andrii Volin
+- Dean Coakley
+- Joel Smith
+- Johannes M. Scheuermann
+- Jose Donizetti
+- Lu Fengqi
+- Medya Ghazizadeh
+- Pablo Caderno
+- Priya Wadhwa
+- RA489
+- Sedat Gokcen
+- Sharif Elgamal
+- Shubham
+- Thomas Strömberg
+- Yang Keao
+- dddddai
+- niedhui
+
 ## Version 1.12.1 - 2020-07-17
 
 Features:

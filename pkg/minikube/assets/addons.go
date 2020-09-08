@@ -22,6 +22,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Addon is a named list of assets, that can be enabled
@@ -419,6 +420,26 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "ambassador"),
+	"gcp-auth": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/gcp-auth/gcp-auth-ns.yaml",
+			vmpath.GuestAddonsDir,
+			"gcp-auth-ns.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/gcp-auth/gcp-auth-service.yaml",
+			vmpath.GuestAddonsDir,
+			"gcp-auth-service.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/gcp-auth/gcp-auth-webhook.yaml",
+			vmpath.GuestAddonsDir,
+			"gcp-auth-webhook.yaml",
+			"0640",
+			false),
+	}, false, "gcp-auth"),
 }
 
 // GenerateTemplateData generates template data for template assets
@@ -432,17 +453,19 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		ea = "-" + runtime.GOARCH
 	}
 	opts := struct {
-		Arch                string
-		ExoticArch          string
-		ImageRepository     string
-		LoadBalancerStartIP string
-		LoadBalancerEndIP   string
+		Arch                      string
+		ExoticArch                string
+		ImageRepository           string
+		LoadBalancerStartIP       string
+		LoadBalancerEndIP         string
+		StorageProvisionerVersion string
 	}{
-		Arch:                a,
-		ExoticArch:          ea,
-		ImageRepository:     cfg.ImageRepository,
-		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
+		Arch:                      a,
+		ExoticArch:                ea,
+		ImageRepository:           cfg.ImageRepository,
+		LoadBalancerStartIP:       cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:         cfg.LoadBalancerEndIP,
+		StorageProvisionerVersion: version.GetStorageProvisionerVersion(),
 	}
 
 	return opts

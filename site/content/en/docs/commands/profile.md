@@ -1,14 +1,13 @@
 ---
 title: "profile"
 description: >
-  Get or list the the current profiles (clusters)
+  Get or list the current profiles (clusters)
 ---
-
 
 
 ## minikube profile
 
-Get or list the the current profiles (clusters)
+Get or list the current profiles (clusters)
 
 ### Synopsis
 

@@ -16,6 +16,11 @@ limitations under the License.
 
 package register
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Log represents the different types of logs that can be output as JSON
 // This includes: Step, Download, DownloadProgress, Warning, Info, Error
 type Log interface {
@@ -37,7 +42,7 @@ func NewStep(message string) *Step {
 	return &Step{data: map[string]string{
 		"totalsteps":  Reg.totalSteps(),
 		"currentstep": Reg.currentStep(),
-		"message":     message,
+		"message":     strings.TrimSpace(message),
 		"name":        string(Reg.current),
 	}}
 }
@@ -83,8 +88,19 @@ func NewDownloadProgress(artifact, progress string) *DownloadProgress {
 
 // Warning will be used to notify the user of warnings
 type Warning struct {
+	data map[string]string
 }
 
+// NewWarning returns a new warning type
+func NewWarning(warning string) *Warning {
+	return &Warning{
+		map[string]string{
+			"message": strings.TrimSpace(warning),
+		},
+	}
+}
+
+// Type returns the cloud events compatible type of this struct
 func (s *Warning) Type() string {
 	return "io.k8s.sigs.minikube.warning"
 }
@@ -102,13 +118,34 @@ func (s *Info) Type() string {
 func NewInfo(message string) *Info {
 	return &Info{
 		map[string]string{
-			"message": message,
+			"message": strings.TrimSpace(message),
 		},
 	}
 }
 
 // Error will be used to notify the user of errors
 type Error struct {
+	data map[string]string
+}
+
+func NewError(err string) *Error {
+	return &Error{
+		map[string]string{
+			"message": strings.TrimSpace(err),
+		},
+	}
+}
+
+// NewErrorExitCode returns an error that has an associated exit code
+func NewErrorExitCode(err string, exitcode int, additionalData ...map[string]string) *Error {
+	e := NewError(strings.TrimSpace(err))
+	e.data["exitcode"] = fmt.Sprintf("%v", exitcode)
+	for _, a := range additionalData {
+		for k, v := range a {
+			e.data[k] = strings.TrimSpace(v)
+		}
+	}
+	return e
 }
 
 func (s *Error) Type() string {

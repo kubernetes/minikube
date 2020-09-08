@@ -123,8 +123,9 @@ func UpdateEndpoint(contextName string, hostname string, port int, confpath stri
 
 	address := "https://" + hostname + ":" + strconv.Itoa(port)
 
-	// if the kubeconfig is missed, create new one
-	if len(cfg.Clusters) == 0 {
+	// if the cluster setting is missed in the kubeconfig, create new one
+	if _, ok := cfg.Clusters[contextName]; !ok {
+		glog.Infof("%q context is missing from %s - will repair!", contextName, confpath)
 		lp := localpath.Profile(contextName)
 		gp := localpath.MiniPath()
 		kcs := &Settings{
@@ -139,8 +140,10 @@ func UpdateEndpoint(contextName string, hostname string, port int, confpath stri
 		if err != nil {
 			return false, errors.Wrap(err, "populating kubeconfig")
 		}
+	} else {
+		cfg.Clusters[contextName].Server = address
 	}
-	cfg.Clusters[contextName].Server = address
+
 	err = writeToFile(cfg, confpath)
 	if err != nil {
 		return false, errors.Wrap(err, "write")

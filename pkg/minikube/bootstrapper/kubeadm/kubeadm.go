@@ -18,19 +18,17 @@ package kubeadm
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"os/exec"
 	"path"
 	"runtime"
-	"sync"
-
-	"fmt"
-	"net"
-
-	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
-
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
@@ -53,9 +51,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
@@ -217,7 +217,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 
 	if driver.IsKIC(cfg.Driver) { // to bypass this error: /proc/sys/net/bridge/bridge-nf-call-iptables does not exist
 		ignore = append(ignore, "FileContent--proc-sys-net-bridge-bridge-nf-call-iptables")
-
 	}
 
 	if err := k.clearStaleConfigs(cfg); err != nil {
@@ -275,7 +274,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 
 // applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.
 func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
-
 	cnm, err := cni.New(cfg)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
@@ -285,7 +283,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.T(out.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	out.T(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
@@ -302,7 +300,6 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 
 // unpause unpauses any Kubernetes backplane components
 func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
-
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return err
@@ -341,7 +338,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 			return nil
 		}
 
-		out.ErrT(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
+		out.ErrT(style.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			glog.Warningf("delete failed: %v", err)
 		}
@@ -360,7 +357,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	// retry again if it is not a fail fast error
 	if _, ff := err.(*FailFastError); !ff {
-		out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
+		out.ErrT(style.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			glog.Warningf("delete failed: %v", err)
 		}
@@ -397,7 +394,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	start := time.Now()
 
 	register.Reg.SetStep(register.VerifyingKubernetes)
-	out.T(out.HealthCheck, "Verifying Kubernetes components...")
+	out.T(style.HealthCheck, "Verifying Kubernetes components...")
 
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
 	cp, err := config.PrimaryControlPlane(&cfg)
@@ -542,6 +539,12 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "control plane")
 	}
 
+	// Save the costly tax of reinstalling Kubernetes if the only issue is a missing kube context
+	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv())
+	if err != nil {
+		glog.Warningf("unable to update kubeconfig (cluster will likely require a reset): %v", err)
+	}
+
 	client, err := k.client(hostname, port)
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
@@ -552,6 +555,14 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	if !k.needsReconfigure(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
 		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
+	}
+
+	if err := k.stopKubeSystem(cfg); err != nil {
+		glog.Warningf("Failed to stop kube-system containers: port conflicts may arise: %v", err)
+	}
+
+	if err := sysinit.New(k.c).Stop("kubelet"); err != nil {
+		glog.Warningf("Failed to stop kubelet, this might cause upgrade errors: %v", err)
 	}
 
 	if err := k.clearStaleConfigs(cfg); err != nil {
@@ -566,6 +577,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	cmds := []string{
 		fmt.Sprintf("%s phase certs all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, conf),
+		fmt.Sprintf("%s phase kubelet-start --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, conf),
 		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, conf),
 	}
@@ -738,14 +750,16 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "kubeadm images")
 	}
 
-	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime,
-		Runner: k.c, Socket: cfg.KubernetesConfig.CRISocket})
+	r, err := cruntime.New(cruntime.Config{
+		Type:   cfg.KubernetesConfig.ContainerRuntime,
+		Runner: k.c, Socket: cfg.KubernetesConfig.CRISocket,
+	})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
 
 	if err := r.Preload(cfg.KubernetesConfig); err != nil {
-		glog.Infof("prelaoding failed, will try to load cached images: %v", err)
+		glog.Infof("preload failed, will try to load cached images: %v", err)
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
@@ -822,7 +836,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "host alias")
 	}
 
-	return sm.Start("kubelet")
+	return nil
 }
 
 // kubectlPath returns the path to the kubelet
@@ -864,7 +878,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	}()
 
 	// Allow no more than 5 seconds for creating cluster role bindings
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
 	defer cancel()
 	rbacName := "minikube-rbac"
 	// kubectl create clusterrolebinding minikube-rbac --clusterrole=cluster-admin --serviceaccount=kube-system:default
@@ -873,10 +887,14 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return errors.Wrapf(err, "timeout apply sa")
+		}
 		// Error from server (AlreadyExists): clusterrolebindings.rbac.authorization.k8s.io "minikube-rbac" already exists
 		if strings.Contains(rr.Output(), "Error from server (AlreadyExists)") {
 			glog.Infof("rbac %q already exists not need to re-create.", rbacName)
-			return nil
+		} else {
+			return errors.Wrapf(err, "apply sa")
 		}
 	}
 
@@ -901,6 +919,27 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	return nil
 }
 
+// stopKubeSystem stops all the containers in the kube-system to prevent #8740 when doing hot upgrade
+func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
+	glog.Info("stopping kube-system containers ...")
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return errors.Wrap(err, "new cruntime")
+	}
+
+	ids, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
+	if err != nil {
+		return errors.Wrap(err, "list")
+	}
+
+	if len(ids) > 0 {
+		if err := cr.StopContainers(ids); err != nil {
+			return errors.Wrap(err, "stop")
+		}
+	}
+	return nil
+}
+
 // adviseNodePressure will advise the user what to do with difference pressure errors based on their environment
 func adviseNodePressure(err error, name string, drv string) {
 	if diskErr, ok := err.(*kverify.ErrDiskPressure); ok {
@@ -908,16 +947,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		glog.Warning(diskErr)
 		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
 		// generic advice for all drivers
-		out.T(out.Tip, "Please free up disk or prune images.")
+		out.T(style.Tip, "Please free up disk or prune images.")
 		if driver.IsVM(drv) {
-			out.T(out.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
+			out.T(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.T(out.Stopped, "Please increse Desktop's disk size.")
+			out.T(style.Stopped, "Please increse Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
-				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.T(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.T(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")
@@ -928,16 +967,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		glog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
-		out.T(out.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
+		out.T(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
 		if driver.IsVM(drv) {
-			out.T(out.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
+			out.T(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.T(out.Stopped, "Consider increasing Docker Desktop's memory size.")
+			out.T(style.Stopped, "Consider increasing Docker Desktop's memory size.")
 			if runtime.GOOS == "darwin" {
-				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.T(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.T(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")

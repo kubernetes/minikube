@@ -36,9 +36,13 @@ const (
 func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
 	drivers := []string{"kvm2", "docker"}
 	for _, d := range drivers {
+		fmt.Printf("**%s Driver**\n", d)
+		if err := downloadArtifacts(ctx, binaries, d); err != nil {
+			fmt.Printf("error downloading artifacts: %v", err)
+			continue
+		}
 		rm, err := collectResults(ctx, binaries, d)
 		if err != nil {
-			fmt.Printf("**%s Driver**\n", d)
 			fmt.Printf("error collecting results for %s driver: %v\n", d, err)
 			continue
 		}
@@ -58,6 +62,11 @@ func collectResults(ctx context.Context, binaries []*Binary, driver string) (*re
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
 			rm.addResult(binary, r)
+			r, err = timeEnableIngress(ctx, binary)
+			if err != nil {
+				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
+			}
+			rm.addResult(binary, r)
 		}
 	}
 	return rm, nil
@@ -71,11 +80,36 @@ func average(nums []float64) float64 {
 	return total / float64(len(nums))
 }
 
+func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string) error {
+	for _, b := range binaries {
+		c := exec.CommandContext(ctx, b.path, "start", fmt.Sprintf("--driver=%s", driver), "--download-only")
+		c.Stderr = os.Stderr
+		log.Printf("Running: %v...", c.Args)
+		if err := c.Run(); err != nil {
+			return errors.Wrap(err, "downloading artifacts")
+		}
+	}
+	return nil
+}
+
 // timeMinikubeStart returns the time it takes to execute `minikube start`
-// It deletes the VM after `minikube start`.
 func timeMinikubeStart(ctx context.Context, binary *Binary, driver string) (*result, error) {
 	startCmd := exec.CommandContext(ctx, binary.path, "start", fmt.Sprintf("--driver=%s", driver))
 	startCmd.Stderr = os.Stderr
+
+	log.Printf("Running: %v...", startCmd.Args)
+	r, err := timeCommandLogs(startCmd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "timing cmd: %v", startCmd.Args)
+	}
+	return r, nil
+}
+
+// timeEnableIngress returns the time it takes to execute `minikube addons enable ingress`
+// It deletes the VM after `minikube addons enable ingress`.
+func timeEnableIngress(ctx context.Context, binary *Binary) (*result, error) {
+	enableCmd := exec.CommandContext(ctx, binary.path, "addons enable ingress")
+	enableCmd.Stderr = os.Stderr
 
 	deleteCmd := exec.CommandContext(ctx, binary.path, "delete")
 	defer func() {
@@ -84,10 +118,10 @@ func timeMinikubeStart(ctx context.Context, binary *Binary, driver string) (*res
 		}
 	}()
 
-	log.Printf("Running: %v...", startCmd.Args)
-	r, err := timeCommandLogs(startCmd)
+	log.Printf("Running: %v...", enableCmd.Args)
+	r, err := timeCommandLogs(enableCmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "timing cmd: %v", startCmd.Args)
+		return nil, errors.Wrapf(err, "timing cmd: %v", enableCmd.Args)
 	}
 	return r, nil
 }

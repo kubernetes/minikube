@@ -5,7 +5,6 @@ description: >
 ---
 
 
-
 ## minikube mount
 
 Mounts the specified directory into minikube

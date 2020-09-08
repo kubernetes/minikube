@@ -26,7 +26,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/service"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var (
@@ -47,13 +49,13 @@ var addonsOpenCmd = &cobra.Command{
 	PreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("addonsURL").Parse(addonsURLFormat)
 		if err != nil {
-			exit.UsageT("The value passed to --format is invalid: {{.error}}", out.V{"error": err})
+			exit.Message(reason.Usage, "The value passed to --format is invalid: {{.error}}", out.V{"error": err})
 		}
 		addonsURLTemplate = t
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.UsageT("usage: minikube addons open ADDON_NAME")
+			exit.Message(reason.Usage, "usage: minikube addons open ADDON_NAME")
 		}
 		addonName := args[0]
 
@@ -62,14 +64,14 @@ var addonsOpenCmd = &cobra.Command{
 
 		addon, ok := assets.Addons[addonName] // validate addon input
 		if !ok {
-			exit.WithCodeT(exit.Data, `addon '{{.name}}' is not a valid addon packaged with minikube.
+			exit.Message(reason.Usage, `addon '{{.name}}' is not a valid addon packaged with minikube.
 To see the list of available addons run:
 minikube addons list`, out.V{"name": addonName})
 		}
 
 		enabled := addon.IsEnabled(co.Config)
 		if !enabled {
-			exit.WithCodeT(exit.Unavailable, `addon '{{.name}}' is currently not enabled.
+			exit.Message(reason.AddonNotEnabled, `addon '{{.name}}' is currently not enabled.
 To enable this addon run:
 minikube addons enable {{.name}}`, out.V{"name": addonName})
 		}
@@ -79,10 +81,10 @@ minikube addons enable {{.name}}`, out.V{"name": addonName})
 
 		serviceList, err := service.GetServiceListByLabel(cname, namespace, key, addonName)
 		if err != nil {
-			exit.WithCodeT(exit.Unavailable, "Error getting service with namespace: {{.namespace}} and labels {{.labelName}}:{{.addonName}}: {{.error}}", out.V{"namespace": namespace, "labelName": key, "addonName": addonName, "error": err})
+			exit.Message(reason.SvcList, "Error getting service with namespace: {{.namespace}} and labels {{.labelName}}:{{.addonName}}: {{.error}}", out.V{"namespace": namespace, "labelName": key, "addonName": addonName, "error": err})
 		}
 		if len(serviceList.Items) == 0 {
-			exit.WithCodeT(exit.Config, `This addon does not have an endpoint defined for the 'addons open' command.
+			exit.Message(reason.SvcNotFound, `This addon does not have an endpoint defined for the 'addons open' command.
 You can add one by annotating a service with the label {{.labelName}}:{{.addonName}}`, out.V{"labelName": key, "addonName": addonName})
 		}
 		for i := range serviceList.Items {
@@ -90,14 +92,14 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 			var urlString []string
 
 			if urlString, err = service.WaitForService(co.API, co.Config.Name, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
-				exit.WithCodeT(exit.Unavailable, "Wait failed: {{.error}}", out.V{"error": err})
+				exit.Message(reason.SvcTimeout, "Wait failed: {{.error}}", out.V{"error": err})
 			}
 
 			if len(urlString) != 0 {
-				out.T(out.Celebrate, "Opening Kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+				out.T(style.Celebrate, "Opening Kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
 				for _, url := range urlString {
 					if err := browser.OpenURL(url); err != nil {
-						exit.WithError(fmt.Sprintf("browser failed to open url %s", url), err)
+						exit.Error(reason.HostBrowser, fmt.Sprintf("browser failed to open url %s", url), err)
 					}
 				}
 			}

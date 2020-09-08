@@ -16,7 +16,7 @@ All translations are stored in the top-level `translations` directory.
 	~/minikube$ ls translations/
 	de.json		es.json		fr.json		ja.json		ko.json		pl.json		zh-CN.json
 	```
-* Run `make extract` from root to populate that file with the strings to translate in json
+* Run `make extract` from root directory to populate that file with the strings to translate in json
   form.
 	```
 	~/minikube$ make extract

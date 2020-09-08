@@ -34,20 +34,30 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v4"
+	PreloadVersion = "v6"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
 
 // TarballName returns name of the tarball
 func TarballName(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-overlay2-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, runtime.GOARCH)
+	if containerRuntime == "crio" {
+		containerRuntime = "cri-o"
+	}
+	var storageDriver string
+	if containerRuntime == "cri-o" {
+		storageDriver = "overlay"
+	} else {
+		storageDriver = "overlay2"
+	}
+	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, runtime.GOARCH)
 }
 
 // returns the name of the checksum file
@@ -77,14 +87,6 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bool {
-
-	// and https://github.com/kubernetes/minikube/issues/6934
-	// to track status of adding crio
-	if containerRuntime == "crio" {
-		glog.Info("crio is not supported yet, skipping preload")
-		return false
-	}
-
 	// TODO (#8166): Get rid of the need for this and viper at all
 	force := false
 	if len(forcePreload) > 0 {
@@ -136,7 +138,7 @@ func Preload(k8sVersion, containerRuntime string) error {
 		return nil
 	}
 
-	out.T(out.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
+	out.T(style.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
 	url := remoteTarballURL(k8sVersion, containerRuntime)
 
 	if err := download(url, targetPath); err != nil {
@@ -166,7 +168,7 @@ func saveChecksumFile(k8sVersion, containerRuntime string) error {
 		return errors.Wrap(err, "getting storage object")
 	}
 	checksum := attrs.MD5
-	return ioutil.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0644)
+	return ioutil.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
 }
 
 // verifyChecksum returns true if the checksum of the local binary matches

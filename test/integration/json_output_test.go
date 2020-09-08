@@ -19,17 +19,19 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os/exec"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 func TestJSONOutput(t *testing.T) {
-	if NoneDriver() || DockerDriver() {
-		t.Skipf("skipping: test drivers once all JSON output is enabled")
-	}
 	profile := UniqueProfileName("json-output")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
@@ -42,25 +44,117 @@ func TestJSONOutput(t *testing.T) {
 		t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
 	}
 
-	type validateJSONOutputFunc func(context.Context, *testing.T, *RunResult)
+	ces, err := cloudEvents(t, rr)
+	if err != nil {
+		t.Fatalf("converting to cloud events: %v\n", err)
+	}
+
+	type validateJSONOutputFunc func(context.Context, *testing.T, []*cloudEvent)
 	t.Run("serial", func(t *testing.T) {
 		serialTests := []struct {
 			name      string
 			validator validateJSONOutputFunc
 		}{
-			{"CloudEvents", validateCloudEvents},
+			{"DistinctCurrentSteps", validateDistinctCurrentSteps},
+			{"IncreasingCurrentSteps", validateIncreasingCurrentSteps},
 		}
 		for _, stc := range serialTests {
 			t.Run(stc.name, func(t *testing.T) {
-				stc.validator(ctx, t, rr)
+				stc.validator(ctx, t, ces)
 			})
 		}
 	})
-
 }
 
-//  make sure all output can be marshaled as a cloud event
-func validateCloudEvents(ctx context.Context, t *testing.T, rr *RunResult) {
+//  make sure each step has a distinct step number
+func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
+	steps := map[string]string{}
+	for _, ce := range ces {
+		currentStep, exists := ce.data["currentstep"]
+		if !exists {
+			continue
+		}
+		if msg, alreadySeen := steps[currentStep]; alreadySeen {
+			t.Fatalf("step %v has already been assigned to another step:\n%v\nCannot use for:\n%v\n%v", currentStep, msg, ce.data["message"], ces)
+		}
+		steps[currentStep] = ce.data["message"]
+	}
+}
+
+// for successful minikube start, 'current step' should be increasing
+func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
+	step := -1
+	for _, ce := range ces {
+		currentStep, exists := ce.data["currentstep"]
+		if !exists {
+			continue
+		}
+		cs, err := strconv.Atoi(currentStep)
+		if err != nil {
+			t.Fatalf("current step is not an integer: %v\n%v", currentStep, ce)
+		}
+		if cs <= step {
+			t.Fatalf("current step is not in increasing order: %v", ces)
+		}
+		step = cs
+	}
+}
+
+func TestJSONOutputError(t *testing.T) {
+	profile := UniqueProfileName("json-output-error")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
+	defer Cleanup(t, profile, cancel)
+
+	// force a failure via --driver=fail so that we can make sure errors
+	// are printed as expected
+	startArgs := []string{"start", "-p", profile, "--memory=2200", "--output=json", "--wait=true", "--driver=fail"}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err == nil {
+		t.Errorf("expected failure: args %q: %v", rr.Command(), err)
+	}
+	ces, err := cloudEvents(t, rr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// we want the last cloud event to be of type error and have the expected exit code and message
+	last := ces[len(ces)-1]
+	if last.Type() != register.NewError("").Type() {
+		t.Fatalf("last cloud event is not of type error: %v", last)
+	}
+	last.validateData(t, "exitcode", fmt.Sprintf("%v", reason.ExDriverUnsupported))
+	last.validateData(t, "message", fmt.Sprintf("The driver 'fail' is not supported on %s", runtime.GOOS))
+}
+
+type cloudEvent struct {
+	cloudevents.Event
+	data map[string]string
+}
+
+func newCloudEvent(t *testing.T, ce cloudevents.Event) *cloudEvent {
+	m := map[string]string{}
+	data := ce.Data()
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("marshalling cloud event: %v", err)
+	}
+	return &cloudEvent{
+		Event: ce,
+		data:  m,
+	}
+}
+
+func (c *cloudEvent) validateData(t *testing.T, key, value string) {
+	v, ok := c.data[key]
+	if !ok {
+		t.Fatalf("expected key %s does not exist in cloud event", key)
+	}
+	if v != value {
+		t.Fatalf("values in cloud events do not match:\nActual:\n'%v'\nExpected:\n'%v'\n", v, value)
+	}
+}
+
+func cloudEvents(t *testing.T, rr *RunResult) ([]*cloudEvent, error) {
+	ces := []*cloudEvent{}
 	stdout := strings.Split(rr.Stdout.String(), "\n")
 	for _, s := range stdout {
 		if s == "" {
@@ -68,7 +162,10 @@ func validateCloudEvents(ctx context.Context, t *testing.T, rr *RunResult) {
 		}
 		event := cloudevents.NewEvent()
 		if err := json.Unmarshal([]byte(s), &event); err != nil {
-			t.Fatalf("unable to unmarshal output: %v\n%s", err, s)
+			t.Logf("unable to marshal output: %v", s)
+			return nil, err
 		}
+		ces = append(ces, newCloudEvent(t, event))
 	}
+	return ces, nil
 }

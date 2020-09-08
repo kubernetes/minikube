@@ -28,6 +28,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 // RunResult holds the results of a Runner
@@ -100,7 +101,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 
 	if warn { // convert exec.Command to with context
 		cmdWithCtx := exec.CommandContext(ctx, cmd.Args[0], cmd.Args[1:]...)
-		cmdWithCtx.Stdout = cmd.Stdout //copying the original command
+		cmdWithCtx.Stdout = cmd.Stdout // copying the original command
 		cmdWithCtx.Stderr = cmd.Stderr
 		cmd = cmdWithCtx
 	}
@@ -134,7 +135,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 			out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
 			// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
 			if cmd.Args[0] != "sudo" {
-				out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+				out.ErrT(style.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
 			}
 		}
 
