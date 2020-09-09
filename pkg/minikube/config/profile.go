@@ -53,7 +53,12 @@ func (p *Profile) IsValid() bool {
 }
 
 // PrimaryControlPlane gets the node specific config for the first created control plane
-func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
+func PrimaryControlPlane(cc *ClusterConfig, miniHome ...string) (Node, error) {
+	miniPath := localpath.MiniPath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+
 	for _, n := range cc.Nodes {
 		if n.ControlPlane {
 			return n, nil
@@ -76,7 +81,7 @@ func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 	cc.KubernetesConfig.NodeName = ""
 	cc.KubernetesConfig.NodeIP = ""
 
-	err := SaveProfile(viper.GetString(ProfileName), cc)
+	err := SaveProfile(viper.GetString(ProfileName), cc, miniPath)
 	if err != nil {
 		return Node{}, err
 	}

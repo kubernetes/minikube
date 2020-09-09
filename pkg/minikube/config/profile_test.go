@@ -17,6 +17,8 @@ limitations under the License.
 package config
 
 import (
+	"github.com/spf13/viper"
+
 	"path/filepath"
 	"testing"
 )
@@ -136,7 +138,7 @@ func TestProfileNameInReservedKeywords(t *testing.T) {
 func TestProfileExists(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/.minikube2 : %v", err)
 	}
 
 	var testCases = []struct {
@@ -163,7 +165,7 @@ func TestProfileExists(t *testing.T) {
 func TestCreateEmptyProfile(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/.minikube2 : %v", err)
 	}
 
 	var testCases = []struct {
@@ -194,7 +196,7 @@ func TestCreateEmptyProfile(t *testing.T) {
 func TestCreateProfile(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/.minikube2 : %v", err)
 	}
 
 	var testCases = []struct {
@@ -230,7 +232,7 @@ func TestCreateProfile(t *testing.T) {
 func TestDeleteProfile(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/.minikube2 : %v", err)
 	}
 
 	err = CreateEmptyProfile("existing_prof", miniDir)
@@ -257,7 +259,7 @@ func TestDeleteProfile(t *testing.T) {
 func TestGetPrimaryControlPlane(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/.minikube2 : %v", err)
 	}
 
 	var tests = []struct {
@@ -277,7 +279,11 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 			t.Fatalf("Failed to load config for %s", tc.description)
 		}
 
-		n, err := PrimaryControlPlane(cc)
+		if tc.description == "old style" {
+			viper.Set(ProfileName, tc.profile+"_converted")
+		}
+
+		n, err := PrimaryControlPlane(cc, miniDir)
 		if err != nil {
 			t.Fatalf("Unexpexted error getting primary control plane: %v", err)
 		}
@@ -294,6 +300,11 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 			t.Errorf("Unexpected name. expected: %d, got: %d", tc.expectedPort, n.Port)
 		}
 
+		if tc.description == "old style" {
+			err = DeleteProfile(viper.GetString(ProfileName), miniDir)
+			if err != nil {
+				t.Errorf("error test tear down %v", err)
+			}
+		}
 	}
-
 }
