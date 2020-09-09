@@ -53,7 +53,7 @@ var exclude = []string{
 }
 
 // ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
-const ErrMapFile string = "pkg/minikube/problem/err_map.go"
+const ErrMapFile string = "pkg/minikube/reason/known_issues.go"
 
 // state is a struct that represent the current state of the extraction process
 type state struct {
