@@ -96,7 +96,8 @@ func etcd(v semver.Version, mirror string) string {
 
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	ev := "3.4.9-1"
+	ev := "3.4.13-0"
+
 	switch v.Minor {
 	case 17, 18:
 		ev = "3.4.3-0"
@@ -109,6 +110,12 @@ func etcd(v semver.Version, mirror string) string {
 	case 11:
 		ev = "3.2.18"
 	}
+
+	// An awkward special case for v1.19.0 - do not imitate unless necessary
+	if v.Equals(semver.MustParse("1.19.0")) {
+		ev = "3.4.9-1"
+	}
+
 	return path.Join(kubernetesRepo(mirror), "etcd"+archTag(needsArchSuffix)+ev)
 }
 
