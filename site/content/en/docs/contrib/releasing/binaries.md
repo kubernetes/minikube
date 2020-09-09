@@ -20,6 +20,14 @@ description: >
 
 See [ISO release instructions]({{<ref "iso.md">}})
 
+## Tag KIC base image
+
+for container drivers (docker,podman), if there has been any change in Dockerfile
+(and there is a -snapshot image), should tag with latest release and push to gcr and docker hub and github packages.
+
+for example if you are releasing v0.0.13 and latest kicbase image is  v0.0.12-snapshot
+should tag v0.0.13 and change the [kic/types.go](https://github.com/medyagh/minikube/blob/635ff53a63e5bb1be4e1abb9067ebe502a16224e/pkg/drivers/kic/types.go#L29-L30) file as well.
+
 ## Update Release Notes
 
 Run the following script from your local upstream repo copy to generate updated release notes:
