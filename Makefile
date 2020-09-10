@@ -298,7 +298,7 @@ integration-versioned: out/minikube ## Trigger minikube integration testing
 
 .PHONY: integration-functional-only
 integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl tests in integration test 
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=20m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) -test.run TestFunctional/serial/StartWithProxy 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=20m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) -test.run TestFunctional 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: html_report
 html_report: ## generate HTML gopogh report out of the last integration test logs (haave to run after integration test targets)
@@ -307,7 +307,7 @@ html_report: ## generate HTML gopogh report out of the last integration test log
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
 	@echo open $(CURDIR)/out/testout_$(COMMIT_SHORT).html
 	@echo "-----------------------------------------------------------------------------------"
-	open $(CURDIR)/out/testout_$(COMMIT_SHORT).html || true
+	@open $(CURDIR)/out/testout_$(COMMIT_SHORT).html || true
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
