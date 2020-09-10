@@ -300,7 +300,7 @@ integration-versioned: out/minikube ## Trigger minikube integration testing
 integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl tests in integration test 
 	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=20m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) -test.run TestFunctional/serial/StartWithProxy 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
-
+.PHONY: html_report
 html_report: ## generate HTML gopogh report out of the last integration test logs (haave to run after integration test targets)
 	@go tool test2json -t < "./out/testout_$(COMMIT_SHORT).txt" > "./out/testout_$(COMMIT_SHORT).json"
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
