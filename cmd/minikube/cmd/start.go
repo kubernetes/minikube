@@ -297,6 +297,18 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		return node.Starter{}, err
 	}
 
+	if viper.GetString(loggingFormat) == "json" {
+		// Add extra flags for supported components
+		loggingFormatOptions := []config.ExtraOption{
+			{Component: "apiserver", Key: "logging-format", Value: "json"},
+			{Component: "controller-manager", Key: "logging-format", Value: "json"},
+			{Component: "kubelet", Key: "logging-format", Value: "json"},
+			{Component: "scheduler", Key: "logging-format", Value: "json"},
+		}
+
+		config.ExtraOptions = append(config.ExtraOptions, loggingFormatOptions...)
+	}
+
 	return node.Starter{
 		Runner:         mRunner,
 		PreExists:      preExists,
@@ -1013,6 +1025,11 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 				exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
 			}
 		}
+	}
+
+	if v := viper.GetString(loggingFormat); v != "text" && v != "json" {
+		// Unsupported format, warn but continue
+		out.WarningT("'{{.format}}' is not a supported logging-format option. Please use text or json", out.V{"format": v})
 	}
 
 	// validate kubeadm extra args

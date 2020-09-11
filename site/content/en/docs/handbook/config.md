@@ -2,7 +2,7 @@
 title: "Configuration"
 weight: 4
 description: >
-  Configuring your cluster 
+  Configuring your cluster
 aliases:
   - /docs/reference/environment_variables/
   - /docs/reference/configuration/kubernetes/
@@ -50,7 +50,7 @@ This flag is repeated, so you can pass it several times with several different v
 By default, minikube installs the latest stable version of Kubernetes that was available at the time of the minikube release. You may select a different Kubernetes release by using the `--kubernetes-version` flag, for example:
 
 `minikube start --kubernetes-version=v1.11.10`
-  
+
 minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube aims to support older releases as well so that users can emulate legacy environments.
 
 For up to date information on supported versions, see `OldestKubernetesVersion` and `NewestKubernetesVersion` in [constants.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/constants/constants.go)
@@ -65,15 +65,15 @@ minikube start --feature-gates=EphemeralContainers=true
 
 ### Modifying Kubernetes defaults
 
-The kubeadm bootstrapper can be configured by the `--extra-config` flag on the `minikube start` command.  It takes a string of the form `component.key=value` where `component` is one of the strings
+The kubeadm bootstrapper can be configured by the `--extra-config` flag on the `minikube start` command. It takes a string of the form `component.key=value` where `component` is one of the strings
 
-* kubeadm
-* kubelet
-* apiserver
-* controller-manager
-* scheduler
+- kubeadm
+- kubelet
+- apiserver
+- controller-manager
+- scheduler
 
-and `key=value` is a flag=value pair for the component being configured.  For example,
+and `key=value` is a flag=value pair for the component being configured. For example,
 
 ```shell
 minikube start --extra-config=apiserver.v=10 --extra-config=kubelet.max-pods=100
@@ -83,6 +83,14 @@ For instance, to allow Kubernetes to launch on an unsupported Docker release:
 
 ```shell
 minikube start --extra-config=kubeadm.ignore-preflight-errors=SystemVerification
+```
+
+### Enabling Structured Logging
+
+Instead of having to use `--extra-config` for each component to enable the structured logging format, we've provided a convenience flag.
+
+```shell
+minikube start --logging-format=json
 ```
 
 ## Runtime configuration
@@ -95,12 +103,12 @@ minikube start --container-runtime=docker
 
 Other options available are:
 
-* [containerd](https://github.com/containerd/containerd)
-* [crio](https://github.com/kubernetes-sigs/cri-o)
+- [containerd](https://github.com/containerd/containerd)
+- [crio](https://github.com/kubernetes-sigs/cri-o)
 
 ## Environment variables
 
-minikube supports passing environment variables instead of flags for every value listed in `minikube config`.  This is done by passing an environment variable with the prefix `MINIKUBE_`.
+minikube supports passing environment variables instead of flags for every value listed in `minikube config`. This is done by passing an environment variable with the prefix `MINIKUBE_`.
 
 For example the `minikube start --iso-url="$ISO_URL"` flag can also be set by setting the `MINIKUBE_ISO_URL="$ISO_URL"` environment variable.
 
@@ -108,17 +116,17 @@ For example the `minikube start --iso-url="$ISO_URL"` flag can also be set by se
 
 Some features can only be accessed by minikube specific environment variables, here is a list of these features:
 
-* **MINIKUBE_HOME** - (string) sets the path for the .minikube directory that minikube uses for state/configuration. *Please note: this is used only by minikube and does not affect anything related to Kubernetes tools such as kubectl.*
+- **MINIKUBE_HOME** - (string) sets the path for the .minikube directory that minikube uses for state/configuration. _Please note: this is used only by minikube and does not affect anything related to Kubernetes tools such as kubectl._
 
-* **MINIKUBE_IN_STYLE** - (bool) manually sets whether or not emoji and colors should appear in minikube. Set to false or 0 to disable this feature, true or 1 to force it to be turned on.
+- **MINIKUBE_IN_STYLE** - (bool) manually sets whether or not emoji and colors should appear in minikube. Set to false or 0 to disable this feature, true or 1 to force it to be turned on.
 
-* **MINIKUBE_WANTUPDATENOTIFICATION** - (bool) sets whether the user wants an update notification for new minikube versions
+- **MINIKUBE_WANTUPDATENOTIFICATION** - (bool) sets whether the user wants an update notification for new minikube versions
 
-* **MINIKUBE_REMINDERWAITPERIODINHOURS** - (int) sets the number of hours to check for an update notification
+- **MINIKUBE_REMINDERWAITPERIODINHOURS** - (int) sets the number of hours to check for an update notification
 
-* **CHANGE_MINIKUBE_NONE_USER** - (bool) automatically change ownership of ~/.minikube to the value of $SUDO_USER
+- **CHANGE_MINIKUBE_NONE_USER** - (bool) automatically change ownership of ~/.minikube to the value of \$SUDO_USER
 
-* **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube
+- **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube
 
 ### Example: Disabling emoji
 
@@ -131,5 +139,5 @@ minikube start
 
 To make the exported variables persistent across reboots:
 
-* Linux and macOS: Add these declarations to `~/.bashrc` or wherever your shells environment variables are stored.
-* Windows: Add these declarations via [system settings](https://support.microsoft.com/en-au/help/310519/how-to-manage-environment-variables-in-windows-xp) or using [setx](https://stackoverflow.com/questions/5898131/set-a-persistent-environment-variable-from-cmd-exe)
+- Linux and macOS: Add these declarations to `~/.bashrc` or wherever your shells environment variables are stored.
+- Windows: Add these declarations via [system settings](https://support.microsoft.com/en-au/help/310519/how-to-manage-environment-variables-in-windows-xp) or using [setx](https://stackoverflow.com/questions/5898131/set-a-persistent-environment-variable-from-cmd-exe)

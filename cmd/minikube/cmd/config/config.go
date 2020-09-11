@@ -69,6 +69,11 @@ var settings = []Setting{
 		callbacks: []setFn{RequiresRestartMsg},
 	},
 	{
+		name:      "logging-format",
+		set:       SetString,
+		callbacks: []setFn{RequiresRestartMsg},
+	},
+	{
 		name:        "v",
 		set:         SetInt,
 		validations: []setFn{IsPositive},

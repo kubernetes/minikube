@@ -90,6 +90,7 @@ type KubernetesConfig struct {
 	LoadBalancerStartIP string // currently only used by MetalLB addon
 	LoadBalancerEndIP   string // currently only used by MetalLB addon
 	ExtraOptions        ExtraOptionSlice
+	LoggingFormat       string
 
 	ShouldLoadCachedImages bool
 

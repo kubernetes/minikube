@@ -4,7 +4,6 @@ description: >
   Modify persistent configuration values
 ---
 
-
 ## minikube config
 
 Modify persistent configuration values
@@ -12,36 +11,37 @@ Modify persistent configuration values
 ### Synopsis
 
 config modifies minikube config files using subcommands like "minikube config set driver kvm"
-Configurable fields: 
+Configurable fields:
 
- * driver
- * vm-driver
- * container-runtime
- * feature-gates
- * v
- * cpus
- * disk-size
- * host-only-cidr
- * memory
- * log_dir
- * kubernetes-version
- * iso-url
- * WantUpdateNotification
- * ReminderWaitPeriodInHours
- * WantReportError
- * WantReportErrorPrompt
- * WantKubectlDownloadMsg
- * WantNoneDriverWarning
- * profile
- * bootstrapper
- * ShowDriverDeprecationNotification
- * ShowBootstrapperDeprecationNotification
- * insecure-registry
- * hyperv-virtual-switch
- * disable-driver-mounts
- * cache
- * embed-certs
- * native-ssh
+- driver
+- vm-driver
+- container-runtime
+- feature-gates
+- logging-format
+- v
+- cpus
+- disk-size
+- host-only-cidr
+- memory
+- log_dir
+- kubernetes-version
+- iso-url
+- WantUpdateNotification
+- ReminderWaitPeriodInHours
+- WantReportError
+- WantReportErrorPrompt
+- WantKubectlDownloadMsg
+- WantNoneDriverWarning
+- profile
+- bootstrapper
+- ShowDriverDeprecationNotification
+- ShowBootstrapperDeprecationNotification
+- insecure-registry
+- hyperv-virtual-switch
+- disable-driver-mounts
+- cache
+- embed-certs
+- native-ssh
 
 ```
 minikube config SUBCOMMAND [flags]
@@ -74,9 +74,9 @@ Lists all valid default values for PROPERTY_NAME
 ### Synopsis
 
 list displays all valid default settings for PROPERTY_NAME
-Acceptable fields: 
+Acceptable fields:
 
- * driver
+- driver
 
 ```
 minikube config defaults PROPERTY_NAME [flags]
@@ -109,7 +109,7 @@ Gets the value of PROPERTY_NAME from the minikube config file
 
 ### Synopsis
 
-Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.
+Returns the value of PROPERTY_NAME from the minikube config file. Can be overwritten at runtime by flags or environmental variables.
 
 ```
 minikube config get PROPERTY_NAME [flags]
@@ -175,7 +175,7 @@ Sets an individual value in a minikube config file
 ### Synopsis
 
 Sets the PROPERTY_NAME config value to PROPERTY_VALUE
-	These values can be overwritten by flags or environment variables at runtime.
+These values can be overwritten by flags or environment variables at runtime.
 
 ```
 minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
@@ -207,7 +207,7 @@ unsets an individual value in a minikube config file
 
 ### Synopsis
 
-unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables
+unsets PROPERTY_NAME from the minikube config file. Can be overwritten by flags or environmental variables
 
 ```
 minikube config unset PROPERTY_NAME [flags]
@@ -266,4 +266,3 @@ minikube config view [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
-

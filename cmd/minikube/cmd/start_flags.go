@@ -107,6 +107,7 @@ const (
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
 	startOutput             = "output"
+	loggingFormat           = "logging-format"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -163,6 +164,7 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+	startCmd.Flags().String(loggingFormat, "", "Set the logging format for components that support it")
 }
 
 // initDriverFlags inits the commandline flags for vm drivers
@@ -328,6 +330,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 				ShouldLoadCachedImages: viper.GetBool(cacheImages),
 				CNI:                    chosenCNI,
 				NodePort:               viper.GetInt(apiServerPort),
+				LoggingFormat:          viper.GetString(loggingFormat),
 			},
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
@@ -605,6 +608,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	// Handle flags and legacy configuration upgrades that do not contain KicBaseImage
 	if cmd.Flags().Changed(kicBaseImage) || cc.KicBaseImage == "" {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
+	}
+
+	if cmd.Flags().Changed(loggingFormat) {
+		cc.KubernetesConfig.LoggingFormat = viper.GetString(loggingFormat)
 	}
 
 	return cc
