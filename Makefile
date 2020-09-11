@@ -39,7 +39,7 @@ REGISTRY_GH?=docker.pkg.github.com/kubernetes/minikube
 # Get git commit id
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
-
+COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 # NOTE: "latest" as of 2020-05-13. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
@@ -285,16 +285,29 @@ docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hype
 docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
-integration: out/minikube$(IS_EXE) ## Trigger minikube integration test
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to ./out/testout_COMMIT.txt
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: integration-none-driver
-integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test
-	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
+integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test, logs to ./out/testout_COMMIT.txt
+	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: integration-versioned
-integration-versioned: out/minikube ## Trigger minikube integration testing
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
+integration-versioned: out/minikube ## Trigger minikube integration testing, logs to ./out/testout_COMMIT.txt
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+
+.PHONY: integration-functional-only
+integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl tests in integration test, logs to ./out/testout_COMMIT.txt
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=20m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) -test.run TestFunctional 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+
+.PHONY: html_report
+html_report: ## Generate HTML  report out of the last ran integration test logs.
+	@go tool test2json -t < "./out/testout_$(COMMIT_SHORT).txt" > "./out/testout_$(COMMIT_SHORT).json"
+	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
+	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
+	@echo open $(CURDIR)/out/testout_$(COMMIT_SHORT).html
+	@echo "-----------------------------------------------------------------------------------"
+	@open $(CURDIR)/out/testout_$(COMMIT_SHORT).html || true
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
