@@ -2,7 +2,7 @@ ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/v0.8.1/images/base/Dockerfile
 # which is an ubuntu 20.04 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
-FROM kindest/base:v20200430-2c0eee40 as base
+FROM gcr.io/k8s-minikube/kindbase:v20200430-2c0eee40 as base
 USER root
 
 # remove files that were installed by kind, replaced by packages

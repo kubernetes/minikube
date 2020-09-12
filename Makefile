@@ -20,6 +20,7 @@ RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
+KIND_VERSION ?= v20200430-2c0eee40
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
@@ -47,6 +48,7 @@ BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSIO
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 
+KIND_BASE_IMAGE_GCR ?= $(REGISTRY)/kindbase:$(KIND_VERSION)
 KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KIC_BASE_IMAGE_GH ?= $(REGISTRY_GH)/kicbase:$(KIC_VERSION)
 KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
@@ -576,8 +578,15 @@ endif
 storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-provisioner docker image
 	docker build -t $(STORAGE_PROVISIONER_IMAGE) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$(GOARCH) .
 
+.PHONY: kind-base-image
+kind-base-image: ## builds the base image used for kind.
+	docker rmi -f $(KIND_BASE_IMAGE_GCR)-snapshot || true
+	docker build -f ./deploy/kindbase/Dockerfile -t local/kindbase:$(KIND_VERSION)-snapshot ./deploy/kindbase
+	docker tag local/kindbase:$(KIND_VERSION)-snapshot $(KIND_BASE_IMAGE_GCR)-snapshot
+	docker tag local/kindbase:$(KIND_VERSION)-snapshot $(KIND_BASE_IMAGE_GCR)
+
 .PHONY: kic-base-image
-kic-base-image: ## builds the base image used for kic.
+kic-base-image: kind-base-image ## builds the base image used for kic.
 	docker rmi -f $(KIC_BASE_IMAGE_GCR)-snapshot || true
 	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) --target base ./deploy/kicbase
 	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)-snapshot
