@@ -279,6 +279,7 @@
 	"Multiple errors deleting profiles": "",
 	"Multiple minikube profiles were found -": "",
 	"NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",
+	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",
 	"NOTE: This process must stay alive for the mount to be accessible ...": "",
 	"Networking and Connectivity Commands:": "",
 	"No changes required for the \"{{.context}}\" context": "",
