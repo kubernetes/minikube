@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -35,13 +36,16 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/schedule"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
-	stopAll    bool
-	keepActive bool
+	stopAll       bool
+	keepActive    bool
+	scheduledStop string
+	waitTime      int
 )
 
 // stopCmd represents the stop command
@@ -56,6 +60,8 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
+	stopCmd.Flags().StringVar(&scheduledStop, "schedule", "", "Schedule stop for this cluster (e.g. --schedule=5m) ")
+	// stopCmd.Flags().IntVar(&wait, "wait", 0, "wait number of seconds before stopping")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
 		exit.Error(reason.InternalFlagsBind, "unable to bind flags", err)
@@ -68,6 +74,11 @@ func init() {
 func runStop(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Stopping)
+
+	if waitTime > 0 && scheduledStop == "" {
+		glog.Infof("--wait was passed in, sleeping %v seconds", waitTime)
+		time.Sleep(time.Duration(waitTime) * time.Second)
+	}
 
 	// new code
 	var profilesToStop []string
@@ -85,11 +96,28 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	stoppedNodes := 0
+	if scheduledStop != "" {
+		duration, err := time.ParseDuration(scheduledStop)
+		if err != nil {
+			exit.Message(reason.Usage, "provided value {{.schedule}} to --schedule is not a valid Golang time.Duration", out.V{"schedule": scheduledStop})
+		}
+		fmt.Println("starting to daemonize")
+		if err := schedule.Daemonize(profilesToStop[0], duration); err != nil {
+			fmt.Println("error with daemonizing", err)
+		}
+		fmt.Println("finished daemonizing, returning")
+		time.Sleep(time.Minute)
+		return
+	}
 	for _, profile := range profilesToStop {
 		stoppedNodes = stopProfile(profile)
 	}
 
 	register.Reg.SetStep(register.Done)
+	if scheduledStop != "" {
+		out.T(style.Stopped, `{{.count}} nodes have scheduled stopped for {{.schedule}} from now`, out.V{"count": stoppedNodes, "schedule": scheduledStop})
+		return
+	}
 	if stoppedNodes > 0 {
 		out.T(style.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
 	}
@@ -150,4 +178,12 @@ func stop(api libmachine.API, machineName string) bool {
 	}
 
 	return nonexistent
+}
+
+func scheduleStopProfile(profile string) error {
+	duration, err := time.ParseDuration(scheduledStop)
+	if err != nil {
+		exit.Message(reason.Usage, "provided value {{.schedule}} to --schedule is not a valid Golang time.Duration", out.V{"schedule": scheduledStop})
+	}
+	return schedule.Stop(profile, duration)
 }
