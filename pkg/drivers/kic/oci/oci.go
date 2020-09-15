@@ -156,7 +156,24 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
 	}
 
-	runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
+	cpuCfsPeriod := true
+	cpuCfsQuota := true
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_period_us"); os.IsNotExist(err) {
+			cpuCfsPeriod = false
+		}
+		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"); os.IsNotExist(err) {
+			cpuCfsQuota = false
+		}
+		if !cpuCfsPeriod || !cpuCfsQuota {
+			// requires CONFIG_CFS_BANDWIDTH
+			glog.Warning("Your kernel does not support CPU cfs period/quota or the cgroup is not mounted.")
+		}
+	}
+
+	if cpuCfsPeriod && cpuCfsQuota {
+		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
+	}
 
 	memcgSwap := true
 	if runtime.GOOS == "linux" {
