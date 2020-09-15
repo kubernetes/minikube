@@ -19,7 +19,6 @@ package localpath
 import (
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -60,10 +59,6 @@ func MakeMiniPath(fileName ...string) string {
 // Profile returns the path to a profile
 func Profile(name string) string {
 	return filepath.Join(MiniPath(), "profiles", name)
-}
-
-func Scheduled(profile string) string {
-	return path.Join(Profile(profile), "scheduled")
 }
 
 // EventLog returns the path to a CloudEvents log

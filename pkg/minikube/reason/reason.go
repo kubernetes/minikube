@@ -113,6 +113,7 @@ var (
 	InternalYamlMarshal      = Kind{ID: "MK_YAML_MARSHAL", ExitCode: ExProgramError}
 	InternalCredsNotFound    = Kind{ID: "MK_CREDENTIALS_NOT_FOUND", ExitCode: ExProgramNotFound, Style: style.Shrug}
 	InternalSemverParse      = Kind{ID: "MK_SEMVER_PARSE", ExitCode: ExProgramError}
+	DaemonizeError           = Kind{ID: "MK_DAEMONIZE", ExitCode: ExProgramError}
 
 	RsrcInsufficientCores             = Kind{ID: "RSRC_INSUFFICIENT_CORES", ExitCode: ExInsufficientCores, Style: style.UnmetRequirement}
 	RsrcInsufficientDarwinDockerCores = Kind{
