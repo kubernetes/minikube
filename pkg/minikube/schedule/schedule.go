@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"strconv"
 	"time"
 
@@ -60,7 +59,8 @@ func Daemonize(profiles []string, duration time.Duration) error {
 	pid := os.Getpid()
 	// store this PID in MINIKUBE_HOME/profiles/<profile>/pid
 	for _, p := range profiles {
-		if err := ioutil.WriteFile(pidFile(p), []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
+		file := localpath.PID(p)
+		if err := ioutil.WriteFile(file, []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
 			return err
 		}
 	}
@@ -68,13 +68,14 @@ func Daemonize(profiles []string, duration time.Duration) error {
 }
 
 func killExistingScheduledStops(profile string) error {
-	f, err := ioutil.ReadFile(pidFile(profile))
+	file := localpath.PID(profile)
+	f, err := ioutil.ReadFile(file)
 	if os.IsNotExist(err) {
 		return nil
 	}
-	defer os.Remove(pidFile(profile))
+	defer os.Remove(file)
 	if err != nil {
-		return errors.Wrapf(err, "reading %s", pidFile(profile))
+		return errors.Wrapf(err, "reading %s", file)
 	}
 	pid, err := strconv.Atoi(string(f))
 	if err != nil {
@@ -89,8 +90,4 @@ func killExistingScheduledStops(profile string) error {
 		return errors.Wrapf(err, "killing %v", pid)
 	}
 	return nil
-}
-
-func pidFile(profile string) string {
-	return path.Join(localpath.Profile(profile), "pid")
 }
