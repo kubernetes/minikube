@@ -21,9 +21,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/VividCortex/godaemon"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -34,13 +36,15 @@ import (
 func Daemonize(profiles []string, duration time.Duration) error {
 	// save current time and expected duration in config
 	scheduledStop := &config.ScheduledStopConfig{
-		InitiationTime: time.Now(),
+		InitiationTime: time.Now().Unix(),
 		Duration:       duration,
 	}
 	for _, p := range profiles {
-		api, cc := mustload.Partial(p)
-		defer api.Close()
-
+		// first check if we have a scheduled stop already running that needs to be cancelled
+		if err := killExistingScheduledStops(p); err != nil {
+			return errors.Wrap(err, "killing existing scheduled stops")
+		}
+		_, cc := mustload.Partial(p)
 		cc.ScheduledStop = scheduledStop
 		if err := config.SaveProfile(p, cc); err != nil {
 			return errors.Wrap(err, "saving profile")
@@ -49,17 +53,44 @@ func Daemonize(profiles []string, duration time.Duration) error {
 
 	_, _, err := godaemon.MakeDaemon(&godaemon.DaemonAttr{})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "making daemon")
 	}
 
-	pid := os.Getpid()
 	// now that this process has daemonized, it has a new PID
+	pid := os.Getpid()
 	// store this PID in MINIKUBE_HOME/profiles/<profile>/pid
 	for _, p := range profiles {
-		pidFile := path.Join(localpath.Profile(p), "pid")
-		if err := ioutil.WriteFile(pidFile, []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
+		if err := ioutil.WriteFile(pidFile(p), []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func killExistingScheduledStops(profile string) error {
+	f, err := ioutil.ReadFile(pidFile(profile))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	defer os.Remove(pidFile(profile))
+	if err != nil {
+		return errors.Wrapf(err, "reading %s", pidFile(profile))
+	}
+	pid, err := strconv.Atoi(string(f))
+	if err != nil {
+		return errors.Wrapf(err, "converting %v to int", string(f))
+	}
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "finding process")
+	}
+	glog.Infof("killing process %v as it is an old scheduled stop", pid)
+	if err := p.Kill(); err != nil {
+		return errors.Wrapf(err, "killing %v", pid)
+	}
+	return nil
+}
+
+func pidFile(profile string) string {
+	return path.Join(localpath.Profile(profile), "pid")
 }
