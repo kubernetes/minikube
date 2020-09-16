@@ -115,9 +115,7 @@ func ParseMountString(spec string) (m Mount, err error) {
 		// Windows paths look like C:\path
 		hpath := fmt.Sprintf("%s:%s", f[0], f[1])
 		fields = append(fields, hpath)
-		for _, opt := range f[2:] {
-			fields = append(fields, opt)
-		}
+		fields = append(fields, f[2:]...)
 	}
 	switch len(fields) {
 	case 0:
