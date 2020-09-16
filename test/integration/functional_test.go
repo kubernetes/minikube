@@ -566,7 +566,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
 
 			if err != nil {
-				t.Errorf("failed to manualy delete image %q : %v", rr.Command(), err)
+				t.Errorf("failed to manually delete image %q : %v", rr.Command(), err)
 			}
 			// make sure the image is deleted.
 			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "inspecti", img))
