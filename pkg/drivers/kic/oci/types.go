@@ -107,10 +107,8 @@ type Mount struct {
 // [rw|ro], [Z], [srhared|rslave|rprivate].
 func ParseMountString(spec string) (m Mount, err error) {
 	f := strings.Split(spec, ":")
-	var fields []string
-	if runtime.GOOS != "windows" {
-		fields = f
-	} else {
+	fields := f
+	if runtime.GOOS == "windows" {
 		// Recreate the host path that got split above since
 		// Windows paths look like C:\path
 		hpath := fmt.Sprintf("%s:%s", f[0], f[1])
