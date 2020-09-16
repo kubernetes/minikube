@@ -36,8 +36,8 @@ import (
 
 func TestScheduledStop(t *testing.T) {
 	profile := UniqueProfileName("scheduled-stop")
-	ctx, _ := context.WithTimeout(context.Background(), Minutes(5))
-	// defer CleanupWithLogs(t, profile, cancel)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	defer CleanupWithLogs(t, profile, cancel)
 	startMinikube(ctx, t, profile)
 
 	// schedule a stop for 5 min from now and make sure PID is created
@@ -53,7 +53,7 @@ func TestScheduledStop(t *testing.T) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
 	checkPID(t, profile)
-	// wait alotted time to make sure minikube status is "Stopped"
+	// wait allotted time to make sure minikube status is "Stopped"
 	time.Sleep(15 * time.Second)
 	checkStatus := func() error {
 		got := Status(ctx, t, Target(), profile, "Host", profile)
