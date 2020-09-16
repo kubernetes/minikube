@@ -39,8 +39,12 @@ func MaybeDisplayAdvice(err error, driver string) {
 
 	if errors.Is(err, oci.ErrExitedUnexpectedly) || errors.Is(err, oci.ErrDaemonInfo) {
 		out.T(style.Tip, "If you are still interested to make {{.driver_name}} driver work. The following suggestions might help you get passed this issue:", out.V{"driver_name": driver})
-		out.T(style.Empty, `
-	- Prune unused {{.driver_name}} images, volumes and abandoned containers.`, out.V{"driver_name": driver})
+		if driver == oci.Docker || driver == oci.Podman {
+			out.T(style.Empty, `
+	- Prune unused {{.driver_name}} images, volumes, networks and abandoned containers.
+
+		{{.driver_name}} system prune --volumes`, out.V{"driver_name": driver})
+		}
 		out.T(style.Empty, `
 	- Restart your {{.driver_name}} service`, out.V{"driver_name": driver})
 		if runtime.GOOS != "linux" {
