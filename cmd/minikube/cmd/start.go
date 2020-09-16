@@ -287,15 +287,15 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		}
 	}
 
-	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
-	if err != nil {
-		return node.Starter{}, err
-	}
-
 	if viper.GetBool(nativeSSH) {
 		ssh.SetDefaultClient(ssh.Native)
 	} else {
 		ssh.SetDefaultClient(ssh.External)
+	}
+
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
+	if err != nil {
+		return node.Starter{}, err
 	}
 
 	return node.Starter{
