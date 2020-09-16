@@ -167,27 +167,8 @@ func CreateContainerNode(p CreateParams) error {
 		}
 	}
 
-	if p.OCIBinary == Podman && memcgSwap { // swap is required for memory
-		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		// Disable swap by setting the value to match
-		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-	}
-
-	if p.OCIBinary == Docker {
-		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		// Disable swap by setting the value to match
-		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-	}
-
-	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
-	var virtualization string
-	if p.OCIBinary == Podman {
-		virtualization = "podman" // VIRTUALIZATION_PODMAN
-	}
-	if p.OCIBinary == Docker {
-		virtualization = "docker" // VIRTUALIZATION_DOCKER
-	}
-	runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", "container", virtualization))
+	runArgs = append(runArgs, memoryArgs(p.OCIBinary, p.Memory, memcgSwap)...)
+	runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", "container", virtualizationArg(p.OCIBinary)))
 
 	for key, val := range p.Envs {
 		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
@@ -277,6 +258,24 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 	}
 
 	return nil
+}
+
+func memoryArgs(ociBin, memory string, memcgSwap bool) []string {
+	if ociBin == Podman && memcgSwap { // swap is required for memory
+		return []string{fmt.Sprintf("--memory=%s", memory), fmt.Sprintf("--memory-swap=%s", memory)}
+	}
+	if ociBin == Docker {
+		return []string{fmt.Sprintf("--memory=%s", memory), fmt.Sprintf("--memory-swap=%s", memory)}
+	}
+	return []string{}
+}
+
+func virtualizationArg(ociBin string) string {
+	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+	if ociBin == Podman {
+		return "podman" // VIRTUALIZATION_PODMAN
+	}
+	return "docker" // VIRTUALIZATION_DOCKER
 }
 
 // StartContainer starts a container with "docker/podman start"
