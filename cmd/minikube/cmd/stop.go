@@ -58,7 +58,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
-	stopCmd.Flags().StringVar(&scheduledStop, "schedule", "", "Schedule stop for this cluster (e.g. --schedule=5m) ")
+	stopCmd.Flags().StringVar(&scheduledStop, "schedule", "", "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
 		exit.Error(reason.InternalFlagsBind, "unable to bind flags", err)
