@@ -40,7 +40,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
 	if !NoneDriver() { // none doesn't support ingress
 		args = append(args, "--addons=ingress")
 	}
@@ -60,6 +60,7 @@ func TestAddons(t *testing.T) {
 			{"MetricsServer", validateMetricsServerAddon},
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
+			{"CSI", validateCSIDriverAndSnapshots},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -396,5 +397,110 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	// Operator installation takes a while
 	if err := retry.Expo(checkOperatorInstalled, time.Second*3, Minutes(6)); err != nil {
 		t.Errorf("failed checking operator installed: %v", err.Error())
+	}
+}
+
+func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
+	}
+
+	start := time.Now()
+	if err := kapi.WaitForPods(client, "kube-system", "kubernetes.io/minikube-addons=csi-hostpath-driver", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for csi-hostpath-driver pods to stabilize: %v", err)
+	}
+	t.Logf("csi-hostpath-driver pods stabilized in %s", time.Since(start))
+
+	// create sample PVC
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pvc.yaml")))
+	if err != nil {
+		t.Logf("creating sample PVC with %s failed: %v", rr.Command(), err)
+	}
+
+	if err := PVCWait(ctx, t, profile, "default", "hpvc", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for PVC hpvc: %v", err)
+	}
+
+	// create sample pod with the PVC
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pv-pod.yaml")))
+	if err != nil {
+		t.Logf("creating pod with %s failed: %v", rr.Command(), err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "app=task-pv-pod", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for pod task-pv-pod: %v", err)
+	}
+
+	// create sample snapshotclass
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "snapshotclass.yaml")))
+	if err != nil {
+		t.Logf("creating snapshostclass with %s failed: %v", rr.Command(), err)
+	}
+
+	// create volume snapshot
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "snapshot.yaml")))
+	if err != nil {
+		t.Logf("creating pod with %s failed: %v", rr.Command(), err)
+	}
+
+	if err := VolumeSnapshotWait(ctx, t, profile, "default", "new-snapshot-demo", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for volume snapshot new-snapshot-demo: %v", err)
+	}
+
+	// delete pod
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod", "task-pv-pod"))
+	if err != nil {
+		t.Logf("deleting pod with %s failed: %v", rr.Command(), err)
+	}
+
+	// delete pvc
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pvc", "hpvc"))
+	if err != nil {
+		t.Logf("deleting pod with %s failed: %v", rr.Command(), err)
+	}
+
+	// restore pv from snapshot
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pvc-restore.yaml")))
+	if err != nil {
+		t.Logf("creating pvc with %s failed: %v", rr.Command(), err)
+	}
+
+	if err = PVCWait(ctx, t, profile, "default", "hpvc-restore", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for PVC hpvc-restore: %v", err)
+	}
+
+	// create pod from restored snapshot
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "pv-pod-restore.yaml")))
+	if err != nil {
+		t.Logf("creating pod with %s failed: %v", rr.Command(), err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "app=task-pv-pod-restore", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for pod task-pv-pod-restore: %v", err)
+	}
+
+	// CLEANUP
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod", "task-pv-pod-restore"))
+	if err != nil {
+		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pvc", "hpvc-restore"))
+	if err != nil {
+		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "volumesnapshot", "new-snapshot-demo"))
+	if err != nil {
+		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "csi-hostpath-driver", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable csi-hostpath-driver addon: args %q: %v", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "volumesnapshots", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable volumesnapshots addon: args %q: %v", rr.Command(), err)
 	}
 }

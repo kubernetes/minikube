@@ -33,10 +33,11 @@ type Addon struct {
 
 // addonPodLabels holds the pod label that will be used to verify if the addon is enabled
 var addonPodLabels = map[string]string{
-	"ingress":  "app.kubernetes.io/name=ingress-nginx",
-	"registry": "kubernetes.io/minikube-addons=registry",
-	"gvisor":   "kubernetes.io/minikube-addons=gvisor",
-	"gcp-auth": "kubernetes.io/minikube-addons=gcp-auth",
+	"ingress":             "app.kubernetes.io/name=ingress-nginx",
+	"registry":            "kubernetes.io/minikube-addons=registry",
+	"gvisor":              "kubernetes.io/minikube-addons=gvisor",
+	"gcp-auth":            "kubernetes.io/minikube-addons=gcp-auth",
+	"csi-hostpath-driver": "kubernetes.io/minikube-addons=csi-hostpath-driver",
 }
 
 // Addons is a list of all addons
@@ -169,5 +170,16 @@ var Addons = []*Addon{
 		name:      "gcp-auth",
 		set:       SetBool,
 		callbacks: []setFn{gcpauth.EnableOrDisable, enableOrDisableAddon, verifyGCPAuthAddon, gcpauth.DisplayAddonMessage},
+	},
+	{
+		name:      "volumesnapshots",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
+	{
+		name:        "csi-hostpath-driver",
+		set:         SetBool,
+		validations: []setFn{IsVolumesnapshotsEnabled},
+		callbacks:   []setFn{enableOrDisableAddon, verifyAddonStatus},
 	},
 }
