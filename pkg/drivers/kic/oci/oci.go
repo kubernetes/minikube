@@ -145,19 +145,6 @@ func CreateContainerNode(p CreateParams) error {
 		// label th enode wuth the node ID
 		"--label", p.NodeLabel,
 	}
-
-	if p.OCIBinary == Podman { // enable execing in /var
-		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
-		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
-	}
-	if p.OCIBinary == Docker {
-		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
-		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
-		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
-	}
-
-	runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
-
 	memcgSwap := true
 	if runtime.GOOS == "linux" {
 		if _, err := os.Stat("/sys/fs/cgroup/memory/memsw.limit_in_bytes"); os.IsNotExist(err) {
@@ -167,26 +154,51 @@ func CreateContainerNode(p CreateParams) error {
 		}
 	}
 
-	if p.OCIBinary == Podman && memcgSwap { // swap is required for memory
-		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		// Disable swap by setting the value to match
-		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-	}
-
-	if p.OCIBinary == Docker {
-		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		// Disable swap by setting the value to match
-		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-	}
-
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	var virtualization string
-	if p.OCIBinary == Podman {
+	if p.OCIBinary == Podman { // enable execing in /var
+		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
+
+		if memcgSwap {
+			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+			// Disable swap by setting the value to match
+			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+		}
+
 		virtualization = "podman" // VIRTUALIZATION_PODMAN
 	}
 	if p.OCIBinary == Docker {
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
+		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
+		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
+
+		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+		// Disable swap by setting the value to match
+		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+
 		virtualization = "docker" // VIRTUALIZATION_DOCKER
 	}
+
+	cpuCfsPeriod := true
+	cpuCfsQuota := true
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_period_us"); os.IsNotExist(err) {
+			cpuCfsPeriod = false
+		}
+		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"); os.IsNotExist(err) {
+			cpuCfsQuota = false
+		}
+		if !cpuCfsPeriod || !cpuCfsQuota {
+			// requires CONFIG_CFS_BANDWIDTH
+			glog.Warning("Your kernel does not support CPU cfs period/quota or the cgroup is not mounted.")
+		}
+	}
+
+	if cpuCfsPeriod && cpuCfsQuota {
+		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
+	}
+
 	runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", "container", virtualization))
 
 	for key, val := range p.Envs {

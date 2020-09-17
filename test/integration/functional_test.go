@@ -496,11 +496,11 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	t.Run("cache", func(t *testing.T) {
-		t.Run("add", func(t *testing.T) {
-			for _, img := range []string{"busybox:latest", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
+		t.Run("add_remote", func(t *testing.T) {
+			for _, img := range []string{"k8s.gcr.io/pause:3.1", "k8s.gcr.io/pause:3.3", "k8s.gcr.io/pause:latest"} {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 				if err != nil {
-					t.Errorf("failed to cache add image %q. args %q err %v", img, rr.Command(), err)
+					t.Errorf("failed to 'cache add' remote image %q. args %q err %v", img, rr.Command(), err)
 				}
 			}
 		})
@@ -514,7 +514,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			message := []byte("FROM scratch\nADD Dockerfile /x")
 			err = ioutil.WriteFile(filepath.Join(dname, "Dockerfile"), message, 0644)
 			if err != nil {
-				t.Fatalf("unable to writefile: %v", err)
+				t.Fatalf("unable to write Dockerfile: %v", err)
 			}
 
 			img := "minikube-local-cache-test:" + profile
@@ -525,14 +525,14 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 			if err != nil {
-				t.Errorf("failed to add local image %q. args %q err %v", img, rr.Command(), err)
+				t.Errorf("failed to 'cache add' local image %q. args %q err %v", img, rr.Command(), err)
 			}
 		})
 
-		t.Run("delete_busybox:1.28.4-glibc", func(t *testing.T) {
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "busybox:1.28.4-glibc"))
+		t.Run("delete_k8s.gcr.io/pause:3.3", func(t *testing.T) {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "k8s.gcr.io/pause:3.3"))
 			if err != nil {
-				t.Errorf("failed to delete image busybox:1.28.4-glibc from cache. args %q: %v", rr.Command(), err)
+				t.Errorf("failed to delete image k8s.gcr.io/pause:3.3 from cache. args %q: %v", rr.Command(), err)
 			}
 		})
 
@@ -542,10 +542,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				t.Errorf("failed to do cache list. args %q: %v", rr.Command(), err)
 			}
 			if !strings.Contains(rr.Output(), "k8s.gcr.io/pause") {
-				t.Errorf("expected 'cache list' output to include 'k8s.gcr.io/pause' but got:\n ***%s***", rr.Output())
+				t.Errorf("expected 'cache list' output to include 'k8s.gcr.io/pause' but got: ***%s***", rr.Output())
 			}
-			if strings.Contains(rr.Output(), "busybox:1.28.4-glibc") {
-				t.Errorf("expected 'cache list' output not to include busybox:1.28.4-glibc but got:\n ***%s***", rr.Output())
+			if strings.Contains(rr.Output(), "k8s.gcr.io/pause:3.3") {
+				t.Errorf("expected 'cache list' output not to include k8s.gcr.io/pause:3.3 but got: ***%s***", rr.Output())
 			}
 		})
 
@@ -554,24 +554,24 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
-			if !strings.Contains(rr.Output(), "1.28.4-glibc") {
-				t.Errorf("expected '1.28.4-glibc' to be in the output but got *%s*", rr.Output())
+			if !strings.Contains(rr.Output(), "0184c1613d929") {
+				t.Errorf("expected sha for pause:3.3 '0184c1613d929' to be in the output but got *%s*", rr.Output())
 			}
 
 		})
 
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
-			img := "busybox:latest"
+			img := "k8s.gcr.io/pause:latest"
 			// deleting image inside minikube node manually
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
 
 			if err != nil {
-				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
+				t.Errorf("failed to manually delete image %q : %v", rr.Command(), err)
 			}
 			// make sure the image is deleted.
 			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "inspecti", img))
 			if err == nil {
-				t.Errorf("expected an error. because image should not exist. but got *nil error* ! cmd: %q", rr.Command())
+				t.Errorf("expected an error  but got no error. image should not exist. ! cmd: %q", rr.Command())
 			}
 			// minikube cache reload.
 			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "reload"))
@@ -587,7 +587,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		// delete will clean up the cached images since they are global and all other tests will load it for no reason
 		t.Run("delete", func(t *testing.T) {
-			for _, img := range []string{"busybox:latest", "k8s.gcr.io/pause:latest"} {
+			for _, img := range []string{"k8s.gcr.io/pause:3.1", "k8s.gcr.io/pause:latest"} {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", img))
 				if err != nil {
 					t.Errorf("failed to delete %s from cache. args %q: %v", img, rr.Command(), err)

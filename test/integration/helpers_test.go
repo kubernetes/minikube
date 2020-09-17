@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -370,6 +371,56 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	t.Logf("***** %s: pod %q failed to start within %s: %v ****", t.Name(), selector, timeout, err)
 	showPodLogs(ctx, t, profile, ns, names)
 	return names, fmt.Errorf("%s: %v", fmt.Sprintf("%s within %s", selector, timeout), err)
+}
+
+// PVCWait waits for persistent volume claim to reach bound state
+func PVCWait(ctx context.Context, t *testing.T, profile string, ns string, name string, timeout time.Duration) error {
+	t.Helper()
+
+	t.Logf("(dbg) %s: waiting %s for pvc %q in namespace %q ...", t.Name(), timeout, name, ns)
+
+	f := func() (bool, error) {
+		ret, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", name, "-o", "jsonpath={.status.phase}", "-n", ns))
+		if err != nil {
+			t.Logf("%s: WARNING: PVC get for %q %q returned: %v", t.Name(), ns, name, err)
+			return false, nil
+		}
+
+		pvc := strings.TrimSpace(ret.Stdout.String())
+		if pvc == string(core.ClaimBound) {
+			return true, nil
+		} else if pvc == string(core.ClaimLost) {
+			return true, fmt.Errorf("PVC %q is LOST", name)
+		}
+		return false, nil
+	}
+
+	return wait.PollImmediate(1*time.Second, timeout, f)
+}
+
+//// VolumeSnapshotWait waits for volume snapshot to be ready to use
+func VolumeSnapshotWait(ctx context.Context, t *testing.T, profile string, ns string, name string, timeout time.Duration) error {
+	t.Helper()
+
+	t.Logf("(dbg) %s: waiting %s for volume snapshot %q in namespace %q ...", t.Name(), timeout, name, ns)
+
+	f := func() (bool, error) {
+		res, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "volumesnapshot", name, "-o", "jsonpath={.status.readyToUse}", "-n", ns))
+		if err != nil {
+			t.Logf("%s: WARNING: volume snapshot get for %q %q returned: %v", t.Name(), ns, name, err)
+			return false, nil
+		}
+
+		isReady, err := strconv.ParseBool(strings.TrimSpace(res.Stdout.String()))
+		if err != nil {
+			t.Logf("%s: WARNING: volume snapshot get for %q %q returned: %v", t.Name(), ns, name, res.Stdout.String())
+			return false, nil
+		}
+
+		return isReady, nil
+	}
+
+	return wait.PollImmediate(1*time.Second, timeout, f)
 }
 
 // Status returns a minikube component status as a string

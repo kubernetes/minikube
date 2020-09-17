@@ -96,7 +96,7 @@ minikube start --container-runtime=docker
 Other options available are:
 
 * [containerd](https://github.com/containerd/containerd)
-* [crio](https://github.com/kubernetes-sigs/cri-o)
+* [cri-o](https://github.com/cri-o/cri-o)
 
 ## Environment variables
 
