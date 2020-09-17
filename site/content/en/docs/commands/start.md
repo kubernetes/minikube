@@ -67,7 +67,7 @@ minikube start [flags]
       --interactive                       Allow user prompts for more information (default true)
       --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.13.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.13.0/minikube-v1.13.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.13.0.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.19.0, 'latest' for v1.19.0). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.19.1, 'latest' for v1.19.1). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM network name. (kvm2 driver only) (default "default")
@@ -75,7 +75,7 @@ minikube start [flags]
       --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).
       --mount                             This will start the mount daemon and automatically mount files into minikube.
       --mount-string string               The argument to pass the minikube mount command on start.
-      --nat-nic-type string               NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
+      --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
       --network-plugin string             Kubelet network plug-in to use (default: auto)
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)

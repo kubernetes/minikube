@@ -252,7 +252,9 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
-	validateDockerStorageDriver(driverName)
+	if driverName == oci.Docker {
+		validateDockerStorageDriver(driverName)
+	}
 
 	// Download & update the driver, even in --download-only mode
 	if !viper.GetBool(dryRun) {
