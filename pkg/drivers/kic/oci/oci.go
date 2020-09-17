@@ -145,20 +145,27 @@ func CreateContainerNode(p CreateParams) error {
 		// label th enode wuth the node ID
 		"--label", p.NodeLabel,
 	}
+	memcgSwap := true
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/sys/fs/cgroup/memory/memsw.limit_in_bytes"); os.IsNotExist(err) {
+			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
+			glog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
+			memcgSwap = false
+		}
+	}
 
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	var virtualization string
 	if p.OCIBinary == Podman { // enable execing in /var
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
-		if _, err := os.Stat("/sys/fs/cgroup/memory/memsw.limit_in_bytes"); runtime.GOOS == "linux" && os.IsNotExist(err) {
-			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
-			glog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-		} else {
+
+		if memcgSwap {
 			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 			// Disable swap by setting the value to match
 			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 		}
+
 		virtualization = "podman" // VIRTUALIZATION_PODMAN
 	}
 	if p.OCIBinary == Docker {
