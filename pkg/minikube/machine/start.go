@@ -36,6 +36,7 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -218,17 +219,32 @@ func postStartValidations(h *host.Host, drvName string) {
 		glog.Warningf("error getting command runner: %v", err)
 	}
 
+	var kind reason.Kind
+	var name string
+	if drvName == oci.Docker {
+		kind = reason.RsrcInsufficientDockerStorage
+		name = "Docker"
+	}
+	if drvName == oci.Podman {
+		kind = reason.RsrcInsufficientPodmanStorage
+		name = "Podman"
+	}
+	if name == "" {
+		glog.Warningf("unknown KIC driver: %v", drvName)
+		return
+	}
+
 	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
 		glog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 	if percentageFull >= 99 {
-		exit.Message(reason.RsrcInsufficientDockerStorage, `Docker is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"p": percentageFull})
+		exit.Message(kind, `{{.n}} is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
 	}
 
 	if percentageFull >= 85 {
-		out.WarnReason(reason.RsrcInsufficientDockerStorage, `Docker is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"p": percentageFull})
+		out.WarnReason(kind, `{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
 	}
 }
 
