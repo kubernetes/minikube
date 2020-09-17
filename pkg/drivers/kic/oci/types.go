@@ -108,6 +108,7 @@ type Mount struct {
 func ParseMountString(spec string) (m Mount, err error) {
 	f := strings.Split(spec, ":")
 	fields := f
+	// suppressing err is safe here since the regex will always compile
 	windows, _ := regexp.MatchString(`^[A-Z]:\\*`, spec)
 	if windows {
 		// Recreate the host path that got split above since
