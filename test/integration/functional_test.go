@@ -587,7 +587,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		// delete will clean up the cached images since they are global and all other tests will load it for no reason
 		t.Run("delete", func(t *testing.T) {
-			for _, img := range []string{"k8s.gcr.io/pause:3.0", "k8s.gcr.io/pause:latest"} {
+			for _, img := range []string{"k8s.gcr.io/pause:3.1", "k8s.gcr.io/pause:latest"} {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", img))
 				if err != nil {
 					t.Errorf("failed to delete %s from cache. args %q: %v", img, rr.Command(), err)
