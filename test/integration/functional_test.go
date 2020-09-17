@@ -497,7 +497,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 	t.Run("cache", func(t *testing.T) {
 		t.Run("add_remote", func(t *testing.T) {
-			for _, img := range []string{"k8s.gcr.io/pause:3.0", "k8s.gcr.io/pause:3.3", "k8s.gcr.io/pause:latest"} {
+			for _, img := range []string{"k8s.gcr.io/pause:3.1", "k8s.gcr.io/pause:3.3", "k8s.gcr.io/pause:latest"} {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 				if err != nil {
 					t.Errorf("failed to 'cache add' remote image %q. args %q err %v", img, rr.Command(), err)
