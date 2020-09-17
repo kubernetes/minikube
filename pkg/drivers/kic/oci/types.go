@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"runtime"
+	"regexp"
 	"strings"
 )
 
@@ -108,11 +108,12 @@ type Mount struct {
 func ParseMountString(spec string) (m Mount, err error) {
 	f := strings.Split(spec, ":")
 	fields := f
-	if runtime.GOOS == "windows" {
+	windows, _ := regexp.MatchString(`^[A-Z]:\\*`, spec)
+	if windows {
 		// Recreate the host path that got split above since
 		// Windows paths look like C:\path
 		hpath := fmt.Sprintf("%s:%s", f[0], f[1])
-		fields = append(fields, hpath)
+		fields = []string{hpath}
 		fields = append(fields, f[2:]...)
 	}
 	switch len(fields) {
