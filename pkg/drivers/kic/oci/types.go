@@ -19,7 +19,8 @@ package oci
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
+	"path"
+	"regexp"
 	"strings"
 )
 
@@ -105,7 +106,18 @@ type Mount struct {
 // '[host-path:]container-path[:<options>]' The comma-delimited 'options' are
 // [rw|ro], [Z], [srhared|rslave|rprivate].
 func ParseMountString(spec string) (m Mount, err error) {
-	switch fields := strings.Split(spec, ":"); len(fields) {
+	f := strings.Split(spec, ":")
+	fields := f
+	// suppressing err is safe here since the regex will always compile
+	windows, _ := regexp.MatchString(`^[A-Z]:\\*`, spec)
+	if windows {
+		// Recreate the host path that got split above since
+		// Windows paths look like C:\path
+		hpath := fmt.Sprintf("%s:%s", f[0], f[1])
+		fields = []string{hpath}
+		fields = append(fields, f[2:]...)
+	}
+	switch len(fields) {
 	case 0:
 		err = errors.New("invalid empty spec")
 	case 1:
@@ -132,7 +144,7 @@ func ParseMountString(spec string) (m Mount, err error) {
 		fallthrough
 	case 2:
 		m.HostPath, m.ContainerPath = fields[0], fields[1]
-		if !filepath.IsAbs(m.ContainerPath) {
+		if !path.IsAbs(m.ContainerPath) {
 			err = fmt.Errorf("'%s' container path must be absolute", m.ContainerPath)
 		}
 	default:
