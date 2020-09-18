@@ -16,6 +16,7 @@
 Thank you to our contributors for this release! 
 - Anders F Björklund
 - Dean Coakley
+- Julien Breux
 - Li Zhijian
 - Medya Ghazizadeh
 - Priya Wadhwa
