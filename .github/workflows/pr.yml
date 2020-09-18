@@ -206,8 +206,7 @@ jobs:
         shell: bash
         run: |
           brew install docker-machine docker
-          docker --version
-          brew services start docker-machine
+          sudo docker --version
       - name: Info
         shell: bash
         run: |
