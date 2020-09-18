@@ -206,7 +206,9 @@ jobs:
         shell: bash
         run: |
           brew install docker-machine docker
-          sudo docker --version
+          docker --version
+          docker-machine create --driver virtualbox default
+          eval $(docker-machine env default)
       - name: Info
         shell: bash
         run: |
