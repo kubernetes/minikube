@@ -207,7 +207,13 @@ var (
 	ProviderNotFound    = Kind{ID: "PROVIDER_NOT_FOUND", ExitCode: ExProviderNotFound}
 	ProviderUnavailable = Kind{ID: "PROVIDER_UNAVAILABLE", ExitCode: ExProviderNotFound, Style: style.Shrug}
 
-	DrvCPEndpoint         = Kind{ID: "DRV_CP_ENDPOINT", ExitCode: ExDriverError}
+	DrvCPEndpoint = Kind{ID: "DRV_CP_ENDPOINT",
+		Advice: `Recreate the cluster by running:
+		minikube delete{{.profile}}
+		minikube start{{.profile}}`,
+		ExitCode: ExDriverError,
+		Style:    style.Failure,
+	}
 	DrvPortForward        = Kind{ID: "DRV_PORT_FORWARD", ExitCode: ExDriverError}
 	DrvUnsupportedMulti   = Kind{ID: "DRV_UNSUPPORTED_MULTINODE", ExitCode: ExDriverConflict}
 	DrvUnsupportedOS      = Kind{ID: "DRV_UNSUPPORTED_OS", ExitCode: ExDriverUnsupported}
