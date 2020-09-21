@@ -60,7 +60,7 @@ func SaveToDir(images []string, cacheDir string) error {
 			dst := filepath.Join(cacheDir, image)
 			dst = localpath.SanitizeCacheDir(dst)
 			if err := saveToTarFile(image, dst); err != nil {
-				glog.Errorf("save image to file %q -> %q failed: %v", image, dst, err)
+				glog.Errorf("save image to file %q -> %q failed: the image doesn't exist", image, dst)
 				return errors.Wrapf(err, "caching image %q", dst)
 			}
 			glog.Infof("save to tar file %s -> %s succeeded", image, dst)
