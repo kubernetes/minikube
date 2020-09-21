@@ -1026,6 +1026,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
+	if driver.IsVM(drvName) && cmd.Flags().Changed(kicBaseImage) {
+		exit.Message(reason.Usage, "Sorry, --base-image can only be used with the Docker or Podman driver. For VM drivers, use --iso-url instead")
+	}
+
 	// validate kubeadm extra args
 	if invalidOpts := bsutil.FindInvalidExtraConfigFlags(config.ExtraOptions); len(invalidOpts) > 0 {
 		out.WarningT(
