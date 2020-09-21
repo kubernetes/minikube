@@ -45,5 +45,11 @@ var updateContextCmd = &cobra.Command{
 		} else {
 			out.T(style.Meh, `No changes required for the "{{.context}}" context`, out.V{"context": cname})
 		}
+
+		if err := kubeconfig.SetCurrentContext(cname, kubeconfig.PathFromEnv()); err != nil {
+			out.ErrT(style.Sad, `Error while setting kubectl current context:  {{.error}}`, out.V{"error": err})
+		} else {
+			out.T(style.Kubectl, `Current context is "{{.context}}"`, out.V{"context": cname})
+		}
 	},
 }
