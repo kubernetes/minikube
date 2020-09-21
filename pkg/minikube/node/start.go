@@ -311,7 +311,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) *kubeconfig.Settings {
 	addr, err := apiServerURL(*h, *cc, *n)
 	if err != nil {
-		exit.Error(reason.DrvCPEndpoint, "Failed to get API Server URL", err)
+		exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to get API Server URL: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
 	}
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
