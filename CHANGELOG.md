@@ -1,5 +1,31 @@
 # Release Notes
 
+## Version 1.13.1 - 2020-09-18
+* Update Default Kubernetes Version to v1.19.2 [#9265](https://github.com/kubernetes/minikube/pull/9265)
+* fix mounting for docker driver in windows [#9263](https://github.com/kubernetes/minikube/pull/9263)
+* CSI Hostpath Driver & VolumeSnapshots addons [#8461](https://github.com/kubernetes/minikube/pull/8461)
+* docker/podman drivers: Make sure CFS_BANDWIDTH is available for --cpus [#9255](https://github.com/kubernetes/minikube/pull/9255)
+* Fix ForwardedPort for podman version 2.0.1 and up [#9237](https://github.com/kubernetes/minikube/pull/9237)
+* Avoid setting time for memory assets [#9256](https://github.com/kubernetes/minikube/pull/9256)
+* point to newest gcp-auth-webhook version [#9199](https://github.com/kubernetes/minikube/pull/9199)
+* Set preload=false if not using overlay2 as docker storage driver [#8831](https://github.com/kubernetes/minikube/pull/8831)
+* Upgrade crio to 1.17.3 [#8922](https://github.com/kubernetes/minikube/pull/8922)
+* Add Docker Desktop instructions if memory is greater than minimum but less than recommended [#9181](https://github.com/kubernetes/minikube/pull/9181)
+* Update minimum memory constants to use MiB instead of MB [#9180](https://github.com/kubernetes/minikube/pull/9180)
+
+Thank you to our contributors for this release! 
+- Anders F Björklund
+- Dean Coakley
+- Julien Breux
+- Li Zhijian
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- Zadjad Rezai
+- jjanik
+
+
 ## Version 1.13.0 - 2020-09-03
 
 ## Features
