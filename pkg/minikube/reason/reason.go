@@ -209,8 +209,8 @@ var (
 
 	DrvCPEndpoint = Kind{ID: "DRV_CP_ENDPOINT",
 		Advice: `Recreate the cluster by running:
-		minikube delete{{.profile}}
-		minikube start{{.profile}}`,
+		minikube delete {{.profileArg}}
+		minikube start {{.profileArg}}`,
 		ExitCode: ExDriverError,
 		Style:    style.Failure,
 	}
