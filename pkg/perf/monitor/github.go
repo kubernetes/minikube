@@ -122,7 +122,7 @@ func (g *Client) timeOfLastCommit(pr int) (time.Time, error) {
 			PerPage: resultsPerPage,
 		})
 		if err != nil {
-			return time.Time{}, nil
+			return time.Time{}, err
 		}
 		commits = append(commits, c...)
 		if len(c) < resultsPerPage {
@@ -153,7 +153,7 @@ func (g *Client) timeOfLastComment(pr int, login string) (time.Time, error) {
 			},
 		})
 		if err != nil {
-			return time.Time{}, nil
+			return time.Time{}, err
 		}
 		comments = append(comments, c...)
 		if len(c) < resultsPerPage {
