@@ -78,7 +78,7 @@ func (g *Client) ListOpenPRsWithLabel(label string) ([]int, error) {
 		return nil, errors.Wrap(err, "listing pull requests")
 	}
 	for _, pr := range prs {
-		if prContainsLabel(pr.Labels, "ok-to-test") {
+		if prContainsLabel(pr.Labels, label) {
 			validPrs = append(validPrs, pr.GetNumber())
 		}
 	}

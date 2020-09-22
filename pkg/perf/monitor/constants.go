@@ -21,4 +21,5 @@ const (
 	OkToTestLabel           = "ok-to-test"
 	GithubOwner             = "kubernetes"
 	GithubRepo              = "minikube"
+	BotName                 = "minikube-pr-bot"
 )
