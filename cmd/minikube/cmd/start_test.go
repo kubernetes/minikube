@@ -296,6 +296,8 @@ func TestBaseImageFlagDriverCombo(t *testing.T) {
 		{driver.VMwareFusion, false},
 		{driver.HyperV, false},
 		{driver.Parallels, false},
+		{"something_invalid", false},
+		{"", false},
 	}
 
 	for _, test := range tests {
