@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -65,6 +66,18 @@ func NewDriver(c Config) *Driver {
 	return d
 }
 
+// machineOrder returns the order of the container based on it is name
+func machineOrder(machineName string) int {
+	// minikube-m02
+	sp := strings.Split(machineName, "-")
+	m := strings.Trim(sp[len(sp)-1], "m") // m02
+	i, err := strconv.Atoi(m)
+	if err != nil {
+		return 1
+	}
+	return i
+}
+
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	params := oci.CreateParams{
@@ -79,6 +92,20 @@ func (d *Driver) Create() error {
 		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
 		OCIBinary:     d.NodeConfig.OCIBinary,
 		APIServerPort: d.NodeConfig.APIServerPort,
+	}
+
+	// one network bridge per cluster.
+	defaultNetwork := d.NodeConfig.ClusterName
+	if gateway, err := oci.CreateNetwork(d.OCIBinary, defaultNetwork); err != nil {
+		glog.Warningf("failed to create network: %v", err)
+		out.WarningT("Unable to create dedicated network, This might result in cluster IP change after restart.")
+	} else {
+		params.Network = defaultNetwork
+		ip := gateway.To4()
+		// calculate the container IP based on its machine order
+		ip[3] += byte(machineOrder(d.NodeConfig.MachineName))
+		glog.Infof("calculated static IP %q for the %q container ", ip.String(), d.NodeConfig.MachineName)
+		params.IP = ip.String()
 	}
 
 	// control plane specific options
@@ -288,6 +315,11 @@ func (d *Driver) Remove() error {
 	// check there be no container left after delete
 	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
 		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
+	}
+
+	if err := oci.RemoveNetwork(d.NodeConfig.ClusterName); err != nil {
+		//TODO: Ingore error if this is a multinode cluster and first container is trying to delete network while other containers are attached to it
+		glog.Warningf("failed to remove network (which might be okay) %s: %v", d.NodeConfig.ClusterName, err)
 	}
 	return nil
 }

@@ -17,6 +17,8 @@ limitations under the License.
 package oci
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 	"os/exec"
@@ -122,4 +124,73 @@ func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
 		gateway = net.ParseIP(ips[1])
 	}
 	return subnet, gateway, nil
+}
+
+// RemoveNetwork removes a network
+func RemoveNetwork(name string) error {
+	if !networkExists(name) {
+		return nil
+	}
+	rr, err := runCmd(exec.Command(Docker, "network", "remove", name))
+	if err != nil {
+		if strings.Contains(rr.Output(), "No such network:") {
+			return ErrNetworkNotFound
+		}
+		// Error response from daemon: error while removing network: network mynet123 id f9e1c50b89feb0b8f4b687f3501a81b618252c9907bc20666e386d0928322387 has active endpoints
+		if strings.Contains(rr.Output(), "has active endpoints") {
+			return ErrNetworkInUse
+		}
+	}
+
+	return err
+}
+
+func networkExists(name string) bool {
+	if _, _, err := dockerNetworkInspect(name); err != nil {
+		if err == ErrNetworkNotFound {
+			return false
+		}
+		glog.Warningf("error inspecting network %s: %v", name, err)
+		return false
+	}
+	return true
+}
+
+// returns all network names created by a label
+func allNetworkByLabel(ociBin string, label string) ([]string, error) {
+	if ociBin != Docker {
+		return nil, fmt.Errorf("%s not supported", ociBin)
+	}
+
+	// docker network ls --filter='label=created_by.minikube.sigs.k8s.io=true' --format '{{.Name}}
+	rr, err := runCmd(exec.Command(Docker, "network", "ls", fmt.Sprintf("--filter=label=%s", label), "--format", "{{.Name}}"))
+	if err != nil {
+		return nil, err
+	}
+	var lines []string
+	scanner := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
+	for scanner.Scan() {
+		lines = append(lines, strings.TrimSpace(scanner.Text()))
+	}
+
+	return lines, nil
+}
+
+// DeleteAllNetworksByKIC deletes all networks created by kic
+func DeleteAllNetworksByKIC() []error {
+	var errs []error
+	ns, err := allNetworkByLabel(Docker, CreatedByLabelKey+"=true")
+	if err != nil {
+		return []error{errors.Wrap(err, "list all volume")}
+	}
+	for _, n := range ns {
+		err := RemoveNetwork(n)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errs
+	}
+	return nil
 }
