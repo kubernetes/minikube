@@ -38,7 +38,9 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -167,7 +169,10 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
+
 	ds, alts, specified := selectDriver(existing)
+	validateBaseImage(cmd.Flag(kicBaseImage), ds.Name)
+
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
 		node.ExitIfFatal(err)
@@ -516,6 +521,7 @@ func kubectlVersion(path string) (string, error) {
 	return cv.ClientVersion.GitVersion, nil
 }
 
+// returns (current_driver, suggested_drivers, "true, if the driver is set by command line arg or in the config file")
 func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState, bool) {
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
@@ -1183,6 +1189,25 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	if defaultVersion.GT(nvs) {
 		out.T(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
+}
+
+// validateBaseImage checks that --base-image is not passed if the drive being in use is KIC (docker/podman)
+// if so, the function exits the process
+func validateBaseImage(baseImage *pflag.Flag, driver string) {
+	if !validBaseImageFlag(baseImage.Changed, driver) {
+		exit.Message(reason.Usage, "TODO:  image {{.image}} with driver {{.driver}}",
+			out.V{
+				"driver": driver,
+				"image":  baseImage.Value,
+			},
+		)
+	}
+}
+func validBaseImageFlag(baseImageFlagSet bool, driver string) bool {
+	if baseImageFlagSet {
+		return registry.IsKIC(driver)
+	}
+	return true
 }
 
 func getKubernetesVersion(old *config.ClusterConfig) string {
