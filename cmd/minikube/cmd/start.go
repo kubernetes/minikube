@@ -161,7 +161,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil && !config.IsNotExist(err) {
 		kind := reason.HostConfigLoad
 		if config.IsPermissionDenied(err) {
-			kind = reason.HostPermissionDenied
+			kind = reason.HostHomePermission
 		}
 		exit.Message(kind, "Unable to load config: {{.error}}", out.V{"error": err})
 	}

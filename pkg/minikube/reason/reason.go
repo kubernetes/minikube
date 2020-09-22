@@ -188,11 +188,17 @@ var (
 
 	RsrcInsufficientStorage = Kind{ID: "RSRC_INSUFFICIENT_STORAGE", ExitCode: ExInsufficientStorage, Style: style.UnmetRequirement}
 
-	HostHomeMkdir        = Kind{ID: "HOST_HOME_MKDIR", ExitCode: ExHostPermission}
-	HostHomeChown        = Kind{ID: "HOST_HOME_CHOWN", ExitCode: ExHostPermission}
-	HostBrowser          = Kind{ID: "HOST_BROWSER", ExitCode: ExHostError}
-	HostConfigLoad       = Kind{ID: "HOST_CONFIG_LOAD", ExitCode: ExHostConfig}
-	HostPermissionDenied = Kind{ID: "HOST_PERMISSION_DENIED", ExitCode: ExHostPermission}
+	HostHomeMkdir      = Kind{ID: "HOST_HOME_MKDIR", ExitCode: ExHostPermission}
+	HostHomeChown      = Kind{ID: "HOST_HOME_CHOWN", ExitCode: ExHostPermission}
+	HostBrowser        = Kind{ID: "HOST_BROWSER", ExitCode: ExHostError}
+	HostConfigLoad     = Kind{ID: "HOST_CONFIG_LOAD", ExitCode: ExHostConfig}
+	HostHomePermission = Kind{
+		ID:       "HOST_HOME_PERMISSION",
+		ExitCode: ExHostPermission,
+		Advice:   "Your user lacks permissions to the minikube profile directory. Run: 'sudo chown -R $USER $HOME/.minikube; chmod -R u+wrx $HOME/.minikube' to fix",
+		Issues:   []int{9165},
+	}
+
 	HostCurrentUser      = Kind{ID: "HOST_CURRENT_USER", ExitCode: ExHostConfig}
 	HostDelCache         = Kind{ID: "HOST_DEL_CACHE", ExitCode: ExHostError}
 	HostKillMountProc    = Kind{ID: "HOST_KILL_MOUNT_PROC", ExitCode: ExHostError}
