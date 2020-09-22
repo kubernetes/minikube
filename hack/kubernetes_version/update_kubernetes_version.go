@@ -18,12 +18,13 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"flag"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 
@@ -31,22 +32,49 @@ import (
 )
 
 func main() {
-	vDefault := ""
-	vNewest := ""
+	// init glog: by default, all log statements write to files in a temporary directory, also
+	// flag.Parse must be called before any logging is done
+	flag.Parse()
+	_ = flag.Set("logtostderr", "true")
 
+	// fetch respective current stable (vDefault as DefaultKubernetesVersion) and
+	// latest rc or beta (vDefault as NewestKubernetesVersion) Kubernetes GitHub Releases
+	vDefault, vNewest, err := fetchKubernetesReleases()
+	if err != nil {
+		glog.Errorf("Fetching current GitHub Releases failed: %v", err)
+	}
+	if vDefault == "" || vNewest == "" {
+		glog.Fatalf("Cannot determine current 'DefaultKubernetesVersion' and 'NewestKubernetesVersion'")
+	}
+	glog.Infof("Current Kubernetes GitHub Releases: 'stable' is %s and 'latest' is %s", vDefault, vNewest)
+
+	if err := updateKubernetesVersions(vDefault, vNewest); err != nil {
+		glog.Fatalf("Updating 'DefaultKubernetesVersion' and 'NewestKubernetesVersion' failed: %v", err)
+	}
+	glog.Infof("Update successful: 'DefaultKubernetesVersion' was set to %s and 'NewestKubernetesVersion' was set to %s", vDefault, vNewest)
+
+	// Flush before exiting to guarantee all log output is written
+	glog.Flush()
+}
+
+// fetchKubernetesReleases returns respective current stable (as vDefault) and
+// latest rc or beta (as vNewest) Kubernetes GitHub Releases, and any error
+func fetchKubernetesReleases() (vDefault, vNewest string, err error) {
 	client := github.NewClient(nil)
+
+	// set a context with a deadline - timeout after at most 10 seconds
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	// walk through the paginated list of all 'kubernetes/kubernetes' repo releases
 	// from latest to older releases, until latest release and pre-release are found
 	// use max value (100) for PerPage to avoid hitting the rate limits (60 per hour, 10 per minute)
 	// see https://godoc.org/github.com/google/go-github/github#hdr-Rate_Limiting
 	opt := &github.ListOptions{PerPage: 100}
-out:
 	for {
-		rels, resp, err := client.Repositories.ListReleases(context.Background(), "kubernetes", "kubernetes", opt)
+		rels, resp, err := client.Repositories.ListReleases(ctx, "kubernetes", "kubernetes", opt)
 		if err != nil {
-			glog.Errorf("GitHub ListReleases failed: %v", err)
-			break
+			return "", "", err
 		}
 
 		for _, r := range rels {
@@ -72,7 +100,7 @@ out:
 				if vNewest < vDefault {
 					vNewest = vDefault
 				}
-				break out
+				return vDefault, vNewest, nil
 			}
 		}
 
@@ -81,57 +109,64 @@ out:
 		}
 		opt.Page = resp.NextPage
 	}
+	return vDefault, vNewest, nil
+}
 
-	if vDefault == "" || vNewest == "" {
-		glog.Errorf("Cannot determine DefaultKubernetesVersion or NewestKubernetesVersion")
-		os.Exit(1)
+// updateKubernetesVersions updates DefaultKubernetesVersion to vDefault release and
+// NewestKubernetesVersion to vNewest release, and returns any error
+func updateKubernetesVersions(vDefault, vNewest string) error {
+	if err := replaceAllString("../../pkg/minikube/constants/constants.go", map[string]string{
+		`DefaultKubernetesVersion = \".*`: "DefaultKubernetesVersion = \"" + vDefault + "\"",
+		`NewestKubernetesVersion = \".*`:  "NewestKubernetesVersion = \"" + vNewest + "\"",
+	}); err != nil {
+		return err
 	}
 
-	constantsFile := "../../pkg/minikube/constants/constants.go"
-	cf, err := ioutil.ReadFile(constantsFile)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	if err := replaceAllString("../../site/content/en/docs/commands/start.md", map[string]string{
+		`'stable' for .*,`:  "'stable' for " + vDefault + ",",
+		`'latest' for .*\)`: "'latest' for " + vNewest + ")",
+	}); err != nil {
+		return err
 	}
 
-	info, err := os.Stat(constantsFile)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	mode := info.Mode()
-
-	re := regexp.MustCompile(`DefaultKubernetesVersion = \".*`)
-	f := re.ReplaceAllString(string(cf), "DefaultKubernetesVersion = \""+vDefault+"\"")
-
-	re = regexp.MustCompile(`NewestKubernetesVersion = \".*`)
-	f = re.ReplaceAllString(f, "NewestKubernetesVersion = \""+vNewest+"\"")
-
-	if err := ioutil.WriteFile(constantsFile, []byte(f), mode); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	// update testData just for the latest 'v<MAJOR>.<MINOR>' from vDefault
+	// update testData just for the latest 'v<MAJOR>.<MINOR>.0' from vDefault
 	vDefaultMM := vDefault[:strings.LastIndex(vDefault, ".")]
 	testData := "../../pkg/minikube/bootstrapper/bsutil/testdata/" + vDefaultMM
 
-	err = filepath.Walk(testData, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(testData, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !strings.HasSuffix(path, "default.yaml") {
 			return nil
 		}
-		cf, err = ioutil.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		re = regexp.MustCompile(`kubernetesVersion: .*`)
-		cf = []byte(re.ReplaceAllString(string(cf), "kubernetesVersion: "+vDefaultMM+".0")) // TODO: let <PATCH> version to be the latest one instead of "0"
-		return ioutil.WriteFile(path, cf, info.Mode())
+		return replaceAllString(path, map[string]string{
+			`kubernetesVersion: .*`: "kubernetesVersion: " + vDefaultMM + ".0",
+		})
 	})
+}
+
+// replaceAllString replaces all occuranes of map's keys with their respective values in the file
+func replaceAllString(path string, pairs map[string]string) error {
+	fb, err := ioutil.ReadFile(path)
 	if err != nil {
-		glog.Errorf("Walk failed: %v", err)
+		return err
 	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	mode := info.Mode()
+
+	f := string(fb)
+	for org, new := range pairs {
+		re := regexp.MustCompile(org)
+		f = re.ReplaceAllString(f, new)
+	}
+	if err := ioutil.WriteFile(path, []byte(f), mode); err != nil {
+		return err
+	}
+
+	return nil
 }
