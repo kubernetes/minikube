@@ -80,6 +80,24 @@ func IsNotExist(err error) bool {
 	return false
 }
 
+// ErrPermissionDenied is the error returned when the config cannot be read
+// due to insufficient permissions
+type ErrPermissionDenied struct {
+	s string
+}
+
+func (e *ErrPermissionDenied) Error() string {
+	return e.s
+}
+
+// IsPermissionDenied returns whether the error is a ErrPermissionDenied instance
+func IsPermissionDenied(err error) bool {
+	if _, ok := err.(*ErrPermissionDenied); ok {
+		return true
+	}
+	return false
+}
+
 // MinikubeConfig represents minikube config
 type MinikubeConfig map[string]interface{}
 
@@ -184,6 +202,9 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
+		if os.IsPermission(err) {
+			return nil, &ErrPermissionDenied{err.Error()}
+		}
 		return nil, errors.Wrap(err, "read")
 	}
 

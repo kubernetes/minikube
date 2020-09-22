@@ -192,6 +192,7 @@ var (
 	HostHomeChown        = Kind{ID: "HOST_HOME_CHOWN", ExitCode: ExHostPermission}
 	HostBrowser          = Kind{ID: "HOST_BROWSER", ExitCode: ExHostError}
 	HostConfigLoad       = Kind{ID: "HOST_CONFIG_LOAD", ExitCode: ExHostConfig}
+	HostPermissionDenied = Kind{ID: "HOST_PERMISSION_DENIED", ExitCode: ExHostPermission}
 	HostCurrentUser      = Kind{ID: "HOST_CURRENT_USER", ExitCode: ExHostConfig}
 	HostDelCache         = Kind{ID: "HOST_DEL_CACHE", ExitCode: ExHostError}
 	HostKillMountProc    = Kind{ID: "HOST_KILL_MOUNT_PROC", ExitCode: ExHostError}
