@@ -1193,12 +1193,18 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 // validateBaseImage checks that --base-image is not passed if the drive being in use is KIC (docker/podman)
 // if so, the function exits the process
-func validateBaseImage(baseImage *pflag.Flag, driver string) {
-	if !validBaseImageFlag(baseImage.Changed, driver) {
-		exit.Message(reason.Usage, "TODO:  image {{.image}} with driver {{.driver}}",
+func validateBaseImage(imageFlag *pflag.Flag, driver string) {
+	if !validBaseImageFlag(imageFlag.Changed, driver) {
+		exit.Message(reason.Usage,
+			"flag --{{.imgFlag}} is not available for driver '{{.driver}}'. Did you mean to use '{{.docker}}' or '{{.podman}}' driver instead?\n"+
+				"Please use --{{.isoFlag}} flag to configure VM based drivers",
 			out.V{
-				"driver": driver,
-				"image":  baseImage.Value,
+				"imgFlag": imageFlag.Name,
+				"driver":  driver,
+				"image":   imageFlag.Value,
+				"docker":  registry.Docker,
+				"podman":  registry.Podman,
+				"isoFlag": isoURL,
 			},
 		)
 	}
