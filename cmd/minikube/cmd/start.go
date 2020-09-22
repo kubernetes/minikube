@@ -38,7 +38,6 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -171,7 +170,21 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateKubernetesVersion(existing)
 
 	ds, alts, specified := selectDriver(existing)
-	validateBaseImage(cmd.Flag(kicBaseImage), ds.Name)
+	if cmd.Flag(kicBaseImage).Changed {
+		if !isBaseImageApplicable(ds.Name) {
+			exit.Message(reason.Usage,
+				"flag --{{.imgFlag}} is not available for driver '{{.driver}}'. Did you mean to use '{{.docker}}' or '{{.podman}}' driver instead?\n"+
+					"Please use --{{.isoFlag}} flag to configure VM based drivers",
+				out.V{
+					"imgFlag": kicBaseImage,
+					"driver":  ds.Name,
+					"docker":  registry.Docker,
+					"podman":  registry.Podman,
+					"isoFlag": isoURL,
+				},
+			)
+		}
+	}
 
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
@@ -1191,29 +1204,8 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	}
 }
 
-// validateBaseImage checks that --base-image is not passed if the drive being in use is KIC (docker/podman)
-// if so, the function exits the process
-func validateBaseImage(imageFlag *pflag.Flag, drv string) {
-	if !validBaseImageFlag(imageFlag.Changed, drv) {
-		exit.Message(reason.Usage,
-			"flag --{{.imgFlag}} is not available for driver '{{.driver}}'. Did you mean to use '{{.docker}}' or '{{.podman}}' driver instead?\n"+
-				"Please use --{{.isoFlag}} flag to configure VM based drivers",
-			out.V{
-				"imgFlag": imageFlag.Name,
-				"driver":  drv,
-				"image":   imageFlag.Value,
-				"docker":  registry.Docker,
-				"podman":  registry.Podman,
-				"isoFlag": isoURL,
-			},
-		)
-	}
-}
-func validBaseImageFlag(baseImageFlagSet bool, driver string) bool {
-	if baseImageFlagSet {
-		return registry.IsKIC(driver)
-	}
-	return true
+func isBaseImageApplicable(drv string) bool {
+	return registry.IsKIC(drv)
 }
 
 func getKubernetesVersion(old *config.ClusterConfig) string {
