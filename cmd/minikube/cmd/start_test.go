@@ -282,47 +282,28 @@ func TestSuggestMemoryAllocation(t *testing.T) {
 }
 
 func TestBaseImageFlagDriverCombo(t *testing.T) {
-	type testStruct struct {
-		description string
-		imageSet    bool
-		driver      string
-	}
-	invalidCombos := []testStruct{
-		{"KVM2 with flag", true, driver.KVM2},
-		{"VirtualBox with flag", true, driver.VirtualBox},
-		{"HyperKit with flag", true, driver.HyperKit},
-		{"VMware with flag", true, driver.VMware},
-		{"VMwareFusion with flag", true, driver.VMwareFusion},
-		{"HyperV with flag", true, driver.HyperV},
-		{"Parallels with flag", true, driver.Parallels},
-	}
-	validCombos := []testStruct{
-		{"Docker with flag", true, driver.Docker},
-		{"Podman with flag", true, driver.Podman},
-		{"Docker w/o flag", false, driver.Docker},
-		{"Podman w/o flag", false, driver.Podman},
-		{"KVM2 w/o flag", false, driver.KVM2},
-		{"VirtualBox w/o flag", false, driver.VirtualBox},
-		{"HyperKit w/o flag", false, driver.HyperKit},
-		{"VMware w/o flag", false, driver.VMware},
-		{"VMwareFusion w/o flag", false, driver.VMwareFusion},
-		{"HyperV w/o flag", false, driver.HyperV},
-		{"Parallels w/o flag", false, driver.Parallels},
+	tests := []struct {
+		driver        string
+		canUseBaseImg bool
+	}{
+		{driver.Docker, true},
+		{driver.Podman, true},
+		{driver.None, false},
+		{driver.KVM2, false},
+		{driver.VirtualBox, false},
+		{driver.HyperKit, false},
+		{driver.VMware, false},
+		{driver.VMwareFusion, false},
+		{driver.HyperV, false},
+		{driver.Parallels, false},
 	}
 
-	for _, test := range validCombos {
-		t.Run(test.description, func(t *testing.T) {
-			if !validBaseImageFlag(test.imageSet, test.driver) {
-				t.Errorf("invalidBaseImageFlag(base-image-set=%v, driver=%v): got false, expected true",
-					test.imageSet, test.driver)
-			}
-		})
-	}
-	for _, test := range invalidCombos {
-		t.Run(test.description, func(t *testing.T) {
-			if validBaseImageFlag(test.imageSet, test.driver) {
-				t.Errorf("invalidBaseImageFlag(base-image-set=%v, driver=%v): got true, expected false",
-					test.imageSet, test.driver)
+	for _, test := range tests {
+		t.Run(test.driver, func(t *testing.T) {
+			got := isBaseImageApplicable(test.driver)
+			if got != test.canUseBaseImg {
+				t.Errorf("isBaseImageApplicable(driver=%v): got %v, expected %v",
+					test.driver, got, test.canUseBaseImg)
 			}
 		})
 	}
