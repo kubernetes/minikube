@@ -20,10 +20,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/perf/monitor"
 )
 
 func main() {
@@ -41,20 +41,15 @@ func main() {
 //   2. running mkcmp against those PRs
 //   3. commenting results on those PRs
 func analyzePerformance(ctx context.Context) error {
-	logsFile := "/home/performance-monitor/logs.txt"
-	if _, err := os.Stat(logsFile); err != nil {
-		return err
-	}
-	client := monitor.NewClient(context.Background(), "kubernetes", "minikube")
-	prs, err := client.ListOpenPRsWithLabel("")
+	client := monitor.NewClient(ctx, monitor.GithubOwner, monitor.GithubRepo)
+	prs, err := client.ListOpenPRsWithLabel(monitor.OkToTestLabel)
 	if err != nil {
 		return errors.Wrap(err, "listing open prs")
 	}
 	log.Print("got prs:", prs)
-	// TODO: priyawadhwa@ for each PR we should comment the error if we get one?
 	for _, pr := range prs {
 		log.Printf("~~~ Analyzing PR %d ~~~", pr)
-		newCommitsExist, err := client.NewCommitsExist(pr, "minikube-pr-bot")
+		newCommitsExist, err := client.NewCommitsExist(pr, monitor.BotName)
 		if err != nil {
 			return err
 		}
@@ -62,13 +57,12 @@ func analyzePerformance(ctx context.Context) error {
 			log.Println("New commits don't exist, skipping rerun...")
 			continue
 		}
-		// TODO: priyawadhwa@ we should download mkcmp for each run?
 		var message string
 		message, err = monitor.RunMkcmp(ctx, pr)
 		if err != nil {
 			message = fmt.Sprintf("Error: %v\n%s", err, message)
 		}
-		log.Printf("got message for pr %d:\n%s\n", pr, message)
+		log.Printf("message for pr %d:\n%s\n", pr, message)
 		if err := client.CommentOnPR(pr, message); err != nil {
 			return err
 		}
