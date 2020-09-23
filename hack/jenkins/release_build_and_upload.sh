@@ -30,17 +30,34 @@ readonly DEB_VERSION="${VERSION/-/\~}"
 readonly RPM_VERSION="${DEB_VERSION}"
 readonly TAGNAME="v${VERSION}"
 
+echo "BEFORE GREPS"
+git status --porcelain --untracked-files=no
+git diff
+
 # Make sure the tag matches the Makefile
 grep -E "^VERSION_MAJOR \\?=" Makefile | grep "${VERSION_MAJOR}"
 grep -E "^VERSION_MINOR \\?=" Makefile | grep "${VERSION_MINOR}"
 grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
 
+echo "BEFORE GOPATH"
+git status --porcelain --untracked-files=no
+git diff
+
 # Force go packages to the Jekins home directory
 export GOPATH=$HOME/go
+
+echo "BEFORE VERIFY ISO"
+git status --porcelain --untracked-files=no
+git diff
 
 # Verify ISO exists
 echo "Verifying ISO exists ..."
 make verify-iso
+
+echo "BEFORE MAKE"
+git status --porcelain --untracked-files=no
+git diff
+
 
 # Build and upload
 env BUILD_IN_DOCKER=y \

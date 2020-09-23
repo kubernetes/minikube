@@ -32,7 +32,7 @@ import (
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
 
 	// Force exp dependency
-	_ "golang.org/x/exp/ebnf"
+	//_ "golang.org/x/exp/ebnf"
 
 	mlog "github.com/docker/machine/libmachine/log"
 
