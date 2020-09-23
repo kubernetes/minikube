@@ -157,9 +157,14 @@ func runStart(cmd *cobra.Command, args []string) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
 		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
 	}
+
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
-		exit.Message(reason.HostConfigLoad, "Unable to load config: {{.error}}", out.V{"error": err})
+		kind := reason.HostConfigLoad
+		if config.IsPermissionDenied(err) {
+			kind = reason.HostHomePermission
+		}
+		exit.Message(kind, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
 	if existing != nil {
