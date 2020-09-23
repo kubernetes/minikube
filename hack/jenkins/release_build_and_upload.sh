@@ -30,55 +30,43 @@ readonly DEB_VERSION="${VERSION/-/\~}"
 readonly RPM_VERSION="${DEB_VERSION}"
 readonly TAGNAME="v${VERSION}"
 
-echo "BEFORE GREPS"
-git status --porcelain --untracked-files=no
-git diff
-
 # Make sure the tag matches the Makefile
 grep -E "^VERSION_MAJOR \\?=" Makefile | grep "${VERSION_MAJOR}"
 grep -E "^VERSION_MINOR \\?=" Makefile | grep "${VERSION_MINOR}"
 grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
 
-echo "BEFORE GOPATH"
-git status --porcelain --untracked-files=no
-git diff
-
 # Force go packages to the Jekins home directory
 export GOPATH=$HOME/go
-
-echo "BEFORE VERIFY ISO"
-git status --porcelain --untracked-files=no
-git diff
 
 # Verify ISO exists
 echo "Verifying ISO exists ..."
 make verify-iso
 
-echo "BEFORE MAKE"
+env BUILD_IN_DOCKER=y make cross
 git status --porcelain --untracked-files=no
 git diff
 
-env BUILD_IN_DOCKER=y make all
-git status --porcelain --untracked-files=no
-git diff
-env BUILD_IN_DOCKER=y make out/minikube-installer.exe
-git status --porcelain --untracked-files=no
-git diff
-env BUILD_IN_DOCKER=y make "out/minikube_${DEB_VERSION}-0_amd64.deb"
-git status --porcelain --untracked-files=no
-git diff
-env BUILD_IN_DOCKER=y make "out/minikube-${RPM_VERSION}-0.x86_64.rpm"
-git status --porcelain --untracked-files=no
-git diff
-env BUILD_IN_DOCKER=y make  "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb"
-git status --porcelain --untracked-files=no
-git diff
-env BUILD_IN_DOCKER=y make "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
+env BUILD_IN_DOCKER=y make drivers
 git status --porcelain --untracked-files=no
 git diff
 
+env BUILD_IN_DOCKER=y make e2e-cross
+git status --porcelain --untracked-files=no
+git diff
 
+env BUILD_IN_DOCKER=y make cross-tars
+git status --porcelain --untracked-files=no
+git diff
 
+env BUILD_IN_DOCKER=y make exotic
+git status --porcelain --untracked-files=no
+git diff
+
+env BUILD_IN_DOCKER=y make out/gvisor-addon
+git status --porcelain --untracked-files=no
+git diff
+
+exit
 # Build and upload
 #env BUILD_IN_DOCKER=y \
 #  make -j 16 \
