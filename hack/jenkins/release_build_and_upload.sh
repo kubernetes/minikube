@@ -58,22 +58,22 @@ echo "BEFORE MAKE"
 git status --porcelain --untracked-files=no
 git diff
 
-env BUILD_IN DOCKER=y make all
+env BUILD_IN_DOCKER=y make all
 git status --porcelain --untracked-files=no
 git diff
-env BUILD_IN DOCKER=y make out/minikube-installer.exe
+env BUILD_IN_DOCKER=y make out/minikube-installer.exe
 git status --porcelain --untracked-files=no
 git diff
-env BUILD_IN DOCKER=y make "out/minikube_${DEB_VERSION}-0_amd64.deb"
+env BUILD_IN_DOCKER=y make "out/minikube_${DEB_VERSION}-0_amd64.deb"
 git status --porcelain --untracked-files=no
 git diff
-env BUILD_IN DOCKER=y make "out/minikube-${RPM_VERSION}-0.x86_64.rpm"
+env BUILD_IN_DOCKER=y make "out/minikube-${RPM_VERSION}-0.x86_64.rpm"
 git status --porcelain --untracked-files=no
 git diff
-env BUILD_IN DOCKER=y make  "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb"
+env BUILD_IN_DOCKER=y make  "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb"
 git status --porcelain --untracked-files=no
 git diff
-env BUILD_IN DOCKER=y make "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
+env BUILD_IN_DOCKER=y make "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
 git status --porcelain --untracked-files=no
 git diff
 
