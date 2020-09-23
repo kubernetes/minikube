@@ -149,10 +149,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}()
 
 	// enable addons, both old and new!
-	if starter.ExistingAddons != nil {
-		wg.Add(1)
-		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
-	}
+	wg.Add(1)
+	go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 
 	wg.Add(1)
 	go func() {
