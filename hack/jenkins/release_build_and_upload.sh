@@ -42,7 +42,7 @@ export GOPATH=$HOME/go
 echo "Verifying ISO exists ..."
 make verify-iso
 
- Build and upload
+# Build and upload
 env BUILD_IN_DOCKER=y \
   make -j 16 \
   all \
