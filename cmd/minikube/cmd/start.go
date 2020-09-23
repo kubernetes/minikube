@@ -39,6 +39,7 @@ import (
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -167,7 +168,24 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
+
 	ds, alts, specified := selectDriver(existing)
+	if cmd.Flag(kicBaseImage).Changed {
+		if !isBaseImageApplicable(ds.Name) {
+			exit.Message(reason.Usage,
+				"flag --{{.imgFlag}} is not available for driver '{{.driver}}'. Did you mean to use '{{.docker}}' or '{{.podman}}' driver instead?\n"+
+					"Please use --{{.isoFlag}} flag to configure VM based drivers",
+				out.V{
+					"imgFlag": kicBaseImage,
+					"driver":  ds.Name,
+					"docker":  registry.Docker,
+					"podman":  registry.Podman,
+					"isoFlag": isoURL,
+				},
+			)
+		}
+	}
+
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
 		node.ExitIfFatal(err)
@@ -516,6 +534,7 @@ func kubectlVersion(path string) (string, error) {
 	return cv.ClientVersion.GitVersion, nil
 }
 
+// returns (current_driver, suggested_drivers, "true, if the driver is set by command line arg or in the config file")
 func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState, bool) {
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
@@ -1183,6 +1202,10 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	if defaultVersion.GT(nvs) {
 		out.T(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
+}
+
+func isBaseImageApplicable(drv string) bool {
+	return registry.IsKIC(drv)
 }
 
 func getKubernetesVersion(old *config.ClusterConfig) string {
