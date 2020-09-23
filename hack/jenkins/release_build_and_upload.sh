@@ -42,40 +42,15 @@ export GOPATH=$HOME/go
 echo "Verifying ISO exists ..."
 make verify-iso
 
-env BUILD_IN_DOCKER=y make cross
-git status --porcelain --untracked-files=no
-git diff
-
-env BUILD_IN_DOCKER=y make drivers
-git status --porcelain --untracked-files=no
-git diff
-
-env BUILD_IN_DOCKER=y make e2e-cross
-git status --porcelain --untracked-files=no
-git diff
-
-env BUILD_IN_DOCKER=y make cross-tars
-git status --porcelain --untracked-files=no
-git diff
-
-env BUILD_IN_DOCKER=y make exotic
-git status --porcelain --untracked-files=no
-git diff
-
-env BUILD_IN_DOCKER=y make out/gvisor-addon
-git status --porcelain --untracked-files=no
-git diff
-
-exit
-# Build and upload
-#env BUILD_IN_DOCKER=y \
-#  make -j 16 \
-#  all \
-#  out/minikube-installer.exe \
-#  "out/minikube_${DEB_VERSION}-0_amd64.deb" \
-#  "out/minikube-${RPM_VERSION}-0.x86_64.rpm" \
-#  "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
-#  "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
+ Build and upload
+env BUILD_IN_DOCKER=y \
+  make -j 16 \
+  all \
+  out/minikube-installer.exe \
+  "out/minikube_${DEB_VERSION}-0_amd64.deb" \
+  "out/minikube-${RPM_VERSION}-0.x86_64.rpm" \
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
+  "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
 
 make checksum
 
