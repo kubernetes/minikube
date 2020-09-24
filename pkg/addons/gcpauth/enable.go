@@ -116,16 +116,3 @@ func disableAddon(cfg *config.ClusterConfig) error {
 
 	return nil
 }
-
-// DisplayAddonMessage display an gcp auth addon specific message to the user
-func DisplayAddonMessage(cfg *config.ClusterConfig, name string, val string) error {
-	enable, err := strconv.ParseBool(val)
-	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
-	}
-	if enable {
-		out.T(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cfg.Name})
-		out.T(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
-	}
-	return nil
-}

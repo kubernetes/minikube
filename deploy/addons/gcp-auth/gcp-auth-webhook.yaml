@@ -135,6 +135,12 @@ webhooks:
     matchExpressions:
       - key: gcp-auth-skip-secret
         operator: DoesNotExist
+  namespaceSelector:
+    matchExpressions:
+      - key: name
+        operator: NotIn
+        values:
+        - kube-system
   sideEffects: None
   admissionReviewVersions: ["v1","v1beta1"]
   clientConfig:
