@@ -35,6 +35,11 @@ func TestMachineOrder(t *testing.T) {
 			MachineName: "minikube-m02",
 			Want:        2},
 		{
+			Name:        "funny",
+			MachineName: "hahaha",
+			Want:        1},
+
+		{
 			Name:        "dash-profile",
 			MachineName: "my-dashy-minikube",
 			Want:        1},

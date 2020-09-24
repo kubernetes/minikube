@@ -94,13 +94,11 @@ func (d *Driver) Create() error {
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
-	// one network bridge per cluster.
-	defaultNetwork := d.NodeConfig.ClusterName
-	if gateway, err := oci.CreateNetwork(d.OCIBinary, defaultNetwork); err != nil {
+	if gateway, err := oci.CreateNetwork(d.OCIBinary, d.NodeConfig.ClusterName); err != nil {
 		glog.Warningf("failed to create network: %v", err)
 		out.WarningT("Unable to create dedicated network, This might result in cluster IP change after restart.")
 	} else {
-		params.Network = defaultNetwork
+		params.Network = d.NodeConfig.ClusterName
 		ip := gateway.To4()
 		// calculate the container IP based on its machine order
 		ip[3] += byte(machineOrder(d.NodeConfig.MachineName))
