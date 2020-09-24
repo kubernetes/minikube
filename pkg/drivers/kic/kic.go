@@ -37,6 +37,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -134,6 +136,9 @@ func (d *Driver) Create() error {
 		glog.Infof("Starting extracting preloaded images to volume ...")
 		// Extract preloaded images to container
 		if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, d.NodeConfig.ImageDigest); err != nil {
+			if strings.Contains(err.Error(), "No space left on device") {
+				exit.Message(reason.RsrcInsufficientDockerStorage, "preload extraction failed: \"No space left on device\"")
+			}
 			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 		} else {
 			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
