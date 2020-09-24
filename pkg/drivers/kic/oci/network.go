@@ -36,6 +36,10 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 		if runtime.GOOS == "linux" {
 			_, gateway, err := dockerNetworkInspect(clusterName)
 			if err != nil {
+				if errors.Is(err, ErrNetworkNotFound) {
+					glog.Infof("The container %s is not attached to a network, this could be because the cluster was created by an older than v.1.14 minikube, will try to get the IP using container gatway", containerName)
+					return containerGatewayIP(Docker, containerName)
+				}
 				return gateway, errors.Wrap(err, "network inspect")
 			}
 			return gateway, nil
@@ -43,9 +47,9 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 		// for windows and mac, the gateway ip is not routable so we use dns trick.
 		return digDNS(ociBin, containerName, "host.docker.internal")
 	}
-
+	//	podman
 	if runtime.GOOS == "linux" {
-		return podmanGatewayIP(containerName)
+		return containerGatewayIP(Podman, containerName)
 	}
 
 	return nil, fmt.Errorf("RoutableHostIPFromInside is currently only implemented for linux")
@@ -63,9 +67,9 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	return ip, nil
 }
 
-// podmanGatewayIP gets the default gateway ip for the container
-func podmanGatewayIP(containerName string) (net.IP, error) {
-	rr, err := runCmd(exec.Command(Podman, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
+// containerGatewayIP gets the default gateway ip for the container
+func containerGatewayIP(ociBin string, containerName string) (net.IP, error) {
+	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect gateway")
 	}
