@@ -29,7 +29,10 @@ import (
 )
 
 // DefaultSubnet subnet to be used on first cluster
-const defaultSubnet = "192.168.39.0/24"
+const defaultSubnetAddr = "192.168.39.0"
+
+// big enough for a cluster of 256 nodes
+const defaultSubnetRange = 24
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
 func CreateNetwork(ociBin string, name string) (net.IP, error) {
@@ -39,21 +42,17 @@ func CreateNetwork(ociBin string, name string) (net.IP, error) {
 	return createDockerNetwork(name)
 }
 
-func createDockerNetwork(name string) (net.IP, error) {
+func createDockerNetwork(clusterName string) (net.IP, error) {
 	// check if the network already exists
-	subnet, gateway, err := dockerNetworkInspect(name)
+	subnet, gateway, err := dockerNetworkInspect(clusterName)
 	if err == nil {
 		glog.Infof("Found existing network with subnet %s and gateway %s.", subnet, gateway)
 		return gateway, nil
 	}
 	// simple way to create networks, subnet is taken, try one bigger
 	attempt := 0
-	_, subnet, err = net.ParseCIDR(defaultSubnet)
-	if err != nil {
-		return nil, errors.Wrapf(err, "parse default subnet %s", defaultSubnet)
-	}
-
-	gateway, err = tryCreateDockerNetwork(subnet, name)
+	subnetAddr := defaultSubnetAddr
+	gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetRange, clusterName)
 	if err != nil {
 		if err != ErrNetworkSubnetTaken {
 			return nil, errors.Wrapf(err, "error creating network")
@@ -62,18 +61,20 @@ func createDockerNetwork(name string) (net.IP, error) {
 		// we can try up to 255
 		for attempt < 13 {
 			attempt++
-			glog.Infof("Couldn't create network %q at %q subnet will try again with a new subnet ...", name, subnet)
+			glog.Infof("Couldn't create network %q at %q subnet will try again with a new subnet ...", clusterName, subnetAddr)
 			// increase 3nd digit by 10 each time
 			// 13 times adding 10 defaultSubnet "192.168.39.0/24"
 			// at most it will add up to 169 which is still less than max allowed 255
 			// this is large enough to try more and not too small to not try enough
 			// can be tuned in the next iterations
-			subnet.IP.To4()[2] += 10
-			gateway, err := tryCreateDockerNetwork(subnet, name)
+			ip := net.ParseIP(subnetAddr).To4()
+			ip[2] += byte(9 + attempt)
+
+			gateway, err = tryCreateDockerNetwork(ip.String(), defaultSubnetRange, clusterName)
 			if err == nil {
 				return gateway, nil
 			}
-			if err == ErrNetworkSubnetTaken {
+			if errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken) {
 				continue
 			}
 		}
@@ -82,12 +83,12 @@ func createDockerNetwork(name string) (net.IP, error) {
 	return gateway, nil
 }
 
-func tryCreateDockerNetwork(subnet *net.IPNet, name string) (net.IP, error) {
-	gateway := subnet.IP.To4()
-	gateway[3]++ // first ip for gateway
-	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnet, name, gateway)
+func tryCreateDockerNetwork(subnetAddr string, subnetRange int, name string) (net.IP, error) {
+	gateway := net.ParseIP(subnetAddr)
+	gateway.To4()[3]++ // first ip for gateway
+	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnetAddr, name, gateway)
 	// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
-	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
+	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetRange)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
 		if strings.Contains(rr.Output(), "Pool overlaps with other one on this address space") {
 			return nil, ErrNetworkSubnetTaken
