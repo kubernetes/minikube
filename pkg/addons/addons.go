@@ -324,11 +324,12 @@ func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error 
 }
 
 func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
-	err := verifyAddonStatusInternal(cc, name, val, "gcp-auth")
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
+	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
+
 	if enable && err == nil {
 		out.T(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
 		out.T(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
