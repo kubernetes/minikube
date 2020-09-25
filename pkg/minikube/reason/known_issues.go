@@ -202,12 +202,7 @@ var hostIssues = []match{
 		GOOS:   []string{"linux"},
 	},
 	{
-		Kind: Kind{
-			ID:       "HOST_HOME_PERMISSION",
-			ExitCode: ExGuestPermission,
-			Advice:   "Your user lacks permissions to the minikube profile directory. Run: 'sudo chown -R $USER $HOME/.minikube; chmod -R u+wrx $HOME/.minikube' to fix",
-			Issues:   []int{9165},
-		},
+		Kind:   HostHomePermission,
 		Regexp: re(`/.minikube/.*: permission denied`),
 	},
 }

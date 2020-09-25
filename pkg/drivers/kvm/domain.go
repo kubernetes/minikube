@@ -31,8 +31,8 @@ import (
 
 const domainTmpl = `
 <domain type='kvm'>
-  <name>{{.MachineName}}</name> 
-  <memory unit='MB'>{{.Memory}}</memory>
+  <name>{{.MachineName}}</name>
+  <memory unit='MiB'>{{.Memory}}</memory>
   <vcpu>{{.CPU}}</vcpu>
   <features>
     <acpi/>
