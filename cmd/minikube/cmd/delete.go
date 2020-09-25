@@ -91,7 +91,6 @@ func init() {
 	if err := viper.BindPFlags(deleteCmd.Flags()); err != nil {
 		exit.Error(reason.InternalBindFlags, "unable to bind flags", err)
 	}
-	RootCmd.AddCommand(deleteCmd)
 }
 
 // shotgun cleanup to delete orphaned docker container data
