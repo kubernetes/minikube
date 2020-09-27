@@ -100,7 +100,7 @@ spec:
   hostNetwork: true
   containers:
   - name: storage-provisioner
-    image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/storage-provisioner{{.ExoticArch}}:{{.StorageProvisionerVersion}}
+    image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/storage-provisioner:{{.StorageProvisionerVersion}}
     command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
     volumeMounts:

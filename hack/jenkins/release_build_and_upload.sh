@@ -67,7 +67,7 @@ if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
 fi
 
 #echo "Updating Docker images ..."
-#make push-gvisor-addon-image push-storage-provisioner-image
+#make push-gvisor-addon-image push-storage-provisioner-manifest
 
 echo "Updating latest bucket for ${VERSION} release ..."
 gsutil cp -r "gs://${BUCKET}/releases/${TAGNAME}/*" "gs://${BUCKET}/releases/latest/"
