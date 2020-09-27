@@ -39,11 +39,11 @@ minikube addons SUBCOMMAND [flags]
 
 ## minikube addons configure
 
-Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list 
+Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list
 
 ### Synopsis
 
-Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list 
+Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list
 
 ```
 minikube addons configure ADDON_NAME [flags]
