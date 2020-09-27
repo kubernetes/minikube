@@ -8,6 +8,7 @@ USER root
 # remove files that were installed by kind, replaced by packages
 RUN rm \
     /etc/crictl.yaml \
+    /etc/systemd/system/containerd.service \
     /etc/systemd/system/multi-user.target.wants/containerd.service \
     /opt/cni/bin/host-local \
     /opt/cni/bin/loopback \
