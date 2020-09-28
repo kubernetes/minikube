@@ -262,7 +262,7 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 
 	errs = oci.DeleteAllNetworksByKIC()
 	if errs != nil {
-		glog.Warningf("error deleting left over networks (might be okay).\nTo see the list of netowrks: 'docker network ls'\n:%v", errs)
+		glog.Warningf("error deleting leftover networks (might be okay).\nTo see the list of networks: 'docker network ls'\n:%v", errs)
 	}
 
 	if bin == oci.Podman {
