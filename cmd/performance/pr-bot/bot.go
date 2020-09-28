@@ -18,12 +18,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
+
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/perf/monitor"
 )
 
 func main() {
 	for {
+		log.Print("~~~~~~~~~ Starting performance analysis ~~~~~~~~~~~~~~")
 		if err := analyzePerformance(context.Background()); err != nil {
 			log.Printf("error executing performance analysis: %v", err)
 		}
@@ -36,5 +41,32 @@ func main() {
 //   2. running mkcmp against those PRs
 //   3. commenting results on those PRs
 func analyzePerformance(ctx context.Context) error {
+	client := monitor.NewClient(ctx, monitor.GithubOwner, monitor.GithubRepo)
+	prs, err := client.ListOpenPRsWithLabel(monitor.OkToTestLabel)
+	if err != nil {
+		return errors.Wrap(err, "listing open prs")
+	}
+	log.Print("got prs:", prs)
+	for _, pr := range prs {
+		log.Printf("~~~ Analyzing PR %d ~~~", pr)
+		newCommitsExist, err := client.NewCommitsExist(pr, monitor.BotName)
+		if err != nil {
+			return err
+		}
+		if !newCommitsExist {
+			log.Println("New commits don't exist, skipping rerun...")
+			continue
+		}
+		var message string
+		message, err = monitor.RunMkcmp(ctx, pr)
+		if err != nil {
+			message = fmt.Sprintf("Error: %v\n%s", err, message)
+		}
+		log.Printf("message for pr %d:\n%s\n", pr, message)
+		if err := client.CommentOnPR(pr, message); err != nil {
+			return err
+		}
+		log.Print("successfully commented on PR")
+	}
 	return nil
 }

@@ -829,7 +829,7 @@ func memoryLimits(drvName string) (int, int, error) {
 		if err != nil {
 			return -1, -1, err
 		}
-		containerLimit = int(s.TotalMemory / 1024 / 1024)
+		containerLimit = util.ConvertBytesToMB(s.TotalMemory)
 	}
 
 	return sysLimit, containerLimit, nil
