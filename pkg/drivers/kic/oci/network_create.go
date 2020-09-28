@@ -28,8 +28,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DefaultSubnet subnet to be used on first cluster
-const defaultSubnetAddr = "192.168.39.0"
+// firstSubnetAddr subnet to be used on first kic cluster
+// it is one octet more than the one used by KVM to avoid possible conflict
+const firstSubnetAddr = "192.168.49.0"
 
 // big enough for a cluster of 256 nodes
 const defaultSubnetRange = 24
@@ -51,19 +52,19 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 	}
 	// simple way to create networks, subnet is taken, try one bigger
 	attempt := 0
-	subnetAddr := defaultSubnetAddr
+	subnetAddr := firstSubnetAddr
 	gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetRange, clusterName)
 	if err != nil {
 		if err != ErrNetworkSubnetTaken {
 			return nil, errors.Wrapf(err, "error creating network")
 		}
-		// try up to 13 times
-		// we can try up to 255
-		for attempt < 13 {
+		// try up to 20 times, third octet would go like 49,59 ,69,..., 239
+		// max we could go is 255 we stop at 239
+		for attempt < 20 {
 			attempt++
 			glog.Infof("Couldn't create network %q at %q subnet will try again with a new subnet ...", clusterName, subnetAddr)
-			// increase 3nd digit by 10 each time
-			// 13 times adding 10 defaultSubnet "192.168.39.0/24"
+			// Find an open subnet by incrementing the 3rd octet by 10 for each try
+			// 13 times adding 10 firstSubnetAddr "192.168.49.0/24"
 			// at most it will add up to 169 which is still less than max allowed 255
 			// this is large enough to try more and not too small to not try enough
 			// can be tuned in the next iterations
@@ -77,8 +78,8 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 			if errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken) {
 				continue
 			}
+			glog.Errorf("unexpected error while trying to create network, will try again anyways: %v", err)
 		}
-
 	}
 	return gateway, nil
 }
@@ -90,7 +91,8 @@ func tryCreateDockerNetwork(subnetAddr string, subnetRange int, name string) (ne
 	// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
 	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetRange)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
-		if strings.Contains(rr.Output(), "Pool overlaps with other one on this address space") {
+		// Pool overlaps with other one on this address space
+		if strings.Contains(rr.Output(), "Pool overlaps") {
 			return nil, ErrNetworkSubnetTaken
 		}
 		if strings.Contains(rr.Output(), "failed to allocate gateway") && strings.Contains(rr.Output(), "Address already in use") {
@@ -113,7 +115,7 @@ func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
 	// results looks like 172.17.0.0/16,172.17.0.1
 	ips := strings.Split(strings.TrimSpace(rr.Stdout.String()), ",")
 	if len(ips) == 0 {
-		return nil, nil, fmt.Errorf("invalid network info")
+		return nil, nil, fmt.Errorf("empty IP list parsed from: %q", rr.Output())
 	}
 
 	_, subnet, err := net.ParseCIDR(ips[0])

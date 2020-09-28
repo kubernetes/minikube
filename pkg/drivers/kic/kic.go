@@ -66,8 +66,8 @@ func NewDriver(c Config) *Driver {
 	return d
 }
 
-// machineOrder returns the order of the container based on it is name
-func machineOrder(machineName string) int {
+// machineIndex returns the order of the container based on it is name
+func machineIndex(machineName string) int {
 	// minikube-m02
 	sp := strings.Split(machineName, "-")
 	m := strings.Trim(sp[len(sp)-1], "m") // m02
@@ -95,14 +95,13 @@ func (d *Driver) Create() error {
 	}
 
 	if gateway, err := oci.CreateNetwork(d.OCIBinary, d.NodeConfig.ClusterName); err != nil {
-		glog.Warningf("failed to create network: %v", err)
-		out.WarningT("Unable to create dedicated network, This might result in cluster IP change after restart.")
+		out.WarningT("Unable to create dedicated network, This might result in cluster IP change after restart. {{.error}}", out.V{"error": err})
 	} else {
 		params.Network = d.NodeConfig.ClusterName
 		ip := gateway.To4()
-		// calculate the container IP based on its machine order
-		ip[3] += byte(machineOrder(d.NodeConfig.MachineName))
-		glog.Infof("calculated static IP %q for the %q container ", ip.String(), d.NodeConfig.MachineName)
+		// calculate the container IP based on guessing the machine index
+		ip[3] += byte(machineIndex(d.NodeConfig.MachineName))
+		glog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
 
@@ -316,7 +315,6 @@ func (d *Driver) Remove() error {
 	}
 
 	if err := oci.RemoveNetwork(d.NodeConfig.ClusterName); err != nil {
-		//TODO: Ingore error if this is a multinode cluster and first container is trying to delete network while other containers are attached to it
 		glog.Warningf("failed to remove network (which might be okay) %s: %v", d.NodeConfig.ClusterName, err)
 	}
 	return nil

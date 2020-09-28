@@ -22,6 +22,7 @@ The NO_PROXY variable here is important: Without setting it, minikube may not be
 
 * **192.168.99.0/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
 * **192.168.39.0/24**: Used by the minikube kvm2 driver.
+* **192.168.49.0/24**: Used by the minikube docker driver.
 * **10.96.0.0/12**: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
 
 One important note: If NO_PROXY is required by non-Kubernetes applications, such as Firefox or Chrome, you may want to specifically add the minikube IP to the comma-separated list, as they may not understand IP ranges ([#3827](https://github.com/kubernetes/minikube/issues/3827)).

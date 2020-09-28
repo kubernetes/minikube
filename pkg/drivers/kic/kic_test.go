@@ -20,7 +20,7 @@ import (
 	"testing"
 )
 
-func TestMachineOrder(t *testing.T) {
+func TestMachineIndex(t *testing.T) {
 	testCases := []struct {
 		Name        string
 		MachineName string
@@ -56,7 +56,7 @@ func TestMachineOrder(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			got := machineOrder(tc.MachineName)
+			got := machineIndex(tc.MachineName)
 			if got != tc.Want {
 				t.Errorf("want order %q but got %q", tc.Want, got)
 
