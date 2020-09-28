@@ -414,7 +414,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	}()
 	var addonErr error
 	for _, a := range toEnableList {
-		// Run the gcp-auth addon last to make sure everything else is up
+		// Run the gcp-auth addon last to give everything else extra time to come up
 		if a == "gcp-auth" {
 			deferredAddons = append(deferredAddons, a)
 			continue
