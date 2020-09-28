@@ -128,6 +128,7 @@ func status() registry.State {
 			stderr := strings.TrimSpace(string(exitErr.Stderr))
 			newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
 
+			// Oddly enough, the underlying connection error is in stdout rather than stderr
 			if strings.Contains(stderr, "errors pretty printing info") || dockerNotRunning(string(o)) {
 				return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
 			}
