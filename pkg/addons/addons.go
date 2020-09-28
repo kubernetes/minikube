@@ -405,7 +405,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	deferredAddons := []string{}
+	deferredAddons := []string{"gcp-auth"}
 	enabledAddons := []string{}
 
 	defer func() { // making it show after verifications (see #7613)
@@ -414,11 +414,12 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	}()
 	var addonErr error
 	for _, a := range toEnableList {
-		// Run the gcp-auth addon last to give everything else extra time to come up
-		if a == "gcp-auth" {
-			deferredAddons = append(deferredAddons, a)
-			continue
+		for _, da := range deferredAddons {
+			if a == da {
+				continue
+			}
 		}
+
 		awg.Add(1)
 		err := func(name string) error {
 			err := RunCallbacks(cc, name, "true")
