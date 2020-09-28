@@ -107,7 +107,7 @@ func tryCreateDockerNetwork(subnetAddr string, subnetRange int, name string) (ne
 func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
 	rr, err := runCmd(exec.Command(Docker, "network", "inspect", name, "--format", "{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}}"))
 	if err != nil {
-		if strings.Contains(rr.Output(), "No such network:") {
+		if strings.Contains(rr.Output(), "No such network") {
 			return nil, nil, ErrNetworkNotFound
 		}
 		return nil, nil, err
@@ -136,7 +136,7 @@ func RemoveNetwork(name string) error {
 	}
 	rr, err := runCmd(exec.Command(Docker, "network", "remove", name))
 	if err != nil {
-		if strings.Contains(rr.Output(), "No such network:") {
+		if strings.Contains(rr.Output(), "No such network") {
 			return ErrNetworkNotFound
 		}
 		// Error response from daemon: error while removing network: network mynet123 id f9e1c50b89feb0b8f4b687f3501a81b618252c9907bc20666e386d0928322387 has active endpoints
