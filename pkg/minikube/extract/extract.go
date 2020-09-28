@@ -42,6 +42,7 @@ import (
 var exclude = []string{
 	"{{.error}}",
 	"{{.url}}",
+	"  {{.url}}",
 	"{{.msg}}: {{.err}}",
 	"{{.key}}={{.value}}",
 	"opt {{.docker_option}}",
@@ -50,6 +51,7 @@ var exclude = []string{
 	"\\n",
 	"==\u003e {{.name}} \u003c==",
 	"- {{.profile}}",
+	"    - {{.profile}}",
 }
 
 // ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
@@ -332,9 +334,6 @@ func checkString(s string) string {
 
 	// Parse out quote marks
 	stringToTranslate := s[1 : len(s)-1]
-
-	// Trim whitespace
-	stringToTranslate = strings.TrimSpace(stringToTranslate)
 
 	// Don't translate integers
 	if _, err := strconv.Atoi(stringToTranslate); err == nil {
