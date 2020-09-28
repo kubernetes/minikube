@@ -27,6 +27,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -86,34 +87,60 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
-	// Quickly returns an error code if server is not running
 	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
 	o, err := cmd.Output()
-	output := string(o)
-	if strings.Contains(output, "windows-") {
-		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			err = errors.Wrapf(err, "deadline exceeded running %q", strings.Join(cmd.Args, " "))
+		}
 
-	}
-	if err == nil {
-		glog.Infof("docker version: %s", output)
-		return checkNeedsImprovement()
-	}
+		glog.Warningf("docker version returned error: %v", err)
 
-	glog.Warningf("docker returned error: %v", err)
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			stderr := strings.TrimSpace(string(exitErr.Stderr))
+			newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
 
-	// Basic timeout
-	if ctx.Err() == context.DeadlineExceeded {
-		glog.Warningf("%q timed out. ", strings.Join(cmd.Args, " "))
+			return suggestFix(stderr, newErr)
+		}
+
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
 	}
 
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		stderr := strings.TrimSpace(string(exitErr.Stderr))
-		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
-		return suggestFix(stderr, newErr)
+	glog.Infof("docker version: %s", o)
+	if strings.Contains(string(o), "windows-") {
+		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
 	}
 
-	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
+	ctx, cancel = context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+
+	// Why run "info"? On some releases (Docker Desktop v19.03.12), "version" returns exit code 0 even if Docker is down.
+	cmd = exec.CommandContext(ctx, oci.Docker, "info")
+	o, err = cmd.Output()
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			err = errors.Wrapf(err, "deadline exceeded running %q", strings.Join(cmd.Args, " "))
+		}
+
+		glog.Warningf("docker info returned error: %v", err)
+
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			stderr := strings.TrimSpace(string(exitErr.Stderr))
+			newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
+
+			if strings.Contains(stderr, "errors pretty printing info") || dockerNotRunning(string(o)) {
+				return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
+			}
+
+			return suggestFix(stderr, newErr)
+		}
+
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
+	}
+
+	glog.Infof("docker info: %s", o)
+
+	return checkNeedsImprovement()
 }
 
 // checkNeedsImprovement if overlay mod is installed on a system
@@ -121,6 +148,7 @@ func checkNeedsImprovement() registry.State {
 	if runtime.GOOS == "linux" {
 		return checkOverlayMod()
 	}
+
 	return registry.State{Installed: true, Healthy: true}
 }
 
@@ -128,15 +156,18 @@ func checkNeedsImprovement() registry.State {
 func checkOverlayMod() registry.State {
 	if _, err := os.Stat("/sys/module/overlay"); err == nil {
 		glog.Info("overlay module found")
+
 		return registry.State{Installed: true, Healthy: true}
 	}
 
 	if _, err := os.Stat("/sys/module/overlay2"); err == nil {
 		glog.Info("overlay2 module found")
+
 		return registry.State{Installed: true, Healthy: true}
 	}
 
 	glog.Warningf("overlay modules were not found")
+
 	return registry.State{NeedsImprovement: true, Installed: true, Healthy: true, Fix: "enable the overlay Linux kernel module using 'modprobe overlay'"}
 }
 
@@ -150,10 +181,14 @@ func suggestFix(stderr string, err error) registry.State {
 		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
 	}
 
-	if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") || strings.Contains(stderr, "docker daemon is not running") {
+	if dockerNotRunning(stderr) {
 		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
 	}
 
 	// We don't have good advice, but at least we can provide a good error message
 	return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Doc: docURL}
+}
+
+func dockerNotRunning(s string) bool {
+	return strings.Contains(s, "Cannot connect") || strings.Contains(s, "refused") || strings.Contains(s, "Is the docker daemon running") || strings.Contains(s, "docker daemon is not running")
 }
