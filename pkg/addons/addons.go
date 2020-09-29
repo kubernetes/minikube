@@ -365,7 +365,6 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 // Start enables the default addons for a profile, plus any additional
 func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, additional []string) {
 	defer wg.Done()
-	addonsToDefer := []string{"gcp-auth"}
 
 	start := time.Now()
 	glog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
@@ -414,28 +413,21 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(enabledAddons, ", ")})
 	}()
 	for _, a := range toEnableList {
-		deferAddon := false
-		for _, da := range addonsToDefer {
-			if a == da {
-				deferAddon = true
-				deferredAddons = append(deferredAddons, a)
-			}
-		}
-		if deferAddon {
+		if a == "gcp-auth" {
+			deferredAddons = append(deferredAddons, a)
 			continue
 		}
 
 		awg.Add(1)
-		go func(name string, ea *[]string) {
+		go func(name string) {
 			err := RunCallbacks(cc, name, "true")
 			if err != nil {
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
 			} else {
-				*ea = append(*ea, name)
+				enabledAddons = append(enabledAddons, name)
 			}
 			awg.Done()
-		}(a, &enabledAddons)
-
+		}(a)
 	}
 
 	// Wait until all of the addons are enabled before updating the config (not thread safe)
