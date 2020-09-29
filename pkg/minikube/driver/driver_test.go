@@ -201,3 +201,49 @@ func TestSuggest(t *testing.T) {
 		})
 	}
 }
+
+func TestIndexFromMachineName(t *testing.T) {
+	testCases := []struct {
+		Name        string
+		MachineName string
+		Want        int
+	}{
+		{
+			Name:        "default",
+			MachineName: "minikube",
+			Want:        1},
+		{
+			Name:        "second-node",
+			MachineName: "minikube-m02",
+			Want:        2},
+		{
+			Name:        "funny",
+			MachineName: "hahaha",
+			Want:        1},
+
+		{
+			Name:        "dash-profile",
+			MachineName: "my-dashy-minikube",
+			Want:        1},
+
+		{
+			Name:        "dash-profile-second-node",
+			MachineName: "my-dashy-minikube-m02",
+			Want:        2},
+		{
+			Name:        "michivious-user",
+			MachineName: "michivious-user-m02-m03",
+			Want:        3},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got := IndexFromMachineName(tc.MachineName)
+			if got != tc.Want {
+				t.Errorf("want order %q but got %q", tc.Want, got)
+
+			}
+		})
+
+	}
+}
