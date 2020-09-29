@@ -111,35 +111,15 @@ func status() registry.State {
 		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 6*time.Second)
-	defer cancel()
-
-	// Why run "info"? On some releases (Docker Desktop v19.03.12), "version" returns exit code 0 even if Docker is down.
-	cmd = exec.CommandContext(ctx, oci.Docker, "info")
-	o, err = cmd.Output()
+	si, err := oci.CachedDaemonInfo("docker")
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			err = errors.Wrapf(err, "deadline exceeded running %q", strings.Join(cmd.Args, " "))
-		}
-
-		glog.Warningf("docker info returned error: %v", err)
-
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			stderr := strings.TrimSpace(string(exitErr.Stderr))
-			newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
-
-			// Oddly enough, the underlying connection error is in stdout rather than stderr
-			if strings.Contains(stderr, "errors pretty printing info") || dockerNotRunning(string(o)) {
-				return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
-			}
-
-			return suggestFix(stderr, newErr)
-		}
-
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
+		// No known fix because we haven't yet seen a failure here
+		return registry.State{Error: errors.Wrap(err, "docker info"), Installed: true, Healthy: false, Doc: docURL}
 	}
 
-	glog.Infof("docker info: %s", o)
+	for _, serr := range si.Errors {
+		return suggestFix(serr, fmt.Errorf("docker info error: %s", serr))
+	}
 
 	return checkNeedsImprovement()
 }
