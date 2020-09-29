@@ -28,8 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 )
 
-const longDescription = `
-	Outputs minikube shell completion for the given shell (bash, zsh or fish)
+const longDescription = `Outputs minikube shell completion for the given shell (bash, zsh or fish)
 
 	This depends on the bash-completion binary.  Example installation instructions:
 	OS X:

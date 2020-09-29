@@ -324,7 +324,18 @@ func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error 
 }
 
 func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
-	return verifyAddonStatusInternal(cc, name, val, "gcp-auth")
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
+
+	if enable && err == nil {
+		out.T(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
+		out.T(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
+	}
+
+	return err
 }
 
 func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string) error {
@@ -394,16 +405,26 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	defer func() { // making it show after verifications( not perfect till #7613 is closed)
+	enabledAddons := []string{}
+	deferredAddons := []string{}
+
+	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
-		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(enabledAddons, ", ")})
 	}()
 	for _, a := range toEnableList {
+		if a == "gcp-auth" {
+			deferredAddons = append(deferredAddons, a)
+			continue
+		}
+
 		awg.Add(1)
 		go func(name string) {
 			err := RunCallbacks(cc, name, "true")
 			if err != nil {
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
+			} else {
+				enabledAddons = append(enabledAddons, name)
 			}
 			awg.Done()
 		}(a)
@@ -411,7 +432,18 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	// Wait until all of the addons are enabled before updating the config (not thread safe)
 	awg.Wait()
-	for _, a := range toEnableList {
+
+	// Now run the deferred addons
+	for _, a := range deferredAddons {
+		err := RunCallbacks(cc, a, "true")
+		if err != nil {
+			out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
+		} else {
+			enabledAddons = append(enabledAddons, a)
+		}
+	}
+
+	for _, a := range enabledAddons {
 		if err := Set(cc, a, "true"); err != nil {
 			klog.Errorf("store failed: %v", err)
 		}

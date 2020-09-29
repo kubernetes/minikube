@@ -169,7 +169,7 @@ var Addons = []*Addon{
 	{
 		name:      "gcp-auth",
 		set:       SetBool,
-		callbacks: []setFn{gcpauth.EnableOrDisable, enableOrDisableAddon, verifyGCPAuthAddon, gcpauth.DisplayAddonMessage},
+		callbacks: []setFn{gcpauth.EnableOrDisable, enableOrDisableAddon, verifyGCPAuthAddon},
 	},
 	{
 		name:      "volumesnapshots",

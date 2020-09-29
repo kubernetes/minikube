@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -49,6 +50,7 @@ func HostIP(host *host.Host) (net.IP, error) {
 		for i := 0; i < v.NumField(); i++ {
 			if v.Type().Field(i).Name == "VSwitch" {
 				hypervVirtualSwitch = v.Field(i).Interface().(string)
+
 				break
 			}
 		}
@@ -59,6 +61,7 @@ func HostIP(host *host.Host) (net.IP, error) {
 		if err != nil {
 			return []byte{}, errors.Wrap(err, fmt.Sprintf("ip for interface (%s)", hypervVirtualSwitch))
 		}
+
 		return ip, nil
 	case driver.VirtualBox:
 		vBoxManageCmd := driver.VBoxManagePath()
@@ -74,6 +77,7 @@ func HostIP(host *host.Host) (net.IP, error) {
 		}
 		re = regexp.MustCompile(`(?sm)Name:\s*` + iface + `\s*$.+?IPAddress:\s*(\S+)`)
 		ip := re.FindStringSubmatch(string(ipList))[1]
+
 		return net.ParseIP(ip), nil
 	case driver.Parallels:
 		bin := "prlsrvctl"
@@ -93,6 +97,7 @@ func HostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting the IP address of Parallels Shared network interface")
 		}
 		ip := ipMatch[1]
+
 		return net.ParseIP(ip), nil
 	case driver.HyperKit:
 		return net.ParseIP("192.168.64.1"), nil
@@ -136,6 +141,7 @@ func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
 
 // Based on code from http://stackoverflow.com/questions/23529663/how-to-get-all-addresses-and-masks-from-local-interfaces-in-go
 func getIPForInterface(name string) (net.IP, error) {
+	glog.Infof("getIPForInterface: searching for %q", name)
 	ints, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -143,19 +149,25 @@ func getIPForInterface(name string) (net.IP, error) {
 
 	var i net.Interface
 	for _, in := range ints {
-		if strings.HasPrefix(in.Name, name) {
+		if strings.HasPrefix(strings.ToLower(in.Name), strings.ToLower(name)) {
+			glog.Infof("found prefix matching interface for %q: %q", name, in.Name)
 			i = in
+
 			break
 		}
+		glog.Infof("%q does not match prefix %q", in.Name, name)
 	}
 
 	// Didn't find prefix, let's try any substring
 	if i.Name == "" {
 		for _, in := range ints {
-			if strings.Contains(in.Name, name) {
+			if strings.Contains(strings.ToLower(in.Name), strings.ToLower(name)) {
+				glog.Infof("found substring matching interface for %q: %q", name, in.Name)
 				i = in
+
 				break
 			}
+			glog.Infof("%q does not match substring %q", in.Name, name)
 		}
 	}
 
@@ -164,14 +176,15 @@ func getIPForInterface(name string) (net.IP, error) {
 		return nil, errors.Errorf("Could not find interface %s inside %+v", name, ints)
 	}
 
-	klog.Infof("Found hyperv interface: %+v\n", i)
+	klog.Infof("Found interface: %+v\n", i)
 	addrs, _ := i.Addrs()
 	for _, a := range addrs {
+		glog.Infof("interface addr: %+v", a)
 		if ipnet, ok := a.(*net.IPNet); ok {
 			if ip := ipnet.IP.To4(); ip != nil {
 				return ip, nil
 			}
 		}
 	}
-	return nil, errors.Errorf("Error finding IPV4 address for %s", name)
+	return nil, errors.Errorf("Unable to find a IPv4 address for interface %q", name)
 }
