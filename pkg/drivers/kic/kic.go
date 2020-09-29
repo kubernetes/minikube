@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
@@ -66,18 +67,6 @@ func NewDriver(c Config) *Driver {
 	return d
 }
 
-// machineIndex returns the order of the container based on it is name
-func machineIndex(machineName string) int {
-	// minikube-m02
-	sp := strings.Split(machineName, "-")
-	m := strings.Trim(sp[len(sp)-1], "m") // m02
-	i, err := strconv.Atoi(m)
-	if err != nil {
-		return 1
-	}
-	return i
-}
-
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	params := oci.CreateParams{
@@ -100,7 +89,7 @@ func (d *Driver) Create() error {
 		params.Network = d.NodeConfig.ClusterName
 		ip := gateway.To4()
 		// calculate the container IP based on guessing the machine index
-		ip[3] += byte(machineIndex(d.NodeConfig.MachineName))
+		ip[3] += byte(driver.IndexFromMachineName(d.NodeConfig.MachineName))
 		glog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
