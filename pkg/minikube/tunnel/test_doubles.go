@@ -19,7 +19,7 @@ package tunnel
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -28,7 +28,7 @@ type recordingReporter struct {
 }
 
 func (r *recordingReporter) Report(tunnelState *Status) {
-	glog.V(4).Infof("recordingReporter.Report: %v", tunnelState)
+	klog.V(4).Infof("recordingReporter.Report: %v", tunnelState)
 	r.statesRecorded = append(r.statesRecorded, tunnelState)
 }
 
@@ -40,7 +40,7 @@ type fakeRouter struct {
 }
 
 func (r *fakeRouter) EnsureRouteIsAdded(route *Route) error {
-	glog.V(4).Infof("fakerouter.EnsureRouteIsAdded %s", route)
+	klog.V(4).Infof("fakerouter.EnsureRouteIsAdded %s", route)
 	if r.errorResponse == nil {
 		exists, err := isValidToAddOrDelete(r, route)
 		if err != nil {
@@ -57,7 +57,7 @@ func (r *fakeRouter) EnsureRouteIsAdded(route *Route) error {
 	return r.errorResponse
 }
 func (r *fakeRouter) Cleanup(route *Route) error {
-	glog.V(4).Infof("fake router cleanup: %v\n", route)
+	klog.V(4).Infof("fake router cleanup: %v\n", route)
 	if r.errorResponse == nil {
 		exists, err := isValidToAddOrDelete(r, route)
 		if err != nil {

@@ -24,10 +24,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -103,11 +103,11 @@ func Execute() {
 
 	// Universally ensure that we never speak to the wrong DOCKER_HOST
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		glog.Errorf("oci env: %v", err)
+		klog.Errorf("oci env: %v", err)
 	}
 
 	if err := oci.PointToHostPodman(); err != nil {
-		glog.Errorf("oci env: %v", err)
+		klog.Errorf("oci env: %v", err)
 	}
 
 	if err := RootCmd.Execute(); err != nil {
@@ -249,7 +249,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		// This config file is optional, so don't emit errors if missing
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			glog.Warningf("Error reading config file at %s: %v", configPath, err)
+			klog.Warningf("Error reading config file at %s: %v", configPath, err)
 		}
 	}
 	setupViper()
@@ -275,6 +275,6 @@ func setupViper() {
 
 func addToPath(dir string) {
 	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
-	glog.Infof("Updating PATH: %s", dir)
+	klog.Infof("Updating PATH: %s", dir)
 	os.Setenv("PATH", new)
 }

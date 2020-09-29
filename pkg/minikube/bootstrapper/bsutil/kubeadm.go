@@ -23,8 +23,8 @@ import (
 	"path"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -81,7 +81,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	if overrideCIDR != "" {
 		podCIDR = overrideCIDR
 	}
-	glog.Infof("Using pod CIDR: %s", podCIDR)
+	klog.Infof("Using pod CIDR: %s", podCIDR)
 
 	opts := struct {
 		CertDir             string
@@ -147,11 +147,11 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	if version.GTE(semver.MustParse("1.17.0")) {
 		configTmpl = ktmpl.V1Beta2
 	}
-	glog.Infof("kubeadm options: %+v", opts)
+	klog.Infof("kubeadm options: %+v", opts)
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
 	}
-	glog.Infof("kubeadm config:\n%s\n", b.String())
+	klog.Infof("kubeadm config:\n%s\n", b.String())
 	return b.Bytes(), nil
 }
 

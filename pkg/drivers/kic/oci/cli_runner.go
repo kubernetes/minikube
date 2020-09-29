@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -107,7 +107,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	}
 
 	rr := &RunResult{Args: cmd.Args}
-	glog.Infof("Run: %v", rr.Command())
+	klog.Infof("Run: %v", rr.Command())
 
 	var outb, errb io.Writer
 	if cmd.Stdout == nil {
@@ -149,7 +149,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	}
 	// Decrease log spam
 	if elapsed > (1 * time.Second) {
-		glog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
+		klog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
 	}
 	if err == nil {
 		return rr, nil

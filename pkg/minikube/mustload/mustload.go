@@ -25,7 +25,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -63,7 +63,7 @@ type ControlPlane struct {
 
 // Partial is a cmd-friendly way to load a cluster which may or may not be running
 func Partial(name string, miniHome ...string) (libmachine.API, *config.ClusterConfig) {
-	glog.Infof("Loading cluster: %s", name)
+	klog.Infof("Loading cluster: %s", name)
 	api, err := machine.NewAPIClient(miniHome...)
 	if err != nil {
 		exit.Error(reason.NewAPIClient, "libmachine failed", err)

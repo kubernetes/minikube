@@ -20,8 +20,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
+  "github.com/pkg/errors"
+  "k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
@@ -653,7 +653,7 @@ func (c Flannel) Apply(r Runner) error {
 		conflict := "/etc/cni/net.d/100-crio-bridge.conf"
 		_, err := r.RunCmd(exec.Command("sudo", "mv", conflict, filepath.Join(filepath.Dir(conflict), "DISABLED-"+filepath.Base(conflict))))
 		if err != nil {
-			glog.Errorf("unable to disable %s: %v", conflict, err)
+			klog.Errorf("unable to disable %s: %v", conflict, err)
 		}
 	}
 

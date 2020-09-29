@@ -24,8 +24,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
@@ -147,7 +147,7 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 		return err
 	}
 	path := profileFilePath(name, miniHome...)
-	glog.Infof("Saving config to %s ...", path)
+	klog.Infof("Saving config to %s ...", path)
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}

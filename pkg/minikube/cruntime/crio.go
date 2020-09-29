@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -113,7 +113,7 @@ func (r *CRIO) Active() bool {
 func (r *CRIO) Enable(disOthers, _ bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
-			glog.Warningf("disableOthers: %v", err)
+			klog.Warningf("disableOthers: %v", err)
 		}
 	}
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
@@ -149,7 +149,7 @@ func (r *CRIO) ImageExists(name string, sha string) bool {
 
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
-	glog.Infof("Loading image: %s", path)
+	klog.Infof("Loading image: %s", path)
 	c := exec.Command("sudo", "podman", "load", "-i", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crio load image")
@@ -237,7 +237,7 @@ func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
 		return errors.Wrap(err, "getting images")
 	}
 	if crioImagesPreloaded(r.Runner, images) {
-		glog.Info("Images already preloaded, skipping extraction")
+		klog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
 
@@ -260,18 +260,18 @@ func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
 	if err := r.Runner.Copy(fa); err != nil {
 		return errors.Wrap(err, "copying file")
 	}
-	glog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
+	klog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
 
 	t = time.Now()
 	// extract the tarball to /var in the VM
 	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xvf", dest)); err != nil {
 		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
 	}
-	glog.Infof("Took %f seconds t extract the tarball", time.Since(t).Seconds())
+	klog.Infof("Took %f seconds t extract the tarball", time.Since(t).Seconds())
 
 	//  remove the tarball in the VM
 	if err := r.Runner.Remove(fa); err != nil {
-		glog.Infof("error removing tarball: %v", err)
+		klog.Infof("error removing tarball: %v", err)
 	}
 
 	return nil
@@ -297,7 +297,7 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	var jsonImages crictlImages
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
 	if err != nil {
-		glog.Errorf("failed to unmarshal images, will assume images are not preloaded")
+		klog.Errorf("failed to unmarshal images, will assume images are not preloaded")
 		return false
 	}
 
@@ -318,11 +318,11 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 
 		}
 		if !found {
-			glog.Infof("couldn't find preloaded image for %q. assuming images are not preloaded.", i)
+			klog.Infof("couldn't find preloaded image for %q. assuming images are not preloaded.", i)
 			return false
 		}
 	}
-	glog.Infof("all images are preloaded for cri-o runtime.")
+	klog.Infof("all images are preloaded for cri-o runtime.")
 	return true
 }
 
@@ -332,7 +332,7 @@ func (r *CRIO) ImagesPreloaded(images []string) bool {
 
 // UpdateCRIONet updates CRIO CNI network configuration and restarts it
 func UpdateCRIONet(r CommandRunner, cidr string) error {
-	glog.Infof("Updating CRIO to use CIDR: %q", cidr)
+	klog.Infof("Updating CRIO to use CIDR: %q", cidr)
 	ip, net, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return errors.Wrap(err, "parse cidr")
@@ -351,7 +351,7 @@ func UpdateCRIONet(r CommandRunner, cidr string) error {
 	// avoids: "Error adding network: failed to set bridge addr: could not add IP address to \"cni0\": permission denied"
 	sed := fmt.Sprintf("sed -i -e s#%s#%s# -e s#%s#%s# /etc/cni/net.d/*bridge*", oldNet, newNet, oldGw, newGw)
 	if _, err := r.RunCmd(exec.Command("sudo", "/bin/bash", "-c", sed)); err != nil {
-		glog.Errorf("netconf update failed: %v", err)
+		klog.Errorf("netconf update failed: %v", err)
 	}
 
 	return sysinit.New(r).Restart("crio")

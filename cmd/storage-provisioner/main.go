@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/storage"
 )
 
@@ -36,7 +36,7 @@ func main() {
 	flag.Parse()
 
 	if err := storage.StartStorageProvisioner(pvDir); err != nil {
-		glog.Exit(err)
+		klog.Exit(err)
 	}
 
 }

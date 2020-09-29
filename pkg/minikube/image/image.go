@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/client"
-	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -36,6 +35,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -54,7 +54,7 @@ func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	imgClient.NegotiateAPIVersion(ctx)
 	img, _, err := imgClient.ImageInspectWithRaw(ctx, imgName)
 	if err != nil && !client.IsErrNotFound(err) {
-		glog.Infof("couldn't find image digest %s from local daemon: %v ", imgName, err)
+		klog.Infof("couldn't find image digest %s from local daemon: %v ", imgName, err)
 		return ""
 	}
 	return img.ID
@@ -65,19 +65,19 @@ func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 func DigestByGoLib(imgName string) string {
 	ref, err := name.ParseReference(imgName, name.WeakValidation)
 	if err != nil {
-		glog.Infof("error parsing image name %s ref %v ", imgName, err)
+		klog.Infof("error parsing image name %s ref %v ", imgName, err)
 		return ""
 	}
 
 	img, err := retrieveImage(ref)
 	if err != nil {
-		glog.Infof("error retrieve Image %s ref %v ", imgName, err)
+		klog.Infof("error retrieve Image %s ref %v ", imgName, err)
 		return ""
 	}
 
 	cf, err := img.ConfigName()
 	if err != nil {
-		glog.Infof("error getting Image config name %s %v ", imgName, err)
+		klog.Infof("error getting Image config name %s %v ", imgName, err)
 		return cf.Hex
 	}
 	return cf.Hex
@@ -89,7 +89,7 @@ func ExistsImageInDaemon(img string) bool {
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
 	if output, err := cmd.Output(); err == nil {
 		if strings.Contains(string(output), img) {
-			glog.Infof("Found %s in local docker daemon, skipping pull", img)
+			klog.Infof("Found %s in local docker daemon, skipping pull", img)
 			return true
 		}
 	}
@@ -137,12 +137,12 @@ func Tag(img string) string {
 
 // WriteImageToDaemon write img to the local docker daemon
 func WriteImageToDaemon(img string) error {
-	glog.Infof("Writing %s to local daemon", img)
+	klog.Infof("Writing %s to local daemon", img)
 	ref, err := name.ParseReference(img)
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
 	}
-	glog.V(3).Infof("Getting image %v", ref)
+	klog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref)
 	if err != nil {
 		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
@@ -155,7 +155,7 @@ func WriteImageToDaemon(img string) error {
 
 		return errors.Wrap(err, "getting remote image")
 	}
-	glog.V(3).Infof("Writing image %v", ref)
+	klog.V(3).Infof("Writing image %v", ref)
 	_, err = daemon.Write(ref, i)
 	if err != nil {
 		return errors.Wrap(err, "writing daemon image")
@@ -165,15 +165,15 @@ func WriteImageToDaemon(img string) error {
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {
-	glog.Infof("retrieving image: %+v", ref)
+	klog.Infof("retrieving image: %+v", ref)
 	img, err := daemon.Image(ref)
 	if err == nil {
-		glog.Infof("found %s locally: %+v", ref.Name(), img)
+		klog.Infof("found %s locally: %+v", ref.Name(), img)
 		return img, nil
 	}
 	// reference does not exist in the local daemon
 	if err != nil {
-		glog.Infof("daemon lookup for %+v: %v", ref, err)
+		klog.Infof("daemon lookup for %+v: %v", ref, err)
 	}
 
 	platform := defaultPlatform
@@ -182,7 +182,7 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 		return img, nil
 	}
 
-	glog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
+	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
 	img, err = remote.Image(ref)
 	return img, err
 }

@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -64,7 +64,7 @@ func download(src string, dst string) error {
 
 	// Don't bother with getter.MockGetter, as we don't provide a way to inspect the outcome
 	if mockMode {
-		glog.Infof("Mock download: %s -> %s", src, dst)
+		klog.Infof("Mock download: %s -> %s", src, dst)
 		// Callers expect the file to exist
 		_, err := os.Create(dst)
 		return err
@@ -75,7 +75,7 @@ func download(src string, dst string) error {
 		return fmt.Errorf("unmocked download under test")
 	}
 
-	glog.Infof("Downloading: %s -> %s", src, dst)
+	klog.Infof("Downloading: %s -> %s", src, dst)
 	if err := client.Get(); err != nil {
 		return errors.Wrapf(err, "getter: %+v", client)
 	}

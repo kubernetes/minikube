@@ -27,9 +27,9 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -71,14 +71,14 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 
 	// Skip loading images if images already exist
 	if cr.ImagesPreloaded(images) {
-		glog.Infof("Images are preloaded, skipping loading")
+		klog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
-	glog.Infof("LoadImages start: %s", images)
+	klog.Infof("LoadImages start: %s", images)
 	start := time.Now()
 
 	defer func() {
-		glog.Infof("LoadImages completed in %s", time.Since(start))
+		klog.Infof("LoadImages completed in %s", time.Since(start))
 	}()
 
 	var g errgroup.Group
@@ -87,7 +87,7 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 	if cr.Name() == "Docker" {
 		imgClient, err = client.NewClientWithOpts(client.FromEnv) // image client
 		if err != nil {
-			glog.Infof("couldn't get a local image daemon which might be ok: %v", err)
+			klog.Infof("couldn't get a local image daemon which might be ok: %v", err)
 		}
 	}
 
@@ -102,14 +102,14 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 			if err == nil {
 				return nil
 			}
-			glog.Infof("%q needs transfer: %v", image, err)
+			klog.Infof("%q needs transfer: %v", image, err)
 			return transferAndLoadImage(runner, cc.KubernetesConfig, image, cacheDir)
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return errors.Wrap(err, "loading cached images")
 	}
-	glog.Infoln("Successfully loaded all cached images")
+	klog.Infoln("Successfully loaded all cached images")
 	return nil
 }
 
@@ -188,7 +188,7 @@ func CacheAndLoadImages(images []string) error {
 		c, err := config.Load(pName)
 		if err != nil {
 			// Non-fatal because it may race with profile deletion
-			glog.Errorf("Failed to load profile %q: %v", pName, err)
+			klog.Errorf("Failed to load profile %q: %v", pName, err)
 			failed = append(failed, pName)
 			continue
 		}
@@ -198,7 +198,7 @@ func CacheAndLoadImages(images []string) error {
 
 			status, err := Status(api, m)
 			if err != nil {
-				glog.Warningf("error getting status for %s: %v", m, err)
+				klog.Warningf("error getting status for %s: %v", m, err)
 				failed = append(failed, m)
 				continue
 			}
@@ -206,7 +206,7 @@ func CacheAndLoadImages(images []string) error {
 			if status == state.Running.String() { // the not running hosts will load on next start
 				h, err := api.Load(m)
 				if err != nil {
-					glog.Warningf("Failed to load machine %q: %v", m, err)
+					klog.Warningf("Failed to load machine %q: %v", m, err)
 					failed = append(failed, m)
 					continue
 				}
@@ -217,15 +217,15 @@ func CacheAndLoadImages(images []string) error {
 				err = LoadImages(c, cr, images, constants.ImageCacheDir)
 				if err != nil {
 					failed = append(failed, m)
-					glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+					klog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
 				}
 				succeeded = append(succeeded, m)
 			}
 		}
 	}
 
-	glog.Infof("succeeded pushing to: %s", strings.Join(succeeded, " "))
-	glog.Infof("failed pushing to: %s", strings.Join(failed, " "))
+	klog.Infof("succeeded pushing to: %s", strings.Join(succeeded, " "))
+	klog.Infof("failed pushing to: %s", strings.Join(failed, " "))
 	// Live pushes are not considered a failure
 	return nil
 }
@@ -238,7 +238,7 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, imgNam
 	}
 	src := filepath.Join(cacheDir, imgName)
 	src = localpath.SanitizeCacheDir(src)
-	glog.Infof("Loading image from cache: %s", src)
+	klog.Infof("Loading image from cache: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
 		return err
@@ -260,6 +260,6 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, imgNam
 		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
 
-	glog.Infof("Transferred and loaded %s from cache", src)
+	klog.Infof("Transferred and loaded %s from cache", src)
 	return nil
 }

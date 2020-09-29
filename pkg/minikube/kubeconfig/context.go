@@ -17,9 +17,9 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/klog/v2"
 )
 
 // UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
@@ -71,7 +71,7 @@ func DeleteContext(machineName string, configPath ...string) error {
 	}
 
 	if kcfg == nil || api.IsConfigEmpty(kcfg) {
-		glog.V(2).Info("kubeconfig is empty")
+		klog.V(2).Info("kubeconfig is empty")
 		return nil
 	}
 

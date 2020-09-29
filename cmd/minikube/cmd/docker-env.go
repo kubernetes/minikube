@@ -28,8 +28,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -163,7 +163,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if ok := isDockerActive(co.CP.Runner); !ok {
-			glog.Warningf("dockerd is not active will try to restart it...")
+			klog.Warningf("dockerd is not active will try to restart it...")
 			mustRestartDocker(cname, co.CP.Runner)
 		}
 
@@ -195,7 +195,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		dockerPath, err := exec.LookPath("docker")
 		if err != nil {
-			glog.Warningf("Unable to find docker in path - skipping connectivity check: %v", err)
+			klog.Warningf("Unable to find docker in path - skipping connectivity check: %v", err)
 			dockerPath = ""
 		}
 
@@ -203,7 +203,7 @@ var dockerEnvCmd = &cobra.Command{
 			out, err := tryDockerConnectivity("docker", ec)
 			if err != nil { // docker might be up but been loaded with wrong certs/config
 				// to fix issues like this #8185
-				glog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
+				klog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
 				mustRestartDocker(cname, co.CP.Runner)
 			}
 		}
@@ -281,7 +281,7 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
-	glog.Infof("Testing Docker connectivity with: %v", c)
+	klog.Infof("Testing Docker connectivity with: %v", c)
 	return c.CombinedOutput()
 }
 

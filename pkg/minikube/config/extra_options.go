@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 // ExtraOption is an extra option
@@ -45,13 +45,13 @@ func (es *ExtraOptionSlice) Exists(value string) bool {
 	// The component is the value before the first dot.
 	componentSplit := strings.SplitN(value, ".", 2)
 	if len(componentSplit) != 2 {
-		glog.Errorf("invalid value: must contain at least one period: %q", value)
+		klog.Errorf("invalid value: must contain at least one period: %q", value)
 		return false
 	}
 
 	keySplit := strings.SplitN(componentSplit[1], "=", 2)
 	if len(keySplit) != 2 {
-		glog.Errorf("invalid value: must contain one equal sign: %q", value)
+		klog.Errorf("invalid value: must contain one equal sign: %q", value)
 		return false
 	}
 
