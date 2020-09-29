@@ -66,6 +66,8 @@ const (
 	// Irrelevant is used for statuses that aren't meaningful for worker nodes
 	Irrelevant = "Irrelevant"
 
+	InsufficientStorage = reason.ExInsufficientStorage
+
 	// New status modes, based roughly on HTTP/SMTP standards
 	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
 	Starting  = 100
@@ -84,18 +86,18 @@ const (
 	Paused   = 418 // I'm a teapot!
 
 	// 5xx signifies a server-side error (that may be retryable)
-	Error               = 500
-	InsufficientStorage = 507
-	Unknown             = 520
+	Error   = 500
+	Unknown = 520
 )
 
 var (
 	codeNames = map[int]string{
-		100: "Starting",
-		101: "Pausing",
-		102: "Unpausing",
-		110: "Stopping",
-		103: "Deleting",
+		reason.ExInsufficientStorage: "InsufficientStorage",
+		100:                          "Starting",
+		101:                          "Pausing",
+		102:                          "Unpausing",
+		110:                          "Stopping",
+		103:                          "Deleting",
 
 		200: "OK",
 		203: "Warning",
@@ -105,12 +107,11 @@ var (
 		418: "Paused",
 
 		500: "Error",
-		507: "InsufficientStorage",
 		520: "Unknown",
 	}
 
 	codeDetails = map[int]string{
-		507: "/var is almost out of disk space",
+		reason.ExInsufficientStorage: "/var is almost out of disk space",
 	}
 )
 
