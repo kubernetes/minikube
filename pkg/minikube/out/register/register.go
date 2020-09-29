@@ -62,7 +62,7 @@ func init() {
 	Reg = Register{
 		// Expected step orders, organized by the initial step seen
 		steps: map[RegStep][]RegStep{
-			InitialSetup: []RegStep{
+			InitialSetup: {
 				InitialSetup,
 				SelectingDriver,
 				DownloadingArtifacts,
@@ -78,10 +78,10 @@ func init() {
 				Done,
 			},
 
-			Stopping:  []RegStep{Stopping, Done},
-			Pausing:   []RegStep{Pausing, Done},
-			Unpausing: []RegStep{Unpausing, Done},
-			Deleting:  []RegStep{Deleting, Stopping, Deleting, Done},
+			Stopping:  {Stopping, Done},
+			Pausing:   {Pausing, Done},
+			Unpausing: {Unpausing, Done},
+			Deleting:  {Deleting, Stopping, Deleting, Done},
 		},
 	}
 }
