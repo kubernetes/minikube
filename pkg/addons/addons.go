@@ -365,6 +365,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 // Start enables the default addons for a profile, plus any additional
 func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, additional []string) {
 	defer wg.Done()
+	addonsToDefer := []string{"gcp-auth"}
 
 	start := time.Now()
 	glog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
@@ -405,50 +406,48 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	deferredAddons := []string{"gcp-auth"}
 	enabledAddons := []string{}
+	deferredAddons := []string{}
 
 	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
-		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": enabledAddons})
+		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(enabledAddons, ", ")})
 	}()
-	var addonErr error
 	for _, a := range toEnableList {
-		for _, da := range deferredAddons {
+		deferAddon := false
+		for _, da := range addonsToDefer {
 			if a == da {
-				continue
+				deferAddon = true
+				deferredAddons = append(deferredAddons, a)
 			}
+		}
+		if deferAddon {
+			continue
 		}
 
 		awg.Add(1)
-		err := func(name string) error {
+		go func(name string, ea *[]string) {
 			err := RunCallbacks(cc, name, "true")
 			if err != nil {
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
+			} else {
+				*ea = append(*ea, name)
 			}
 			awg.Done()
-			return err
-		}(a)
+		}(a, &enabledAddons)
 
-		if err != nil {
-			addonErr = err
-		} else {
-			enabledAddons = append(enabledAddons, a)
-		}
 	}
 
 	// Wait until all of the addons are enabled before updating the config (not thread safe)
 	awg.Wait()
 
-	// Don't bother trying more addons if one of the default ones failed
-	if addonErr == nil {
-		for _, a := range deferredAddons {
-			err := RunCallbacks(cc, a, "true")
-			if err != nil {
-				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
-			} else {
-				enabledAddons = append(enabledAddons, a)
-			}
+	// Now run the deferred addons
+	for _, a := range deferredAddons {
+		err := RunCallbacks(cc, a, "true")
+		if err != nil {
+			out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
+		} else {
+			enabledAddons = append(enabledAddons, a)
 		}
 	}
 
