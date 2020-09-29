@@ -145,7 +145,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	}
 
 	if ex, ok := err.(*exec.ExitError); ok {
-		glog.Warningf("%s returned with exit code %s", rr.Command(), ex.ExitCode())
+		glog.Warningf("%s returned with exit code %d", rr.Command(), ex.ExitCode())
 		rr.ExitCode = ex.ExitCode()
 	}
 
