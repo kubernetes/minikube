@@ -305,9 +305,15 @@ html_report: ## Generate HTML  report out of the last ran integration test logs.
 	@go tool test2json -t < "./out/testout_$(COMMIT_SHORT).txt" > "./out/testout_$(COMMIT_SHORT).json"
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
+ifeq ($(GOOS),windows)
+	@echo start $(CURDIR)/out/testout_$(COMMIT_SHORT).html
+	@echo "-----------------------------------------------------------------------------------"
+	@start $(CURDIR)/out/testout_$(COMMIT_SHORT).html || true
+else
 	@echo open $(CURDIR)/out/testout_$(COMMIT_SHORT).html
 	@echo "-----------------------------------------------------------------------------------"
 	@open $(CURDIR)/out/testout_$(COMMIT_SHORT).html || true
+endif
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
