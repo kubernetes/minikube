@@ -32,8 +32,8 @@ import (
 // it is one octet more than the one used by KVM to avoid possible conflict
 const firstSubnetAddr = "192.168.49.0"
 
-// big enough for a cluster of 256 nodes
-const defaultSubnetRange = 24
+// big enough for a cluster of 254 nodes
+const defaultSubnetMask = 24
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
 func CreateNetwork(ociBin string, name string) (net.IP, error) {
@@ -53,13 +53,13 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 	// simple way to create networks, subnet is taken, try one bigger
 	attempt := 0
 	subnetAddr := firstSubnetAddr
-	gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetRange, clusterName)
+	gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetMask, clusterName)
 	if err != nil {
 		if err != ErrNetworkSubnetTaken {
 			return nil, errors.Wrapf(err, "error creating network")
 		}
+		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 		// try up to 20 times, third octet would go like 49,59 ,69,..., 239
-		// max we could go is 255 we stop at 239
 		for attempt < 20 {
 			attempt++
 			glog.Infof("Couldn't create network %q at %q subnet will try again with a new subnet ...", clusterName, subnetAddr)
@@ -71,7 +71,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 			ip := net.ParseIP(subnetAddr).To4()
 			ip[2] += byte(9 + attempt)
 
-			gateway, err = tryCreateDockerNetwork(ip.String(), defaultSubnetRange, clusterName)
+			gateway, err = tryCreateDockerNetwork(ip.String(), defaultSubnetMask, clusterName)
 			if err == nil {
 				return gateway, nil
 			}
@@ -84,12 +84,12 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 	return gateway, nil
 }
 
-func tryCreateDockerNetwork(subnetAddr string, subnetRange int, name string) (net.IP, error) {
+func tryCreateDockerNetwork(subnetAddr string, subnetMask int, name string) (net.IP, error) {
 	gateway := net.ParseIP(subnetAddr)
 	gateway.To4()[3]++ // first ip for gateway
 	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnetAddr, name, gateway)
 	// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
-	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetRange)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
+	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
 		// Pool overlaps with other one on this address space
 		if strings.Contains(rr.Output(), "Pool overlaps") {
@@ -159,13 +159,13 @@ func networkExists(name string) bool {
 	return true
 }
 
-// returns all network names created by a label
-func allNetworkByLabel(ociBin string, label string) ([]string, error) {
+// networkNamesByLabel returns all network names created by a label
+func networkNamesByLabel(ociBin string, label string) ([]string, error) {
 	if ociBin != Docker {
 		return nil, fmt.Errorf("%s not supported", ociBin)
 	}
 
-	// docker network ls --filter='label=created_by.minikube.sigs.k8s.io=true' --format '{{.Name}}
+	// docker network ls --filter='label=created_by.minikube.sigs.k8s.io=true' --format '{{.Name}}'
 	rr, err := runCmd(exec.Command(Docker, "network", "ls", fmt.Sprintf("--filter=label=%s", label), "--format", "{{.Name}}"))
 	if err != nil {
 		return nil, err
@@ -179,10 +179,10 @@ func allNetworkByLabel(ociBin string, label string) ([]string, error) {
 	return lines, nil
 }
 
-// DeleteAllNetworksByKIC deletes all networks created by kic
-func DeleteAllNetworksByKIC() []error {
+// DeleteKICNetworks deletes all networks created by kic
+func DeleteKICNetworks() []error {
 	var errs []error
-	ns, err := allNetworkByLabel(Docker, CreatedByLabelKey+"=true")
+	ns, err := networkNamesByLabel(Docker, CreatedByLabelKey+"=true")
 	if err != nil {
 		return []error{errors.Wrap(err, "list all volume")}
 	}

@@ -58,7 +58,7 @@ var ErrNetworkNotFound = errors.New("kic network not found")
 var ErrNetworkGatewayTaken = errors.New("network gateway is taken")
 
 // ErrNetworkInUse is when trying to delete a network which is attached to another container
-var ErrNetworkInUse = errors.New("can't delete network attached to a running container")
+var ErrNetworkInUse = errors.New("unable to delete a network that is attached to a running container")
 
 // LogContainerDebug will print relevant docker/podman infos after a container fails
 func LogContainerDebug(ociBin string, name string) string {
