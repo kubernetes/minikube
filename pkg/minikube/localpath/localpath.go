@@ -23,10 +23,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/otiai10/copy"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog/v2"
 )
 
 // MinikubeHome is the name of the minikube home directory environment variable.
@@ -76,9 +76,9 @@ func ClientCert(name string) string {
 	// minikube v1.5.x
 	legacy := filepath.Join(MiniPath(), "client.crt")
 	if _, err := os.Stat(legacy); err == nil {
-		glog.Infof("copying %s -> %s", legacy, new)
+		klog.Infof("copying %s -> %s", legacy, new)
 		if err := copy.Copy(legacy, new); err != nil {
-			glog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
+			klog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
 			return legacy
 		}
 	}
@@ -96,9 +96,9 @@ func ClientKey(name string) string {
 	// minikube v1.5.x
 	legacy := filepath.Join(MiniPath(), "client.key")
 	if _, err := os.Stat(legacy); err == nil {
-		glog.Infof("copying %s -> %s", legacy, new)
+		klog.Infof("copying %s -> %s", legacy, new)
 		if err := copy.Copy(legacy, new); err != nil {
-			glog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
+			klog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
 			return legacy
 		}
 	}
@@ -125,7 +125,7 @@ func SanitizeCacheDir(image string) string {
 	if runtime.GOOS == "windows" && hasWindowsDriveLetter(image) {
 		// not sanitize Windows drive letter.
 		s := image[:2] + strings.Replace(image[2:], ":", "_", -1)
-		glog.Infof("windows sanitize: %s -> %s", image, s)
+		klog.Infof("windows sanitize: %s -> %s", image, s)
 		return s
 	}
 	// ParseReference cannot have a : in the directory path

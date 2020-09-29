@@ -24,15 +24,16 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 )
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
 func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
-	glog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
+	klog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
 
 	vs, err := allVolumesByLabel(ociBin, label)
 
@@ -54,7 +55,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []er
 // example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
 func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
-	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
+	klog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
 	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
 	if _, err := runCmd(cmd, warnSlow...); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s", label))

@@ -21,10 +21,10 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -72,7 +72,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	if stopAll {
 		validProfiles, _, err := config.ListProfiles()
 		if err != nil {
-			glog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
+			klog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
 		}
 		for _, profile := range validProfiles {
 			profilesToStop = append(profilesToStop, profile.Name)
@@ -131,7 +131,7 @@ func stop(api libmachine.API, machineName string) bool {
 		if err == nil {
 			return nil
 		}
-		glog.Warningf("stop host returned error: %v", err)
+		klog.Warningf("stop host returned error: %v", err)
 
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:

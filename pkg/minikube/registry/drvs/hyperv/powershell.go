@@ -24,7 +24,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 var powershell string
@@ -36,16 +36,16 @@ func init() {
 func cmdOut(args ...string) (string, error) {
 	args = append([]string{"-NoProfile", "-NonInteractive"}, args...)
 	cmd := exec.Command(powershell, args...)
-	glog.Infof("[executing ==>] : %v %v", powershell, strings.Join(args, " "))
+	klog.Infof("[executing ==>] : %v %v", powershell, strings.Join(args, " "))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	glog.Infof("[stdout =====>] : %s", stdout.String())
-	glog.Infof("[stderr =====>] : %s", stderr.String())
+	klog.Infof("[stdout =====>] : %s", stdout.String())
+	klog.Infof("[stderr =====>] : %s", stderr.String())
 	if err != nil {
-		glog.Infof("[err =====>] : %v", err)
+		klog.Infof("[err =====>] : %v", err)
 	}
 	return stdout.String(), err
 }

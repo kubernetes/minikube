@@ -27,8 +27,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -117,14 +117,14 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.C
 	pMap := map[string][]string{}
 	cmds := logCommands(r, bs, cfg, lookBackwardsCount, false)
 	for name := range cmds {
-		glog.Infof("Gathering logs for %s ...", name)
+		klog.Infof("Gathering logs for %s ...", name)
 		var b bytes.Buffer
 		c := exec.Command("/bin/bash", "-c", cmds[name])
 		c.Stderr = &b
 		c.Stdout = &b
 
 		if rr, err := cr.RunCmd(c); err != nil {
-			glog.Warningf("failed %s: command: %s %v output: %s", name, rr.Command(), err, rr.Output())
+			klog.Warningf("failed %s: command: %s %v output: %s", name, rr.Command(), err, rr.Output())
 			continue
 		}
 		scanner := bufio.NewScanner(&b)
@@ -132,7 +132,7 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.C
 		for scanner.Scan() {
 			l := scanner.Text()
 			if IsProblem(l) {
-				glog.Warningf("Found %s problem: %s", name, l)
+				klog.Warningf("Found %s problem: %s", name, l)
 				problems = append(problems, l)
 			}
 		}
@@ -178,7 +178,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		c.Stdout = &b
 		c.Stderr = &b
 		if rr, err := runner.RunCmd(c); err != nil {
-			glog.Errorf("command %s failed with error: %v output: %q", rr.Command(), err, rr.Output())
+			klog.Errorf("command %s failed with error: %v output: %q", rr.Command(), err, rr.Output())
 			failed = append(failed, name)
 			continue
 		}
@@ -200,12 +200,12 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cl
 	for _, pod := range importantPods {
 		ids, err := r.ListContainers(cruntime.ListOptions{Name: pod})
 		if err != nil {
-			glog.Errorf("Failed to list containers for %q: %v", pod, err)
+			klog.Errorf("Failed to list containers for %q: %v", pod, err)
 			continue
 		}
-		glog.Infof("%d containers: %s", len(ids), ids)
+		klog.Infof("%d containers: %s", len(ids), ids)
 		if len(ids) == 0 {
-			glog.Warningf("No container was found matching %q", pod)
+			klog.Warningf("No container was found matching %q", pod)
 			continue
 		}
 		for _, i := range ids {

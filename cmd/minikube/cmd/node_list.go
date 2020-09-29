@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -41,9 +41,9 @@ var nodeListCmd = &cobra.Command{
 		_, cc := mustload.Partial(cname)
 
 		if len(cc.Nodes) < 1 {
-			glog.Warningf("Did not found any minikube node.")
+			klog.Warningf("Did not found any minikube node.")
 		} else {
-			glog.Infof("%v", cc.Nodes)
+			klog.Infof("%v", cc.Nodes)
 		}
 
 		for _, n := range cc.Nodes {

@@ -28,7 +28,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -110,7 +110,7 @@ func status() registry.State {
 	o, err := cmd.Output()
 	output := strings.TrimSpace(string(o))
 	if err == nil {
-		glog.Infof("podman version: %s", output)
+		klog.Infof("podman version: %s", output)
 
 		v, err := semver.Make(output)
 		if err != nil {
@@ -128,7 +128,7 @@ func status() registry.State {
 		return registry.State{Installed: true, Healthy: true}
 	}
 
-	glog.Warningf("podman returned error: %v", err)
+	klog.Warningf("podman returned error: %v", err)
 
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {

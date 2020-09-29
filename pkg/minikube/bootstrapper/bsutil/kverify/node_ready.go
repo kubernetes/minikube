@@ -21,21 +21,21 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 // WaitForNodeReady waits till kube client reports node status as "ready"
 func WaitForNodeReady(cs *kubernetes.Clientset, timeout time.Duration) error {
-	glog.Infof("waiting %s for node status to be ready ...", timeout)
+	klog.Infof("waiting %s for node status to be ready ...", timeout)
 	start := time.Now()
 	defer func() {
-		glog.Infof("duration metric: took %s to wait for WaitForNodeReady...", time.Since(start))
+		klog.Infof("duration metric: took %s to wait for WaitForNodeReady...", time.Since(start))
 	}()
 	checkReady := func() (bool, error) {
 		if time.Since(start) > timeout {
@@ -43,14 +43,14 @@ func WaitForNodeReady(cs *kubernetes.Clientset, timeout time.Duration) error {
 		}
 		ns, err := cs.CoreV1().Nodes().List(meta.ListOptions{})
 		if err != nil {
-			glog.Infof("error listing nodes will retry: %v", err)
+			klog.Infof("error listing nodes will retry: %v", err)
 			return false, nil
 		}
 
 		for _, n := range ns.Items {
 			for _, c := range n.Status.Conditions {
 				if c.Type == v1.NodeReady && c.Status != v1.ConditionTrue {
-					glog.Infof("node %q has unwanted condition %q : Reason %q Message: %q. will try. ", n.Name, c.Type, c.Reason, c.Message)
+					klog.Infof("node %q has unwanted condition %q : Reason %q Message: %q. will try. ", n.Name, c.Type, c.Reason, c.Message)
 					return false, nil
 				}
 			}

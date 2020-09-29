@@ -26,9 +26,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
-
 	"github.com/google/go-github/v32/github"
+
+	"k8s.io/klog/v2"
 )
 
 func main() {
@@ -41,20 +41,20 @@ func main() {
 	// latest rc or beta (vDefault as NewestKubernetesVersion) Kubernetes GitHub Releases
 	vDefault, vNewest, err := fetchKubernetesReleases()
 	if err != nil {
-		glog.Errorf("Fetching current GitHub Releases failed: %v", err)
+		klog.Errorf("Fetching current GitHub Releases failed: %v", err)
 	}
 	if vDefault == "" || vNewest == "" {
-		glog.Fatalf("Cannot determine current 'DefaultKubernetesVersion' and 'NewestKubernetesVersion'")
+		klog.Fatalf("Cannot determine current 'DefaultKubernetesVersion' and 'NewestKubernetesVersion'")
 	}
-	glog.Infof("Current Kubernetes GitHub Releases: 'stable' is %s and 'latest' is %s", vDefault, vNewest)
+	klog.Infof("Current Kubernetes GitHub Releases: 'stable' is %s and 'latest' is %s", vDefault, vNewest)
 
 	if err := updateKubernetesVersions(vDefault, vNewest); err != nil {
-		glog.Fatalf("Updating 'DefaultKubernetesVersion' and 'NewestKubernetesVersion' failed: %v", err)
+		klog.Fatalf("Updating 'DefaultKubernetesVersion' and 'NewestKubernetesVersion' failed: %v", err)
 	}
-	glog.Infof("Update successful: 'DefaultKubernetesVersion' was set to %s and 'NewestKubernetesVersion' was set to %s", vDefault, vNewest)
+	klog.Infof("Update successful: 'DefaultKubernetesVersion' was set to %s and 'NewestKubernetesVersion' was set to %s", vDefault, vNewest)
 
 	// Flush before exiting to guarantee all log output is written
-	glog.Flush()
+	klog.Flush()
 }
 
 // fetchKubernetesReleases returns respective current stable (as vDefault) and

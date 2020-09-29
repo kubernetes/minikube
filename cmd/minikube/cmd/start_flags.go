@@ -22,10 +22,10 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -221,10 +221,10 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
-		glog.Info("no existing cluster config was found, will generate one from the flags ")
+		klog.Info("no existing cluster config was found, will generate one from the flags ")
 		sysLimit, containerLimit, err := memoryLimits(drvName)
 		if err != nil {
-			glog.Warningf("Unable to query memory limits: %+v", err)
+			klog.Warningf("Unable to query memory limits: %+v", err)
 		}
 
 		mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
@@ -239,7 +239,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			}
 		} else {
 			validateRequestedMemorySize(mem, drvName)
-			glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
+			klog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 		}
 
 		diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
@@ -273,7 +273,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		// Backwards compatibility with --enable-default-cni
 		chosenCNI := viper.GetString(cniFlag)
 		if viper.GetBool(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
-			glog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
+			klog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
 			chosenCNI = "bridge"
 		}
 
@@ -340,12 +340,12 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 
 		if _, ok := cnm.(cni.Disabled); !ok {
-			glog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
+			klog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
 			cc.KubernetesConfig.NetworkPlugin = "cni"
 		}
 	}
 
-	glog.Infof("config:\n%+v", cc)
+	klog.Infof("config:\n%+v", cc)
 
 	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
 	if err != nil {
@@ -372,19 +372,19 @@ func upgradeExistingConfig(cc *config.ClusterConfig) {
 	}
 
 	if cc.VMDriver != "" && cc.Driver == "" {
-		glog.Infof("config upgrade: Driver=%s", cc.VMDriver)
+		klog.Infof("config upgrade: Driver=%s", cc.VMDriver)
 		cc.Driver = cc.VMDriver
 	}
 
 	if cc.Name == "" {
-		glog.Infof("config upgrade: Name=%s", ClusterFlagValue())
+		klog.Infof("config upgrade: Name=%s", ClusterFlagValue())
 		cc.Name = ClusterFlagValue()
 	}
 
 	if cc.KicBaseImage == "" {
 		// defaults to kic.BaseImage
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
-		glog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
+		klog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
 	}
 }
 
@@ -413,10 +413,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	if cc.Memory == 0 {
-		glog.Info("Existing config file was missing memory. (could be an old minikube config), will use the default value")
+		klog.Info("Existing config file was missing memory. (could be an old minikube config), will use the default value")
 		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 		if err != nil {
-			glog.Warningf("error calculate memory size in mb : %v", err)
+			klog.Warningf("error calculate memory size in mb : %v", err)
 		}
 		cc.Memory = memInMB
 	}
@@ -424,7 +424,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	if cmd.Flags().Changed(memory) {
 		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 		if err != nil {
-			glog.Warningf("error calculate memory size in mb : %v", err)
+			klog.Warningf("error calculate memory size in mb : %v", err)
 		}
 		if memInMB != cc.Memory {
 			out.WarningT("You cannot change the memory size for an exiting minikube cluster. Please first delete the cluster.")
@@ -435,7 +435,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	validateRequestedMemorySize(cc.Memory, cc.Driver)
 
 	if cc.CPUs == 0 {
-		glog.Info("Existing config file was missing cpu. (could be an old minikube config), will use the default value")
+		klog.Info("Existing config file was missing cpu. (could be an old minikube config), will use the default value")
 		cc.CPUs = viper.GetInt(cpus)
 	}
 	if cmd.Flags().Changed(cpus) {
@@ -447,7 +447,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			glog.Warningf("error calculate disk size in mb : %v", err)
+			klog.Warningf("error calculate disk size in mb : %v", err)
 		}
 
 		if memInMB != existing.DiskSize {
@@ -589,7 +589,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
 		if viper.GetBool(enableDefaultCNI) {
-			glog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
+			klog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
 			cc.KubernetesConfig.CNI = "bridge"
 		}
 	}
@@ -614,25 +614,25 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 // returns map of components to wait for
 func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	if !cmd.Flags().Changed(waitComponents) {
-		glog.Infof("Wait components to verify : %+v", kverify.DefaultComponents)
+		klog.Infof("Wait components to verify : %+v", kverify.DefaultComponents)
 		return kverify.DefaultComponents
 	}
 
 	waitFlags, err := cmd.Flags().GetStringSlice(waitComponents)
 	if err != nil {
-		glog.Warningf("Failed to read --wait from flags: %v.\n Moving on will use the default wait components: %+v", err, kverify.DefaultComponents)
+		klog.Warningf("Failed to read --wait from flags: %v.\n Moving on will use the default wait components: %+v", err, kverify.DefaultComponents)
 		return kverify.DefaultComponents
 	}
 
 	if len(waitFlags) == 1 {
 		// respecting legacy flag before minikube 1.9.0, wait flag was boolean
 		if waitFlags[0] == "false" || waitFlags[0] == "none" {
-			glog.Infof("Waiting for no components: %+v", kverify.NoComponents)
+			klog.Infof("Waiting for no components: %+v", kverify.NoComponents)
 			return kverify.NoComponents
 		}
 		// respecting legacy flag before minikube 1.9.0, wait flag was boolean
 		if waitFlags[0] == "true" || waitFlags[0] == "all" {
-			glog.Infof("Waiting for all components: %+v", kverify.AllComponents)
+			klog.Infof("Waiting for all components: %+v", kverify.AllComponents)
 			return kverify.AllComponents
 		}
 	}
@@ -648,9 +648,9 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 			}
 		}
 		if !seen {
-			glog.Warningf("The value %q is invalid for --wait flag. valid options are %q", wc, strings.Join(kverify.AllComponentsList, ","))
+			klog.Warningf("The value %q is invalid for --wait flag. valid options are %q", wc, strings.Join(kverify.AllComponentsList, ","))
 		}
 	}
-	glog.Infof("Waiting for components: %+v", waitComponents)
+	klog.Infof("Waiting for components: %+v", waitComponents)
 	return waitComponents
 }

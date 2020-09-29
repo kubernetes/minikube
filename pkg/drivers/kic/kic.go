@@ -28,8 +28,8 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -102,14 +102,14 @@ func (d *Driver) Create() error {
 
 	exists, err := oci.ContainerExists(d.OCIBinary, params.Name, true)
 	if err != nil {
-		glog.Warningf("failed to check if container already exists: %v", err)
+		klog.Warningf("failed to check if container already exists: %v", err)
 	}
 	if exists {
 		// if container was created by minikube it is safe to delete and recreate it.
 		if oci.IsCreatedByMinikube(d.OCIBinary, params.Name) {
-			glog.Info("Found already existing abandoned minikube container, will try to delete.")
+			klog.Info("Found already existing abandoned minikube container, will try to delete.")
 			if err := oci.DeleteContainer(d.OCIBinary, params.Name); err != nil {
-				glog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again: %v", params.Name, params.OCIBinary, err)
+				klog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again: %v", params.Name, params.OCIBinary, err)
 			}
 		} else {
 			// The conflicting container name was not created by minikube
@@ -131,12 +131,12 @@ func (d *Driver) Create() error {
 			return
 		}
 		t := time.Now()
-		glog.Infof("Starting extracting preloaded images to volume ...")
+		klog.Infof("Starting extracting preloaded images to volume ...")
 		// Extract preloaded images to container
 		if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, d.NodeConfig.ImageDigest); err != nil {
-			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
+			klog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 		} else {
-			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+			klog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
 		}
 	}()
 
@@ -155,7 +155,7 @@ func (d *Driver) Create() error {
 // prepareSSH will generate keys and copy to the container so minikube ssh works
 func (d *Driver) prepareSSH() error {
 	keyPath := d.GetSSHKeyPath()
-	glog.Infof("Creating ssh key for kic: %s...", keyPath)
+	klog.Infof("Creating ssh key for kic: %s...", keyPath)
 	if err := ssh.GenerateSSHKey(keyPath); err != nil {
 		return errors.Wrap(err, "generate ssh key")
 	}
@@ -255,11 +255,11 @@ func (d *Driver) Kill() error {
 	// on init this doesn't get filled when called from cmd
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
-		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
+		klog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 
 	if err := oci.ShutDown(d.OCIBinary, d.MachineName); err != nil {
-		glog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
+		klog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
 	}
 
 	cr := command.NewExecRunner() // using exec runner for interacting with dameon.
@@ -272,7 +272,7 @@ func (d *Driver) Kill() error {
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
-		glog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
+		klog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
 	}
 
 	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
@@ -296,7 +296,7 @@ func (d *Driver) Remove() error {
 func (d *Driver) Restart() error {
 	s, err := d.GetState()
 	if err != nil {
-		glog.Warningf("get state during restart: %v", err)
+		klog.Warningf("get state during restart: %v", err)
 	}
 	if s == state.Stopped { // don't stop if already stopped
 		return d.Start()
@@ -328,7 +328,7 @@ func (d *Driver) Start() error {
 		if s != state.Running {
 			return fmt.Errorf("expected container state be running but got %q", s)
 		}
-		glog.Infof("container %q state is running.", d.MachineName)
+		klog.Infof("container %q state is running.", d.MachineName)
 		return nil
 	}
 
@@ -351,35 +351,35 @@ func (d *Driver) Stop() error {
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
 	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
-		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
+		klog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
 		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
-			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
+			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
 
 	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
 	if err != nil { // won't return error because:
 		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
-		glog.Errorf("unable to get container runtime: %v", err)
+		klog.Errorf("unable to get container runtime: %v", err)
 	} else {
 		containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
 		if err != nil {
-			glog.Infof("unable list containers : %v", err)
+			klog.Infof("unable list containers : %v", err)
 		}
 		if len(containers) > 0 {
 			if err := runtime.StopContainers(containers); err != nil {
-				glog.Infof("unable to stop containers : %v", err)
+				klog.Infof("unable to stop containers : %v", err)
 			}
 			if err := runtime.KillContainers(containers); err != nil {
-				glog.Errorf("unable to kill containers : %v", err)
+				klog.Errorf("unable to kill containers : %v", err)
 			}
 		}
-		glog.Infof("successfully stopped kubernetes!")
+		klog.Infof("successfully stopped kubernetes!")
 
 	}
 
 	if err := killAPIServerProc(d.exec); err != nil {
-		glog.Warningf("couldn't stop kube-apiserver proc: %v", err)
+		klog.Warningf("couldn't stop kube-apiserver proc: %v", err)
 	}
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
@@ -402,7 +402,7 @@ func killAPIServerProc(runner command.Runner) error {
 	if err == nil { // this means we might have a running kube-apiserver
 		pid, err := strconv.Atoi(rr.Stdout.String())
 		if err == nil { // this means we have a valid pid
-			glog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
+			klog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
 			if _, err = runner.RunCmd(exec.Command("pkill", "-9", string(pid))); err != nil {
 				return errors.Wrap(err, "kill")
 			}

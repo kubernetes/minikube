@@ -26,10 +26,10 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -47,7 +47,7 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	// Lock before we check for existence to avoid thundering herd issues
 	spec := lock.PathMutexSpec(executable)
 	spec.Timeout = 10 * time.Minute
-	glog.Infof("acquiring lock: %+v", spec)
+	klog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
@@ -57,7 +57,7 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	exists := driverExists(executable)
 	path, err := validateDriver(executable, v)
 	if !exists || (err != nil && autoUpdate) {
-		glog.Warningf("%s: %v", executable, err)
+		klog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
 		derr := download.Driver(executable, path, v)
 		if derr != nil {
@@ -75,9 +75,9 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 
 	// Using the find command for hyperkit is far easier than cross-platform uid checks in Go.
 	stdout, err := exec.Command("find", path, "-uid", "0", "-perm", "4755").Output()
-	glog.Infof("stdout: %s", stdout)
+	klog.Infof("stdout: %s", stdout)
 	if err == nil && strings.TrimSpace(string(stdout)) == path {
-		glog.Infof("%s looks good", path)
+		klog.Infof("%s looks good", path)
 		return nil
 	}
 
@@ -95,14 +95,14 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 	for _, c := range cmds {
 		testArgs := append([]string{"-n"}, c.Args[1:]...)
 		test := exec.Command("sudo", testArgs...)
-		glog.Infof("testing: %v", test.Args)
+		klog.Infof("testing: %v", test.Args)
 		if err := test.Run(); err != nil {
-			glog.Infof("%v may require a password: %v", c.Args, err)
+			klog.Infof("%v may require a password: %v", c.Args, err)
 			if !interactive {
 				return fmt.Errorf("%v requires a password, and --interactive=false", c.Args)
 			}
 		}
-		glog.Infof("running: %v", c.Args)
+		klog.Infof("running: %v", c.Args)
 		err := c.Run()
 		if err != nil {
 			return errors.Wrapf(err, "%v", c.Args)
@@ -113,7 +113,7 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 
 // validateDriver validates if a driver appears to be up-to-date and installed properly
 func validateDriver(executable string, v semver.Version) (string, error) {
-	glog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
+	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
 	path, err := exec.LookPath(executable)
 	if err != nil {
 		return path, err

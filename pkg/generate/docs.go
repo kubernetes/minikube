@@ -27,10 +27,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -39,7 +39,7 @@ func Docs(root *cobra.Command, path string) error {
 	cmds := root.Commands()
 	for _, c := range cmds {
 		if c.Hidden {
-			glog.Infof("Skipping generating doc for %s as it's a hidden command", c.Name())
+			klog.Infof("Skipping generating doc for %s as it's a hidden command", c.Name())
 			continue
 		}
 		contents, err := DocForCommand(c)
@@ -98,7 +98,7 @@ func removeHelpText(buffer *bytes.Buffer) string {
 		}
 		// scanner strips the ending newline
 		if _, err := final.WriteString(line + "\n"); err != nil {
-			glog.Warningf("error removing help text: %v", err)
+			klog.Warningf("error removing help text: %v", err)
 			break
 		}
 	}
@@ -132,7 +132,7 @@ func generateTitle(command *cobra.Command, w io.Writer) error {
 func saveDocForCommand(command *cobra.Command, contents []byte, path string) error {
 	fp := filepath.Join(path, fmt.Sprintf("%s.md", command.Name()))
 	if err := os.Remove(fp); err != nil {
-		glog.Warningf("error removing %s", fp)
+		klog.Warningf("error removing %s", fp)
 	}
 	return ioutil.WriteFile(fp, contents, 0o644)
 }

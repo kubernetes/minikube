@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -31,7 +32,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 
-	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -68,7 +68,7 @@ var printProfilesTable = func() {
 	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Errorf("failed to get machine api client %v", err)
+		klog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
 
@@ -79,7 +79,7 @@ var printProfilesTable = func() {
 		}
 		p.Status, err = machine.Status(api, driver.MachineName(*p.Config, cp))
 		if err != nil {
-			glog.Warningf("error getting host status for %s: %v", p.Name, err)
+			klog.Warningf("error getting host status for %s: %v", p.Name, err)
 		}
 		validData = append(validData, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 	}
@@ -100,14 +100,14 @@ var printProfilesTable = func() {
 	}
 
 	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+		klog.Warningf("error loading profiles: %v", err)
 	}
 }
 
 var printProfilesJSON = func() {
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Errorf("failed to get machine api client %v", err)
+		klog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
 
@@ -119,7 +119,7 @@ var printProfilesJSON = func() {
 		}
 		status, err := machine.Status(api, driver.MachineName(*v.Config, cp))
 		if err != nil {
-			glog.Warningf("error getting host status for %s: %v", v.Name, err)
+			klog.Warningf("error getting host status for %s: %v", v.Name, err)
 		}
 		v.Status = status
 	}

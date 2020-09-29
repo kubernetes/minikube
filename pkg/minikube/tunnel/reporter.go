@@ -22,7 +22,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 // reporter that reports the status of a tunnel
@@ -81,7 +81,7 @@ func (r *simpleReporter) Report(tunnelState *Status) {
 		managedServices,
 		errors)))
 	if err != nil {
-		glog.Errorf("failed to report state %s", err)
+		klog.Errorf("failed to report state %s", err)
 	}
 }
 

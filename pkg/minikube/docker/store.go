@@ -21,8 +21,8 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/golang/glog"
 	"github.com/opencontainers/go-digest"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 )
@@ -59,7 +59,7 @@ func (s *Storage) Save() error {
 	// if this command fails, assume the file doesn't exist
 	rr, err := s.runner.RunCmd(exec.Command("sudo", "cat", referenceStorePath))
 	if err != nil {
-		glog.Infof("repositories.json doesn't exist: %v", err)
+		klog.Infof("repositories.json doesn't exist: %v", err)
 		return nil
 	}
 	contents := rr.Stdout.Bytes()

@@ -25,8 +25,9 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 )
 
 // RoutableHostIPFromInside returns the ip/dns of the host that container lives on
@@ -55,7 +56,7 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 		return ip, errors.Wrapf(err, "resolve dns to ip")
 	}
 
-	glog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
+	klog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
 	return ip, nil
 }
 
@@ -103,7 +104,7 @@ func dockerGatewayIP(profile string) (net.IP, error) {
 	}
 
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
-	glog.Infof("got host ip for mount in container by inspect docker network: %s", ip.String())
+	klog.Infof("got host ip for mount in container by inspect docker network: %s", ip.String())
 	return ip, nil
 }
 

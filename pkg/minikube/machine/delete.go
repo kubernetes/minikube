@@ -25,8 +25,8 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -43,7 +43,7 @@ func deleteOrphanedKIC(ociBin string, name string) {
 
 	_, err := oci.ContainerStatus(ociBin, name)
 	if err != nil {
-		glog.Infof("couldn't inspect container %q before deleting: %v", name, err)
+		klog.Infof("couldn't inspect container %q before deleting: %v", name, err)
 		return
 	}
 	// allow no more than 5 seconds for delting the container
@@ -51,12 +51,12 @@ func deleteOrphanedKIC(ociBin string, name string) {
 	defer cancel()
 
 	if err := oci.ShutDown(ociBin, name); err != nil {
-		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
+		klog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
 	cmd := exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)
 	err = cmd.Run()
 	if err == nil {
-		glog.Infof("Found stale kic container and successfully cleaned it up!")
+		klog.Infof("Found stale kic container and successfully cleaned it up!")
 	}
 }
 
@@ -79,7 +79,7 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 	status, err := Status(api, machineName)
 	if err != nil {
 		// Assume that the host has already been deleted, log and return
-		glog.Infof("Unable to get host status for %s, assuming it has already been deleted: %v", machineName, err)
+		klog.Infof("Unable to get host status for %s, assuming it has already been deleted: %v", machineName, err)
 		return nil
 	}
 
@@ -90,7 +90,7 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 	// some drivers need manual shut down before delete to avoid getting stuck.
 	if driver.NeedsShutdown(host.Driver.DriverName()) {
 		if err := StopHost(api, machineName); err != nil {
-			glog.Warningf("stop host: %v", err)
+			klog.Warningf("stop host: %v", err)
 		}
 		// Hack: give the Hyper-V VM more time to stop before deletion
 		time.Sleep(1 * time.Second)
@@ -103,7 +103,7 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 // delete removes a host and its local data files
 func delete(api libmachine.API, h *host.Host, machineName string) error {
 	if err := h.Driver.Remove(); err != nil {
-		glog.Warningf("remove failed, will retry: %v", err)
+		klog.Warningf("remove failed, will retry: %v", err)
 		time.Sleep(1 * time.Second)
 
 		nerr := h.Driver.Remove()
@@ -121,20 +121,20 @@ func delete(api libmachine.API, h *host.Host, machineName string) error {
 // demolish destroys a host by any means necessary - use only if state is inconsistent
 func demolish(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) {
 	machineName := driver.MachineName(cc, n)
-	glog.Infof("DEMOLISHING %s ...", machineName)
+	klog.Infof("DEMOLISHING %s ...", machineName)
 
 	// This will probably fail
 	err := stop(h)
 	if err != nil {
-		glog.Infof("stophost failed (probably ok): %v", err)
+		klog.Infof("stophost failed (probably ok): %v", err)
 	}
 
 	// For 95% of cases, this should be enough
 	err = DeleteHost(api, machineName)
 	if err != nil {
-		glog.Warningf("deletehost failed: %v", err)
+		klog.Warningf("deletehost failed: %v", err)
 	}
 
 	err = delete(api, h, machineName)
-	glog.Warningf("delete failed (probably ok) %v", err)
+	klog.Warningf("delete failed (probably ok) %v", err)
 }

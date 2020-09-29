@@ -23,8 +23,8 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -36,7 +36,7 @@ import (
 // StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API, machineName string) error {
 	register.Reg.SetStep(register.Stopping)
-	glog.Infof("StopHost: %v", machineName)
+	klog.Infof("StopHost: %v", machineName)
 	h, err := api.Load(machineName)
 	if err != nil {
 		return errors.Wrapf(err, "load")
@@ -56,15 +56,15 @@ func stop(h *host.Host) error {
 	}
 
 	if err := h.Stop(); err != nil {
-		glog.Infof("stop err: %v", err)
+		klog.Infof("stop err: %v", err)
 		st, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && st.State == state.Stopped {
-			glog.Infof("host is already stopped")
+			klog.Infof("host is already stopped")
 			return nil
 		}
 		return &retry.RetriableError{Err: errors.Wrap(err, "stop")}
 	}
-	glog.Infof("duration metric: stop complete within %s", time.Since(start))
+	klog.Infof("duration metric: stop complete within %s", time.Since(start))
 	return nil
 }
 
@@ -72,11 +72,11 @@ func stop(h *host.Host) error {
 func trySSHPowerOff(h *host.Host) error {
 	s, err := h.Driver.GetState()
 	if err != nil {
-		glog.Warningf("unable to get state: %v", err)
+		klog.Warningf("unable to get state: %v", err)
 		return err
 	}
 	if s != state.Running {
-		glog.Infof("host is in state %s", s)
+		klog.Infof("host is in state %s", s)
 		return nil
 	}
 
@@ -84,11 +84,11 @@ func trySSHPowerOff(h *host.Host) error {
 	// differnet for kic because RunSSHCommand is not implemented by kic
 	if driver.IsKIC(h.DriverName) {
 		err := oci.ShutDown(h.DriverName, h.Name)
-		glog.Infof("shutdown container: err=%v", err)
+		klog.Infof("shutdown container: err=%v", err)
 	} else {
 		out, err := h.RunSSHCommand("sudo poweroff")
 		// poweroff always results in an error, since the host disconnects.
-		glog.Infof("poweroff result: out=%s, err=%v", out, err)
+		klog.Infof("poweroff result: out=%s, err=%v", out, err)
 	}
 	return nil
 }
