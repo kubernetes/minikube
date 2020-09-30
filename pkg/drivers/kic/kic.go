@@ -37,8 +37,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -126,6 +124,7 @@ func (d *Driver) Create() error {
 
 	var waitForPreload sync.WaitGroup
 	waitForPreload.Add(1)
+	var pErr error
 	go func() {
 		defer waitForPreload.Done()
 		// If preload doesn't exist, don't bother extracting tarball to volume
@@ -137,7 +136,8 @@ func (d *Driver) Create() error {
 		// Extract preloaded images to container
 		if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, d.NodeConfig.ImageDigest); err != nil {
 			if strings.Contains(err.Error(), "No space left on device") {
-				exit.Message(reason.RsrcInsufficientDockerStorage, "preload extraction failed: \"No space left on device\"")
+				pErr = oci.ErrInsufficientDockerStorage
+				return
 			}
 			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 		} else {
@@ -154,7 +154,7 @@ func (d *Driver) Create() error {
 	}
 
 	waitForPreload.Wait()
-	return nil
+	return pErr
 }
 
 // prepareSSH will generate keys and copy to the container so minikube ssh works
