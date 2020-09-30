@@ -45,6 +45,9 @@ var ErrExitedUnexpectedly = errors.New("container exited unexpectedly")
 // ErrDaemonInfo is thrown when docker/podman info is failing or not responding
 var ErrDaemonInfo = errors.New("daemon info not responding")
 
+// ErrInsufficientDockerStorage is thrown when there is not more storage for docker
+var ErrInsufficientDockerStorage = &FailFastError{errors.New("insufficient docker storage, no space left on device")}
+
 // LogContainerDebug will print relevant docker/podman infos after a container fails
 func LogContainerDebug(ociBin string, name string) string {
 	rr, err := containerInspect(ociBin, name)
