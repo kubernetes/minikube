@@ -46,7 +46,7 @@ func deleteOrphanedKIC(ociBin string, name string) {
 		glog.Infof("couldn't inspect container %q before deleting: %v", name, err)
 		return
 	}
-	// allow no more than 5 seconds for delting the container
+	// allow no more than 5 seconds for deleting the container
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
