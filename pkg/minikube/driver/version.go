@@ -5,7 +5,7 @@ import (
 	"github.com/golang/glog"
 )
 
-// minHyperkitVersion is the minimum compatible version of the minikube hyperkit driver
+// minHyperkitVersion is the minimum version of the minikube hyperkit driver compatible with the current minikube code
 var minHyperkitVersion semver.Version
 
 const minHyperkitVersionStr = "1.10.0"
