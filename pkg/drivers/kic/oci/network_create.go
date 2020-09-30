@@ -50,36 +50,31 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 		glog.Infof("Found existing network with subnet %s and gateway %s.", subnet, gateway)
 		return gateway, nil
 	}
-	// simple way to create networks, subnet is taken, try one bigger
-	attempt := 0
-	subnetAddr := firstSubnetAddr
-	gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetMask, clusterName)
-	if err != nil {
-		if err != ErrNetworkSubnetTaken {
-			return nil, errors.Wrapf(err, "error creating network")
-		}
-		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
-		// try up to 20 times, third octet would go like 49,59 ,69,..., 239
-		for attempt < 20 {
-			attempt++
-			glog.Infof("Couldn't create network %q at %q subnet will try again with a new subnet ...", clusterName, subnetAddr)
-			// Find an open subnet by incrementing the 3rd octet by 10 for each try
-			// 13 times adding 10 firstSubnetAddr "192.168.49.0/24"
-			// at most it will add up to 169 which is still less than max allowed 255
-			// this is large enough to try more and not too small to not try enough
-			// can be tuned in the next iterations
-			ip := net.ParseIP(subnetAddr).To4()
-			ip[2] += byte(9 + attempt)
 
-			gateway, err = tryCreateDockerNetwork(ip.String(), defaultSubnetMask, clusterName)
-			if err == nil {
-				return gateway, nil
-			}
-			if errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken) {
-				continue
-			}
-			glog.Errorf("unexpected error while trying to create network, will try again anyways: %v", err)
+	attempts := 0
+	subnetAddr := firstSubnetAddr
+	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
+	// will be like like 192.168.49.0/24 ,...,192.168.239.0/24
+	for attempts < 20 {
+		gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetMask, clusterName)
+		if err == nil {
+			return gateway, nil
 		}
+
+		// don't retry if error is not adddress is taken
+		if !(errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken)) {
+			glog.Errorf("error while trying to create network %v", err)
+			return nil, errors.Wrap(err, "un-retryable")
+		}
+		attempts++
+		// Find an open subnet by incrementing the 3rd octet by 10 for each try
+		// 13 times adding 10 firstSubnetAddr "192.168.49.0/24"
+		// at most it will add up to 169 which is still less than max allowed 255
+		// this is large enough to try more and not too small to not try enough
+		// can be tuned in the next iterations
+		newSubnet := net.ParseIP(subnetAddr).To4()
+		newSubnet[2] += byte(9 + attempts)
+		subnetAddr = newSubnet.String()
 	}
 	return gateway, nil
 }
@@ -87,7 +82,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 func tryCreateDockerNetwork(subnetAddr string, subnetMask int, name string) (net.IP, error) {
 	gateway := net.ParseIP(subnetAddr)
 	gateway.To4()[3]++ // first ip for gateway
-	glog.Infof("attempt to create network %q with subnet: %s and gateway %s...", subnetAddr, name, gateway)
+	glog.Infof("attempt to create network %s/%d with subnet: %s and gateway %s...", subnetAddr, subnetMask, name, gateway)
 	// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
 	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
@@ -98,7 +93,7 @@ func tryCreateDockerNetwork(subnetAddr string, subnetMask int, name string) (net
 		if strings.Contains(rr.Output(), "failed to allocate gateway") && strings.Contains(rr.Output(), "Address already in use") {
 			return nil, ErrNetworkGatewayTaken
 		}
-		return nil, errors.Wrapf(err, "error creating network")
+		return nil, errors.Wrapf(err, "create network %s", fmt.Sprintf("%s %s/%d", name, subnetAddr, subnetMask))
 	}
 	return gateway, nil
 }
