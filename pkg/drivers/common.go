@@ -28,7 +28,7 @@ import (
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/pkg/errors"
-	
+
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/util"
 )

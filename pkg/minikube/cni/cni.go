@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
