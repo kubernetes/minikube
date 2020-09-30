@@ -20,8 +20,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-  "github.com/pkg/errors"
-  "k8s.io/klog/v2"
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
