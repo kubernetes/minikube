@@ -24,7 +24,7 @@ import (
 // minHyperkitVersion is the minimum version of the minikube hyperkit driver compatible with the current minikube code
 var minHyperkitVersion semver.Version
 
-const minHyperkitVersionStr = "1.10.0"
+const minHyperkitVersionStr = "1.11.0"
 
 func init() {
 	v, err := semver.New(minHyperkitVersionStr)
