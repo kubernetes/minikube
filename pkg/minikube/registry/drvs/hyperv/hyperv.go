@@ -27,6 +27,7 @@ import (
 
 	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -93,13 +94,14 @@ func status() registry.State {
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
-		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
+		glog.Errorf("%s failed: %v", cmd.Args, err)
+		errorMessage := fmt.Errorf("%s failed: %v with output: %q", strings.Join(cmd.Args, " "), err, strings.TrimSpace(out))
 		fixMessage := "Start PowerShell as an Administrator"
 		return registry.State{Installed: false, Running: true, Error: errorMessage, Fix: fixMessage, Doc: docURL}
 	}
 
-	// Get-Wmiobject does not return an error code for false
-	if strings.TrimSpace(string(out)) != "True" {
+	// Get-Wmiobject does not return an error code for false. Some PowerShell versions emit UPPERCASE.
+	if strings.ToLower(strings.TrimSpace(string(out))) != "true" {
 		errorMessage := fmt.Errorf("%s returned %q", strings.Join(cmd.Args, " "), out)
 		fixMessage := "Enable Hyper-V: Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
 		return registry.State{Installed: false, Running: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
