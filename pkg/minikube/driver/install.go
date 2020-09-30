@@ -55,7 +55,7 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	defer releaser.Release()
 
 	exists := driverExists(executable)
-	path, err := validateDriver(executable, v)
+	path, err := validateDriver(executable, minDriverVersion(name, v))
 	if !exists || (err != nil && autoUpdate) {
 		glog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
@@ -133,6 +133,7 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	if err != nil {
 		return path, errors.Wrap(err, "can't parse driver version")
 	}
+
 	if driverVersion.LT(v) {
 		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
 	}
