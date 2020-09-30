@@ -303,8 +303,8 @@ func TestIndexFromMachineName(t *testing.T) {
 	}
 }
 
-// test against cluster config
-func TestIndexFromMachineName2(t *testing.T) {
+// test indexFroMachine against cluster config
+func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 
 	testsCases := []struct {
 		ClusterConfig config.ClusterConfig

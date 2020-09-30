@@ -54,7 +54,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 	attempts := 0
 	subnetAddr := firstSubnetAddr
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
-	// will be like like 192.168.49.0/24 ,...,192.168.239.0/24
+	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
 	for attempts < 20 {
 		gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetMask, clusterName)
 		if err == nil {
@@ -76,7 +76,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 		newSubnet[2] += byte(9 + attempts)
 		subnetAddr = newSubnet.String()
 	}
-	return gateway, nil
+	return gateway, fmt.Errorf("failed to create network after 20 attempts")
 }
 
 func tryCreateDockerNetwork(subnetAddr string, subnetMask int, name string) (net.IP, error) {
@@ -144,14 +144,11 @@ func RemoveNetwork(name string) error {
 }
 
 func networkExists(name string) bool {
-	if _, _, err := dockerNetworkInspect(name); err != nil {
-		if err == ErrNetworkNotFound {
-			return false
-		}
-		glog.Warningf("error inspecting network %s: %v", name, err)
-		return false
+	_, _, err := dockerNetworkInspect(name)
+	if err != nil && !errors.Is(err, ErrNetworkNotFound) { // log unexpected error
+		glog.Warningf("Error inspecting docker network %s: %v", name, err)
 	}
-	return true
+	return err == nil
 }
 
 // networkNamesByLabel returns all network names created by a label
