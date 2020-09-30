@@ -84,7 +84,7 @@ func (d *Driver) Create() error {
 	}
 
 	if gateway, err := oci.CreateNetwork(d.OCIBinary, d.NodeConfig.ClusterName); err != nil {
-		out.WarningT("Unable to create dedicated network, This might result in cluster IP change after restart. {{.error}}", out.V{"error": err})
+		out.WarningT("Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}", out.V{"error": err})
 	} else {
 		params.Network = d.NodeConfig.ClusterName
 		ip := gateway.To4()
