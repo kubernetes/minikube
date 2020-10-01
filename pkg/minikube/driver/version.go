@@ -22,22 +22,25 @@ import (
 )
 
 // minHyperkitVersion is the minimum version of the minikube hyperkit driver compatible with the current minikube code
-var minHyperkitVersion semver.Version
+var minHyperkitVersion *semver.Version
 
 const minHyperkitVersionStr = "1.11.0"
 
 func init() {
 	v, err := semver.New(minHyperkitVersionStr)
 	if err != nil {
-		glog.Fatalf("Failed to parse the hyperkit driver version: %v", err)
+		glog.Errorf("Failed to parse the hyperkit driver version: %v", err)
+	} else {
+		minHyperkitVersion = v
 	}
-	minHyperkitVersion = *v
 }
-
 func minDriverVersion(driver string, mkVer semver.Version) semver.Version {
 	switch driver {
 	case HyperKit:
-		return minHyperkitVersion
+		if minHyperkitVersion != nil {
+			return *minHyperkitVersion
+		}
+		return mkVer
 	case KVM2:
 		return mkVer
 	default:
