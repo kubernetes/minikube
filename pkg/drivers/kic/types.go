@@ -48,6 +48,7 @@ var (
 
 // Config is configuration for the kic driver used by registry
 type Config struct {
+	ClusterName       string            // The cluster the container belongs to
 	MachineName       string            // maps to the container name being created
 	CPU               int               // Number of CPU cores assigned to the container
 	Memory            int               // max memory in MB
