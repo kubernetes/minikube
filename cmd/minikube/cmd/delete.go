@@ -260,6 +260,11 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
 	}
 
+	errs = oci.DeleteKICNetworks()
+	if errs != nil {
+		glog.Warningf("error deleting leftover networks (might be okay).\nTo see the list of networks: 'docker network ls'\n:%v", errs)
+	}
+
 	if bin == oci.Podman {
 		// podman prune does not support --filter
 		return
