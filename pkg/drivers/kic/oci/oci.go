@@ -182,7 +182,8 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 		// Disable swap by setting the value to match
 		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-
+		// reboot docker container after Docker daemon or docker Desktop was rebooted.
+		runArgs = append(runArgs, "--restart=on-failure:1")
 		virtualization = "docker" // VIRTUALIZATION_DOCKER
 	}
 
