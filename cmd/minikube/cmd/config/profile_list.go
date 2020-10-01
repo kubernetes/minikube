@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -54,96 +56,114 @@ var profileListCmd = &cobra.Command{
 	},
 }
 
-var printProfilesTable = func() {
-	var validData [][]string
+func printProfilesTable() {
+	validProfiles, invalidProfiles, err := config.ListProfiles()
+
+	if err != nil {
+		glog.Warningf("error loading profiles: %v", err)
+	}
+
+	if len(validProfiles) == 0 {
+		exit.Message(reason.Usage, "No minikube profile was found. You can create one using `minikube start`.")
+	}
+
+	updateProfilesStatus(validProfiles)
+	renderProfilesTable(profilesToTableData(validProfiles))
+	warnInvalidProfiles(invalidProfiles)
+}
+
+func updateProfilesStatus(profiles []*config.Profile) {
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		glog.Errorf("failed to get machine api client %v", err)
+	}
+	defer api.Close()
+
+	for _, p := range profiles {
+		p.Status = profileStatus(p, api)
+	}
+}
+
+func profileStatus(p *config.Profile, api libmachine.API) string {
+	cp, err := config.PrimaryControlPlane(p.Config)
+	if err != nil {
+		exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
+	}
+
+	host, err := machine.LoadHost(api, driver.MachineName(*p.Config, cp))
+	if err != nil {
+		glog.Warningf("error loading profiles: %v", err)
+		return "Unknown"
+	}
+
+	cr, err := machine.CommandRunner(host)
+	if err != nil {
+		glog.Warningf("error loading profiles: %v", err)
+		return "Unknown"
+	}
+
+	hostname, _, port, err := driver.ControlPlaneEndpoint(p.Config, &cp, host.DriverName)
+	if err != nil {
+		glog.Warningf("error loading profiles: %v", err)
+		return "Unknown"
+	}
+
+	status, err := kverify.APIServerStatus(cr, hostname, port)
+	if err != nil {
+		glog.Warningf("error getting apiserver status for %s: %v", p.Name, err)
+		return "Unknown"
+	}
+	return status.String()
+}
+
+func renderProfilesTable(ps [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
-	validProfiles, invalidProfiles, err := config.ListProfiles()
+	table.AppendBulk(ps)
+	table.Render()
+}
 
-	if len(validProfiles) == 0 || err != nil {
-		exit.Message(reason.Usage, "No minikube profile was found. You can create one using `minikube start`.")
-	}
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		glog.Errorf("failed to get machine api client %v", err)
-	}
-	defer api.Close()
-
-	for _, p := range validProfiles {
+func profilesToTableData(profiles []*config.Profile) [][]string {
+	var data [][]string
+	for _, p := range profiles {
 		cp, err := config.PrimaryControlPlane(p.Config)
 		if err != nil {
 			exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
 		}
-		p.Status, err = machine.Status(api, driver.MachineName(*p.Config, cp))
-		if err != nil {
-			glog.Warningf("error getting host status for %s: %v", p.Name, err)
-		}
-		validData = append(validData, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
+
+		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
+	}
+	return data
+}
+
+func warnInvalidProfiles(invalidProfiles []*config.Profile) {
+	if invalidProfiles == nil {
+		return
 	}
 
-	table.AppendBulk(validData)
-	table.Render()
-
-	if invalidProfiles != nil {
-		out.WarningT("Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
-		for _, p := range invalidProfiles {
-			out.ErrT(style.Empty, "\t "+p.Name)
-		}
-		out.ErrT(style.Tip, "You can delete them using the following command(s): ")
-		for _, p := range invalidProfiles {
-			out.Err(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
-		}
-
+	out.WarningT("Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
+	for _, p := range invalidProfiles {
+		out.ErrT(style.Empty, "\t "+p.Name)
 	}
 
-	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+	out.ErrT(style.Tip, "You can delete them using the following command(s): ")
+	for _, p := range invalidProfiles {
+		out.Err(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
 	}
 }
 
-var printProfilesJSON = func() {
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		glog.Errorf("failed to get machine api client %v", err)
-	}
-	defer api.Close()
-
+func printProfilesJSON() {
 	validProfiles, invalidProfiles, err := config.ListProfiles()
-	for _, v := range validProfiles {
-		cp, err := config.PrimaryControlPlane(v.Config)
-		if err != nil {
-			exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
-		}
-		status, err := machine.Status(api, driver.MachineName(*v.Config, cp))
-		if err != nil {
-			glog.Warningf("error getting host status for %s: %v", v.Name, err)
-		}
-		v.Status = status
-	}
 
-	var valid []*config.Profile
-	var invalid []*config.Profile
+	updateProfilesStatus(validProfiles)
 
-	if validProfiles != nil {
-		valid = validProfiles
-	} else {
-		valid = []*config.Profile{}
-	}
-
-	if invalidProfiles != nil {
-		invalid = invalidProfiles
-	} else {
-		invalid = []*config.Profile{}
-	}
-
-	body := map[string]interface{}{}
-
+	var body = map[string]interface{}{}
 	if err == nil || config.IsNotExist(err) {
-		body["valid"] = valid
-		body["invalid"] = invalid
+		body["valid"] = profilesOrDefault(validProfiles)
+		body["invalid"] = profilesOrDefault(invalidProfiles)
 		jsonString, _ := json.Marshal(body)
 		out.String(string(jsonString))
 	} else {
@@ -152,6 +172,13 @@ var printProfilesJSON = func() {
 		out.String(string(jsonString))
 		os.Exit(reason.ExGuestError)
 	}
+}
+
+func profilesOrDefault(profiles []*config.Profile) []*config.Profile {
+	if profiles != nil {
+		return profiles
+	}
+	return []*config.Profile{}
 }
 
 func init() {
