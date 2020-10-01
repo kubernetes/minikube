@@ -81,9 +81,10 @@ func TestProfileNameValid(t *testing.T) {
 		"1st-profile":         true,
 		"1st-2nd-3rd-profile": true,
 		"12567":               true,
+		"111":                 true,
 
-		"n":                false,
 		"1":                false,
+		"n":                false,
 		"pro file":         false,
 		"pro-file-":        false,
 		"-profile":         false,
