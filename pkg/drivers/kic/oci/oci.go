@@ -170,6 +170,11 @@ func CreateContainerNode(p CreateParams) error {
 		virtualization = "podman" // VIRTUALIZATION_PODMAN
 	}
 	if p.OCIBinary == Docker {
+		// to provide a static IP for docker
+		if p.Network != "" && p.IP != "" {
+			runArgs = append(runArgs, "--network", p.Network)
+			runArgs = append(runArgs, "--ip", p.IP)
+		}
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
@@ -285,6 +290,10 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 		// full error: docker: Error response from daemon: Range of CPUs is from 0.01 to 8.00, as there are only 8 CPUs available.
 		if strings.Contains(rr.Output(), "Range of CPUs is from") && strings.Contains(rr.Output(), "CPUs available") { // CPUs available
 			return ErrCPUCountLimit
+		}
+		// example: docker: Error response from daemon: Address already in use.
+		if strings.Contains(rr.Output(), "Address already in use") {
+			return ErrIPinUse
 		}
 		return err
 	}

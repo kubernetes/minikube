@@ -94,7 +94,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
 	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
-	hostIP, err := cluster.HostIP(starter.Host)
+	hostIP, err := cluster.HostIP(starter.Host, starter.Cfg.Name)
 	if err != nil {
 		klog.Errorf("Unable to get host IP: %v", err)
 	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {

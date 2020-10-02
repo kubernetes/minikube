@@ -21,6 +21,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"k8s.io/klog/v2"
@@ -296,4 +297,16 @@ func MachineName(cc config.ClusterConfig, n config.Node) string {
 		return cc.Name
 	}
 	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
+}
+
+// IndexFromMachineName returns the order of the container based on it is name
+func IndexFromMachineName(machineName string) int {
+	// minikube-m02
+	sp := strings.Split(machineName, "-")
+	m := strings.Trim(sp[len(sp)-1], "m") // m02
+	i, err := strconv.Atoi(m)
+	if err != nil {
+		return 1
+	}
+	return i
 }
