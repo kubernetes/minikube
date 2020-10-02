@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"flag"
 	goflag "flag"
 	"fmt"
 	"os"
@@ -63,12 +64,12 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
-		logDir := pflag.Lookup("log_dir")
-		if !logDir.Changed {
-			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
-				exit.Error(reason.InternalFlagSet, "logdir set failed", err)
-			}
-		}
+		// logDir := pflag.Lookup("log_dir")
+		// if !logDir.Changed {
+		// 	if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
+		// 		exit.Error(reason.InternalFlagSet, "logdir set failed", err)
+		// 	}
+		// }
 	},
 }
 
@@ -156,6 +157,9 @@ func setFlagsUsingViper() {
 		if a.Changed {
 			viper.Set(a.Name, a.Value.String())
 		}
+
+		// viper.Set("alsologtostderr", "false")
+
 		// Viper will give precedence first to calls to the Set command,
 		// then to values from the config.yml
 		if err := a.Value.Set(viper.GetString(a.Name)); err != nil {
@@ -166,6 +170,18 @@ func setFlagsUsingViper() {
 }
 
 func init() {
+	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(klogFlags)
+
+	// Sync the glog and klog flags.
+	flag.CommandLine.VisitAll(func(f1 *flag.Flag) {
+		f2 := klogFlags.Lookup(f1.Name)
+		if f2 != nil {
+			value := f1.Value.String()
+			f2.Value.Set(value)
+		}
+	})
+
 	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
@@ -270,7 +286,7 @@ func setupViper() {
 	viper.SetDefault(config.WantNoneDriverWarning, true)
 	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
 	viper.SetDefault(config.ShowBootstrapperDeprecationNotification, true)
-	setFlagsUsingViper()
+	// setFlagsUsingViper()
 }
 
 func addToPath(dir string) {

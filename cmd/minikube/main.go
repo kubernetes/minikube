@@ -86,7 +86,7 @@ func bridgeLogMessages() {
 
 type stdLogBridge struct{}
 
-// Write parses the standard logging line and passes its components to glog
+// Write parses the standard logging line and passes its components to klog
 func (lb stdLogBridge) Write(b []byte) (n int, err error) {
 	// Split "d.go:23: message" into "d.go", "23", and "message".
 	parts := bytes.SplitN(b, []byte{':'}, 3)
