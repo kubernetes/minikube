@@ -143,7 +143,7 @@ func BareMetal(name string) bool {
 
 // NeedsRoot returns true if driver needs to run with root privileges
 func NeedsRoot(name string) bool {
-	return name == None
+	return false
 }
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity

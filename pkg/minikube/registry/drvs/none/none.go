@@ -61,13 +61,9 @@ func status() registry.State {
 		return registry.State{Running: true, Error: err, Installed: false, Fix: "Install docker", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
-	u, err := user.Current()
+	_, err = user.Current()
 	if err != nil {
 		return registry.State{Running: true, Error: err, Healthy: false, Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
-	}
-
-	if u.Uid != "0" {
-		return registry.State{Error: fmt.Errorf("the 'none' driver must be run as the root user"), Healthy: false, Fix: "For non-root usage, try the newer 'docker' driver", Installed: true}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
