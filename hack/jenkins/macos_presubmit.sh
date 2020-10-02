@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -ex
 
 MINIKUBE_LOCATION=$KOKORO_GITHUB_PULL_REQUEST_NUMBER
 OS_ARCH="darwin-amd64"
