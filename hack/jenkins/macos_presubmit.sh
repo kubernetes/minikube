@@ -25,6 +25,10 @@ EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 cd github/minikube/hack/jenkins
 
+docker version
+
+exit 
+
 osascript -e 'quit app "Docker"';
 sudo /Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
 # repeating without sudo because  https://github.com/docker/for-mac/issues/882#issuecomment-516946766
