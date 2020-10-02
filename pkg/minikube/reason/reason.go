@@ -188,10 +188,17 @@ var (
 
 	RsrcInsufficientStorage = Kind{ID: "RSRC_INSUFFICIENT_STORAGE", ExitCode: ExInsufficientStorage, Style: style.UnmetRequirement}
 
-	HostHomeMkdir        = Kind{ID: "HOST_HOME_MKDIR", ExitCode: ExHostPermission}
-	HostHomeChown        = Kind{ID: "HOST_HOME_CHOWN", ExitCode: ExHostPermission}
-	HostBrowser          = Kind{ID: "HOST_BROWSER", ExitCode: ExHostError}
-	HostConfigLoad       = Kind{ID: "HOST_CONFIG_LOAD", ExitCode: ExHostConfig}
+	HostHomeMkdir      = Kind{ID: "HOST_HOME_MKDIR", ExitCode: ExHostPermission}
+	HostHomeChown      = Kind{ID: "HOST_HOME_CHOWN", ExitCode: ExHostPermission}
+	HostBrowser        = Kind{ID: "HOST_BROWSER", ExitCode: ExHostError}
+	HostConfigLoad     = Kind{ID: "HOST_CONFIG_LOAD", ExitCode: ExHostConfig}
+	HostHomePermission = Kind{
+		ID:       "HOST_HOME_PERMISSION",
+		ExitCode: ExHostPermission,
+		Advice:   "Your user lacks permissions to the minikube profile directory. Run: 'sudo chown -R $USER $HOME/.minikube; chmod -R u+wrx $HOME/.minikube' to fix",
+		Issues:   []int{9165},
+	}
+
 	HostCurrentUser      = Kind{ID: "HOST_CURRENT_USER", ExitCode: ExHostConfig}
 	HostDelCache         = Kind{ID: "HOST_DEL_CACHE", ExitCode: ExHostError}
 	HostKillMountProc    = Kind{ID: "HOST_KILL_MOUNT_PROC", ExitCode: ExHostError}
@@ -207,7 +214,13 @@ var (
 	ProviderNotFound    = Kind{ID: "PROVIDER_NOT_FOUND", ExitCode: ExProviderNotFound}
 	ProviderUnavailable = Kind{ID: "PROVIDER_UNAVAILABLE", ExitCode: ExProviderNotFound, Style: style.Shrug}
 
-	DrvCPEndpoint         = Kind{ID: "DRV_CP_ENDPOINT", ExitCode: ExDriverError}
+	DrvCPEndpoint = Kind{ID: "DRV_CP_ENDPOINT",
+		Advice: `Recreate the cluster by running:
+		minikube delete {{.profileArg}}
+		minikube start {{.profileArg}}`,
+		ExitCode: ExDriverError,
+		Style:    style.Failure,
+	}
 	DrvPortForward        = Kind{ID: "DRV_PORT_FORWARD", ExitCode: ExDriverError}
 	DrvUnsupportedMulti   = Kind{ID: "DRV_UNSUPPORTED_MULTINODE", ExitCode: ExDriverConflict}
 	DrvUnsupportedOS      = Kind{ID: "DRV_UNSUPPORTED_OS", ExitCode: ExDriverUnsupported}

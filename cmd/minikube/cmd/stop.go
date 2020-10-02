@@ -60,8 +60,6 @@ func init() {
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
 		exit.Error(reason.InternalFlagsBind, "unable to bind flags", err)
 	}
-
-	RootCmd.AddCommand(stopCmd)
 }
 
 // runStop handles the executes the flow of "minikube stop"

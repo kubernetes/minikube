@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util"
 )
 
 // This file is for common code shared among internal machine drivers
@@ -74,7 +75,7 @@ func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 		return errors.Wrapf(err, "closing file %s", diskPath)
 	}
 
-	if err := os.Truncate(diskPath, int64(diskSizeMb*1000000)); err != nil {
+	if err := os.Truncate(diskPath, util.ConvertMBToBytes(diskSizeMb)); err != nil {
 		return errors.Wrap(err, "truncate")
 	}
 	return nil

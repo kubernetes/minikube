@@ -22,20 +22,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 // SysInfo Info represents common system Information between docker and podman that minikube cares
 type SysInfo struct {
-	CPUs          int    // CPUs is Number of CPUs
-	TotalMemory   int64  // TotalMemory Total available ram
-	OSType        string // container's OsType (windows or linux)
-	Swarm         bool   // Weather or not the docker swarm is active
-	StorageDriver string // the storage driver for the daemon  (for example overlay2)
+	CPUs          int      // CPUs is Number of CPUs
+	TotalMemory   int64    // TotalMemory Total available ram
+	OSType        string   // container's OsType (windows or linux)
+	Swarm         bool     // Weather or not the docker swarm is active
+	StorageDriver string   // the storage driver for the daemon  (for example overlay2)
+	Errors        []string // any server issues
 }
 
-var cachedSysInfo *SysInfo
-var cachedSysInfoErr *error
+var (
+	cachedSysInfo    *SysInfo
+	cachedSysInfoErr *error
+)
 
 // CachedDaemonInfo will run and return a docker/podman info only once per minikube run time. to avoid performance
 func CachedDaemonInfo(ociBin string) (SysInfo, error) {
@@ -58,7 +62,7 @@ func DaemonInfo(ociBin string) (SysInfo, error) {
 		return *cachedSysInfo, err
 	}
 	d, err := dockerSystemInfo()
-	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType, Swarm: d.Swarm.LocalNodeState == "active", StorageDriver: d.Driver}
+	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType, Swarm: d.Swarm.LocalNodeState == "active", StorageDriver: d.Driver, Errors: d.ServerErrors}
 	return *cachedSysInfo, err
 }
 
@@ -163,6 +167,7 @@ type dockerSysInfo struct {
 	SecurityOptions []string    `json:"SecurityOptions"`
 	ProductLicense  string      `json:"ProductLicense"`
 	Warnings        interface{} `json:"Warnings"`
+	ServerErrors    []string
 	ClientInfo      struct {
 		Debug    bool          `json:"Debug"`
 		Plugins  []interface{} `json:"Plugins"`
@@ -245,6 +250,7 @@ func dockerSystemInfo() (dockerSysInfo, error) {
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
 
+	glog.Infof("docker info: %+v", ds)
 	return ds, nil
 }
 
@@ -264,5 +270,6 @@ func podmanSystemInfo() (podmanSysInfo, error) {
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ps); err != nil {
 		return ps, errors.Wrapf(err, "unmarshal podman system info")
 	}
+	glog.Infof("podman info: %+v", ps)
 	return ps, nil
 }
