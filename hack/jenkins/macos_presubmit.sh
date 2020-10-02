@@ -27,6 +27,8 @@ cd github/minikube/hack/jenkins
 
 docker version
 
+docker version --format '{{.Client.Version}}' || true
+
 exit 
 
 osascript -e 'quit app "Docker"';
