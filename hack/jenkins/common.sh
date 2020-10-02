@@ -24,6 +24,8 @@
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
 
+set -x
+
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
 export GOPATH="$HOME/go"
