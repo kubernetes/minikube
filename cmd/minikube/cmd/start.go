@@ -39,6 +39,7 @@ import (
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -156,9 +157,14 @@ func runStart(cmd *cobra.Command, args []string) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
 		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 1 character, starting with alphanumeric.")
 	}
+
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
-		exit.Message(reason.HostConfigLoad, "Unable to load config: {{.error}}", out.V{"error": err})
+		kind := reason.HostConfigLoad
+		if config.IsPermissionDenied(err) {
+			kind = reason.HostHomePermission
+		}
+		exit.Message(kind, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
 	if existing != nil {
@@ -167,7 +173,24 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
+
 	ds, alts, specified := selectDriver(existing)
+	if cmd.Flag(kicBaseImage).Changed {
+		if !isBaseImageApplicable(ds.Name) {
+			exit.Message(reason.Usage,
+				"flag --{{.imgFlag}} is not available for driver '{{.driver}}'. Did you mean to use '{{.docker}}' or '{{.podman}}' driver instead?\n"+
+					"Please use --{{.isoFlag}} flag to configure VM based drivers",
+				out.V{
+					"imgFlag": kicBaseImage,
+					"driver":  ds.Name,
+					"docker":  registry.Docker,
+					"podman":  registry.Podman,
+					"isoFlag": isoURL,
+				},
+			)
+		}
+	}
+
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
 		node.ExitIfFatal(err)
@@ -516,6 +539,7 @@ func kubectlVersion(path string) (string, error) {
 	return cv.ClientVersion.GitVersion, nil
 }
 
+// returns (current_driver, suggested_drivers, "true, if the driver is set by command line arg or in the config file")
 func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState, bool) {
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
@@ -770,7 +794,7 @@ func validateUser(drvName string) {
 
 	out.ErrT(style.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
 	out.ErrT(style.Tip, "If you are running minikube within a VM, consider using --driver=none:")
-	out.ErrT(style.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+	out.ErrT(style.Documentation, "  {{.url}}", out.V{"url": "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"})
 
 	cname := ClusterFlagValue()
 	_, err = config.Load(cname)
@@ -805,7 +829,7 @@ func memoryLimits(drvName string) (int, int, error) {
 		if err != nil {
 			return -1, -1, err
 		}
-		containerLimit = int(s.TotalMemory / 1024 / 1024)
+		containerLimit = util.ConvertBytesToMB(s.TotalMemory)
 	}
 
 	return sysLimit, containerLimit, nil
@@ -1183,6 +1207,10 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	if defaultVersion.GT(nvs) {
 		out.T(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
+}
+
+func isBaseImageApplicable(drv string) bool {
+	return registry.IsKIC(drv)
 }
 
 func getKubernetesVersion(old *config.ClusterConfig) string {

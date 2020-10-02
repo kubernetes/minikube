@@ -144,9 +144,11 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 		}
 	}
 
-	if exitError, ok := err.(*exec.ExitError); ok {
-		rr.ExitCode = exitError.ExitCode()
+	if ex, ok := err.(*exec.ExitError); ok {
+		glog.Warningf("%s returned with exit code %d", rr.Command(), ex.ExitCode())
+		rr.ExitCode = ex.ExitCode()
 	}
+
 	// Decrease log spam
 	if elapsed > (1 * time.Second) {
 		glog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)

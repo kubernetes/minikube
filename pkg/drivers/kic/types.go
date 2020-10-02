@@ -24,9 +24,9 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.12-snapshot3"
+	Version = "v0.0.13-snapshot1"
 	// SHA of the kic base image
-	baseImageSHA = "1d687ba53e19dbe5fafe4cc18aa07f269ecc4b7b622f2251b5bf569ddb474e9b"
+	baseImageSHA = "4d43acbd0050148d4bc399931f1b15253b5e73815b63a67b8ab4a5c9e523403f"
 )
 
 var (
@@ -48,6 +48,7 @@ var (
 
 // Config is configuration for the kic driver used by registry
 type Config struct {
+	ClusterName       string            // The cluster the container belongs to
 	MachineName       string            // maps to the container name being created
 	CPU               int               // Number of CPU cores assigned to the container
 	Memory            int               // max memory in MB

@@ -23,8 +23,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/proxy"
 )
 
@@ -274,6 +276,36 @@ func TestSuggestMemoryAllocation(t *testing.T) {
 			got := suggestMemoryAllocation(test.sysLimit, test.containerLimit, test.nodes)
 			if got != test.want {
 				t.Errorf("defaultMemorySize(sys=%d, container=%d) = %d, want: %d", test.sysLimit, test.containerLimit, got, test.want)
+			}
+		})
+	}
+}
+
+func TestBaseImageFlagDriverCombo(t *testing.T) {
+	tests := []struct {
+		driver        string
+		canUseBaseImg bool
+	}{
+		{driver.Docker, true},
+		{driver.Podman, true},
+		{driver.None, false},
+		{driver.KVM2, false},
+		{driver.VirtualBox, false},
+		{driver.HyperKit, false},
+		{driver.VMware, false},
+		{driver.VMwareFusion, false},
+		{driver.HyperV, false},
+		{driver.Parallels, false},
+		{"something_invalid", false},
+		{"", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.driver, func(t *testing.T) {
+			got := isBaseImageApplicable(test.driver)
+			if got != test.canUseBaseImg {
+				t.Errorf("isBaseImageApplicable(driver=%v): got %v, expected %v",
+					test.driver, got, test.canUseBaseImg)
 			}
 		})
 	}
