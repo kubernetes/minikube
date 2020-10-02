@@ -23,6 +23,6 @@ JOB_NAME="Docker_macOS"
 EXTRA_START_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 
-cd minikube/hack/jenkins
+cd github/minikube/hack/jenkins
 
 source common.sh
