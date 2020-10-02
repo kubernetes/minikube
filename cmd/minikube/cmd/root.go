@@ -63,13 +63,6 @@ var RootCmd = &cobra.Command{
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
 		}
-
-		// logDir := pflag.Lookup("log_dir")
-		// if !logDir.Changed {
-		// 	if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
-		// 		exit.Error(reason.InternalFlagSet, "logdir set failed", err)
-		// 	}
-		// }
 	},
 }
 
@@ -145,28 +138,6 @@ func usageTemplate() string {
 
 %s{{end}}
 `, translate.T("Usage"), translate.T("Aliases"), translate.T("Examples"), translate.T("Available Commands"), translate.T("Flags"), translate.T("Global Flags"), translate.T("Additional help topics"), translate.T(`Use "{{.CommandPath}} [command] --help" for more information about a command.`))
-}
-
-// Handle config values for flags used in external packages (e.g. glog)
-// by setting them directly, using values from viper when not passed in as args
-func setFlagsUsingViper() {
-	for _, config := range []string{"alsologtostderr", "log_dir", "v"} {
-		a := pflag.Lookup(config)
-		viper.SetDefault(a.Name, a.DefValue)
-		// If the flag is set, override viper value
-		if a.Changed {
-			viper.Set(a.Name, a.Value.String())
-		}
-
-		// viper.Set("alsologtostderr", "false")
-
-		// Viper will give precedence first to calls to the Set command,
-		// then to values from the config.yml
-		if err := a.Value.Set(viper.GetString(a.Name)); err != nil {
-			exit.Error(reason.InternalFlagSet, fmt.Sprintf("failed to set value for %q", a.Name), err)
-		}
-		a.Changed = true
-	}
 }
 
 func init() {
@@ -286,7 +257,6 @@ func setupViper() {
 	viper.SetDefault(config.WantNoneDriverWarning, true)
 	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
 	viper.SetDefault(config.ShowBootstrapperDeprecationNotification, true)
-	// setFlagsUsingViper()
 }
 
 func addToPath(dir string) {
