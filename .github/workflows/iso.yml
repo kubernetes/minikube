@@ -64,11 +64,6 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      # iso needs golang 1.11.3 
-      - uses: actions/setup-go@v2
-        with:
-          go-version: '1.11.13'
-          stable: true
       - name: Build ISO
         run: |
           whoami
