@@ -66,8 +66,6 @@ const (
 	// Irrelevant is used for statuses that aren't meaningful for worker nodes
 	Irrelevant = "Irrelevant"
 
-	InsufficientStorage = reason.ExInsufficientStorage
-
 	// New status modes, based roughly on HTTP/SMTP standards
 	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
 	Starting  = 100
@@ -86,18 +84,23 @@ const (
 	Paused   = 418 // I'm a teapot!
 
 	// 5xx signifies a server-side error (that may be retryable)
-	Error   = 500
-	Unknown = 520
+	Error               = 500
+	InsufficientStorage = 507
+	Unknown             = 520
 )
 
 var (
+	exitCodeToHTTPCode = map[int]int{
+		// exit code 26 corresponds to insufficient storage
+		26: 507,
+	}
+
 	codeNames = map[int]string{
-		reason.ExInsufficientStorage: "InsufficientStorage",
-		100:                          "Starting",
-		101:                          "Pausing",
-		102:                          "Unpausing",
-		110:                          "Stopping",
-		103:                          "Deleting",
+		100: "Starting",
+		101: "Pausing",
+		102: "Unpausing",
+		110: "Stopping",
+		103: "Deleting",
 
 		200: "OK",
 		203: "Warning",
@@ -107,11 +110,12 @@ var (
 		418: "Paused",
 
 		500: "Error",
+		507: "InsufficientStorage",
 		520: "Unknown",
 	}
 
 	codeDetails = map[int]string{
-		reason.ExInsufficientStorage: "/var is almost out of disk space",
+		507: "/var is almost out of disk space",
 	}
 )
 
@@ -537,6 +541,9 @@ func clusterState(sts []*Status) ClusterState {
 			if err != nil {
 				glog.Errorf("unable to convert exit code to int: %v", err)
 				continue
+			}
+			if val, ok := exitCodeToHTTPCode[exitCode]; ok {
+				exitCode = val
 			}
 			transientCode = exitCode
 			for _, n := range cs.Nodes {
