@@ -87,6 +87,7 @@ var (
 	// PR data
 	prBranchPrefix = "update-kubernetes-version_" // will be appended with first 7 characters of the PR commit SHA
 	prTitle        = `update_kubernetes_version: {stable:"{{.K8sStableVersion}}", latest:"{{.K8sLatestVersion}}"}`
+	prIssue        = 4392
 	prSearchLimit  = 100 // limit the number of previous PRs searched for same prTitle to be <= N * ghListOptionsPerPage
 )
 
@@ -183,7 +184,7 @@ func main() {
 			klog.Infof("PR create skipped: already exists (%s)", prURL)
 		} else {
 			// create PR
-			pr, err := ghCreatePR(ctx, ghOwner, ghRepo, ghBase, prBranchPrefix, prTitle, ghToken, plan, data)
+			pr, err := ghCreatePR(ctx, ghOwner, ghRepo, ghBase, prBranchPrefix, prTitle, prIssue, ghToken, plan, data)
 			if err != nil {
 				klog.Fatalf("Error creating PR: %v", err)
 			} else if pr == nil {
@@ -209,9 +210,12 @@ func fsUpdate(fsRoot string, plan map[string]Patch, data Data) (changed bool, er
 		mode := info.Mode()
 
 		p.Content = blob
-		changed, err = p.apply(data)
+		chg, err := p.apply(data)
 		if err != nil {
 			return false, err
+		}
+		if chg {
+			changed = true
 		}
 		if err := ioutil.WriteFile(path, p.Content, mode); err != nil {
 			return false, err
@@ -220,7 +224,7 @@ func fsUpdate(fsRoot string, plan map[string]Patch, data Data) (changed bool, er
 	return changed, nil
 }
 
-func ghCreatePR(ctx context.Context, owner, repo, base, branch, title, token string, plan map[string]Patch, data Data) (*github.PullRequest, error) {
+func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, issue int, token string, plan map[string]Patch, data Data) (*github.PullRequest, error) {
 	ghc := ghClient(ctx, token)
 
 	// get base branch
@@ -296,7 +300,6 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title, token str
 	klog.Infof("PR branch '%s' created: %s", prBranch, prRef.GetURL())
 
 	// create PR
-	issue := 4392
 	modifiable := true
 	pr, _, err := ghc.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
 		Title:               github.String(title),
