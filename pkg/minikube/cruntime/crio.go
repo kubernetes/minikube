@@ -326,6 +326,7 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	return true
 }
 
+// ImagesPreloaded returns true if all images have been preloaded
 func (r *CRIO) ImagesPreloaded(images []string) bool {
 	return crioImagesPreloaded(r.Runner, images)
 }
