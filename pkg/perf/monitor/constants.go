@@ -21,14 +21,14 @@ const (
 	GithubAccessTokenEnvVar = "GITHUB_ACCESS_TOKEN"
 
 	// OkToTestLabel is the github label for ok-to-test
-	OkToTestLabel           = "ok-to-test"
+	OkToTestLabel = "ok-to-test"
 
 	// GithubOwner is the owner of the github repository
-	GithubOwner             = "kubernetes"
+	GithubOwner = "kubernetes"
 
 	// GithubRepo is the name of the github repository
-	GithubRepo              = "minikube"
+	GithubRepo = "minikube"
 
 	// BotName is the name of the minikube Pull Request bot
-	BotName                 = "minikube-pr-bot"
+	BotName = "minikube-pr-bot"
 )
