@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/version"
@@ -196,9 +197,11 @@ var statusCmd = &cobra.Command{
 	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if output != "text" && statusFormat != defaultStatusFormat {
+		if strings.ToLower(output) != "text" && statusFormat != defaultStatusFormat {
 			exit.Message(reason.Usage, "Cannot use both --output and --format options")
 		}
+
+		out.SetJSON(strings.ToLower(output) == "json")
 
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname)
@@ -544,7 +547,7 @@ func clusterState(sts []*Status) ClusterState {
 			}
 			exitCode, err := strconv.Atoi(data["exitcode"])
 			if err != nil {
-				klog.Errorf("unable to convert exit code to int: %v", err)
+				klog.Warningf("exit code not found: %v", err)
 				continue
 			}
 			if val, ok := exitCodeToHTTPCode[exitCode]; ok {
