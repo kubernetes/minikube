@@ -33,6 +33,8 @@ const (
 
 var (
 	outputFile io.Writer = os.Stdout
+
+	//GetUUID returns the UUID function to use
 	GetUUID              = randomID
 
 	eventFile *os.File
