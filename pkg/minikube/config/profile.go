@@ -90,8 +90,8 @@ func ProfileNameValid(name string) bool {
 	const RestrictedNamePattern = `(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])`
 
 	var validName = regexp.MustCompile(`^` + RestrictedNamePattern + `$`)
-
-	return validName.MatchString(name)
+	// length needs to be more than 1 character because docker volume #9366
+	return validName.MatchString(name) && len(name) > 1
 }
 
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
