@@ -47,14 +47,17 @@ func CalculateSizeInMB(humanReadableSize string) (int, error) {
 	return int(size / units.MiB), nil
 }
 
+// ConvertMBToBytes converts MB to bytes
 func ConvertMBToBytes(mbSize int) int64 {
 	return int64(mbSize) * units.MiB
 }
 
+// ConvertBytesToMB converts bytes to MB
 func ConvertBytesToMB(byteSize int64) int {
 	return int(ConvertUnsignedBytesToMB(uint64(byteSize)))
 }
 
+// ConvertUnsignedBytesToMB converts bytes to MB
 func ConvertUnsignedBytesToMB(byteSize uint64) int64 {
 	return int64(byteSize / units.MiB)
 }

@@ -17,9 +17,18 @@ limitations under the License.
 package monitor
 
 const (
+	// GithubAccessTokenEnvVar is the env var name to use
 	GithubAccessTokenEnvVar = "GITHUB_ACCESS_TOKEN"
-	OkToTestLabel           = "ok-to-test"
-	GithubOwner             = "kubernetes"
-	GithubRepo              = "minikube"
-	BotName                 = "minikube-pr-bot"
+
+	// OkToTestLabel is the github label for ok-to-test
+	OkToTestLabel = "ok-to-test"
+
+	// GithubOwner is the owner of the github repository
+	GithubOwner = "kubernetes"
+
+	// GithubRepo is the name of the github repository
+	GithubRepo = "minikube"
+
+	// BotName is the name of the minikube Pull Request bot
+	BotName = "minikube-pr-bot"
 )

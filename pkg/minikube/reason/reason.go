@@ -61,6 +61,7 @@ type Kind struct {
 	NoMatch bool
 }
 
+// IssueURLs returns URLs for issues
 func (k *Kind) IssueURLs() []string {
 	is := []string{}
 	for _, i := range k.Issues {
