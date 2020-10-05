@@ -127,7 +127,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		// If we end up using a fallback image, notify the user
 		defer func() {
 			if finalImg != "" && finalImg != baseImg {
-				out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(cc.KicBaseImage), image.Tag(finalImg)))
+				out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(baseImg), image.Tag(finalImg)))
 				cc.KicBaseImage = finalImg
 			}
 		}()
@@ -136,7 +136,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				glog.Infof("successfully loaded %s from cached tarball", img)
 				// strip the digest from the img before saving it in the config
 				// because loading an image from tarball to daemon doesn't load the digest
-				finalImg = image.Tag(img)
+				finalImg = img
 				return nil
 			}
 			glog.Infof("Downloading %s to local daemon", img)

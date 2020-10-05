@@ -57,6 +57,7 @@ var (
 
 const (
 	// Additional legacy states:
+
 	// Configured means configured
 	Configured = "Configured" // ~state.Saved
 	// Misconfigured means misconfigured
@@ -67,9 +68,9 @@ const (
 	Irrelevant = "Irrelevant"
 
 	// New status modes, based roughly on HTTP/SMTP standards
-	InsufficientStorage = reason.ExInsufficientStorage
 
 	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
+
 	Starting  = 100
 	Pausing   = 101
 	Unpausing = 102
@@ -77,27 +78,30 @@ const (
 	Deleting  = 120
 
 	// 2xx signifies that the API Server is able to service requests
+
 	OK      = 200
 	Warning = 203
 
 	// 4xx signifies an error that requires help from the client to resolve
+
 	NotFound = 404
 	Stopped  = 405
 	Paused   = 418 // I'm a teapot!
 
 	// 5xx signifies a server-side error (that may be retryable)
-	Error   = 500
-	Unknown = 520
+
+	Error               = 500
+	InsufficientStorage = 507
+	Unknown             = 520
 )
 
 var (
 	codeNames = map[int]string{
-		reason.ExInsufficientStorage: "InsufficientStorage",
-		100:                          "Starting",
-		101:                          "Pausing",
-		102:                          "Unpausing",
-		110:                          "Stopping",
-		103:                          "Deleting",
+		100: "Starting",
+		101: "Pausing",
+		102: "Unpausing",
+		110: "Stopping",
+		103: "Deleting",
 
 		200: "OK",
 		203: "Warning",
@@ -107,11 +111,12 @@ var (
 		418: "Paused",
 
 		500: "Error",
+		507: "InsufficientStorage",
 		520: "Unknown",
 	}
 
 	codeDetails = map[int]string{
-		reason.ExInsufficientStorage: "/var is almost out of disk space",
+		507: "/var is almost out of disk space",
 	}
 )
 

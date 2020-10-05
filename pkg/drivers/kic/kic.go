@@ -37,6 +37,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -79,6 +81,17 @@ func (d *Driver) Create() error {
 		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
 		OCIBinary:     d.NodeConfig.OCIBinary,
 		APIServerPort: d.NodeConfig.APIServerPort,
+	}
+
+	if gateway, err := oci.CreateNetwork(d.OCIBinary, d.NodeConfig.ClusterName); err != nil {
+		out.WarningT("Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}", out.V{"error": err})
+	} else {
+		params.Network = d.NodeConfig.ClusterName
+		ip := gateway.To4()
+		// calculate the container IP based on guessing the machine index
+		ip[3] += byte(driver.IndexFromMachineName(d.NodeConfig.MachineName))
+		glog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
+		params.IP = ip.String()
 	}
 
 	// control plane specific options
@@ -294,6 +307,10 @@ func (d *Driver) Remove() error {
 	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
 		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
+
+	if err := oci.RemoveNetwork(d.NodeConfig.ClusterName); err != nil {
+		glog.Warningf("failed to remove network (which might be okay) %s: %v", d.NodeConfig.ClusterName, err)
+	}
 	return nil
 }
 
@@ -408,7 +425,7 @@ func killAPIServerProc(runner command.Runner) error {
 		pid, err := strconv.Atoi(rr.Stdout.String())
 		if err == nil { // this means we have a valid pid
 			glog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
-			if _, err = runner.RunCmd(exec.Command("pkill", "-9", string(pid))); err != nil {
+			if _, err = runner.RunCmd(exec.Command("pkill", "-9", fmt.Sprint(pid))); err != nil {
 				return errors.Wrap(err, "kill")
 			}
 		}
