@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
+// DefaultJSONOutput is a progress tracker with JSON output
 var DefaultJSONOutput getter.ProgressTracker = &jsonOutput{}
 
 type jsonOutput struct {
