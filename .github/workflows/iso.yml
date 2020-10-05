@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "deploy/iso/**"
+      - ".github/workflows/**"
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
@@ -67,7 +68,7 @@ jobs:
       - name: Build ISO
         run: |
           whoami
-          make minikube_iso &> ./out/iso.log
+          make minikube_iso | tee out.log
           make checksum
       - uses: actions/setup-go@v2
         with:
