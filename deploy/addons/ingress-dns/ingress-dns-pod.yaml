@@ -34,6 +34,7 @@ metadata:
     kubernetes.io/bootstrapping: rbac-defaults
     app.kubernetes.io/part-of: kube-system
     addonmanager.kubernetes.io/mode: Reconcile
+    gcp-auth-skip-secret: "true"
 rules:
   - apiGroups:
       - ""
