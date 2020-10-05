@@ -157,6 +157,9 @@ func (d *Driver) Create() error {
 			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
 		}
 	}()
+	if pErr == oci.ErrInsufficientDockerStorage {
+		return pErr
+	}
 
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
@@ -167,7 +170,7 @@ func (d *Driver) Create() error {
 	}
 
 	waitForPreload.Wait()
-	return pErr
+	return nil
 }
 
 // prepareSSH will generate keys and copy to the container so minikube ssh works

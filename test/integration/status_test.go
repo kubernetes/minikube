@@ -30,7 +30,6 @@ import (
 	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 func TestInsufficientStorage(t *testing.T) {
@@ -85,7 +84,7 @@ func verifyClusterState(t *testing.T, contents []byte) {
 		t.Fatalf("unmarshalling: %v", err)
 	}
 	// verify the status looks as we expect
-	if cs.StatusCode != reason.ExInsufficientStorage {
+	if cs.StatusCode != cmd.InsufficientStorage {
 		t.Fatalf("incorrect status code: %v", cs.StatusCode)
 	}
 	if cs.StatusName != "InsufficientStorage" {
