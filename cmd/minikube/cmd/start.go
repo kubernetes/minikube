@@ -794,7 +794,7 @@ func validateUser(drvName string) {
 
 	out.ErrT(style.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
 	out.ErrT(style.Tip, "If you are running minikube within a VM, consider using --driver=none:")
-	out.ErrT(style.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+	out.ErrT(style.Documentation, "  {{.url}}", out.V{"url": "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"})
 
 	cname := ClusterFlagValue()
 	_, err = config.Load(cname)
@@ -829,7 +829,7 @@ func memoryLimits(drvName string) (int, int, error) {
 		if err != nil {
 			return -1, -1, err
 		}
-		containerLimit = int(s.TotalMemory / 1024 / 1024)
+		containerLimit = util.ConvertBytesToMB(s.TotalMemory)
 	}
 
 	return sysLimit, containerLimit, nil

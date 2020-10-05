@@ -80,7 +80,7 @@ spec:
     spec:
       containers:
         - name: gcp-auth
-          image: gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.2
+          image: gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
@@ -131,10 +131,17 @@ metadata:
     app: gcp-auth
 webhooks:
 - name: gcp-auth-mutate.k8s.io
+  failurePolicy: Fail
   objectSelector:
     matchExpressions:
       - key: gcp-auth-skip-secret
         operator: DoesNotExist
+  namespaceSelector:
+    matchExpressions:
+      - key: name
+        operator: NotIn
+        values:
+        - kube-system
   sideEffects: None
   admissionReviewVersions: ["v1","v1beta1"]
   clientConfig:

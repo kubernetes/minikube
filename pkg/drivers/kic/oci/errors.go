@@ -39,6 +39,9 @@ var ErrWindowsContainers = &FailFastError{errors.New("docker container type is w
 // ErrCPUCountLimit is thrown when docker daemon doesn't have enough CPUs for the requested container
 var ErrCPUCountLimit = &FailFastError{errors.New("not enough CPUs is available for container")}
 
+// ErrIPinUse is thrown when the container been given an IP used by another container
+var ErrIPinUse = &FailFastError{errors.New("can't create with that IP, address already in use")}
+
 // ErrExitedUnexpectedly is thrown when container is created/started without error but later it exists and it's status is not running anymore.
 var ErrExitedUnexpectedly = errors.New("container exited unexpectedly")
 
@@ -47,6 +50,18 @@ var ErrDaemonInfo = errors.New("daemon info not responding")
 
 // ErrInsufficientDockerStorage is thrown when there is not more storage for docker
 var ErrInsufficientDockerStorage = &FailFastError{errors.New("insufficient docker storage, no space left on device")}
+
+// ErrNetworkSubnetTaken is thrown when a subnet is taken by another network
+var ErrNetworkSubnetTaken = errors.New("subnet is taken")
+
+// ErrNetworkNotFound is when given network was not found
+var ErrNetworkNotFound = errors.New("kic network not found")
+
+// ErrNetworkGatewayTaken is when given network gatway is taken
+var ErrNetworkGatewayTaken = errors.New("network gateway is taken")
+
+// ErrNetworkInUse is when trying to delete a network which is attached to another container
+var ErrNetworkInUse = errors.New("unable to delete a network that is attached to a running container")
 
 // LogContainerDebug will print relevant docker/podman infos after a container fails
 func LogContainerDebug(ociBin string, name string) string {

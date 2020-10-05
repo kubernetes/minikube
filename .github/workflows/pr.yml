@@ -410,7 +410,7 @@ jobs:
           echo "---------------- ${numFail} Failures :( ----------------------------"
           echo $failedTests
           echo "-------------------------------------------------------"
-          If ($numFail -gt 0){ exit 2 } 
+          If ($numFail -gt 0){ exit 2 }
           If ($numPass -eq 0){ exit 2 }
           If ($numPass -lt 33){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
@@ -427,7 +427,7 @@ jobs:
         shell: powershell
         run: |
           echo $env:computerName
-          ls 
+          ls
           $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
           ls
@@ -462,14 +462,14 @@ jobs:
           $docker_running = $?
           }
           Write-Output "Docker is running"
-          docker system prune -f 
+          docker system prune -f
       - name: Info
         continue-on-error: true
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
-          ls 
+          ls
           echo $env:computername
           Get-WmiObject -class Win32_ComputerSystem
       - uses: actions/setup-go@v2
@@ -481,7 +481,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")          
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           choco install -y caffeine
@@ -547,7 +547,7 @@ jobs:
           echo "---------------- ${numFail} Failures :( ----------------------------"
           echo $failedTests
           echo "-------------------------------------------------------"
-          If ($numFail -gt 0){ exit 2 } 
+          If ($numFail -gt 0){ exit 2 }
           If ($numPass -eq 0){ exit 2 }
           If ($numPass -lt 33){ exit 2 }
           If ($numFail -eq 0){ exit 0 }
@@ -773,11 +773,11 @@ jobs:
         run: |
           hostname
           VBoxManage --version
-          sysctl hw.physicalcpu hw.logicalcpu 
+          sysctl hw.physicalcpu hw.logicalcpu
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k      
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -964,7 +964,7 @@ jobs:
         run: |
           hostname
           VBoxManage --version
-          sysctl hw.physicalcpu hw.logicalcpu 
+          sysctl hw.physicalcpu hw.logicalcpu
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
@@ -1148,7 +1148,7 @@ jobs:
         run: |
           hostname
           VBoxManage --version
-          sysctl hw.physicalcpu hw.logicalcpu 
+          sysctl hw.physicalcpu hw.logicalcpu
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off

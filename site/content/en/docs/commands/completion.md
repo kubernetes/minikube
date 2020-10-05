@@ -11,8 +11,7 @@ Generate command completion for a shell
 
 ### Synopsis
 
-
-	Outputs minikube shell completion for the given shell (bash, zsh or fish)
+Outputs minikube shell completion for the given shell (bash, zsh or fish)
 
 	This depends on the bash-completion binary.  Example installation instructions:
 	OS X:
