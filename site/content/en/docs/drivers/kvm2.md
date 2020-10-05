@@ -39,7 +39,7 @@ Also see [co/kvm2 open issues](https://github.com/kubernetes/minikube/labels/co%
 
 ### Nested Virtulization
 
-If you are running KVM in a nested virtualization environment ensure your config the kernel modules correctly follow either [this](https://stafwag.github.io/blog/blog/2018/06/04/nested-virtualization-in-kvm/)  or [this](VM follow to config the kernel modules. also https://computingforgeeks.com/how-to-install-kvm-virtualization-on-debian/) tutorial.
+If you are running KVM in a nested virtualization environment ensure your config the kernel modules correctly follow either [this](https://stafwag.github.io/blog/blog/2018/06/04/nested-virtualization-in-kvm/) or [this](https://computingforgeeks.com/how-to-install-kvm-virtualization-on-debian/) tutorial.
 
 ## Troubleshooting
 * Run `virt-host-validate` and check for the suggestions.
