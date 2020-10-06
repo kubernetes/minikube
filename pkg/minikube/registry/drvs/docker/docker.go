@@ -60,6 +60,12 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		}
 	}
 
+	extraArgs := []string{}
+
+	for _, port := range cc.DockerPorts {
+		extraArgs = append(extraArgs, "-p", port)
+	}
+
 	return kic.NewDriver(kic.Config{
 		ClusterName:       cc.Name,
 		MachineName:       driver.MachineName(cc, n),
@@ -72,6 +78,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		APIServerPort:     cc.Nodes[0].Port,
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
+		ExtraArgs:         extraArgs,
 	}), nil
 }
 
