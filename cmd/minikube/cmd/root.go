@@ -148,6 +148,11 @@ func init() {
 		f2 := klogFlags.Lookup(f1.Name)
 		if f2 != nil {
 			value := f1.Value.String()
+			// we need to special case this flag because the default value in glog
+			// is incompatible in klog
+			if f1.Name == "log_backtrace_at" {
+				value = ""
+			}
 			if err := f2.Value.Set(value); err != nil {
 				klog.Warningf("Error reading flag value %s: %v", f1.Name, err)
 			}
@@ -222,7 +227,7 @@ func init() {
 	RootCmd.AddCommand(completionCmd)
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.CommandLine.AddGoFlagSet(klogFlags)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.Error(reason.InternalBindFlags, "Unable to bind flags", err)
 	}

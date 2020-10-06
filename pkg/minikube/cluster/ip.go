@@ -26,7 +26,6 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -141,7 +140,7 @@ func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
 
 // Based on code from http://stackoverflow.com/questions/23529663/how-to-get-all-addresses-and-masks-from-local-interfaces-in-go
 func getIPForInterface(name string) (net.IP, error) {
-	glog.Infof("getIPForInterface: searching for %q", name)
+	klog.Infof("getIPForInterface: searching for %q", name)
 	ints, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -150,24 +149,24 @@ func getIPForInterface(name string) (net.IP, error) {
 	var i net.Interface
 	for _, in := range ints {
 		if strings.HasPrefix(strings.ToLower(in.Name), strings.ToLower(name)) {
-			glog.Infof("found prefix matching interface for %q: %q", name, in.Name)
+			klog.Infof("found prefix matching interface for %q: %q", name, in.Name)
 			i = in
 
 			break
 		}
-		glog.Infof("%q does not match prefix %q", in.Name, name)
+		klog.Infof("%q does not match prefix %q", in.Name, name)
 	}
 
 	// Didn't find prefix, let's try any substring
 	if i.Name == "" {
 		for _, in := range ints {
 			if strings.Contains(strings.ToLower(in.Name), strings.ToLower(name)) {
-				glog.Infof("found substring matching interface for %q: %q", name, in.Name)
+				klog.Infof("found substring matching interface for %q: %q", name, in.Name)
 				i = in
 
 				break
 			}
-			glog.Infof("%q does not match substring %q", in.Name, name)
+			klog.Infof("%q does not match substring %q", in.Name, name)
 		}
 	}
 
@@ -179,7 +178,7 @@ func getIPForInterface(name string) (net.IP, error) {
 	klog.Infof("Found interface: %+v\n", i)
 	addrs, _ := i.Addrs()
 	for _, a := range addrs {
-		glog.Infof("interface addr: %+v", a)
+		klog.Infof("interface addr: %+v", a)
 		if ipnet, ok := a.(*net.IPNet); ok {
 			if ip := ipnet.IP.To4(); ip != nil {
 				return ip, nil
