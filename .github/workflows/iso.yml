@@ -68,7 +68,7 @@ jobs:
       - name: Build ISO
         run: |
           whoami
-          make minikube_iso | tee out.log
+          make minikube_iso |& tee iso.log
           make checksum
       - uses: actions/setup-go@v2
         with:
