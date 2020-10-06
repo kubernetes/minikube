@@ -1,0 +1,2 @@
+Starting minikube version 1.13.1 we do not update the installed hyperkit driver if its version is 1.11.0 or higher.
+Have the hyperkit driver v1.11.0 here to test this behaviour.
