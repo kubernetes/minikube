@@ -50,6 +50,8 @@ spec:
   template:
     metadata:
       name: gcp-auth-certs-create
+      labels:
+          gcp-auth-skip-secret: "true"
     spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
@@ -110,6 +112,8 @@ spec:
   template:
     metadata:
       name: gcp-auth-certs-patch
+      labels:
+          gcp-auth-skip-secret: "true"
     spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
