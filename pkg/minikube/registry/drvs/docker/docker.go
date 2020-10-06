@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -108,7 +107,7 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
 	}
 
-	glog.Infof("docker version: %s", o)
+	klog.Infof("docker version: %s", o)
 	if strings.Contains(string(o), "windows-") {
 		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
 	}

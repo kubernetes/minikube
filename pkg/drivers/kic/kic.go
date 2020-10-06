@@ -28,7 +28,6 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
@@ -91,7 +90,7 @@ func (d *Driver) Create() error {
 		ip := gateway.To4()
 		// calculate the container IP based on guessing the machine index
 		ip[3] += byte(driver.IndexFromMachineName(d.NodeConfig.MachineName))
-		glog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
+		klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
 

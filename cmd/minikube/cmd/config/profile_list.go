@@ -23,7 +23,6 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -34,9 +33,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+
+	"k8s.io/klog/v2"
 )
 
 var output string
@@ -61,7 +61,7 @@ func printProfilesTable() {
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 
 	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+		klog.Warningf("error loading profiles: %v", err)
 	}
 
 	if len(validProfiles) == 0 {
@@ -93,13 +93,13 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 
 	host, err := machine.LoadHost(api, driver.MachineName(*p.Config, cp))
 	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+		klog.Warningf("error loading profiles: %v", err)
 		return "Unknown"
 	}
 
 	cr, err := machine.CommandRunner(host)
 	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+		klog.Warningf("error loading profiles: %v", err)
 		return "Unknown"
 	}
 
