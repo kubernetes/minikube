@@ -107,6 +107,7 @@ const (
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
 	startOutput             = "output"
+	dockerPorts             = "docker-ports"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -197,6 +198,9 @@ func initDriverFlags() {
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (hyperv driver only)")
 	startCmd.Flags().Bool(hypervUseExternalSwitch, false, "Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)")
 	startCmd.Flags().String(hypervExternalAdapter, "", "External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)")
+
+	// docker
+	startCmd.Flags().StringSlice(dockerPorts, []string{}, "List of ports that should be exposed (docker driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -311,6 +315,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			HostOnlyNicType:         viper.GetString(hostOnlyNicType),
 			NatNicType:              viper.GetString(natNicType),
 			StartHostTimeout:        viper.GetDuration(waitTimeout),
+			DockerPorts:             viper.GetStringSlice(dockerPorts),
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),
@@ -545,6 +550,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(apiServerPort) {
 		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
+	}
+
+	if cmd.Flags().Changed(vsockPorts) {
+		cc.DockerPorts = viper.GetStringSlice(dockerPorts)
 	}
 
 	// pre minikube 1.9.2 cc.KubernetesConfig.NodePort was not populated.
