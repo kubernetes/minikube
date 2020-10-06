@@ -60,5 +60,6 @@ type Config struct {
 	PortMappings      []oci.PortMapping // container port mappings
 	Envs              map[string]string // key,value of environment variables passed to the node
 	KubernetesVersion string            // Kubernetes version to install
-	ContainerRuntime  string            // container runtime kic is running
+	ContainerRuntime  string            // container runtime kic is running,
+	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 }
