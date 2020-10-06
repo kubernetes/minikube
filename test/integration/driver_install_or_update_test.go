@@ -28,6 +28,7 @@ import (
 	"github.com/blang/semver"
 
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/version"
 )
 
 func TestKVMDriverInstallOrUpdate(t *testing.T) {
@@ -171,5 +172,87 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Expected driver to be download. test: %s, got: %v", tc.name, err)
 		}
+	}
+}
+
+func TestHyperKitDriverSkipUpgrade(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("Skip if not darwin.")
+	}
+	MaybeParallel(t)
+	tests := []struct {
+		name             string
+		path             string
+		downloadExpected bool
+	}{
+		{
+			name:             "upgrade-v1.11.0-to-current",
+			path:             filepath.Join(*testdataDir, "hyperkit-driver-version-1.11.0"),
+			downloadExpected: false,
+		},
+		{
+			name:             "upgrade-v1.2.0-to-current",
+			path:             filepath.Join(*testdataDir, "hyperkit-driver-older-version"),
+			downloadExpected: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			originalPath := os.Getenv("PATH")
+			defer func() {
+				if err := os.Setenv("PATH", originalPath); err != nil {
+					t.Errorf("failed to restore PATH: %v", err)
+				}
+			}()
+
+			dir, err := ioutil.TempDir("", tc.name)
+			if err != nil {
+				t.Fatalf("Expected to create tempdir. test: %s, got: %v", tc.name, err)
+			}
+			defer func() {
+				if err := os.RemoveAll(dir); err != nil {
+					t.Errorf("Failed to remove dir %q: %v", dir, err)
+				}
+			}()
+
+			pwd, err := os.Getwd()
+			if err != nil {
+				t.Fatalf("Error not expected when getting working directory. test: %s, got: %v", tc.name, err)
+			}
+
+			driverPath := filepath.Join(pwd, tc.path, "docker-machine-driver-hyperkit")
+			if _, err = os.Stat(driverPath); err != nil {
+				t.Fatalf("Expected driver to exist. test: %s, got: %v", tc.name, err)
+			}
+
+			// change permission to allow driver to be executable
+			if err = os.Chmod(driverPath, 0700); err != nil {
+				t.Fatalf("Expected not expected when changing driver permission. test: %s, got: %v", tc.name, err)
+			}
+
+			if err = os.Setenv("PATH", filepath.Dir(driverPath)); err != nil {
+				t.Fatalf("Unexpected error on SetEn, got: %v", err)
+			}
+			curVersion, err := version.GetSemverVersion()
+			if err != nil {
+				t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
+			}
+
+			if _, err = driver.AssureDriverBinary("hyperkit", dir, curVersion, true); err != nil {
+				t.Fatalf("Failed to update driver to %v. test: %s, got: %v", curVersion, tc.name, err)
+			}
+
+			_, err = os.Stat(filepath.Join(dir, "docker-machine-driver-hyperkit"))
+			if tc.downloadExpected {
+				if err != nil {
+					t.Fatalf("driver downlad expected. test: %s, got: %v", tc.name, err)
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("driver downlad NOT expected. test: %s", tc.name)
+				}
+			}
+		})
 	}
 }
