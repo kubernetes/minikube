@@ -96,6 +96,11 @@ const (
 )
 
 var (
+	exitCodeToHTTPCode = map[int]int{
+		// exit code 26 corresponds to insufficient storage
+		26: 507,
+	}
+
 	codeNames = map[int]string{
 		100: "Starting",
 		101: "Pausing",
@@ -448,14 +453,18 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 
 // clusterState converts Status structs into a ClusterState struct
 func clusterState(sts []*Status) ClusterState {
-	sc := statusCode(sts[0].Host)
+	statusName := sts[0].APIServer
+	if sts[0].Host == codeNames[InsufficientStorage] {
+		statusName = sts[0].Host
+	}
+	sc := statusCode(statusName)
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
 		BaseState: BaseState{
 			Name:         ClusterFlagValue(),
 			StatusCode:   sc,
-			StatusName:   sts[0].Host,
+			StatusName:   statusName,
 			StatusDetail: codeDetails[sc],
 		},
 
@@ -538,6 +547,9 @@ func clusterState(sts []*Status) ClusterState {
 			if err != nil {
 				glog.Errorf("unable to convert exit code to int: %v", err)
 				continue
+			}
+			if val, ok := exitCodeToHTTPCode[exitCode]; ok {
+				exitCode = val
 			}
 			transientCode = exitCode
 			for _, n := range cs.Nodes {
