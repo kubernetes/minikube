@@ -1,5 +1,42 @@
 # Release Notes
 
+## Version 1.14.0-beta.0 - 2020-10-06
+
+## Features
+* add dedicated network for docker driver [#9294](https://github.com/kubernetes/minikube/pull/9294)
+* Make sure gcp-auth addon can be enabled on startup [#9318](https://github.com/kubernetes/minikube/pull/9318)
+
+## Bug Fixes
+* Fix minikube status bug when cluster is paused [#9383](https://github.com/kubernetes/minikube/pull/9383)
+* don't allow profile name to be less than 2 characters [#9367](https://github.com/kubernetes/minikube/pull/9367)
+* fix: "profile list" shows paused clusters as "Running" [#8978](https://github.com/kubernetes/minikube/pull/8978)
+* Fix error in unittest, as pointed out by warning [#9345](https://github.com/kubernetes/minikube/pull/9345)
+
+## Updates
+* update kicbase image to ubuntu-based [#9353](https://github.com/kubernetes/minikube/pull/9353)
+
+Thank you to our contributors for this release! 
+- Anders F Björklund
+- Bob Killen
+- Daniel Weibel
+- Dominik Braun
+- Ilya Zuyev
+- JJ Asghar
+- Jituri, Pranav
+- Medya Ghazizadeh
+- Michael Ryan Dempsey
+- Predrag Rogic
+- Priya Wadhwa
+- Sharif Elgamal
+- Tacio Costa
+- Thomas Strömberg
+- Till Hoffmann
+- loftkun
+- programistka
+- zhanwang
+
+
+
 ## Version 1.13.1 - 2020-09-18
 * Update Default Kubernetes Version to v1.19.2 [#9265](https://github.com/kubernetes/minikube/pull/9265)
 * fix mounting for docker driver in windows [#9263](https://github.com/kubernetes/minikube/pull/9263)
