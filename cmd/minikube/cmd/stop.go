@@ -116,7 +116,7 @@ func stopProfile(profile string) int {
 
 	if !keepActive {
 		if err := kubeconfig.DeleteContext(profile, kubeconfig.PathFromEnv()); err != nil {
-			exit.Error(reason.HostKubeconfigUpdate, "update config", err)
+			exit.Error(reason.HostKubeconfigDeleteCtx, "delete ctx", err)
 		}
 	}
 
