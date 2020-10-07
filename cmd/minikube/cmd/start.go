@@ -197,7 +197,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		machine.MaybeDisplayAdvice(err, ds.Name)
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
-			exit.Error(reason.GuestProvision, "error provisioning host", err)
+			exitGuestProvision(err)
 		} else {
 			success := false
 			// Walk down the rest of the options
@@ -224,7 +224,7 @@ func runStart(cmd *cobra.Command, args []string) {
 				}
 			}
 			if !success {
-				exit.Error(reason.GuestProvision, "error provisioning host", err)
+				exitGuestProvision(err)
 			}
 		}
 	}
@@ -248,7 +248,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			stopProfile(existing.Name)
 			starter, err = provisionWithDriver(cmd, ds, existing)
 			if err != nil {
-				exit.Error(reason.GuestProvision, "error provisioning host", err)
+				exitGuestProvision(err)
 			}
 		}
 	}
@@ -1262,4 +1262,11 @@ func exitIfNotForced(r reason.Kind, message string, v ...out.V) {
 		exit.Message(r, message, v...)
 	}
 	out.Error(r, message, v...)
+}
+
+func exitGuestProvision(err error) {
+	if errors.Cause(err) == oci.ErrInsufficientDockerStorage {
+		exit.Message(reason.RsrcInsufficientDockerStorage, "preload extraction failed: \"No space left on device\"")
+	}
+	exit.Error(reason.GuestProvision, "error provisioning host", err)
 }
