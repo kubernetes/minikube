@@ -11,8 +11,7 @@ Stops a running local Kubernetes cluster
 
 ### Synopsis
 
-Stops a local Kubernetes cluster running in Virtualbox. This command stops the VM
-itself, leaving all files intact. The cluster can be started again with the "start" command.
+Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the "start" command.
 
 ```
 minikube stop [flags]
