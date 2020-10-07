@@ -315,7 +315,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			HostOnlyNicType:         viper.GetString(hostOnlyNicType),
 			NatNicType:              viper.GetString(natNicType),
 			StartHostTimeout:        viper.GetDuration(waitTimeout),
-			ExposedPorts:             viper.GetStringSlice(ports),
+			ExposedPorts:            viper.GetStringSlice(ports),
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),
