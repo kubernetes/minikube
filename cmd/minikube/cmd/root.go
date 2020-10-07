@@ -17,7 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-	"flag"
+	goflag "flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -76,16 +76,16 @@ func Execute() {
 	for _, c := range RootCmd.Commands() {
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
-		c.Flags().VisitAll(func(flag *pflag.Flag) {
-			flag.Usage = translate.T(flag.Usage)
+		c.Flags().VisitAll(func(f *pflag.Flag) {
+			f.Usage = translate.T(f.Usage)
 		})
 
 		c.SetUsageTemplate(usageTemplate())
 	}
 	RootCmd.Short = translate.T(RootCmd.Short)
 	RootCmd.Long = translate.T(RootCmd.Long)
-	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		flag.Usage = translate.T(flag.Usage)
+	RootCmd.Flags().VisitAll(func(f *pflag.Flag) {
+		f.Usage = translate.T(f.Usage)
 	})
 
 	if runtime.GOOS != "windows" {
@@ -140,26 +140,6 @@ func usageTemplate() string {
 }
 
 func init() {
-	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
-	klog.InitFlags(klogFlags)
-
-	// Sync the glog and klog flags.
-	flag.CommandLine.VisitAll(func(f1 *flag.Flag) {
-		f2 := klogFlags.Lookup(f1.Name)
-		if f2 != nil {
-			value := f1.Value.String()
-			// we need to special case this flag because the default value in glog
-			// is incompatible in klog
-			if f1.Name == "log_backtrace_at" {
-				value = ""
-			}
-			if err := f2.Value.Set(value); err != nil {
-				klog.Warningf("Error reading flag value %s: %v", f1.Name, err)
-			}
-		}
-	})
-
-	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 
@@ -227,10 +207,17 @@ func init() {
 	RootCmd.AddCommand(completionCmd)
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
-	pflag.CommandLine.AddGoFlagSet(klogFlags)
+	klog.InitFlags(nil)
+	goflag.Set("logtostderr", "false")
+	goflag.Set("alsologtostderr", "false")
+	goflag.Parse()
+
+	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.Error(reason.InternalBindFlags, "Unable to bind flags", err)
 	}
+
+	translate.DetermineLocale()
 	cobra.OnInitialize(initConfig)
 }
 

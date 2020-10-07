@@ -17,7 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/docker/machine/libmachine"
@@ -29,19 +28,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 // This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 // INFO lvl logging is displayed due to the Kubernetes api calling flag.Set("logtostderr", "true") in its init()
 // see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
-	if err := flag.Set("logtostderr", "false"); err != nil {
-		exit.Error(reason.InternalFlagSet, "unable to set logtostderr", err)
-	}
-
 	// Setting the default client to native gives much better performance.
 	ssh.SetDefaultClient(ssh.Native)
 }
