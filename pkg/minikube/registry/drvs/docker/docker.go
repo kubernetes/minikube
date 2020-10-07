@@ -62,7 +62,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	extraArgs := []string{}
 
-	for _, port := range cc.DockerPorts {
+	for _, port := range cc.ExposedPorts {
 		extraArgs = append(extraArgs, "-p", port)
 	}
 
