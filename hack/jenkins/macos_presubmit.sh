@@ -31,4 +31,6 @@ docker-machine env default
 eval "$(docker-machine env default)"
 docker info
 
+yes | gcloud components update
+
 source common.sh
