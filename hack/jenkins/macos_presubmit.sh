@@ -31,8 +31,4 @@ cd github/minikube/hack/jenkins
 
 docker info
 
-id -Gn $(whoami)
-
-brew install hyperkit
-
 source common.sh
