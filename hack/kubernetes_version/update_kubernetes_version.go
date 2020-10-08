@@ -34,7 +34,7 @@ import (
 func main() {
 	// init glog: by default, all log statements write to files in a temporary directory, also
 	// flag.Parse must be called before any logging is done
-	flag.Parse()
+	// flag.Parse()
 	_ = flag.Set("logtostderr", "true")
 
 	// fetch respective current stable (vDefault as DefaultKubernetesVersion) and

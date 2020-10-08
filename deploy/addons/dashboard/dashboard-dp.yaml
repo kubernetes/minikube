@@ -86,6 +86,7 @@ spec:
     metadata:
       labels:
         k8s-app: kubernetes-dashboard
+        gcp-auth-skip-secret: "true"
     spec:
       containers:
         - name: kubernetes-dashboard

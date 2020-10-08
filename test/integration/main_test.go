@@ -52,7 +52,7 @@ const (
 
 // TestMain is the test main
 func TestMain(m *testing.M) {
-	flag.Parse()
+	// flag.Parse()
 	setMaxParallelism()
 
 	start := time.Now()

@@ -50,6 +50,8 @@ spec:
   template:
     metadata:
       name: gcp-auth-certs-create
+      labels:
+          gcp-auth-skip-secret: "true"
     spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
@@ -77,10 +79,11 @@ spec:
       labels:
         app: gcp-auth
         kubernetes.io/minikube-addons: gcp-auth
+        gcp-auth-skip-secret: "true"
     spec:
       containers:
         - name: gcp-auth
-          image: gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.2
+          image: gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
@@ -109,6 +112,8 @@ spec:
   template:
     metadata:
       name: gcp-auth-certs-patch
+      labels:
+          gcp-auth-skip-secret: "true"
     spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:

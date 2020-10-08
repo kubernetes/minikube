@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 13
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 14
+VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).1
+ISO_VERSION ?= v1.13.1
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -94,12 +94,8 @@ GVISOR_TAG ?= latest
 # storage provisioner tag to push changes to
 STORAGE_PROVISIONER_TAG ?= v3
 
-# TODO: multi-arch manifest
-ifeq ($(GOARCH),amd64)
-STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
-else
+STORAGE_PROVISIONER_MANIFEST ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
-endif
 
 # Set the version information for the Kubernetes servers
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT) -X k8s.io/minikube/pkg/version.storageProvisionerVersion=$(STORAGE_PROVISIONER_TAG)
@@ -579,8 +575,11 @@ else
 endif
 
 .PHONY: storage-provisioner-image
-storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-provisioner docker image
-	docker build -t $(STORAGE_PROVISIONER_IMAGE) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$(GOARCH) .
+storage-provisioner-image: storage-provisioner-image-$(GOARCH) ## Build storage-provisioner docker image
+	docker tag $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG) $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
+
+storage-provisioner-image-%: out/storage-provisioner-%
+	docker build -t $(REGISTRY)/storage-provisioner-$*:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$* .
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
@@ -600,6 +599,18 @@ upload-preloaded-images-tar: out/minikube # Upload the preloaded images for olde
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
 	docker login gcr.io/k8s-minikube
 	$(MAKE) push-docker IMAGE=$(STORAGE_PROVISIONER_IMAGE)
+
+ALL_ARCH = amd64 arm arm64 ppc64le s390x
+IMAGE = $(REGISTRY)/storage-provisioner
+TAG = $(STORAGE_PROVISIONER_TAG)
+
+.PHONY: push-storage-provisioner-manifest
+push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~storage\-provisioner\-image\-&~g")
+	docker login gcr.io/k8s-minikube
+	set -x; for arch in $(ALL_ARCH); do docker push ${IMAGE}-$${arch}:${TAG}; done
+	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	set -x; for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
+	docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable

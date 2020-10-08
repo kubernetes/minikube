@@ -57,6 +57,7 @@ var (
 
 const (
 	// Additional legacy states:
+
 	// Configured means configured
 	Configured = "Configured" // ~state.Saved
 	// Misconfigured means misconfigured
@@ -67,7 +68,9 @@ const (
 	Irrelevant = "Irrelevant"
 
 	// New status modes, based roughly on HTTP/SMTP standards
+
 	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
+
 	Starting  = 100
 	Pausing   = 101
 	Unpausing = 102
@@ -75,21 +78,29 @@ const (
 	Deleting  = 120
 
 	// 2xx signifies that the API Server is able to service requests
+
 	OK      = 200
 	Warning = 203
 
 	// 4xx signifies an error that requires help from the client to resolve
+
 	NotFound = 404
 	Stopped  = 405
 	Paused   = 418 // I'm a teapot!
 
 	// 5xx signifies a server-side error (that may be retryable)
+
 	Error               = 500
 	InsufficientStorage = 507
 	Unknown             = 520
 )
 
 var (
+	exitCodeToHTTPCode = map[int]int{
+		// exit code 26 corresponds to insufficient storage
+		26: 507,
+	}
+
 	codeNames = map[int]string{
 		100: "Starting",
 		101: "Pausing",
@@ -442,14 +453,18 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 
 // clusterState converts Status structs into a ClusterState struct
 func clusterState(sts []*Status) ClusterState {
-	sc := statusCode(sts[0].Host)
+	statusName := sts[0].APIServer
+	if sts[0].Host == codeNames[InsufficientStorage] {
+		statusName = sts[0].Host
+	}
+	sc := statusCode(statusName)
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
 		BaseState: BaseState{
 			Name:         ClusterFlagValue(),
 			StatusCode:   sc,
-			StatusName:   sts[0].Host,
+			StatusName:   statusName,
 			StatusDetail: codeDetails[sc],
 		},
 
@@ -532,6 +547,9 @@ func clusterState(sts []*Status) ClusterState {
 			if err != nil {
 				klog.Errorf("unable to convert exit code to int: %v", err)
 				continue
+			}
+			if val, ok := exitCodeToHTTPCode[exitCode]; ok {
+				exitCode = val
 			}
 			transientCode = exitCode
 			for _, n := range cs.Nodes {
