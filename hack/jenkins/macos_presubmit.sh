@@ -31,4 +31,6 @@ cd github/minikube/hack/jenkins
 
 docker info
 
+whoami
+
 source common.sh

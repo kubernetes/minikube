@@ -55,6 +55,7 @@ echo "docker:    $(docker version)"
 echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"
 echo "go:        $(go version || true)"
 
+whoami
 
 case "${VM_DRIVER}" in
   kvm2)
