@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 
@@ -44,7 +45,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	// flag.Parse()
+	flag.Parse()
 }
 
 func validateArgs(args []string) error {
