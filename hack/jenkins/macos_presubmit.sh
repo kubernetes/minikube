@@ -18,7 +18,7 @@ set -ex
 
 MINIKUBE_LOCATION=$KOKORO_GITHUB_PULL_REQUEST_NUMBER
 OS_ARCH="darwin-amd64"
-VM_DRIVER="docker"
+VM_DRIVER="hyperkit"
 JOB_NAME="Docker_macOS"
 EXTRA_START_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
@@ -33,9 +33,6 @@ docker info
 
 id -Gn $(whoami)
 
-docker-machine --help || true
-docker-machine create --driver virtualbox default
-docker-machine env default
-eval "$(docker-machine env default)"
+brew install hyperkit
 
 source common.sh
