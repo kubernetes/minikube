@@ -208,9 +208,12 @@ func init() {
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
 	klog.InitFlags(nil)
-	goflag.Set("logtostderr", "false")
-	goflag.Set("alsologtostderr", "false")
-	// goflag.Parse()
+	if err := goflag.Set("logtostderr", "false"); err != nil {
+		klog.Warningf("Unable to set default flag value for logtostderr: %v", err)
+	}
+	if err := goflag.Set("alsologtostderr", "false"); err != nil {
+		klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
+	}
 
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
