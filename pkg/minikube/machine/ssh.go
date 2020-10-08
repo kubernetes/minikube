@@ -42,13 +42,13 @@ func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, 
 		return errors.Errorf("%q is not running", machineName)
 	}
 
-	client, err := host.CreateSSHClient()
-
 	if native {
 		ssh.SetDefaultClient(ssh.Native)
 	} else {
 		ssh.SetDefaultClient(ssh.External)
 	}
+
+	client, err := host.CreateSSHClient()
 
 	if err != nil {
 		return errors.Wrap(err, "Creating ssh client")
