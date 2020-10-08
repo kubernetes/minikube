@@ -1,21 +1,56 @@
 # Release Notes
 
+## Version 1.14.0 - 2020-10-08
+
+## Features
+
+* Delete context when stopped [#9414](https://github.com/kubernetes/minikube/pull/9414)
+* New flag "--ports" to expose ports for docker & podman drivers [#9404](https://github.com/kubernetes/minikube/pull/9404)
+
+## Bug Fixes and minor improvements
+
+* Ingress addon: fix the controller name [#9413](https://github.com/kubernetes/minikube/pull/9413)
+* docker/podman drivers: no panic when updating mount-string with no configuration  [#9412](https://github.com/kubernetes/minikube/pull/9412)
+* Improve reference to virtualbox in "stop" help [#9411](https://github.com/kubernetes/minikube/pull/9411)
+* Improve solution message when there is no space left on device [#9316](https://github.com/kubernetes/minikube/pull/9316)
+
+* To see more changes checkout the last beta release notes 1.14.0-beta.0.
+
+
+Thank you to our contributors for this release.
+
+- Anders F Björklund
+- Asare Worae
+- Medya Gh
+- Medya Ghazizadeh
+- Prajilesh N
+- Predrag Rogic
+- Priya Wadhwa
+- Thomas Stromberg
+- Thomas Strömberg
+- ToonvanStrijp
+- priyawadhwa
+
 ## Version 1.14.0-beta.0 - 2020-10-06
 
 ## Features
+
 * add dedicated network for docker driver [#9294](https://github.com/kubernetes/minikube/pull/9294)
 * Make sure gcp-auth addon can be enabled on startup [#9318](https://github.com/kubernetes/minikube/pull/9318)
 
 ## Bug Fixes
+
 * Fix minikube status bug when cluster is paused [#9383](https://github.com/kubernetes/minikube/pull/9383)
 * don't allow profile name to be less than 2 characters [#9367](https://github.com/kubernetes/minikube/pull/9367)
 * fix: "profile list" shows paused clusters as "Running" [#8978](https://github.com/kubernetes/minikube/pull/8978)
 * Fix error in unittest, as pointed out by warning [#9345](https://github.com/kubernetes/minikube/pull/9345)
 
 ## Updates
+
 * update kicbase image to ubuntu-based [#9353](https://github.com/kubernetes/minikube/pull/9353)
 
 Thank you to our contributors for this release! 
+
 - Anders F Björklund
 - Bob Killen
 - Daniel Weibel
