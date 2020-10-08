@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,11 +31,6 @@ import (
 )
 
 func main() {
-	// init glog: by default, all log statements write to files in a temporary directory, also
-	// flag.Parse must be called before any logging is done
-	// flag.Parse()
-	_ = flag.Set("logtostderr", "true")
-
 	// fetch respective current stable (vDefault as DefaultKubernetesVersion) and
 	// latest rc or beta (vDefault as NewestKubernetesVersion) Kubernetes GitHub Releases
 	vDefault, vNewest, err := fetchKubernetesReleases()
