@@ -100,8 +100,10 @@ func tryCreateDockerNetwork(subnetAddr string, subnetMask int, name string) (net
 
 // returns subnet and gate if exists
 func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
-	rr, err := runCmd(exec.Command(Docker, "network", "inspect", name, "--format", "{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}}"))
+	cmd := exec.Command(Docker, "network", "inspect", name, "--format", "{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}}")
+	rr, err := runCmd(cmd)
 	if err != nil {
+		logDockerNetworkInspect(name)
 		if strings.Contains(rr.Output(), "No such network") {
 			return nil, nil, ErrNetworkNotFound
 		}
@@ -122,6 +124,15 @@ func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
 		gateway = net.ParseIP(ips[1])
 	}
 	return subnet, gateway, nil
+}
+
+func logDockerNetworkInspect(name string) {
+	cmd := exec.Command(Docker, "network", "inspect", name)
+	rr, err := runCmd(cmd)
+	if err != nil {
+		glog.Infof("error running %v: %v", rr.Args, err)
+	}
+	glog.Infof("output of %v: %v", rr.Args, rr.Output())
 }
 
 // RemoveNetwork removes a network
