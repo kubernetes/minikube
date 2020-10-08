@@ -31,6 +31,11 @@ cd github/minikube/hack/jenkins
 
 docker info
 
-whoami
+id -Gn $(whoami)
+
+docker-machine --help || true
+docker-machine create --driver virtualbox default
+docker-machine env default
+eval "$(docker-machine env default)"
 
 source common.sh
