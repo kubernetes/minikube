@@ -180,10 +180,10 @@ v_at_ = $(v_at_1)
 quiet := $(v_at_$(V))
 Q=$(if $(quiet),@)
 
-INT_TESTS_TO_RUN := ./test/integration
-ifneq ($(INT_TESTS),)
+INTEGRATION_TESTS_TO_RUN := ./test/integration
+ifneq ($(TEST_FILES),)
 	TEST_HELPERS = main_test.go util_test.go helpers_test.go
-	INT_TESTS_TO_RUN := $(addprefix ./test/integration/, $(TEST_HELPERS) $(INT_TESTS))
+	INTEGRATION_TESTS_TO_RUN := $(addprefix ./test/integration/, $(TEST_HELPERS) $(TEST_FILES))
 endif
 
 out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) go.mod
@@ -272,7 +272,7 @@ iso_in_docker:
 		$(ISO_BUILD_IMAGE) /bin/bash
 
 test-iso: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
-	go test -v ./test/integration --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
+	go test -v $(INTEGRATION_TESTS_TO_RUN) --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
 test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger packaging test
@@ -292,7 +292,7 @@ docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to ./out/testout_COMMIT.txt
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INT_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test, logs to ./out/testout_COMMIT.txt
@@ -300,11 +300,11 @@ integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Tr
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing, logs to ./out/testout_COMMIT.txt
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INT_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: integration-functional-only
 integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl tests in integration test, logs to ./out/testout_COMMIT.txt
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=20m $(INT_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) -test.run TestFunctional 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=20m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) -test.run TestFunctional 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: html_report
 html_report: ## Generate HTML  report out of the last ran integration test logs.
