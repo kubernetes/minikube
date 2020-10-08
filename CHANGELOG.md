@@ -20,15 +20,12 @@ Thank you to our contributors for this release.
 
 - Anders F Björklund
 - Asare Worae
-- Medya Gh
 - Medya Ghazizadeh
 - Prajilesh N
 - Predrag Rogic
 - Priya Wadhwa
-- Thomas Stromberg
 - Thomas Strömberg
 - ToonvanStrijp
-- priyawadhwa
 
 ## Version 1.14.0-beta.0 - 2020-10-06
 
