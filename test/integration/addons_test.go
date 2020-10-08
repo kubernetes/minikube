@@ -586,7 +586,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
 	}
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed disabling gcp-auth addon. arg %q.s %v", rr.Command(), err)
 	}
