@@ -19,12 +19,17 @@ limitations under the License.
 package integration
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -40,8 +45,21 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
-	if !NoneDriver() { // none doesn't support ingress
+	// Set an env var to point to our dummy credentials file
+	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
+	defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if err != nil {
+		t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
+	}
+
+	err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
+	defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+	if err != nil {
+		t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+	}
+
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
+	if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none doesn't support ingress
 		args = append(args, "--addons=ingress")
 	}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
@@ -61,6 +79,7 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
+			{"GCPAuth", validateGCPAuthAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -92,7 +111,7 @@ func TestAddons(t *testing.T) {
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	if NoneDriver() {
+	if NoneDriver() || (runtime.GOOS == "darwin" && KicDriver()) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 
@@ -502,5 +521,73 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "volumesnapshots", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed to disable volumesnapshots addon: args %q: %v", rr.Command(), err)
+	}
+}
+
+func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	// schedule a pod to check environment variables
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	// 8 minutes, because 4 is not enough for images to pull in all cases.
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(8))
+	if err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+
+	// Use this pod to confirm that the env vars are set correctly
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_APPLICATION_CREDENTIALS"))
+	if err != nil {
+		t.Fatalf("printenv creds: %v", err)
+	}
+
+	got := strings.TrimSpace(rr.Stdout.String())
+	expected := "/google-app-creds.json"
+	if got != expected {
+		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
+	}
+
+	// Make sure the file contents are correct
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
+	if err != nil {
+		t.Fatalf("cat creds: %v", err)
+	}
+
+	var gotJSON map[string]string
+	err = json.Unmarshal(bytes.TrimSpace(rr.Stdout.Bytes()), &gotJSON)
+	if err != nil {
+		t.Fatalf("unmarshal json: %v", err)
+	}
+	expectedJSON := map[string]string{
+		"client_id":        "haha",
+		"client_secret":    "nice_try",
+		"quota_project_id": "this_is_fake",
+		"refresh_token":    "maybe_next_time",
+		"type":             "authorized_user",
+	}
+
+	if !reflect.DeepEqual(gotJSON, expectedJSON) {
+		t.Fatalf("unexpected creds file: got %v, expected %v", gotJSON, expectedJSON)
+	}
+
+	// Check the GOOGLE_CLOUD_PROJECT env var as well
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_CLOUD_PROJECT"))
+	if err != nil {
+		t.Fatalf("print env project: %v", err)
+	}
+
+	got = strings.TrimSpace(rr.Stdout.String())
+	expected = "this_is_fake"
+	if got != expected {
+		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed disabling gcp-auth addon. arg %q.s %v", rr.Command(), err)
 	}
 }
