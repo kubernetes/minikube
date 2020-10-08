@@ -25,10 +25,10 @@ EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 cd github/minikube/hack/jenkins
 
-#osascript -e 'quit app "Docker"';
-#/Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
-#osascript -e 'quit app "Docker"'; /Applications/Docker.app/Contents/MacOS/Docker --unattended &; while [ -z "$(docker info 2> /dev/null )" ]; do printf "."; sleep 1; done; echo "" || true
-
+docker-machine create --help || true
+docker-machine create --driver virtualbox default
+docker-machine env default
+eval "$(docker-machine env default)"
 docker info
 
 source common.sh
