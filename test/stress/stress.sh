@@ -21,19 +21,27 @@
 #
 #   ./test/stress/stress.sh "<optional start flags>" <optional version to upgrade from> <optional count>
 #
-# Example:
+# Example, testing upgrades from v1.11.0 + fresh starts from HEAD with flags:
 #
 #   ./test/stress/stress.sh "--driver=docker --base-image gcr.io/k8s-minikube/kic:ubuntu-upgrade"
+#
+# Example, testing v1.13.0 + HEAD with environment variables, but no flags
+#
+#   env MINIKUBE_FORCE_SYSTEMD=true MINIKUBE_HOME=/google/minikube ./test/stress/stress.sh "" v1.13.1
 #
 
 readonly START_FLAGS=${1:-""}
 readonly UPGRADE_FROM=${2:-"v1.11.0"}
 readonly TOTAL=${3:-20}
-readonly OLD_PATH="/tmp/minikube-${UPGRADE_FROM}"
+readonly OLD_PATH="./out/minikube-${UPGRADE_FROM}"
 readonly NEW_PATH="./out/minikube"
 readonly LOG_PATH="$(mktemp)"
 
-readonly PROFILE="stress$(echo -n $START_FLAGS | openssl md5 | cut -c1-5)"
+if [[ -z "${START_FLAGS}" ]]; then
+  readonly PROFILE="stress"
+else
+  readonly PROFILE="stress$(echo -n $START_FLAGS | openssl md5 | awk '{print $NF}' | cut -c1-5)"
+fi
 
 if [[ ! -x "${NEW_PATH}" ]]; then
   echo "${NEW_PATH} is missing, please run 'make'"
@@ -68,7 +76,7 @@ for i in $(seq 1 ${TOTAL}); do
 
   lecho ""
   lecho "Upgrade ${UPGRADE_FROM} to HEAD hot test: loop ${i}"
-  time ${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { lecho "${OLD_PATH} failed, which is OK"; }    
+  time ${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { lecho "${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} failed, which is OK"; }
   lecho "Starting cluster built-by ${UPGRADE_FROM} with ${NEW_PATH}"
   time ${NEW_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { fail "hot upgrade (loop $i)";  exit 1; }
   lecho "Deleting ${UPGRADE_FROM} built-cluster"
@@ -76,7 +84,7 @@ for i in $(seq 1 ${TOTAL}); do
 
   lecho ""
   lecho "Upgrade ${UPGRADE_FROM} to HEAD cold test: loop ${i}"
-  time ${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { lecho "${OLD_PATH} failed, which is OK"; }
+  time ${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} --alsologtostderr 2>>${LOG_PATH} || { lecho "${OLD_PATH} start -p ${PROFILE} ${START_FLAGS} failed, which is OK"; }
 
   lecho "Stopping ${UPGRADE_FROM}} built-cluster"
   ${OLD_PATH} stop -p ${PROFILE} 2>>${LOG_PATH}
