@@ -210,7 +210,7 @@ func init() {
 	klog.InitFlags(nil)
 	goflag.Set("logtostderr", "false")
 	goflag.Set("alsologtostderr", "false")
-	goflag.Parse()
+	// goflag.Parse()
 
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {

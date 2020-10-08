@@ -112,7 +112,7 @@ func IsDocker(name string) bool {
 	return name == Docker
 }
 
-// IsKIC checks if the driver is a Docker for Desktop (Docker on windows or MacOs)
+// IsDockerDesktop checks if the driver is a Docker for Desktop (Docker on windows or MacOs)
 // for linux and exotic archs, this will be false
 func IsDockerDesktop(name string) bool {
 	if IsDocker(name) {

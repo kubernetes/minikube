@@ -95,12 +95,13 @@ metadata:
   labels:
     integration-test: storage-provisioner
     addonmanager.kubernetes.io/mode: Reconcile
+    gcp-auth-skip-secret: "true"
 spec:
   serviceAccountName: storage-provisioner
   hostNetwork: true
   containers:
   - name: storage-provisioner
-    image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/storage-provisioner{{.ExoticArch}}:{{.StorageProvisionerVersion}}
+    image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/storage-provisioner:{{.StorageProvisionerVersion}}
     command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
     volumeMounts:

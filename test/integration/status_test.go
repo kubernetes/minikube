@@ -52,7 +52,7 @@ func TestInsufficientStorage(t *testing.T) {
 	}
 
 	// make sure 'minikube status' has correct output
-	stdout := runStatusCmd(ctx, t, profile)
+	stdout := runStatusCmd(ctx, t, profile, true)
 	verifyClusterState(t, stdout)
 
 	// try deleting events.json and make sure this still works
@@ -60,16 +60,18 @@ func TestInsufficientStorage(t *testing.T) {
 	if err := os.Remove(eventsFile); err != nil {
 		t.Fatalf("removing %s", eventsFile)
 	}
-	stdout = runStatusCmd(ctx, t, profile)
+	stdout = runStatusCmd(ctx, t, profile, true)
 	verifyClusterState(t, stdout)
 }
 
 // runStatusCmd runs the status command and returns stdout
-func runStatusCmd(ctx context.Context, t *testing.T, profile string) []byte {
+func runStatusCmd(ctx context.Context, t *testing.T, profile string, increaseEnv bool) []byte {
 	// make sure minikube status shows insufficient storage
 	c := exec.CommandContext(ctx, Target(), "status", "-p", profile, "--output=json", "--layout=cluster")
 	// artificially set /var to 100% capacity
-	c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
+	if increaseEnv {
+		c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
+	}
 	rr, err := Run(t, c)
 	// status exits non-0 if status isn't Running
 	if err == nil {
@@ -94,5 +96,43 @@ func verifyClusterState(t *testing.T, contents []byte) {
 		if n.StatusCode != cmd.InsufficientStorage {
 			t.Fatalf("incorrect node status code: %v", cs.StatusCode)
 		}
+	}
+}
+
+func TestPauseStatus(t *testing.T) {
+	// run start
+	profile := UniqueProfileName("pause-status")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	defer Cleanup(t, profile, cancel)
+
+	startArgs := []string{"start", "-p", profile, "--output=json", "--wait=true"}
+	startArgs = append(startArgs, StartArgs()...)
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Fatalf("minikube start failed %v\n%v", rr.Command(), err)
+	}
+
+	// run pause
+	pauseArgs := []string{"pause", "-p", profile}
+	c = exec.CommandContext(ctx, Target(), pauseArgs...)
+	rr, err = Run(t, c)
+	if err != nil {
+		t.Fatalf("minikube pause failed %v\n%v", rr.Command(), err)
+	}
+
+	// run status
+	statusOutput := runStatusCmd(context.Background(), t, profile, false)
+	var cs cmd.ClusterState
+	if err := json.Unmarshal(statusOutput, &cs); err != nil {
+		t.Fatalf("unmarshalling: %v", err)
+	}
+	// verify the status looks as we expect
+	if cs.StatusCode != cmd.Paused {
+		t.Fatalf("incorrect status code: %v", cs.StatusCode)
+	}
+	if cs.StatusName != "Paused" {
+		t.Fatalf("incorrect status name: %v", cs.StatusName)
 	}
 }

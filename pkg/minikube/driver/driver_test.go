@@ -211,7 +211,7 @@ func TestMachineName(t *testing.T) {
 		{
 			ClusterConfig: config.ClusterConfig{Name: "minikube",
 				Nodes: []config.Node{
-					config.Node{
+					{
 						Name:              "",
 						IP:                "172.17.0.3",
 						Port:              8443,
@@ -227,7 +227,7 @@ func TestMachineName(t *testing.T) {
 		{
 			ClusterConfig: config.ClusterConfig{Name: "p2",
 				Nodes: []config.Node{
-					config.Node{
+					{
 						Name:              "",
 						IP:                "172.17.0.3",
 						Port:              8443,
@@ -235,7 +235,7 @@ func TestMachineName(t *testing.T) {
 						ControlPlane:      true,
 						Worker:            true,
 					},
-					config.Node{
+					{
 						Name:              "m2",
 						IP:                "172.17.0.4",
 						Port:              0,
@@ -313,7 +313,7 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 		{
 			ClusterConfig: config.ClusterConfig{Name: "minikube",
 				Nodes: []config.Node{
-					config.Node{
+					{
 						Name:              "",
 						IP:                "172.17.0.3",
 						Port:              8443,
@@ -329,7 +329,7 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 		{
 			ClusterConfig: config.ClusterConfig{Name: "p2",
 				Nodes: []config.Node{
-					config.Node{
+					{
 						Name:              "",
 						IP:                "172.17.0.3",
 						Port:              8443,
@@ -337,7 +337,7 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 						ControlPlane:      true,
 						Worker:            true,
 					},
-					config.Node{
+					{
 						Name:              "m2",
 						IP:                "172.17.0.4",
 						Port:              0,

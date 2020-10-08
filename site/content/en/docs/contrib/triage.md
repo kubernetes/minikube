@@ -41,7 +41,7 @@ The list of outstanding items are at http://tinyurl.com/mk-tparty/daily-triage -
 The most important level of categorizing the issue is defining what type it is.
 We typically want at least one of the following labels on every issue, and some issues may fall into multiple categories:
 
-- `triage/support`   - The default for most incoming issues
+- `kind/support`   - The default for most incoming issues
 - `kind/bug` - When it’s a bug or we aren’t delivering the best user experience
 
 Other possibilities: 
@@ -104,7 +104,7 @@ Suspected **Root cause**:
 
 
 ## Prioritization
-If the issue is not `triage/support`, it needs a [priority label](https://github.com/kubernetes/community/blob/master/contributors/guide/issue-triage.md#define-priority):
+If the issue is not `kind/support`, it needs a [priority label](https://github.com/kubernetes/community/blob/master/contributors/guide/issue-triage.md#define-priority):
 
 `priority/critical-urgent` - someones top priority ASAP, such as security issue, user-visible bug, or build breakage. Rarely used.
 

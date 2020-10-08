@@ -110,6 +110,7 @@ type Info struct {
 	data map[string]string
 }
 
+// Type returns the cloud events compatible type of this struct
 func (s *Info) Type() string {
 	return "io.k8s.sigs.minikube.info"
 }
@@ -128,6 +129,7 @@ type Error struct {
 	data map[string]string
 }
 
+// NewError returns a new Error type
 func NewError(err string) *Error {
 	return &Error{
 		map[string]string{
@@ -148,6 +150,7 @@ func NewErrorExitCode(err string, exitcode int, additionalData ...map[string]str
 	return e
 }
 
+// Type returns the cloud events compatible type of this struct
 func (s *Error) Type() string {
 	return "io.k8s.sigs.minikube.error"
 }
