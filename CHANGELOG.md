@@ -11,10 +11,9 @@
 
 * Ingress addon: fix the controller name [#9413](https://github.com/kubernetes/minikube/pull/9413)
 * docker/podman drivers: no panic when updating mount-string with no configuration  [#9412](https://github.com/kubernetes/minikube/pull/9412)
-* Improve reference to virtualbox in "stop" help [#9411](https://github.com/kubernetes/minikube/pull/9411)
 * Improve solution message when there is no space left on device [#9316](https://github.com/kubernetes/minikube/pull/9316)
 
-* To see more changes checkout the last beta release notes 1.14.0-beta.0.
+* To see more changes checkout the last beta release notes [1.14.0-beta.0](https://github.com/kubernetes/minikube/releases/tag/v1.14.0-beta.0).
 
 
 Thank you to our contributors for this release.
