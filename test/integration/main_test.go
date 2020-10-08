@@ -19,7 +19,6 @@ package integration
 import (
 	"flag"
 	"fmt"
-	"math"
 	"os"
 	"runtime"
 	"strconv"
@@ -85,7 +84,8 @@ func setMaxParallelism() {
 	}
 
 	// Each "minikube start" consumes up to 2 cores, though the average usage is somewhat lower
-	limit := int(math.Floor(float64(maxp) / 1.75))
+	//limit := int(math.Floor(float64(maxp) / 1.75))
+	limit := 1
 
 	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", maxp, limit)
 	if err := flag.Set("test.parallel", strconv.Itoa(limit)); err != nil {
