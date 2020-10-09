@@ -34,4 +34,4 @@ docker info
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
 
-source ommon.sh
+source common.sh
