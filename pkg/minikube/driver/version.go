@@ -34,7 +34,9 @@ func init() {
 		minHyperkitVersion = v
 	}
 }
-func minDriverVersion(driver string, mkVer semver.Version) semver.Version {
+
+// minAcceptableDriverVersion is the minimum version of driver supported by current version of minikube
+func minAcceptableDriverVersion(driver string, mkVer semver.Version) semver.Version {
 	switch driver {
 	case HyperKit:
 		if minHyperkitVersion != nil {
