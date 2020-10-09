@@ -15,7 +15,6 @@
 
 * To see more changes checkout the last beta release notes [1.14.0-beta.0](https://github.com/kubernetes/minikube/releases/tag/v1.14.0-beta.0).
 
-
 Thank you to our contributors for this release.
 
 - Anders F Björklund
