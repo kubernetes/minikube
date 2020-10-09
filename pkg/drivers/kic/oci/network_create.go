@@ -128,6 +128,7 @@ func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
 
 func logDockerNetworkInspect(name string) {
 	cmd := exec.Command(Docker, "network", "inspect", name)
+	glog.Infof("running %v to gather additional debugging logs...", cmd.Args)
 	rr, err := runCmd(cmd)
 	if err != nil {
 		glog.Infof("error running %v: %v", rr.Args, err)
