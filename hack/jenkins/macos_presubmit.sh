@@ -26,7 +26,7 @@ EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 cd github/minikube/hack/jenkins
 
-docker-machine create --driver virtualbox --virtualbox-memory 4000 default
+docker-machine create --driver virtualbox default
 docker-machine env default
 eval "$(docker-machine env default)"
 docker info
