@@ -63,7 +63,7 @@ func AssureDriverBinary(name string, directory string, v semver.Version, autoUpd
 	defer releaser.Release()
 
 	exists := driverExists(executable)
-	path, err := validateDriver(executable, minDriverVersion(name, v))
+	path, err := validateDriver(executable, minAcceptableDriverVersion(name, v))
 	if !exists || (err != nil && autoUpdate) {
 		glog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
