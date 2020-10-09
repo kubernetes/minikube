@@ -31,6 +31,7 @@ docker-machine env default
 eval "$(docker-machine env default)"
 docker info
 
-yes | gcloud components update
+# Force python3.7
+export CLOUDSDK_PYTHON=/usr/bin/python3
 
 source common.sh
