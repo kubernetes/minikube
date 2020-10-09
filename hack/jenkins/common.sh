@@ -51,7 +51,7 @@ echo "kernel:    $(uname -v)"
 echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
-echo "docker:    $(docker version)"
+echo "docker:    $(docker version  --format '{{ .Client.Version }}')"
 echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"
 echo "go:        $(go version || true)"
 
@@ -150,35 +150,35 @@ if [[ "${zombie_defuncts}" != "" ]]; then
   kill ${zombie_defuncts} || true
 fi
 
-if type -P virsh; then
-  virsh -c qemu:///system list --all --uuid \
-    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
-    || true
-  echo ">> virsh VM list after clean up (should be empty):"
-  virsh -c qemu:///system list --all || true
-fi
+#if type -P virsh; then
+#  virsh -c qemu:///system list --all --uuid \
+#    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+#    || true
+#  echo ">> virsh VM list after clean up (should be empty):"
+#  virsh -c qemu:///system list --all || true
+#fi
 
-if type -P vboxmanage; then
-  killall VBoxHeadless || true
-  sleep 1
-  killall -9 VBoxHeadless || true
+#if type -P vboxmanage; then
+#  killall VBoxHeadless || true
+#  sleep 1
+#  killall -9 VBoxHeadless || true
 
-  for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
-    echo "- Removing stale VirtualBox VM: $guid"
-    vboxmanage startvm "${guid}" --type emergencystop || true
-    vboxmanage unregistervm "${guid}" || true
-  done
+#  for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
+#    echo "- Removing stale VirtualBox VM: $guid"
+#    vboxmanage startvm "${guid}" --type emergencystop || true
+#    vboxmanage unregistervm "${guid}" || true
+#  done
 
-  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ print $2 }')
-  for if in $ifaces; do
-    vboxmanage hostonlyif remove "${if}" || true
-  done
+# ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ print $2 }')
+#  for if in $ifaces; do
+#    vboxmanage hostonlyif remove "${if}" || true
+#  done
 
-  echo ">> VirtualBox VM list after clean up (should be empty):"
-  vboxmanage list vms || true
-  echo ">> VirtualBox interface list after clean up (should be empty):"
-  vboxmanage list hostonlyifs || true
-fi
+#  echo ">> VirtualBox VM list after clean up (should be empty):"
+#  vboxmanage list vms || true
+#  echo ">> VirtualBox interface list after clean up (should be empty):"
+#  vboxmanage list hostonlyifs || true
+#fi
 
 
 if type -P hdiutil; then

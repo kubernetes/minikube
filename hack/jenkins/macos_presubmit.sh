@@ -17,6 +17,7 @@
 set -ex
 
 MINIKUBE_LOCATION=$KOKORO_GITHUB_PULL_REQUEST_NUMBER
+COMMIT=$KOKORO_GITHUB_PULL_REQUEST_COMMIT
 OS_ARCH="darwin-amd64"
 VM_DRIVER="docker"
 JOB_NAME="Docker_macOS"
@@ -25,8 +26,7 @@ EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 cd github/minikube/hack/jenkins
 
-docker-machine create --help || true
-docker-machine create --driver virtualbox default
+docker-machine create --driver virtualbox --virtualbox-memory 4000 default
 docker-machine env default
 eval "$(docker-machine env default)"
 docker info
@@ -34,4 +34,4 @@ docker info
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
 
-source common.sh
+source ommon.sh
