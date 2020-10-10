@@ -19,15 +19,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"math"
-	"net"
-	"net/url"
-	"os"
-	"os/exec"
-	"os/user"
-	"runtime"
-	"strings"
-
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -38,6 +29,14 @@ import (
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"math"
+	"net"
+	"net/url"
+	"os"
+	"os/exec"
+	"os/user"
+	"runtime"
+	"strings"
 
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -171,10 +170,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		upgradeExistingConfig(existing)
 	}
 
-	validateSpecifiedDriver(existing)
+	//validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
 
-	ds, alts, specified := selectDriver(existing)
+	ds, alts, specified, _ := selectDriver(existing)
+	// TODO: Deletion of existing cluster in the machine can happen after validating other factors
 	if cmd.Flag(kicBaseImage).Changed {
 		if !isBaseImageApplicable(ds.Name) {
 			exit.Message(reason.Usage,
@@ -542,21 +542,19 @@ func kubectlVersion(path string) (string, error) {
 	return cv.ClientVersion.GitVersion, nil
 }
 
-// returns (current_driver, suggested_drivers, "true, if the driver is set by command line arg or in the config file")
-func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState, bool) {
-	// Technically unrelated, but important to perform before detection
-	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
-	register.Reg.SetStep(register.SelectingDriver)
-	// By default, the driver is whatever we used last time
-	if existing != nil {
-		old := hostDriver(existing)
-		ds := driver.Status(old)
-		out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
-		return ds, nil, true
+// validates and select the driver ' --driver and --vm-driver options
+func validateUserSpecifiedDriverOption() (registry.DriverState, error) {
+	// default to look at new '--driver' option
+	d := viper.GetString("driver")
+	vmd := viper.GetString("vm-driver")
+
+	// user has not specified any driver
+	if d == "" && vmd == "" {
+		return registry.DriverState{}, nil
 	}
 
-	// Default to looking at the new driver parameter
-	if d := viper.GetString("driver"); d != "" {
+	// check if both exists then default to 'driver' as the 'vm-driver' is depreciated
+	if d != "" {
 		if vmd := viper.GetString("vm-driver"); vmd != "" {
 			// Output a warning
 			warning := `Both driver={{.driver}} and vm-driver={{.vmd}} have been set.
@@ -568,43 +566,164 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 			out.WarningT(warning, out.V{"driver": d, "vmd": vmd})
 		}
 		ds := driver.Status(d)
-		if ds.Name == "" {
-			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+		if ds.Name != "" {
+			out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
+			return ds, nil
 		}
-		out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
-		return ds, nil, true
+	} else if vmd != "" {
+		// fallback to old '--vm-driver' parameter
+		ds := driver.Status(vmd)
+		if ds.Name != "" {
+			out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
+			return ds, nil
+		}
 	}
 
-	// Fallback to old driver parameter
-	if d := viper.GetString("vm-driver"); d != "" {
-		ds := driver.Status(viper.GetString("vm-driver"))
-		if ds.Name == "" {
-			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
-		}
-		out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
-		return ds, nil, true
-	}
+	return registry.DriverState{}, errors.Errorf("The driver %s is not supported on %s", d, runtime.GOOS)
+}
 
+func selectDriversFromRegistry() (registry.DriverState, []registry.DriverState, error) {
 	choices := driver.Choices(viper.GetBool("vm"))
 	pick, alts, rejects := driver.Suggest(choices)
-	if pick.Name == "" {
-		out.T(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
-		for _, r := range rejects {
-			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+	if pick.Name != "" {
+		if len(alts) > 1 {
+			altNames := []string{}
+			for _, a := range alts {
+				altNames = append(altNames, a.String())
+			}
+			out.T(style.Sparkle, `Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}`, out.V{"driver": pick.Name, "alternates": strings.Join(altNames, ", ")})
+		} else {
+			out.T(style.Sparkle, `Automatically selected the {{.driver}} driver`, out.V{"driver": pick.String()})
 		}
-		exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+
+		return pick, alts, nil
 	}
 
-	if len(alts) > 1 {
-		altNames := []string{}
-		for _, a := range alts {
-			altNames = append(altNames, a.String())
-		}
-		out.T(style.Sparkle, `Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}`, out.V{"driver": pick.Name, "alternates": strings.Join(altNames, ", ")})
-	} else {
-		out.T(style.Sparkle, `Automatically selected the {{.driver}} driver`, out.V{"driver": pick.String()})
+	out.T(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
+	for _, r := range rejects {
+		out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
 	}
-	return pick, alts, false
+
+	return registry.DriverState{}, nil, errors.Errorf("No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+}
+
+// returns
+// - suggested_driver
+// - alternate_drivers
+// - "true, if the driver is set by command line arg or in the config file
+// - "true" if the delete existing cluster is validated and set
+func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState, bool, bool) {
+	// Technically unrelated, but important to perform before detection
+	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
+	register.Reg.SetStep(register.SelectingDriver)
+
+	var (
+		pick registry.DriverState
+		alts []registry.DriverState
+	)
+
+	if existing == nil {
+		// Default to looking at the new driver parameter
+		ds, err := validateUserSpecifiedDriverOption()
+		if err != nil {
+			exit.Message(reason.DrvUnsupportedOS, err.Error())
+		} else {
+			// if ds is not empty then set the specified driver option as true and return the same
+			// else continue = user not specified any driver
+			if (ds != registry.DriverState{}) {
+				return ds, nil, true, false
+			}
+		}
+
+		// automatically select the available drivers from Registry
+		pick, alts, err = selectDriversFromRegistry()
+		if err != nil {
+			exit.Message(reason.DrvNotDetected, err.Error())
+		}
+	} else {
+		// cluster exists
+		// check if user has specified any driver - based on which delete-on-failure is considered if its set
+		var requested string
+		if d := viper.GetString("driver"); d != "" {
+			requested = d
+		} else if d := viper.GetString("vm-driver"); d != "" {
+			requested = d
+		}
+
+		if requested == "" {
+			// By default, the driver is whatever we used last time
+			// no need to consider 'delete-on-failure option
+
+			old := hostDriver(existing)
+			ds := driver.Status(old)
+			out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
+			return ds, nil, true, false
+		} else {
+			// driver option is specified.
+			// validate the specified driver before check if 'delete-on-failure' is set
+			// if the driver specified is invalid, exit with error message
+			// else , consider 'delete-on-failure' and other validations
+
+			ds, err := validateUserSpecifiedDriverOption()
+			if err != nil {
+				// exit with error
+				exit.Message(reason.DrvUnsupportedOS, err.Error())
+			} else {
+				// consider the driver specified and validate it against the existing cluster
+				// decision made based on 'delete-on-failure'
+				var deleteOnFailureOpt bool
+				deleteOnFailureOpt = viper.GetBool(deleteOnFailure)
+
+				existingClusterDriver := hostDriver(existing)
+
+				if deleteOnFailureOpt == false {
+					// not forced to delete the existing cluster
+					// check if the existing cluster is same as requested one
+
+					if requested == existingClusterDriver {
+						// requested is same as existing
+						ds := driver.Status(existingClusterDriver)
+						out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
+						return ds, nil, true, false
+					} else {
+						// when delete-on-failure is false we don't have to force the cluster to be re-imaged with new drive
+						// exit with error
+						exit.Advice(
+							reason.GuestDrvMismatch,
+							`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
+							"Delete the existing '{{.name}}' cluster using: '{{.delcommand}}', or start the existing '{{.name}}' cluster using: '{{.command}} --driver={{.old}}'",
+							out.V{
+								"name":       existing.Name,
+								"new":        requested,
+								"old":        existingClusterDriver,
+								"command":    mustload.ExampleCmd(existing.Name, "start"),
+								"delcommand": mustload.ExampleCmd(existing.Name, "delete"),
+							},
+						)
+					}
+				} else if deleteOnFailureOpt == true {
+					// driver is validated
+					if (ds == registry.DriverState{}) {
+						//return ds, nil, true
+						exit.Message(reason.DrvNotDetected, "Driver not detected.")
+					}
+
+					if requested == existingClusterDriver {
+						// requested is same as existing
+						ds := driver.Status(existingClusterDriver)
+						out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
+						return ds, nil, true, false
+					} else {
+						// return with the valid user specified driver details with flags for
+						// driver set from commandline/config and delete existing cluster option
+						return ds, nil, true, true
+					}
+				}
+			}
+		}
+	}
+
+	return pick, alts, false, false
 }
 
 // hostDriver returns the actual driver used by a libmachine host, which can differ from our config
