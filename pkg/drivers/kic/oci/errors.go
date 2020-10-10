@@ -67,14 +67,14 @@ var ErrNetworkInUse = errors.New("unable to delete a network that is attached to
 func LogContainerDebug(ociBin string, name string) string {
 	rr, err := containerInspect(ociBin, name)
 	if err != nil {
-		klog.Warningf("Filed to get postmortem inspect. %s :%v", rr.Command(), err)
+		klog.Warningf("Failed to get postmortem inspect. %s :%v", rr.Command(), err)
 	} else {
 		klog.Infof("Postmortem inspect (%q): %s", rr.Command(), rr.Output())
 	}
 
 	rr, err = containerLogs(ociBin, name)
 	if err != nil {
-		klog.Warningf("Filed to get postmortem logs. %s :%v", rr.Command(), err)
+		klog.Warningf("Failed to get postmortem logs. %s :%v", rr.Command(), err)
 	} else {
 		klog.Infof("Postmortem logs (%q): %s", rr.Command(), rr.Output())
 	}
@@ -85,6 +85,7 @@ func LogContainerDebug(ociBin string, name string) string {
 		} else {
 			klog.Infof("postmortem docker info: %+v", di)
 		}
+		logDockerNetworkInspect(name)
 	} else {
 		pi, err := podmanSystemInfo()
 		if err != nil {
