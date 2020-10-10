@@ -170,7 +170,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		upgradeExistingConfig(existing)
 	}
 
-	//validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
 
 	ds, alts, specified, _ := selectDriver(existing)
@@ -753,44 +752,6 @@ func hostDriver(existing *config.ClusterConfig) string {
 	}
 
 	return h.Driver.DriverName()
-}
-
-// validateSpecifiedDriver makes sure that if a user has passed in a driver
-// it matches the existing cluster if there is one
-func validateSpecifiedDriver(existing *config.ClusterConfig) {
-	if existing == nil {
-		return
-	}
-
-	var requested string
-	if d := viper.GetString("driver"); d != "" {
-		requested = d
-	} else if d := viper.GetString("vm-driver"); d != "" {
-		requested = d
-	}
-
-	// Neither --vm-driver or --driver was specified
-	if requested == "" {
-		return
-	}
-
-	old := hostDriver(existing)
-	if requested == old {
-		return
-	}
-
-	exit.Advice(
-		reason.GuestDrvMismatch,
-		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
-		"Delete the existing '{{.name}}' cluster using: '{{.delcommand}}', or start the existing '{{.name}}' cluster using: '{{.command}} --driver={{.old}}'",
-		out.V{
-			"name":       existing.Name,
-			"new":        requested,
-			"old":        old,
-			"command":    mustload.ExampleCmd(existing.Name, "start"),
-			"delcommand": mustload.ExampleCmd(existing.Name, "delete"),
-		},
-	)
 }
 
 // validateDriver validates that the selected driver appears sane, exits if not
