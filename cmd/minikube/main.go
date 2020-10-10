@@ -75,7 +75,7 @@ func main() {
 	cmd.Execute()
 }
 
-// bridgeLogMessages bridges non-glog logs into glog
+// bridgeLogMessages bridges non-glog logs into klog
 func bridgeLogMessages() {
 	log.SetFlags(log.Lshortfile)
 	log.SetOutput(stdLogBridge{})
@@ -109,7 +109,7 @@ func (lb stdLogBridge) Write(b []byte) (n int, err error) {
 // libmachine log bridge
 type machineLogBridge struct{}
 
-// Write passes machine driver logs to glog
+// Write passes machine driver logs to klog
 func (lb machineLogBridge) Write(b []byte) (n int, err error) {
 	if machineLogErrorRe.Match(b) {
 		klog.Errorf("libmachine: %s", b)
