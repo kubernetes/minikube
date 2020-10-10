@@ -19,6 +19,15 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"net"
+	"net/url"
+	"os"
+	"os/exec"
+	"os/user"
+	"runtime"
+	"strings"
+
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -29,14 +38,6 @@ import (
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"math"
-	"net"
-	"net/url"
-	"os"
-	"os/exec"
-	"os/user"
-	"runtime"
-	"strings"
 
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -626,12 +627,11 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		ds, err := validateUserSpecifiedDriverOption()
 		if err != nil {
 			exit.Message(reason.DrvUnsupportedOS, err.Error())
-		} else {
-			// if ds is not empty then set the specified driver option as true and return the same
-			// else continue = user not specified any driver
-			if (ds != registry.DriverState{}) {
-				return ds, nil, true, false
-			}
+		}
+		// if ds is not empty then set the specified driver option as true and return the same
+		// else continue = user not specified any driver
+		if (ds != registry.DriverState{}) {
+			return ds, nil, true, false
 		}
 
 		// automatically select the available drivers from Registry
@@ -657,67 +657,63 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 			ds := driver.Status(old)
 			out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 			return ds, nil, true, false
+		}
+		// driver option is specified.
+		// validate the specified driver before check if 'delete-on-failure' is set
+		// if the driver specified is invalid, exit with error message
+		// else , consider 'delete-on-failure' and other validations
+
+		ds, err := validateUserSpecifiedDriverOption()
+		if err != nil {
+			// exit with error
+			exit.Message(reason.DrvUnsupportedOS, err.Error())
 		} else {
-			// driver option is specified.
-			// validate the specified driver before check if 'delete-on-failure' is set
-			// if the driver specified is invalid, exit with error message
-			// else , consider 'delete-on-failure' and other validations
+			// consider the driver specified and validate it against the existing cluster
+			// decision made based on 'delete-on-failure'
+			deleteOnFailureOpt := viper.GetBool(deleteOnFailure)
 
-			ds, err := validateUserSpecifiedDriverOption()
-			if err != nil {
-				// exit with error
-				exit.Message(reason.DrvUnsupportedOS, err.Error())
-			} else {
-				// consider the driver specified and validate it against the existing cluster
-				// decision made based on 'delete-on-failure'
-				var deleteOnFailureOpt bool
-				deleteOnFailureOpt = viper.GetBool(deleteOnFailure)
+			existingClusterDriver := hostDriver(existing)
 
-				existingClusterDriver := hostDriver(existing)
+			if !deleteOnFailureOpt {
+				// not forced to delete the existing cluster
+				// check if the existing cluster is same as requested one
 
-				if deleteOnFailureOpt == false {
-					// not forced to delete the existing cluster
-					// check if the existing cluster is same as requested one
-
-					if requested == existingClusterDriver {
-						// requested is same as existing
-						ds := driver.Status(existingClusterDriver)
-						out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
-						return ds, nil, true, false
-					} else {
-						// when delete-on-failure is false we don't have to force the cluster to be re-imaged with new drive
-						// exit with error
-						exit.Advice(
-							reason.GuestDrvMismatch,
-							`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
-							"Delete the existing '{{.name}}' cluster using: '{{.delcommand}}', or start the existing '{{.name}}' cluster using: '{{.command}} --driver={{.old}}'",
-							out.V{
-								"name":       existing.Name,
-								"new":        requested,
-								"old":        existingClusterDriver,
-								"command":    mustload.ExampleCmd(existing.Name, "start"),
-								"delcommand": mustload.ExampleCmd(existing.Name, "delete"),
-							},
-						)
-					}
-				} else if deleteOnFailureOpt == true {
-					// driver is validated
-					if (ds == registry.DriverState{}) {
-						//return ds, nil, true
-						exit.Message(reason.DrvNotDetected, "Driver not detected.")
-					}
-
-					if requested == existingClusterDriver {
-						// requested is same as existing
-						ds := driver.Status(existingClusterDriver)
-						out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
-						return ds, nil, true, false
-					} else {
-						// return with the valid user specified driver details with flags for
-						// driver set from commandline/config and delete existing cluster option
-						return ds, nil, true, true
-					}
+				if requested == existingClusterDriver {
+					// requested is same as existing
+					ds := driver.Status(existingClusterDriver)
+					out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
+					return ds, nil, true, false
 				}
+				// when delete-on-failure is false we don't have to force the cluster to be re-imaged with new drive
+				// exit with error
+				exit.Advice(
+					reason.GuestDrvMismatch,
+					`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
+					"Delete the existing '{{.name}}' cluster using: '{{.delcommand}}', or start the existing '{{.name}}' cluster using: '{{.command}} --driver={{.old}}'",
+					out.V{
+						"name":       existing.Name,
+						"new":        requested,
+						"old":        existingClusterDriver,
+						"command":    mustload.ExampleCmd(existing.Name, "start"),
+						"delcommand": mustload.ExampleCmd(existing.Name, "delete"),
+					},
+				)
+			} else if deleteOnFailureOpt {
+				// driver is validated
+				if (ds == registry.DriverState{}) {
+					//return ds, nil, true
+					exit.Message(reason.DrvNotDetected, "Driver not detected.")
+				}
+
+				if requested == existingClusterDriver {
+					// requested is same as existing
+					ds := driver.Status(existingClusterDriver)
+					out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
+					return ds, nil, true, false
+				}
+				// return with the valid user specified driver details with flags for
+				// driver set from commandline/config and delete existing cluster option
+				return ds, nil, true, true
 			}
 		}
 	}
