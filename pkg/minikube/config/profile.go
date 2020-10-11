@@ -289,3 +289,30 @@ func ProfileFolderPath(profile string, miniHome ...string) string {
 	}
 	return filepath.Join(miniPath, "profiles", profile)
 }
+
+// Edit existing cluster profile name and profile folder
+// this is mainly used to temporarily change the profile details when 'start issued different driver & --delete-on-failure
+func EditExistingProfile(profile *Profile) (string, error) {
+	// rename the container/vm name.
+	newClusterName := profile.Name + "ClusterBackup"
+
+	// TODO : This needs to be done for all container types.
+	err := oci.RenameProfile(profile.Name, newClusterName)
+	if err != nil {
+		return "", err
+	}
+
+	profile.Config.Name = newClusterName
+	profile.Config.KubernetesConfig.ClusterName = newClusterName
+	err = DefaultLoader.WriteConfigToFile(profile.Name, profile.Config)
+	if err != nil {
+		return "", err
+	}
+
+	newPath := filepath.Join(localpath.MiniPath(), "profiles")
+	if err = os.Rename(ProfileFolderPath(profile.Name), filepath.Join(newPath, newClusterName)); err != nil {
+		return "", err
+	}
+
+	return newClusterName, nil
+}

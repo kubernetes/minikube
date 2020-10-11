@@ -628,3 +628,13 @@ func iptablesFileExists(ociBin string, nameOrID string) bool {
 	}
 	return true
 }
+
+func RenameProfile(oldName, newName string) error {
+	_, err := runCmd(exec.Command(Docker, "rename", oldName, newName), false)
+	if err != nil {
+		klog.Errorf("Error in renaming profile : %s", err.Error())
+		return err
+	}
+
+	return nil
+}

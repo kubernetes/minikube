@@ -220,9 +220,9 @@ func ClusterFlagValue() string {
 }
 
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
-func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
+func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string, deleteExistingCluster bool) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
-	if existing != nil {
+	if existing != nil && !deleteExistingCluster {
 		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")

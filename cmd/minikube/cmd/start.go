@@ -174,7 +174,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateKubernetesVersion(existing)
 
 	ds, alts, specified, deleteExistingCluster := selectDriver(existing)
-	// TODO: Deletion of existing cluster in the machine can happen after validating other factors
 	if cmd.Flag(kicBaseImage).Changed {
 		if !isBaseImageApplicable(ds.Name) {
 			exit.Message(reason.Usage,
@@ -191,7 +190,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	starter, err := provisionWithDriver(cmd, ds, existing)
+	starter, err := provisionWithDriver(cmd, ds, existing, deleteExistingCluster)
 	if err != nil {
 		node.ExitIfFatal(err)
 		machine.MaybeDisplayAdvice(err, ds.Name)
@@ -214,7 +213,7 @@ func runStart(cmd *cobra.Command, args []string) {
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
-				starter, err = provisionWithDriver(cmd, ds, existing)
+				starter, err = provisionWithDriver(cmd, ds, existing, false)
 				if err != nil {
 					continue
 				} else {
@@ -229,7 +228,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if existing != nil && driver.IsKIC(existing.Driver) {
+	if (existing != nil && !deleteExistingCluster) && driver.IsKIC(existing.Driver) {
 		if viper.GetBool(createMount) {
 			old := ""
 			if len(existing.ContainerVolumeMounts) > 0 {
@@ -249,45 +248,77 @@ func runStart(cmd *cobra.Command, args []string) {
 			out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
 			out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
 			stopProfile(existing.Name)
-			starter, err = provisionWithDriver(cmd, ds, existing)
+			starter, err = provisionWithDriver(cmd, ds, existing, false)
 			if err != nil {
 				exitGuestProvision(err)
 			}
 		}
 	}
 
-	// check here after all the validations if, 'deleteExistingCluster' set
-	if deleteExistingCluster {
-		profile, err := config.LoadProfile(existing.Name)
+	kubeConfig := startClusterWithDriver(cmd, ds, starter, existing, deleteExistingCluster)
+
+	if err := showKubectlInfo(kubeConfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
+		klog.Errorf("kubectl info: %v", err)
+	}
+}
+
+func startClusterWithDriver(cmd *cobra.Command, ds registry.DriverState, starter node.Starter, existing *config.ClusterConfig, deleteExistingCluster bool) *kubeconfig.Settings {
+	var (
+		kubeConfig *kubeconfig.Settings
+		err        error
+	)
+
+	if existing != nil && deleteExistingCluster {
+		profile, _ := config.LoadProfile(existing.Name)
+
+		kubeConfig, err = startWithDriver(cmd, starter, nil)
 		if err != nil {
-			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
+			// restart the old cluster
+			profileName := ClusterFlagValue()
+			existing.Name = profileName
+			existing.KubernetesConfig.ClusterName = profileName
+			starter, err := provisionWithDriver(cmd, ds, existing, viper.GetBool(deleteOnFailure))
+			if err != nil {
+				exitGuestProvision(err)
+			}
+
+			kubeConfig, err = startWithDriver(cmd, starter, existing)
+			if err != nil {
+				exit.Message(reason.GuestStart, `failed to start old cluster "{{.name}}" with driver "{{.driver}}." `,
+					out.V{
+						"name":   existing.Name,
+						"driver": hostDriver(existing),
+					})
+			}
+
+			node.ExitIfFatal(err)
+			exit.Error(reason.GuestStart, "failed to start node", err)
 		}
 
+		// delete the existing cluster
 		err = deleteProfile(profile)
 		if err != nil {
 			exit.Message(
 				reason.GuestDrvMismatch,
 				`The existing "{{.name}}" cluster created using the "{{.driver}}" driver could not be deleted`,
 				out.V{
-					"name":       existing.Name,
-					"driver":        hostDriver(existing),
+					"name":   existing.Name,
+					"driver": hostDriver(existing),
 				},
 			)
 		}
+	} else {
+		kubeConfig, err = startWithDriver(cmd, starter, existing)
+		if err != nil {
+			node.ExitIfFatal(err)
+			exit.Error(reason.GuestStart, "failed to start node", err)
+		}
 	}
 
-	kubeconfig, err := startWithDriver(cmd, starter, existing)
-	if err != nil {
-		node.ExitIfFatal(err)
-		exit.Error(reason.GuestStart, "failed to start node", err)
-	}
-
-	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
-		klog.Errorf("kubectl info: %v", err)
-	}
+	return kubeConfig
 }
 
-func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig, deleteExistingCluster bool) (node.Starter, error) {
 	driverName := ds.Name
 	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -308,7 +339,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	k8sVersion := getKubernetesVersion(existing)
-	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
+	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName, deleteExistingCluster)
 	if err != nil {
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
@@ -341,6 +372,24 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		ssh.SetDefaultClient(ssh.External)
 	}
 
+	if existing != nil && deleteExistingCluster {
+		profile, err := config.LoadProfile(existing.Name)
+		if err != nil {
+			return node.Starter{}, errors.Wrap(err, "Failed loading profile.")
+		}
+
+		stopProfile(profile.Name)
+
+		backupName, err := config.EditExistingProfile(profile)
+		if err != nil {
+			return node.Starter{}, errors.Wrap(err, "Failed editing existing profile before creating new cluster.")
+		}
+
+		existing.Name = backupName
+		existing.KubernetesConfig.ClusterName = backupName
+	}
+
+	// we leave the delete on failure option here, so that if provisioning fails the new cluster can be deleted in node/startHost
 	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
 	if err != nil {
 		return node.Starter{}, err
