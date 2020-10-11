@@ -173,7 +173,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateKubernetesVersion(existing)
 
-	ds, alts, specified, _ := selectDriver(existing)
+	ds, alts, specified, deleteExistingCluster := selectDriver(existing)
 	// TODO: Deletion of existing cluster in the machine can happen after validating other factors
 	if cmd.Flag(kicBaseImage).Changed {
 		if !isBaseImageApplicable(ds.Name) {
@@ -253,6 +253,26 @@ func runStart(cmd *cobra.Command, args []string) {
 			if err != nil {
 				exitGuestProvision(err)
 			}
+		}
+	}
+
+	// check here after all the validations if, 'deleteExistingCluster' set
+	if deleteExistingCluster {
+		profile, err := config.LoadProfile(existing.Name)
+		if err != nil {
+			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			exit.Message(
+				reason.GuestDrvMismatch,
+				`The existing "{{.name}}" cluster created using the "{{.driver}}" driver could not be deleted`,
+				out.V{
+					"name":       existing.Name,
+					"driver":        hostDriver(existing),
+				},
+			)
 		}
 	}
 
@@ -567,14 +587,12 @@ func validateUserSpecifiedDriverOption() (registry.DriverState, error) {
 		}
 		ds := driver.Status(d)
 		if ds.Name != "" {
-			out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 			return ds, nil
 		}
 	} else if vmd != "" {
 		// fallback to old '--vm-driver' parameter
 		ds := driver.Status(vmd)
 		if ds.Name != "" {
-			out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 			return ds, nil
 		}
 	}
@@ -630,7 +648,8 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		}
 		// if ds is not empty then set the specified driver option as true and return the same
 		// else continue = user not specified any driver
-		if (ds != registry.DriverState{}) {
+		if (err == nil) && (ds != registry.DriverState{}) {
+			out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 			return ds, nil, true, false
 		}
 
