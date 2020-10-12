@@ -30,6 +30,7 @@ docker-machine create --driver virtualbox default
 docker-machine env default
 eval "$(docker-machine env default)"
 docker info
+docker version
 
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
@@ -53,3 +54,4 @@ chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 "${MINIKUBE_BIN}" version
 
 "${MINIKUBE_BIN}" start --driver=docker
+exit $?
