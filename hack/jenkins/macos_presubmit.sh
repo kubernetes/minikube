@@ -34,4 +34,22 @@ docker info
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
 
-source common.sh
+#source common.sh
+mkdir -p out/ testdata/
+# Add the out/ directory to the PATH, for using new drivers.
+PATH="$(pwd)/out/":$PATH
+export PATH
+gsutil -qm cp \
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
+
+gsutil -qm cp -r "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
+
+gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
+export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
+export E2E_BIN="out/e2e-${OS_ARCH}"
+chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
+"${MINIKUBE_BIN}" version
+
+"${MINIKUBE_BIN}" start --driver=docker
