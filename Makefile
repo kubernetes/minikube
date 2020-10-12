@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.13.1
+ISO_VERSION ?= v1.14.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -51,7 +51,8 @@ KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KIC_BASE_IMAGE_GH ?= $(REGISTRY_GH)/kicbase:$(KIC_VERSION)
 KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 
-ISO_BUCKET ?= minikube/iso
+# Change this back to on relese ISO_BUCKET ?= minikube/iso
+ISO_BUCKET ?= minikube-builds/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
 MINIKUBE_BUCKET ?= minikube/releases
