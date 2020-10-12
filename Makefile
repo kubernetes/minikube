@@ -51,8 +51,7 @@ KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KIC_BASE_IMAGE_GH ?= $(REGISTRY_GH)/kicbase:$(KIC_VERSION)
 KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 
-# Change this back to on relese ISO_BUCKET ?= minikube/iso
-ISO_BUCKET ?= minikube-builds/iso
+ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
 MINIKUBE_BUCKET ?= minikube/releases
