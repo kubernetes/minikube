@@ -24,7 +24,7 @@ jobs:
           stable: true
       - name: Download Dependencies
         run: go mod download
-      - name: Install KVM 
+      - name: Install KVM
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
@@ -117,11 +117,14 @@ jobs:
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}
-      - uses: actions/upload-artifact@v1
+      - name: Upload report
+        uses: actions/upload-artifact@v1
         with:
           name: iso_functional_test_kvm2_ubuntu
           path: out/report
-      - uses: actions/upload-artifact@v1
+      - name: Upload iso.log
+        if: always()
+        uses: actions/upload-artifact@v1
         with:
           name: iso log
           path: out/iso.log
