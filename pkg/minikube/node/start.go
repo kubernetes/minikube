@@ -196,7 +196,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	klog.Infof("Will wait %s for node ...", waitTimeout)
+	klog.Infof("Will wait %s for node up to ", viper.GetDuration(waitTimeout))
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}
