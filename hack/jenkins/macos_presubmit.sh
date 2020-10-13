@@ -30,7 +30,7 @@ docker-machine create --driver virtualbox default
 docker-machine env default
 eval "$(docker-machine env default)"
 docker info
-docker version
+docker version --format {{.Server.Os}}-{{.Server.Version}}
 
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
