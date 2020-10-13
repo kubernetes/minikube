@@ -607,7 +607,7 @@ func ShutDown(ociBin string, name string) error {
 			klog.Infof("temporary error verifying shutdown: %v", err)
 		}
 		klog.Infof("temporary error: container %s status is %s but expect it to be exited", name, st)
-		return errors.Wrap(err, "couldn't verify cointainer is exited. %v")
+		return errors.Wrap(err, "couldn't verify container is exited. %v")
 	}
 	if err := retry.Expo(stopped, time.Millisecond*500, time.Second*20); err != nil {
 		return errors.Wrap(err, "verify shutdown")
