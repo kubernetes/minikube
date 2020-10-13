@@ -53,5 +53,5 @@ export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 "${MINIKUBE_BIN}" version
 
-"${MINIKUBE_BIN}" start --driver=docker --force-systemd --wait-timeout=20m"
+"${MINIKUBE_BIN}" start --driver=docker --force-systemd --wait-timeout=20m
 exit $?
