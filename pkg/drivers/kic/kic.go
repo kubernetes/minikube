@@ -78,7 +78,7 @@ func (d *Driver) Create() error {
 		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
 		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:          d.NodeConfig.Envs,
-		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
+		ExtraArgs:     append([]string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)}, d.NodeConfig.ExtraArgs...),
 		OCIBinary:     d.NodeConfig.OCIBinary,
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
@@ -137,6 +137,7 @@ func (d *Driver) Create() error {
 
 	var waitForPreload sync.WaitGroup
 	waitForPreload.Add(1)
+	var pErr error
 	go func() {
 		defer waitForPreload.Done()
 		// If preload doesn't exist, don't bother extracting tarball to volume
@@ -147,11 +148,18 @@ func (d *Driver) Create() error {
 		glog.Infof("Starting extracting preloaded images to volume ...")
 		// Extract preloaded images to container
 		if err := oci.ExtractTarballToVolume(d.NodeConfig.OCIBinary, download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, d.NodeConfig.ImageDigest); err != nil {
+			if strings.Contains(err.Error(), "No space left on device") {
+				pErr = oci.ErrInsufficientDockerStorage
+				return
+			}
 			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 		} else {
 			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
 		}
 	}()
+	if pErr == oci.ErrInsufficientDockerStorage {
+		return pErr
+	}
 
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")

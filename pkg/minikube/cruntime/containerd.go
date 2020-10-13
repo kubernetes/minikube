@@ -413,6 +413,7 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	return true
 }
 
+// ImagesPreloaded returns true if all images have been preloaded
 func (r *Containerd) ImagesPreloaded(images []string) bool {
 	return containerdImagesPreloaded(r.Runner, images)
 }

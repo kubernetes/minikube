@@ -48,9 +48,8 @@ var (
 var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stops a running local Kubernetes cluster",
-	Long: `Stops a local Kubernetes cluster running in Virtualbox. This command stops the VM
-itself, leaving all files intact. The cluster can be started again with the "start" command.`,
-	Run: runStop,
+	Long:  `Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the "start" command.`,
+	Run:   runStop,
 }
 
 func init() {
@@ -115,8 +114,8 @@ func stopProfile(profile string) int {
 	}
 
 	if !keepActive {
-		if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
-			exit.Error(reason.HostKubeconfigUnset, "update config", err)
+		if err := kubeconfig.DeleteContext(profile, kubeconfig.PathFromEnv()); err != nil {
+			exit.Error(reason.HostKubeconfigDeleteCtx, "delete ctx", err)
 		}
 	}
 
