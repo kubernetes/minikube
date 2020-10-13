@@ -53,5 +53,5 @@ export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 "${MINIKUBE_BIN}" version
 
-sudo "${MINIKUBE_BIN}" start --driver=docker
+"${MINIKUBE_BIN}" start --driver=docker
 exit $?
