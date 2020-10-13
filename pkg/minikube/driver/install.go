@@ -41,24 +41,16 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	if name != KVM2 && name != HyperKit {
 		return nil
 	}
-	path, err := AssureDriverBinary(name, directory, v, autoUpdate)
-	if err != nil {
-		return err
-	}
-	return fixDriverPermissions(name, path, interactive)
-}
 
-// AssureDriverBinary does the same as InstallOrUpdate
-// but doesn't set root permissions in case the driver is downloaded
-func AssureDriverBinary(name string, directory string, v semver.Version, autoUpdate bool) (string, error) {
 	executable := fmt.Sprintf("docker-machine-driver-%s", name)
 
+	// Lock before we check for existence to avoid thundering herd issues
 	spec := lock.PathMutexSpec(executable)
 	spec.Timeout = 10 * time.Minute
 	glog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
 	}
 	defer releaser.Release()
 
@@ -68,10 +60,10 @@ func AssureDriverBinary(name string, directory string, v semver.Version, autoUpd
 		glog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
 		if err := download.Driver(executable, path, v); err != nil {
-			return "", err
+			return err
 		}
 	}
-	return path, nil
+	return fixDriverPermissions(name, path, interactive)
 }
 
 // fixDriverPermissions fixes the permissions on a driver
