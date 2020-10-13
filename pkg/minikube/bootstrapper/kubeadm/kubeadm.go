@@ -482,9 +482,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 
 // ensureKubeletStarted will start kubelet if whatever reason it is stopped.
 func (k *Bootstrapper) ensureKubeletStarted() error {
-	fmt.Println("inside ensureKubeletStarted")
-	if kverify.KubeletStatus(k.c) != state.Running {
-		fmt.Println("kubelet was not running for some reason , starting it...")
+	if st := kverify.KubeletStatus(k.c); st != state.Running {
+		glog.Warningf("surprisingly kubelet service status was %s!. will try start it... this a known issue https://github.com/kubernetes/minikube/issues/9458", st)
 		return sysinit.New(k.c).Start("kubelet")
 	}
 	return nil
