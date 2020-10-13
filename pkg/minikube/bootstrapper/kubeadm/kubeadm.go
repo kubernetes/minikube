@@ -459,7 +459,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 	if cfg.VerifyComponents[kverify.KubeletKey] {
-		if err := kverify.WaitForKubelet(k.c, timeout); err != nil {
+		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
 			return errors.Wrap(err, "waiting for kubelet")
 		}
 
