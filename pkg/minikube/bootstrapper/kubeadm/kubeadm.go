@@ -483,7 +483,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 // ensureKubeletStarted will start a systemd or init.d service if it is not running.
 func (k *Bootstrapper) ensureServiceStarted(svc string) error {
 	if st := kverify.ServiceStatus(k.c, svc); st != state.Running {
-		klog.Warningf("surprisingly %q service status was %s!. will try start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)
+		klog.Warningf("surprisingly %q service status was %s!. will try to start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)
 		return sysinit.New(k.c).Start(svc)
 	}
 	return nil
