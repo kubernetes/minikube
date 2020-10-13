@@ -28,13 +28,14 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// KubeletStatus checks the kubelet status
-func KubeletStatus(cr command.Runner) state.State {
-	klog.Infof("Checking kubelet status ...")
-	active := sysinit.New(cr).Active("kubelet")
+// ServiceStatus checks the kubelet status
+func ServiceStatus(cr command.Runner, svc string) state.State {
+	active := sysinit.New(cr).Active(svc)
 	if active {
+		klog.Infof("%s status = running", svc)
 		return state.Running
 	}
+	klog.Infof("%s status = not running", svc)
 	return state.Stopped
 }
 
@@ -43,7 +44,7 @@ func WaitForKubelet(cr command.Runner, timeout time.Duration) error {
 	pStart := time.Now()
 	klog.Infof("waiting for kubelet to be running ....")
 	kr := func() error {
-		if st := KubeletStatus(cr); st != state.Running {
+		if st := ServiceStatus(cr); st != state.Running {
 			return fmt.Errorf("status %s", st)
 		}
 		return nil

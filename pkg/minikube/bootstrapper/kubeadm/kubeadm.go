@@ -394,9 +394,9 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	start := time.Now()
 	register.Reg.SetStep(register.VerifyingKubernetes)
 	out.T(style.HealthCheck, "Verifying Kubernetes components...")
-	// regardless if waiting or not, we make sure it is not stopped
+	// regardless if waiting is set or not, we will make sure kubelet is not stopped
 	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
-	if err := k.ensureKubeletStarted(); err != nil {
+	if err := k.ensureServiceStarted("kubelet"); err != nil {
 		klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
 	}
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
@@ -480,11 +480,11 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	return nil
 }
 
-// ensureKubeletStarted will start kubelet if whatever reason it is stopped.
-func (k *Bootstrapper) ensureKubeletStarted() error {
-	if st := kverify.KubeletStatus(k.c); st != state.Running {
-		glog.Warningf("surprisingly kubelet service status was %s!. will try start it... this a known issue https://github.com/kubernetes/minikube/issues/9458", st)
-		return sysinit.New(k.c).Start("kubelet")
+// ensureKubeletStarted will start a systemd or init.d service if it is not running.
+func (k *Bootstrapper) ensureServiceStarted(svc string) error {
+	if st := kverify.ServiceStatus(k.c, svc); st != state.Running {
+		klog.Warningf("surprisingly %q service status was %s!. will try start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)
+		return sysinit.New(k.c).Start(svc)
 	}
 	return nil
 }
