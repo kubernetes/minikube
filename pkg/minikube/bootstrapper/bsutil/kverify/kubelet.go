@@ -37,10 +37,11 @@ func ServiceStatus(cr command.Runner, svc string) state.State {
 	return state.Stopped
 }
 
-// WaitForService will wait for a systemd or init.d service to be running on the node...
+// WaitForService will wait for a "systemd" or "init.d" service to be running on the node...
+// not to be confused with Kubernetes Services
 func WaitForService(cr command.Runner, svc string, timeout time.Duration) error {
 	pStart := time.Now()
-	klog.Infof("waiting for kubelet to be running ....")
+	klog.Infof("waiting for %s service to be running ....", svc)
 	kr := func() error {
 		if st := ServiceStatus(cr, svc); st != state.Running {
 			return fmt.Errorf("status %s", st)
@@ -52,7 +53,7 @@ func WaitForService(cr command.Runner, svc string, timeout time.Duration) error 
 		return fmt.Errorf("not running: %s", err)
 	}
 
-	klog.Infof("duration metric: took %s WaitForService to finish.", time.Since(pStart))
+	klog.Infof("duration metric: took %s WaitForService to wait for %s.", time.Since(pStart), svc)
 
 	return nil
 
