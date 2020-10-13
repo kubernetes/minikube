@@ -521,9 +521,12 @@ func ListContainersByLabel(ociBin string, label string, warnSlow ...bool) ([]str
 // to make sure it points to the docker daemon installed by user.
 func PointToHostDockerDaemon() error {
 	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
-	if p != "" {
-		glog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
+	if p == "" {
+		// No docker-env vars to unset
+		return nil
 	}
+
+	glog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
 
 	for i := range constants.DockerDaemonEnvs {
 		e := constants.DockerDaemonEnvs[i]
