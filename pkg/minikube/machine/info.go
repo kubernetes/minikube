@@ -21,10 +21,10 @@ import (
 	"os/exec"
 
 	"github.com/docker/machine/libmachine/provision"
-	"github.com/golang/glog"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -44,16 +44,16 @@ func CachedHostInfo() (*HostInfo, error, error, error) {
 	var cpuErr, memErr, diskErr error
 	i, cpuErr := cachedCPUInfo()
 	if cpuErr != nil {
-		glog.Warningf("Unable to get CPU info: %v", cpuErr)
+		klog.Warningf("Unable to get CPU info: %v", cpuErr)
 	}
 	v, memErr := cachedSysMemLimit()
 	if memErr != nil {
-		glog.Warningf("Unable to get mem info: %v", memErr)
+		klog.Warningf("Unable to get mem info: %v", memErr)
 	}
 
 	d, diskErr := cachedDiskInfo()
 	if diskErr != nil {
-		glog.Warningf("Unable to get disk info: %v", diskErr)
+		klog.Warningf("Unable to get disk info: %v", diskErr)
 	}
 
 	var info HostInfo
@@ -67,13 +67,13 @@ func CachedHostInfo() (*HostInfo, error, error, error) {
 func showLocalOsRelease() {
 	osReleaseOut, err := ioutil.ReadFile("/etc/os-release")
 	if err != nil {
-		glog.Errorf("ReadFile: %v", err)
+		klog.Errorf("ReadFile: %v", err)
 		return
 	}
 
 	osReleaseInfo, err := provision.NewOsRelease(osReleaseOut)
 	if err != nil {
-		glog.Errorf("NewOsRelease: %v", err)
+		klog.Errorf("NewOsRelease: %v", err)
 		return
 	}
 
@@ -85,16 +85,16 @@ func showLocalOsRelease() {
 func logRemoteOsRelease(r command.Runner) {
 	rr, err := r.RunCmd(exec.Command("cat", "/etc/os-release"))
 	if err != nil {
-		glog.Infof("remote release failed: %v", err)
+		klog.Infof("remote release failed: %v", err)
 	}
 
 	osReleaseInfo, err := provision.NewOsRelease(rr.Stdout.Bytes())
 	if err != nil {
-		glog.Errorf("NewOsRelease: %v", err)
+		klog.Errorf("NewOsRelease: %v", err)
 		return
 	}
 
-	glog.Infof("Remote host: %s", osReleaseInfo.PrettyName)
+	klog.Infof("Remote host: %s", osReleaseInfo.PrettyName)
 }
 
 var (

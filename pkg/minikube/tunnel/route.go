@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 // router manages the routing table on the host, implementations should cater for OS specific methods
@@ -53,7 +53,7 @@ func isValidToAddOrDelete(router router, r *Route) (bool, error) {
 	}
 
 	if len(overlaps) > 0 {
-		glog.Warningf("overlapping CIDR detected in routing table with minikube tunnel (CIDR: %s). It is advisable to remove these rules:\n%v", r.DestCIDR, strings.Join(overlaps, "\n"))
+		klog.Warningf("overlapping CIDR detected in routing table with minikube tunnel (CIDR: %s). It is advisable to remove these rules:\n%v", r.DestCIDR, strings.Join(overlaps, "\n"))
 	}
 
 	if exists {

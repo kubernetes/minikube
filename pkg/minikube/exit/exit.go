@@ -21,7 +21,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -30,7 +30,7 @@ import (
 // Message outputs a templated message and exits without interpretation
 func Message(r reason.Kind, format string, args ...out.V) {
 	if r.ID == "" {
-		glog.Errorf("supplied reason has no ID: %+v", r)
+		klog.Errorf("supplied reason has no ID: %+v", r)
 	}
 
 	if r.Style == style.None {

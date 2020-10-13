@@ -19,10 +19,10 @@ package cmd
 import (
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -54,7 +54,7 @@ func runPause(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Pausing)
 
-	glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+	klog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
 	if allNamespaces {
 		namespaces = nil // all
 	} else if len(namespaces) == 0 {

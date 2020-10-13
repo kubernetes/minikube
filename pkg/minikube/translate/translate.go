@@ -23,8 +23,9 @@ import (
 	"strings"
 
 	"github.com/cloudfoundry-attic/jibber_jabber"
-	"github.com/golang/glog"
 	"golang.org/x/text/language"
+
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -61,12 +62,12 @@ func T(s string) string {
 func DetermineLocale() {
 	locale, err := jibber_jabber.DetectIETF()
 	if err != nil {
-		glog.Infof("Getting system locale failed: %v", err)
+		klog.Infof("Getting system locale failed: %v", err)
 		locale = ""
 	}
 	err = SetPreferredLanguage(locale)
 	if err != nil {
-		glog.Infof("Setting locale failed: %v", err)
+		klog.Infof("Setting locale failed: %v", err)
 		preferredLanguage = defaultLanguage
 	}
 
@@ -85,25 +86,25 @@ func DetermineLocale() {
 			translationFile := path.Join("translations", fmt.Sprintf("%s.json", p))
 			t, err = Asset(translationFile)
 			if err != nil {
-				glog.Infof("Failed to load translation file for %s: %v", p, err)
+				klog.Infof("Failed to load translation file for %s: %v", p, err)
 				return
 			}
 		} else {
-			glog.Infof("Failed to load translation file for %s: %v", preferredLanguage.String(), err)
+			klog.Infof("Failed to load translation file for %s: %v", preferredLanguage.String(), err)
 			return
 		}
 	}
 
 	err = json.Unmarshal(t, &Translations)
 	if err != nil {
-		glog.Infof("Failed to populate translation map: %v", err)
+		klog.Infof("Failed to populate translation map: %v", err)
 	}
 
 }
 
 // setPreferredLanguageTag configures which language future messages should use.
 func setPreferredLanguageTag(l language.Tag) {
-	glog.Infof("Setting Language to %s ...", l)
+	klog.Infof("Setting Language to %s ...", l)
 	preferredLanguage = l
 }
 

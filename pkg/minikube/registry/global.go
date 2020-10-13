@@ -21,7 +21,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -99,15 +99,15 @@ func Driver(name string) DriverDef {
 // Available returns a list of available drivers in the global registry
 func Available(vm bool) []DriverState {
 	sts := []DriverState{}
-	glog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
+	klog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
 
 	for _, d := range globalRegistry.List() {
 		if d.Status == nil {
-			glog.Errorf("%q does not implement Status", d.Name)
+			klog.Errorf("%q does not implement Status", d.Name)
 			continue
 		}
 		s := d.Status()
-		glog.Infof("%s priority: %d, state: %+v", d.Name, d.Priority, s)
+		klog.Infof("%s priority: %d, state: %+v", d.Name, d.Priority, s)
 
 		priority := d.Priority
 		if !s.Healthy {

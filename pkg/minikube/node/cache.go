@@ -22,10 +22,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -50,13 +50,13 @@ const (
 func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
 	// TODO: remove imageRepository check once #7695 is fixed
 	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime) {
-		glog.Info("Caching tarball of preloaded images")
+		klog.Info("Caching tarball of preloaded images")
 		err := download.Preload(k8sVersion, cRuntime)
 		if err == nil {
-			glog.Infof("Finished verifying existence of preloaded tar for  %s on %s", k8sVersion, cRuntime)
+			klog.Infof("Finished verifying existence of preloaded tar for  %s on %s", k8sVersion, cRuntime)
 			return // don't cache individual images if preload is successful.
 		}
-		glog.Warningf("Error downloading preloaded artifacts will continue without preload: %v", err)
+		klog.Warningf("Error downloading preloaded artifacts will continue without preload: %v", err)
 	}
 
 	if !viper.GetBool(cacheImages) {
@@ -108,15 +108,15 @@ func doCacheBinaries(k8sVersion string) error {
 func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, downloadOnly bool) {
 	if cc.Driver != "docker" {
 		// TODO: driver == "podman"
-		glog.Info("Driver isn't docker, skipping base image download")
+		klog.Info("Driver isn't docker, skipping base image download")
 		return
 	}
 	if image.ExistsImageInDaemon(cc.KicBaseImage) {
-		glog.Infof("%s exists in daemon, skipping pull", cc.KicBaseImage)
+		klog.Infof("%s exists in daemon, skipping pull", cc.KicBaseImage)
 		return
 	}
 
-	glog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 	out.T(style.Pulling, "Pulling base image ...")
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
@@ -133,27 +133,27 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			if err := image.LoadFromTarball(driver.Docker, img); err == nil {
-				glog.Infof("successfully loaded %s from cached tarball", img)
+				klog.Infof("successfully loaded %s from cached tarball", img)
 				// strip the digest from the img before saving it in the config
 				// because loading an image from tarball to daemon doesn't load the digest
 				finalImg = img
 				return nil
 			}
-			glog.Infof("Downloading %s to local daemon", img)
+			klog.Infof("Downloading %s to local daemon", img)
 			err := image.WriteImageToDaemon(img)
 			if err == nil {
-				glog.Infof("successfully downloaded %s", img)
+				klog.Infof("successfully downloaded %s", img)
 				finalImg = img
 				return nil
 			}
 			if downloadOnly {
 				if err := image.SaveToDir([]string{img}, constants.ImageCacheDir); err == nil {
-					glog.Infof("successfully saved %s as a tarball", img)
+					klog.Infof("successfully saved %s as a tarball", img)
 					finalImg = img
 					return nil
 				}
 			}
-			glog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
+			klog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
 		}
 		return fmt.Errorf("failed to download kic base image or any fallback image")
 	})
@@ -164,7 +164,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
 		if err != nil {
 			if errors.Is(err, image.ErrGithubNeedsLogin) {
-				glog.Warningf("Error downloading kic artifacts: %v", err)
+				klog.Warningf("Error downloading kic artifacts: %v", err)
 				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": strings.Split(kic.BaseImage, "@")[0]})
 				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
 				out.T(style.Documentation, `Please visit the following link for documentation around this: 
@@ -174,12 +174,12 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 			if errors.Is(err, image.ErrGithubNeedsLogin) || errors.Is(err, image.ErrNeedsLogin) {
 				exit.Message(reason.Usage, `Please either authenticate to the registry or use --base-image flag to use a different registry.`)
 			} else {
-				glog.Errorln("Error downloading kic artifacts: ", err)
+				klog.Errorln("Error downloading kic artifacts: ", err)
 			}
 
 		}
 	}
-	glog.Info("Successfully downloaded all kic artifacts")
+	klog.Info("Successfully downloaded all kic artifacts")
 }
 
 // WaitCacheRequiredImages blocks until the required images are all cached.
@@ -188,7 +188,7 @@ func waitCacheRequiredImages(g *errgroup.Group) {
 		return
 	}
 	if err := g.Wait(); err != nil {
-		glog.Errorln("Error caching images: ", err)
+		klog.Errorln("Error caching images: ", err)
 	}
 }
 

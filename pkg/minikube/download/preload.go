@@ -29,9 +29,9 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -94,7 +94,7 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 	}
 
 	// TODO: debug why this func is being called two times
-	glog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
+	klog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
 	if !viper.GetBool("preload") && !force {
 		return false
 	}
@@ -102,24 +102,24 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 	if _, err := os.Stat(targetPath); err == nil {
-		glog.Infof("Found local preload: %s", targetPath)
+		klog.Infof("Found local preload: %s", targetPath)
 		return true
 	}
 
 	url := remoteTarballURL(k8sVersion, containerRuntime)
 	resp, err := http.Head(url)
 	if err != nil {
-		glog.Warningf("%s fetch error: %v", url, err)
+		klog.Warningf("%s fetch error: %v", url, err)
 		return false
 	}
 
 	// note: err won't be set if it's a 404
 	if resp.StatusCode != 200 {
-		glog.Warningf("%s status code: %d", url, resp.StatusCode)
+		klog.Warningf("%s status code: %d", url, resp.StatusCode)
 		return false
 	}
 
-	glog.Infof("Found remote preload: %s", url)
+	klog.Infof("Found remote preload: %s", url)
 	return true
 }
 
@@ -128,13 +128,13 @@ func Preload(k8sVersion, containerRuntime string) error {
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 
 	if _, err := os.Stat(targetPath); err == nil {
-		glog.Infof("Found %s in cache, skipping download", targetPath)
+		klog.Infof("Found %s in cache, skipping download", targetPath)
 		return nil
 	}
 
 	// Make sure we support this k8s version
 	if !PreloadExists(k8sVersion, containerRuntime) {
-		glog.Infof("Preloaded tarball for k8s version %s does not exist", k8sVersion)
+		klog.Infof("Preloaded tarball for k8s version %s does not exist", k8sVersion)
 		return nil
 	}
 
@@ -157,7 +157,7 @@ func Preload(k8sVersion, containerRuntime string) error {
 }
 
 func saveChecksumFile(k8sVersion, containerRuntime string) error {
-	glog.Infof("saving checksum for %s ...", TarballName(k8sVersion, containerRuntime))
+	klog.Infof("saving checksum for %s ...", TarballName(k8sVersion, containerRuntime))
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
@@ -174,7 +174,7 @@ func saveChecksumFile(k8sVersion, containerRuntime string) error {
 // verifyChecksum returns true if the checksum of the local binary matches
 // the checksum of the remote binary
 func verifyChecksum(k8sVersion, containerRuntime, path string) error {
-	glog.Infof("verifying checksumm of %s ...", path)
+	klog.Infof("verifying checksumm of %s ...", path)
 	// get md5 checksum of tarball path
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {

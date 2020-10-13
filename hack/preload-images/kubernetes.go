@@ -19,8 +19,9 @@ package main
 import (
 	"context"
 
-	"github.com/golang/glog"
 	"github.com/google/go-github/github"
+
+	"k8s.io/klog/v2"
 )
 
 // RecentK8sVersions returns the most recent k8s version, usually around 30
@@ -35,6 +36,6 @@ func RecentK8sVersions() ([]string, error) {
 	for _, r := range list {
 		releases = append(releases, r.GetTagName())
 	}
-	glog.Infof("Got releases: %v", releases)
+	klog.Infof("Got releases: %v", releases)
 	return releases, nil
 }

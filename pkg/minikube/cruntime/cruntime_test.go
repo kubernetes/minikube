@@ -23,10 +23,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/glog"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 )
@@ -416,7 +416,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 
 // systemctl is a fake implementation of systemctl
 func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // nolint result 0 (string) is always ""
-	glog.Infof("fake systemctl: %v", args)
+	klog.Infof("fake systemctl: %v", args)
 	action := args[0]
 
 	if action == "--version" {

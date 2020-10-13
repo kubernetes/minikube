@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -54,17 +54,17 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) bool {
 	}
 	latestVersion, err := getLatestVersionFromURL(url)
 	if err != nil {
-		glog.Warning(err)
+		klog.Warning(err)
 		return true
 	}
 	localVersion, err := version.GetSemverVersion()
 	if err != nil {
-		glog.Warning(err)
+		klog.Warning(err)
 		return true
 	}
 	if localVersion.Compare(latestVersion) < 0 {
 		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
-			glog.Errorf("write time failed: %v", err)
+			klog.Errorf("write time failed: %v", err)
 		}
 		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
 		out.T(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
@@ -123,7 +123,7 @@ func getLatestVersionFromURL(url string) (semver.Version, error) {
 // GetAllVersionsFromURL get all versions from a JSON URL
 func GetAllVersionsFromURL(url string) (Releases, error) {
 	var releases Releases
-	glog.Info("Checking for updates...")
+	klog.Info("Checking for updates...")
 	if err := getJSON(url, &releases); err != nil {
 		return releases, errors.Wrap(err, "Error getting json from minikube version url")
 	}

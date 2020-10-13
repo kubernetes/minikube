@@ -20,7 +20,7 @@ package register
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -109,7 +109,7 @@ func (r *Register) currentStep() string {
 	}
 
 	// Warn, as sometimes detours happen: "start" may cause "stopping" and "deleting"
-	glog.Warningf("%q was not found within the registered steps for %q: %v", r.current, r.first, steps)
+	klog.Warningf("%q was not found within the registered steps for %q: %v", r.current, r.first, steps)
 	return ""
 }
 
@@ -120,7 +120,7 @@ func (r *Register) SetStep(s RegStep) {
 		if ok {
 			r.first = s
 		} else {
-			glog.Errorf("unexpected first step: %q", r.first)
+			klog.Errorf("unexpected first step: %q", r.first)
 		}
 	}
 

@@ -27,8 +27,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
@@ -46,7 +46,7 @@ func NewExecRunner() Runner {
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
-	glog.Infof("Run: %v", rr.Command())
+	klog.Infof("Run: %v", rr.Command())
 
 	var outb, errb io.Writer
 	if cmd.Stdout == nil {
@@ -75,7 +75,7 @@ func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}
 	// Decrease log spam
 	if elapsed > (1 * time.Second) {
-		glog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
+		klog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
 	}
 	if err == nil {
 		return rr, nil
@@ -88,16 +88,16 @@ func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 func (*execRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(dst); err == nil {
-		glog.Infof("found %s, removing ...", dst)
+		klog.Infof("found %s, removing ...", dst)
 		if err := os.Remove(dst); err != nil {
 			return errors.Wrapf(err, "error removing file %s", dst)
 		}
 	}
 
 	src := f.GetSourcePath()
-	glog.Infof("cp: %s --> %s (%d bytes)", src, dst, f.GetLength())
+	klog.Infof("cp: %s --> %s (%d bytes)", src, dst, f.GetLength())
 	if f.GetLength() == 0 {
-		glog.Warningf("0 byte asset: %+v", f)
+		klog.Warningf("0 byte asset: %+v", f)
 	}
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
@@ -111,6 +111,6 @@ func (*execRunner) Copy(f assets.CopyableFile) error {
 // Remove removes a file
 func (*execRunner) Remove(f assets.CopyableFile) error {
 	dst := filepath.Join(f.GetTargetDir(), f.GetTargetName())
-	glog.Infof("rm: %s", dst)
+	klog.Infof("rm: %s", dst)
 	return os.Remove(dst)
 }

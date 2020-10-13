@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
@@ -44,17 +44,17 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 
 	gatewayIP := route.Gateway.String()
 
-	glog.Infof("Adding route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
+	klog.Infof("Adding route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("route", "ADD", destinationIP, "MASK", destinationMask, gatewayIP)
-	glog.Infof("About to run command: %s", command.Args)
+	klog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
 	message := string(stdInAndOut)
 	if message != " OK!\r\n" {
 		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
-	glog.Infof("%s", stdInAndOut)
+	klog.Infof("%s", stdInAndOut)
 	if err != nil {
-		glog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
+		klog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 		return err
 	}
 	return nil
@@ -81,7 +81,7 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 			dstMaskIP := net.ParseIP(dstCIDRMask)
 			gatewayIP := net.ParseIP(fields[2])
 			if dstCIDRIP == nil || dstMaskIP == nil || gatewayIP == nil {
-				glog.V(4).Infof("skipping line: can't parse all IPs from routing table: %s", line)
+				klog.V(4).Infof("skipping line: can't parse all IPs from routing table: %s", line)
 			} else {
 				tableLine := routingTableLine{
 					route: &Route{
@@ -93,7 +93,7 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 					},
 					line: line,
 				}
-				glog.V(4).Infof("adding line %v", tableLine)
+				klog.V(4).Infof("adding line %v", tableLine)
 				t = append(t, tableLine)
 			}
 		}
@@ -127,14 +127,14 @@ func (router *osRouter) Cleanup(route *Route) error {
 	serviceCIDR := route.DestCIDR.String()
 	gatewayIP := route.Gateway.String()
 
-	glog.Infof("Cleaning up route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
+	klog.Infof("Cleaning up route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
 	command := exec.Command("route", "delete", serviceCIDR)
 	stdInAndOut, err := command.CombinedOutput()
 	if err != nil {
 		return err
 	}
 	message := string(stdInAndOut)
-	glog.Infof("'%s'", message)
+	klog.Infof("'%s'", message)
 	if message != " OK!\r\n" {
 		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
 	}

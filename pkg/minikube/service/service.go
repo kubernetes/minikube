@@ -28,13 +28,13 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -210,7 +210,7 @@ func CheckService(cname string, namespace string, service string) error {
 	if len(svc.Spec.Ports) == 0 {
 		return fmt.Errorf("%s:%s has no ports", namespace, service)
 	}
-	glog.Infof("Found service: %+v", svc)
+	klog.Infof("Found service: %+v", svc)
 	return nil
 }
 
@@ -327,7 +327,7 @@ func CreateSecret(cname string, namespace, name string, dataValues map[string]st
 	secrets := client.Secrets(namespace)
 	secret, err := secrets.Get(name, meta.GetOptions{})
 	if err != nil {
-		glog.Infof("Failed to retrieve existing secret: %v", err)
+		klog.Infof("Failed to retrieve existing secret: %v", err)
 	}
 
 	// Delete existing secret

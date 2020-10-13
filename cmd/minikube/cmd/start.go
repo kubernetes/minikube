@@ -30,7 +30,6 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/ssh"
-	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -40,6 +39,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -100,17 +100,17 @@ func platform() string {
 	hi, err := gopshost.Info()
 	if err == nil {
 		s.WriteString(fmt.Sprintf("%s %s", strings.Title(hi.Platform), hi.PlatformVersion))
-		glog.Infof("hostinfo: %+v", hi)
+		klog.Infof("hostinfo: %+v", hi)
 	} else {
-		glog.Warningf("gopshost.Info returned error: %v", err)
+		klog.Warningf("gopshost.Info returned error: %v", err)
 		s.WriteString(runtime.GOOS)
 	}
 
 	vsys, vrole, err := gopshost.Virtualization()
 	if err != nil {
-		glog.Warningf("gopshost.Virtualization returned error: %v", err)
+		klog.Warningf("gopshost.Virtualization returned error: %v", err)
 	} else {
-		glog.Infof("virtualization: %s %s", vsys, vrole)
+		klog.Infof("virtualization: %s %s", vsys, vrole)
 	}
 
 	// This environment is exotic, let's output a bit more.
@@ -207,7 +207,7 @@ func runStart(cmd *cobra.Command, args []string) {
 				// Delete the existing cluster and try again with the next driver on the list
 				profile, err := config.LoadProfile(ClusterFlagValue())
 				if err != nil {
-					glog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
+					klog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
 				}
 
 				err = deleteProfile(profile)
@@ -263,17 +263,17 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
-		glog.Errorf("kubectl info: %v", err)
+		klog.Errorf("kubectl info: %v", err)
 	}
 }
 
 func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
 	driverName := ds.Name
-	glog.Infof("selected driver: %s", driverName)
+	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
 	err := autoSetDriverOptions(cmd, driverName)
 	if err != nil {
-		glog.Errorf("Error autoSetOptions : %v", err)
+		klog.Errorf("Error autoSetOptions : %v", err)
 	}
 
 	validateFlags(cmd, driverName)
@@ -458,7 +458,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	cluster := semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix))
 	minorSkew := int(math.Abs(float64(int(client.Minor) - int(cluster.Minor))))
-	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
+	klog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
@@ -614,19 +614,19 @@ func hostDriver(existing *config.ClusterConfig) string {
 	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Warningf("selectDriver NewAPIClient: %v", err)
+		klog.Warningf("selectDriver NewAPIClient: %v", err)
 		return existing.Driver
 	}
 
 	cp, err := config.PrimaryControlPlane(existing)
 	if err != nil {
-		glog.Warningf("Unable to get control plane from existing config: %v", err)
+		klog.Warningf("Unable to get control plane from existing config: %v", err)
 		return existing.Driver
 	}
 	machineName := driver.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
-		glog.Warningf("api.Load failed for %s: %v", machineName, err)
+		klog.Warningf("api.Load failed for %s: %v", machineName, err)
 		if existing.VMDriver != "" {
 			return existing.VMDriver
 		}
@@ -677,7 +677,7 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 // validateDriver validates that the selected driver appears sane, exits if not
 func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
-	glog.Infof("validating driver %q against %+v", name, existing)
+	klog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
 		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
@@ -688,7 +688,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	}
 
 	st := ds.State
-	glog.Infof("status for %s: %+v", name, st)
+	klog.Infof("status for %s: %+v", name, st)
 
 	if st.NeedsImprovement {
 		out.T(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
@@ -728,7 +728,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
-	glog.Infof("selecting image repository for country %s ...", mirrorCountry)
+	klog.Infof("selecting image repository for country %s ...", mirrorCountry)
 
 	if mirrorCountry != "" {
 		localRepos, ok := constants.ImageRepositories[mirrorCountry]
@@ -780,7 +780,7 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 func validateUser(drvName string) {
 	u, err := user.Current()
 	if err != nil {
-		glog.Errorf("Error getting the current user: %v", err)
+		klog.Errorf("Error getting the current user: %v", err)
 		return
 	}
 
@@ -814,10 +814,10 @@ func validateUser(drvName string) {
 func memoryLimits(drvName string) (int, int, error) {
 	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
 	if cpuErr != nil {
-		glog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
+		klog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
 	if diskErr != nil {
-		glog.Warningf("could not get system disk info while verifying memory limits, which might be okay: %v", diskErr)
+		klog.Warningf("could not get system disk info while verifying memory limits, which might be okay: %v", diskErr)
 	}
 
 	if memErr != nil {
@@ -881,7 +881,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 	// TODO: Fix MB vs MiB confusion
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
-		glog.Warningf("Unable to query memory limits: %v", err)
+		klog.Warningf("Unable to query memory limits: %v", err)
 	}
 
 	// Detect if their system doesn't have enough memory to work with.
@@ -938,7 +938,7 @@ func validateCPUCount(drvName string) {
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
-			glog.Warningf("Unable to get CPU info: %v", err)
+			klog.Warningf("Unable to get CPU info: %v", err)
 		} else {
 			cpuCount = ci
 		}
@@ -1088,7 +1088,7 @@ func validateRegistryMirror() {
 		for _, loc := range registryMirror {
 			URL, err := url.Parse(loc)
 			if err != nil {
-				glog.Errorln("Error Parsing URL: ", err)
+				klog.Errorln("Error Parsing URL: ", err)
 			}
 			if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
 				exit.Message(reason.Usage, "Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}", out.V{"url": loc})
@@ -1137,10 +1137,10 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	if len(hints.ExtraOptions) > 0 {
 		for _, eo := range hints.ExtraOptions {
 			if config.ExtraOptions.Exists(eo) {
-				glog.Infof("skipping extra-config %q.", eo)
+				klog.Infof("skipping extra-config %q.", eo)
 				continue
 			}
-			glog.Infof("auto setting extra-config to %q.", eo)
+			klog.Infof("auto setting extra-config to %q.", eo)
 			err = config.ExtraOptions.Set(eo)
 			if err != nil {
 				err = errors.Wrapf(err, "setting extra option %s", eo)
@@ -1154,12 +1154,12 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 
 	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
 		viper.Set(containerRuntime, hints.ContainerRuntime)
-		glog.Infof("auto set %s to %q.", containerRuntime, hints.ContainerRuntime)
+		klog.Infof("auto set %s to %q.", containerRuntime, hints.ContainerRuntime)
 	}
 
 	if !cmd.Flags().Changed(cmdcfg.Bootstrapper) && hints.Bootstrapper != "" {
 		viper.Set(cmdcfg.Bootstrapper, hints.Bootstrapper)
-		glog.Infof("auto set %s to %q.", cmdcfg.Bootstrapper, hints.Bootstrapper)
+		klog.Infof("auto set %s to %q.", cmdcfg.Bootstrapper, hints.Bootstrapper)
 
 	}
 
@@ -1193,7 +1193,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
 	if err != nil {
-		glog.Errorf("Error parsing old version %q: %v", old.KubernetesConfig.KubernetesVersion, err)
+		klog.Errorf("Error parsing old version %q: %v", old.KubernetesConfig.KubernetesVersion, err)
 	}
 
 	if nvs.LT(ovs) {
@@ -1249,7 +1249,7 @@ func validateDockerStorageDriver(drvName string) {
 	}
 	si, err := oci.DaemonInfo(drvName)
 	if err != nil {
-		glog.Warningf("Unable to confirm that %s is using overlay2 storage driver; setting preload=false", drvName)
+		klog.Warningf("Unable to confirm that %s is using overlay2 storage driver; setting preload=false", drvName)
 		viper.Set(preload, false)
 		return
 	}

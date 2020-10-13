@@ -33,9 +33,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+
+	"k8s.io/klog/v2"
 )
 
 var output string
@@ -60,7 +61,7 @@ func printProfilesTable() {
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 
 	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+		klog.Warningf("error loading profiles: %v", err)
 	}
 
 	if len(validProfiles) == 0 {
@@ -75,7 +76,7 @@ func printProfilesTable() {
 func updateProfilesStatus(profiles []*config.Profile) {
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Errorf("failed to get machine api client %v", err)
+		klog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
 
@@ -92,25 +93,25 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 
 	host, err := machine.LoadHost(api, driver.MachineName(*p.Config, cp))
 	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+		klog.Warningf("error loading profiles: %v", err)
 		return "Unknown"
 	}
 
 	cr, err := machine.CommandRunner(host)
 	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+		klog.Warningf("error loading profiles: %v", err)
 		return "Unknown"
 	}
 
 	hostname, _, port, err := driver.ControlPlaneEndpoint(p.Config, &cp, host.DriverName)
 	if err != nil {
-		glog.Warningf("error loading profiles: %v", err)
+		klog.Warningf("error loading profiles: %v", err)
 		return "Unknown"
 	}
 
 	status, err := kverify.APIServerStatus(cr, hostname, port)
 	if err != nil {
-		glog.Warningf("error getting apiserver status for %s: %v", p.Name, err)
+		klog.Warningf("error getting apiserver status for %s: %v", p.Name, err)
 		return "Unknown"
 	}
 	return status.String()

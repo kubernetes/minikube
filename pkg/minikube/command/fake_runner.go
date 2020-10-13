@@ -26,9 +26,9 @@ import (
 
 	"golang.org/x/sync/syncmap"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
@@ -50,7 +50,7 @@ func NewFakeCommandRunner() *FakeCommandRunner {
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
-	glog.Infof("(FakeCommandRunner) Run:  %v", rr.Command())
+	klog.Infof("(FakeCommandRunner) Run:  %v", rr.Command())
 
 	start := time.Now()
 
@@ -85,7 +85,7 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	// Reduce log spam
 	if elapsed > (1 * time.Second) {
-		glog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
+		klog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
 	}
 	return rr, nil
 }
@@ -117,7 +117,7 @@ func (f *FakeCommandRunner) SetFileToContents(fileToContents map[string]string) 
 // SetCommandToOutput stores the file to contents map for the FakeCommandRunner
 func (f *FakeCommandRunner) SetCommandToOutput(cmdToOutput map[string]string) {
 	for k, v := range cmdToOutput {
-		glog.Infof("fake command %q -> %q", k, v)
+		klog.Infof("fake command %q -> %q", k, v)
 		f.cmdMap.Store(k, v)
 	}
 }

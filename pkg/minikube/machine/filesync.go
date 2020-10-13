@@ -23,8 +23,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -115,7 +115,7 @@ func syncDest(localRoot string, localPath string, destRoot string, flatten bool)
 
 // assetsFromDir generates assets from a local filepath, with/without a flattened hierarchy
 func assetsFromDir(localRoot string, destRoot string, flatten bool) ([]assets.CopyableFile, error) {
-	glog.Infof("Scanning %s for local assets ...", localRoot)
+	klog.Infof("Scanning %s for local assets ...", localRoot)
 	fs := []assets.CopyableFile{}
 	err := filepath.Walk(localRoot, func(localPath string, fi os.FileInfo, err error) error {
 		if err != nil {
@@ -138,7 +138,7 @@ func assetsFromDir(localRoot string, destRoot string, flatten bool) ([]assets.Co
 		targetDir := path.Dir(dest)
 		targetName := path.Base(dest)
 
-		glog.Infof("local asset: %s -> %s in %s", localPath, targetName, targetDir)
+		klog.Infof("local asset: %s -> %s in %s", localPath, targetName, targetDir)
 		f, err := assets.NewFileAsset(localPath, targetDir, targetName, ps)
 		if err != nil {
 			return errors.Wrapf(err, "creating file asset for %s", localPath)

@@ -40,8 +40,8 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -162,10 +162,10 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 
 // Create creates the host
 func (api *LocalClient) Create(h *host.Host) error {
-	glog.Infof("LocalClient.Create starting")
+	klog.Infof("LocalClient.Create starting")
 	start := time.Now()
 	defer func() {
-		glog.Infof("LocalClient.Create took %s", time.Since(start))
+		klog.Infof("LocalClient.Create took %s", time.Since(start))
 	}()
 
 	def := registry.Driver(h.DriverName)

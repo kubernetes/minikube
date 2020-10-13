@@ -29,10 +29,10 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -96,9 +96,9 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
 	hostIP, err := cluster.HostIP(starter.Host, starter.Cfg.Name)
 	if err != nil {
-		glog.Errorf("Unable to get host IP: %v", err)
+		klog.Errorf("Unable to get host IP: %v", err)
 	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
-		glog.Errorf("Unable to add host alias: %v", err)
+		klog.Errorf("Unable to add host alias: %v", err)
 	}
 
 	var bs bootstrapper.Bootstrapper
@@ -196,12 +196,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	glog.Infof("Will wait %s for node ...", waitTimeout)
+	klog.Infof("Will wait %s for node ...", waitTimeout)
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}
 
-	glog.Infof("waiting for startup goroutines ...")
+	klog.Infof("waiting for startup goroutines ...")
 	wg.Wait()
 
 	// Write enabled addons to the config before completion
@@ -264,7 +264,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 			case *cruntime.ErrISOFeature:
 				out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
 			default:
-				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
+				klog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
 			}
 
 			if err := machine.CacheImagesForBootstrapper(cc.KubernetesConfig.ImageRepository, cc.KubernetesConfig.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
@@ -374,31 +374,31 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, del
 	if err == nil {
 		return host, exists, nil
 	}
-	glog.Warningf("error starting host: %v", err)
+	klog.Warningf("error starting host: %v", err)
 	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
 	if !exists {
 		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
 		if err != nil {
-			glog.Warningf("delete host: %v", err)
+			klog.Warningf("delete host: %v", err)
 		}
 	}
 
 	if err, ff := errors.Cause(err).(*oci.FailFastError); ff {
-		glog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
+		klog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
 		return host, exists, err
 	}
 
 	out.ErrT(style.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
-	glog.Info("Will try again in 5 seconds ...")
+	klog.Info("Will try again in 5 seconds ...")
 	// Try again, but just once to avoid making the logs overly confusing
 	time.Sleep(5 * time.Second)
 
 	if delOnFail {
-		glog.Info("Deleting existing host since delete-on-failure was set.")
+		klog.Info("Deleting existing host since delete-on-failure was set.")
 		// Delete the failed existing host
 		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
 		if err != nil {
-			glog.Warningf("delete host: %v", err)
+			klog.Warningf("delete host: %v", err)
 		}
 	}
 
@@ -461,7 +461,7 @@ func trySSH(h *host.Host, ip string) error {
 		d := net.Dialer{Timeout: 3 * time.Second}
 		conn, err := d.Dial("tcp", sshAddr)
 		if err != nil {
-			glog.Warningf("dial failed (will retry): %v", err)
+			klog.Warningf("dial failed (will retry): %v", err)
 			return err
 		}
 		_ = conn.Close()
@@ -506,7 +506,7 @@ func tryRegistry(r command.Runner, driverName string, imageRepository string) {
 
 	opts = append(opts, fmt.Sprintf("https://%s/", imageRepository))
 	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
-		glog.Warningf("%s failed: %v", rr.Args, err)
+		klog.Warningf("%s failed: %v", rr.Args, err)
 		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": imageRepository, "type": driver.MachineType(driverName)})
 		out.ErrT(style.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
@@ -548,8 +548,8 @@ func rescaleCoreDNS(cc *config.ClusterConfig, runner command.Runner) {
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "scale", "deployment", "--replicas=1", "coredns", "-n=kube-system")
 	if _, err := runner.RunCmd(cmd); err != nil {
-		glog.Warningf("unable to scale coredns replicas to 1: %v", err)
+		klog.Warningf("unable to scale coredns replicas to 1: %v", err)
 	} else {
-		glog.Infof("successfully scaled coredns replicas to 1")
+		klog.Infof("successfully scaled coredns replicas to 1")
 	}
 }

@@ -29,9 +29,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/browser"
@@ -154,7 +154,7 @@ func openURLs(svc string, urls []string) {
 	for _, u := range urls {
 		_, err := url.Parse(u)
 		if err != nil {
-			glog.Warningf("failed to parse url %q: %v (will not open)", u, err)
+			klog.Warningf("failed to parse url %q: %v (will not open)", u, err)
 			out.String(fmt.Sprintf("%s\n", u))
 			continue
 		}
