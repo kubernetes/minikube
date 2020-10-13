@@ -28,7 +28,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// ServiceStatus checks the kubelet status
+// ServiceStatus checks the status of a systemd or init.d service
 func ServiceStatus(cr command.Runner, svc string) state.State {
 	active := sysinit.New(cr).Active(svc)
 	if active {
