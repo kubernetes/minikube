@@ -22,14 +22,6 @@ import (
 	"strings"
 	"time"
 
-<<<<<<< HEAD
-	"github.com/docker/machine/libmachine/state"
-||||||| parent of a1b34164f (ensure kubelet is running and wait for it)
-	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
-=======
-	"github.com/golang/glog"
->>>>>>> a1b34164f (ensure kubelet is running and wait for it)
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -161,5 +153,3 @@ func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg conf
 		time.Sleep(kconst.APICallRetryInterval * 15)
 	}
 }
-
-

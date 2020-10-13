@@ -32,19 +32,17 @@ import (
 func ServiceStatus(cr command.Runner, svc string) state.State {
 	active := sysinit.New(cr).Active(svc)
 	if active {
-		klog.Infof("%s status = running", svc)
 		return state.Running
 	}
-	klog.Infof("%s status = not running", svc)
 	return state.Stopped
 }
 
-// WaitForKubelet will wait for Kubelet service to be running ...
-func WaitForKubelet(cr command.Runner, timeout time.Duration) error {
+// WaitForService will wait for a systemd or init.d service to be running on the node...
+func WaitForService(cr command.Runner, svc string, timeout time.Duration) error {
 	pStart := time.Now()
 	klog.Infof("waiting for kubelet to be running ....")
 	kr := func() error {
-		if st := ServiceStatus(cr); st != state.Running {
+		if st := ServiceStatus(cr, svc); st != state.Running {
 			return fmt.Errorf("status %s", st)
 		}
 		return nil
@@ -54,7 +52,7 @@ func WaitForKubelet(cr command.Runner, timeout time.Duration) error {
 		return fmt.Errorf("not running: %s", err)
 	}
 
-	klog.Infof("duration metric: took %s WaitForKubelet to finish.", time.Since(pStart))
+	klog.Infof("duration metric: took %s WaitForService to finish.", time.Since(pStart))
 
 	return nil
 
