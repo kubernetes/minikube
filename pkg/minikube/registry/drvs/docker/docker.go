@@ -97,7 +97,7 @@ func status() registry.State {
 
 	dh := os.Getenv("DOCKER_HOST")
 	fmt.Printf("DOCKER_HOST=%s\n", dh)
-	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "'{{.Server.Os}}-{{.Server.Version}}'")
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
 	o, err := cmd.Output()
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
