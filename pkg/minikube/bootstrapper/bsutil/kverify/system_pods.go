@@ -22,7 +22,14 @@ import (
 	"strings"
 	"time"
 
+<<<<<<< HEAD
 	"github.com/docker/machine/libmachine/state"
+||||||| parent of a1b34164f (ensure kubelet is running and wait for it)
+	"github.com/docker/machine/libmachine/state"
+	"github.com/golang/glog"
+=======
+	"github.com/golang/glog"
+>>>>>>> a1b34164f (ensure kubelet is running and wait for it)
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +41,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
-	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -156,12 +162,4 @@ func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg conf
 	}
 }
 
-// KubeletStatus checks the kubelet status
-func KubeletStatus(cr command.Runner) state.State {
-	klog.Infof("Checking kubelet status ...")
-	active := sysinit.New(cr).Active("kubelet")
-	if active {
-		return state.Running
-	}
-	return state.Stopped
-}
+

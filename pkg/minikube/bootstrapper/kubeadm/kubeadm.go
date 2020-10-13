@@ -392,10 +392,13 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 // WaitForNode blocks until the node appears to be healthy
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
-
 	register.Reg.SetStep(register.VerifyingKubernetes)
 	out.T(style.HealthCheck, "Verifying Kubernetes components...")
-
+	// regardless if waiting or not, we make sure it is not stopped
+	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
+	if err := k.ensureKubeletStarted(); err != nil {
+		klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
+	}
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
@@ -455,6 +458,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			}
 		}
 	}
+	if cfg.VerifyComponents[kverify.KubeletKey] {
+		if err := kverify.WaitForKubelet(k.c, timeout); err != nil {
+			return errors.Wrap(err, "waiting for kubelet")
+		}
+
+	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
 		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
@@ -467,6 +476,16 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, cfg.Name, cfg.Driver)
 		return errors.Wrap(err, "node pressure")
+	}
+	return nil
+}
+
+// ensureKubeletStarted will start kubelet if whatever reason it is stopped.
+func (k *Bootstrapper) ensureKubeletStarted() error {
+	fmt.Println("inside ensureKubeletStarted")
+	if kverify.KubeletStatus(k.c) != state.Running {
+		fmt.Println("kubelet was not running for some reason , starting it...")
+		return sysinit.New(k.c).Start("kubelet")
 	}
 	return nil
 }
