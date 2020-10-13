@@ -161,7 +161,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 		}
 
 		if sudoNeedsPassword() {
-			t.Skipf("password required to execute 'ls', skipping remaining test: %v", err)
+			t.Skipf("password required to execute 'ls', skipping remaining test")
 		}
 
 		err = driver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
