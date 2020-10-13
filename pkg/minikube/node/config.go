@@ -24,8 +24,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -62,12 +62,12 @@ func configureMounts(wg *sync.WaitGroup) {
 	out.T(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
 	path := os.Args[0]
 	mountDebugVal := 0
-	if glog.V(8) {
+	if klog.V(8).Enabled() {
 		mountDebugVal = 1
 	}
 	mountCmd := exec.Command(path, "mount", fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
 	mountCmd.Env = append(os.Environ(), constants.IsMinikubeChildProcess+"=true")
-	if glog.V(8) {
+	if klog.V(8).Enabled() {
 		mountCmd.Stdout = os.Stdout
 		mountCmd.Stderr = os.Stderr
 	}

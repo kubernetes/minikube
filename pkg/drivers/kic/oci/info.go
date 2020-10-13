@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 // SysInfo Info represents common system Information between docker and podman that minikube cares
@@ -250,7 +250,7 @@ func dockerSystemInfo() (dockerSysInfo, error) {
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
 
-	glog.Infof("docker info: %+v", ds)
+	klog.Infof("docker info: %+v", ds)
 	return ds, nil
 }
 
@@ -270,6 +270,6 @@ func podmanSystemInfo() (podmanSysInfo, error) {
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ps); err != nil {
 		return ps, errors.Wrapf(err, "unmarshal podman system info")
 	}
-	glog.Infof("podman info: %+v", ps)
+	klog.Infof("podman info: %+v", ps)
 	return ps, nil
 }

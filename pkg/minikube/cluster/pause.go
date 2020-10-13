@@ -19,8 +19,8 @@ package cluster
 import (
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -61,7 +61,7 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 	}
 
 	if len(ids) == 0 {
-		glog.Warningf("no running containers to pause")
+		klog.Warningf("no running containers to pause")
 		return ids, nil
 	}
 
@@ -90,7 +90,7 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 	}
 
 	if len(ids) == 0 {
-		glog.Warningf("no paused containers found")
+		klog.Warningf("no paused containers found")
 	} else if err := cr.UnpauseContainers(ids); err != nil {
 		return ids, errors.Wrap(err, "unpause")
 	}

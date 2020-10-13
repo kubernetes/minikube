@@ -19,11 +19,12 @@ package kic
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"k8s.io/klog/v2"
 )
 
 // ServiceTunnel ...
@@ -58,7 +59,7 @@ func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 	go func() {
 		err = t.sshConn.startAndWait()
 		if err != nil {
-			glog.Errorf("error starting ssh tunnel: %v", err)
+			klog.Errorf("error starting ssh tunnel: %v", err)
 		}
 	}()
 

@@ -22,8 +22,8 @@ import (
 	"os/exec"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -190,7 +190,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 
 		// Don't disable containerd if we are bound to it
 		if me.Name() == "Docker" && r.Name() == "containerd" && dockerBoundToContainerd(cr) {
-			glog.Infof("skipping containerd shutdown because we are bound to it")
+			klog.Infof("skipping containerd shutdown because we are bound to it")
 			continue
 		}
 
@@ -200,7 +200,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 		}
 
 		if err = r.Disable(); err != nil {
-			glog.Warningf("disable failed: %v", err)
+			klog.Warningf("disable failed: %v", err)
 		}
 
 		// Validate that the runtime really is offline - and that Active & Disable are properly written.
@@ -216,7 +216,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 func enableIPForwarding(cr CommandRunner) error {
 	c := exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables")
 	if rr, err := cr.RunCmd(c); err != nil {
-		glog.Infof("couldn't verify netfilter by %q which might be okay. error: %v", rr.Command(), err)
+		klog.Infof("couldn't verify netfilter by %q which might be okay. error: %v", rr.Command(), err)
 		c = exec.Command("sudo", "modprobe", "br_netfilter")
 		if _, err := cr.RunCmd(c); err != nil {
 			return errors.Wrapf(err, "br_netfilter")

@@ -42,8 +42,9 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/golang/glog"
 	"github.com/google/go-github/v32/github"
+
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -127,17 +128,17 @@ func (p *Patch) apply(data interface{}) (changed bool, err error) {
 func main() {
 	// write log statements to stderr instead of to files
 	if err := flag.Set("logtostderr", "true"); err != nil {
-		fmt.Printf("Error setting 'logtostderr' glog flag: %v", err)
+		fmt.Printf("Error setting 'logtostderr' klog flag: %v", err)
 	}
 	flag.Parse()
-	defer glog.Flush()
+	defer klog.Flush()
 
 	if target == "" {
 		target = "fs"
 	} else if target != "fs" && target != "gh" && target != "all" {
-		glog.Fatalf("Invalid UPDATE_TARGET option: '%s'; Valid options are: unset/absent (defaults to 'fs'), 'fs', 'gh', or 'all'", target)
+		klog.Fatalf("Invalid UPDATE_TARGET option: '%s'; Valid options are: unset/absent (defaults to 'fs'), 'fs', 'gh', or 'all'", target)
 	} else if (target == "gh" || target == "all") && ghToken == "" {
-		glog.Fatalf("GITHUB_TOKEN is required if UPDATE_TARGET is 'gh' or 'all'")
+		klog.Fatalf("GITHUB_TOKEN is required if UPDATE_TARGET is 'gh' or 'all'")
 	}
 
 	// set a context with defined timeout
@@ -147,21 +148,21 @@ func main() {
 	// get Kubernetes versions from GitHub Releases
 	stable, latest, err := ghReleases(ctx, "kubernetes", "kubernetes", ghToken)
 	if err != nil || stable == "" || latest == "" {
-		glog.Fatalf("Error getting Kubernetes versions: %v", err)
+		klog.Fatalf("Error getting Kubernetes versions: %v", err)
 	}
 	data := Data{K8sStableVersion: stable, K8sLatestVersion: latest}
-	glog.Infof("Kubernetes versions: 'stable' is %s and 'latest' is %s", data.K8sStableVersion, data.K8sLatestVersion)
+	klog.Infof("Kubernetes versions: 'stable' is %s and 'latest' is %s", data.K8sStableVersion, data.K8sLatestVersion)
 
-	glog.Infof("The Plan:\n%s", thePlan(plan, data))
+	klog.Infof("The Plan:\n%s", thePlan(plan, data))
 
 	if target == "fs" || target == "all" {
 		changed, err := fsUpdate(fsRoot, plan, data)
 		if err != nil {
-			glog.Errorf("Error updating local repo: %v", err)
+			klog.Errorf("Error updating local repo: %v", err)
 		} else if !changed {
-			glog.Infof("Local repo update skipped: nothing changed")
+			klog.Infof("Local repo update skipped: nothing changed")
 		} else {
-			glog.Infof("Local repo updated")
+			klog.Infof("Local repo updated")
 		}
 	}
 
@@ -170,25 +171,25 @@ func main() {
 		tmpl := template.Must(template.New("prTitle").Parse(prTitle))
 		buf := new(bytes.Buffer)
 		if err := tmpl.Execute(buf, data); err != nil {
-			glog.Fatalf("Error parsing PR Title: %v", err)
+			klog.Fatalf("Error parsing PR Title: %v", err)
 		}
 		prTitle = buf.String()
 
 		// check if PR already exists
 		prURL, err := ghFindPR(ctx, prTitle, ghOwner, ghRepo, ghBase, ghToken)
 		if err != nil {
-			glog.Errorf("Error checking if PR already exists: %v", err)
+			klog.Errorf("Error checking if PR already exists: %v", err)
 		} else if prURL != "" {
-			glog.Infof("PR create skipped: already exists (%s)", prURL)
+			klog.Infof("PR create skipped: already exists (%s)", prURL)
 		} else {
 			// create PR
 			pr, err := ghCreatePR(ctx, ghOwner, ghRepo, ghBase, prBranchPrefix, prTitle, prIssue, ghToken, plan, data)
 			if err != nil {
-				glog.Fatalf("Error creating PR: %v", err)
+				klog.Fatalf("Error creating PR: %v", err)
 			} else if pr == nil {
-				glog.Infof("PR create skipped: nothing changed")
+				klog.Infof("PR create skipped: nothing changed")
 			} else {
-				glog.Infof("PR created: %s", *pr.HTMLURL)
+				klog.Infof("PR created: %s", *pr.HTMLURL)
 			}
 		}
 	}
@@ -287,7 +288,7 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 	if err != nil {
 		return nil, fmt.Errorf("error creating fork commit: %w", err)
 	}
-	glog.Infof("PR commit '%s' created: %s", forkCommit.GetSHA(), forkCommit.GetHTMLURL())
+	klog.Infof("PR commit '%s' created: %s", forkCommit.GetSHA(), forkCommit.GetHTMLURL())
 
 	// create PR branch
 	prBranch := branch + forkCommit.GetSHA()[:7]
@@ -301,7 +302,7 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 	if err != nil {
 		return nil, fmt.Errorf("error creating PR branch: %w", err)
 	}
-	glog.Infof("PR branch '%s' created: %s", prBranch, prRef.GetURL())
+	klog.Infof("PR branch '%s' created: %s", prBranch, prRef.GetURL())
 
 	// create PR
 	modifiable := true
@@ -447,7 +448,7 @@ func thePlan(plan map[string]Patch, data Data) (prettyprint string) {
 			tmpl := template.Must(template.New("").Parse(dst))
 			buf := new(bytes.Buffer)
 			if err := tmpl.Execute(buf, data); err != nil {
-				glog.Fatalf("Error parsing the Plan: %v", err)
+				klog.Fatalf("Error parsing the Plan: %v", err)
 				return fmt.Sprintf("%+v", plan)
 			}
 			p.Replace[src] = buf.String()
@@ -455,7 +456,7 @@ func thePlan(plan map[string]Patch, data Data) (prettyprint string) {
 	}
 	str, err := json.MarshalIndent(plan, "", "  ")
 	if err != nil {
-		glog.Fatalf("Error parsing the Plan: %v", err)
+		klog.Fatalf("Error parsing the Plan: %v", err)
 		return fmt.Sprintf("%+v", plan)
 	}
 	return string(str)

@@ -22,13 +22,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
@@ -39,7 +39,7 @@ func DeleteFromCacheDir(images []string) error {
 	for _, image := range images {
 		path := filepath.Join(constants.ImageCacheDir, image)
 		path = localpath.SanitizeCacheDir(path)
-		glog.Infoln("Deleting image in cache at ", path)
+		klog.Infoln("Deleting image in cache at ", path)
 		if err := os.Remove(path); err != nil {
 			return err
 		}
@@ -60,17 +60,17 @@ func SaveToDir(images []string, cacheDir string) error {
 			dst := filepath.Join(cacheDir, image)
 			dst = localpath.SanitizeCacheDir(dst)
 			if err := saveToTarFile(image, dst); err != nil {
-				glog.Errorf("save image to file %q -> %q failed: %v", image, dst, err)
+				klog.Errorf("save image to file %q -> %q failed: %v", image, dst, err)
 				return errors.Wrapf(err, "caching image %q", dst)
 			}
-			glog.Infof("save to tar file %s -> %s succeeded", image, dst)
+			klog.Infof("save to tar file %s -> %s succeeded", image, dst)
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return errors.Wrap(err, "caching images")
 	}
-	glog.Infoln("Successfully saved all images to host disk.")
+	klog.Infoln("Successfully saved all images to host disk.")
 	return nil
 }
 
@@ -78,7 +78,7 @@ func SaveToDir(images []string, cacheDir string) error {
 func saveToTarFile(iname, rawDest string) error {
 	start := time.Now()
 	defer func() {
-		glog.Infof("cache image %q -> %q took %s", iname, rawDest, time.Since(start))
+		klog.Infof("cache image %q -> %q took %s", iname, rawDest, time.Since(start))
 	}()
 
 	// OS-specific mangling of destination path
@@ -89,7 +89,7 @@ func saveToTarFile(iname, rawDest string) error {
 
 	spec := lock.PathMutexSpec(dst)
 	spec.Timeout = 10 * time.Minute
-	glog.Infof("acquiring lock: %+v", spec)
+	klog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
@@ -97,7 +97,7 @@ func saveToTarFile(iname, rawDest string) error {
 	defer releaser.Release()
 
 	if _, err := os.Stat(dst); err == nil {
-		glog.Infof("%s exists", dst)
+		klog.Infof("%s exists", dst)
 		return nil
 	}
 
@@ -115,7 +115,7 @@ func saveToTarFile(iname, rawDest string) error {
 
 	img, err := retrieveImage(ref)
 	if err != nil {
-		glog.Warningf("unable to retrieve image: %v", err)
+		klog.Warningf("unable to retrieve image: %v", err)
 	}
 	if img == nil {
 		return errors.Wrapf(err, "nil image for %s", iname)
@@ -126,12 +126,12 @@ func saveToTarFile(iname, rawDest string) error {
 		return err
 	}
 
-	glog.Infof("%s exists", dst)
+	klog.Infof("%s exists", dst)
 	return nil
 }
 
 func writeImage(img v1.Image, dst string, ref name.Reference) error {
-	glog.Infoln("opening: ", dst)
+	klog.Infoln("opening: ", dst)
 	f, err := ioutil.TempFile(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
 	if err != nil {
 		return err
@@ -142,7 +142,7 @@ func writeImage(img v1.Image, dst string, ref name.Reference) error {
 		if err == nil {
 			err = os.Remove(f.Name())
 			if err != nil {
-				glog.Warningf("failed to clean up the temp file %s: %v", f.Name(), err)
+				klog.Warningf("failed to clean up the temp file %s: %v", f.Name(), err)
 			}
 		}
 	}()

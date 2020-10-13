@@ -24,8 +24,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 )
 
@@ -69,7 +69,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		return errors.Wrapf(err, "mount with cmd %s ", rr.Command())
 	}
 
-	glog.Infof("mount successful: %q", rr.Output())
+	klog.Infof("mount successful: %q", rr.Output())
 	return nil
 }
 
@@ -144,6 +144,6 @@ func Unmount(r mountRunner, target string) error {
 	if _, err := r.RunCmd(c); err != nil {
 		return errors.Wrap(err, "unmount")
 	}
-	glog.Infof("unmount for %s ran successfully", target)
+	klog.Infof("unmount for %s ran successfully", target)
 	return nil
 }

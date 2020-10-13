@@ -25,9 +25,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -52,7 +52,7 @@ func LocalISOResource(isoURL string) string {
 	u, err := url.Parse(isoURL)
 	if err != nil {
 		fake := "file://" + filepath.ToSlash(isoURL)
-		glog.Errorf("%s is not a URL! Returning %s", isoURL, fake)
+		klog.Errorf("%s is not a URL! Returning %s", isoURL, fake)
 		return fake
 	}
 
@@ -84,7 +84,7 @@ func ISO(urls []string, skipChecksum bool) (string, error) {
 	for _, url := range urls {
 		err := downloadISO(url, skipChecksum)
 		if err != nil {
-			glog.Errorf("Unable to download %s: %v", url, err)
+			klog.Errorf("Unable to download %s: %v", url, err)
 			errs[url] = err.Error()
 			continue
 		}
@@ -116,7 +116,7 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 	dst := localISOPath(u)
 	spec := lock.PathMutexSpec(dst)
 	spec.Timeout = 10 * time.Minute
-	glog.Infof("acquiring lock: %+v", spec)
+	klog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)

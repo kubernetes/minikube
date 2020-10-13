@@ -28,8 +28,8 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/pkgaction"
 	"github.com/docker/machine/libmachine/swarm"
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -68,7 +68,7 @@ func (p *UbuntuProvisioner) GenerateDockerOptions(dockerPort int) (*provision.Do
 	noPivot := true
 	// Using pivot_root is not supported on fstype rootfs
 	if fstype, err := rootFileSystemType(p); err == nil {
-		glog.Infof("root file system type: %s", fstype)
+		klog.Infof("root file system type: %s", fstype)
 		noPivot = fstype == "rootfs"
 	}
 
@@ -84,7 +84,7 @@ Requires=docker.socket
 Type=notify
 `
 	if noPivot {
-		glog.Warning("Using fundamentally insecure --no-pivot option")
+		klog.Warning("Using fundamentally insecure --no-pivot option")
 		engineConfigTmpl += `
 # DOCKER_RAMDISK disables pivot_root in Docker, using MS_MOVE instead.
 Environment=DOCKER_RAMDISK=yes
@@ -163,18 +163,18 @@ func (p *UbuntuProvisioner) Provision(swarmOptions swarm.Options, authOptions au
 	p.AuthOptions = authOptions
 	p.EngineOptions = engineOptions
 
-	glog.Infof("provisioning hostname %q", p.Driver.GetMachineName())
+	klog.Infof("provisioning hostname %q", p.Driver.GetMachineName())
 	if err := p.SetHostname(p.Driver.GetMachineName()); err != nil {
 		return err
 	}
 
 	p.AuthOptions = setRemoteAuthOptions(p)
-	glog.Infof("set auth options %+v", p.AuthOptions)
+	klog.Infof("set auth options %+v", p.AuthOptions)
 
-	glog.Infof("setting up certificates")
+	klog.Infof("setting up certificates")
 	configAuth := func() error {
 		if err := configureAuth(p); err != nil {
-			glog.Warningf("configureAuth failed: %v", err)
+			klog.Warningf("configureAuth failed: %v", err)
 			return &retry.RetriableError{Err: err}
 		}
 		return nil
@@ -183,13 +183,13 @@ func (p *UbuntuProvisioner) Provision(swarmOptions swarm.Options, authOptions au
 	err := retry.Expo(configAuth, 100*time.Microsecond, 2*time.Minute)
 
 	if err != nil {
-		glog.Infof("Error configuring auth during provisioning %v", err)
+		klog.Infof("Error configuring auth during provisioning %v", err)
 		return err
 	}
 
-	glog.Infof("setting minikube options for container-runtime")
+	klog.Infof("setting minikube options for container-runtime")
 	if err := setContainerRuntimeOptions(p.clusterName, p); err != nil {
-		glog.Infof("Error setting container-runtime options during provisioning %v", err)
+		klog.Infof("Error setting container-runtime options during provisioning %v", err)
 		return err
 	}
 

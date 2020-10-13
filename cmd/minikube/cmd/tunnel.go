@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -54,9 +54,9 @@ var tunnelCmd = &cobra.Command{
 		co := mustload.Healthy(cname)
 
 		if cleanup {
-			glog.Info("Checking for tunnels to cleanup...")
+			klog.Info("Checking for tunnels to cleanup...")
 			if err := manager.CleanupNotRunningTunnels(); err != nil {
-				glog.Errorf("error cleaning up: %s", err)
+				klog.Errorf("error cleaning up: %s", err)
 			}
 		}
 

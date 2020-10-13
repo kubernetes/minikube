@@ -20,28 +20,28 @@ package kverify
 import (
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 // WaitForDefaultSA waits for the default service account to be created.
 func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
-	glog.Info("waiting for default service account to be created ...")
+	klog.Info("waiting for default service account to be created ...")
 	start := time.Now()
 	saReady := func() (bool, error) {
 		// equivalent to manual check of 'kubectl --context profile get serviceaccount default'
 		sas, err := cs.CoreV1().ServiceAccounts("default").List(meta.ListOptions{})
 		if err != nil {
-			glog.Infof("temproary error waiting for default SA: %v", err)
+			klog.Infof("temproary error waiting for default SA: %v", err)
 			return false, nil
 		}
 		for _, sa := range sas.Items {
 			if sa.Name == "default" {
-				glog.Infof("found service account: %q", sa.Name)
+				klog.Infof("found service account: %q", sa.Name)
 				return true, nil
 			}
 		}
@@ -51,6 +51,6 @@ func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 		return errors.Wrapf(err, "waited %s for SA", time.Since(start))
 	}
 
-	glog.Infof("duration metric: took %s for default service account to be created ...", time.Since(start))
+	klog.Infof("duration metric: took %s for default service account to be created ...", time.Since(start))
 	return nil
 }

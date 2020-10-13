@@ -17,7 +17,7 @@ limitations under the License.
 package cni
 
 import (
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
@@ -35,11 +35,11 @@ func (c Disabled) String() string {
 // Apply enables the CNI
 func (c Disabled) Apply(r Runner) error {
 	if driver.IsKIC(c.cc.Driver) && c.cc.KubernetesConfig.ContainerRuntime != "docker" {
-		glog.Warningf("CNI is recommended for %q driver and %q runtime - expect networking issues", c.cc.Driver, c.cc.KubernetesConfig.ContainerRuntime)
+		klog.Warningf("CNI is recommended for %q driver and %q runtime - expect networking issues", c.cc.Driver, c.cc.KubernetesConfig.ContainerRuntime)
 	}
 
 	if len(c.cc.Nodes) > 1 {
-		glog.Warningf("CNI is recommended for multi-node clusters - expect networking issues")
+		klog.Warningf("CNI is recommended for multi-node clusters - expect networking issues")
 	}
 
 	return nil
