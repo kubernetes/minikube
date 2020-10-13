@@ -19,7 +19,7 @@ package reason
 import (
 	"regexp"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 // match matches a known issue within minikube
@@ -62,7 +62,7 @@ func MatchKnownIssue(r Kind, err error, goos string) *Kind {
 	for _, ki := range knownIssues() {
 		ki := ki
 		if ki.Regexp == nil {
-			glog.Errorf("known issue has no regexp: %+v", ki)
+			klog.Errorf("known issue has no regexp: %+v", ki)
 			continue
 		}
 

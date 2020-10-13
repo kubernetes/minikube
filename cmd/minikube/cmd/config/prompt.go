@@ -23,8 +23,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
 	"golang.org/x/crypto/ssh/terminal"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -127,7 +127,7 @@ func AskForPasswordValue(s string) string {
 	}
 	defer func() {
 		if err := terminal.Restore(stdInFd, oldState); err != nil {
-			glog.Errorf("terminal restore failed: %v", err)
+			klog.Errorf("terminal restore failed: %v", err)
 		}
 	}()
 

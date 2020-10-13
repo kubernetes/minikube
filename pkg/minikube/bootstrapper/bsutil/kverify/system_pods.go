@@ -23,11 +23,11 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -40,7 +40,7 @@ import (
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
 func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
-	glog.Info("waiting for kube-system pods to appear ...")
+	klog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
 
 	podList := func() error {
@@ -52,13 +52,13 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 		// Wait for any system pod, as waiting for apiserver may block until etcd
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
 		if err != nil {
-			glog.Warningf("pod list returned error: %v", err)
+			klog.Warningf("pod list returned error: %v", err)
 			return err
 		}
 
-		glog.Infof("%d kube-system pods found", len(pods.Items))
+		klog.Infof("%d kube-system pods found", len(pods.Items))
 		for _, pod := range pods.Items {
-			glog.Infof(podStatusMsg(pod))
+			klog.Infof(podStatusMsg(pod))
 		}
 
 		if len(pods.Items) < 2 {
@@ -71,7 +71,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 	if err := retry.Local(podList, timeout); err != nil {
 		return fmt.Errorf("apiserver never returned a pod list")
 	}
-	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
+	klog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
 	return nil
 }
 
@@ -83,10 +83,10 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	if err != nil {
 		return err
 	}
-	glog.Infof("%d kube-system pods found", len(pods.Items))
+	klog.Infof("%d kube-system pods found", len(pods.Items))
 
 	for _, pod := range pods.Items {
-		glog.Infof(podStatusMsg(pod))
+		klog.Infof(podStatusMsg(pod))
 
 		if pod.Status.Phase != core.PodRunning {
 			continue
@@ -113,7 +113,7 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 
 // WaitForAppsRunning waits for expected Apps To be running
 func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout time.Duration) error {
-	glog.Info("waiting for k8s-apps to be running ...")
+	klog.Info("waiting for k8s-apps to be running ...")
 	start := time.Now()
 
 	checkRunning := func() error {
@@ -123,7 +123,7 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout tim
 	if err := retry.Local(checkRunning, timeout); err != nil {
 		return errors.Wrapf(err, "expected k8s-apps")
 	}
-	glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
+	klog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
 	return nil
 }
 
@@ -158,7 +158,7 @@ func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg conf
 
 // KubeletStatus checks the kubelet status
 func KubeletStatus(cr command.Runner) state.State {
-	glog.Infof("Checking kubelet status ...")
+	klog.Infof("Checking kubelet status ...")
 	active := sysinit.New(cr).Active("kubelet")
 	if active {
 		return state.Running

@@ -21,7 +21,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/sig-storage-lib-external-provisioner/v5/controller"
 )
 
@@ -57,7 +57,7 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *hostPathProvisioner) Provision(options controller.ProvisionOptions) (*core.PersistentVolume, error) {
 	path := path.Join(p.pvDir, options.PVC.Namespace, options.PVC.Name)
-	glog.Infof("Provisioning volume %v to %s", options, path)
+	klog.Infof("Provisioning volume %v to %s", options, path)
 	if err := os.MkdirAll(path, 0777); err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (p *hostPathProvisioner) Provision(options controller.ProvisionOptions) (*c
 // Delete removes the storage asset that was created by Provision represented
 // by the given PV.
 func (p *hostPathProvisioner) Delete(volume *core.PersistentVolume) error {
-	glog.Infof("Deleting volume %v", volume)
+	klog.Infof("Deleting volume %v", volume)
 	ann, ok := volume.Annotations["hostPathProvisionerIdentity"]
 	if !ok {
 		return errors.New("identity annotation not found on PV")
@@ -112,14 +112,14 @@ func (p *hostPathProvisioner) Delete(volume *core.PersistentVolume) error {
 
 // StartStorageProvisioner will start storage provisioner server
 func StartStorageProvisioner(pvDir string) error {
-	glog.Infof("Initializing the minikube storage provisioner...")
+	klog.Infof("Initializing the minikube storage provisioner...")
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return err
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		glog.Fatalf("Failed to create client: %v", err)
+		klog.Fatalf("Failed to create client: %v", err)
 	}
 
 	// The controller needs to know what the server version is because out-of-tree
@@ -137,7 +137,7 @@ func StartStorageProvisioner(pvDir string) error {
 	// PVs
 	pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
 
-	glog.Info("Storage provisioner initialized, now starting service!")
+	klog.Info("Storage provisioner initialized, now starting service!")
 	pc.Run(wait.NeverStop)
 	return nil
 }

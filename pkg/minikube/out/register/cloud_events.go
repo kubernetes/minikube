@@ -23,8 +23,9 @@ import (
 	"path/filepath"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/golang/glog"
 	guuid "github.com/google/uuid"
+
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -49,14 +50,14 @@ func SetOutputFile(w io.Writer) {
 func SetEventLogPath(path string) {
 	if _, err := os.Stat(filepath.Dir(path)); err != nil {
 		if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
-			glog.Errorf("Error creating profile directory: %v", err)
+			klog.Errorf("Error creating profile directory: %v", err)
 			return
 		}
 	}
 
 	f, err := os.Create(path)
 	if err != nil {
-		glog.Errorf("unable to write to %s: %v", path, err)
+		klog.Errorf("unable to write to %s: %v", path, err)
 		return
 	}
 	eventFile = f
@@ -69,7 +70,7 @@ func cloudEvent(log Log, data map[string]string) cloudevents.Event {
 	event.SetType(log.Type())
 	event.SetSpecVersion(specVersion)
 	if err := event.SetData(cloudevents.ApplicationJSON, data); err != nil {
-		glog.Warningf("error setting data: %v", err)
+		klog.Warningf("error setting data: %v", err)
 	}
 	event.SetID(GetUUID())
 	return event
@@ -81,7 +82,7 @@ func printAsCloudEvent(log Log, data map[string]string) {
 
 	bs, err := event.MarshalJSON()
 	if err != nil {
-		glog.Errorf("error marshalling event: %v", err)
+		klog.Errorf("error marshalling event: %v", err)
 		return
 	}
 	fmt.Fprintln(outputFile, string(bs))
@@ -93,7 +94,7 @@ func printAndRecordCloudEvent(log Log, data map[string]string) {
 
 	bs, err := event.MarshalJSON()
 	if err != nil {
-		glog.Errorf("error marshalling event: %v", err)
+		klog.Errorf("error marshalling event: %v", err)
 		return
 	}
 	fmt.Fprintln(outputFile, string(bs))
@@ -106,7 +107,7 @@ func printAndRecordCloudEvent(log Log, data map[string]string) {
 func storeEvent(bs []byte) {
 	fmt.Fprintln(eventFile, string(bs))
 	if err := eventFile.Sync(); err != nil {
-		glog.Warningf("even file flush failed: %v", err)
+		klog.Warningf("even file flush failed: %v", err)
 	}
 }
 
@@ -120,7 +121,7 @@ func recordCloudEvent(log Log, data map[string]string) {
 		event := cloudEvent(log, data)
 		bs, err := event.MarshalJSON()
 		if err != nil {
-			glog.Errorf("error marshalling event: %v", err)
+			klog.Errorf("error marshalling event: %v", err)
 			return
 		}
 		storeEvent(bs)

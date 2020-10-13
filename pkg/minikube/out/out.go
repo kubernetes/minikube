@@ -27,8 +27,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
+
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -99,25 +100,25 @@ func Infof(format string, a ...V) {
 // String writes a basic formatted string to stdout
 func String(format string, a ...interface{}) {
 	// Flush log buffer so that output order makes sense
-	glog.Flush()
+	klog.Flush()
 
 	if outFile == nil {
-		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
+		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
 
-	glog.Infof(format, a...)
+	klog.Infof(format, a...)
 
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
-		glog.Errorf("Fprintf failed: %v", err)
+		klog.Errorf("Fprintf failed: %v", err)
 	}
 }
 
 // Ln writes a basic formatted string with a newline to stdout
 func Ln(format string, a ...interface{}) {
 	if JSON {
-		glog.Warningf("please use out.T to log steps in JSON")
+		klog.Warningf("please use out.T to log steps in JSON")
 		return
 	}
 	String(format+"\n", a...)
@@ -138,15 +139,15 @@ func Err(format string, a ...interface{}) {
 	register.RecordError(format)
 
 	if errFile == nil {
-		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
+		klog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
 
-	glog.Warningf(format, a...)
+	klog.Warningf(format, a...)
 
 	_, err := fmt.Fprintf(errFile, format, a...)
 	if err != nil {
-		glog.Errorf("Fprint failed: %v", err)
+		klog.Errorf("Fprint failed: %v", err)
 	}
 }
 
@@ -181,20 +182,20 @@ func FailureT(format string, a ...V) {
 
 // SetOutFile configures which writer standard output goes to.
 func SetOutFile(w fdWriter) {
-	glog.Infof("Setting OutFile to fd %d ...", w.Fd())
+	klog.Infof("Setting OutFile to fd %d ...", w.Fd())
 	outFile = w
 	useColor = wantsColor(w.Fd())
 }
 
 // SetJSON configures printing to STDOUT in JSON
 func SetJSON(j bool) {
-	glog.Infof("Setting JSON to %v", j)
+	klog.Infof("Setting JSON to %v", j)
 	JSON = j
 }
 
 // SetErrFile configures which writer error output goes to.
 func SetErrFile(w fdWriter) {
-	glog.Infof("Setting ErrFile to fd %d...", w.Fd())
+	klog.Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
 	useColor = wantsColor(w.Fd())
 }
@@ -209,11 +210,11 @@ func wantsColor(fd uintptr) bool {
 	// If unset, we try to automatically determine suitability from the environment.
 	val := os.Getenv(OverrideEnv)
 	if val != "" {
-		glog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
+		klog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
 		override, err := strconv.ParseBool(val)
 		if err != nil {
 			// That's OK, we will just fall-back to automatic detection.
-			glog.Errorf("ParseBool(%s): %v", OverrideEnv, err)
+			klog.Errorf("ParseBool(%s): %v", OverrideEnv, err)
 		} else {
 			return override
 		}
@@ -228,12 +229,12 @@ func wantsColor(fd uintptr) bool {
 	colorTerm := os.Getenv("COLORTERM")
 	// Example: term-256color
 	if !strings.Contains(term, "color") && !strings.Contains(colorTerm, "truecolor") && !strings.Contains(colorTerm, "24bit") && !strings.Contains(colorTerm, "yes") {
-		glog.Infof("TERM=%s,COLORTERM=%s, which probably does not support color", term, colorTerm)
+		klog.Infof("TERM=%s,COLORTERM=%s, which probably does not support color", term, colorTerm)
 		return false
 	}
 
 	isT := isatty.IsTerminal(fd)
-	glog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
+	klog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
 	return isT
 }
 
@@ -254,7 +255,7 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 
 // DisplayError prints the error and displays the standard minikube error messaging
 func DisplayError(msg string, err error) {
-	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
+	klog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	if JSON {
 		FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
 		return
@@ -270,19 +271,19 @@ func DisplayError(msg string, err error) {
 // applyTmpl applies formatting
 func applyTmpl(format string, a ...V) string {
 	if len(a) == 0 {
-		glog.Warningf("no arguments passed for %q - returning raw string", format)
+		klog.Warningf("no arguments passed for %q - returning raw string", format)
 		return format
 	}
 
 	var buf bytes.Buffer
 	t, err := template.New(format).Parse(format)
 	if err != nil {
-		glog.Errorf("unable to parse %q: %v - returning raw string.", format, err)
+		klog.Errorf("unable to parse %q: %v - returning raw string.", format, err)
 		return format
 	}
 	err = t.Execute(&buf, a[0])
 	if err != nil {
-		glog.Errorf("unable to execute %s: %v - returning raw string.", format, err)
+		klog.Errorf("unable to execute %s: %v - returning raw string.", format, err)
 		return format
 	}
 	out := buf.String()

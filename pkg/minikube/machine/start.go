@@ -32,10 +32,10 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/golang/glog"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -78,7 +78,7 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 	}
 	start := time.Now()
 	defer func() {
-		glog.Infof("releasing machines lock for %q, held for %s", machineName, time.Since(start))
+		klog.Infof("releasing machines lock for %q, held for %s", machineName, time.Since(start))
 		releaser.Release()
 	}()
 
@@ -87,11 +87,11 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 		return nil, false, errors.Wrapf(err, "exists: %s", machineName)
 	}
 	if !exists {
-		glog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
+		klog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
 		h, err := createHost(api, cfg, n)
 		return h, exists, err
 	}
-	glog.Infoln("Skipping create...Using existing machine configuration")
+	klog.Infoln("Skipping create...Using existing machine configuration")
 	h, err := fixHost(api, cfg, n)
 	return h, exists, err
 }
@@ -124,10 +124,10 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 }
 
 func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, error) {
-	glog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
+	klog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
-		glog.Infof("duration metric: createHost completed in %s", time.Since(start))
+		klog.Infof("duration metric: createHost completed in %s", time.Since(start))
 	}()
 
 	if cfg.Driver == driver.VMwareFusion && viper.GetBool(config.ShowDriverDeprecationNotification) {
@@ -161,7 +161,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	h.HostOptions.EngineOptions = engineOptions(*cfg)
 
 	cstart := time.Now()
-	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
+	klog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
 
 	if cfg.StartHostTimeout == 0 {
 		cfg.StartHostTimeout = 6 * time.Minute
@@ -169,7 +169,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	if err := timedCreateHost(h, api, cfg.StartHostTimeout); err != nil {
 		return nil, errors.Wrap(err, "creating host")
 	}
-	glog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
+	klog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
 
 	if err := postStartSetup(h, *cfg); err != nil {
 		return h, errors.Wrap(err, "post-start")
@@ -216,7 +216,7 @@ func postStartValidations(h *host.Host, drvName string) {
 	}
 	r, err := CommandRunner(h)
 	if err != nil {
-		glog.Warningf("error getting command runner: %v", err)
+		klog.Warningf("error getting command runner: %v", err)
 	}
 
 	var kind reason.Kind
@@ -230,14 +230,14 @@ func postStartValidations(h *host.Host, drvName string) {
 		name = "Podman"
 	}
 	if name == "" {
-		glog.Warningf("unknown KIC driver: %v", drvName)
+		klog.Warningf("unknown KIC driver: %v", drvName)
 		return
 	}
 
 	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
-		glog.Warningf("error getting percentage of /var that is free: %v", err)
+		klog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 	if percentageFull >= 99 {
 		exit.Message(kind, `{{.n}} is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
@@ -255,7 +255,7 @@ func DiskUsed(cr command.Runner, dir string) (int, error) {
 	}
 	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -h %s | awk 'NR==2{print $5}'", dir)))
 	if err != nil {
-		glog.Warningf("error running df -h /var: %v\n%v", err, output.Output())
+		klog.Warningf("error running df -h /var: %v\n%v", err, output.Output())
 		return 0, err
 	}
 	percentage := strings.TrimSpace(output.Stdout.String())
@@ -265,17 +265,17 @@ func DiskUsed(cr command.Runner, dir string) (int, error) {
 
 // postStart are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
-	glog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
+	klog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
 	start := time.Now()
 	defer func() {
-		glog.Infof("post-start completed in %s", time.Since(start))
+		klog.Infof("post-start completed in %s", time.Since(start))
 	}()
 
 	if driver.IsMock(h.DriverName) {
 		return nil
 	}
 
-	glog.Infof("creating required directories: %v", requiredDirectories)
+	klog.Infof("creating required directories: %v", requiredDirectories)
 
 	r, err := CommandRunner(h)
 	if err != nil {
@@ -311,11 +311,11 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 		spec.Timeout = 10 * time.Minute
 	}
 
-	glog.Infof("acquiring machines lock for %s: %+v", name, spec)
+	klog.Infof("acquiring machines lock for %s: %+v", name, spec)
 	start := time.Now()
 	r, err := mutex.Acquire(spec)
 	if err == nil {
-		glog.Infof("acquired machines lock for %q in %s", name, time.Since(start))
+		klog.Infof("acquired machines lock for %q in %s", name, time.Since(start))
 	}
 	return r, err
 }

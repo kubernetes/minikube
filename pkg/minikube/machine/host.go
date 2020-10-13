@@ -20,8 +20,9 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 )
 
 // Status returns the status of a libmachine host
@@ -50,11 +51,11 @@ func Status(api libmachine.API, machineName string) (string, error) {
 func IsRunning(api libmachine.API, name string) bool {
 	s, err := Status(api, name)
 	if err != nil {
-		glog.Warningf("host status for %q returned error: %v", name, err)
+		klog.Warningf("host status for %q returned error: %v", name, err)
 		return false
 	}
 	if s != state.Running.String() {
-		glog.Warningf("%q host status: %s", name, s)
+		klog.Warningf("%q host status: %s", name, s)
 		return false
 	}
 	return true
@@ -62,7 +63,7 @@ func IsRunning(api libmachine.API, name string) bool {
 
 // LoadHost returns a libmachine host by name
 func LoadHost(api libmachine.API, machineName string) (*host.Host, error) {
-	glog.Infof("Checking if %q exists ...", machineName)
+	klog.Infof("Checking if %q exists ...", machineName)
 	exists, err := api.Exists(machineName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)

@@ -25,8 +25,9 @@ import (
 	"bytes"
 
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
@@ -58,11 +59,11 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		// if it doesn't it means docker daemon is stuck and needs restart
 		if err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again!", c, ociBin))
-			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
+			klog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
 			continue
 		}
 		if err := ShutDown(ociBin, c); err != nil {
-			glog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
+			klog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
 		}
 
 		if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", c)); err != nil {
@@ -79,11 +80,11 @@ func DeleteContainer(ociBin string, name string) error {
 	if err == context.DeadlineExceeded {
 		out.WarningT("{{.ocibin}} is taking an unsually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
 	} else if err != nil {
-		glog.Warningf("error getting container status, will try to delete anyways: %v", err)
+		klog.Warningf("error getting container status, will try to delete anyways: %v", err)
 	}
 	// try to delete anyways
 	if err := ShutDown(ociBin, name); err != nil {
-		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
+		klog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
 
 	if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
@@ -98,11 +99,11 @@ func PrepareContainerNode(p CreateParams) error {
 	if err := createVolume(p.OCIBinary, p.Name, p.Name); err != nil {
 		return errors.Wrapf(err, "creating volume for %s container", p.Name)
 	}
-	glog.Infof("Successfully created a %s volume %s", p.OCIBinary, p.Name)
+	klog.Infof("Successfully created a %s volume %s", p.OCIBinary, p.Name)
 	if err := prepareVolume(p.OCIBinary, p.Image, p.Name); err != nil {
 		return errors.Wrapf(err, "preparing volume for %s container", p.Name)
 	}
-	glog.Infof("Successfully prepared a %s volume %s", p.OCIBinary, p.Name)
+	klog.Infof("Successfully prepared a %s volume %s", p.OCIBinary, p.Name)
 	return nil
 }
 
@@ -115,7 +116,7 @@ func CreateContainerNode(p CreateParams) error {
 			return ErrWindowsContainers
 		}
 		if err != nil {
-			glog.Warningf("error getting dameon info: %v", err)
+			klog.Warningf("error getting dameon info: %v", err)
 			return errors.Wrap(err, "daemon info")
 		}
 	}
@@ -149,7 +150,7 @@ func CreateContainerNode(p CreateParams) error {
 	if runtime.GOOS == "linux" {
 		if _, err := os.Stat("/sys/fs/cgroup/memory/memsw.limit_in_bytes"); os.IsNotExist(err) {
 			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
-			glog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
+			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
 			memcgSwap = false
 		}
 	}
@@ -196,7 +197,7 @@ func CreateContainerNode(p CreateParams) error {
 		}
 		if !cpuCfsPeriod || !cpuCfsQuota {
 			// requires CONFIG_CFS_BANDWIDTH
-			glog.Warning("Your kernel does not support CPU cfs period/quota or the cgroup is not mounted.")
+			klog.Warning("Your kernel does not support CPU cfs period/quota or the cgroup is not mounted.")
 		}
 	}
 
@@ -241,7 +242,7 @@ func CreateContainerNode(p CreateParams) error {
 		if !iptablesFileExists(p.OCIBinary, p.Name) {
 			return fmt.Errorf("iptables file doesn't exist, see #8179")
 		}
-		glog.Infof("the created container %q has a running status.", p.Name)
+		klog.Infof("the created container %q has a running status.", p.Name)
 		return nil
 	}
 
@@ -522,7 +523,7 @@ func ListContainersByLabel(ociBin string, label string, warnSlow ...bool) ([]str
 func PointToHostDockerDaemon() error {
 	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
 	if p != "" {
-		glog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
+		klog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
 	}
 
 	for i := range constants.DockerDaemonEnvs {
@@ -540,7 +541,7 @@ func PointToHostDockerDaemon() error {
 func PointToHostPodman() error {
 	p := os.Getenv(constants.MinikubeActivePodmanEnv)
 	if p != "" {
-		glog.Infof("shell is pointing to podman inside minikube. will unset to use host")
+		klog.Infof("shell is pointing to podman inside minikube. will unset to use host")
 	}
 
 	for i := range constants.PodmanRemoteEnvs {
@@ -591,7 +592,7 @@ func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State,
 // to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
 func ShutDown(ociBin string, name string) error {
 	if _, err := runCmd(exec.Command(ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")); err != nil {
-		glog.Infof("error shutdown %s: %v", name, err)
+		klog.Infof("error shutdown %s: %v", name, err)
 	}
 	// helps with allowing docker realize the container is exited and report its status correctly.
 	time.Sleep(time.Second * 1)
@@ -599,19 +600,19 @@ func ShutDown(ociBin string, name string) error {
 	stopped := func() error {
 		st, err := ContainerStatus(ociBin, name)
 		if st == state.Stopped {
-			glog.Infof("container %s status is %s", name, st)
+			klog.Infof("container %s status is %s", name, st)
 			return nil
 		}
 		if err != nil {
-			glog.Infof("temporary error verifying shutdown: %v", err)
+			klog.Infof("temporary error verifying shutdown: %v", err)
 		}
-		glog.Infof("temporary error: container %s status is %s but expect it to be exited", name, st)
+		klog.Infof("temporary error: container %s status is %s but expect it to be exited", name, st)
 		return errors.Wrap(err, "couldn't verify cointainer is exited. %v")
 	}
 	if err := retry.Expo(stopped, time.Millisecond*500, time.Second*20); err != nil {
 		return errors.Wrap(err, "verify shutdown")
 	}
-	glog.Infof("Successfully shutdown container %s", name)
+	klog.Infof("Successfully shutdown container %s", name)
 	return nil
 }
 
@@ -622,7 +623,7 @@ func iptablesFileExists(ociBin string, nameOrID string) bool {
 	file := "/var/lib/dpkg/alternatives/iptables"
 	_, err := runCmd(exec.Command(ociBin, "exec", nameOrID, "stat", file), false)
 	if err != nil {
-		glog.Warningf("error checking if %s exists: %v", file, err)
+		klog.Warningf("error checking if %s exists: %v", file, err)
 		return false
 	}
 	return true

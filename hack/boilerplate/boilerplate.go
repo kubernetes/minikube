@@ -42,7 +42,6 @@ var (
 )
 
 func main() {
-	flag.Parse()
 	refs, err := extensionToBoilerplate(*boilerplatedir)
 	if err != nil {
 		log.Fatal(err)

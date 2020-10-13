@@ -24,8 +24,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 )
 
 // firstSubnetAddr subnet to be used on first kic cluster
@@ -47,7 +48,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 	// check if the network already exists
 	subnet, gateway, err := dockerNetworkInspect(clusterName)
 	if err == nil {
-		glog.Infof("Found existing network with subnet %s and gateway %s.", subnet, gateway)
+		klog.Infof("Found existing network with subnet %s and gateway %s.", subnet, gateway)
 		return gateway, nil
 	}
 
@@ -63,7 +64,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 
 		// don't retry if error is not adddress is taken
 		if !(errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken)) {
-			glog.Errorf("error while trying to create network %v", err)
+			klog.Errorf("error while trying to create network %v", err)
 			return nil, errors.Wrap(err, "un-retryable")
 		}
 		attempts++
@@ -82,7 +83,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 func tryCreateDockerNetwork(subnetAddr string, subnetMask int, name string) (net.IP, error) {
 	gateway := net.ParseIP(subnetAddr)
 	gateway.To4()[3]++ // first ip for gateway
-	glog.Infof("attempt to create network %s/%d with subnet: %s and gateway %s...", subnetAddr, subnetMask, name, gateway)
+	klog.Infof("attempt to create network %s/%d with subnet: %s and gateway %s...", subnetAddr, subnetMask, name, gateway)
 	// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
 	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
@@ -128,12 +129,12 @@ func dockerNetworkInspect(name string) (*net.IPNet, net.IP, error) {
 
 func logDockerNetworkInspect(name string) {
 	cmd := exec.Command(Docker, "network", "inspect", name)
-	glog.Infof("running %v to gather additional debugging logs...", cmd.Args)
+	klog.Infof("running %v to gather additional debugging logs...", cmd.Args)
 	rr, err := runCmd(cmd)
 	if err != nil {
-		glog.Infof("error running %v: %v", rr.Args, err)
+		klog.Infof("error running %v: %v", rr.Args, err)
 	}
-	glog.Infof("output of %v: %v", rr.Args, rr.Output())
+	klog.Infof("output of %v: %v", rr.Args, rr.Output())
 }
 
 // RemoveNetwork removes a network
@@ -158,7 +159,7 @@ func RemoveNetwork(name string) error {
 func networkExists(name string) bool {
 	_, _, err := dockerNetworkInspect(name)
 	if err != nil && !errors.Is(err, ErrNetworkNotFound) { // log unexpected error
-		glog.Warningf("Error inspecting docker network %s: %v", name, err)
+		klog.Warningf("Error inspecting docker network %s: %v", name, err)
 	}
 	return err == nil
 }

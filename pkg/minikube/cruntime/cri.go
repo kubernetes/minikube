@@ -25,8 +25,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 )
 
@@ -38,7 +38,7 @@ type container struct {
 
 // crictlList returns the output of 'crictl ps' in an efficient manner
 func crictlList(cr CommandRunner, root string, o ListOptions) (*command.RunResult, error) {
-	glog.Infof("listing CRI containers in root %s: %+v", root, o)
+	klog.Infof("listing CRI containers in root %s: %+v", root, o)
 
 	// Use -a because otherwise paused containers are missed
 	baseCmd := []string{"crictl", "ps", "-a", "--quiet"}
@@ -73,7 +73,7 @@ func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, 
 	var ids []string
 	seen := map[string]bool{}
 	for _, id := range strings.Split(rr.Stdout.String(), "\n") {
-		glog.Infof("found id: %q", id)
+		klog.Infof("found id: %q", id)
 		if id != "" && !seen[id] {
 			ids = append(ids, id)
 			seen[id] = true
@@ -100,7 +100,7 @@ func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, 
 		return nil, errors.Wrap(err, "runc")
 	}
 	content := rr.Stdout.Bytes()
-	glog.Infof("JSON = %s", content)
+	klog.Infof("JSON = %s", content)
 	d := json.NewDecoder(bytes.NewReader(content))
 	if err := d.Decode(&cs); err != nil {
 		return nil, err
@@ -110,16 +110,16 @@ func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, 
 		return nil, fmt.Errorf("list returned 0 containers, but ps returned %d", len(ids))
 	}
 
-	glog.Infof("list returned %d containers", len(cs))
+	klog.Infof("list returned %d containers", len(cs))
 	var fids []string
 	for _, c := range cs {
-		glog.Infof("container: %+v", c)
+		klog.Infof("container: %+v", c)
 		if !seen[c.ID] {
-			glog.Infof("skipping %s - not in ps", c.ID)
+			klog.Infof("skipping %s - not in ps", c.ID)
 			continue
 		}
 		if o.State != All && o.State.String() != c.Status {
-			glog.Infof("skipping %s: state = %q, want %q", c, c.Status, o.State)
+			klog.Infof("skipping %s: state = %q, want %q", c, c.Status, o.State)
 			continue
 		}
 		fids = append(fids, c.ID)
@@ -176,7 +176,7 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Killing containers: %s", ids)
+	klog.Infof("Killing containers: %s", ids)
 
 	crictl := getCrictlPath(cr)
 	args := append([]string{crictl, "rm"}, ids...)
@@ -192,7 +192,7 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Stopping containers: %s", ids)
+	klog.Infof("Stopping containers: %s", ids)
 
 	crictl := getCrictlPath(cr)
 	args := append([]string{crictl, "stop"}, ids...)

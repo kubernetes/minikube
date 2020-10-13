@@ -23,8 +23,8 @@ import (
 	"runtime"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -53,7 +53,7 @@ func Binary(binary, version, osName, archName string) (string, error) {
 	}
 
 	if _, err := os.Stat(targetFilepath); err == nil {
-		glog.Infof("Not caching binary, using %s", url)
+		klog.Infof("Not caching binary, using %s", url)
 		return targetFilepath, nil
 	}
 
