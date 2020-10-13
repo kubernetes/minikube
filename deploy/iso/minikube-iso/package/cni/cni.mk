@@ -14,6 +14,7 @@ CNI_DEPENDENCIES = host-go
 
 CNI_GOPATH = $(@D)/_output
 CNI_MAKE_ENV = \
+	$(GO_TARGET_ENV) \
 	CGO_ENABLED=0 \
 	GO111MODULE=off \
 	GOPATH="$(CNI_GOPATH)" \

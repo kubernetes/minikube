@@ -406,18 +406,12 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	var awg sync.WaitGroup
 
 	enabledAddons := []string{}
-	deferredAddons := []string{}
 
 	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
 		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(enabledAddons, ", ")})
 	}()
 	for _, a := range toEnableList {
-		if a == "gcp-auth" {
-			deferredAddons = append(deferredAddons, a)
-			continue
-		}
-
 		awg.Add(1)
 		go func(name string) {
 			err := RunCallbacks(cc, name, "true")
@@ -432,16 +426,6 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	// Wait until all of the addons are enabled before updating the config (not thread safe)
 	awg.Wait()
-
-	// Now run the deferred addons
-	for _, a := range deferredAddons {
-		err := RunCallbacks(cc, a, "true")
-		if err != nil {
-			out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
-		} else {
-			enabledAddons = append(enabledAddons, a)
-		}
-	}
 
 	for _, a := range enabledAddons {
 		if err := Set(cc, a, "true"); err != nil {
