@@ -226,9 +226,8 @@ func (d *Driver) GetIP() (string, error) {
 // GetExternalIP returns an IP which is accessible from outside
 func (d *Driver) GetExternalIP() (string, error) {
 	dh := os.Getenv(constants.DockerHostEnv)
-	fmt.Printf("DOCKER HOST=%s\n", dh)
 	if dh != "" {
-		return dh, nil
+		return strings.TrimLeft(dh, "tcp://"), nil
 	}
 	return oci.DefaultBindIPV4, nil
 }
@@ -236,9 +235,8 @@ func (d *Driver) GetExternalIP() (string, error) {
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
 	dh := os.Getenv(constants.DockerHostEnv)
-	fmt.Printf("DOCKER HOST=%s\n", dh)
 	if dh != "" {
-		return dh, nil
+		return strings.TrimLeft(dh, "tcp://"), nil
 	}
 	return oci.DefaultBindIPV4, nil
 }
