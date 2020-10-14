@@ -19,6 +19,7 @@ package kic
 import (
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -224,11 +225,19 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetExternalIP returns an IP which is accessible from outside
 func (d *Driver) GetExternalIP() (string, error) {
+	dh := os.Getenv(constants.DockerHostEnv)
+	if dh != "" {
+		return dh, nil
+	}
 	return oci.DefaultBindIPV4, nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
+	dh := os.Getenv(constants.DockerHostEnv)
+	if dh != "" {
+		return dh, nil
+	}
 	return oci.DefaultBindIPV4, nil
 }
 
