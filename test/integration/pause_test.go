@@ -24,6 +24,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/cmd/minikube/cmd"
 )
 
 func TestPause(t *testing.T) {
@@ -43,6 +45,7 @@ func TestPause(t *testing.T) {
 			{"Start", validateFreshStart},
 			{"SecondStartNoReconfiguration", validateStartNoReconfigure},
 			{"Pause", validatePause},
+			{"VerifyStatus", validateStatus},
 			{"Unpause", validateUnpause},
 			{"PauseAgain", validatePause},
 			{"DeletePaused", validateDelete},
@@ -165,4 +168,21 @@ func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 
 	}
 
+}
+
+func validateStatus(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	statusOutput := runStatusCmd(ctx, t, profile, false)
+	var cs cmd.ClusterState
+	if err := json.Unmarshal(statusOutput, &cs); err != nil {
+		t.Fatalf("unmarshalling: %v", err)
+	}
+	// verify the status looks as we expect
+	if cs.StatusCode != cmd.Paused {
+		t.Fatalf("incorrect status code: %v", cs.StatusCode)
+	}
+	if cs.StatusName != "Paused" {
+		t.Fatalf("incorrect status name: %v", cs.StatusName)
+	}
 }
