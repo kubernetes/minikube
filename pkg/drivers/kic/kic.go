@@ -227,7 +227,7 @@ func (d *Driver) GetIP() (string, error) {
 func (d *Driver) GetExternalIP() (string, error) {
 	dh := os.Getenv(constants.DockerHostEnv)
 	if dh != "" {
-		return strings.TrimPrefix(dh, "tcp://"), nil
+		return strings.Split(strings.TrimPrefix(dh, "tcp://"), ":")[0], nil
 	}
 	return oci.DefaultBindIPV4, nil
 }
@@ -236,7 +236,7 @@ func (d *Driver) GetExternalIP() (string, error) {
 func (d *Driver) GetSSHHostname() (string, error) {
 	dh := os.Getenv(constants.DockerHostEnv)
 	if dh != "" {
-		return strings.TrimPrefix(dh, "tcp://"), nil
+		return strings.Split(strings.TrimPrefix(dh, "tcp://"), ":")[0], nil
 	}
 	return oci.DefaultBindIPV4, nil
 }
