@@ -163,6 +163,12 @@ func driverVersion(path string) (string, error) {
 	return resultVersion, nil
 }
 
+// tempMinikubeDir creates a temp .minikube directory
+// with structure essential to testing of hyperkit driver updates
+// $TEMP/.minikube/
+//                |-bin/
+//                     |-docker-machine-minikube
+// docker-machine-minikube is copied from the testdata/<driver>/ directory
 func tempMinikubeDir(name, driver string) (string, string, error) {
 	temp, err := ioutil.TempDir("", name)
 	if err != nil {
