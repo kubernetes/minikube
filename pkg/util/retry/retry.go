@@ -21,13 +21,14 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	"github.com/golang/glog"
+
+	"k8s.io/klog/v2"
 )
 
 const defaultMaxRetries = 113
 
 func notify(err error, d time.Duration) {
-	glog.Infof("will retry after %s: %v", d, err)
+	klog.Infof("will retry after %s: %v", d, err)
 }
 
 // Local is back-off retry for local connections

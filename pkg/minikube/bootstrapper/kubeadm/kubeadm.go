@@ -33,10 +33,10 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
@@ -119,10 +119,10 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 	legacyEtcd := "/data/minikube"
 
 	if _, err := k.c.RunCmd(exec.Command("sudo", "test", "-d", legacyEtcd)); err != nil {
-		glog.Infof("%s skipping compat symlinks: %v", legacyEtcd, err)
+		klog.Infof("%s skipping compat symlinks: %v", legacyEtcd, err)
 		return nil
 	}
-	glog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
+	klog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
 
 	c := exec.Command("sudo", "ln", "-s", legacyEtcd, bsutil.EtcdDataDir())
 	if rr, err := k.c.RunCmd(c); err != nil {
@@ -144,10 +144,10 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) error {
 	args := append([]string{"ls", "-la"}, paths...)
 	rr, err := k.c.RunCmd(exec.Command("sudo", args...))
 	if err != nil {
-		glog.Infof("config check failed, skipping stale config cleanup: %v", err)
+		klog.Infof("config check failed, skipping stale config cleanup: %v", err)
 		return nil
 	}
-	glog.Infof("found existing configuration files:\n%s\n", rr.Stdout.String())
+	klog.Infof("found existing configuration files:\n%s\n", rr.Stdout.String())
 
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
@@ -158,11 +158,11 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) error {
 	for _, path := range paths {
 		_, err := k.c.RunCmd(exec.Command("sudo", "grep", endpoint, path))
 		if err != nil {
-			glog.Infof("%q may not be in %s - will remove: %v", endpoint, path, err)
+			klog.Infof("%q may not be in %s - will remove: %v", endpoint, path, err)
 
 			_, err := k.c.RunCmd(exec.Command("sudo", "rm", "-f", path))
 			if err != nil {
-				glog.Errorf("rm failed: %v", err)
+				klog.Errorf("rm failed: %v", err)
 			}
 		}
 	}
@@ -197,18 +197,18 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	skipSystemVerification := false
 	// Allow older kubeadm versions to function with newer Docker releases.
 	if version.LT(semver.MustParse("1.13.0")) {
-		glog.Infof("ignoring SystemVerification for kubeadm because of old Kubernetes version %v", version)
+		klog.Infof("ignoring SystemVerification for kubeadm because of old Kubernetes version %v", version)
 		skipSystemVerification = true
 	}
 	if driver.BareMetal(cfg.Driver) && r.Name() == "Docker" {
 		if v, err := r.Version(); err == nil && strings.Contains(v, "azure") {
-			glog.Infof("ignoring SystemVerification for kubeadm because of unknown docker version %s", v)
+			klog.Infof("ignoring SystemVerification for kubeadm because of unknown docker version %s", v)
 			skipSystemVerification = true
 		}
 	}
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
 	if driver.IsKIC(cfg.Driver) {
-		glog.Infof("ignoring SystemVerification for kubeadm because of %s driver", cfg.Driver)
+		klog.Infof("ignoring SystemVerification for kubeadm because of %s driver", cfg.Driver)
 		skipSystemVerification = true
 	}
 	if skipSystemVerification {
@@ -249,21 +249,21 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	go func() {
 		// we need to have cluster role binding before applying overlay to avoid #7428
 		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
-			glog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
+			klog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
 		}
 		wg.Done()
 	}()
 
 	go func() {
 		if err := k.applyNodeLabels(cfg); err != nil {
-			glog.Warningf("unable to apply node labels: %v", err)
+			klog.Warningf("unable to apply node labels: %v", err)
 		}
 		wg.Done()
 	}()
 
 	go func() {
 		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
-			glog.Warningf("unable to adjust resource limits: %v", err)
+			klog.Warningf("unable to adjust resource limits: %v", err)
 		}
 		wg.Done()
 	}()
@@ -321,18 +321,18 @@ func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	start := time.Now()
-	glog.Infof("StartCluster: %+v", cfg)
+	klog.Infof("StartCluster: %+v", cfg)
 	defer func() {
-		glog.Infof("StartCluster complete in %s", time.Since(start))
+		klog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
 	// Before we start, ensure that no paused components are lurking around
 	if err := k.unpause(cfg); err != nil {
-		glog.Warningf("unpause failed: %v", err)
+		klog.Warningf("unpause failed: %v", err)
 	}
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
-		glog.Infof("found existing configuration files, will attempt cluster restart")
+		klog.Infof("found existing configuration files, will attempt cluster restart")
 		rerr := k.restartControlPlane(cfg)
 		if rerr == nil {
 			return nil
@@ -340,7 +340,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 		out.ErrT(style.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
-			glog.Warningf("delete failed: %v", err)
+			klog.Warningf("delete failed: %v", err)
 		}
 		// Fall-through to init
 	}
@@ -359,7 +359,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	if _, ff := err.(*FailFastError); !ff {
 		out.ErrT(style.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
-			glog.Warningf("delete failed: %v", err)
+			klog.Warningf("delete failed: %v", err)
 		}
 		return k.init(cfg)
 	}
@@ -379,7 +379,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 
 	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(ip, strconv.Itoa(port)))
 	if cc.Host != endpoint {
-		glog.Warningf("Overriding stale ClientConfig host %s with %s", cc.Host, endpoint)
+		klog.Warningf("Overriding stale ClientConfig host %s with %s", cc.Host, endpoint)
 		cc.Host = endpoint
 	}
 	c, err := kubernetes.NewForConfig(cc)
@@ -392,10 +392,13 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 // WaitForNode blocks until the node appears to be healthy
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
-
 	register.Reg.SetStep(register.VerifyingKubernetes)
 	out.T(style.HealthCheck, "Verifying Kubernetes components...")
-
+	// regardless if waiting is set or not, we will make sure kubelet is not stopped
+	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
+	if err := k.ensureServiceStarted("kubelet"); err != nil {
+		klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
+	}
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
@@ -412,7 +415,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
-		glog.Infof("skip waiting for components based on config.")
+		klog.Infof("skip waiting for components based on config.")
 
 		if err := kverify.NodePressure(client); err != nil {
 			adviseNodePressure(err, cfg.Name, cfg.Driver)
@@ -455,6 +458,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			}
 		}
 	}
+	if cfg.VerifyComponents[kverify.KubeletKey] {
+		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
+			return errors.Wrap(err, "waiting for kubelet")
+		}
+
+	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
 		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
@@ -462,7 +471,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
-	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
+	klog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
 
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, cfg.Name, cfg.Driver)
@@ -471,46 +480,55 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	return nil
 }
 
+// ensureKubeletStarted will start a systemd or init.d service if it is not running.
+func (k *Bootstrapper) ensureServiceStarted(svc string) error {
+	if st := kverify.ServiceStatus(k.c, svc); st != state.Running {
+		klog.Warningf("surprisingly %q service status was %s!. will try to start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)
+		return sysinit.New(k.c).Start(svc)
+	}
+	return nil
+}
+
 // needsReconfigure returns whether or not the cluster needs to be reconfigured
 func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, client *kubernetes.Clientset, version string) bool {
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
-		glog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
+		klog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
 		return true
 	}
 
 	st, err := kverify.APIServerStatus(k.c, hostname, port)
 	if err != nil {
-		glog.Infof("needs reconfigure: apiserver error: %v", err)
+		klog.Infof("needs reconfigure: apiserver error: %v", err)
 		return true
 	}
 
 	if st != state.Running {
-		glog.Infof("needs reconfigure: apiserver in state %s", st)
+		klog.Infof("needs reconfigure: apiserver in state %s", st)
 		return true
 	}
 
 	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
-		glog.Infof("needs reconfigure: %v", err)
+		klog.Infof("needs reconfigure: %v", err)
 		return true
 	}
 
 	if err := kverify.APIServerVersionMatch(client, version); err != nil {
-		glog.Infof("needs reconfigure: %v", err)
+		klog.Infof("needs reconfigure: %v", err)
 		return true
 	}
 
 	// DANGER: This log message is hard-coded in an integration test!
-	glog.Infof("The running cluster does not require reconfiguration: %s", hostname)
+	klog.Infof("The running cluster does not require reconfiguration: %s", hostname)
 	return false
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
 func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
-	glog.Infof("restartCluster start")
+	klog.Infof("restartCluster start")
 
 	start := time.Now()
 	defer func() {
-		glog.Infof("restartCluster took %s", time.Since(start))
+		klog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
 	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
@@ -526,7 +544,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	if err := k.createCompatSymlinks(); err != nil {
-		glog.Errorf("failed to create compat symlinks: %v", err)
+		klog.Errorf("failed to create compat symlinks: %v", err)
 	}
 
 	cp, err := config.PrimaryControlPlane(&cfg)
@@ -542,7 +560,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	// Save the costly tax of reinstalling Kubernetes if the only issue is a missing kube context
 	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv())
 	if err != nil {
-		glog.Warningf("unable to update kubeconfig (cluster will likely require a reset): %v", err)
+		klog.Warningf("unable to update kubeconfig (cluster will likely require a reset): %v", err)
 	}
 
 	client, err := k.client(hostname, port)
@@ -553,16 +571,16 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	// If the cluster is running, check if we have any work to do.
 	conf := bsutil.KubeadmYamlPath
 	if !k.needsReconfigure(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
-		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
+		klog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
 	}
 
 	if err := k.stopKubeSystem(cfg); err != nil {
-		glog.Warningf("Failed to stop kube-system containers: port conflicts may arise: %v", err)
+		klog.Warningf("Failed to stop kube-system containers: port conflicts may arise: %v", err)
 	}
 
 	if err := sysinit.New(k.c).Stop("kubelet"); err != nil {
-		glog.Warningf("Failed to stop kubelet, this might cause upgrade errors: %v", err)
+		klog.Warningf("Failed to stop kubelet, this might cause upgrade errors: %v", err)
 	}
 
 	if err := k.clearStaleConfigs(cfg); err != nil {
@@ -582,11 +600,11 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, conf),
 	}
 
-	glog.Infof("reconfiguring cluster from %s", conf)
+	klog.Infof("reconfiguring cluster from %s", conf)
 	// Run commands one at a time so that it is easier to root cause failures.
 	for _, c := range cmds {
 		if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c)); err != nil {
-			glog.Errorf("%s failed - will try once more: %v", c, err)
+			klog.Errorf("%s failed - will try once more: %v", c, err)
 
 			if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c)); err != nil {
 				return errors.Wrap(err, "run")
@@ -627,12 +645,12 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		return err
 	}
 	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
-		glog.Warningf("addon install failed, wil retry: %v", err)
+		klog.Warningf("addon install failed, wil retry: %v", err)
 		return errors.Wrap(err, "addons")
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
-		glog.Warningf("unable to adjust resource limits: %v", err)
+		klog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
 }
@@ -640,9 +658,9 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 // JoinCluster adds a node to an existing cluster
 func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
 	start := time.Now()
-	glog.Infof("JoinCluster: %+v", cc)
+	klog.Infof("JoinCluster: %+v", cc)
 	defer func() {
-		glog.Infof("JoinCluster complete in %s", time.Since(start))
+		klog.Infof("JoinCluster complete in %s", time.Since(start))
 	}()
 
 	// Join the master by specifying its token
@@ -652,13 +670,13 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 		// reset first to clear any possibly existing state
 		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))))
 		if err != nil {
-			glog.Infof("kubeadm reset failed, continuing anyway: %v", err)
+			klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
 		}
 
 		out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 		if err != nil {
 			if strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
-				glog.Infof("Node %s already joined the cluster, skip failure.", n.Name)
+				klog.Infof("Node %s already joined the cluster, skip failure.", n.Name)
 			} else {
 				return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
 			}
@@ -720,21 +738,21 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 	rr, derr := k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
 	if derr != nil {
-		glog.Warningf("%s: %v", rr.Command(), err)
+		klog.Warningf("%s: %v", rr.Command(), err)
 	}
 
 	if err := sysinit.New(k.c).ForceStop("kubelet"); err != nil {
-		glog.Warningf("stop kubelet: %v", err)
+		klog.Warningf("stop kubelet: %v", err)
 	}
 
 	containers, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
 	if err != nil {
-		glog.Warningf("unable to list kube-system containers: %v", err)
+		klog.Warningf("unable to list kube-system containers: %v", err)
 	}
 	if len(containers) > 0 {
-		glog.Warningf("found %d kube-system containers to stop", len(containers))
+		klog.Warningf("found %d kube-system containers to stop", len(containers))
 		if err := cr.StopContainers(containers); err != nil {
-			glog.Warningf("error stopping containers: %v", err)
+			klog.Warningf("error stopping containers: %v", err)
 		}
 	}
 
@@ -763,7 +781,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := r.Preload(cfg.KubernetesConfig); err != nil {
-		glog.Infof("preload failed, will try to load cached images: %v", err)
+		klog.Infof("preload failed, will try to load cached images: %v", err)
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
@@ -802,7 +820,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "generating kubelet service")
 	}
 
-	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
+	klog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
 	sm := sysinit.New(k.c)
 
@@ -878,7 +896,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) error {
 	start := time.Now()
 	defer func() {
-		glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
+		klog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
 	}()
 
 	// Allow no more than 5 seconds for creating cluster role bindings
@@ -896,7 +914,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		}
 		// Error from server (AlreadyExists): clusterrolebindings.rbac.authorization.k8s.io "minikube-rbac" already exists
 		if strings.Contains(rr.Output(), "Error from server (AlreadyExists)") {
-			glog.Infof("rbac %q already exists not need to re-create.", rbacName)
+			klog.Infof("rbac %q already exists not need to re-create.", rbacName)
 		} else {
 			return errors.Wrapf(err, "apply sa")
 		}
@@ -925,7 +943,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 
 // stopKubeSystem stops all the containers in the kube-system to prevent #8740 when doing hot upgrade
 func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
-	glog.Info("stopping kube-system containers ...")
+	klog.Info("stopping kube-system containers ...")
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "new cruntime")
@@ -948,7 +966,7 @@ func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
 func adviseNodePressure(err error, name string, drv string) {
 	if diskErr, ok := err.(*kverify.ErrDiskPressure); ok {
 		out.ErrLn("")
-		glog.Warning(diskErr)
+		klog.Warning(diskErr)
 		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
 		// generic advice for all drivers
 		out.T(style.Tip, "Please free up disk or prune images.")
@@ -969,7 +987,7 @@ func adviseNodePressure(err error, name string, drv string) {
 
 	if memErr, ok := err.(*kverify.ErrMemoryPressure); ok {
 		out.ErrLn("")
-		glog.Warning(memErr)
+		klog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
 		out.T(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
 		if driver.IsVM(drv) {
@@ -988,7 +1006,7 @@ func adviseNodePressure(err error, name string, drv string) {
 	}
 
 	if pidErr, ok := err.(*kverify.ErrPIDPressure); ok {
-		glog.Warning(pidErr)
+		klog.Warning(pidErr)
 		out.ErrLn("")
 		out.WarningT("The node {{.name}} has ran out of available PIDs.", out.V{"name": name})
 		out.ErrLn("")
@@ -996,7 +1014,7 @@ func adviseNodePressure(err error, name string, drv string) {
 	}
 
 	if netErr, ok := err.(*kverify.ErrNetworkNotReady); ok {
-		glog.Warning(netErr)
+		klog.Warning(netErr)
 		out.ErrLn("")
 		out.WarningT("The node {{.name}} network is not available. Please verify network settings.", out.V{"name": name})
 		out.ErrLn("")

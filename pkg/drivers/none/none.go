@@ -22,9 +22,9 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	knet "k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -65,7 +65,7 @@ func NewDriver(c Config) *Driver {
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
 	// Libraries shouldn't panic, but there is no way for drivers to return error :(
 	if err != nil {
-		glog.Fatalf("unable to create container runtime: %v", err)
+		klog.Fatalf("unable to create container runtime: %v", err)
 	}
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
@@ -127,7 +127,7 @@ func (d *Driver) GetURL() (string, error) {
 func (d *Driver) GetState() (state.State, error) {
 	hostname, port, err := kubeconfig.Endpoint(d.BaseDriver.MachineName)
 	if err != nil {
-		glog.Warningf("unable to get port: %v", err)
+		klog.Warningf("unable to get port: %v", err)
 		port = constants.APIServerPort
 	}
 
@@ -142,13 +142,13 @@ func (d *Driver) GetState() (state.State, error) {
 		return state.Running, nil
 	}
 
-	return kverify.KubeletStatus(d.exec), nil
+	return kverify.ServiceStatus(d.exec, "kubelet"), nil
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
 	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
-		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
+		klog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 
 	// First try to gracefully stop containers
@@ -182,10 +182,10 @@ func (d *Driver) Remove() error {
 	if err := d.Kill(); err != nil {
 		return errors.Wrap(err, "kill")
 	}
-	glog.Infof("Removing: %s", cleanupPaths)
+	klog.Infof("Removing: %s", cleanupPaths)
 	args := append([]string{"rm", "-rf"}, cleanupPaths...)
 	if _, err := d.exec.RunCmd(exec.Command("sudo", args...)); err != nil {
-		glog.Errorf("cleanup incomplete: %v", err)
+		klog.Errorf("cleanup incomplete: %v", err)
 	}
 	return nil
 }
@@ -212,9 +212,9 @@ func (d *Driver) Start() error {
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
 	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
-		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
+		klog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
 		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
-			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
+			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
@@ -226,7 +226,7 @@ func (d *Driver) Stop() error {
 			return errors.Wrap(err, "stop containers")
 		}
 	}
-	glog.Infof("none driver is stopped!")
+	klog.Infof("none driver is stopped!")
 	return nil
 }
 
@@ -237,7 +237,7 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 
 // restartKubelet restarts the kubelet
 func restartKubelet(cr command.Runner) error {
-	glog.Infof("restarting kubelet.service ...")
+	klog.Infof("restarting kubelet.service ...")
 	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
 	if _, err := cr.RunCmd(c); err != nil {
 		return err

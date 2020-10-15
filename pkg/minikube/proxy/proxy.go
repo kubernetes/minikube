@@ -24,9 +24,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -115,7 +115,7 @@ func checkEnv(ip string, env string) bool {
 	for _, b := range noProxyBlocks {
 		yes, err := isInBlock(ip, b)
 		if err != nil {
-			glog.Warningf("fail to check proxy env: %v", err)
+			klog.Warningf("fail to check proxy env: %v", err)
 		}
 		if yes {
 			return true
@@ -146,7 +146,7 @@ func UpdateTransport(cfg *rest.Config) *rest.Config {
 			ht.Proxy = nil
 			rt = ht
 		} else {
-			glog.Errorf("Error while casting RoundTripper (of type %T) to *http.Transport : %v", rt, ok)
+			klog.Errorf("Error while casting RoundTripper (of type %T) to *http.Transport : %v", rt, ok)
 		}
 		return rt
 	}

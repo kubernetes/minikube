@@ -21,10 +21,10 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
-	"github.com/golang/glog"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -120,7 +120,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 // If no CurrentContext is set, the given name will be used.
 func Update(kcs *Settings) error {
 	spec := lock.PathMutexSpec(filepath.Join(kcs.filePath(), "settings.Update"))
-	glog.Infof("acquiring lock: %+v", spec)
+	klog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
@@ -128,7 +128,7 @@ func Update(kcs *Settings) error {
 	defer releaser.Release()
 
 	// read existing config or create new if does not exist
-	glog.Infoln("Updating kubeconfig: ", kcs.filePath())
+	klog.Infoln("Updating kubeconfig: ", kcs.filePath())
 	kcfg, err := readOrNew(kcs.filePath())
 	if err != nil {
 		return err

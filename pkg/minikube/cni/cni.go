@@ -24,8 +24,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -67,11 +67,11 @@ type tmplInput struct {
 // New returns a new CNI manager
 func New(cc config.ClusterConfig) (Manager, error) {
 	if cc.KubernetesConfig.NetworkPlugin != "" && cc.KubernetesConfig.NetworkPlugin != "cni" {
-		glog.Infof("network plugin configured as %q, returning disabled", cc.KubernetesConfig.NetworkPlugin)
+		klog.Infof("network plugin configured as %q, returning disabled", cc.KubernetesConfig.NetworkPlugin)
 		return Disabled{}, nil
 	}
 
-	glog.Infof("Creating CNI manager for %q", cc.KubernetesConfig.CNI)
+	klog.Infof("Creating CNI manager for %q", cc.KubernetesConfig.CNI)
 
 	switch cc.KubernetesConfig.CNI {
 	case "", "auto":
@@ -96,25 +96,25 @@ func New(cc config.ClusterConfig) (Manager, error) {
 func chooseDefault(cc config.ClusterConfig) Manager {
 	// For backwards compatibility with older profiles using --enable-default-cni
 	if cc.KubernetesConfig.EnableDefaultCNI {
-		glog.Infof("EnableDefaultCNI is true, recommending bridge")
+		klog.Infof("EnableDefaultCNI is true, recommending bridge")
 		return Bridge{}
 	}
 
 	if cc.KubernetesConfig.ContainerRuntime != "docker" {
 		if driver.IsKIC(cc.Driver) {
-			glog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+			klog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 			return KindNet{cc: cc}
 		}
-		glog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 		return Bridge{cc: cc}
 	}
 
 	if len(cc.Nodes) > 1 {
-		glog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
+		klog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
 		return KindNet{cc: cc}
 	}
 
-	glog.Infof("CNI unnecessary in this configuration, recommending no CNI")
+	klog.Infof("CNI unnecessary in this configuration, recommending no CNI")
 	return Disabled{}
 }
 
@@ -134,7 +134,7 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 	defer cancel()
 
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
-	glog.Infof("applying CNI manifest using %s ...", kubectl)
+	klog.Infof("applying CNI manifest using %s ...", kubectl)
 
 	if err := r.Copy(f); err != nil {
 		return errors.Wrapf(err, "copy")

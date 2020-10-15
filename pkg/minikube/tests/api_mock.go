@@ -25,9 +25,10 @@ import (
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/swarm"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+
+	"k8s.io/klog/v2"
 )
 
 // MockAPI is a struct used to mock out libmachine.API
@@ -56,7 +57,7 @@ func NewMockAPI(t *testing.T) *MockAPI {
 // Logf logs mock interactions
 func (api *MockAPI) Logf(format string, args ...interface{}) {
 	if api.t == nil {
-		glog.Infof(format, args...)
+		klog.Infof(format, args...)
 		return
 	}
 	api.t.Logf(format, args...)

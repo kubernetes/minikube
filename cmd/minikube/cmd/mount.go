@@ -27,9 +27,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -98,7 +98,7 @@ var mountCmd = &cobra.Command{
 			exit.Message(reason.Usage, "Target directory {{.path}} must be an absolute path", out.V{"path": vmPath})
 		}
 		var debugVal int
-		if glog.V(1) {
+		if klog.V(1).Enabled() {
 			debugVal = 1 // ufs.StartServer takes int debug param
 		}
 
@@ -110,7 +110,7 @@ var mountCmd = &cobra.Command{
 		var ip net.IP
 		var err error
 		if mountIP == "" {
-			ip, err = cluster.HostIP(co.CP.Host)
+			ip, err = cluster.HostIP(co.CP.Host, co.Config.Name)
 			if err != nil {
 				exit.Error(reason.IfHostIP, "Error getting the host IP address to use from within the VM", err)
 			}

@@ -61,6 +61,7 @@ type Kind struct {
 	NoMatch bool
 }
 
+// IssueURLs returns URLs for issues
 func (k *Kind) IssueURLs() []string {
 	is := []string{}
 	for _, i := range k.Issues {
@@ -199,17 +200,18 @@ var (
 		Issues:   []int{9165},
 	}
 
-	HostCurrentUser      = Kind{ID: "HOST_CURRENT_USER", ExitCode: ExHostConfig}
-	HostDelCache         = Kind{ID: "HOST_DEL_CACHE", ExitCode: ExHostError}
-	HostKillMountProc    = Kind{ID: "HOST_KILL_MOUNT_PROC", ExitCode: ExHostError}
-	HostKubeconfigUnset  = Kind{ID: "HOST_KUBECNOFIG_UNSET", ExitCode: ExHostConfig}
-	HostKubeconfigUpdate = Kind{ID: "HOST_KUBECONFIG_UPDATE", ExitCode: ExHostConfig}
-	HostKubectlProxy     = Kind{ID: "HOST_KUBECTL_PROXY", ExitCode: ExHostError}
-	HostMountPid         = Kind{ID: "HOST_MOUNT_PID", ExitCode: ExHostError}
-	HostPathMissing      = Kind{ID: "HOST_PATH_MISSING", ExitCode: ExHostNotFound}
-	HostPathStat         = Kind{ID: "HOST_PATH_STAT", ExitCode: ExHostError}
-	HostPurge            = Kind{ID: "HOST_PURGE", ExitCode: ExHostError}
-	HostSaveProfile      = Kind{ID: "HOST_SAVE_PROFILE", ExitCode: ExHostConfig}
+	HostCurrentUser         = Kind{ID: "HOST_CURRENT_USER", ExitCode: ExHostConfig}
+	HostDelCache            = Kind{ID: "HOST_DEL_CACHE", ExitCode: ExHostError}
+	HostKillMountProc       = Kind{ID: "HOST_KILL_MOUNT_PROC", ExitCode: ExHostError}
+	HostKubeconfigUnset     = Kind{ID: "HOST_KUBECNOFIG_UNSET", ExitCode: ExHostConfig}
+	HostKubeconfigUpdate    = Kind{ID: "HOST_KUBECONFIG_UPDATE", ExitCode: ExHostConfig}
+	HostKubeconfigDeleteCtx = Kind{ID: "HOST_KUBECONFIG_DELETE_CTX", ExitCode: ExHostConfig}
+	HostKubectlProxy        = Kind{ID: "HOST_KUBECTL_PROXY", ExitCode: ExHostError}
+	HostMountPid            = Kind{ID: "HOST_MOUNT_PID", ExitCode: ExHostError}
+	HostPathMissing         = Kind{ID: "HOST_PATH_MISSING", ExitCode: ExHostNotFound}
+	HostPathStat            = Kind{ID: "HOST_PATH_STAT", ExitCode: ExHostError}
+	HostPurge               = Kind{ID: "HOST_PURGE", ExitCode: ExHostError}
+	HostSaveProfile         = Kind{ID: "HOST_SAVE_PROFILE", ExitCode: ExHostConfig}
 
 	ProviderNotFound    = Kind{ID: "PROVIDER_NOT_FOUND", ExitCode: ExProviderNotFound}
 	ProviderUnavailable = Kind{ID: "PROVIDER_UNAVAILABLE", ExitCode: ExProviderNotFound, Style: style.Shrug}

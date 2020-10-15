@@ -25,8 +25,8 @@ import (
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -89,7 +89,7 @@ func status() registry.State {
 
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {
-		glog.Warningf("%q timed out. ", strings.Join(cmd.Args, " "))
+		klog.Warningf("%q timed out. ", strings.Join(cmd.Args, " "))
 		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Restart VirtualBox", Doc: docURL}
 	}
 

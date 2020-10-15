@@ -21,10 +21,10 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -48,9 +48,8 @@ var (
 var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stops a running local Kubernetes cluster",
-	Long: `Stops a local Kubernetes cluster running in Virtualbox. This command stops the VM
-itself, leaving all files intact. The cluster can be started again with the "start" command.`,
-	Run: runStop,
+	Long:  `Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the "start" command.`,
+	Run:   runStop,
 }
 
 func init() {
@@ -60,8 +59,6 @@ func init() {
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
 		exit.Error(reason.InternalFlagsBind, "unable to bind flags", err)
 	}
-
-	RootCmd.AddCommand(stopCmd)
 }
 
 // runStop handles the executes the flow of "minikube stop"
@@ -74,7 +71,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	if stopAll {
 		validProfiles, _, err := config.ListProfiles()
 		if err != nil {
-			glog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
+			klog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
 		}
 		for _, profile := range validProfiles {
 			profilesToStop = append(profilesToStop, profile.Name)
@@ -117,8 +114,8 @@ func stopProfile(profile string) int {
 	}
 
 	if !keepActive {
-		if err := kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv()); err != nil {
-			exit.Error(reason.HostKubeconfigUnset, "update config", err)
+		if err := kubeconfig.DeleteContext(profile, kubeconfig.PathFromEnv()); err != nil {
+			exit.Error(reason.HostKubeconfigDeleteCtx, "delete ctx", err)
 		}
 	}
 
@@ -133,7 +130,7 @@ func stop(api libmachine.API, machineName string) bool {
 		if err == nil {
 			return nil
 		}
-		glog.Warningf("stop host returned error: %v", err)
+		klog.Warningf("stop host returned error: %v", err)
 
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:

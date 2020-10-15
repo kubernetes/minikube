@@ -26,10 +26,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -52,7 +52,7 @@ const defaultStorageClassProvisioner = "standard"
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
-	glog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)
+	klog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)
 	a, valid := isAddonValid(name)
 	if !valid {
 		return errors.Errorf("%s is not a valid addon", name)
@@ -94,7 +94,7 @@ func SetAndSave(profile string, name string, value string) error {
 		return errors.Wrap(err, "set")
 	}
 
-	glog.Infof("Writing out %q config to set %s=%v...", profile, name, value)
+	klog.Infof("Writing out %q config to set %s=%v...", profile, name, value)
 	return config.Write(profile, cc)
 }
 
@@ -128,7 +128,7 @@ func SetBool(cc *config.ClusterConfig, name string, val string) error {
 
 // enableOrDisableAddon updates addon status executing any commands necessary
 func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) error {
-	glog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
+	klog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -137,7 +137,7 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 
 	// check addon status before enabling/disabling it
 	if isAddonAlreadySet(cc, addon, enable) {
-		glog.Warningf("addon %s should already be in state %v", name, val)
+		klog.Warningf("addon %s should already be in state %v", name, val)
 		if !enable {
 			return nil
 		}
@@ -185,7 +185,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	mName := driver.MachineName(*cc, cp)
 	host, err := machine.LoadHost(api, mName)
 	if err != nil || !machine.IsRunning(api, mName) {
-		glog.Warningf("%q is not running, setting %s=%v and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
+		klog.Warningf("%q is not running, setting %s=%v and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
 		return nil
 	}
 
@@ -240,15 +240,15 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		fPath := path.Join(f.GetTargetDir(), f.GetTargetName())
 
 		if enable {
-			glog.Infof("installing %s", fPath)
+			klog.Infof("installing %s", fPath)
 			if err := cmd.Copy(f); err != nil {
 				return err
 			}
 		} else {
-			glog.Infof("Removing %+v", fPath)
+			klog.Infof("Removing %+v", fPath)
 			defer func() {
 				if err := cmd.Remove(f); err != nil {
-					glog.Warningf("error removing %s; addon should still be disabled as expected", fPath)
+					klog.Warningf("error removing %s; addon should still be disabled as expected", fPath)
 				}
 			}()
 		}
@@ -261,7 +261,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	apply := func() error {
 		_, err := cmd.RunCmd(kubectlCommand(cc, deployFiles, enable))
 		if err != nil {
-			glog.Warningf("apply failed, will retry: %v", err)
+			klog.Warningf("apply failed, will retry: %v", err)
 		}
 		return err
 	}
@@ -271,7 +271,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 
 // enableOrDisableStorageClasses enables or disables storage classes
 func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val string) error {
-	glog.Infof("enableOrDisableStorageClasses %s=%v on %q", name, val, cc.Name)
+	klog.Infof("enableOrDisableStorageClasses %s=%v on %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrap(err, "Error parsing boolean")
@@ -293,7 +293,7 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 		return errors.Wrap(err, "getting control plane")
 	}
 	if !machine.IsRunning(api, driver.MachineName(*cc, cp)) {
-		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
+		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
 		return enableOrDisableAddon(cc, name, val)
 	}
 
@@ -324,11 +324,22 @@ func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error 
 }
 
 func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
-	return verifyAddonStatusInternal(cc, name, val, "gcp-auth")
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
+
+	if enable && err == nil {
+		out.T(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
+		out.T(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
+	}
+
+	return err
 }
 
 func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string) error {
-	glog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
+	klog.Infof("Verifying addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -356,9 +367,9 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	defer wg.Done()
 
 	start := time.Now()
-	glog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
+	klog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
 	defer func() {
-		glog.Infof("enableAddons completed in %s", time.Since(start))
+		klog.Infof("enableAddons completed in %s", time.Since(start))
 	}()
 
 	// Get the default values of any addons not saved to our config
@@ -394,9 +405,11 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	defer func() { // making it show after verifications( not perfect till #7613 is closed)
+	enabledAddons := []string{}
+
+	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
-		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+		out.T(style.AddonEnable, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(enabledAddons, ", ")})
 	}()
 	for _, a := range toEnableList {
 		awg.Add(1)
@@ -404,6 +417,8 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 			err := RunCallbacks(cc, name, "true")
 			if err != nil {
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
+			} else {
+				enabledAddons = append(enabledAddons, name)
 			}
 			awg.Done()
 		}(a)
@@ -411,9 +426,10 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	// Wait until all of the addons are enabled before updating the config (not thread safe)
 	awg.Wait()
-	for _, a := range toEnableList {
+
+	for _, a := range enabledAddons {
 		if err := Set(cc, a, "true"); err != nil {
-			glog.Errorf("store failed: %v", err)
+			klog.Errorf("store failed: %v", err)
 		}
 	}
 }

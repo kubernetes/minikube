@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 13
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 14
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).1
+ISO_VERSION ?= v1.14.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -32,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 GO_VERSION ?= 1.14.6
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2019.02.11
+BUILDROOT_BRANCH ?= 2020.02.6
 REGISTRY?=gcr.io/k8s-minikube
 REGISTRY_GH?=docker.pkg.github.com/kubernetes/minikube
 
@@ -58,7 +58,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.107
+KERNEL_VERSION ?= 4.19.114
 # latest from https://github.com/golangci/golangci-lint/releases
 GOLINT_VERSION ?= v1.30.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
@@ -94,12 +94,8 @@ GVISOR_TAG ?= latest
 # storage provisioner tag to push changes to
 STORAGE_PROVISIONER_TAG ?= v3
 
-# TODO: multi-arch manifest
-ifeq ($(GOARCH),amd64)
-STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
-else
+STORAGE_PROVISIONER_MANIFEST ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
-endif
 
 # Set the version information for the Kubernetes servers
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT) -X k8s.io/minikube/pkg/version.storageProvisionerVersion=$(STORAGE_PROVISIONER_TAG)
@@ -305,9 +301,15 @@ html_report: ## Generate HTML  report out of the last ran integration test logs.
 	@go tool test2json -t < "./out/testout_$(COMMIT_SHORT).txt" > "./out/testout_$(COMMIT_SHORT).json"
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
+ifeq ($(GOOS),windows)
+	@echo start $(CURDIR)/out/testout_$(COMMIT_SHORT).html
+	@echo "-----------------------------------------------------------------------------------"
+	@start $(CURDIR)/out/testout_$(COMMIT_SHORT).html || true
+else
 	@echo open $(CURDIR)/out/testout_$(COMMIT_SHORT).html
 	@echo "-----------------------------------------------------------------------------------"
 	@open $(CURDIR)/out/testout_$(COMMIT_SHORT).html || true
+endif
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
@@ -331,7 +333,7 @@ pkg/minikube/assets/assets.go: $(shell find "deploy/addons" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 endif
-	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/go-bindata/go-bindata/...
 	$(if $(quiet),@echo "  GEN      $@")
 	$(Q)PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
 	$(Q)-gofmt -s -w $@
@@ -344,7 +346,7 @@ pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 endif
-	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/go-bindata/go-bindata/...
 	$(if $(quiet),@echo "  GEN      $@")
 	$(Q)PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
 	$(Q)-gofmt -s -w $@
@@ -573,13 +575,16 @@ else
 endif
 
 .PHONY: storage-provisioner-image
-storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-provisioner docker image
-	docker build -t $(STORAGE_PROVISIONER_IMAGE) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$(GOARCH) .
+storage-provisioner-image: storage-provisioner-image-$(GOARCH) ## Build storage-provisioner docker image
+	docker tag $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG) $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
+
+storage-provisioner-image-%: out/storage-provisioner-%
+	docker build -t $(REGISTRY)/storage-provisioner-$*:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$* .
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
 	docker rmi -f $(KIC_BASE_IMAGE_GCR)-snapshot || true
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) --target base ./deploy/kicbase
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) ./deploy/kicbase
 	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)-snapshot
 	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)
 	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_HUB)
@@ -594,6 +599,18 @@ upload-preloaded-images-tar: out/minikube # Upload the preloaded images for olde
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
 	docker login gcr.io/k8s-minikube
 	$(MAKE) push-docker IMAGE=$(STORAGE_PROVISIONER_IMAGE)
+
+ALL_ARCH = amd64 arm arm64 ppc64le s390x
+IMAGE = $(REGISTRY)/storage-provisioner
+TAG = $(STORAGE_PROVISIONER_TAG)
+
+.PHONY: push-storage-provisioner-manifest
+push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~storage\-provisioner\-image\-&~g")
+	docker login gcr.io/k8s-minikube
+	set -x; for arch in $(ALL_ARCH); do docker push ${IMAGE}-$${arch}:${TAG}; done
+	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	set -x; for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
+	docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable
@@ -747,9 +764,9 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serv
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
-.PHONY: out/performance-monitor
-out/performance-monitor:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
+.PHONY: out/performance-bot
+out/performance-bot:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/pr-bot/bot.go
 
 .PHONY: compare
 compare: out/mkcmp out/minikube

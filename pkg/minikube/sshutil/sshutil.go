@@ -23,9 +23,10 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -41,7 +42,7 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 		auth.Keys = []string{h.SSHKeyPath}
 	}
 
-	glog.Infof("new ssh client: %+v", h)
+	klog.Infof("new ssh client: %+v", h)
 
 	config, err := machinessh.NewNativeConfig(h.Username, auth)
 	if err != nil {
@@ -52,7 +53,7 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 	getSSH := func() (err error) {
 		client, err = ssh.Dial("tcp", net.JoinHostPort(h.IP, strconv.Itoa(h.Port)), &config)
 		if err != nil {
-			glog.Warningf("dial failure (will retry): %v", err)
+			klog.Warningf("dial failure (will retry): %v", err)
 		}
 		return err
 	}

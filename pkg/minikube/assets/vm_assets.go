@@ -25,8 +25,9 @@ import (
 	"path"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 )
 
 // MemorySource is the source name used for in-memory copies
@@ -92,7 +93,7 @@ func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset
 
 // NewFileAsset creates a new FileAsset
 func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, error) {
-	glog.V(4).Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
+	klog.V(4).Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
 
 	f, err := os.Open(src)
 	if err != nil {
@@ -105,7 +106,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 	}
 
 	if info.Size() == 0 {
-		glog.Warningf("NewFileAsset: %s is an empty file!", src)
+		klog.Warningf("NewFileAsset: %s is an empty file!", src)
 	}
 
 	return &FileAsset{
@@ -123,7 +124,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 func (f *FileAsset) GetLength() (flen int) {
 	fi, err := os.Stat(f.SourcePath)
 	if err != nil {
-		glog.Errorf("stat(%q) failed: %v", f.SourcePath, err)
+		klog.Errorf("stat(%q) failed: %v", f.SourcePath, err)
 		return 0
 	}
 	return int(fi.Size())
@@ -133,7 +134,7 @@ func (f *FileAsset) GetLength() (flen int) {
 func (f *FileAsset) GetModTime() (time.Time, error) {
 	fi, err := os.Stat(f.SourcePath)
 	if err != nil {
-		glog.Errorf("stat(%q) failed: %v", f.SourcePath, err)
+		klog.Errorf("stat(%q) failed: %v", f.SourcePath, err)
 		return time.Time{}, err
 	}
 	return fi.ModTime(), nil
@@ -248,7 +249,7 @@ func (m *BinAsset) loadData(isTemplate bool) error {
 
 	m.length = len(contents)
 	m.reader = bytes.NewReader(contents)
-	glog.V(1).Infof("Created asset %s with %d bytes", m.SourcePath, m.length)
+	klog.V(1).Infof("Created asset %s with %d bytes", m.SourcePath, m.length)
 	if m.length == 0 {
 		return fmt.Errorf("%s is an empty asset", m.SourcePath)
 	}

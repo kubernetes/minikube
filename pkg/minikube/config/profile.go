@@ -24,8 +24,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
@@ -90,8 +90,8 @@ func ProfileNameValid(name string) bool {
 	const RestrictedNamePattern = `(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])`
 
 	var validName = regexp.MustCompile(`^` + RestrictedNamePattern + `$`)
-
-	return validName.MatchString(name)
+	// length needs to be more than 1 character because docker volume #9366
+	return validName.MatchString(name) && len(name) > 1
 }
 
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
@@ -147,7 +147,7 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 		return err
 	}
 	path := profileFilePath(name, miniHome...)
-	glog.Infof("Saving config to %s ...", path)
+	klog.Infof("Saving config to %s ...", path)
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}

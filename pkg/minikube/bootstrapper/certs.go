@@ -29,12 +29,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/otiai10/copy"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -49,7 +49,7 @@ import (
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) ([]assets.CopyableFile, error) {
 	localPath := localpath.Profile(k8s.ClusterName)
-	glog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
+	klog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
 
 	ccs, err := generateSharedCACerts()
 	if err != nil {
@@ -166,11 +166,11 @@ func generateSharedCACerts() (CACerts, error) {
 
 	for _, ca := range caCertSpecs {
 		if canRead(ca.certPath) && canRead(ca.keyPath) {
-			glog.Infof("skipping %s CA generation: %s", ca.subject, ca.keyPath)
+			klog.Infof("skipping %s CA generation: %s", ca.subject, ca.keyPath)
 			continue
 		}
 
-		glog.Infof("generating %s CA: %s", ca.subject, ca.keyPath)
+		klog.Infof("generating %s CA: %s", ca.subject, ca.keyPath)
 		if err := util.GenerateCACert(ca.certPath, ca.keyPath, ca.subject); err != nil {
 			return cc, errors.Wrap(err, "generate ca cert")
 		}
@@ -266,11 +266,11 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 		}
 
 		if canRead(cp) && canRead(kp) {
-			glog.Infof("skipping %s signed cert generation: %s", spec.subject, kp)
+			klog.Infof("skipping %s signed cert generation: %s", spec.subject, kp)
 			continue
 		}
 
-		glog.Infof("generating %s signed cert: %s", spec.subject, kp)
+		klog.Infof("generating %s signed cert: %s", spec.subject, kp)
 		err := util.GenerateSignedCert(
 			cp, kp, spec.subject,
 			spec.ips, spec.alternateNames,
@@ -281,11 +281,11 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 		}
 
 		if spec.hash != "" {
-			glog.Infof("copying %s -> %s", cp, spec.certPath)
+			klog.Infof("copying %s -> %s", cp, spec.certPath)
 			if err := copy.Copy(cp, spec.certPath); err != nil {
 				return xfer, errors.Wrap(err, "copy cert")
 			}
-			glog.Infof("copying %s -> %s", kp, spec.keyPath)
+			klog.Infof("copying %s -> %s", kp, spec.keyPath)
 			if err := copy.Copy(kp, spec.keyPath); err != nil {
 				return xfer, errors.Wrap(err, "copy key")
 			}
@@ -341,11 +341,11 @@ func collectCACerts() (map[string]string, error) {
 
 		if ext == ".crt" || ext == ".pem" {
 			if info.Size() < 32 {
-				glog.Warningf("ignoring %s, impossibly tiny %d bytes", fullPath, info.Size())
+				klog.Warningf("ignoring %s, impossibly tiny %d bytes", fullPath, info.Size())
 				return nil
 			}
 
-			glog.Infof("found cert: %s (%d bytes)", fullPath, info.Size())
+			klog.Infof("found cert: %s (%d bytes)", fullPath, info.Size())
 
 			validPem, err := isValidPEMCertificate(hostpath)
 			if err != nil {
@@ -386,7 +386,7 @@ func getSubjectHash(cr command.Runner, filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	glog.Infof("hashing: %s", lrr.Stdout.String())
+	klog.Infof("hashing: %s", lrr.Stdout.String())
 
 	rr, err := cr.RunCmd(exec.Command("openssl", "x509", "-hash", "-noout", "-in", filePath))
 	if err != nil {
@@ -407,7 +407,7 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 	}
 
 	if !hasSSLBinary && len(caCerts) > 0 {
-		glog.Warning("OpenSSL not found. Please recreate the cluster with the latest minikube ISO.")
+		klog.Warning("OpenSSL not found. Please recreate the cluster with the latest minikube ISO.")
 	}
 
 	for _, caCertFile := range caCerts {
