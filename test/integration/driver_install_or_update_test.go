@@ -29,6 +29,7 @@ import (
 	"github.com/blang/semver"
 
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -216,12 +217,9 @@ func TestHyperkitDriverSkipUpgrade(t *testing.T) {
 				}
 			}()
 
-			// start "minikube start --download-only --interactive=false --driver=hyperkit --preload=false"
-			cmd := exec.Command(Target(), "start", "--download-only", "--interactive=false", "--driver=hyperkit", "--preload=false")
+			cmd := exec.Command(Target(), "start", "--download-only", "--interactive=false", "--driver=hyperkit")
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stdout
-			// set PATH=<tmp_minikube>/bin:<path_to_sudo>
-			//     MINIKUBE_PATH=<tmp_minikube>
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("PATH=%v%c%v", filepath.Dir(drvPath), filepath.ListSeparator, filepath.Dir(sudoPath)),
 				"MINIKUBE_HOME="+mkDir)
@@ -262,16 +260,11 @@ func driverVersion(path string) (string, error) {
 
 // prepareTempMinikubeDirWithHyperkitDriver creates a temp .minikube directory
 // with structure essential to testing of hyperkit driver updates
-// $TEMP/.minikube/
-//                |-bin/
-//                     |-docker-machine-minikube
-// docker-machine-minikube is copied from the testdata/<driver>/ directory
 func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, string, error) {
 	temp, err := ioutil.TempDir("", name)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create tempdir: %v", err)
 	}
-
 	mkDir := filepath.Join(temp, ".minikube")
 	mkBinDir := filepath.Join(mkDir, "bin")
 	err = os.MkdirAll(mkBinDir, 0777)
@@ -288,12 +281,14 @@ func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, stri
 	if _, err = os.Stat(testDataDriverPath); err != nil {
 		return "", "", fmt.Errorf("expected driver to exist: %v", err)
 	}
-
 	// copy driver to temp bin
 	testDriverPath := filepath.Join(mkBinDir, "docker-machine-driver-hyperkit")
 	if err = ioext.CopyFile(testDataDriverPath, testDriverPath, false); err != nil {
 		return "", "", fmt.Errorf("failed to setup current hyperkit driver: %v", err)
 	}
+
+	_ = ioext.CopyDir(filepath.Join(localpath.MakeMiniPath("cache")), filepath.Join(mkDir, "cache"))
+
 	// change permission to allow driver to be executable
 	if err = os.Chmod(testDriverPath, 0755); err != nil {
 		return "", "", fmt.Errorf("failed to set driver permission: %v", err)
