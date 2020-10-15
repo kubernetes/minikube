@@ -675,16 +675,12 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 
 		out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 		if err != nil {
-			if strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
-				klog.Infof("Node %s already joined the cluster, skip failure.", n.Name)
-			} else {
-				return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
-			}
+			return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
 		}
 		return nil
 	}
 
-	if err := retry.Expo(join, 10*time.Second, 1*time.Minute); err != nil {
+	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
 		return errors.Wrap(err, "joining cp")
 	}
 
