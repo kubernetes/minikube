@@ -117,6 +117,8 @@ spec:
       serviceAccountName: heketi-service-account
       containers:
       - image: heketi/heketi:latest
+        command: ["/usr/bin/heketi"]
+        args: ["--config=/etc/heketi/heketi.json", "--disable-auth"]      
         imagePullPolicy: IfNotPresent
         name: heketi
         env:
