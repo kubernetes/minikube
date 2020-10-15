@@ -172,7 +172,7 @@ spec:
   template:
     spec:
       containers:
-      - name: ingress-nginx-controller
+      - name: controller
         ports:
          - containerPort: 6379
            hostPort: 6379

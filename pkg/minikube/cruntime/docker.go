@@ -23,8 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -104,7 +104,7 @@ func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
-			glog.Warningf("disableOthers: %v", err)
+			klog.Warningf("disableOthers: %v", err)
 		}
 	}
 
@@ -149,7 +149,7 @@ func (r *Docker) ImageExists(name string, sha string) bool {
 
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
-	glog.Infof("Loading image: %s", path)
+	klog.Infof("Loading image: %s", path)
 	c := exec.Command("docker", "load", "-i", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "loadimage docker.")
@@ -212,7 +212,7 @@ func (r *Docker) KillContainers(ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Killing containers: %s", ids)
+	klog.Infof("Killing containers: %s", ids)
 	args := append([]string{"rm", "-f"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
@@ -226,7 +226,7 @@ func (r *Docker) StopContainers(ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Stopping containers: %s", ids)
+	klog.Infof("Stopping containers: %s", ids)
 	args := append([]string{"stop"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
@@ -240,7 +240,7 @@ func (r *Docker) PauseContainers(ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Pausing containers: %s", ids)
+	klog.Infof("Pausing containers: %s", ids)
 	args := append([]string{"pause"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
@@ -254,7 +254,7 @@ func (r *Docker) UnpauseContainers(ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Unpausing containers: %s", ids)
+	klog.Infof("Unpausing containers: %s", ids)
 	args := append([]string{"unpause"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
@@ -285,7 +285,7 @@ func (r *Docker) SystemLogCmd(len int) string {
 
 // ForceSystemd forces the docker daemon to use systemd as cgroup manager
 func (r *Docker) forceSystemd() error {
-	glog.Infof("Forcing docker to use systemd as cgroup manager...")
+	klog.Infof("Forcing docker to use systemd as cgroup manager...")
 	daemonConfig := `{
 "exec-opts": ["native.cgroupdriver=systemd"],
 "log-driver": "json-file",
@@ -316,13 +316,13 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 		return errors.Wrap(err, "getting images")
 	}
 	if dockerImagesPreloaded(r.Runner, images) {
-		glog.Info("Images already preloaded, skipping extraction")
+		klog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
 
 	refStore := docker.NewStorage(r.Runner)
 	if err := refStore.Save(); err != nil {
-		glog.Infof("error saving reference store: %v", err)
+		klog.Infof("error saving reference store: %v", err)
 	}
 
 	tarballPath := download.TarballPath(k8sVersion, cRuntime)
@@ -344,7 +344,7 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	if err := r.Runner.Copy(fa); err != nil {
 		return errors.Wrap(err, "copying file")
 	}
-	glog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
+	klog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
 
 	// extract the tarball to /var in the VM
 	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xvf", dest)); err != nil {
@@ -353,16 +353,16 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 
 	//  remove the tarball in the VM
 	if err := r.Runner.Remove(fa); err != nil {
-		glog.Infof("error removing tarball: %v", err)
+		klog.Infof("error removing tarball: %v", err)
 	}
 
 	// save new reference store again
 	if err := refStore.Save(); err != nil {
-		glog.Infof("error saving reference store: %v", err)
+		klog.Infof("error saving reference store: %v", err)
 	}
 	// update reference store
 	if err := refStore.Update(); err != nil {
-		glog.Infof("error updating reference store: %v", err)
+		klog.Infof("error updating reference store: %v", err)
 	}
 	return r.Restart()
 }
@@ -378,12 +378,12 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 		preloadedImages[i] = struct{}{}
 	}
 
-	glog.Infof("Got preloaded images: %s", rr.Output())
+	klog.Infof("Got preloaded images: %s", rr.Output())
 
 	// Make sure images == imgs
 	for _, i := range images {
 		if _, ok := preloadedImages[i]; !ok {
-			glog.Infof("%s wasn't preloaded", i)
+			klog.Infof("%s wasn't preloaded", i)
 			return false
 		}
 	}
@@ -394,7 +394,7 @@ func dockerBoundToContainerd(runner command.Runner) bool {
 	// NOTE: assumes systemd
 	rr, err := runner.RunCmd(exec.Command("sudo", "systemctl", "cat", "docker.service"))
 	if err != nil {
-		glog.Warningf("unable to check if docker is bound to containerd")
+		klog.Warningf("unable to check if docker is bound to containerd")
 		return false
 	}
 
@@ -405,6 +405,7 @@ func dockerBoundToContainerd(runner command.Runner) bool {
 	return false
 }
 
+// ImagesPreloaded returns true if all images have been preloaded
 func (r *Docker) ImagesPreloaded(images []string) bool {
 	return dockerImagesPreloaded(r.Runner, images)
 }

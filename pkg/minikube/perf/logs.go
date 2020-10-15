@@ -23,8 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 )
 
 // timeCommandLogs runs command and watches stdout to time how long each new log takes
@@ -53,7 +54,7 @@ func timeCommandLogs(cmd *exec.Cmd) (*result, error) {
 		log := scanner.Text()
 		// this is the time it took to complete the previous log
 		timeTaken := time.Since(timer).Seconds()
-		glog.Infof("%f: %s", timeTaken, log)
+		klog.Infof("%f: %s", timeTaken, log)
 
 		timer = time.Now()
 		logs = append(logs, log)

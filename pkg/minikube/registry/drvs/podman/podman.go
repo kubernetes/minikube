@@ -28,7 +28,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -72,7 +72,14 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		}
 	}
 
+	extraArgs := []string{}
+
+	for _, port := range cc.ExposedPorts {
+		extraArgs = append(extraArgs, "-p", port)
+	}
+
 	return kic.NewDriver(kic.Config{
+		ClusterName:       cc.Name,
 		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       strings.Split(cc.KicBaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
@@ -83,6 +90,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		APIServerPort:     cc.Nodes[0].Port,
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
+		ExtraArgs:         extraArgs,
 	}), nil
 }
 
@@ -110,7 +118,7 @@ func status() registry.State {
 	o, err := cmd.Output()
 	output := strings.TrimSpace(string(o))
 	if err == nil {
-		glog.Infof("podman version: %s", output)
+		klog.Infof("podman version: %s", output)
 
 		v, err := semver.Make(output)
 		if err != nil {
@@ -128,7 +136,7 @@ func status() registry.State {
 		return registry.State{Installed: true, Healthy: true}
 	}
 
-	glog.Warningf("podman returned error: %v", err)
+	klog.Warningf("podman returned error: %v", err)
 
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {

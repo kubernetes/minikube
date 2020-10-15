@@ -23,16 +23,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/juju/clock"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 )
 
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	spec := PathMutexSpec(filename)
-	glog.Infof("WriteFile acquiring %s: %+v", filename, spec)
+	klog.Infof("WriteFile acquiring %s: %+v", filename, spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to acquire lock for %s: %+v", filename, spec)

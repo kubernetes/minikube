@@ -22,8 +22,8 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
@@ -48,7 +48,7 @@ minikube kubectl -- get pods --namespace kube-system`,
 			out.ErrLn("Error caching kubectl: %v", err)
 		}
 
-		glog.Infof("Running %s %v", c.Path, args)
+		klog.Infof("Running %s %v", c.Path, args)
 		c.Stdin = os.Stdin
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr

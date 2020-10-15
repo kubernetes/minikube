@@ -20,7 +20,7 @@ package register
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -62,7 +62,7 @@ func init() {
 	Reg = Register{
 		// Expected step orders, organized by the initial step seen
 		steps: map[RegStep][]RegStep{
-			InitialSetup: []RegStep{
+			InitialSetup: {
 				InitialSetup,
 				SelectingDriver,
 				DownloadingArtifacts,
@@ -78,10 +78,10 @@ func init() {
 				Done,
 			},
 
-			Stopping:  []RegStep{Stopping, Done},
-			Pausing:   []RegStep{Pausing, Done},
-			Unpausing: []RegStep{Unpausing, Done},
-			Deleting:  []RegStep{Deleting, Stopping, Deleting, Done},
+			Stopping:  {Stopping, Done},
+			Pausing:   {Pausing, Done},
+			Unpausing: {Unpausing, Done},
+			Deleting:  {Deleting, Stopping, Deleting, Done},
 		},
 	}
 }
@@ -109,7 +109,7 @@ func (r *Register) currentStep() string {
 	}
 
 	// Warn, as sometimes detours happen: "start" may cause "stopping" and "deleting"
-	glog.Warningf("%q was not found within the registered steps for %q: %v", r.current, r.first, steps)
+	klog.Warningf("%q was not found within the registered steps for %q: %v", r.current, r.first, steps)
 	return ""
 }
 
@@ -120,7 +120,7 @@ func (r *Register) SetStep(s RegStep) {
 		if ok {
 			r.first = s
 		} else {
-			glog.Errorf("unexpected first step: %q", r.first)
+			klog.Errorf("unexpected first step: %q", r.first)
 		}
 	}
 

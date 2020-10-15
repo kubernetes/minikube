@@ -21,9 +21,10 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -111,7 +112,7 @@ func IsDocker(name string) bool {
 	return name == Docker
 }
 
-// IsKIC checks if the driver is a Docker for Desktop (Docker on windows or MacOs)
+// IsDockerDesktop checks if the driver is a Docker for Desktop (Docker on windows or MacOs)
 // for linux and exotic archs, this will be false
 func IsDockerDesktop(name string) bool {
 	if IsDocker(name) {
@@ -232,16 +233,16 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 		}
 
 		if !ds.State.Healthy {
-			glog.Infof("not recommending %q due to health: %v", ds.Name, ds.State.Error)
+			klog.Infof("not recommending %q due to health: %v", ds.Name, ds.State.Error)
 			continue
 		}
 
 		if ds.Priority <= registry.Discouraged {
-			glog.Infof("not recommending %q due to priority: %d", ds.Name, ds.Priority)
+			klog.Infof("not recommending %q due to priority: %d", ds.Name, ds.Priority)
 			continue
 		}
 		if ds.Priority > pick.Priority {
-			glog.V(1).Infof("%q has a higher priority (%d) than %q (%d)", ds.Name, ds.Priority, pick.Name, pick.Priority)
+			klog.V(1).Infof("%q has a higher priority (%d) than %q (%d)", ds.Name, ds.Priority, pick.Name, pick.Priority)
 			pick = ds
 		}
 	}
@@ -266,9 +267,9 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 			alternates = append(alternates, ds)
 		}
 	}
-	glog.Infof("Picked: %+v", pick)
-	glog.Infof("Alternatives: %+v", alternates)
-	glog.Infof("Rejects: %+v", rejects)
+	klog.Infof("Picked: %+v", pick)
+	klog.Infof("Alternatives: %+v", alternates)
+	klog.Infof("Rejects: %+v", rejects)
 	return pick, alternates, rejects
 }
 
@@ -284,7 +285,7 @@ func Status(name string) registry.DriverState {
 
 // SetLibvirtURI sets the URI to perform libvirt health checks against
 func SetLibvirtURI(v string) {
-	glog.Infof("Setting default libvirt URI to %s", v)
+	klog.Infof("Setting default libvirt URI to %s", v)
 	os.Setenv("LIBVIRT_DEFAULT_URI", v)
 
 }
@@ -296,4 +297,16 @@ func MachineName(cc config.ClusterConfig, n config.Node) string {
 		return cc.Name
 	}
 	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
+}
+
+// IndexFromMachineName returns the order of the container based on it is name
+func IndexFromMachineName(machineName string) int {
+	// minikube-m02
+	sp := strings.Split(machineName, "-")
+	m := strings.Trim(sp[len(sp)-1], "m") // m02
+	i, err := strconv.Atoi(m)
+	if err != nil {
+		return 1
+	}
+	return i
 }

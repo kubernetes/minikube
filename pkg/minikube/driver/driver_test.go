@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -199,5 +200,162 @@ func TestSuggest(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestMachineName(t *testing.T) {
+	testsCases := []struct {
+		ClusterConfig config.ClusterConfig
+		Want          string
+	}{
+		{
+			ClusterConfig: config.ClusterConfig{Name: "minikube",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+				},
+			},
+			Want: "minikube",
+		},
+
+		{
+			ClusterConfig: config.ClusterConfig{Name: "p2",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+					{
+						Name:              "m2",
+						IP:                "172.17.0.4",
+						Port:              0,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      false,
+						Worker:            true,
+					},
+				},
+			},
+			Want: "p2-m2",
+		},
+	}
+
+	for _, tc := range testsCases {
+		got := MachineName(tc.ClusterConfig, tc.ClusterConfig.Nodes[len(tc.ClusterConfig.Nodes)-1])
+		if got != tc.Want {
+			t.Errorf("Expected MachineName to be %q but got %q", tc.Want, got)
+		}
+	}
+}
+
+func TestIndexFromMachineName(t *testing.T) {
+	testCases := []struct {
+		Name        string
+		MachineName string
+		Want        int
+	}{
+		{
+			Name:        "default",
+			MachineName: "minikube",
+			Want:        1},
+		{
+			Name:        "second-node",
+			MachineName: "minikube-m02",
+			Want:        2},
+		{
+			Name:        "funny",
+			MachineName: "hahaha",
+			Want:        1},
+
+		{
+			Name:        "dash-profile",
+			MachineName: "my-dashy-minikube",
+			Want:        1},
+
+		{
+			Name:        "dash-profile-second-node",
+			MachineName: "my-dashy-minikube-m02",
+			Want:        2},
+		{
+			Name:        "michivious-user",
+			MachineName: "michivious-user-m02-m03",
+			Want:        3},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got := IndexFromMachineName(tc.MachineName)
+			if got != tc.Want {
+				t.Errorf("want order %q but got %q", tc.Want, got)
+
+			}
+		})
+
+	}
+}
+
+// test indexFroMachine against cluster config
+func TestIndexFromMachineNameClusterConfig(t *testing.T) {
+
+	testsCases := []struct {
+		ClusterConfig config.ClusterConfig
+		Want          int
+	}{
+		{
+			ClusterConfig: config.ClusterConfig{Name: "minikube",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+				},
+			},
+			Want: 1,
+		},
+
+		{
+			ClusterConfig: config.ClusterConfig{Name: "p2",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+					{
+						Name:              "m2",
+						IP:                "172.17.0.4",
+						Port:              0,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      false,
+						Worker:            true,
+					},
+				},
+			},
+			Want: 2,
+		},
+	}
+
+	for _, tc := range testsCases {
+		got := IndexFromMachineName(MachineName(tc.ClusterConfig, tc.ClusterConfig.Nodes[len(tc.ClusterConfig.Nodes)-1]))
+		if got != tc.Want {
+			t.Errorf("expected IndexFromMachineName to be %d but got %d", tc.Want, got)
+		}
+
 	}
 }

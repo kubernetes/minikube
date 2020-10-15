@@ -26,9 +26,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -61,7 +61,7 @@ var dashboardCmd = &cobra.Command{
 
 		for _, n := range co.Config.Nodes {
 			if err := proxy.ExcludeIP(n.IP); err != nil {
-				glog.Errorf("Error excluding IP from proxy: %s", err)
+				klog.Errorf("Error excluding IP from proxy: %s", err)
 			}
 		}
 
@@ -118,9 +118,9 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		glog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
+		klog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
 		if err = p.Wait(); err != nil {
-			glog.Errorf("Wait: %v", err)
+			klog.Errorf("Wait: %v", err)
 		}
 	},
 }
@@ -143,12 +143,12 @@ func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string,
 		return nil, "", errors.Wrap(err, "cmd stdout")
 	}
 
-	glog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
+	klog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
 	if err := cmd.Start(); err != nil {
 		return nil, "", errors.Wrap(err, "proxy start")
 	}
 
-	glog.Infof("Waiting for kubectl to output host:port ...")
+	klog.Infof("Waiting for kubectl to output host:port ...")
 	reader := bufio.NewReader(stdoutPipe)
 
 	var out []byte
@@ -161,12 +161,12 @@ func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string,
 			break
 		}
 		if timedOut {
-			glog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
+			klog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
 			break
 		}
 		out = append(out, r)
 	}
-	glog.Infof("proxy stdout: %s", string(out))
+	klog.Infof("proxy stdout: %s", string(out))
 	return cmd, hostPortRe.FindString(string(out)), nil
 }
 
@@ -203,7 +203,7 @@ func dashboardURL(proxy string, ns string, svc string) string {
 // checkURL checks if a URL returns 200 HTTP OK
 func checkURL(url string) error {
 	resp, err := http.Get(url)
-	glog.Infof("%s response: %v %+v", url, err, resp)
+	klog.Infof("%s response: %v %+v", url, err, resp)
 	if err != nil {
 		return errors.Wrap(err, "checkURL")
 	}

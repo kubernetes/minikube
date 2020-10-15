@@ -26,6 +26,8 @@ import (
 
 	// initflag must be imported before any other minikube pkg.
 	// Fix for https://github.com/kubernetes/minikube/issues/4866
+
+	"k8s.io/klog/v2"
 	_ "k8s.io/minikube/pkg/initflag"
 
 	// Register drivers
@@ -36,7 +38,6 @@ import (
 
 	mlog "github.com/docker/machine/libmachine/log"
 
-	"github.com/golang/glog"
 	"github.com/google/slowjam/pkg/stacklog"
 	"github.com/pkg/profile"
 
@@ -58,7 +59,7 @@ var (
 
 func main() {
 	bridgeLogMessages()
-	defer glog.Flush()
+	defer klog.Flush()
 
 	s := stacklog.MustStartFromEnv("STACKLOG_PATH")
 	defer s.Stop()
@@ -74,7 +75,7 @@ func main() {
 	cmd.Execute()
 }
 
-// bridgeLogMessages bridges non-glog logs into glog
+// bridgeLogMessages bridges non-glog logs into klog
 func bridgeLogMessages() {
 	log.SetFlags(log.Lshortfile)
 	log.SetOutput(stdLogBridge{})
@@ -85,12 +86,12 @@ func bridgeLogMessages() {
 
 type stdLogBridge struct{}
 
-// Write parses the standard logging line and passes its components to glog
+// Write parses the standard logging line and passes its components to klog
 func (lb stdLogBridge) Write(b []byte) (n int, err error) {
 	// Split "d.go:23: message" into "d.go", "23", and "message".
 	parts := bytes.SplitN(b, []byte{':'}, 3)
 	if len(parts) != 3 || len(parts[0]) < 1 || len(parts[2]) < 1 {
-		glog.Errorf("bad log format: %s", b)
+		klog.Errorf("bad log format: %s", b)
 		return
 	}
 
@@ -101,21 +102,21 @@ func (lb stdLogBridge) Write(b []byte) (n int, err error) {
 		text = fmt.Sprintf("bad line number: %s", b)
 		line = 0
 	}
-	glog.Infof("stdlog: %s:%d %s", file, line, text)
+	klog.Infof("stdlog: %s:%d %s", file, line, text)
 	return len(b), nil
 }
 
 // libmachine log bridge
 type machineLogBridge struct{}
 
-// Write passes machine driver logs to glog
+// Write passes machine driver logs to klog
 func (lb machineLogBridge) Write(b []byte) (n int, err error) {
 	if machineLogErrorRe.Match(b) {
-		glog.Errorf("libmachine: %s", b)
+		klog.Errorf("libmachine: %s", b)
 	} else if machineLogWarningRe.Match(b) {
-		glog.Warningf("libmachine: %s", b)
+		klog.Warningf("libmachine: %s", b)
 	} else {
-		glog.Infof("libmachine: %s", b)
+		klog.Infof("libmachine: %s", b)
 	}
 	return len(b), nil
 }

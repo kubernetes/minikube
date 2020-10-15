@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -88,9 +88,9 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "drain", m)
 	if _, err := runner.RunCmd(cmd); err != nil {
-		glog.Warningf("unable to scale coredns replicas to 1: %v", err)
+		klog.Warningf("unable to scale coredns replicas to 1: %v", err)
 	} else {
-		glog.Infof("successfully scaled coredns replicas to 1")
+		klog.Infof("successfully scaled coredns replicas to 1")
 	}
 
 	// kubectl delete
@@ -122,7 +122,7 @@ func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
 
 		// Accept full machine name as well as just node name
 		if driver.MachineName(cc, n) == name {
-			glog.Infof("Couldn't find node name %s, but found it as a machine name, returning it anyway.", name)
+			klog.Infof("Couldn't find node name %s, but found it as a machine name, returning it anyway.", name)
 			return &n, i, nil
 		}
 	}

@@ -506,6 +506,11 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		t.Run("add_local", func(t *testing.T) {
+			if GithubActionRunner() && runtime.GOOS == "darwin" {
+				t.Skipf("skipping this test because Docker can not run in macos on github action free version. https://github.community/t/is-it-possible-to-install-and-configure-docker-on-macos-runner/16981")
+
+			}
+
 			dname, err := ioutil.TempDir("", profile)
 			if err != nil {
 				t.Fatalf("Cannot create temp dir: %v", err)

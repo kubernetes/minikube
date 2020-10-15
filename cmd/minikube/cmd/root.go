@@ -24,10 +24,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -62,13 +62,6 @@ var RootCmd = &cobra.Command{
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
 		}
-
-		logDir := pflag.Lookup("log_dir")
-		if !logDir.Changed {
-			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
-				exit.Error(reason.InternalFlagSet, "logdir set failed", err)
-			}
-		}
 	},
 }
 
@@ -83,16 +76,16 @@ func Execute() {
 	for _, c := range RootCmd.Commands() {
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
-		c.Flags().VisitAll(func(flag *pflag.Flag) {
-			flag.Usage = translate.T(flag.Usage)
+		c.Flags().VisitAll(func(f *pflag.Flag) {
+			f.Usage = translate.T(f.Usage)
 		})
 
 		c.SetUsageTemplate(usageTemplate())
 	}
 	RootCmd.Short = translate.T(RootCmd.Short)
 	RootCmd.Long = translate.T(RootCmd.Long)
-	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		flag.Usage = translate.T(flag.Usage)
+	RootCmd.Flags().VisitAll(func(f *pflag.Flag) {
+		f.Usage = translate.T(f.Usage)
 	})
 
 	if runtime.GOOS != "windows" {
@@ -103,11 +96,11 @@ func Execute() {
 
 	// Universally ensure that we never speak to the wrong DOCKER_HOST
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		glog.Errorf("oci env: %v", err)
+		klog.Errorf("oci env: %v", err)
 	}
 
 	if err := oci.PointToHostPodman(); err != nil {
-		glog.Errorf("oci env: %v", err)
+		klog.Errorf("oci env: %v", err)
 	}
 
 	if err := RootCmd.Execute(); err != nil {
@@ -146,27 +139,7 @@ func usageTemplate() string {
 `, translate.T("Usage"), translate.T("Aliases"), translate.T("Examples"), translate.T("Available Commands"), translate.T("Flags"), translate.T("Global Flags"), translate.T("Additional help topics"), translate.T(`Use "{{.CommandPath}} [command] --help" for more information about a command.`))
 }
 
-// Handle config values for flags used in external packages (e.g. glog)
-// by setting them directly, using values from viper when not passed in as args
-func setFlagsUsingViper() {
-	for _, config := range []string{"alsologtostderr", "log_dir", "v"} {
-		a := pflag.Lookup(config)
-		viper.SetDefault(a.Name, a.DefValue)
-		// If the flag is set, override viper value
-		if a.Changed {
-			viper.Set(a.Name, a.Value.String())
-		}
-		// Viper will give precedence first to calls to the Set command,
-		// then to values from the config.yml
-		if err := a.Value.Set(viper.GetString(a.Name)); err != nil {
-			exit.Error(reason.InternalFlagSet, fmt.Sprintf("failed to set value for %q", a.Name), err)
-		}
-		a.Changed = true
-	}
-}
-
 func init() {
-	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 
@@ -234,10 +207,20 @@ func init() {
 	RootCmd.AddCommand(completionCmd)
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
+	klog.InitFlags(nil)
+	if err := goflag.Set("logtostderr", "false"); err != nil {
+		klog.Warningf("Unable to set default flag value for logtostderr: %v", err)
+	}
+	if err := goflag.Set("alsologtostderr", "false"); err != nil {
+		klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
+	}
+
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.Error(reason.InternalBindFlags, "Unable to bind flags", err)
 	}
+
+	translate.DetermineLocale()
 	cobra.OnInitialize(initConfig)
 }
 
@@ -249,7 +232,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		// This config file is optional, so don't emit errors if missing
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			glog.Warningf("Error reading config file at %s: %v", configPath, err)
+			klog.Warningf("Error reading config file at %s: %v", configPath, err)
 		}
 	}
 	setupViper()
@@ -270,11 +253,10 @@ func setupViper() {
 	viper.SetDefault(config.WantNoneDriverWarning, true)
 	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
 	viper.SetDefault(config.ShowBootstrapperDeprecationNotification, true)
-	setFlagsUsingViper()
 }
 
 func addToPath(dir string) {
 	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
-	glog.Infof("Updating PATH: %s", dir)
+	klog.Infof("Updating PATH: %s", dir)
 	os.Setenv("PATH", new)
 }

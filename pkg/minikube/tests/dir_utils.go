@@ -45,6 +45,7 @@ func MakeTempDir() string {
 	return localpath.MiniPath()
 }
 
+// RemoveTempDir removes the temp dir
 func RemoveTempDir(tempdir string) {
 	if filepath.Base(tempdir) == ".minikube" {
 		tempdir = filepath.Dir(tempdir)

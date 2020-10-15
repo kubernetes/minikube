@@ -23,9 +23,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -114,7 +114,7 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 
 	v, _, err := config.ListProfiles()
 	if err != nil {
-		glog.Errorf("list profiles returned error: %v", err)
+		klog.Errorf("list profiles returned error: %v", err)
 	}
 	if len(v) > 1 {
 		out.T(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")

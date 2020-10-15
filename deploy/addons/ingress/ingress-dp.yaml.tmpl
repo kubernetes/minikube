@@ -44,6 +44,7 @@ spec:
         app.kubernetes.io/instance: ingress-nginx
         app.kubernetes.io/component: controller
         addonmanager.kubernetes.io/mode: Reconcile
+        gcp-auth-skip-secret: "true"
     spec:
       serviceAccountName: ingress-nginx
       containers:
