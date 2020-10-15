@@ -392,10 +392,13 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 // WaitForNode blocks until the node appears to be healthy
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
-
 	register.Reg.SetStep(register.VerifyingKubernetes)
 	out.T(style.HealthCheck, "Verifying Kubernetes components...")
-
+	// regardless if waiting is set or not, we will make sure kubelet is not stopped
+	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
+	if err := k.ensureServiceStarted("kubelet"); err != nil {
+		klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
+	}
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
@@ -455,6 +458,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			}
 		}
 	}
+	if cfg.VerifyComponents[kverify.KubeletKey] {
+		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
+			return errors.Wrap(err, "waiting for kubelet")
+		}
+
+	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
 		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
@@ -467,6 +476,15 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, cfg.Name, cfg.Driver)
 		return errors.Wrap(err, "node pressure")
+	}
+	return nil
+}
+
+// ensureKubeletStarted will start a systemd or init.d service if it is not running.
+func (k *Bootstrapper) ensureServiceStarted(svc string) error {
+	if st := kverify.ServiceStatus(k.c, svc); st != state.Running {
+		klog.Warningf("surprisingly %q service status was %s!. will try to start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)
+		return sysinit.New(k.c).Start(svc)
 	}
 	return nil
 }

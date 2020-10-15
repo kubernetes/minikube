@@ -345,8 +345,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		st.Host = codeNames[InsufficientStorage]
 	}
 
-	stk := kverify.KubeletStatus(cr)
-	klog.Infof("%s kubelet status = %s", name, stk)
+	stk := kverify.ServiceStatus(cr, "kubelet")
 	st.Kubelet = stk.String()
 
 	// Early exit for worker nodes
