@@ -18,7 +18,7 @@ package driver
 
 import (
 	"github.com/blang/semver"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 // minHyperkitVersion is the minimum version of the minikube hyperkit driver compatible with the current minikube code
@@ -29,7 +29,7 @@ const minHyperkitVersionStr = "1.11.0"
 func init() {
 	v, err := semver.New(minHyperkitVersionStr)
 	if err != nil {
-		glog.Errorf("Failed to parse the hyperkit driver version: %v", err)
+		klog.Errorf("Failed to parse the hyperkit driver version: %v", err)
 	} else {
 		minHyperkitVersion = v
 	}
@@ -46,7 +46,7 @@ func minAcceptableDriverVersion(driver string, mkVer semver.Version) semver.Vers
 	case KVM2:
 		return mkVer
 	default:
-		glog.Warningf("Unexpected driver: %v", driver)
+		klog.Warningf("Unexpected driver: %v", driver)
 		return mkVer
 	}
 }
