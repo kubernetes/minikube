@@ -193,7 +193,7 @@ func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, stri
 
 	mkDir := filepath.Join(temp, ".minikube")
 	mkBinDir := filepath.Join(mkDir, "bin")
-	err = os.MkdirAll(mkBinDir, 0755)
+	err = os.MkdirAll(mkBinDir, 0777)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to prepare tempdir: %v", err)
 	}
@@ -214,7 +214,7 @@ func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, stri
 		return "", "", fmt.Errorf("failed to setup current hyperkit driver: %v", err)
 	}
 	// change permission to allow driver to be executable
-	if err = os.Chmod(testDriverPath, 0777); err != nil {
+	if err = os.Chmod(testDriverPath, 0755); err != nil {
 		return "", "", fmt.Errorf("failed to set driver permission: %v", err)
 	}
 	return temp, testDriverPath, nil
