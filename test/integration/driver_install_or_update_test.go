@@ -287,6 +287,7 @@ func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, stri
 		return "", "", fmt.Errorf("failed to setup current hyperkit driver: %v", err)
 	}
 
+	// try to copy cached files to the temp minikube folder to avoid downloading of iso and preloads
 	_ = ioext.CopyDir(filepath.Join(localpath.MakeMiniPath("cache")), filepath.Join(mkDir, "cache"))
 
 	// change permission to allow driver to be executable
