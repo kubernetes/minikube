@@ -171,7 +171,7 @@ func tempMinikubeDir(name, driver string) (string, string, error) {
 
 	mkDir := filepath.Join(temp, ".minikube")
 	mkBinDir := filepath.Join(mkDir, "bin")
-	err = os.MkdirAll(mkBinDir, 0777)
+	err = os.MkdirAll(mkBinDir, 0755)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to prepare tempdir: %v", err)
 	}
