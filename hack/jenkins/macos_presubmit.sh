@@ -19,18 +19,20 @@ set -ex
 MINIKUBE_LOCATION=$KOKORO_GITHUB_PULL_REQUEST_NUMBER
 COMMIT=$KOKORO_GITHUB_PULL_REQUEST_COMMIT
 OS_ARCH="darwin-amd64"
-VM_DRIVER="docker"
+VM_DRIVER="hyperkit"
 JOB_NAME="Docker_macOS"
 EXTRA_START_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 cd github/minikube/hack/jenkins
 
-docker-machine create --driver virtualbox  --virtualbox-cpu-count 2 --virtualbox-memory 4000 default
-docker-machine env default
-eval "$(docker-machine env default)"
-docker info
-docker version --format {{.Server.Os}}-{{.Server.Version}}
+#docker-machine create --driver virtualbox  --virtualbox-cpu-count 2 --virtualbox-memory 4000 default
+#docker-machine env default
+#eval "$(docker-machine env default)"
+#docker info
+#docker version --format {{.Server.Os}}-{{.Server.Version}}
+
+brew install hyperkit
 
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
@@ -53,5 +55,5 @@ export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 "${MINIKUBE_BIN}" version
 
-"${MINIKUBE_BIN}" start --driver=docker --force-systemd --wait-timeout=20m
+"${MINIKUBE_BIN}" start --driver=hyperkit --wait-timeout=20m
 exit $?
