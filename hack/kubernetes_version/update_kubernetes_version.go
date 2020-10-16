@@ -40,6 +40,7 @@ import (
 	"text/template"
 	"time"
 
+	"golang.org/x/mod/semver"
 	"golang.org/x/oauth2"
 
 	"github.com/golang/glog"
@@ -398,26 +399,19 @@ func ghReleases(ctx context.Context, owner, repo, token string) (stable, latest 
 		}
 		for _, rl := range rls {
 			ver := rl.GetName()
-			if ver == "" {
+			if !semver.IsValid(ver) {
 				continue
 			}
-			// check if ver version is a release (ie, 'v1.19.2') or a
-			// pre-release (ie, 'v1.19.3-rc.0' or 'v1.19.0-beta.2') channel ch
-			// note: github.RepositoryRelease GetPrerelease() bool would be useful for all pre-rels
-			ch := strings.Split(ver, "-")
-			if len(ch) == 1 && stable == "" {
-				stable = ver
-			} else if len(ch) > 1 && latest == "" {
-				if strings.HasPrefix(ch[1], "rc") || strings.HasPrefix(ch[1], "beta") {
-					latest = ver
-				}
+			// check if ver version is release (ie, 'v1.19.2') or pre-release (ie, 'v1.19.3-rc.0' or 'v1.19.0-beta.2')
+			prerls := semver.Prerelease(ver)
+			if prerls == "" {
+				stable = semver.Max(ver, stable)
+			} else if strings.HasPrefix(prerls, "-rc") || strings.HasPrefix(prerls, "-beta") {
+				latest = semver.Max(ver, latest)
 			}
-			if stable != "" && latest != "" {
-				// make sure that v.Latest >= stable
-				if latest < stable {
-					latest = stable
-				}
-				return stable, latest, nil
+			// make sure that latest >= stable
+			if semver.Compare(latest, stable) == -1 {
+				latest = stable
 			}
 		}
 		if resp.NextPage == 0 {
