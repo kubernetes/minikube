@@ -673,9 +673,9 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 			klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
 		}
 
-		out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
+		_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 		if err != nil {
-			return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
+			return errors.Wrapf(err, "kubeadm join")
 		}
 		return nil
 	}
