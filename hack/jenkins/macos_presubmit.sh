@@ -50,6 +50,10 @@ gsutil -qm cp \
 gsutil -qm cp -r "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
+
+sudo chown root:wheel /tmpfs/src/github/minikube/hack/jenkins/out/docker-machine-driver-hyperkit 
+sudo chmod u+s /tmpfs/src/github/minikube/hack/jenkins/out/docker-machine-driver-hyperkit
+
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
