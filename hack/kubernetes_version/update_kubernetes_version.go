@@ -127,9 +127,10 @@ func (p *Patch) apply(data interface{}) (changed bool, err error) {
 }
 
 func main() {
+	klog.InitFlags(nil)
 	// write log statements to stderr instead of to files
 	if err := flag.Set("logtostderr", "true"); err != nil {
-		fmt.Printf("Error setting 'logtostderr' klog flag: %v", err)
+		fmt.Printf("Error setting 'logtostderr' klog flag: %v\n", err)
 	}
 	flag.Parse()
 	defer klog.Flush()
