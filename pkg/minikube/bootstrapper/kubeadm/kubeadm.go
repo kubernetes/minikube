@@ -673,18 +673,17 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 			klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
 		}
 
-		out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
+		_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 		if err != nil {
 			if strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
-				klog.Infof("Node %s already joined the cluster, skip failure.", n.Name)
-			} else {
-				return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
+				klog.Info("still waiting for the worker node to register with the api server")
 			}
+			return errors.Wrapf(err, "kubeadm join")
 		}
 		return nil
 	}
 
-	if err := retry.Expo(join, 10*time.Second, 1*time.Minute); err != nil {
+	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
 		return errors.Wrap(err, "joining cp")
 	}
 

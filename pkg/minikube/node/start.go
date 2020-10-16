@@ -133,6 +133,9 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 
+		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
+			return nil, errors.Wrap(err, "update node")
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -167,10 +170,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 	} else {
-		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
-			return nil, errors.Wrap(err, "update node")
-		}
-
 		// Make sure to use the command runner for the control plane to generate the join token
 		cpBs, cpr, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
