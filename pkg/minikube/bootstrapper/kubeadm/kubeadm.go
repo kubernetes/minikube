@@ -676,7 +676,7 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 		_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 		if err != nil {
 			if strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
-				klog.Infof("still waiting for the worker node to register with the api server")
+				klog.Info("still waiting for the worker node to register with the api server")
 			}
 			return errors.Wrapf(err, "kubeadm join")
 		}
