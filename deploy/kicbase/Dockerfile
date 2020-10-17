@@ -92,13 +92,16 @@ RUN clean-install \
     lz4 \
     gnupg \ 
     sudo \
-    docker.io \
-    containerd \
     openssh-server \
     dnsutils \
-    runc \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0
+
+# install docker
+RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list" && \
+    curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
+    apt-key add - < docker.key && \
+    clean-install docker-ce docker-ce-cli containerd.io
 
 # Install cri-o/podman dependencies:
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \ 
@@ -118,7 +121,7 @@ RUN sh -c "echo 'deb https://dl.bintray.com/afbjorklund/podman focal main' > /et
     apt-key add - < afbjorklund-public.key.asc && \
     clean-install podman=1.9.3~1
 
-RUN mkdir -p /usr/lib/cri-o-runc/sbin && cp /usr/sbin/runc /usr/lib/cri-o-runc/sbin/runc
+RUN mkdir -p /usr/lib/cri-o-runc/sbin && cp /usr/bin/runc /usr/lib/cri-o-runc/sbin/runc
 
 # automount service
 COPY automount/minikube-automount /usr/sbin/minikube-automount
