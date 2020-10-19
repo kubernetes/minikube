@@ -23,6 +23,7 @@ import (
 	"os/exec"
 
 	parallels "github.com/Parallels/docker-machine-parallels"
+	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -36,6 +37,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Priority: registry.Default,
+		Init:     func() drivers.Driver { return parallels.NewDriver("", "") },
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
