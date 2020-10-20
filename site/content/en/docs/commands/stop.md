@@ -23,6 +23,7 @@ minikube stop [flags]
       --all                   Set flag to stop all profiles (clusters)
   -h, --help                  help for stop
       --keep-context-active   keep the kube-context active after cluster is stopped. Defaults to false.
+      --schedule string       Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)
 ```
 
 ### Options inherited from parent commands
