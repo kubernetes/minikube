@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"github.com/VividCortex/godaemon"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -50,7 +50,7 @@ func killExistingScheduledStops(profiles []string) error {
 		if err != nil {
 			return errors.Wrap(err, "finding process")
 		}
-		glog.Infof("killing process %v as it is an old scheduled stop", pid)
+		klog.Infof("killing process %v as it is an old scheduled stop", pid)
 		if err := p.Kill(); err != nil {
 			return errors.Wrapf(err, "killing %v", pid)
 		}
