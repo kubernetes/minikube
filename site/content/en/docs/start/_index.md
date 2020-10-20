@@ -90,6 +90,11 @@ From a terminal with administrator access (but not logged in as root), run:
 
 ```shell
 minikube start
+
+# if you want to use LoadBalancer in macOS
+# reference : https://github.com/kubernetes/minikube/issues/7344#issuecomment-688179776
+
+minikube start --vm-driver=hyperkit
 ```
 
 If minikube fails to start, see the [drivers page]({{<ref "/docs/drivers">}}) for help setting up a compatible container or virtual-machine manager.
