@@ -17,26 +17,25 @@ limitations under the License.
 package oci
 
 import (
-	"context"
-	"os"
-	"time"
-
 	"bufio"
 	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
-
-	"fmt"
-	"os/exec"
-	"runtime"
-	"strconv"
-	"strings"
 )
 
 // DeleteContainersByLabel deletes all containers that have a specific label
@@ -521,18 +520,31 @@ func ListContainersByLabel(ociBin string, label string, warnSlow ...bool) ([]str
 // PointToHostDockerDaemon will unset env variables that point to docker inside minikube
 // to make sure it points to the docker daemon installed by user.
 func PointToHostDockerDaemon() error {
-	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
-	if p != "" {
+
+	if p := os.Getenv(constants.MinikubeActiveDockerdEnv); p != "" {
 		klog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
 	}
 
-	for i := range constants.DockerDaemonEnvs {
-		e := constants.DockerDaemonEnvs[i]
-		err := os.Setenv(e, "")
-		if err != nil {
-			return errors.Wrapf(err, "resetting %s env", e)
+	for _, e := range constants.DockerDaemonEnvs {
+		if err := resetEnv(e); err != nil {
+			return err
 		}
+	}
 
+	return nil
+}
+
+func resetEnv(key string) error {
+	v := os.Getenv(constants.MinikubeExistingPrefix + key)
+	if v == "" {
+		if err := os.Unsetenv(key); err != nil {
+			return errors.Wrapf(err, "resetting %s env", key)
+		}
+		return nil
+	}
+
+	if err := os.Setenv(key, v); err != nil {
+		return errors.Wrapf(err, "resetting %s env", key)
 	}
 	return nil
 }
