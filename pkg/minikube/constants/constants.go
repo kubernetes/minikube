@@ -75,6 +75,8 @@ const (
 	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
 	// TestDiskUsedEnv is used in integration tests for insufficient storage with 'minikube status'
 	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
+	// MinikubeExistingPrefix is used to save the original environment when executing docker-env
+	MinikubeExistingPrefix = "MINIKUBE_EXISTING_"
 )
 
 var (
