@@ -176,7 +176,7 @@ func SetDockerEnv() []string {
 				}
 
 				if isLocalProxy(u.Host) {
-					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
+					out.WarningT("Local proxy ignored: not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
 					continue
 				}
 			}
