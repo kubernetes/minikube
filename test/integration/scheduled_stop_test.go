@@ -36,7 +36,7 @@ import (
 
 func TestScheduledStop(t *testing.T) {
 	profile := UniqueProfileName("scheduled-stop")
-	ctx, _ := context.WithTimeout(context.Background(), Minutes(5))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
 	defer CleanupWithLogs(t, profile, cancel)
 	startMinikube(ctx, t, profile)
 
