@@ -27,7 +27,7 @@ import (
 
 	"github.com/VividCortex/godaemon"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
