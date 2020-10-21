@@ -95,10 +95,11 @@ func (d *Driver) Create() error {
 	}
 
 	// control plane specific options
-	params.PortMappings = append(params.PortMappings, oci.PortMapping{
-		ListenAddress: oci.DefaultBindIPV4,
-		ContainerPort: int32(params.APIServerPort),
-	},
+	params.PortMappings = append(params.PortMappings,
+		oci.PortMapping{
+			ListenAddress: oci.DefaultBindIPV4,
+			ContainerPort: int32(params.APIServerPort),
+		},
 		oci.PortMapping{
 			ListenAddress: oci.DefaultBindIPV4,
 			ContainerPort: constants.SSHPort,

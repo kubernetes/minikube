@@ -25,6 +25,7 @@ func TestPointToHostDockerDaemonEmpty(t *testing.T) {
 	_ = os.Setenv("DOCKER_HOST", "foo_host")
 	_ = os.Setenv("DOCKER_CERT_PATH", "foo_cert_path")
 	_ = os.Setenv("DOCKER_TLS_VERIFY", "foo_tls_verify")
+	_ = os.Setenv("MINIKUBE_ACTIVE_DOCKERD", "minikube")
 
 	_ = os.Unsetenv("MINIKUBE_EXISTING_DOCKER_HOST")
 	_ = os.Unsetenv("MINIKUBE_EXISTING_DOCKER_CERT_PATH")

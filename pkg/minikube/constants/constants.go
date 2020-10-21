@@ -75,8 +75,16 @@ const (
 	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
 	// TestDiskUsedEnv is used in integration tests for insufficient storage with 'minikube status'
 	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
+
 	// MinikubeExistingPrefix is used to save the original environment when executing docker-env
 	MinikubeExistingPrefix = "MINIKUBE_EXISTING_"
+
+	// ExistingDockerHostEnv is used to save original docker environment
+	ExistingDockerHostEnv = MinikubeExistingPrefix + "DOCKER_HOST"
+	// ExistingDockerCertPathEnv is used to save original docker environment
+	ExistingDockerCertPathEnv = MinikubeExistingPrefix + "DOCKER_CERT_PATH"
+	// ExistingDockerTLSVerifyEnv is used to save original docker environment
+	ExistingDockerTLSVerifyEnv = MinikubeExistingPrefix + "DOCKER_TLS_VERIFY"
 )
 
 var (
@@ -92,6 +100,9 @@ var (
 
 	// DockerDaemonEnvs is list of docker-daemon related environment variables.
 	DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}
+	// ExistingDockerDaemonEnvs is list of docker-daemon related environment variables.
+	ExistingDockerDaemonEnvs = [3]string{ExistingDockerHostEnv, ExistingDockerTLSVerifyEnv, ExistingDockerCertPathEnv}
+
 	// PodmanRemoteEnvs is list of podman-remote related environment variables.
 	PodmanRemoteEnvs = [1]string{PodmanVarlinkBridgeEnv}
 
