@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	cloud.google.com/go/storage v1.8.0
+	github.com/Azure/azure-sdk-for-go v42.3.0+incompatible
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/Parallels/docker-machine-parallels v1.3.0
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect

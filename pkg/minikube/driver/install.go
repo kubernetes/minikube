@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -55,13 +56,12 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	defer releaser.Release()
 
 	exists := driverExists(executable)
-	path, err := validateDriver(executable, v)
+	path, err := validateDriver(executable, minAcceptableDriverVersion(name, v))
 	if !exists || (err != nil && autoUpdate) {
 		klog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
-		derr := download.Driver(executable, path, v)
-		if derr != nil {
-			return derr
+		if err := download.Driver(executable, path, v); err != nil {
+			return err
 		}
 	}
 	return fixDriverPermissions(name, path, interactive)
@@ -133,6 +133,8 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	if err != nil {
 		return path, errors.Wrap(err, "can't parse driver version")
 	}
+	klog.Infof("%s version is %s", path, driverVersion)
+
 	if driverVersion.LT(v) {
 		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
 	}
