@@ -354,7 +354,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 		}
 
 		// This timeout includes image pull time, which can take a few minutes. 3 is not enough.
-		err = kapi.WaitForPods(client, ns, label, time.Minute*5)
+		err = kapi.WaitForPods(client, ns, label, time.Minute*6)
 		if err != nil {
 			return errors.Wrapf(err, "waiting for %s pods", label)
 		}
