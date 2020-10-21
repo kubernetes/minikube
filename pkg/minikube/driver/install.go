@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -132,6 +133,7 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	if err != nil {
 		return path, errors.Wrap(err, "can't parse driver version")
 	}
+	klog.Infof("%s version is %s", path, driverVersion)
 
 	if driverVersion.LT(v) {
 		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
