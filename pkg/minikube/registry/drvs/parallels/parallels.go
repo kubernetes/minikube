@@ -55,9 +55,9 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	_, err := exec.LookPath("docker-machine-driver-parallels")
+	_, err := exec.LookPath("prlctl")
 	if err != nil {
-		return registry.State{Error: err, Fix: "Install docker-machine-driver-parallels", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/parallels/"}
+		return registry.State{Error: err, Fix: "Install Parallels Desktop for Mac", Doc: "https://minikube.sigs.k8s.io/docs/drivers/parallels/"}
 	}
-	return registry.State{Installed: true, Healthy: true, Running: true}
+	return registry.State{Installed: true, Healthy: true}
 }
