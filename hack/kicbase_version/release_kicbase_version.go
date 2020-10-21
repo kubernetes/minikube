@@ -53,7 +53,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
+
 	"github.com/pkg/errors"
 )
 
@@ -118,35 +119,35 @@ func main() {
 
 	// write log statements to stderr instead of to files
 	if err := flag.Set("logtostderr", "true"); err != nil {
-		fmt.Printf("Error setting 'logtostderr' glog flag: %v", err)
+		fmt.Printf("Error setting 'logtostderr' klog flag: %v", err)
 	}
 	flag.Parse()
-	defer glog.Flush()
+	defer klog.Flush()
 
 	// determine current kic base image version
 	vCurrent, err := getKICVersion()
 	if err != nil {
-		glog.Fatalf("failed getting current kic base image version: %v", err)
+		klog.Fatalf("failed getting current kic base image version: %v", err)
 	}
 	if len(vCurrent) == 0 {
-		glog.Fatalf("cannot determine current kic base image version")
+		klog.Fatalf("cannot determine current kic base image version")
 	}
-	glog.Infof("current kic base image version: %s", vCurrent)
+	klog.Infof("current kic base image version: %s", vCurrent)
 
 	// determine release kic base image version
 	vRelease := strings.Split(vCurrent, "-")[0]
-	glog.Infof("release kic base image version: %s", vRelease)
+	klog.Infof("release kic base image version: %s", vRelease)
 
 	// prepare local kic base image
 	image, err := prepareImage(ctx, vCurrent, vRelease)
 	if err != nil {
-		glog.Fatalf("failed preparing local kic base reference image: %v", err)
+		klog.Fatalf("failed preparing local kic base reference image: %v", err)
 	}
-	glog.Infof("local kic base reference image: %s", image)
+	klog.Infof("local kic base reference image: %s", image)
 
 	// update registries
 	if updated := updateRegistries(ctx, image, vRelease); !updated {
-		glog.Fatalf("failed updating all registries")
+		klog.Fatalf("failed updating all registries")
 	}
 }
 
@@ -155,27 +156,27 @@ func updateRegistries(ctx context.Context, image, release string) (updated bool)
 	for _, reg := range registries {
 		login := exec.CommandContext(ctx, "docker", "login", "--username", reg.username, "--password-stdin", reg.image)
 		if err := run(login, strings.NewReader(reg.password)); err != nil {
-			glog.Errorf("failed logging in to %s: %v", reg.name, err)
+			klog.Errorf("failed logging in to %s: %v", reg.name, err)
 			continue
 		}
-		glog.Infof("successfully logged in to %s", reg.name)
+		klog.Infof("successfully logged in to %s", reg.name)
 
 		tag := exec.CommandContext(ctx, "docker", "tag", image+":"+release, reg.image+":"+release)
 		if err := run(tag, nil); err != nil {
-			glog.Errorf("failed tagging %s for %s: %v", reg.image+":"+release, reg.name, err)
+			klog.Errorf("failed tagging %s for %s: %v", reg.image+":"+release, reg.name, err)
 			continue
 		}
-		glog.Infof("successfully tagged %s for %s", reg.image+":"+release, reg.name)
+		klog.Infof("successfully tagged %s for %s", reg.image+":"+release, reg.name)
 
 		push := exec.CommandContext(ctx, "docker", "push", reg.image+":"+release)
 		if err := run(push, nil); err != nil {
-			glog.Errorf("failed pushing %s to %s: %v", reg.image+":"+release, reg.name, err)
+			klog.Errorf("failed pushing %s to %s: %v", reg.image+":"+release, reg.name, err)
 			continue
 		}
-		glog.Infof("successfully pushed %s to %s", reg.image+":"+release, reg.name)
+		klog.Infof("successfully pushed %s to %s", reg.image+":"+release, reg.name)
 
 		reg.setUpdated(true)
-		glog.Infof("successfully updated %s", reg.name)
+		klog.Infof("successfully updated %s", reg.name)
 		updated = true
 	}
 	return updated
