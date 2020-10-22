@@ -32,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 GO_VERSION ?= 1.15.2
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2020.02.6
+BUILDROOT_BRANCH ?= 2020.02.7
 REGISTRY?=gcr.io/k8s-minikube
 REGISTRY_GH?=docker.pkg.github.com/kubernetes/minikube
 
