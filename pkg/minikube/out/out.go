@@ -19,7 +19,6 @@ package out
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"html"
 	"html/template"
@@ -29,6 +28,7 @@ import (
 	"strings"
 
 	isatty "github.com/mattn/go-isatty"
+
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -191,17 +191,6 @@ func SetOutFile(w fdWriter) {
 func SetJSON(j bool) {
 	klog.Infof("Setting JSON to %v", j)
 	JSON = j
-	if JSON {
-		if err := flag.Set("logtostderr", "false"); err != nil {
-			klog.Warningf("Unable to set 'logtostderr' default flag value: %v", err)
-		}
-		if err := flag.Set("alsologtostderr", "false"); err != nil {
-			klog.Warningf("Unable to set 'alsologtostderr' default flag value: %v", err)
-		}
-		if err := flag.Set("stderrthreshold", "FATAL"); err != nil {
-			klog.Warningf("Unable to set 'stderrthreshold' default flag value: %v", err)
-		}
-	}
 }
 
 // SetErrFile configures which writer error output goes to.
