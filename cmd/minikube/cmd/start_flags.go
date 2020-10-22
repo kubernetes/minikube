@@ -157,7 +157,7 @@ func initMinikubeFlags() {
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
 func initKubernetesFlags() {
 	startCmd.Flags().String(kubernetesVersion, "", fmt.Sprintf("The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for %s, 'latest' for %s). Defaults to 'stable'.", constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion))
-	startCmd.Flags().String(startNamespace, "default", "The namespace used in the Kubernetes cluster")
+	startCmd.Flags().String(startNamespace, "default", "The named space to activate after start")
 	startCmd.Flags().Var(&config.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
