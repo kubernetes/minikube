@@ -19,6 +19,8 @@ package kic
 import (
 	"fmt"
 	"net"
+	"net/url"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -230,6 +232,14 @@ func (d *Driver) GetExternalIP() (string, error) {
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
+	// TODO
+	if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
+		if u, err := url.Parse(dh); err == nil {
+			if u.Host != "" {
+				return u.Hostname(), nil
+			}
+		}
+	}
 	return oci.DefaultBindIPV4, nil
 }
 
