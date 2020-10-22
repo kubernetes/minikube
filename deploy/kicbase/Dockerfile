@@ -15,11 +15,11 @@
 # kind node base image
 #
 # For systemd + docker configuration used below, see the following references:
-# https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+# https://systemd.io/CONTAINER_INTERFACE/
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20200423
+FROM ubuntu:focal-20200925
 
 # copy in static files (configs, scripts)
 COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -37,6 +37,7 @@ COPY entrypoint /usr/local/bin/entrypoint
 # - packages needed for kubernetes components
 # - packages needed by the container runtime
 # - misc packages kind uses itself
+# - packages that provide semi-core kubernetes functionality
 # After installing packages we cleanup by:
 # - removing unwanted systemd services
 # - disabling kmsg in journald (these log entries would be confusing)
@@ -54,8 +55,9 @@ RUN echo "Ensuring scripts are executable ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
-      libseccomp2 \
+      libseccomp2 pigz \
       bash ca-certificates curl rsync \
+      nfs-common \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -73,7 +75,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
 # tell systemd that it is in docker (it will check for the container env)
-# https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+# https://systemd.io/CONTAINER_INTERFACE/
 ENV container docker
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
