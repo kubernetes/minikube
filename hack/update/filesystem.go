@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 )
 
-// fsUpdate updates local filesystem repo files according to the given schema and data,
-// returns if the update actually changed anything, and any error occurred
+// fsUpdate updates local filesystem repo files according to the given schema and data.
+// Returns if the update actually changed anything, and any error occurred.
 func fsUpdate(fsRoot string, schema map[string]Item, data interface{}) (changed bool, err error) {
 	for path, item := range schema {
 		path = filepath.Join(fsRoot, path)
