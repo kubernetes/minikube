@@ -547,7 +547,7 @@ func clusterState(sts []*Status) ClusterState {
 			}
 			exitCode, err := strconv.Atoi(data["exitcode"])
 			if err != nil {
-				klog.Warningf("exit code not found: %v", err)
+				klog.Errorf("exit code not found: %v", err)
 				continue
 			}
 			if val, ok := exitCodeToHTTPCode[exitCode]; ok {
