@@ -55,6 +55,7 @@ import (
 	"time"
 
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/hack/update"
 )
 
@@ -75,13 +76,13 @@ var (
 		},
 	}
 
-	// pull request data
+	// PR data
 	prBranchPrefix = "update-kicbase-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update-kicbase-version: {"{{.StableVersion}}"}`
+	prTitle        = `update-kicbase-version: {stable: "{{.StableVersion}}"}`
 	prIssue        = 9420
 )
 
-// Data holds current and stable KIC Base image versions
+// Data holds current and stable KIC base image versions
 type Data struct {
 	CurrentVersion string `json:"CurrentVersion"`
 	StableVersion  string `json:"StableVersion"`
@@ -92,33 +93,33 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
-	// determine current and stable kic base image versions
+	// determine current and stable KIC base image versions
 	current, stable, err := KICVersions()
 	if err != nil {
-		klog.Fatalf("failed getting kic base image versions: %v", err)
+		klog.Fatalf("Unable to get KIC base image versions: %v", err)
 	}
 	if len(current) == 0 || len(stable) == 0 {
-		klog.Fatalf("cannot determine kic base image versions")
+		klog.Fatalf("Unable to determine KIC base image versions")
 	}
 	data := Data{CurrentVersion: current, StableVersion: stable}
-	klog.Infof("kic base image versions: 'current' is %s and 'stable' would be %s", data.CurrentVersion, data.StableVersion)
+	klog.Infof("KIC base image versions: 'current' is %s and 'stable' would be %s", data.CurrentVersion, data.StableVersion)
 
-	// prepare local kic base image
+	// prepare local KIC base image
 	image, err := prepareImage(ctx, data)
 	if err != nil {
-		klog.Fatalf("failed preparing local kic base reference image: %v", err)
+		klog.Fatalf("Unable to prepare local KIC base reference image: %v", err)
 	}
-	klog.Infof("local kic base reference image: %s", image)
+	klog.Infof("Local KIC base reference image: %s", image)
 
 	// update registries
 	if updated := update.CRUpdateAll(ctx, image, data.StableVersion); !updated {
-		klog.Fatalf("failed updating all registries")
+		klog.Fatalf("Unable to update any registry")
 	}
 
 	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
 }
 
-// KICVersions returns current and stable kic base image versions and any error
+// KICVersions returns current and stable KIC base image versions and any error occurred.
 func KICVersions() (current, stable string, err error) {
 	blob, err := ioutil.ReadFile(filepath.Join(update.FSRoot, kicFile))
 	if err != nil {
@@ -134,8 +135,8 @@ func KICVersions() (current, stable string, err error) {
 	return current, stable, nil
 }
 
-// prepareImage checks if current image exists locally, tries to pull it if not,
-// tags it with release version, returns reference image url and any error
+// prepareImage checks if current image exists locally, tries to pull it if not, tags it with release version.
+// Returns reference image url and any error occurred.
 func prepareImage(ctx context.Context, data Data) (image string, err error) {
 	image, err = update.PullImage(ctx, data.CurrentVersion, data.StableVersion)
 	if err != nil {
