@@ -651,7 +651,14 @@ func (c Flannel) Apply(r Runner) error {
 
 	if driver.IsKIC(c.cc.Driver) {
 		conflict := "/etc/cni/net.d/100-crio-bridge.conf"
-		_, err := r.RunCmd(exec.Command("sudo", "mv", conflict, filepath.Join(filepath.Dir(conflict), "DISABLED-"+filepath.Base(conflict))))
+
+		_, err := r.RunCmd(exec.Command("stat", conflict))
+		if err != nil {
+			klog.Warningf("%s not found, skipping disable step: %v", conflict, err)
+			return nil
+		}
+
+		_, err = r.RunCmd(exec.Command("sudo", "mv", conflict, filepath.Join(filepath.Dir(conflict), "DISABLED-"+filepath.Base(conflict))))
 		if err != nil {
 			klog.Errorf("unable to disable %s: %v", conflict, err)
 		}
