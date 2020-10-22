@@ -85,7 +85,7 @@ func tryCreateDockerNetwork(subnetAddr string, subnetMask int, name string) (net
 	gateway.To4()[3]++ // first ip for gateway
 	klog.Infof("attempt to create network %s/%d with subnet: %s and gateway %s...", subnetAddr, subnetMask, name, gateway)
 	// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
-	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), "--mtu=1400", name))
+	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", "--mtu=1400", "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
 	if err != nil {
 		// Pool overlaps with other one on this address space
 		if strings.Contains(rr.Output(), "Pool overlaps") {
