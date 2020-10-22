@@ -36,7 +36,6 @@ require (
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/hashicorp/go-getter v1.4.2
 	github.com/hashicorp/go-retryablehttp v0.6.6
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8
 	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
@@ -52,9 +51,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
-	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12
-	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
 	github.com/olekukonko/tablewriter v0.0.4
@@ -69,8 +66,7 @@ require (
 	github.com/russross/blackfriday v1.5.3-0.20200218234912-41c5fccfd6f6 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible
-	github.com/sirupsen/logrus v1.7.0 // indirect
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
@@ -83,7 +79,7 @@ require (
 	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/sys v0.0.0-20201018230417-eeed37f84f13
+	golang.org/x/sys v0.0.0-20200523222454-059865788121
 	golang.org/x/text v0.3.2
 	google.golang.org/api v0.25.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
