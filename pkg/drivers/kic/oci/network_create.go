@@ -37,9 +37,6 @@ const firstSubnetAddr = "192.168.49.0"
 // big enough for a cluster of 254 nodes
 const defaultSubnetMask = 24
 
-// will be used if docker bridge config doesn't exist related issue #9528
-const defaultMTU = 1500
-
 // name of the bridge network that docker creates by default to be used to get the MTU. ( related issue #9528)
 const dockerDefaultBridgeName = "bridge"
 
@@ -59,9 +56,11 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 		return info.gateway, nil
 	}
 
+	// will try to get MTU from the docker network to avoid issue with systems with exotic MTU settings.
+	// related issue #9528
 	info, err = dockerNetworkInspect(dockerDefaultBridgeName)
 	if err != nil {
-		info.mtu = defaultMTU
+		klog.Warningf("failed to get mtu information from the docker's default network %q: %v", dockerDefaultBridgeName, err)
 	}
 	attempts := 0
 	subnetAddr := firstSubnetAddr
@@ -95,9 +94,26 @@ func tryCreateDockerNetwork(subnetAddr string, subnetMask int, mtu int, name str
 	gateway := net.ParseIP(subnetAddr)
 	gateway.To4()[3]++ // first ip for gateway
 	klog.Infof("attempt to create network %s/%d with subnet: %s and gateway %s and MTU of %d ...", subnetAddr, subnetMask, name, gateway, mtu)
-	// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
+	args := []string{
+		"network",
+		"create",
+		"--driver=bridge",
+		fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)),
+		fmt.Sprintf("--gateway=%s", gateway),
+		// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
+		"-o", "--ip-masq",
+		"-o", "--icc",
+		fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"),
+		name,
+	}
+
 	// adding MTU option because #9528
-	rr, err := runCmd(exec.Command(Docker, "network", "create", "--driver=bridge", fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)), fmt.Sprintf("--gateway=%s", gateway), "-o", "--ip-masq", "-o", fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu), "-o", "--icc", fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name))
+	if mtu != 0 {
+		args = append(args, "-o")
+		args = append(args, fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu))
+	}
+
+	rr, err := runCmd(exec.Command(Docker, args...))
 	if err != nil {
 		// Pool overlaps with other one on this address space
 		if strings.Contains(rr.Output(), "Pool overlaps") {
@@ -122,7 +138,6 @@ type netInfo struct {
 // if exists returns subnet, gateway and mtu
 func dockerNetworkInspect(name string) (netInfo, error) {
 	var info = netInfo{name: name}
-	inf.mtu = defaultMTU
 	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}},{{(index .Options "com.docker.network.driver.mtu")}}`)
 	rr, err := runCmd(cmd)
 	if err != nil {
@@ -144,7 +159,7 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 		info.gateway = net.ParseIP(vals[1])
 		mtu, err := strconv.Atoi(vals[2])
 		if err != nil {
-			klog.Warningf("couldn't parse mtu for docker network %q wil use default MTU %s : %v", name, defaultMTU, err)
+			klog.Warningf("couldn't parse mtu for docker network %q: %v", name, err)
 		} else {
 			info.mtu = mtu
 		}
