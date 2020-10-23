@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -469,8 +470,7 @@ func generatePortMappings(portMappings ...PortMapping) []string {
 	for _, pm := range portMappings {
 		// let docker pick a host port by leaving it as ::
 		// example --publish=127.0.0.17::8443 will get a random host port for 8443
-		publish := fmt.Sprintf("--publish=%s::%d", "", pm.ContainerPort)
-		//publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
+		publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
 		result = append(result, publish)
 	}
 	return result
@@ -638,4 +638,19 @@ func iptablesFileExists(ociBin string, nameOrID string) bool {
 		return false
 	}
 	return true
+}
+
+func DockerHost(driver string) string {
+	if driver != Docker {
+		return DefaultBindIPV4
+	}
+
+	if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
+		if u, err := url.Parse(dh); err == nil {
+			if u.Host != "" {
+				return u.Hostname()
+			}
+		}
+	}
+	return DefaultBindIPV4
 }

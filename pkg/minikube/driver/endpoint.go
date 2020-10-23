@@ -29,7 +29,8 @@ import (
 func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName string) (string, net.IP, int, error) {
 	if NeedsPortForward(driverName) {
 		port, err := oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
-		hostname := oci.DefaultBindIPV4
+		hostname := oci.DockerHost(driverName)
+
 		ip := net.ParseIP(hostname)
 		if ip == nil {
 			return hostname, ip, port, fmt.Errorf("failed to parse ip for %q", hostname)

@@ -164,6 +164,5 @@ func dockerContainerIP(name string) (string, string, error) {
 	if len(ips) != 2 {
 		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
 	}
-	return "34.72.91.111", "", nil
-	//return ips[0], ips[1], nil
+	return ips[0], ips[1], nil
 }
