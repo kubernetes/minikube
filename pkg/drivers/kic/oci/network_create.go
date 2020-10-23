@@ -111,7 +111,7 @@ func tryCreateDockerNetwork(subnetAddr string, subnetMask int, mtu int, name str
 	return gateway, nil
 }
 
-// netInfo holds part of a docker or podman network information relevent to kic drivers
+// netInfo holds part of a docker or podman network information relevant to kic drivers
 type netInfo struct {
 	name    string
 	subnet  *net.IPNet
@@ -123,7 +123,7 @@ type netInfo struct {
 func dockerNetworkInspect(name string) (netInfo, error) {
 	var info = netInfo{name: name}
 	info.mtu = defaultMTU
-	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}},(index .Options "com.docker.network.driver.mtu")`)
+	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}},{{(index .Options "com.docker.network.driver.mtu")}}`)
 	rr, err := runCmd(cmd)
 	if err != nil {
 		logDockerNetworkInspect(name)
