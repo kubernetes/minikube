@@ -1,7 +1,6 @@
 menu "System tools"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/runc-master/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/podman/Config.in"
-    source "$BR2_EXTERNAL_MINIKUBE_PATH/package/varlink/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/conmon/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/crio-bin/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/crictl-bin/Config.in"
