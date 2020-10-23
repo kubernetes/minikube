@@ -39,12 +39,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
-var podmanEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv, constants.MinikubeActivePodmanEnv)
+var podmanEnvTmpl = fmt.Sprintf("{{ if .VarlinkBridge }}{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{end}}{{ if .ContainerHost }}{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerHost }}{{ .Suffix }}{{end}}{{ if .ContainerSSHKey }}{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerSSHKey}}{{ .Suffix }}{{ end }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv, constants.PodmanContainerHostEnv, constants.PodmanContainerSSHKeyEnv, constants.MinikubeActivePodmanEnv)
 
 // PodmanShellConfig represents the shell config for Podman
 type PodmanShellConfig struct {
 	shell.Config
 	VarlinkBridge         string
+	ContainerHost         string
+	ContainerSSHKey       string
 	MinikubePodmanProfile string
 }
 
@@ -59,17 +61,24 @@ func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShel
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
 	s.VarlinkBridge = envMap[constants.PodmanVarlinkBridgeEnv]
+	s.ContainerHost = envMap[constants.PodmanContainerHostEnv]
+	s.ContainerSSHKey = envMap[constants.PodmanContainerSSHKeyEnv]
 	s.MinikubePodmanProfile = envMap[constants.MinikubeActivePodmanEnv]
 
 	return s
 }
 
-// isPodmanAvailable checks if Podman is available
-func isPodmanAvailable(r command.Runner) bool {
+// isVarlinkAvailable checks if varlink command is available
+func isVarlinkAvailable(r command.Runner) bool {
 	if _, err := r.RunCmd(exec.Command("which", "varlink")); err != nil {
 		return false
 	}
 
+	return true
+}
+
+// isPodmanAvailable checks if podman command is available
+func isPodmanAvailable(r command.Runner) bool {
 	if _, err := r.RunCmd(exec.Command("which", "podman")); err != nil {
 		return false
 	}
@@ -130,11 +139,25 @@ var podmanEnvCmd = &cobra.Command{
 			exit.Message(reason.Usage, `The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
-		if ok := isPodmanAvailable(co.CP.Runner); !ok {
+		r := co.CP.Runner
+		if ok := isPodmanAvailable(r); !ok {
 			exit.Message(reason.EnvPodmanUnavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
 
-		client, err := createExternalSSHClient(co.CP.Host.Driver)
+		varlink := isVarlinkAvailable(r)
+
+		d := co.CP.Host.Driver
+		client, err := createExternalSSHClient(d)
+		if err != nil {
+			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
+		}
+
+		hostname, err := d.GetSSHHostname()
+		if err != nil {
+			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
+		}
+
+		port, err := d.GetSSHPort()
 		if err != nil {
 			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
 		}
@@ -143,7 +166,12 @@ var podmanEnvCmd = &cobra.Command{
 			EnvConfig: sh,
 			profile:   cname,
 			driver:    driverName,
+			varlink:   varlink,
 			client:    client,
+			username:  d.GetSSHUsername(),
+			hostname:  hostname,
+			port:      port,
+			keypath:   d.GetSSHKeyPath(),
 		}
 
 		if ec.Shell == "" {
@@ -162,9 +190,14 @@ var podmanEnvCmd = &cobra.Command{
 // PodmanEnvConfig encapsulates all external inputs into shell generation for Podman
 type PodmanEnvConfig struct {
 	shell.EnvConfig
-	profile string
-	driver  string
-	client  *ssh.ExternalClient
+	profile  string
+	driver   string
+	varlink  bool
+	client   *ssh.ExternalClient
+	username string
+	hostname string
+	port     int
+	keypath  string
 }
 
 // podmanSetScript writes out a shell-compatible 'podman-env' script
@@ -175,10 +208,34 @@ func podmanSetScript(ec PodmanEnvConfig, w io.Writer) error {
 
 // podmanUnsetScript writes out a shell-compatible 'podman-env unset' script
 func podmanUnsetScript(ec PodmanEnvConfig, w io.Writer) error {
-	vars := []string{
+	// podman v1
+	vars1 := []string{
 		constants.PodmanVarlinkBridgeEnv,
+	}
+	// podman v2
+	vars2 := []string{
+		constants.PodmanContainerHostEnv,
+		constants.PodmanContainerSSHKeyEnv,
+	}
+	// common
+	vars0 := []string{
 		constants.MinikubeActivePodmanEnv,
 	}
+
+	var vars []string
+	if ec.client != nil || ec.hostname != "" {
+		// getting ec.varlink needs a running machine
+		if ec.varlink {
+			vars = vars1
+		} else {
+			vars = vars2
+		}
+	} else {
+		// just unset *all* of the variables instead
+		vars = vars1
+		vars = append(vars, vars2...)
+	}
+	vars = append(vars, vars0...)
 	return shell.UnsetScript(ec.EnvConfig, w, vars)
 }
 
@@ -190,11 +247,36 @@ func podmanBridge(client *ssh.ExternalClient) string {
 	return strings.Join(command, " ")
 }
 
+// podmanURL returns the url to use in a var for accessing the podman socket over ssh
+func podmanURL(username string, hostname string, port int) string {
+	path := "/run/podman/podman.sock"
+	return fmt.Sprintf("ssh://%s@%s:%d%s", username, hostname, port, path)
+}
+
 // podmanEnvVars gets the necessary podman env variables to allow the use of minikube's podman service
 func podmanEnvVars(ec PodmanEnvConfig) map[string]string {
-	env := map[string]string{
-		constants.PodmanVarlinkBridgeEnv:  podmanBridge(ec.client),
+	// podman v1
+	env1 := map[string]string{
+		constants.PodmanVarlinkBridgeEnv: podmanBridge(ec.client),
+	}
+	// podman v2
+	env2 := map[string]string{
+		constants.PodmanContainerHostEnv:   podmanURL(ec.username, ec.hostname, ec.port),
+		constants.PodmanContainerSSHKeyEnv: ec.keypath,
+	}
+	//common
+	env0 := map[string]string{
 		constants.MinikubeActivePodmanEnv: ec.profile,
+	}
+
+	var env map[string]string
+	if ec.varlink {
+		env = env1
+	} else {
+		env = env2
+	}
+	for k, v := range env0 {
+		env[k] = v
 	}
 	return env
 }
