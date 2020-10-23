@@ -125,9 +125,9 @@ func dockerNetworkInspect(name string) (*net.IPNet, net.IP, int, error) {
 	mtu := defaultNetworkMTU
 	if len(vals) > 0 {
 		gateway = net.ParseIP(vals[1])
-		mtu, err := strconv.Atoi(vals[2])
+		mtu, err = strconv.Atoi(vals[2])
 		if err != nil {
-			klog.Warning("failed to parse docker network %s mtu, will use the default %d : %v", name, defaultNetworkMTU, err)
+			klog.Warningf("failed to parse docker network %s mtu, will use the default %d : %v", name, defaultNetworkMTU, err)
 			mtu = defaultNetworkMTU
 		}
 	}

@@ -35,7 +35,7 @@ import (
 func RoutableHostIPFromInside(ociBin string, clusterName string, containerName string) (net.IP, error) {
 	if ociBin == Docker {
 		if runtime.GOOS == "linux" {
-			_, gateway, err := dockerNetworkInspect(clusterName)
+			_, gateway, _, err := dockerNetworkInspect(clusterName)
 			if err != nil {
 				if errors.Is(err, ErrNetworkNotFound) {
 					klog.Infof("The container %s is not attached to a network, this could be because the cluster was created by minikube <v1.14, will try to get the IP using container gatway", containerName)
