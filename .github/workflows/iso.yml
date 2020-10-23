@@ -116,7 +116,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - name: Upload report
         uses: actions/upload-artifact@v1
         with:

@@ -156,7 +156,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_ubuntu
@@ -252,7 +254,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: functional_virtualbox_macos
@@ -384,7 +388,9 @@ jobs:
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
@@ -521,7 +527,9 @@ jobs:
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
@@ -622,7 +630,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: none_ubuntu18_04
@@ -717,7 +727,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: addons_certs_docker_ubuntu
@@ -813,7 +825,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: addons_certs_virtualbox_macos
@@ -909,7 +923,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: multinode_docker_ubuntu
@@ -999,7 +1015,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: multinode_virtualbox_macos
@@ -1094,7 +1112,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: preload_dockerflags_docker_ubuntu
@@ -1184,7 +1204,9 @@ jobs:
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo "STAT=${STAT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: pause_preload_dockerflags_virtualbox_macos
