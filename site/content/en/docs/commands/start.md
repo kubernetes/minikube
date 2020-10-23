@@ -38,6 +38,7 @@ minikube start [flags]
       --dns-domain string                 The cluster dns domain name used in the Kubernetes cluster (default "cluster.local")
       --dns-proxy                         Enable proxy for NAT DNS requests (virtualbox driver only)
       --docker-env stringArray            Environment variables to pass to the Docker daemon. (format: key=value)
+      --docker-network string             Docker network to run minikube with. Only available with the docker driver. If left empty, minikube will create a new network.
       --docker-opt stringArray            Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
       --download-only                     If true, only download and cache files for later use - don't install or start anything.
       --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
