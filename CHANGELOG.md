@@ -1,5 +1,52 @@
 # Release Notes
 
+
+## Version 1.14.1 - 2020-10-23
+
+FeatureS:
+
+* new --wait flag component "kubelet" [#9459](https://github.com/kubernetes/minikube/pull/9459)
+
+Bug Fixes:
+
+* docker: When creating networks, use MTU of built-in bridge network [#9530](https://github.com/kubernetes/minikube/pull/9530)
+* multinode: ensure worker node join control plane on restart [#9476](https://github.com/kubernetes/minikube/pull/9476)
+* Fix "--native-ssh" flag for "minikube ssh" [#9417](https://github.com/kubernetes/minikube/pull/9417)
+
+Minor Improvements:
+
+* Omit error message if 100-crio-bridge.conf has already been disabled [#9505](https://github.com/kubernetes/minikube/pull/9505)
+* Fix parallels driver initialization [#9494](https://github.com/kubernetes/minikube/pull/9494)
+* avoid re-downloading hyperkit driver [#9365](https://github.com/kubernetes/minikube/pull/9365)
+* improve gcp-auth addon failure policy [#9408](https://github.com/kubernetes/minikube/pull/9408)
+* Bump version for ingress dns addon [#9435](https://github.com/kubernetes/minikube/pull/9435)
+* Added deprecation warning for --network-plugin=cni [#9368](https://github.com/kubernetes/minikube/pull/9368)
+* Use correct port for echoserver - fixes "Connection reset by peer" LoadBalancer issue [#9511](https://github.com/kubernetes/minikube/pull/9511)
+* Update warning message for local proxy. [#9490](https://github.com/kubernetes/minikube/pull/9490)
+* Combine pause status test into existing pause test [#9466](https://github.com/kubernetes/minikube/pull/9466)
+* bump helm-tiller addon to v2.16.12 [#9444](https://github.com/kubernetes/minikube/pull/9444)
+
+Thank you to our contributors for this release! 
+
+- Anders F Björklund
+- Dale Hamel
+- GRXself
+- Ilya Zuyev
+- Josh Woodcock
+- Joshua Mühlfort
+- Kenta Iso
+- Medya Ghazizadeh
+- Mikhail Zholobov
+- Nick Kubala
+- Pablo Caderno
+- Predrag Rogic
+- Priya Modali
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Stromberg
+- Thomas Strömberg
+- heyf
+
 ## Version 1.14.0 - 2020-10-08
 
 ## Features
