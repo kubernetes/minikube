@@ -65,7 +65,6 @@ func init() {
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
 	out.SetJSON(outputFormat == "json")
-	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Stopping)
 
 	// new code
