@@ -44,9 +44,14 @@ func CreateNetwork(ociBin string, name string) (net.IP, error) {
 	return createDockerNetwork(name)
 }
 
-func createDockerNetwork(clusterName string) (net.IP, error) {
+func createDockerNetwork(networkName string) (net.IP, error) {
+	// check if the network is docker native, if this is the case return
+	if networkName == "bridge" {
+		return nil, nil
+	}
+
 	// check if the network already exists
-	subnet, gateway, err := dockerNetworkInspect(clusterName)
+	subnet, gateway, err := dockerNetworkInspect(networkName)
 	if err == nil {
 		klog.Infof("Found existing network with subnet %s and gateway %s.", subnet, gateway)
 		return gateway, nil
@@ -57,7 +62,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
 	for attempts < 20 {
-		gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetMask, clusterName)
+		gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetMask, networkName)
 		if err == nil {
 			return gateway, nil
 		}

@@ -83,10 +83,14 @@ func (d *Driver) Create() error {
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
-	if gateway, err := oci.CreateNetwork(d.OCIBinary, d.NodeConfig.ClusterName); err != nil {
+	networkName := d.NodeConfig.DockerNetwork
+	if networkName == "" {
+		networkName = d.NodeConfig.ClusterName
+	}
+	if gateway, err := oci.CreateNetwork(d.OCIBinary, networkName); err != nil {
 		out.WarningT("Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}", out.V{"error": err})
-	} else {
-		params.Network = d.NodeConfig.ClusterName
+	} else if gateway != nil {
+		params.Network = networkName
 		ip := gateway.To4()
 		// calculate the container IP based on guessing the machine index
 		ip[3] += byte(driver.IndexFromMachineName(d.NodeConfig.MachineName))
