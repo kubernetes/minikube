@@ -38,7 +38,10 @@ const firstSubnetAddr = "192.168.49.0"
 const defaultSubnetMask = 24
 
 // will be used if docker bridge config doesn't exist related issue #9528
-const defaultNetworkMTU = 1500
+const defaultMTU = 1500
+
+// name of the bridge network that docker creates by default to be used to get the MTU. ( related issue #9528)
+const dockerDefaultBridgeName = "bridge"
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
 func CreateNetwork(ociBin string, name string) (net.IP, error) {
@@ -50,20 +53,24 @@ func CreateNetwork(ociBin string, name string) (net.IP, error) {
 
 func createDockerNetwork(clusterName string) (net.IP, error) {
 	// check if the network already exists
-	subnet, gateway, mtu, err := dockerNetworkInspect(clusterName)
+	info, err := dockerNetworkInspect(clusterName)
 	if err == nil {
-		klog.Infof("Found existing network with subnet %s and gateway %s.", subnet, gateway)
-		return gateway, nil
+		klog.Infof("Found existing network %+v", info)
+		return info.gateway, nil
 	}
 
+	info, err = dockerNetworkInspect(dockerDefaultBridgeName)
+	if err != nil {
+		info.mtu = defaultMTU
+	}
 	attempts := 0
 	subnetAddr := firstSubnetAddr
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
 	for attempts < 20 {
-		gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetMask, mtu, clusterName)
+		info.gateway, err = tryCreateDockerNetwork(subnetAddr, defaultSubnetMask, info.mtu, clusterName)
 		if err == nil {
-			return gateway, nil
+			return info.gateway, nil
 		}
 
 		// don't retry if error is not adddress is taken
@@ -81,7 +88,7 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 		newSubnet[2] += byte(9 + attempts)
 		subnetAddr = newSubnet.String()
 	}
-	return gateway, fmt.Errorf("failed to create network after 20 attempts")
+	return info.gateway, fmt.Errorf("failed to create network after 20 attempts")
 }
 
 func tryCreateDockerNetwork(subnetAddr string, subnetMask int, mtu int, name string) (net.IP, error) {
@@ -104,40 +111,51 @@ func tryCreateDockerNetwork(subnetAddr string, subnetMask int, mtu int, name str
 	return gateway, nil
 }
 
-// returns subnet and gate if exists returns subnet, gateway and mtu
-func dockerNetworkInspect(name string) (*net.IPNet, net.IP, int, error) {
+// netInfo holds part of a docker or podman network information relevent to kic drivers
+type netInfo struct {
+	name    string
+	subnet  *net.IPNet
+	gateway net.IP
+	mtu     int
+}
+
+// if exists returns subnet, gateway and mtu
+func dockerNetworkInspect(name string) (netInfo, error) {
+	var info = netInfo{name: name}
+	info.mtu = defaultMTU
 	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}},(index .Options "com.docker.network.driver.mtu")`)
 	rr, err := runCmd(cmd)
 	if err != nil {
 		logDockerNetworkInspect(name)
 		if strings.Contains(rr.Output(), "No such network") {
-			return nil, nil, defaultNetworkMTU, ErrNetworkNotFound
+
+			return info, ErrNetworkNotFound
 		}
-		return nil, nil, defaultNetworkMTU, err
+		return info, err
 	}
-	// results looks like 172.17.0.0/16,172.17.0.1
+
+	// results looks like 172.17.0.0/16,172.17.0.1,1500
 	vals := strings.Split(strings.TrimSpace(rr.Stdout.String()), ",")
 	if len(vals) == 0 {
-		return nil, nil, defaultNetworkMTU, fmt.Errorf("empty IP list parsed from: %q", rr.Output())
+		return info, fmt.Errorf("empty list network inspect: %q", rr.Output())
 	}
 
-	var gateway net.IP
-	mtu := defaultNetworkMTU
 	if len(vals) > 0 {
-		gateway = net.ParseIP(vals[1])
-		mtu, err = strconv.Atoi(vals[2])
+		info.gateway = net.ParseIP(vals[1])
+		mtu, err := strconv.Atoi(vals[2])
 		if err != nil {
-			klog.Warningf("failed to parse docker network %s mtu, will use the default %d : %v", name, defaultNetworkMTU, err)
-			mtu = defaultNetworkMTU
+			klog.Warningf("failed to parse docker network %s mtu, will use the default %d : %v", name, defaultMTU, err)
+		} else {
+			info.mtu = mtu
 		}
 	}
 
-	_, subnet, err := net.ParseCIDR(vals[0])
+	_, info.subnet, err = net.ParseCIDR(vals[0])
 	if err != nil {
-		return nil, nil, defaultNetworkMTU, errors.Wrapf(err, "parse subnet for %s", name)
+		return info, errors.Wrapf(err, "parse subnet for %s", name)
 	}
 
-	return subnet, gateway, mtu, nil
+	return info, nil
 }
 
 func logDockerNetworkInspect(name string) {
@@ -170,7 +188,7 @@ func RemoveNetwork(name string) error {
 }
 
 func networkExists(name string) bool {
-	_, _, _, err := dockerNetworkInspect(name)
+	_, err := dockerNetworkInspect(name)
 	if err != nil && !errors.Is(err, ErrNetworkNotFound) { // log unexpected error
 		klog.Warningf("Error inspecting docker network %s: %v", name, err)
 	}
