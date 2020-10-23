@@ -939,6 +939,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/pquerna/cachecontrol v0.0.0-20171018203845-0dec1b30a021/go.mod h1:prYjPmNq4d1NPVmpShWobRqXY3q7Vp+80DqgxxUrUIA=
 github.com/pquerna/ffjson v0.0.0-20180717144149-af8b230fcd20/go.mod h1:YARuvh7BUWHNhzDq2OM5tzR2RiCcN2D7sapiKyCel/M=
+github.com/priyawadhwa/godaemon v0.0.0-20201023222158-5d5ea5b0cb72 h1:o2K9V8zGFZar9fr3qW2ikKehvGCcjf16n+MNxoaPKHM=
+github.com/priyawadhwa/godaemon v0.0.0-20201023222158-5d5ea5b0cb72/go.mod h1:gsvY6bap8CdyOgacVBjhKgiFKriJyaLiq7EOTd7Of6E=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v0.9.3/go.mod h1:/TN21ttK/J9q6uSwhBd54HahCDft0ttaMvbicHlPoso=
 github.com/prometheus/client_golang v1.0.0 h1:vrDKnkGzuGvhNAL56c7DBz29ZL+KxnoR0x7enabFceM=
