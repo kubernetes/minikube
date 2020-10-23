@@ -99,6 +99,7 @@ replace (
 	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.0.0-20200902152226-fbad78ec2813
 	github.com/hashicorp/go-getter => github.com/afbjorklund/go-getter v1.4.1-0.20190910175809-eb9f6c26742c
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
+	github.com/VividCortex/godaemon => github.com/priyawadhwa/godaemon v0.0.0-20201023222158-5d5ea5b0cb72
 	k8s.io/api => k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.3
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.3
