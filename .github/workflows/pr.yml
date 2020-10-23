@@ -371,7 +371,7 @@ jobs:
           echo "----"
           echo $T_ELAPSED
           echo "----"
-          echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
+          echo "TIME_ELAPSED=$T_ELAPSED" >> $GITHUB_ENV
       - name: Generate HTML Report
         continue-on-error: true
         shell: powershell
@@ -383,8 +383,8 @@ jobs:
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
-          echo "::set-env name=STAT::${STAT}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo "STAT=${STAT}" >> $GITHUB_ENV
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
@@ -508,7 +508,7 @@ jobs:
           echo "----"
           echo $T_ELAPSED
           echo "----"
-          echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
+          echo "TIME_ELAPSED=$T_ELAPSED" >> $GITHUB_ENV
       - name: Generate HTML Report
         continue-on-error: true
         shell: powershell
@@ -520,8 +520,8 @@ jobs:
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
-          echo "::set-env name=STAT::${STAT}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo "STAT=${STAT}" >> $GITHUB_ENV
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
