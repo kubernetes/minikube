@@ -122,7 +122,7 @@ type netInfo struct {
 // if exists returns subnet, gateway and mtu
 func dockerNetworkInspect(name string) (netInfo, error) {
 	var info = netInfo{name: name}
-	info.mtu = defaultMTU
+	inf.mtu = defaultMTU
 	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}},{{(index .Options "com.docker.network.driver.mtu")}}`)
 	rr, err := runCmd(cmd)
 	if err != nil {
@@ -144,7 +144,7 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 		info.gateway = net.ParseIP(vals[1])
 		mtu, err := strconv.Atoi(vals[2])
 		if err != nil {
-			klog.Warningf("failed to parse docker network %s mtu, will use the default %d : %v", name, defaultMTU, err)
+			klog.Warningf("couldn't parse mtu for docker network %q wil use default MTU %s : %v", name, defaultMTU, err)
 		} else {
 			info.mtu = mtu
 		}
