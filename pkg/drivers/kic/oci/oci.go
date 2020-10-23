@@ -640,11 +640,22 @@ func iptablesFileExists(ociBin string, nameOrID string) bool {
 	return true
 }
 
+// TODO: comment
 func DockerHost(driver string) string {
 	if driver != Docker {
 		return DefaultBindIPV4
 	}
+	if v := DockerMachineHost(driver); v != "" {
+		return v
+	}
+	return DefaultBindIPV4
+}
 
+// TODO: comment
+func DockerMachineHost(driver string) string {
+	if driver != Docker {
+		return ""
+	}
 	if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
 		if u, err := url.Parse(dh); err == nil {
 			if u.Host != "" {
@@ -652,5 +663,5 @@ func DockerHost(driver string) string {
 			}
 		}
 	}
-	return DefaultBindIPV4
+	return ""
 }

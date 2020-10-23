@@ -148,8 +148,14 @@ func NeedsRoot(name string) bool {
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
+	if !IsKIC(name) {
+		return false
+	}
+	if oci.DockerMachineHost(name) != "" {
+		return true
+	}
 	// Docker for Desktop
-	return IsKIC(name) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows" || IsMicrosoftWSL())
+	return (runtime.GOOS == "darwin" || runtime.GOOS == "windows" || IsMicrosoftWSL())
 }
 
 // IsMicrosoftWSL will return true if process is running in WSL in windows
