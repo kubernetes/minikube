@@ -19,7 +19,6 @@ package kic
 import (
 	"fmt"
 	"net"
-	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -32,6 +31,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -95,23 +95,26 @@ func (d *Driver) Create() error {
 		klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
-
+	listAddr := oci.DefaultBindIPV4
+	if d.DriverName() == oci.Docker && os.Getenv(constants.DockerHostEnv) != "" {
+		listAddr = "0.0.0.0"
+	}
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings,
 		oci.PortMapping{
-			ListenAddress: oci.DefaultBindIPV4,
+			ListenAddress: listAddr,
 			ContainerPort: int32(params.APIServerPort),
 		},
 		oci.PortMapping{
-			ListenAddress: oci.DefaultBindIPV4,
+			ListenAddress: listAddr,
 			ContainerPort: constants.SSHPort,
 		},
 		oci.PortMapping{
-			ListenAddress: oci.DefaultBindIPV4,
+			ListenAddress: listAddr,
 			ContainerPort: constants.DockerDaemonPort,
 		},
 		oci.PortMapping{
-			ListenAddress: oci.DefaultBindIPV4,
+			ListenAddress: listAddr,
 			ContainerPort: constants.RegistryAddonPort,
 		},
 	)
@@ -227,20 +230,12 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetExternalIP returns an IP which is accessible from outside
 func (d *Driver) GetExternalIP() (string, error) {
-	return oci.DefaultBindIPV4, nil
+	return oci.DockerHost(d.DriverName()), nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	// TODO
-	if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
-		if u, err := url.Parse(dh); err == nil {
-			if u.Host != "" {
-				return u.Hostname(), nil
-			}
-		}
-	}
-	return oci.DefaultBindIPV4, nil
+	return oci.DockerHost(d.DriverName()), nil
 }
 
 // GetSSHPort returns port for use with ssh
