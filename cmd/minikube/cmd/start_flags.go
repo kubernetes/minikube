@@ -108,6 +108,7 @@ const (
 	kicBaseImage            = "base-image"
 	startOutput             = "output"
 	ports                   = "ports"
+	dockerNetwork           = "docker-network"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -148,6 +149,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
 	startCmd.Flags().StringP(startOutput, "o", "text", "Format to print stdout in. Options include: [text,json]")
+	startCmd.Flags().StringP(dockerNetwork, "", "", "Docker network to run minikube with. Only available with the docker driver. If left empty, minikube will create a new network.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -292,6 +294,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			EmbedCerts:              viper.GetBool(embedCerts),
 			MinikubeISO:             viper.GetString(isoURL),
 			KicBaseImage:            viper.GetString(kicBaseImage),
+			DockerNetwork:           viper.GetString(dockerNetwork),
 			Memory:                  mem,
 			CPUs:                    viper.GetInt(cpus),
 			DiskSize:                diskSize,
