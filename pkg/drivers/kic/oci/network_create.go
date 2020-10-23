@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // firstSubnetAddr subnet to be used on first kic cluster
@@ -47,6 +48,7 @@ func CreateNetwork(ociBin string, name string) (net.IP, error) {
 func createDockerNetwork(networkName string) (net.IP, error) {
 	// check if the network is docker native, if this is the case return
 	if networkName == "bridge" {
+		out.WarningT("Using the bridge network may result in minikube IP changing on restart")
 		return nil, nil
 	}
 
