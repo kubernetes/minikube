@@ -37,8 +37,8 @@ const firstSubnetAddr = "192.168.49.0"
 // big enough for a cluster of 254 nodes
 const defaultSubnetMask = 24
 
-// name of the bridge network that docker creates by default to be used to get the MTU. ( related issue #9528)
-const dockerDefaultBridgeName = "bridge"
+// name of the default Docker bridge network, used to lookup the MTU (see #9528)
+const dockerDefaultBridge = "bridge"
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
 func CreateNetwork(ociBin string, name string) (net.IP, error) {
@@ -58,9 +58,9 @@ func createDockerNetwork(clusterName string) (net.IP, error) {
 
 	// will try to get MTU from the docker network to avoid issue with systems with exotic MTU settings.
 	// related issue #9528
-	info, err = dockerNetworkInspect(dockerDefaultBridgeName)
+	info, err = dockerNetworkInspect(dockerDefaultBridge)
 	if err != nil {
-		klog.Warningf("failed to get mtu information from the docker's default network %q: %v", dockerDefaultBridgeName, err)
+		klog.Warningf("failed to get mtu information from the docker's default network %q: %v", dockerDefaultBridge, err)
 	}
 	attempts := 0
 	subnetAddr := firstSubnetAddr
@@ -108,7 +108,7 @@ func tryCreateDockerNetwork(subnetAddr string, subnetMask int, mtu int, name str
 	}
 
 	// adding MTU option because #9528
-	if mtu != 0 {
+	if mtu > 0 {
 		args = append(args, "-o")
 		args = append(args, fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu))
 	}
