@@ -38,8 +38,8 @@ func TestTimeCommandLogs(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected log %s but didn't find it", log)
 		}
-		// Let's give a little wiggle room so we don't fail if time is 3 and actualTime is 2.999
-		if actualTime < time && time-actualTime > 0.001 {
+		// Let's give a little wiggle room so we don't fail if time is 3 and actualTime is 2.99...
+		if actualTime < time && time-actualTime > 0.01 {
 			t.Fatalf("expected log \"%s\" to take more time than it actually did. got %v, expected > %v", log, actualTime, time)
 		}
 	}

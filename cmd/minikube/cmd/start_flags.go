@@ -280,6 +280,11 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			klog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
 			chosenCNI = "bridge"
 		}
+		// networkPlugin cni deprecation warning
+		chosenNetworkPlugin := viper.GetString(networkPlugin)
+		if chosenNetworkPlugin == "cni" {
+			out.WarningT("With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative")
+		}
 
 		cc = config.ClusterConfig{
 			Name:                    ClusterFlagValue(),
@@ -326,7 +331,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 				FeatureGates:           viper.GetString(featureGates),
 				ContainerRuntime:       viper.GetString(containerRuntime),
 				CRISocket:              viper.GetString(criSocket),
-				NetworkPlugin:          viper.GetString(networkPlugin),
+				NetworkPlugin:          chosenNetworkPlugin,
 				ServiceCIDR:            viper.GetString(serviceCIDR),
 				ImageRepository:        repository,
 				ExtraOptions:           config.ExtraOptions,

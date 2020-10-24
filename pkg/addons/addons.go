@@ -353,9 +353,10 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
 		}
 
-		err = kapi.WaitForPods(client, ns, label, time.Minute*3)
+		// This timeout includes image pull time, which can take a few minutes. 3 is not enough.
+		err = kapi.WaitForPods(client, ns, label, time.Minute*6)
 		if err != nil {
-			return errors.Wrapf(err, "verifying %s addon pods : %v", name, err)
+			return errors.Wrapf(err, "waiting for %s pods", label)
 		}
 
 	}
