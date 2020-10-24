@@ -110,7 +110,7 @@ RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /e
 RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
-    clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins varlink
+    clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins
 
 # install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.18/README.md#installing-cri-o
 RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.18.list" && \
@@ -119,10 +119,17 @@ RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/li
     clean-install cri-o cri-o-runc
 
 # install podman
-RUN sh -c "echo 'deb https://dl.bintray.com/afbjorklund/podman focal main' > /etc/apt/sources.list.d/podman.list" && \
-    curl -L https://bintray.com/user/downloadSubjectPublicKey?username=afbjorklund -o afbjorklund-public.key.asc && \
-    apt-key add - < afbjorklund-public.key.asc && \
-    clean-install podman=1.9.3~1
+RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
+    apt-key add - < Release.key && \
+    clean-install podman && \
+    addgroup --system podman && \
+    mkdir -p /etc/systemd/system/podman.socket.d && \
+    printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
+           > /etc/systemd/system/podman.socket.d/override.conf && \
+    mkdir -p /etc/tmpfiles.d && \
+    echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
+    systemd-tmpfiles --create
 
 # automount service
 COPY automount/minikube-automount /usr/sbin/minikube-automount
@@ -133,7 +140,7 @@ RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
-RUN systemctl enable docker
+RUN systemctl enable docker.service && systemctl enable podman.socket
 # making SSH work for docker container 
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 RUN mkdir /var/run/sshd
@@ -148,6 +155,7 @@ EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
 RUN adduser --ingroup docker --disabled-password --gecos '' docker 
 RUN adduser docker sudo
+RUN adduser docker podman
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER docker
 RUN mkdir /home/docker/.ssh
