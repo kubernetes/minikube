@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 14
-VERSION_BUILD ?= 0
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -29,7 +29,7 @@ DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.14.6
+GO_VERSION ?= 1.15.2
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2020.02.6
@@ -114,8 +114,7 @@ MARKDOWNLINT ?= markdownlint
 
 MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 
-MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
-MINIKUBE_BUILD_TAGS += go_getter_nos3 go_getter_nogcs
+MINIKUBE_BUILD_TAGS := go_getter_nos3 go_getter_nogcs
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 
 CMD_SOURCE_DIRS = cmd pkg
