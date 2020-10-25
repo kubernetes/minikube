@@ -31,7 +31,7 @@ spec:
       #  kubernetes.io/hostname: minikube
       hostNetwork: true
       containers:
-      - image: quay.io/nixpanic/glusterfs-server:pr_fake-disk
+      - image: {{default "quay.io/nixpanic" .ImageRepository}}/glusterfs-server:pr_fake-disk
         imagePullPolicy: IfNotPresent
         name: glusterfs
         env:
