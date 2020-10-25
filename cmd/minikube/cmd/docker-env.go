@@ -43,7 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-var dockerEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
+var dockerEnvTmpl = fmt.Sprintf("{{ if .DockerTLSVerify }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ end }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ if .DockerCertPath }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ end }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{ end }}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -58,6 +58,7 @@ type DockerShellConfig struct {
 
 var (
 	noProxy              bool
+	sshHost              bool
 	dockerUnset          bool
 	defaultNoProxyGetter NoProxyGetter
 )
@@ -75,12 +76,19 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShel
 	profile := ec.profile
 	const usgPlz = "To point your shell to minikube's docker-daemon, run:"
 	usgCmd := fmt.Sprintf("minikube -p %s docker-env", profile)
+	if ec.ssh {
+		usgCmd += " --ssh-host"
+	}
 	s := &DockerShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
-	s.DockerCertPath = envMap[constants.DockerCertPathEnv]
+	if !ec.ssh {
+		s.DockerCertPath = envMap[constants.DockerCertPathEnv]
+	}
 	s.DockerHost = envMap[constants.DockerHostEnv]
-	s.DockerTLSVerify = envMap[constants.DockerTLSVerifyEnv]
+	if !ec.ssh {
+		s.DockerTLSVerify = envMap[constants.DockerTLSVerifyEnv]
+	}
 	s.MinikubeDockerdProfile = envMap[constants.MinikubeActiveDockerdEnv]
 
 	if ec.noProxy {
@@ -162,11 +170,13 @@ var dockerEnvCmd = &cobra.Command{
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
-		if ok := isDockerActive(co.CP.Runner); !ok {
+		r := co.CP.Runner
+		if ok := isDockerActive(r); !ok {
 			klog.Warningf("dockerd is not active will try to restart it...")
-			mustRestartDocker(cname, co.CP.Runner)
+			mustRestartDocker(cname, r)
 		}
 
+		d := co.CP.Host.Driver
 		var err error
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
@@ -176,14 +186,30 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
+		hostname, err := d.GetSSHHostname()
+		if err != nil {
+			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
+		}
+
+		sshport, err := d.GetSSHPort()
+		if err != nil {
+			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
+		}
+
+		hostIP := co.CP.IP.String()
 		ec := DockerEnvConfig{
 			EnvConfig: sh,
 			profile:   cname,
 			driver:    driverName,
-			hostIP:    co.CP.IP.String(),
+			ssh:       sshHost,
+			hostIP:    hostIP,
 			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,
+			username:  d.GetSSHUsername(),
+			hostname:  hostname,
+			sshport:   sshport,
+			keypath:   d.GetSSHKeyPath(),
 		}
 
 		if ec.Shell == "" {
@@ -219,10 +245,15 @@ type DockerEnvConfig struct {
 	shell.EnvConfig
 	profile  string
 	driver   string
+	ssh      bool
 	hostIP   string
 	port     int
 	certsDir string
 	noProxy  bool
+	username string
+	hostname string
+	sshport  int
+	keypath  string
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env' script
@@ -255,15 +286,31 @@ func dockerURL(ip string, port int) string {
 	return fmt.Sprintf("tcp://%s", net.JoinHostPort(ip, strconv.Itoa(port)))
 }
 
+// sshURL returns the docker endpoint URL when using socket over ssh.
+func sshURL(username string, hostname string, port int) string {
+	// assumes standard /var/run/docker.sock as the path (not possible to set it at the moment)
+	return fmt.Sprintf("ssh://%s@%s", username, net.JoinHostPort(hostname, strconv.Itoa(port)))
+}
+
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec DockerEnvConfig) map[string]string {
-	env := map[string]string{
+	envTCP := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
 		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
 	}
+	envSSH := map[string]string{
+		constants.DockerHostEnv:            sshURL(ec.username, ec.hostname, ec.sshport),
+		constants.MinikubeActiveDockerdEnv: ec.profile,
+	}
 
+	var env map[string]string
+	if ec.ssh {
+		env = envSSH
+	} else {
+		env = envTCP
+	}
 	return env
 }
 
@@ -288,6 +335,7 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 func init() {
 	defaultNoProxyGetter = &EnvNoProxyGetter{}
 	dockerEnvCmd.Flags().BoolVar(&noProxy, "no-proxy", false, "Add machine IP to NO_PROXY environment variable")
+	dockerEnvCmd.Flags().BoolVar(&sshHost, "ssh-host", false, "Use SSH connection instead of HTTPS (port 2376)")
 	dockerEnvCmd.Flags().StringVar(&shell.ForceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
 	dockerEnvCmd.Flags().BoolVarP(&dockerUnset, "unset", "u", false, "Unset variables instead of setting them")
 }
