@@ -38,7 +38,6 @@ minikube start [flags]
       --dns-domain string                 The cluster dns domain name used in the Kubernetes cluster (default "cluster.local")
       --dns-proxy                         Enable proxy for NAT DNS requests (virtualbox driver only)
       --docker-env stringArray            Environment variables to pass to the Docker daemon. (format: key=value)
-      --docker-network string             Docker network to run minikube with. Only available with the docker driver. If left empty, minikube will create a new network.
       --docker-opt stringArray            Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
       --download-only                     If true, only download and cache files for later use - don't install or start anything.
       --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
@@ -78,6 +77,7 @@ minikube start [flags]
       --mount-string string               The argument to pass the minikube mount command on start.
       --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
+      --network string                    Docker network to run minikube with. Only available with the docker driver. If left empty, minikube will create a new network.
       --network-plugin string             Kubelet network plug-in to use (default: auto)
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
