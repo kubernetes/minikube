@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -85,6 +86,9 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	if scheduledStop != "" {
+		if runtime.GOOS == "windows" {
+			exit.Message(reason.Usage, "the --schedule flag is currently not supported on windows")
+		}
 		duration, err := time.ParseDuration(scheduledStop)
 		if err != nil {
 			exit.Message(reason.Usage, "provided value {{.schedule}} to --schedule is not a valid Golang time.Duration", out.V{"schedule": scheduledStop})
