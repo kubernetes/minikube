@@ -26,7 +26,7 @@ import (
 // Profile represents a minikube profile
 type Profile struct {
 	Name   string
-	Status string // running, stopped
+	Status string // running, stopped, paused, unknown
 	Config *ClusterConfig
 }
 
