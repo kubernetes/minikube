@@ -204,7 +204,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	if err != nil {
 		return nil, nil, err
 	}
-	// try to get profiles list based on all contrainers created by docker driver
+	// try to get profiles list based on all containers created by docker driver
 	cs, err := oci.ListOwnedContainers(oci.Docker)
 	if err == nil {
 		pDirs = append(pDirs, cs...)
