@@ -108,7 +108,7 @@ const (
 	kicBaseImage            = "base-image"
 	startOutput             = "output"
 	ports                   = "ports"
-	dockerNetwork           = "docker-network"
+	containerNetwork        = "network"
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -149,7 +149,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
 	startCmd.Flags().StringP(startOutput, "o", "text", "Format to print stdout in. Options include: [text,json]")
-	startCmd.Flags().StringP(dockerNetwork, "", "", "Docker network to run minikube with. Only available with the docker driver. If left empty, minikube will create a new network.")
+	startCmd.Flags().StringP(containerNetwork, "", "", "Docker network to run minikube with. Only available with the docker driver. If left empty, minikube will create a new network.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -288,13 +288,17 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			out.WarningT("With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative")
 		}
 
+		if !driver.IsKIC(drvName) && viper.GetString(containerNetwork) != "" {
+			exit.Advice(reason.Usage, "--network flag is only valid with the docker driver", "remove the --network flag from `minikube start`")
+		}
+
 		cc = config.ClusterConfig{
 			Name:                    ClusterFlagValue(),
 			KeepContext:             viper.GetBool(keepContext),
 			EmbedCerts:              viper.GetBool(embedCerts),
 			MinikubeISO:             viper.GetString(isoURL),
 			KicBaseImage:            viper.GetString(kicBaseImage),
-			DockerNetwork:           viper.GetString(dockerNetwork),
+			ContainerNetwork:        viper.GetString(containerNetwork),
 			Memory:                  mem,
 			CPUs:                    viper.GetInt(cpus),
 			DiskSize:                diskSize,

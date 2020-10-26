@@ -83,7 +83,7 @@ func (d *Driver) Create() error {
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
-	networkName := d.NodeConfig.DockerNetwork
+	networkName := d.NodeConfig.Network
 	if networkName == "" {
 		networkName = d.NodeConfig.ClusterName
 	}
