@@ -112,7 +112,7 @@ func CreateContainerNode(p CreateParams) error {
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
 	if p.OCIBinary == Docker && runtime.GOOS == "windows" {
 		info, err := DaemonInfo(p.OCIBinary)
-		if info.OSType == "windows" {
+		if info.OSType == "windows" && os.Getenv("LCOW_SUPPORTED") != "1" {
 			return ErrWindowsContainers
 		}
 		if err != nil {
