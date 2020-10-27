@@ -115,7 +115,7 @@ func status() registry.State {
 	}
 
 	klog.Infof("docker version: %s", o)
-	if strings.Contains(string(o), "windows-") {
+	if strings.Contains(string(o), "windows-") && os.Getenv("LCOW_SUPPORTED") != "1" {
 		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
 	}
 
