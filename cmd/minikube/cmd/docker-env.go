@@ -168,8 +168,13 @@ var dockerEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Docker daemon",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		shl, err := shell.Detect()
+		if err != nil {
+			exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
+		}
 		sh := shell.EnvConfig{
-			Shell: shell.ForceShell,
+			Shell: shl,
 		}
 
 		if dockerUnset {
@@ -201,7 +206,6 @@ var dockerEnvCmd = &cobra.Command{
 			mustRestartDocker(cname, co.CP.Runner)
 		}
 
-		var err error
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
@@ -218,13 +222,6 @@ var dockerEnvCmd = &cobra.Command{
 			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,
-		}
-
-		if ec.Shell == "" {
-			ec.Shell, err = shell.Detect()
-			if err != nil {
-				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
-			}
 		}
 
 		dockerPath, err := exec.LookPath("docker")
