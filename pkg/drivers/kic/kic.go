@@ -19,7 +19,6 @@ package kic
 import (
 	"fmt"
 	"net"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -95,10 +94,13 @@ func (d *Driver) Create() error {
 		klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
+	drv := d.DriverName()
 	listAddr := oci.DefaultBindIPV4
-	if d.DriverName() == oci.Docker && os.Getenv(constants.DockerHostEnv) != "" {
+	if oci.IsExternalRuntimeHost(drv) {
+		klog.Infof("Listening 0.0.0.0 on external docker host %v", oci.RuntimeHost(drv))
 		listAddr = "0.0.0.0"
 	}
+
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings,
 		oci.PortMapping{
@@ -230,12 +232,12 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetExternalIP returns an IP which is accessible from outside
 func (d *Driver) GetExternalIP() (string, error) {
-	return oci.DockerHost(d.DriverName()), nil
+	return oci.RuntimeHost(d.DriverName()), nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	return oci.DockerHost(d.DriverName()), nil
+	return oci.RuntimeHost(d.DriverName()), nil
 }
 
 // GetSSHPort returns port for use with ssh

@@ -196,7 +196,7 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 
 	apiServerIPs := append(
 		k8s.APIServerIPs,
-		[]net.IP{net.ParseIP(n.IP), serviceIP, net.ParseIP(oci.DockerHost(k8s.ContainerRuntime)), net.ParseIP("10.0.0.1")}...)
+		[]net.IP{net.ParseIP(n.IP), serviceIP, net.ParseIP(oci.RuntimeHost(k8s.ContainerRuntime)), net.ParseIP("10.0.0.1")}...)
 	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName, constants.ControlPlaneAlias)
 	apiServerAlternateNames := append(
 		apiServerNames,

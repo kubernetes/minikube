@@ -151,11 +151,11 @@ func NeedsPortForward(name string) bool {
 	if !IsKIC(name) {
 		return false
 	}
-	if oci.DockerMachineHost(name) != "" {
+	if oci.IsExternalRuntimeHost(name) {
 		return true
 	}
 	// Docker for Desktop
-	return (runtime.GOOS == "darwin" || runtime.GOOS == "windows" || IsMicrosoftWSL())
+	return runtime.GOOS == "darwin" || runtime.GOOS == "windows" || IsMicrosoftWSL()
 }
 
 // IsMicrosoftWSL will return true if process is running in WSL in windows

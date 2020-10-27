@@ -29,7 +29,7 @@ import (
 func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName string) (string, net.IP, int, error) {
 	if NeedsPortForward(driverName) {
 		port, err := oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
-		hostname := oci.DockerHost(driverName)
+		hostname := oci.RuntimeHost(driverName)
 
 		ip := net.ParseIP(hostname)
 		if ip == nil {
