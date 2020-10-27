@@ -1,5 +1,16 @@
 # Release Notes
 
+## Version 1.14.2 - 2020-10-27
+
+Bug Fixes:
+
+* fix "profile list" timing out when cluster stopped. [#9557](https://github.com/kubernetes/minikube/pull/9557)
+
+Thank you to our contributors for this release!
+
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Thomas Strömberg
 
 ## Version 1.14.1 - 2020-10-23
 
