@@ -331,7 +331,7 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	kubectlArgs := []string{"get", "pods"}
 	rr, err := Run(t, exec.CommandContext(ctx, dstfn, kubectlArgs...))
 	if err != nil {
-		t.Fatalf("failed to run kubectl directl. args %q: %v", rr.Command(), err)
+		t.Fatalf("failed to run kubectl directly. args %q: %v", rr.Command(), err)
 	}
 
 }
