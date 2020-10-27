@@ -375,7 +375,7 @@ jobs:
           echo "----"
           echo $T_ELAPSED
           echo "----"
-          echo "TIME_ELAPSED=$T_ELAPSED" >> $GITHUB_ENV
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
       - name: Generate HTML Report
         continue-on-error: true
         shell: powershell
@@ -387,10 +387,8 @@ jobs:
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo 'STAT<<EOF' >> $GITHUB_ENV
-          echo "${STAT}" >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
@@ -514,7 +512,7 @@ jobs:
           echo "----"
           echo $T_ELAPSED
           echo "----"
-          echo "TIME_ELAPSED=$T_ELAPSED" >> $GITHUB_ENV
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
       - name: Generate HTML Report
         continue-on-error: true
         shell: powershell
@@ -526,10 +524,8 @@ jobs:
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-          echo 'STAT<<EOF' >> $GITHUB_ENV
-          echo "${STAT}" >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
