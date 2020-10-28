@@ -111,8 +111,8 @@ func TestAddons(t *testing.T) {
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	if NoneDriver() || (runtime.GOOS == "darwin" && KicDriver()) {
-		t.Skipf("skipping: ssh unsupported by none")
+	if runtime.GOOS == "darwin" && KicDriver() {
+		t.Skipf("skipping: ingress not supported on macOS docker driver")
 	}
 
 	client, err := kapi.Client(profile)
