@@ -38,7 +38,7 @@ const firstSubnetAddr = "192.168.49.0"
 const defaultSubnetMask = 24
 
 // name of the default Docker bridge network, used to lookup the MTU (see #9528)
-const dockerDefaultBridge = "bridge"
+const dockerDefaultBridge = "nat"
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
 func CreateNetwork(ociBin string, name string) (net.IP, error) {
