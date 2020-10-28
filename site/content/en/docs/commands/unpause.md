@@ -23,6 +23,7 @@ minikube unpause [flags]
   -n, ----namespaces strings   namespaces to unpause (default [kube-system,kubernetes-dashboard,storage-gluster,istio-operator])
   -A, --all-namespaces         If set, unpause all namespaces
   -h, --help                   help for unpause
+  -o, --output string          Format to print stdout in. Options include: [text,json] (default "text")
 ```
 
 ### Options inherited from parent commands
