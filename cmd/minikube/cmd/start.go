@@ -128,7 +128,7 @@ func platform() string {
 func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 
-	out.SetJSON(viper.GetString(startOutput) == "json")
+	out.SetJSON(viper.GetString(outputFormat) == "json")
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
@@ -1074,7 +1074,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
-	if s := viper.GetString(startOutput); s != "text" && s != "json" {
+	if s := viper.GetString(outputFormat); s != "text" && s != "json" {
 		exit.Message(reason.Usage, "Sorry, please set the --output flag to one of the following valid options: [text,json]")
 	}
 
