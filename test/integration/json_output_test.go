@@ -36,34 +36,56 @@ func TestJSONOutput(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	startArgs := []string{"start", "-p", profile, "--memory=2200", "--output=json", "--wait=true"}
-	startArgs = append(startArgs, StartArgs()...)
-
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-	if err != nil {
-		t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
+	tests := []struct {
+		command string
+		args    []string
+	}{
+		{
+			command: "start",
+			args:    append([]string{"--memory=2200", "--wait=true"}, StartArgs()...),
+		}, {
+			command: "pause",
+		}, {
+			command: "unpause",
+		}, {
+			command: "stop",
+		},
 	}
 
-	ces, err := cloudEvents(t, rr)
-	if err != nil {
-		t.Fatalf("converting to cloud events: %v\n", err)
-	}
+	for _, test := range tests {
+		t.Run(test.command, func(t *testing.T) {
+			args := []string{test.command, "-p", profile, "--output=json"}
+			args = append(args, test.args...)
 
-	type validateJSONOutputFunc func(context.Context, *testing.T, []*cloudEvent)
-	t.Run("serial", func(t *testing.T) {
-		serialTests := []struct {
-			name      string
-			validator validateJSONOutputFunc
-		}{
-			{"DistinctCurrentSteps", validateDistinctCurrentSteps},
-			{"IncreasingCurrentSteps", validateIncreasingCurrentSteps},
-		}
-		for _, stc := range serialTests {
-			t.Run(stc.name, func(t *testing.T) {
-				stc.validator(ctx, t, ces)
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+			if err != nil {
+				t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
+			}
+
+			ces, err := cloudEvents(t, rr)
+			if err != nil {
+				t.Fatalf("converting to cloud events: %v\n", err)
+			}
+
+			type validateJSONOutputFunc func(context.Context, *testing.T, []*cloudEvent)
+			t.Run("parallel", func(t *testing.T) {
+				parallelTests := []struct {
+					name      string
+					validator validateJSONOutputFunc
+				}{
+					{"DistinctCurrentSteps", validateDistinctCurrentSteps},
+					{"IncreasingCurrentSteps", validateIncreasingCurrentSteps},
+				}
+				for _, stc := range parallelTests {
+					stc := stc
+					t.Run(stc.name, func(t *testing.T) {
+						MaybeParallel(t)
+						stc.validator(ctx, t, ces)
+					})
+				}
 			})
-		}
-	})
+		})
+	}
 }
 
 //  make sure each step has a distinct step number
@@ -100,7 +122,7 @@ func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cl
 	}
 }
 
-func TestJSONOutputError(t *testing.T) {
+func TestJxSONOutputError(t *testing.T) {
 	profile := UniqueProfileName("json-output-error")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
 	defer Cleanup(t, profile, cancel)

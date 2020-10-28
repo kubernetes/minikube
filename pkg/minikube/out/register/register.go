@@ -39,6 +39,7 @@ const (
 	Done                 RegStep = "Done"
 
 	Stopping  RegStep = "Stopping"
+	PowerOff  RegStep = "PowerOff"
 	Deleting  RegStep = "Deleting"
 	Pausing   RegStep = "Pausing"
 	Unpausing RegStep = "Unpausing"
@@ -78,7 +79,7 @@ func init() {
 				Done,
 			},
 
-			Stopping:  {Stopping, Done},
+			Stopping:  {Stopping, PowerOff, Done},
 			Pausing:   {Pausing, Done},
 			Unpausing: {Unpausing, Done},
 			Deleting:  {Deleting, Stopping, Deleting, Done},
@@ -126,5 +127,3 @@ func (r *Register) SetStep(s RegStep) {
 
 	r.current = s
 }
-
-// recordStep records the current step
