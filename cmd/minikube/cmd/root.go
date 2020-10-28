@@ -71,7 +71,19 @@ func Execute() {
 	_, callingCmd := filepath.Split(os.Args[0])
 
 	if callingCmd == "kubectl" {
-		os.Args = append([]string{RootCmd.Use, callingCmd}, os.Args[1:]...)
+		// If the user is using the minikube binary as kubectl, allow them to specify the kubectl context without also specifying minikube profile
+		profile := ""
+		for i, a := range os.Args {
+			if a == "--context" {
+				profile = fmt.Sprintf("--profile=%s", os.Args[i+1])
+				break
+			} else if strings.HasPrefix(a, "--context=") {
+				context := strings.Split(a, "=")[1]
+				profile = fmt.Sprintf("--profile=%s", context)
+			}
+		}
+		os.Args = append([]string{RootCmd.Use, callingCmd, profile, "--"}, os.Args[1:]...)
+		fmt.Printf("%+v\n", os.Args)
 	}
 	for _, c := range RootCmd.Commands() {
 		c.Short = translate.T(c.Short)
