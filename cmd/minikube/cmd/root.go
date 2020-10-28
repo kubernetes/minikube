@@ -80,10 +80,14 @@ func Execute() {
 			} else if strings.HasPrefix(a, "--context=") {
 				context := strings.Split(a, "=")[1]
 				profile = fmt.Sprintf("--profile=%s", context)
+				break
 			}
 		}
-		os.Args = append([]string{RootCmd.Use, callingCmd, profile, "--"}, os.Args[1:]...)
-		fmt.Printf("%+v\n", os.Args)
+		if profile != "" {
+			os.Args = append([]string{RootCmd.Use, callingCmd, profile, "--"}, os.Args[1:]...)
+		} else {
+			os.Args = append([]string{RootCmd.Use, callingCmd, "--"}, os.Args[1:]...)
+		}
 	}
 	for _, c := range RootCmd.Commands() {
 		c.Short = translate.T(c.Short)

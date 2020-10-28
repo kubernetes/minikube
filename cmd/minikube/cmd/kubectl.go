@@ -43,7 +43,6 @@ minikube kubectl -- get pods --namespace kube-system`,
 		co := mustload.Healthy(ClusterFlagValue())
 
 		version := co.Config.KubernetesConfig.KubernetesVersion
-		fmt.Printf("args=%+v\n", args)
 		c, err := KubectlCommand(version, args...)
 		if err != nil {
 			out.ErrLn("Error caching kubectl: %v", err)
