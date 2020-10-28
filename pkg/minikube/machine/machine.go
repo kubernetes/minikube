@@ -104,7 +104,7 @@ func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
 	switch {
 	case driver.IsKIC(d):
 		return provision.NewUbuntuProvisioner(h.Driver), nil
-	case driver.BareMetal(d):
+	case driver.BareMetal(d), d == driver.Generic:
 		return libprovision.DetectProvisioner(h.Driver)
 	default:
 		return provision.NewBuildrootProvisioner(h.Driver), nil
