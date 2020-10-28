@@ -23,6 +23,7 @@ FROM ubuntu:focal-20200423
 
 # copy in static files (configs, scripts)
 COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
+COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
 COPY clean-install /usr/local/bin/clean-install
 COPY entrypoint /usr/local/bin/entrypoint
 
