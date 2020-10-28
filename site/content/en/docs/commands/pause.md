@@ -23,6 +23,7 @@ minikube pause [flags]
   -n, ----namespaces strings   namespaces to pause (default [kube-system,kubernetes-dashboard,storage-gluster,istio-operator])
   -A, --all-namespaces         If set, pause all namespaces
   -h, --help                   help for pause
+  -o, --output string          Format to print stdout in. Options include: [text,json] (default "text")
 ```
 
 ### Options inherited from parent commands
