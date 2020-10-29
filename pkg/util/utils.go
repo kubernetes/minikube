@@ -22,6 +22,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/blang/semver"
 	units "github.com/docker/go-units"
@@ -60,6 +61,47 @@ func ConvertBytesToMB(byteSize int64) int {
 // ConvertUnsignedBytesToMB converts bytes to MB
 func ConvertUnsignedBytesToMB(byteSize uint64) int64 {
 	return int64(byteSize / units.MiB)
+}
+
+// ParseMemFree parses the output of the `free -m` command
+func ParseMemFree(out string) (int64, error) {
+	//             total        used        free      shared  buff/cache   available
+	//Mem:           1987         706         194           1        1086        1173
+	//Swap:             0           0           0
+	outlines := strings.Split(out, "\n")
+	l := len(outlines)
+	for _, line := range outlines[1 : l-1] {
+		parsedLine := strings.Fields(line)
+		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		m := strings.Trim(parsedLine[0], ":")
+		if m == "Mem" {
+			return t, nil
+		}
+	}
+	return 0, nil
+}
+
+// ParseDiskFree parses the output of the `df -m` command
+func ParseDiskFree(out string) (int64, error) {
+	// Filesystem     1M-blocks  Used Available Use% Mounted on
+	// /dev/sda1          39643  3705     35922  10% /
+	outlines := strings.Split(out, "\n")
+	l := len(outlines)
+	for _, line := range outlines[1 : l-1] {
+		parsedLine := strings.Fields(line)
+		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		m := parsedLine[5]
+		if m == "/" {
+			return t, nil
+		}
+	}
+	return 0, nil
 }
 
 // GetBinaryDownloadURL returns a suitable URL for the platform

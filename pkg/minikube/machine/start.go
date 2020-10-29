@@ -136,7 +136,9 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	showHostInfo(*cfg)
+	if cfg.Driver != driver.Generic {
+		showHostInfo(nil, *cfg)
+	}
 	def := registry.Driver(cfg.Driver)
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.Driver)
@@ -170,6 +172,9 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		return nil, errors.Wrap(err, "creating host")
 	}
 	klog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
+	if cfg.Driver == driver.Generic {
+		showHostInfo(h, *cfg)
+	}
 
 	if err := postStartSetup(h, *cfg); err != nil {
 		return h, errors.Wrap(err, "post-start")
@@ -321,13 +326,26 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 }
 
 // showHostInfo shows host information
-func showHostInfo(cfg config.ClusterConfig) {
+func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 	machineType := driver.MachineType(cfg.Driver)
 	if driver.BareMetal(cfg.Driver) {
-		info, cpuErr, memErr, DiskErr := CachedHostInfo()
+		info, cpuErr, memErr, DiskErr := LocalHostInfo()
 		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningLocalhost)
 			out.T(style.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+		}
+		return
+	}
+	if cfg.Driver == driver.Generic {
+		r, err := CommandRunner(h)
+		if err != nil {
+			klog.Warningf("error getting command runner: %v", err)
+			return
+		}
+		info, cpuErr, memErr, DiskErr := RemoteHostInfo(r)
+		if cpuErr == nil && memErr == nil && DiskErr == nil {
+			register.Reg.SetStep(register.RunningRemotely)
+			out.T(style.StartingGeneric, "Running remotely (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 		return
 	}
