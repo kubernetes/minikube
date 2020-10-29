@@ -157,9 +157,17 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	want := "Welcome to nginx!"
 	addr := "http://127.0.0.1/"
 	checkIngress := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
-		if err != nil {
-			return err
+		var rr RunResult
+		if NoneDriver() { // just run curl directly on the none driver
+			rr, err := Run(t, exec.CommandContext(ctx, fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr))
+			if err != nil {
+				return err
+			}
+		} else {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
+			if err != nil {
+				return err
+			}
 		}
 
 		stderr := rr.Stderr.String()
