@@ -283,7 +283,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	if driver.BareMetal(mc.Driver) {
 		showLocalOsRelease()
 	}
-	if driver.IsVM(mc.Driver) || driver.IsKIC(mc.Driver) {
+	if driver.IsVM(mc.Driver) || driver.IsKIC(mc.Driver) || mc.Driver == driver.Generic {
 		logRemoteOsRelease(r)
 	}
 	return syncLocalAssets(r)
