@@ -95,12 +95,6 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		return h, nil
 	}
 
-	if h.Driver.DriverName() == driver.Generic {
-		if _, err := h.RunSSHCommand(fmt.Sprintf("sudo usermod -aG docker %s", h.Driver.GetSSHUsername())); err != nil {
-			return h, errors.Wrap(err, "usermod")
-		}
-	}
-
 	return h, ensureSyncedGuestClock(h, driverName)
 }
 

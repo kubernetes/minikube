@@ -180,6 +180,12 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		return h, errors.Wrap(err, "post-start")
 	}
 
+	if h.Driver.DriverName() == driver.Generic {
+		if _, err := h.RunSSHCommand(fmt.Sprintf("sudo usermod -aG docker %s", h.Driver.GetSSHUsername())); err != nil {
+			return h, errors.Wrap(err, "usermod")
+		}
+	}
+
 	if err := saveHost(api, h, cfg, n); err != nil {
 		return h, err
 	}
