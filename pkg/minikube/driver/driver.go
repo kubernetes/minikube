@@ -96,6 +96,10 @@ func MachineType(name string) string {
 		return "container"
 	}
 
+	if name == Generic {
+		return "bare metal machine"
+	}
+
 	if IsVM(name) {
 		return "VM"
 	}
