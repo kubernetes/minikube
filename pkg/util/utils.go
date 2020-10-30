@@ -73,6 +73,9 @@ func ParseMemFree(out string) (int64, int64, error) {
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)
+		if len(parsedLine) < 7 {
+			continue
+		}
 		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
 		if err != nil {
 			return 0, 0, err
@@ -86,7 +89,7 @@ func ParseMemFree(out string) (int64, int64, error) {
 			return t, a, nil
 		}
 	}
-	return 0, 0, nil
+	return 0, 0, errors.New("No matching data found")
 }
 
 // ParseDiskFree parses the output of the `df -m` command
@@ -98,6 +101,9 @@ func ParseDiskFree(out string) (int64, int64, error) {
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)
+		if len(parsedLine) < 6 {
+			continue
+		}
 		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
 		if err != nil {
 			return 0, 0, err
@@ -111,7 +117,7 @@ func ParseDiskFree(out string) (int64, int64, error) {
 			return t, a, nil
 		}
 	}
-	return 0, 0, nil
+	return 0, 0, errors.New("No matching data found")
 }
 
 // GetBinaryDownloadURL returns a suitable URL for the platform
