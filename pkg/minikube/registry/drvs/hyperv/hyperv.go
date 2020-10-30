@@ -34,6 +34,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const (
@@ -104,6 +106,19 @@ func status() registry.State {
 		fixMessage := "Enable Hyper-V: Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
 		return registry.State{Installed: false, Running: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
 	}
+
+	// Ensure user is either a Windows Administrator or a Hyper-V Administrator.
+	adminCheckCmd := exec.CommandContext(ctx, path, `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
+	adminCheckOut, _ := adminCheckCmd.CombinedOutput()
+
+	hypervAdminCheckCmd := exec.CommandContext(ctx, path, `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(([System.Security.Principal.SecurityIdentifier]::new("S-1-5-32-578")))`)
+	hypervAdminCheckOut, _ := hypervAdminCheckCmd.CombinedOutput()
+
+
+	if (strings.TrimSpace(string(adminCheckOut)) != "True") && (strings.TrimSpace(string(hypervAdminCheckOut)) != "True") {
+		exit.Error(reason.DrvNeedsAdministrator,"", errors.New("Hyper-v commands have to be run as an Administrator"))
+	}
+
 
 	return registry.State{Installed: true, Healthy: true}
 }

@@ -231,6 +231,7 @@ var (
 	DrvNotDetected        = Kind{ID: "DRV_NOT_DETECTED", ExitCode: ExDriverNotFound}
 	DrvAsRoot             = Kind{ID: "DRV_AS_ROOT", ExitCode: ExDriverPermission}
 	DrvNeedsRoot          = Kind{ID: "DRV_NEEDS_ROOT", ExitCode: ExDriverPermission}
+	DrvNeedsAdministrator = Kind{ID: "DRV_NEEDS_ADMINISTRATOR", ExitCode: ExDriverPermission}
 
 	GuestCacheLoad        = Kind{ID: "GUEST_CACHE_LOAD", ExitCode: ExGuestError}
 	GuestCert             = Kind{ID: "GUEST_CERT", ExitCode: ExGuestError}
