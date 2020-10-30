@@ -133,7 +133,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 			return err
 		}
 		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s (may be temproary)", rr.Command(), rr.Stderr)
+			t.Logf("%v: unexpected stderr: %s (may be temporary)", rr.Command(), rr.Stderr)
 		}
 		return nil
 	}
@@ -160,7 +160,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		var rr *RunResult
 		var err error
 		if NoneDriver() { // just run curl directly on the none driver
-			rr, err = Run(t, exec.CommandContext(ctx, fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
+			rr, err = Run(t, exec.CommandContext(ctx, "curl", "-s", addr, "-H", "'Host: nginx.example.com'"))
 			if err != nil {
 				return err
 			}
