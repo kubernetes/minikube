@@ -8,7 +8,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/Parallels/docker-machine-parallels v1.3.0
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
-	github.com/VividCortex/godaemon v0.0.0-20200629145737-581b70a8a603
+	github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21
 	github.com/blang/semver v3.5.0+incompatible
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -100,7 +100,6 @@ replace (
 	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.0.0-20200902152226-fbad78ec2813
 	github.com/hashicorp/go-getter => github.com/afbjorklund/go-getter v1.4.1-0.20201020145846-c0da14b4bffe
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
-	github.com/VividCortex/godaemon => github.com/priyawadhwa/godaemon v0.0.0-20201023222158-5d5ea5b0cb72
 	k8s.io/api => k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.3
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.3
