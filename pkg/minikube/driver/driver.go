@@ -151,7 +151,7 @@ func NeedsPortForward(name string) bool {
 	if !IsKIC(name) {
 		return false
 	}
-	if oci.IsExternalRuntimeHost(name) {
+	if oci.IsExternalDaemonHost(name) {
 		return true
 	}
 	// Docker for Desktop

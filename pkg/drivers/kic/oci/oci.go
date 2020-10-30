@@ -640,11 +640,11 @@ func iptablesFileExists(ociBin string, nameOrID string) bool {
 	return true
 }
 
-// RuntimeHost returns the ip/hostname where OCI daemon service for driver is running
+// DaemonHost returns the ip/hostname where OCI daemon service for driver is running
 // For Podman it's always DefaultBindIPV4
 // For Docker return the host part of DOCKER_HOST environment variable if set
 // or DefaultBindIPV4 otherwise
-func RuntimeHost(driver string) string {
+func DaemonHost(driver string) string {
 	if driver != Docker {
 		return DefaultBindIPV4
 	}
@@ -658,10 +658,10 @@ func RuntimeHost(driver string) string {
 	return DefaultBindIPV4
 }
 
-// IsExternalRuntimeHost returns whether or not the OCI runtime is running on an external/virtual host
+// IsExternalDaemonHost returns whether or not the OCI runtime is running on an external/virtual host
 // For Podman driver it's always false for now
 // For Docker driver return true if DOCKER_HOST is set to a URI, and the URI contains a host item
-func IsExternalRuntimeHost(driver string) bool {
+func IsExternalDaemonHost(driver string) bool {
 	if driver != Docker {
 		return false
 	}
