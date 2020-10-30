@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/hack/update"
 )
 
@@ -87,13 +88,13 @@ var (
 		},
 	}
 
-	// pull request data
+	// PR data
 	prBranchPrefix = "update-golang-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update_golang_version: {stable:"{{.StableVersion}}"}`
+	prTitle        = `update_golang_version: {stable: "{{.StableVersion}}"}`
 	prIssue        = 9264
 )
 
-// Data holds stable Golang version
+// Data holds stable Golang version - in full and in <major>.<minor> format
 type Data struct {
 	StableVersion   string `json:"stableVersion"`
 	StableVersionMM string `json:"stableVersionMM"` // go.mod wants go version in <major>.<minor> format
@@ -107,7 +108,7 @@ func main() {
 	// get Golang stable version
 	stable, stableMM, err := goVersions()
 	if err != nil || stable == "" || stableMM == "" {
-		klog.Fatalf("Error getting Golang stable version: %v", err)
+		klog.Fatalf("Unable to get Golang stable version: %v", err)
 	}
 	data := Data{StableVersion: stable, StableVersionMM: stableMM}
 	klog.Infof("Golang stable version: %s", data.StableVersion)
@@ -115,7 +116,7 @@ func main() {
 	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
 }
 
-// goVersion returns Golang stable version
+// goVersion returns Golang stable version.
 func goVersions() (stable, stableMM string, err error) {
 	resp, err := http.Get("https://golang.org/VERSION?m=text")
 	if err != nil {
