@@ -129,7 +129,6 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	cmd.Stderr = errb
 
 	start := time.Now()
-	klog.Infof("Running %v", cmd.Args)
 	err := cmd.Run()
 	elapsed := time.Since(start)
 	if warn {
