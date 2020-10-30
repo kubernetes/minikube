@@ -97,8 +97,8 @@ func RemoteHostInfo(r command.Runner) (*HostInfo, error, error, error) {
 
 	var info HostInfo
 	info.CPUs = ncpus
-	info.Memory = memory
-	info.DiskSize = disksize
+	info.Memory = int64(memory)
+	info.DiskSize = int64(disksize)
 	return &info, cpuErr, memErr, diskErr
 }
 
