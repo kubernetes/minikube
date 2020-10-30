@@ -96,9 +96,9 @@ func (d *Driver) Create() error {
 	}
 	drv := d.DriverName()
 	listAddr := oci.DefaultBindIPV4
-	if oci.IsExternalRuntimeHost(drv) {
+	if oci.IsExternalDaemonHost(drv) {
 		out.WarningT("Listening to 0.0.0.0 on external docker host {{.host}}. Please be advised",
-			out.V{"host": oci.RuntimeHost(drv)})
+			out.V{"host": oci.DaemonHost(drv)})
 		listAddr = "0.0.0.0"
 	}
 
@@ -233,12 +233,12 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetExternalIP returns an IP which is accessible from outside
 func (d *Driver) GetExternalIP() (string, error) {
-	return oci.RuntimeHost(d.DriverName()), nil
+	return oci.DaemonHost(d.DriverName()), nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	return oci.RuntimeHost(d.DriverName()), nil
+	return oci.DaemonHost(d.DriverName()), nil
 }
 
 // GetSSHPort returns port for use with ssh
