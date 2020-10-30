@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"errors"
 	"io/ioutil"
 	"os/exec"
 	"strconv"
@@ -199,6 +200,9 @@ func parseMemFree(out string) (int64, error) {
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)
+		if len(parsedLine) < 7 {
+			continue
+		}
 		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
 		if err != nil {
 			return 0, err
@@ -208,7 +212,7 @@ func parseMemFree(out string) (int64, error) {
 			return t, nil
 		}
 	}
-	return 0, nil
+	return 0, errors.New("no matching data found")
 }
 
 // ParseDiskFree parses the output of the `df -m` command
@@ -219,6 +223,9 @@ func parseDiskFree(out string) (int64, error) {
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)
+		if len(parsedLine) < 6 {
+			continue
+		}
 		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
 		if err != nil {
 			return 0, err
@@ -228,5 +235,5 @@ func parseDiskFree(out string) (int64, error) {
 			return t, nil
 		}
 	}
-	return 0, nil
+	return 0, errors.New("no matching data found")
 }
