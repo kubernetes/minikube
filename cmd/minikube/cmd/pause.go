@@ -50,6 +50,7 @@ var pauseCmd = &cobra.Command{
 }
 
 func runPause(cmd *cobra.Command, args []string) {
+	out.SetJSON(outputFormat == "json")
 	co := mustload.Running(ClusterFlagValue())
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Pausing)
@@ -105,4 +106,5 @@ func runPause(cmd *cobra.Command, args []string) {
 func init() {
 	pauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", constants.DefaultNamespaces, "namespaces to pause")
 	pauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, pause all namespaces")
+	pauseCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 }
