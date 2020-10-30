@@ -70,3 +70,28 @@ func TestPointToHostDockerDaemon(t *testing.T) {
 		}
 	}
 }
+
+func TestDaemonHost(t *testing.T) {
+	tests := []struct {
+		driver           string
+		dockerHost       string
+		expectedAddr     string
+		expectedExternal bool
+	}{
+		{"", "", "127.0.0.1", false},
+		{"docker", "tcp://1.1.1.1:2222/foo", "1.1.1.1", true},
+		{"podman", "tcp://1.1.1.1:2222/foo", "127.0.0.1", false},
+		{"_invalid_", "tcp://1.1.1.1:2222/foo", "127.0.0.1", false},
+		{"docker", "unix:///var/run/something", "127.0.0.1", false},
+		{"docker", "tcp://127.0.0.1/foo", "127.0.0.1", true},
+	}
+	for _, test := range tests {
+		_ = os.Setenv("DOCKER_HOST", test.dockerHost)
+		if v := IsExternalDaemonHost(test.driver); v != test.expectedExternal {
+			t.Errorf("invalid result of IsExternalDaemonHost. got: %v, want: %v", v, test.expectedExternal)
+		}
+		if v := DaemonHost(test.driver); v != test.expectedAddr {
+			t.Errorf("invalid oci daemon host. got: %v, want: %v", v, test.expectedAddr)
+		}
+	}
+}
