@@ -143,7 +143,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -155,8 +155,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_ubuntu
@@ -239,7 +241,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -251,8 +253,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: functional_virtualbox_macos
@@ -371,7 +375,7 @@ jobs:
           echo "----"
           echo $T_ELAPSED
           echo "----"
-          echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
       - name: Generate HTML Report
         continue-on-error: true
         shell: powershell
@@ -383,8 +387,8 @@ jobs:
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
-          echo "::set-env name=STAT::${STAT}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
@@ -508,7 +512,7 @@ jobs:
           echo "----"
           echo $T_ELAPSED
           echo "----"
-          echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
       - name: Generate HTML Report
         continue-on-error: true
         shell: powershell
@@ -520,8 +524,8 @@ jobs:
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
-          echo "::set-env name=STAT::${STAT}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
@@ -609,7 +613,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -621,8 +625,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: none_ubuntu18_04
@@ -704,7 +710,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -716,8 +722,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: addons_certs_docker_ubuntu
@@ -800,7 +808,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -812,8 +820,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: addons_certs_virtualbox_macos
@@ -896,7 +906,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -908,8 +918,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: multinode_docker_ubuntu
@@ -986,7 +998,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -998,8 +1010,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: multinode_virtualbox_macos
@@ -1081,7 +1095,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -1093,8 +1107,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: preload_dockerflags_docker_ubuntu
@@ -1171,7 +1187,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -1183,8 +1199,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: pause_preload_dockerflags_virtualbox_macos
