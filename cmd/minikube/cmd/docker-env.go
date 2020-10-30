@@ -168,10 +168,14 @@ var dockerEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Docker daemon",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
 
-		shl, err := shell.Detect()
-		if err != nil {
-			exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
+		shl := shell.ForceShell
+		if shl == "" {
+			shl, err = shell.Detect()
+			if err != nil {
+				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
+			}
 		}
 		sh := shell.EnvConfig{
 			Shell: shl,
