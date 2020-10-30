@@ -97,7 +97,8 @@ func (d *Driver) Create() error {
 	drv := d.DriverName()
 	listAddr := oci.DefaultBindIPV4
 	if oci.IsExternalRuntimeHost(drv) {
-		klog.Infof("Listening 0.0.0.0 on external docker host %v", oci.RuntimeHost(drv))
+		out.WarningT("Listening to 0.0.0.0 on external docker host {{.host}}. Please be advised",
+			out.V{"host": oci.RuntimeHost(drv)})
 		listAddr = "0.0.0.0"
 	}
 
