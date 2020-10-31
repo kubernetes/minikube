@@ -114,9 +114,9 @@ func status() registry.State {
 
 
 	if (strings.TrimSpace(string(adminCheckOut)) != "True") && (strings.TrimSpace(string(hypervAdminCheckOut)) != "True") {
-		error := fmt.Errorf("Hyper-v commands have to be run as an Administrator")
+		err := fmt.Errorf("Hyper-v commands have to be run as an Administrator")
 		fixMessage := "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode."
-		return registry.State{Installed: true, Running: false, Error: error, Fix: fixMessage, Doc: docURL}
+		return registry.State{Installed: true, Running: false, Error: err, Fix: fixMessage, Doc: docURL}
 	}
 
 
