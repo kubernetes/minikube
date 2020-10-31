@@ -34,8 +34,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const (
@@ -116,7 +114,9 @@ func status() registry.State {
 
 
 	if (strings.TrimSpace(string(adminCheckOut)) != "True") && (strings.TrimSpace(string(hypervAdminCheckOut)) != "True") {
-		exit.Error(reason.DrvNeedsAdministrator,"", errors.New("Hyper-v commands have to be run as an Administrator"))
+		error := fmt.Errorf("Hyper-v commands have to be run as an Administrator")
+		fixMessage := "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode."
+		return registry.State{Installed: true, Running: false, Error: error, Fix: fixMessage, Doc: docURL}
 	}
 
 
