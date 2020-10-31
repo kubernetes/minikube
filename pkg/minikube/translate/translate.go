@@ -104,7 +104,8 @@ func DetermineLocale() {
 
 // setPreferredLanguageTag configures which language future messages should use.
 func setPreferredLanguageTag(l language.Tag) {
-	klog.Infof("Setting Language to %s ...", l)
+	// output message only if verbosity level is set and we still haven't got all the flags parsed in main()
+	klog.V(1).Infof("Setting Language to %s ...", l)
 	preferredLanguage = l
 }
 
