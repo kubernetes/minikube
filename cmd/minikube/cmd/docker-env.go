@@ -264,20 +264,7 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 
 // dockerSetScript writes out a shell-compatible 'docker-env unset' script
 func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
-	vars := []string{
-		constants.DockerTLSVerifyEnv,
-		constants.DockerHostEnv,
-		constants.DockerCertPathEnv,
-		constants.MinikubeActiveDockerdEnv,
-	}
-
-	if ec.noProxy {
-		k, _ := defaultNoProxyGetter.GetNoProxyVar()
-		if k != "" {
-			vars = append(vars, k)
-		}
-	}
-
+	vars := dockerEnvNames(ec)
 	return shell.UnsetScript(ec.EnvConfig, w, vars)
 }
 
@@ -312,6 +299,24 @@ func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 		env = envTCP
 	}
 	return env
+}
+
+// dockerEnvNames gets the necessary docker env variables to reset after using minikube's docker daemon
+func dockerEnvNames(ec DockerEnvConfig) []string {
+	vars := []string{
+		constants.DockerTLSVerifyEnv,
+		constants.DockerHostEnv,
+		constants.DockerCertPathEnv,
+		constants.MinikubeActiveDockerdEnv,
+	}
+
+	if ec.noProxy {
+		k, _ := defaultNoProxyGetter.GetNoProxyVar()
+		if k != "" {
+			vars = append(vars, k)
+		}
+	}
+	return vars
 }
 
 // dockerEnvVarsList gets the necessary docker env variables to allow the use of minikube's docker daemon to be used in a exec.Command
