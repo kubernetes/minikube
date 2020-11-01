@@ -39,7 +39,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
-var podmanEnvTmpl = fmt.Sprintf("{{ if .VarlinkBridge }}{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{end}}{{ if .ContainerHost }}{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerHost }}{{ .Suffix }}{{end}}{{ if .ContainerSSHKey }}{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerSSHKey}}{{ .Suffix }}{{ end }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv, constants.PodmanContainerHostEnv, constants.PodmanContainerSSHKeyEnv, constants.MinikubeActivePodmanEnv)
+var podmanEnv1Tmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv, constants.MinikubeActivePodmanEnv)
+
+var podmanEnv2Tmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerHost }}{{ .Suffix }}{{ if .ContainerSSHKey }}{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerSSHKey}}{{ .Suffix }}{{ end }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanContainerHostEnv, constants.PodmanContainerSSHKeyEnv, constants.MinikubeActivePodmanEnv)
 
 // PodmanShellConfig represents the shell config for Podman
 type PodmanShellConfig struct {
@@ -202,6 +204,12 @@ type PodmanEnvConfig struct {
 
 // podmanSetScript writes out a shell-compatible 'podman-env' script
 func podmanSetScript(ec PodmanEnvConfig, w io.Writer) error {
+	var podmanEnvTmpl string
+	if ec.varlink {
+		podmanEnvTmpl = podmanEnv1Tmpl
+	} else {
+		podmanEnvTmpl = podmanEnv2Tmpl
+	}
 	envVars := podmanEnvVars(ec)
 	return shell.SetScript(ec.EnvConfig, w, podmanEnvTmpl, podmanShellCfgSet(ec, envVars))
 }
