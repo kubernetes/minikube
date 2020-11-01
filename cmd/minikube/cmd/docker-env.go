@@ -43,7 +43,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-var dockerEnvTmpl = fmt.Sprintf("{{ if .DockerTLSVerify }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ end }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ if .DockerCertPath }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ end }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{ end }}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
+var dockerEnvTCPTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
+
+var dockerEnvSSHTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.DockerHostEnv, constants.MinikubeActiveDockerdEnv)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -258,6 +260,12 @@ type DockerEnvConfig struct {
 
 // dockerSetScript writes out a shell-compatible 'docker-env' script
 func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
+	var dockerEnvTmpl string
+	if ec.ssh {
+		dockerEnvTmpl = dockerEnvSSHTmpl
+	} else {
+		dockerEnvTmpl = dockerEnvTCPTmpl
+	}
 	envVars := dockerEnvVars(ec)
 	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
