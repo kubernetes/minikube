@@ -28,38 +28,40 @@ This directory may then be referenced from a Kubernetes manifest, for example:
 
 ```shell
 {
-  "apiVersion": "v1",
-  "kind": "Pod",
-  "metadata": {
-    "name": "ubuntu"
-  },
-  "spec": {
-        "containers": [
-          {
-            "name": "ubuntu",
-            "image": "ubuntu:18.04",
-            "args": [
-              "bash"
+   "apiVersion":"v1",
+   "kind":"Pod",
+   "metadata":{
+      "name":"ubuntu"
+   },
+   "spec":{
+      "containers":[
+         {
+            "name":"ubuntu",
+            "image":"ubuntu:18.04",
+            "args":[
+               "bash"
             ],
-            "stdin": true,
-            "stdinOnce": true,
-            "tty": true,
-            "workingDir": "/host",
-            "volumeMounts": [{
-              "mountPath": "/host",
-              "name": "host-mount"
-            }]
-          }
-        ],
-    "volumes": [
-      {
-        "name": "host-mount",
-        "hostPath": {
-          "path": "/host"
-        }
-      }
-    ]
-  }
+            "stdin":true,
+            "stdinOnce":true,
+            "tty":true,
+            "workingDir":"/host",
+            "volumeMounts":[
+               {
+                  "mountPath":"/host",
+                  "name":"host-mount"
+               }
+            ]
+         }
+      ],
+      "volumes":[
+         {
+            "name":"host-mount",
+            "hostPath":{
+               "path":"/host"
+            }
+         }
+      ]
+   }
 }
 ```
 
