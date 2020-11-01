@@ -61,10 +61,16 @@ func status() registry.State {
 		return registry.State{Running: true, Error: err, Installed: false, Fix: "Install docker", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
-	_, err = user.Current()
+	u, err := user.Current()
 	if err != nil {
 		return registry.State{Running: true, Error: err, Healthy: false, Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
+	if u.Uid != "0" {
+		test := exec.Command("sudo", "-n", "echo", "-n")
+		if err := test.Run(); err != nil {
+			return registry.State{Error: fmt.Errorf("running the 'none' driver as a regular user requires sudo permissions"), Healthy: false}
+		}
+	}
 	return registry.State{Installed: true, Healthy: true}
 }
