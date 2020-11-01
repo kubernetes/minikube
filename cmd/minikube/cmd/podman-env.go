@@ -208,34 +208,7 @@ func podmanSetScript(ec PodmanEnvConfig, w io.Writer) error {
 
 // podmanUnsetScript writes out a shell-compatible 'podman-env unset' script
 func podmanUnsetScript(ec PodmanEnvConfig, w io.Writer) error {
-	// podman v1
-	vars1 := []string{
-		constants.PodmanVarlinkBridgeEnv,
-	}
-	// podman v2
-	vars2 := []string{
-		constants.PodmanContainerHostEnv,
-		constants.PodmanContainerSSHKeyEnv,
-	}
-	// common
-	vars0 := []string{
-		constants.MinikubeActivePodmanEnv,
-	}
-
-	var vars []string
-	if ec.client != nil || ec.hostname != "" {
-		// getting ec.varlink needs a running machine
-		if ec.varlink {
-			vars = vars1
-		} else {
-			vars = vars2
-		}
-	} else {
-		// just unset *all* of the variables instead
-		vars = vars1
-		vars = append(vars, vars2...)
-	}
-	vars = append(vars, vars0...)
+	vars := podmanEnvNames(ec)
 	return shell.UnsetScript(ec.EnvConfig, w, vars)
 }
 
@@ -279,6 +252,39 @@ func podmanEnvVars(ec PodmanEnvConfig) map[string]string {
 		env[k] = v
 	}
 	return env
+}
+
+// podmanEnvNames gets the necessary podman env variables to reset after using minikube's podman service
+func podmanEnvNames(ec PodmanEnvConfig) []string {
+	// podman v1
+	vars1 := []string{
+		constants.PodmanVarlinkBridgeEnv,
+	}
+	// podman v2
+	vars2 := []string{
+		constants.PodmanContainerHostEnv,
+		constants.PodmanContainerSSHKeyEnv,
+	}
+	// common
+	vars0 := []string{
+		constants.MinikubeActivePodmanEnv,
+	}
+
+	var vars []string
+	if ec.client != nil || ec.hostname != "" {
+		// getting ec.varlink needs a running machine
+		if ec.varlink {
+			vars = vars1
+		} else {
+			vars = vars2
+		}
+	} else {
+		// just unset *all* of the variables instead
+		vars = vars1
+		vars = append(vars, vars2...)
+	}
+	vars = append(vars, vars0...)
+	return vars
 }
 
 func init() {
