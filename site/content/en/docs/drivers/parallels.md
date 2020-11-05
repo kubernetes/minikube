@@ -7,7 +7,7 @@ aliases:
 
 ## Overview
 
-The Parallels driver is particularly useful for users who own Parallels Desktop, as it does not require VT-x hardware support.
+The Parallels driver is particularly useful for users who own Parallels Desktop for Mac, as it does not require VT-x hardware support.
 
 {{% readfile file="/docs/drivers/includes/parallels_usage.inc" %}}
 

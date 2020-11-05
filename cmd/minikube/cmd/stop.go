@@ -59,6 +59,7 @@ func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 	stopCmd.Flags().StringVar(&scheduledStop, "schedule", "", "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
+	stopCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
 		exit.Error(reason.InternalFlagsBind, "unable to bind flags", err)
@@ -67,6 +68,7 @@ func init() {
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
+	out.SetJSON(outputFormat == "json")
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Stopping)
 
