@@ -611,7 +611,7 @@ push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~st
 	docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
 
 .PHONY: push-docker
-push-docker: # Push docker image base on to IMAGE variable (used internaly by other targets)
+push-docker: # Push docker image base on to IMAGE variable (used internally by other targets)
 	@docker pull $(IMAGE) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry"
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
