@@ -47,7 +47,7 @@ echo "test home: ${TEST_HOME}"
 echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
 echo "uptime:    $(uptime)"
-# Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
+# Setting KUBECONFIG prevents the version check from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"

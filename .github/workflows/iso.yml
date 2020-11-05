@@ -103,7 +103,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -115,8 +115,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - name: Upload report
         uses: actions/upload-artifact@v1
         with:
