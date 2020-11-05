@@ -581,12 +581,13 @@ storage-provisioner-image-%: out/storage-provisioner-%
 	docker build -t $(REGISTRY)/storage-provisioner-$*:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$* .
 
 .PHONY: kic-base-image
-kic-base-image: ## builds the kic base image and tags local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
-	docker rmi -f local/kicbase:latest || true
-	docker rmi -f local/kicbase:$(KIC_VERSION) || true
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) ./deploy/kicbase
-	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
-	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
+kic-base-image: ## builds the base image used for kic.
+	docker rmi -f $(KIC_BASE_IMAGE_GCR)-snapshot || true
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) ./deploy/kicbase
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)-snapshot
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GCR)
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_HUB)
+	docker tag local/kicbase:$(KIC_VERSION)-snapshot $(KIC_BASE_IMAGE_GH)
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
@@ -611,7 +612,7 @@ push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~st
 	docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
 
 .PHONY: push-docker
-push-docker: # Push docker image base on to IMAGE variable (used internaly by other targets)
+push-docker: # Push docker image base on to IMAGE variable
 	@docker pull $(IMAGE) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry"
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
@@ -621,28 +622,25 @@ endif
 .PHONY: push-kic-base-image-gcr
 push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
 	docker login gcr.io/k8s-minikube
-	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_GCR)
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GCR)
 
 .PHONY: push-kic-base-image-gh
 push-kic-base-image-gh: kic-base-image ## Push kic-base to github
 	docker login docker.pkg.github.com
-	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_GH)
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GH)
 
 .PHONY: push-kic-base-image-hub
 push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
 	docker login
-	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_HUB)
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
 
 .PHONY: push-kic-base-image
-push-kic-base-image: ## Push local/kicbase:latest to all remote registries
+push-kic-base-image: ## Push kic-base to all registries
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
 	$(MAKE) push-kic-base-image AUTOPUSH=true
 else
-	$(MAKE) push-kic-base-image-gcr push-kic-base-image-hub push-kic-base-image-gh 
+	$(MAKE) push-kic-base-image-gh push-kic-base-image-gcr push-kic-base-image-hub
 endif
 
 .PHONY: out/gvisor-addon
