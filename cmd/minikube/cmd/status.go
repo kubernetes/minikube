@@ -217,7 +217,11 @@ var statusCmd = &cobra.Command{
 }
 
 // writeStatusesAtInterval writes statuses in a given output format - at intervals defined by duration
+<<<<<<< HEAD
 func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *config.ClusterConfig) {
+=======
+func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *config.ClusterConfig) int {
+>>>>>>> ab981fe40 (move write statuses logic to a separate func)
 	for {
 		var statuses []*Status
 
