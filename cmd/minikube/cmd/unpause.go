@@ -46,6 +46,7 @@ var unpauseCmd = &cobra.Command{
 		register.SetEventLogPath(localpath.EventLog(cname))
 
 		co := mustload.Running(cname)
+		out.SetJSON(outputFormat == "json")
 		register.Reg.SetStep(register.Unpausing)
 
 		klog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
@@ -106,4 +107,5 @@ var unpauseCmd = &cobra.Command{
 func init() {
 	unpauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", constants.DefaultNamespaces, "namespaces to unpause")
 	unpauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, unpause all namespaces")
+	unpauseCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 }

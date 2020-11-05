@@ -18,17 +18,15 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
 
-	// initflag must be imported before any other minikube pkg.
-	// Fix for https://github.com/kubernetes/minikube/issues/4866
-
+	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
-	_ "k8s.io/minikube/pkg/initflag"
 
 	// Register drivers
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
@@ -60,6 +58,8 @@ var (
 func main() {
 	bridgeLogMessages()
 	defer klog.Flush()
+
+	setFlags()
 
 	s := stacklog.MustStartFromEnv("STACKLOG_PATH")
 	defer s.Stop()
@@ -119,4 +119,34 @@ func (lb machineLogBridge) Write(b []byte) (n int, err error) {
 		klog.Infof("libmachine: %s", b)
 	}
 	return len(b), nil
+}
+
+// setFlags sets the flags
+func setFlags() {
+	// parse flags beyond subcommand - get aroung go flag 'limitations':
+	// "Flag parsing stops just before the first non-flag argument" (ref: https://pkg.go.dev/flag#hdr-Command_line_flag_syntax)
+	pflag.CommandLine.ParseErrorsWhitelist.UnknownFlags = true
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+
+	// set default flag value for logtostderr and alsologtostderr but don't override user's preferences
+	if !pflag.CommandLine.Changed("logtostderr") {
+		if err := pflag.Set("logtostderr", "false"); err != nil {
+			klog.Warningf("Unable to set default flag value for logtostderr: %v", err)
+		}
+	}
+	if !pflag.CommandLine.Changed("alsologtostderr") {
+		if err := pflag.Set("alsologtostderr", "false"); err != nil {
+			klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
+		}
+	}
+
+	// make sure log_dir exists if log_file is not also set - the log_dir is mutually exclusive with the log_file option
+	// ref: https://github.com/kubernetes/klog/blob/52c62e3b70a9a46101f33ebaf0b100ec55099975/klog.go#L491
+	if pflag.Lookup("log_file") != nil && pflag.Lookup("log_file").Value.String() == "" &&
+		pflag.Lookup("log_dir") != nil && pflag.Lookup("log_dir").Value.String() != "" {
+		if err := os.MkdirAll(pflag.Lookup("log_dir").Value.String(), 0755); err != nil {
+			klog.Warningf("unable to create log directory: %v", err)
+		}
+	}
 }

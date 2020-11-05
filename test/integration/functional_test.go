@@ -328,10 +328,10 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	}
 	defer os.Remove(dstfn) // clean up
 
-	kubectlArgs := []string{"get", "pods"}
+	kubectlArgs := []string{"--context", profile, "get", "pods"}
 	rr, err := Run(t, exec.CommandContext(ctx, dstfn, kubectlArgs...))
 	if err != nil {
-		t.Fatalf("failed to run kubectl directl. args %q: %v", rr.Command(), err)
+		t.Fatalf("failed to run kubectl directly. args %q: %v", rr.Command(), err)
 	}
 
 }

@@ -49,7 +49,7 @@ spec:
       serviceAccountName: ingress-nginx
       containers:
         - name: controller
-          image: us.gcr.io/k8s-artifacts-prod/ingress-nginx/controller:v0.34.1@sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+          image: k8s.gcr.io/ingress-nginx/controller:v0.40.2@sha256:46ba23c3fbaafd9e5bd01ea85b2f921d9f2217be082580edc22e6c704a83f02f
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
@@ -141,21 +141,25 @@ webhooks:
   - name: validate.nginx.ingress.kubernetes.io
     rules:
       - apiGroups:
-          - extensions
           - networking.k8s.io
         apiVersions:
           - v1beta1
+          - v1
         operations:
           - CREATE
           - UPDATE
         resources:
           - ingresses
     failurePolicy: Fail
+    sideEffects: None
+    admissionReviewVersions:
+      - v1
+      - v1beta1
     clientConfig:
       service:
         namespace: kube-system
         name: ingress-nginx-controller-admission
-        path: /extensions/v1beta1/ingresses
+        path: /networking/v1beta1/ingresses
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -248,7 +252,7 @@ spec:
     spec:
       containers:
         - name: patch
-          image: jettech/kube-webhook-certgen:v1.2.2
+          image: docker.io/jettech/kube-webhook-certgen:v1.3.0
           imagePullPolicy:
           args:
             - patch
