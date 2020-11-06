@@ -20,7 +20,6 @@ minikube version [flags]
 ### Options
 
 ```
-  -h, --help            help for version
   -o, --output string   One of 'yaml' or 'json'.
       --short           Print just the version number.
 ```
@@ -31,6 +30,7 @@ minikube version [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file

@@ -51,7 +51,6 @@ minikube start [flags]
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.
-  -h, --help                              help for start
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
       --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.99.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
@@ -101,6 +100,7 @@ minikube start [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
