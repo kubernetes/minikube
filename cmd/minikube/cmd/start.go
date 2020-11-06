@@ -436,7 +436,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		if kcs.KeepContext {
 			out.T(style.Kubectl, "To connect to this cluster, use:  --context={{.name}}", out.V{"name": kcs.ClusterName})
 		} else {
-			out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}" by default`, out.V{"name": machineName})
+			out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}" cluster and "{{.ns}}" namespace by default`, out.V{"name": machineName, "ns": kcs.Namespace})
 		}
 	}()
 

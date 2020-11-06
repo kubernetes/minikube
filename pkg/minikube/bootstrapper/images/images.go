@@ -145,7 +145,7 @@ func storageProvisioner(mirror string) string {
 // dashboardFrontend returns the image used for the dashboard frontend
 func dashboardFrontend(repo string) string {
 	if repo == "" {
-		repo = "kubernetesui"
+		repo = "docker.io/kubernetesui"
 	}
 	// See 'kubernetes-dashboard' in deploy/addons/dashboard/dashboard-dp.yaml
 	return path.Join(repo, "dashboard:v2.0.3")
@@ -154,7 +154,7 @@ func dashboardFrontend(repo string) string {
 // dashboardMetrics returns the image used for the dashboard metrics scraper
 func dashboardMetrics(repo string) string {
 	if repo == "" {
-		repo = "kubernetesui"
+		repo = "docker.io/kubernetesui"
 	}
 	// See 'dashboard-metrics-scraper' in deploy/addons/dashboard/dashboard-dp.yaml
 	return path.Join(repo, "metrics-scraper:v1.0.4")
