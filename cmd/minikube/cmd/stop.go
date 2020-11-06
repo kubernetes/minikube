@@ -42,9 +42,9 @@ import (
 )
 
 var (
-	stopAll       bool
-	keepActive    bool
-	scheduledStop string
+	stopAll               bool
+	keepActive            bool
+	scheduledStopDuration time.Duration
 )
 
 // stopCmd represents the stop command
@@ -58,7 +58,7 @@ var stopCmd = &cobra.Command{
 func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
-	stopCmd.Flags().StringVar(&scheduledStop, "schedule", "", "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
+	stopCmd.Flags().DurationVar(&scheduledStopDuration, "schedule", 0*time.Second, "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
 	stopCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
@@ -87,19 +87,15 @@ func runStop(cmd *cobra.Command, args []string) {
 		profilesToStop = append(profilesToStop, cname)
 	}
 
-	if scheduledStop != "" {
+	if scheduledStopDuration != 0 {
 		if runtime.GOOS == "windows" {
 			exit.Message(reason.Usage, "the --schedule flag is currently not supported on windows")
 		}
-		duration, err := time.ParseDuration(scheduledStop)
-		if err != nil {
-			exit.Message(reason.Usage, "provided value {{.schedule}} to --schedule is not a valid Golang time.Duration", out.V{"schedule": scheduledStop})
-		}
-		if err := schedule.Daemonize(profilesToStop, duration); err != nil {
+		if err := schedule.Daemonize(profilesToStop, scheduledStopDuration); err != nil {
 			exit.Message(reason.DaemonizeError, "unable to daemonize: {{.err}}", out.V{"err": err.Error()})
 		}
-		klog.Infof("sleeping %s before completing stop...", duration.String())
-		time.Sleep(duration)
+		klog.Infof("sleeping %s before completing stop...", scheduledStopDuration.String())
+		time.Sleep(scheduledStopDuration)
 	}
 
 	stoppedNodes := 0
