@@ -127,6 +127,8 @@ func setFlags() {
 	// "Flag parsing stops just before the first non-flag argument" (ref: https://pkg.go.dev/flag#hdr-Command_line_flag_syntax)
 	pflag.CommandLine.ParseErrorsWhitelist.UnknownFlags = true
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	// avoid 'pflag: help requested' error, as help will be defined later by cobra cmd.Execute()
+	pflag.BoolP("help", "h", false, "")
 	pflag.Parse()
 
 	// set default flag value for logtostderr and alsologtostderr but don't override user's preferences
