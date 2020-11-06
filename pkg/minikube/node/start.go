@@ -318,6 +318,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
+		Namespace:            cc.KubernetesConfig.Namespace,
 		ClusterServerAddress: addr,
 		ClientCertificate:    localpath.ClientCert(cc.Name),
 		ClientKey:            localpath.ClientKey(cc.Name),

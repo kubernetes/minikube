@@ -72,7 +72,7 @@ func Partial(name string, miniHome ...string) (libmachine.API, *config.ClusterCo
 	cc, err := config.Load(name, miniHome...)
 	if err != nil {
 		if config.IsNotExist(err) {
-			out.T(style.Shrug, `There is no local cluster named "{{.cluster}}"`, out.V{"cluster": name})
+			out.T(style.Shrug, `Profile "{{.cluster}}" not found. Run "minikube profile list" to view all profiles.`, out.V{"cluster": name})
 			exitTip("start", name, reason.ExGuestNotFound)
 		}
 		exit.Error(reason.HostConfigLoad, "Error getting cluster config", err)
@@ -174,6 +174,6 @@ func ExampleCmd(cname string, action string) string {
 // exitTip returns an action tip and exits
 func exitTip(action string, profile string, code int) {
 	command := ExampleCmd(profile, action)
-	out.T(style.Workaround, `To fix this, run: "{{.command}}"`, out.V{"command": command})
+	out.T(style.Workaround, `To start a cluster, run: "{{.command}}"`, out.V{"command": command})
 	os.Exit(code)
 }

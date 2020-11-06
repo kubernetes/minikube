@@ -68,6 +68,10 @@ const (
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
+	// PodmanContainerHostEnv is used for podman settings
+	PodmanContainerHostEnv = "CONTAINER_HOST"
+	// PodmanContainerSSHKeyEnv is used for podman settings
+	PodmanContainerSSHKeyEnv = "CONTAINER_SSHKEY"
 	// MinikubeActivePodmanEnv holds the podman service that the user's shell is pointing at
 	// value would be profile or empty if pointing to the user's host.
 	MinikubeActivePodmanEnv = "MINIKUBE_ACTIVE_PODMAN"
