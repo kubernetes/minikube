@@ -21,7 +21,6 @@ minikube logs [flags]
 
 ```
   -f, --follow        Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
-  -h, --help          help for logs
   -n, --length int    Number of lines back to go within the log (default 60)
       --node string   The node to get logs from. Defaults to the primary control plane.
       --problems      Show only log entries which point to known problems
@@ -33,6 +32,7 @@ minikube logs [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
