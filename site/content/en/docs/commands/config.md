@@ -47,18 +47,13 @@ Configurable fields:
 minikube config SUBCOMMAND [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for config
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -91,7 +86,6 @@ minikube config defaults PROPERTY_NAME [flags]
 ### Options
 
 ```
-  -h, --help            help for defaults
       --output string   Output format. Accepted values: [json]
 ```
 
@@ -101,6 +95,7 @@ minikube config defaults PROPERTY_NAME [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -127,18 +122,13 @@ Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwr
 minikube config get PROPERTY_NAME [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for get
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -166,18 +156,13 @@ Simply type config help [path to command] for full details.
 minikube config help [command] [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for help
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -205,18 +190,13 @@ Sets the PROPERTY_NAME config value to PROPERTY_VALUE
 minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for set
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -243,18 +223,13 @@ unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags
 minikube config unset PROPERTY_NAME [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for unset
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -286,7 +261,6 @@ minikube config view [flags]
 ```
       --format string   Go template format string for the config view output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
                         For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#ConfigViewTemplate (default "- {{.ConfigKey}}: {{.ConfigValue}}\n")
-  -h, --help            help for view
 ```
 
 ### Options inherited from parent commands
@@ -295,6 +269,7 @@ minikube config view [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
