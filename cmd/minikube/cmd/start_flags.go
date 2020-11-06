@@ -292,7 +292,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 
 		if !driver.IsKIC(drvName) && viper.GetString(containerNetwork) != "" {
-			exit.Advice(reason.Usage, "--network flag is only valid with the docker driver", "remove the --network flag from `minikube start`")
+			out.WarningT("--network flag is only valid with the docker driver, it will be ignored")
 		}
 
 		cc = config.ClusterConfig{
