@@ -16,29 +16,20 @@
 
 set -eux -o pipefail
 
-function install_docker() {
-  sudo apt-get -y update
-  sudo apt-get -y install apt-transport-https ca-certificates curl gnupg-agent software-properties-common  curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-  sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian `lsb_release -cs` stable"
-  sudo apt-get -y update
-  sudo apt-get -y install docker-ce docker-ce-cli containerd.io
-  sudo usermod -aG docker jenkins
-}
-
-function install_kubectl() {
-  curl -LO "https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl"
-  chmod +x ./kubectl
-  sudo mv ./kubectl /usr/local/bin/kubectl
-}
-
-echo "Checking docker"
-if ! docker version &>/dev/null; then
-  echo "No docker installation found, installing docker."
-  install_docker
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  echo "detected darwin, exiting"
+  return
 fi
 
-echo "Checking kubectl"
-if ! kubectl version &>/dev/null; then
-  echo "No kubectl installation found, installing kubectl"
-  install_kubectl
-fi
+echo "Installing latest docker"
+sudo apt-get -y update
+sudo apt-get -y install apt-transport-https ca-certificates curl gnupg-agent software-properties-common  
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian `lsb_release -cs` stable"
+sudo apt-get -y update
+sudo apt-get -y install docker-ce docker-ce-cli containerd.io
+sudo usermod -aG docker jenkins
+
+echo "Installing latest kubectl"
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl"
+sudo install ./kubectl /usr/local/bin/kubectl
