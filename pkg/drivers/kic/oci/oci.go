@@ -524,16 +524,15 @@ func PointToHostDockerDaemon() error {
 	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
 	if p != "" {
 		klog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
-	}
-
-	for i := range constants.DockerDaemonEnvs {
-		e := constants.DockerDaemonEnvs[i]
-		err := os.Setenv(e, "")
-		if err != nil {
-			return errors.Wrapf(err, "resetting %s env", e)
+		for i := range constants.DockerDaemonEnvs {
+			e := constants.DockerDaemonEnvs[i]
+			err := os.Setenv(e, "")
+			if err != nil {
+				return errors.Wrapf(err, "resetting %s env", e)
+			}
 		}
-
 	}
+
 	return nil
 }
 
