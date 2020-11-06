@@ -117,6 +117,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	}
 
 	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+	register.Reg.SetStep(register.PullingBaseImage)
 	out.T(style.Pulling, "Pulling base image ...")
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
