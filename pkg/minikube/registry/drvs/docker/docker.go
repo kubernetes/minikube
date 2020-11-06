@@ -96,6 +96,7 @@ func status() registry.State {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
+	cmd.Env = os.Environ()
 	o, err := cmd.Output()
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
