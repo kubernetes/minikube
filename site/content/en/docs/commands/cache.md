@@ -13,18 +13,13 @@ Add, delete, or push a local image into minikube
 
 Add, delete, or push a local image into minikube
 
-### Options
-
-```
-  -h, --help   help for cache
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -51,18 +46,13 @@ Add an image to local cache.
 minikube cache add [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for add
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -89,18 +79,13 @@ Delete an image from the local cache.
 minikube cache delete [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for delete
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -128,18 +113,13 @@ Simply type cache help [path to command] for full details.
 minikube cache help [command] [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for help
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -171,7 +151,6 @@ minikube cache list [flags]
 ```
       --format string   Go template format string for the cache list output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
                         For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#CacheListTemplate (default "{{.CacheImage}}\n")
-  -h, --help            help for list
 ```
 
 ### Options inherited from parent commands
@@ -180,6 +159,7 @@ minikube cache list [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
@@ -206,18 +186,13 @@ reloads images previously added using the 'cache add' subcommand
 minikube cache reload [flags]
 ```
 
-### Options
-
-```
-  -h, --help   help for reload
-```
-
 ### Options inherited from parent commands
 
 ```
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --log_file string                  If non-empty, use this log file
