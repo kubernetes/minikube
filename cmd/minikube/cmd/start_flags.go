@@ -107,12 +107,16 @@ const (
 	deleteOnFailure         = "delete-on-failure"
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
-	startOutput             = "output"
 	ports                   = "ports"
+	startNamespace          = "namespace"
 	genericIPAddress        = "generic-ip-address"
 	genericSSHUser          = "generic-ssh-user"
 	genericSSHKey           = "generic-ssh-key"
 	genericSSHPort          = "generic-ssh-port"
+)
+
+var (
+	outputFormat string
 )
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -152,12 +156,13 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
-	startCmd.Flags().StringP(startOutput, "o", "text", "Format to print stdout in. Options include: [text,json]")
+	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
 func initKubernetesFlags() {
 	startCmd.Flags().String(kubernetesVersion, "", fmt.Sprintf("The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for %s, 'latest' for %s). Defaults to 'stable'.", constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion))
+	startCmd.Flags().String(startNamespace, "default", "The named space to activate after start")
 	startCmd.Flags().Var(&config.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
@@ -339,6 +344,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),
+				Namespace:              viper.GetString(startNamespace),
 				APIServerName:          viper.GetString(apiServerName),
 				APIServerNames:         apiServerNames,
 				APIServerIPs:           apiServerIPs,
@@ -558,6 +564,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
+	}
+
+	if cmd.Flags().Changed(startNamespace) {
+		cc.KubernetesConfig.Namespace = viper.GetString(startNamespace)
 	}
 
 	if cmd.Flags().Changed(apiServerName) {

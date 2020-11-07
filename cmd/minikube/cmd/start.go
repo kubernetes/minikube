@@ -128,7 +128,7 @@ func platform() string {
 func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 
-	out.SetJSON(viper.GetString(startOutput) == "json")
+	out.SetJSON(outputFormat == "json")
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
@@ -436,7 +436,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		if kcs.KeepContext {
 			out.T(style.Kubectl, "To connect to this cluster, use:  --context={{.name}}", out.V{"name": kcs.ClusterName})
 		} else {
-			out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}" by default`, out.V{"name": machineName})
+			out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}" cluster and "{{.ns}}" namespace by default`, out.V{"name": machineName, "ns": kcs.Namespace})
 		}
 	}()
 
@@ -1074,7 +1074,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
-	if s := viper.GetString(startOutput); s != "text" && s != "json" {
+	if outputFormat != "text" && outputFormat != "json" {
 		exit.Message(reason.Usage, "Sorry, please set the --output flag to one of the following valid options: [text,json]")
 	}
 

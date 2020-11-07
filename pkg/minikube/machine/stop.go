@@ -84,6 +84,7 @@ func trySSHPowerOff(h *host.Host) error {
 		return nil
 	}
 
+	register.Reg.SetStep(register.PowerOff)
 	out.T(style.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
 	// differnet for kic because RunSSHCommand is not implemented by kic
 	if driver.IsKIC(h.DriverName) {
