@@ -249,7 +249,9 @@ var dockerEnvCmd = &cobra.Command{
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
 
-			err = exec.Command(path, d.GetSSHKeyPath()).Run()
+			cmd := exec.Command(path, d.GetSSHKeyPath())
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
 			if err != nil {
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
