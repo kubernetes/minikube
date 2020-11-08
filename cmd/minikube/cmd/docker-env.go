@@ -61,6 +61,7 @@ type DockerShellConfig struct {
 var (
 	noProxy              bool
 	sshHost              bool
+	sshAdd               bool
 	dockerUnset          bool
 	defaultNoProxyGetter NoProxyGetter
 )
@@ -239,6 +240,20 @@ var dockerEnvCmd = &cobra.Command{
 		if err := dockerSetScript(ec, os.Stdout); err != nil {
 			exit.Error(reason.InternalDockerScript, "Error generating set output", err)
 		}
+
+		if sshAdd {
+			klog.Infof("Adding %v", d.GetSSHKeyPath())
+
+			path, err := exec.LookPath("ssh-add")
+			if err != nil {
+				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
+			}
+
+			err = exec.Command(path, d.GetSSHKeyPath()).Run()
+			if err != nil {
+				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
+			}
+		}
 	},
 }
 
@@ -349,6 +364,7 @@ func init() {
 	defaultNoProxyGetter = &EnvNoProxyGetter{}
 	dockerEnvCmd.Flags().BoolVar(&noProxy, "no-proxy", false, "Add machine IP to NO_PROXY environment variable")
 	dockerEnvCmd.Flags().BoolVar(&sshHost, "ssh-host", false, "Use SSH connection instead of HTTPS (port 2376)")
+	dockerEnvCmd.Flags().BoolVar(&sshAdd, "ssh-add", false, "Add SSH identity key to SSH authentication agent")
 	dockerEnvCmd.Flags().StringVar(&shell.ForceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
 	dockerEnvCmd.Flags().BoolVarP(&dockerUnset, "unset", "u", false, "Unset variables instead of setting them")
 }
