@@ -31,7 +31,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-func killExistingScheduledStops(profiles []string) error {
+// KillExisting kills existing scheduled stops
+func KillExisting(profiles []string) error {
 	for _, profile := range profiles {
 		file := localpath.PID(profile)
 		f, err := ioutil.ReadFile(file)

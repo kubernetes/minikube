@@ -23,7 +23,8 @@ import (
 	"time"
 )
 
-func killExistingScheduledStops(profiles []string) error {
+// KillExisting kills existing scheduled stops
+func KillExisting(profiles []string) error {
 	return fmt.Errorf("not yet implemented for windows")
 }
 
