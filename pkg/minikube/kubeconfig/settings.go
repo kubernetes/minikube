@@ -33,6 +33,9 @@ type Settings struct {
 	// The name of the cluster for this context
 	ClusterName string
 
+	// The name of the namespace for this context
+	Namespace string
+
 	// ClusterServerAddress is the address of the Kubernetes cluster
 	ClusterServerAddress string
 
@@ -104,6 +107,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	contextName := cfg.ClusterName
 	context := api.NewContext()
 	context.Cluster = cfg.ClusterName
+	context.Namespace = cfg.Namespace
 	context.AuthInfo = userName
 	apiCfg.Contexts[contextName] = context
 

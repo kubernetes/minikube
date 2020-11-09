@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Download Dependencies
         run: go mod download
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install libvirt
         run: |
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install libvirt
         run: |
@@ -112,7 +112,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -143,7 +143,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -155,8 +155,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: functional_docker_ubuntu
@@ -195,7 +197,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -239,7 +241,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -251,8 +253,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: functional_virtualbox_macos
@@ -338,7 +342,7 @@ jobs:
           echo "------------------------"
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -371,7 +375,7 @@ jobs:
           echo "----"
           echo $T_ELAPSED
           echo "----"
-          echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
       - name: Generate HTML Report
         continue-on-error: true
         shell: powershell
@@ -383,8 +387,8 @@ jobs:
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
-          echo "::set-env name=STAT::${STAT}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
@@ -474,7 +478,7 @@ jobs:
           Get-WmiObject -class Win32_ComputerSystem
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -508,7 +512,7 @@ jobs:
           echo "----"
           echo $T_ELAPSED
           echo "----"
-          echo "::set-env name=TIME_ELAPSED::$T_ELAPSED"
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
       - name: Generate HTML Report
         continue-on-error: true
         shell: powershell
@@ -520,8 +524,8 @@ jobs:
           $FailNum=$(echo $STAT | jq '.NumberOfFail')
           $TestsNum=$(echo $STAT | jq '.NumberOfTests')
           $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}"
-          echo "::set-env name=STAT::${STAT}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo ${GOPOGH_RESULT}
           $numFail=(echo $STAT | jq '.NumberOfFail')
           $failedTests=( echo $STAT | jq '.FailedTests')
@@ -580,7 +584,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -609,7 +613,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -621,8 +625,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: none_ubuntu18_04
@@ -675,7 +681,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -698,13 +704,13 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions|TestSkaffold)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestAddons|TestCertOptions|TestSkaffold)" -test.timeout=20m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -716,8 +722,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: addons_certs_docker_ubuntu
@@ -755,7 +763,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -800,7 +808,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -812,8 +820,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: addons_certs_virtualbox_macos
@@ -865,7 +875,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -896,7 +906,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -908,8 +918,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: multinode_docker_ubuntu
@@ -947,7 +959,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -986,7 +998,7 @@ jobs:
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -998,8 +1010,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: multinode_virtualbox_macos
@@ -1019,11 +1033,12 @@ jobs:
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 7 ];then echo "*** Failed to pass at least 7 ! ***";exit 2;fi
-  pause_preload_dockerflags_docker_ubuntu:
+  preload_dockerflags_docker_ubuntu:
+    # TestPause was removed due to https://github.com/kubernetes/minikube/issues/9568
     runs-on: ubuntu-18.04
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "pause_preload_dockerflags_docker_ubuntu"
+      JOB_NAME: "preload_dockerflags_docker_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     needs: [build_minikube]
@@ -1051,7 +1066,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -1074,13 +1089,13 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestPause|TestPreload|TestDockerFlags)" -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker  -test.run "(TestDockerFlags|TestPreload)" -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -1092,13 +1107,15 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
-          name: pause_preload_dockerflags_docker_ubuntu
+          name: preload_dockerflags_docker_ubuntu
           path: minikube_binaries/report
-      - name: The End Result - pause_preload_dockerflags_docker_ubuntu
+      - name: The End Result - preload_dockerflags_docker_ubuntu
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
@@ -1112,7 +1129,7 @@ jobs:
           echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 9 ];then echo "*** Failed to pass at least 9 ! ***";exit 2;fi
+          if [ "$numPass" -lt 2 ];then echo "*** Failed to pass at least 2 ! ***";exit 2;fi
   pause_preload_dockerflags_virtualbox_macos:
     runs-on: macos-10.15
     env:
@@ -1131,7 +1148,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.14.6'
+          go-version: '1.15.2'
           stable: true
       - name: Install gopogh
 
@@ -1164,13 +1181,13 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "(TestPause|TestPreload|TestDockerFlags)" -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "(TestPause|TestPreload|TestDockerFlags)" -test.timeout=20m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
-          echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -1182,8 +1199,10 @@ jobs:
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
-          echo ::set-env name=STAT::${STAT}
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@v1
         with:
           name: pause_preload_dockerflags_virtualbox_macos
@@ -1218,7 +1237,7 @@ jobs:
         addons_certs_virtualbox_macos,
         multinode_docker_ubuntu,
         multinode_virtualbox_macos,
-        pause_preload_dockerflags_docker_ubuntu,
+        preload_dockerflags_docker_ubuntu,
         pause_preload_dockerflags_virtualbox_macos,
       ]
     runs-on: ubuntu-18.04
@@ -1240,7 +1259,7 @@ jobs:
           cp -r ./addons_certs_virtualbox_macos ./all_reports/
           cp -r ./multinode_docker_ubuntu ./all_reports/
           cp -r ./multinode_virtualbox_macos ./all_reports/
-          cp -r ./pause_preload_dockerflags_docker_ubuntu ./all_reports/
+          cp -r ./preload_dockerflags_docker_ubuntu ./all_reports/
           cp -r ./pause_preload_dockerflags_virtualbox_macos ./all_reports/
       - uses: actions/upload-artifact@v1
         with:
