@@ -141,6 +141,7 @@ type VersionedExtraOption struct {
 }
 
 // ScheduledStopConfig contains information around scheduled stop
+// not yet used, will be used to show status of scheduled stop
 type ScheduledStopConfig struct {
 	InitiationTime int64
 	Duration       time.Duration

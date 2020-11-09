@@ -35,6 +35,9 @@ import (
 )
 
 func TestScheduledStop(t *testing.T) {
+	if NoneDriver() {
+		t.Skip("--schedule does not apply to none driver ")
+	}
 	profile := UniqueProfileName("scheduled-stop")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
 	defer CleanupWithLogs(t, profile, cancel)
