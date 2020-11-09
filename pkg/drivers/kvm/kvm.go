@@ -110,6 +110,8 @@ func (d *Driver) PreCommandCheck() error {
 	if err != nil {
 		return errors.Wrap(err, "error connecting to libvirt socket. Have you added yourself to the libvirtd group?")
 	}
+	defer conn.Close()
+
 	libVersion, err := conn.GetLibVersion()
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt version")
@@ -481,4 +483,15 @@ func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) erro
 	}
 
 	return dom.Undefine()
+}
+
+// lvErr will return libvirt Error struct containing specific libvirt error code, domain, message and level
+func lvErr(err error) libvirt.Error {
+	if err != nil {
+		if lverr, ok := err.(libvirt.Error); ok {
+			return lverr
+		}
+		return libvirt.Error{Code: libvirt.ERR_INTERNAL_ERROR, Message: "internal error"}
+	}
+	return libvirt.Error{Code: libvirt.ERR_OK, Message: ""}
 }
