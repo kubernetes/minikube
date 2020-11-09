@@ -31,6 +31,7 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Replace with hardcoded range with CIDR
@@ -47,9 +48,6 @@ const networkTmpl = `
 </network>
 `
 
-// waiting time for libvirt ops to settle
-const nap = 100 * time.Microsecond
-
 // setupNetwork ensures that the network with `name` is started (active)
 // and has the autostart feature set.
 func setupNetwork(conn *libvirt.Connect, name string) error {
@@ -57,6 +55,7 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 	if err != nil {
 		return errors.Wrapf(err, "checking network %s", name)
 	}
+	defer func() { _ = n.Free() }()
 
 	// always ensure autostart is set on the network
 	autostart, err := n.GetAutostart()
@@ -79,7 +78,6 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 			return errors.Wrapf(err, "starting network %s", name)
 		}
 	}
-
 	return nil
 }
 
@@ -110,17 +108,14 @@ func (d *Driver) ensureNetwork() error {
 			return errors.Wrapf(err, "deleting inoperable network %s", d.PrivateNetwork)
 		}
 		log.Debugf("Successfully deleted %s network", d.PrivateNetwork)
-		time.Sleep(nap)
 		if err := d.createNetwork(); err != nil {
 			return errors.Wrapf(err, "recreating inoperable network %s", d.PrivateNetwork)
 		}
 		log.Debugf("Successfully recreated %s network", d.PrivateNetwork)
-		time.Sleep(nap)
 		if err := setupNetwork(conn, d.PrivateNetwork); err != nil {
 			return err
 		}
 		log.Debugf("Successfully activated %s network", d.PrivateNetwork)
-		time.Sleep(nap)
 	}
 
 	return nil
@@ -140,13 +135,16 @@ func (d *Driver) createNetwork() error {
 
 	// network: default
 	// It is assumed that the libvirt/kvm installation has already created this network
-	if _, err := conn.LookupNetworkByName(d.Network); err != nil {
+	netd, err := conn.LookupNetworkByName(d.Network)
+	if err != nil {
 		return errors.Wrapf(err, "network %s doesn't exist", d.Network)
 	}
+	defer func() { _ = netd.Free() }()
 
 	// network: private
 	// Only create the private network if it does not already exist
-	if _, err := conn.LookupNetworkByName(d.PrivateNetwork); err != nil {
+	netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
+	if err != nil {
 		// create the XML for the private network from our networkTmpl
 		tmpl := template.Must(template.New("network").Parse(networkTmpl))
 		var networkXML bytes.Buffer
@@ -161,10 +159,26 @@ func (d *Driver) createNetwork() error {
 		}
 
 		// and finally create it
-		if err := network.Create(); err != nil {
+		log.Debugf("Trying to create network %s...", d.PrivateNetwork)
+		create := func() error {
+			if err := network.Create(); err != nil {
+				return err
+			}
+			active, err := network.IsActive()
+			if err == nil && active {
+				return nil
+			}
+			return errors.Errorf("retrying %v", err)
+		}
+		if err := retry.Local(create, 10*time.Second); err != nil {
 			return errors.Wrapf(err, "creating network %s", d.PrivateNetwork)
 		}
 	}
+	defer func() {
+		if netp != nil {
+			_ = netp.Free()
+		}
+	}()
 
 	return nil
 }
@@ -183,13 +197,13 @@ func (d *Driver) deleteNetwork() error {
 	log.Debugf("Checking if network %s exists...", d.PrivateNetwork)
 	network, err := conn.LookupNetworkByName(d.PrivateNetwork)
 	if err != nil {
-		if libvirtErr, ok := err.(libvirt.Error); ok && libvirtErr.Code == libvirt.ERR_NO_NETWORK {
+		if lvErr(err).Code == libvirt.ERR_NO_NETWORK {
 			log.Warnf("Network %s does not exist. Skipping deletion", d.PrivateNetwork)
 			return nil
 		}
-
 		return errors.Wrapf(err, "failed looking for network %s", d.PrivateNetwork)
 	}
+	defer func() { _ = network.Free() }()
 	log.Debugf("Network %s exists", d.PrivateNetwork)
 
 	err = d.checkDomains(conn)
@@ -198,25 +212,59 @@ func (d *Driver) deleteNetwork() error {
 	}
 
 	// when we reach this point, it means it is safe to delete the network
-	log.Debugf("Trying to destroy network %s...", d.PrivateNetwork)
+
 	// cannot destroy an inactive network - try to activate it first
-	active, err := network.IsActive()
-	if err == nil && !active {
-		log.Debugf("Trying to reactivate network %s first...", d.PrivateNetwork)
-		_ = network.Create()
-		time.Sleep(nap)
+	log.Debugf("Trying to reactivate network %s first (if needed)...", d.PrivateNetwork)
+	activate := func() error {
+		active, err := network.IsActive()
+		if err == nil && active {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		// inactive, try to activate
+		if err := network.Create(); err != nil {
+			return err
+		}
+		return errors.Errorf("needs confirmation") // confirm in the next cycle
 	}
-	err = network.Destroy()
-	if err != nil {
-		return errors.Wrap(err, "network destroy")
+	if err := retry.Local(activate, 10*time.Second); err != nil {
+		log.Debugf("Reactivating network %s failed, will continue anyway...", d.PrivateNetwork)
 	}
-	time.Sleep(nap)
+
+	log.Debugf("Trying to destroy network %s...", d.PrivateNetwork)
+	destroy := func() error {
+		if err := network.Destroy(); err != nil {
+			return err
+		}
+		active, err := network.IsActive()
+		if err == nil && !active {
+			return nil
+		}
+		return errors.Errorf("retrying %v", err)
+	}
+	if err := retry.Local(destroy, 10*time.Second); err != nil {
+		return errors.Wrap(err, "destroying network")
+	}
+
 	log.Debugf("Trying to undefine network %s...", d.PrivateNetwork)
-	err = network.Undefine()
-	if err != nil {
-		return errors.Wrap(err, "network undefine")
+	undefine := func() error {
+		if err := network.Undefine(); err != nil {
+			return err
+		}
+		netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
+		if netp != nil {
+			_ = netp.Free()
+		}
+		if lvErr(err).Code == libvirt.ERR_NO_NETWORK {
+			return nil
+		}
+		return errors.Errorf("retrying %v", err)
 	}
-	time.Sleep(nap)
+	if err := retry.Local(undefine, 10*time.Second); err != nil {
+		return errors.Wrap(err, "undefining network")
+	}
 
 	return nil
 }
@@ -301,7 +349,6 @@ func (d *Driver) lookupIP() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "getting connection and domain")
 	}
-
 	defer conn.Close()
 
 	libVersion, err := conn.GetLibVersion()
@@ -323,6 +370,7 @@ func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "looking up network by name")
 	}
+	defer func() { _ = network.Free() }()
 
 	bridge, err := network.GetBridgeName()
 	if err != nil {
