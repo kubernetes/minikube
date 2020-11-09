@@ -33,17 +33,19 @@ func Daemonize(profiles []string, duration time.Duration) error {
 		InitiationTime: time.Now().Unix(),
 		Duration:       duration,
 	}
+	var daemonizeProfiles []string
 	for _, p := range profiles {
 		_, cc := mustload.Partial(p)
 		if driver.BareMetal(cc.Driver) {
 			out.WarningT("scheduled stop is not supported on the none driver, skipping scheduling")
 			continue
 		}
+		daemonizeProfiles = append(daemonizeProfiles, p)
 		cc.ScheduledStop = scheduledStop
 		if err := config.SaveProfile(p, cc); err != nil {
 			return errors.Wrap(err, "saving profile")
 		}
 	}
 
-	return daemonize(profiles, duration)
+	return daemonize(daemonizeProfiles, duration)
 }
