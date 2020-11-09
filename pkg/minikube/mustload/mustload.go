@@ -98,6 +98,7 @@ func Running(name string) ClusterController {
 
 	if hs == state.None.String() {
 		out.T(style.Shrug, `The control plane node "{{.name}}" does not exist.`, out.V{"name": cp.Name})
+		out.T(style.Shrug, `Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode.`)
 		exitTip("start", name, reason.ExGuestNotFound)
 	}
 
