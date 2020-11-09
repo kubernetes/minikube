@@ -26,7 +26,7 @@ import (
 // Profile represents a minikube profile
 type Profile struct {
 	Name   string
-	Status string // running, stopped
+	Status string // running, stopped, paused, unknown
 	Config *ClusterConfig
 }
 
@@ -78,6 +78,7 @@ type ClusterConfig struct {
 type KubernetesConfig struct {
 	KubernetesVersion   string
 	ClusterName         string
+	Namespace           string
 	APIServerName       string
 	APIServerNames      []string
 	APIServerIPs        []net.IP
