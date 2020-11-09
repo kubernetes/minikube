@@ -63,7 +63,9 @@ export MINIKUBE_ACTIVE_PODMAN="bash"
 # To point your shell to minikube's podman service, run:
 # eval $(minikube -p bash podman-env)
 `,
-			`unset CONTAINER_HOST CONTAINER_SSHKEY MINIKUBE_ACTIVE_PODMAN
+			`unset CONTAINER_HOST;
+unset CONTAINER_SSHKEY;
+unset MINIKUBE_ACTIVE_PODMAN;
 `,
 		},
 	}
