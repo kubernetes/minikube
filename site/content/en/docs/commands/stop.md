@@ -23,7 +23,6 @@ minikube stop [flags]
       --all                   Set flag to stop all profiles (clusters)
       --keep-context-active   keep the kube-context active after cluster is stopped. Defaults to false.
   -o, --output string         Format to print stdout in. Options include: [text,json] (default "text")
-      --schedule duration     Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)
 ```
 
 ### Options inherited from parent commands
