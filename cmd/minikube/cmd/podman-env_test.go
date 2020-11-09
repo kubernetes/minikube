@@ -49,7 +49,8 @@ export MINIKUBE_ACTIVE_PODMAN="bash"
 # To point your shell to minikube's podman service, run:
 # eval $(minikube -p bash podman-env)
 `,
-			`unset PODMAN_VARLINK_BRIDGE MINIKUBE_ACTIVE_PODMAN
+			`unset PODMAN_VARLINK_BRIDGE;
+unset MINIKUBE_ACTIVE_PODMAN;
 `,
 		},
 	}
