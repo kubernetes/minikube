@@ -240,14 +240,6 @@ func (d *Driver) Restart() error {
 
 // Start a host
 func (d *Driver) Start() (err error) {
-	// if somebody/something deleted the network in the meantime,
-	// we might need to recreate it. It's (nearly) a noop if the network exists.
-	log.Info("Creating network...")
-	err = d.createNetwork()
-	if err != nil {
-		return errors.Wrap(err, "creating network")
-	}
-
 	// this call ensures that all networks are active
 	log.Info("Ensuring networks are active...")
 	err = d.ensureNetwork()

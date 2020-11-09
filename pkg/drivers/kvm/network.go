@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/docker/machine/libmachine/log"
 	libvirt "github.com/libvirt/libvirt-go"
@@ -45,6 +46,9 @@ const networkTmpl = `
   </ip>
 </network>
 `
+
+// waiting time for libvirt ops to settle
+const nap = 100 * time.Microsecond
 
 // setupNetwork ensures that the network with `name` is started (active)
 // and has the autostart feature set.
@@ -99,8 +103,24 @@ func (d *Driver) ensureNetwork() error {
 
 	// Start the private network
 	log.Infof("Ensuring network %s is active", d.PrivateNetwork)
+	// retry once to recreate the network, but only if is not used by another minikube instance
 	if err := setupNetwork(conn, d.PrivateNetwork); err != nil {
-		return err
+		log.Debugf("Network %s is inoperable, will try to recreate it: %v", d.PrivateNetwork, err)
+		if err := d.deleteNetwork(); err != nil {
+			return errors.Wrapf(err, "deleting inoperable network %s", d.PrivateNetwork)
+		}
+		log.Debugf("Successfully deleted %s network", d.PrivateNetwork)
+		time.Sleep(nap)
+		if err := d.createNetwork(); err != nil {
+			return errors.Wrapf(err, "recreating inoperable network %s", d.PrivateNetwork)
+		}
+		log.Debugf("Successfully recreated %s network", d.PrivateNetwork)
+		time.Sleep(nap)
+		if err := setupNetwork(conn, d.PrivateNetwork); err != nil {
+			return err
+		}
+		log.Debugf("Successfully activated %s network", d.PrivateNetwork)
+		time.Sleep(nap)
 	}
 
 	return nil
@@ -179,15 +199,24 @@ func (d *Driver) deleteNetwork() error {
 
 	// when we reach this point, it means it is safe to delete the network
 	log.Debugf("Trying to destroy network %s...", d.PrivateNetwork)
+	// cannot destroy an inactive network - try to activate it first
+	active, err := network.IsActive()
+	if err == nil && !active {
+		log.Debugf("Trying to reactivate network %s first...", d.PrivateNetwork)
+		_ = network.Create()
+		time.Sleep(nap)
+	}
 	err = network.Destroy()
 	if err != nil {
 		return errors.Wrap(err, "network destroy")
 	}
+	time.Sleep(nap)
 	log.Debugf("Trying to undefine network %s...", d.PrivateNetwork)
 	err = network.Undefine()
 	if err != nil {
 		return errors.Wrap(err, "network undefine")
 	}
+	time.Sleep(nap)
 
 	return nil
 }
