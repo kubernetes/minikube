@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"log"
 	"runtime"
 	"time"
 
@@ -59,6 +60,7 @@ func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 	stopCmd.Flags().DurationVar(&scheduledStopDuration, "schedule", 0*time.Second, "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
+	stopCmd.Flags().MarkHidden("schedule")
 	stopCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
@@ -85,6 +87,11 @@ func runStop(cmd *cobra.Command, args []string) {
 	} else {
 		cname := ClusterFlagValue()
 		profilesToStop = append(profilesToStop, cname)
+	}
+
+	// Kill any existing scheduled stops
+	if err := schedule.KillExisting(profilesToStop); err != nil {
+		log.Printf("error killing existing scheduled stops: %v", err)
 	}
 
 	if scheduledStopDuration != 0 {

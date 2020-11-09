@@ -17,12 +17,13 @@ limitations under the License.
 package schedule
 
 import (
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // Daemonize daemonizes minikube so that scheduled stop happens as expected
@@ -32,11 +33,12 @@ func Daemonize(profiles []string, duration time.Duration) error {
 		InitiationTime: time.Now().Unix(),
 		Duration:       duration,
 	}
-	if err := killExistingScheduledStops(profiles); err != nil {
-		log.Printf("error killing existing scheduled stops: %v", err)
-	}
 	for _, p := range profiles {
 		_, cc := mustload.Partial(p)
+		if driver.BareMetal(cc.Driver) {
+			out.WarningT("scheduled stop is not supported on the none driver, skipping scheduling")
+			continue
+		}
 		cc.ScheduledStop = scheduledStop
 		if err := config.SaveProfile(p, cc); err != nil {
 			return errors.Wrap(err, "saving profile")
