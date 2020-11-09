@@ -36,6 +36,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -172,9 +173,7 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 		return img, nil
 	}
 	// reference does not exist in the local daemon
-	if err != nil {
-		klog.Infof("daemon lookup for %+v: %v", ref, err)
-	}
+	klog.Infof("daemon lookup for %+v: %v", ref, err)
 
 	platform := defaultPlatform
 	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
