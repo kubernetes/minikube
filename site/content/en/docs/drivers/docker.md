@@ -19,6 +19,10 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 ## Known Issues
 
+- The following Docker runtime security options are currently *unsupported and will not work* with the Docker driver:
+  - [userns-remap](https://docs.docker.com/engine/security/userns-remap/)
+  - [rootless](https://docs.docker.com/engine/security/rootless/)
+
 - Docker driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/_index.md" >}}) 
 
 - On macOS, containers might get hung and require a restart of Docker for Desktop. See [docker/for-mac#1835](https://github.com/docker/for-mac/issues/1835)
