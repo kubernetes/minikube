@@ -133,6 +133,9 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 
+		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
+			return nil, errors.Wrap(err, "update node")
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -167,10 +170,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 	} else {
-		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
-			return nil, errors.Wrap(err, "update node")
-		}
-
 		// Make sure to use the command runner for the control plane to generate the join token
 		cpBs, cpr, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
@@ -196,7 +195,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	klog.Infof("Will wait %s for node ...", waitTimeout)
+	klog.Infof("Will wait %s for node up to ", viper.GetDuration(waitTimeout))
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}
@@ -319,6 +318,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
+		Namespace:            cc.KubernetesConfig.Namespace,
 		ClusterServerAddress: addr,
 		ClientCertificate:    localpath.ClientCert(cc.Name),
 		ClientKey:            localpath.ClientKey(cc.Name),

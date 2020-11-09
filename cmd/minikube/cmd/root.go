@@ -17,7 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-	goflag "flag"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -71,7 +71,23 @@ func Execute() {
 	_, callingCmd := filepath.Split(os.Args[0])
 
 	if callingCmd == "kubectl" {
-		os.Args = append([]string{RootCmd.Use, callingCmd}, os.Args[1:]...)
+		// If the user is using the minikube binary as kubectl, allow them to specify the kubectl context without also specifying minikube profile
+		profile := ""
+		for i, a := range os.Args {
+			if a == "--context" {
+				profile = fmt.Sprintf("--profile=%s", os.Args[i+1])
+				break
+			} else if strings.HasPrefix(a, "--context=") {
+				context := strings.Split(a, "=")[1]
+				profile = fmt.Sprintf("--profile=%s", context)
+				break
+			}
+		}
+		if profile != "" {
+			os.Args = append([]string{RootCmd.Use, callingCmd, profile, "--"}, os.Args[1:]...)
+		} else {
+			os.Args = append([]string{RootCmd.Use, callingCmd, "--"}, os.Args[1:]...)
+		}
 	}
 	for _, c := range RootCmd.Commands() {
 		c.Short = translate.T(c.Short)
@@ -140,6 +156,18 @@ func usageTemplate() string {
 }
 
 func init() {
+	klog.InitFlags(nil)
+	// preset logtostderr and alsologtostderr only for test runs, for normal runs consider flags in main()
+	if strings.HasPrefix(filepath.Base(os.Args[0]), "e2e-") || strings.HasSuffix(os.Args[0], "test") {
+		if err := flag.Set("logtostderr", "false"); err != nil {
+			klog.Warningf("Unable to set default flag value for logtostderr: %v", err)
+		}
+		if err := flag.Set("alsologtostderr", "false"); err != nil {
+			klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
+		}
+	}
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine) // avoid `generate-docs_test.go` complaining about "Docs are not updated"
+
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 
@@ -207,15 +235,6 @@ func init() {
 	RootCmd.AddCommand(completionCmd)
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
-	klog.InitFlags(nil)
-	if err := goflag.Set("logtostderr", "false"); err != nil {
-		klog.Warningf("Unable to set default flag value for logtostderr: %v", err)
-	}
-	if err := goflag.Set("alsologtostderr", "false"); err != nil {
-		klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
-	}
-
-	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.Error(reason.InternalBindFlags, "Unable to bind flags", err)
 	}

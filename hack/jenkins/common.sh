@@ -31,7 +31,7 @@ export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.14.6" "/usr/local" || true
+sudo ./installers/check_install_golang.sh "1.15.2" "/usr/local" || true
 
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 docker volume prune -f || true
@@ -47,7 +47,7 @@ echo "test home: ${TEST_HOME}"
 echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
 echo "uptime:    $(uptime)"
-# Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
+# Setting KUBECONFIG prevents the version check from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"
