@@ -19,6 +19,7 @@ package gcpauth
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"strconv"
@@ -61,6 +62,18 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
 		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+	}
+
+	if creds.JSON == nil {
+		// credentials were found from the surrounding environment instead of from a file, we need to create a file from these creds.
+		token, err := creds.TokenSource.Token()
+		if err != nil {
+			// well that's no good, the creds aren't valid
+			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		}
+		tokenCredsBuffer := new(bytes.Buffer)
+		json.NewEncoder(tokenCredsBuffer).Encode(token)
+		creds.JSON = tokenCredsBuffer.Bytes()
 	}
 
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
