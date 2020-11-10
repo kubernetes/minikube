@@ -33,6 +33,9 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 # installing golang so we could do go get for gopogh
 sudo ./installers/check_install_golang.sh "1.15.2" "/usr/local" || true
 
+# install docker and kubectl if not present
+sudo ./installers/check_install_docker.sh
+
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 docker volume prune -f || true
 docker system df || true
