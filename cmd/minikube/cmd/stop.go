@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"log"
 	"os"
 	"runtime"
 	"time"
@@ -97,9 +96,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	// Kill any existing scheduled stops
-	if err := schedule.KillExisting(profilesToStop); err != nil {
-		log.Printf("error killing existing scheduled stops: %v", err)
-	}
+	schedule.KillExisting(profilesToStop)
 
 	if scheduledStopDuration != 0 {
 		if runtime.GOOS == "windows" {
