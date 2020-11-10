@@ -18,7 +18,7 @@ spec:
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - image: registry.hub.docker.com/library/registry:2.7.1
+      - image: {{default "registry.hub.docker.com/library" .ImageRepository}}/registry:2.7.1
         imagePullPolicy: IfNotPresent
         name: registry
         ports:
