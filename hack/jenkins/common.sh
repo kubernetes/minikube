@@ -214,6 +214,8 @@ if [[ "${kprocs}" != "" ]]; then
   sudo -E kill ${kprocs} || true
 fi
 
+sudo apt-get -y install lsof
+
 # clean up none drivers binding on 8443
   none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
   if [[ "${none_procs}" != "" ]]; then

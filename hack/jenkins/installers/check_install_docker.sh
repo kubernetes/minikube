@@ -29,7 +29,6 @@ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debi
 sudo apt-get -y update
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 sudo usermod -aG docker jenkins
-sudo newgrp docker
 
 echo "Installing latest kubectl"
 curl -LO "https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl"
