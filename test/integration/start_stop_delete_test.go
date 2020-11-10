@@ -294,7 +294,6 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	for _, img := range jv["images"] {
 		for _, i := range img.Tags {
 			// Remove container-specific prefixes for naming consistency
-			i = strings.TrimPrefix(i, "docker.io/")
 			i = strings.TrimPrefix(i, "localhost/")
 			if defaultImage(i) {
 				found[i] = true
