@@ -293,7 +293,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	found := map[string]bool{}
 	for _, img := range jv["images"] {
 		for _, i := range img.Tags {
-			i = trimImage(i)
+			i = trimImageName(i)
 			if defaultImage(i) {
 				found[i] = true
 			} else {
@@ -307,8 +307,8 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	}
 	// we need to trim the want raw, because if runtime is docker it will not report the full name with docker.io as prefix
 	want := []string{}
-	for i := range wantRaw {
-		want = append(want, trimImage(i))
+	for _, i := range wantRaw {
+		want = append(want, trimImageName(i))
 	}
 
 	gotImages := []string{}
@@ -366,7 +366,7 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 // but for 'containerd' we get full name
 // 		$ docker@minikube:~$  sudo crictl images -o json | grep dash
 //        	 "docker.io/kubernetesui/dashboard:v2.0.3"
-func trimImage(name string) string {
+func trimImageName(name string) string {
 	name = strings.TrimPrefix(name, "docker.io/")
 	name = strings.TrimPrefix(name, "localhost/")
 	return name
