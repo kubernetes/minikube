@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names stringArray       A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.14-snapshot@sha256:1e303d96e9d72371235cb28ed77f9b3ba67fb4966085202238e635f1d80181f8")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.14-snapshot2@sha256:2bd97b482faf5b6a403ac39dd5e7c6fe2006425c6663a12f94f64f5f81a7787e")
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
       --container-runtime string          The container runtime to be used (docker, cri-o, containerd). (default "docker")
