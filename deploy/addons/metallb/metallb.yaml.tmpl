@@ -212,7 +212,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
-        image: metallb/speaker:v0.8.2
+        image: {{default "metallb" .ImageRepository}}/speaker:v0.8.2
         imagePullPolicy: IfNotPresent
         name: speaker
         ports:
@@ -268,7 +268,7 @@ spec:
       - args:
         - --port=7472
         - --config=config
-        image: metallb/controller:v0.8.2
+        image: {{default "metallb" .ImageRepository}}/controller:v0.8.2
         imagePullPolicy: IfNotPresent
         name: controller
         ports:

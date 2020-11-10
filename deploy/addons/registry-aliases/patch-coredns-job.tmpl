@@ -15,7 +15,7 @@ spec:
            path: /var/lib/minikube/binaries
       containers:
        - name: core-dns-patcher
-         image:  quay.io/rhdevelopers/core-dns-patcher
+         image:  {{default "quay.io/rhdevelopers" .ImageRepository}}/core-dns-patcher
          imagePullPolicy: IfNotPresent
          # using the kubectl from the minikube instance
          volumeMounts:
