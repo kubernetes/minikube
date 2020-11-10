@@ -293,8 +293,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	found := map[string]bool{}
 	for _, img := range jv["images"] {
 		for _, i := range img.Tags {
-			// Remove container-specific prefixes for naming consistency
-			i = strings.TrimPrefix(i, "localhost/")
+			i = trimImage(i)
 			if defaultImage(i) {
 				found[i] = true
 			} else {
@@ -302,10 +301,16 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 			}
 		}
 	}
-	want, err := images.Kubeadm("", version)
+	wantRaw, err := images.Kubeadm("", version)
 	if err != nil {
 		t.Errorf("failed to get kubeadm images for %s : %v", version, err)
 	}
+	// we need to trim the want raw, because if runtime is docker it will not report the full name with docker.io as prefix
+	want := []string{}
+	for i := range wantRaw {
+		want = append(want, trimImage(i))
+	}
+
 	gotImages := []string{}
 	for k := range found {
 		gotImages = append(gotImages, k)
@@ -352,6 +357,19 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("post-unpause kubelet status = %q; want = %q", got, state.Running)
 	}
 
+}
+
+// Remove container-specific prefixes for naming consistency
+// for example in `docker` runtime we get this:
+// 		$ docker@minikube:~$ sudo crictl images -o json | grep dash
+// 	         "kubernetesui/dashboard:v2.0.3"
+// but for 'containerd' we get full name
+// 		$ docker@minikube:~$  sudo crictl images -o json | grep dash
+//        	 "docker.io/kubernetesui/dashboard:v2.0.3"
+func trimImage(name string) string {
+	name = strings.TrimPrefix(name, "docker.io/")
+	name = strings.TrimPrefix(name, "localhost/")
+	return name
 }
 
 // defaultImage returns true if this image is expected in a default minikube install
