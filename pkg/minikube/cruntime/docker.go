@@ -18,7 +18,6 @@ package cruntime
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -76,7 +75,6 @@ func (r *Docker) Style() style.Enum {
 func (r *Docker) Version() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully
 	c := exec.Command("docker", "version", "--format", "{{.Server.Version}}")
-	c.Env = os.Environ()
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return "", err
@@ -139,7 +137,6 @@ func (r *Docker) Disable() error {
 func (r *Docker) ImageExists(name string, sha string) bool {
 	// expected output looks like [SHA_ALGO:SHA]
 	c := exec.Command("docker", "image", "inspect", "--format", "{{.Id}}", name)
-	c.Env = os.Environ()
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return false
@@ -154,7 +151,6 @@ func (r *Docker) ImageExists(name string, sha string) bool {
 func (r *Docker) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
 	c := exec.Command("docker", "load", "-i", path)
-	c.Env = os.Environ()
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "loadimage docker.")
 	}
@@ -165,7 +161,6 @@ func (r *Docker) LoadImage(path string) error {
 func (r *Docker) CGroupDriver() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully
 	c := exec.Command("docker", "info", "--format", "{{.CgroupDriver}}")
-	c.Env = os.Environ()
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return "", err
@@ -199,9 +194,7 @@ func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
 	}
 
 	args = append(args, fmt.Sprintf("--filter=name=%s", nameFilter), "--format={{.ID}}")
-	cmd := exec.Command("docker", args...)
-	cmd.Env = os.Environ()
-	rr, err := r.Runner.RunCmd(cmd)
+	rr, err := r.Runner.RunCmd(exec.Command("docker", args...))
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker")
 	}
@@ -222,7 +215,6 @@ func (r *Docker) KillContainers(ids []string) error {
 	klog.Infof("Killing containers: %s", ids)
 	args := append([]string{"rm", "-f"}, ids...)
 	c := exec.Command("docker", args...)
-	c.Env = os.Environ()
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "Killing containers docker.")
 	}
@@ -237,7 +229,6 @@ func (r *Docker) StopContainers(ids []string) error {
 	klog.Infof("Stopping containers: %s", ids)
 	args := append([]string{"stop"}, ids...)
 	c := exec.Command("docker", args...)
-	c.Env = os.Environ()
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "docker")
 	}
@@ -252,7 +243,6 @@ func (r *Docker) PauseContainers(ids []string) error {
 	klog.Infof("Pausing containers: %s", ids)
 	args := append([]string{"pause"}, ids...)
 	c := exec.Command("docker", args...)
-	c.Env = os.Environ()
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "docker")
 	}
@@ -267,7 +257,6 @@ func (r *Docker) UnpauseContainers(ids []string) error {
 	klog.Infof("Unpausing containers: %s", ids)
 	args := append([]string{"unpause"}, ids...)
 	c := exec.Command("docker", args...)
-	c.Env = os.Environ()
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "docker")
 	}
@@ -380,9 +369,7 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 
 // dockerImagesPreloaded returns true if all images have been preloaded
 func dockerImagesPreloaded(runner command.Runner, images []string) bool {
-	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}")
-	cmd.Env = os.Environ()
-	rr, err := runner.RunCmd(cmd)
+	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
 	if err != nil {
 		return false
 	}
