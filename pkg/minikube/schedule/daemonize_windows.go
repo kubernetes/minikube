@@ -21,11 +21,13 @@ package schedule
 import (
 	"fmt"
 	"time"
+
+	"k8s.io/klog/v2"
 )
 
-// KillExisting kills existing scheduled stops
-func KillExisting(profiles []string) error {
-	return fmt.Errorf("not yet implemented for windows")
+// KillExisting will kill existing scheduled stops
+func KillExisting(profiles []string) {
+	klog.Errorf("not yet implemented for windows")
 }
 
 func daemonize(profiles []string, duration time.Duration) error {

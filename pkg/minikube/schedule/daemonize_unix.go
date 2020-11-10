@@ -31,30 +31,41 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// KillExisting kills existing scheduled stops
-func KillExisting(profiles []string) error {
+// KillExisting kills existing scheduled stops by looking up the PID
+// of the scheduled stop from the PID file saved for the profile and killing the process
+func KillExisting(profiles []string) {
 	for _, profile := range profiles {
-		file := localpath.PID(profile)
-		f, err := ioutil.ReadFile(file)
-		if os.IsNotExist(err) {
-			return nil
+		if err := killPIDForProfile(profile); err != nil {
+			klog.Errorf("error killng PID for profile %s: %v", profile, err)
 		}
-		defer os.Remove(file)
-		if err != nil {
-			return errors.Wrapf(err, "reading %s", file)
+	}
+}
+
+func killPIDForProfile(profile string) error {
+	file := localpath.PID(profile)
+	f, err := ioutil.ReadFile(file)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	defer func() {
+		if err := os.Remove(file); err != nil {
+			klog.Errorf("error deleting %s: %v, you may have to delete in manually", file, err)
 		}
-		pid, err := strconv.Atoi(string(f))
-		if err != nil {
-			return errors.Wrapf(err, "converting %v to int", string(f))
-		}
-		p, err := os.FindProcess(pid)
-		if err != nil {
-			return errors.Wrap(err, "finding process")
-		}
-		klog.Infof("killing process %v as it is an old scheduled stop", pid)
-		if err := p.Kill(); err != nil {
-			return errors.Wrapf(err, "killing %v", pid)
-		}
+	}()
+	if err != nil {
+		return errors.Wrapf(err, "reading %s", file)
+	}
+	pid, err := strconv.Atoi(string(f))
+	if err != nil {
+		return errors.Wrapf(err, "converting %s to int", f)
+	}
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "finding process")
+	}
+	klog.Infof("killing process %v as it is an old scheduled stop", pid)
+	if err := p.Kill(); err != nil {
+		return errors.Wrapf(err, "killing %v", pid)
 	}
 	return nil
 }
@@ -72,7 +83,7 @@ func daemonize(profiles []string, duration time.Duration) error {
 func savePIDs(pid int, profiles []string) error {
 	for _, p := range profiles {
 		file := localpath.PID(p)
-		if err := ioutil.WriteFile(file, []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
+		if err := ioutil.WriteFile(file, []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
 			return err
 		}
 	}
