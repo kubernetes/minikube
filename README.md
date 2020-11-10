@@ -1,13 +1,10 @@
 # minikube
 
-[![BuildStatus Widget]][BuildStatus Result]
+[![Actions Status](https://github.com/kubernetes/minikube/workflows/Master/badge.svg)](https://github.com/kubernetes/minikube/actions)
 [![GoReport Widget]][GoReport Status]
 [![Github All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
  
-
-[BuildStatus Result]: https://travis-ci.org/kubernetes/minikube
-[BuildStatus Widget]: https://travis-ci.org/kubernetes/minikube.svg?branch=master
 
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
 [GoReport Widget]: https://goreportcard.com/badge/github.com/kubernetes/minikube
