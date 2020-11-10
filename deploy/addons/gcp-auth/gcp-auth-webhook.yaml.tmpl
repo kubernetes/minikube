@@ -54,7 +54,7 @@ spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
         - name: create
-          image: jettech/kube-webhook-certgen:v1.3.0
+          image: {{default "jettech" .ImageRepository}}/kube-webhook-certgen:v1.3.0
           imagePullPolicy: IfNotPresent
           args:
             - create
@@ -80,7 +80,7 @@ spec:
     spec:
       containers:
         - name: gcp-auth
-          image: gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.3
+          image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/gcp-auth-webhook:v0.0.3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
@@ -113,7 +113,7 @@ spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
         - name: patch
-          image: jettech/kube-webhook-certgen:v1.3.0
+          image: {{default "jettech" .ImageRepository}}/kube-webhook-certgen:v1.3.0
           imagePullPolicy: IfNotPresent
           args:
             - patch

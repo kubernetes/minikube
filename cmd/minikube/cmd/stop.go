@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -65,8 +66,12 @@ func init() {
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
 	out.SetJSON(outputFormat == "json")
-	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Stopping)
+
+	// check if profile path exists, if no PathError log file exists for valid profile
+	if _, err := os.Stat(localpath.Profile(ClusterFlagValue())); err == nil {
+		register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	}
 
 	// new code
 	var profilesToStop []string
