@@ -79,6 +79,7 @@ type ClusterConfig struct {
 type KubernetesConfig struct {
 	KubernetesVersion   string
 	ClusterName         string
+	Namespace           string
 	APIServerName       string
 	APIServerNames      []string
 	APIServerIPs        []net.IP

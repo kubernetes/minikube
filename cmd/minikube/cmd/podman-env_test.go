@@ -41,7 +41,7 @@ func TestGeneratePodmanScripts(t *testing.T) {
 	}{
 		{
 			"bash",
-			PodmanEnvConfig{profile: "bash", driver: "kvm2", client: newFakeClient()},
+			PodmanEnvConfig{profile: "bash", driver: "kvm2", varlink: true, client: newFakeClient()},
 			nil,
 			`export PODMAN_VARLINK_BRIDGE="/usr/bin/ssh root@host -- sudo varlink -A \'podman varlink \\\$VARLINK_ADDRESS\' bridge"
 export MINIKUBE_ACTIVE_PODMAN="bash"
@@ -50,6 +50,19 @@ export MINIKUBE_ACTIVE_PODMAN="bash"
 # eval $(minikube -p bash podman-env)
 `,
 			`unset PODMAN_VARLINK_BRIDGE MINIKUBE_ACTIVE_PODMAN
+`,
+		},
+		{
+			"bash",
+			PodmanEnvConfig{profile: "bash", driver: "kvm2", client: newFakeClient(), username: "root", hostname: "host", port: 22},
+			nil,
+			`export CONTAINER_HOST="ssh://root@host:22/run/podman/podman.sock"
+export MINIKUBE_ACTIVE_PODMAN="bash"
+
+# To point your shell to minikube's podman service, run:
+# eval $(minikube -p bash podman-env)
+`,
+			`unset CONTAINER_HOST CONTAINER_SSHKEY MINIKUBE_ACTIVE_PODMAN
 `,
 		},
 	}
