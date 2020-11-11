@@ -464,7 +464,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		out.Ln("")
 		out.WarningT("{{.path}} is version {{.client_version}}, which may have incompatibilites with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
-		out.T(style.Tip, "Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'", out.V{"version": k8sVersion})
+		out.Infof("Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'", out.V{"version": k8sVersion})
 	}
 	return nil
 }

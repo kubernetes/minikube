@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -117,6 +118,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	}
 
 	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+	register.Reg.SetStep(register.PullingBaseImage)
 	out.T(style.Pulling, "Pulling base image ...")
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
