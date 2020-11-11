@@ -43,6 +43,7 @@ const (
 func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.KVM2,
+		Alias:    []string{driver.AliasKVM},
 		Config:   configure,
 		Status:   status,
 		Priority: registry.Preferred,
