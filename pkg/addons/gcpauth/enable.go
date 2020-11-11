@@ -66,7 +66,8 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	if creds.JSON == nil {
-		// If we're in a special environment, the creds file goes in a special place.
+		// Cloud Shell sends credential files to an unusual location, let's check that location
+		// For example, CLOUDSDK_CONFIG=/tmp/tmp.cflmvysoQE
 		if e := os.Getenv("CLOUDSDK_CONFIG"); e != "" {
 			credFile := path.Join(e, "application_default_credentials.json")
 			b, err := ioutil.ReadFile(credFile)
