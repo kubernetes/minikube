@@ -40,7 +40,7 @@ import (
 //
 // out.SetOutFile(os.Stdout)
 // out.String("Starting up!")
-// out.T(style.StatusChange, "Configuring things")
+// out.Step(style.StatusChange, "Configuring things")
 
 // out.SetErrFile(os.Stderr)
 // out.Fatal("Oh no, everything failed.")
