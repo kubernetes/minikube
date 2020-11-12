@@ -37,7 +37,7 @@ mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cro
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
 sudo apt-get update
-sudo apt-get -y install qemu-system libvirt-clients libvirt-daemon-system
+sudo apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
 sudo adduser jenkins libvirt || true
 
 source ./common.sh
