@@ -131,7 +131,7 @@ RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
     /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
 # scheduled stop service
-COPY scheduled-stop/stop.sh /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
+COPY scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 COPY scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN ln -fs /usr/lib/systemd/system/minikube-scheduled-stop.service \
     /etc/systemd/system/multi-user.target.wants/minikube-scheduled-stop.service
