@@ -28,6 +28,7 @@ const (
 	SelectingDriver      RegStep = "Selecting Driver"
 	DownloadingArtifacts RegStep = "Downloading Artifacts"
 	StartingNode         RegStep = "Starting Node"
+	PullingBaseImage     RegStep = "Pulling Base Image"
 	RunningLocalhost     RegStep = "Running on Localhost"
 	LocalOSRelease       RegStep = "Local OS Release"
 	CreatingContainer    RegStep = "Creating Container"
