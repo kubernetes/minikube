@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -36,13 +37,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/schedule"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
-	stopAll    bool
-	keepActive bool
+	stopAll               bool
+	keepActive            bool
+	scheduledStopDuration time.Duration
 )
 
 // stopCmd represents the stop command
@@ -56,6 +59,10 @@ var stopCmd = &cobra.Command{
 func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
+	stopCmd.Flags().DurationVar(&scheduledStopDuration, "schedule", 0*time.Second, "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
+	if err := stopCmd.Flags().MarkHidden("schedule"); err != nil {
+		klog.Info("unable to mark --schedule flag as hidden")
+	}
 	stopCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
@@ -86,6 +93,20 @@ func runStop(cmd *cobra.Command, args []string) {
 	} else {
 		cname := ClusterFlagValue()
 		profilesToStop = append(profilesToStop, cname)
+	}
+
+	// Kill any existing scheduled stops
+	schedule.KillExisting(profilesToStop)
+
+	if scheduledStopDuration != 0 {
+		if runtime.GOOS == "windows" {
+			exit.Message(reason.Usage, "the --schedule flag is currently not supported on windows")
+		}
+		if err := schedule.Daemonize(profilesToStop, scheduledStopDuration); err != nil {
+			exit.Message(reason.DaemonizeError, "unable to daemonize: {{.err}}", out.V{"err": err.Error()})
+		}
+		klog.Infof("sleeping %s before completing stop...", scheduledStopDuration.String())
+		time.Sleep(scheduledStopDuration)
 	}
 
 	stoppedNodes := 0
