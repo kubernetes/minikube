@@ -79,7 +79,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 		ExtraArgs:         extraArgs,
-		Network:           cc.ContainerNetwork,
+		Network:           cc.Network,
 	}), nil
 }
 

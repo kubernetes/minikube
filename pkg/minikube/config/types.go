@@ -72,7 +72,7 @@ type ClusterConfig struct {
 	VerifyComponents        map[string]bool // map of components to verify and wait for after start.
 	StartHostTimeout        time.Duration
 	ExposedPorts            []string // Only used by the docker and podman driver
-	ContainerNetwork        string   // only used by docker driver
+	Network                 string   // only used by docker driver
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
