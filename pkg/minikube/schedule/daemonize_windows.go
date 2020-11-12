@@ -22,9 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"fmt"
-	"time"
-
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -64,6 +61,8 @@ func killExisting(profile string) error {
 	return nil
 }
 
+// to daemonize on windows, we schedule the stop within minikube itself
+// starting the minikube-scheduled-stop systemd service kicks off the scheduled stop
 func daemonize(profiles []string, duration time.Duration) error {
 	for _, profile := range profiles {
 		if err := startSystemdService(profile, duration); err != nil {
@@ -73,6 +72,10 @@ func daemonize(profiles []string, duration time.Duration) error {
 	return nil
 }
 
+// to start the systemd service, we first have to tell the systemd service how long to sleep for
+// before shutting down minikube from within
+// we do this by settig the SLEEP environment variable in the environment file to the users
+// requested duration
 func startSystemdService(profile string, duration time.Duration) error {
 	// get ssh runner
 	klog.Infof("starting systemd service for profile %s...", profile)
@@ -97,6 +100,8 @@ func startSystemdService(profile string, duration time.Duration) error {
 	return sysManger.Restart(constants.ScheduledStopSystemdService)
 }
 
+// return the contents of the environment file for minikube-scheduled-stop systemd service
+// should be of the format SLEEP=<scheduled stop requested by user in seconds>
 func environmentFile(duration time.Duration) assets.CopyableFile {
 	contents := []byte(fmt.Sprintf("SLEEP=%v", duration.Seconds()))
 	return assets.NewMemoryAssetTarget(contents, constants.ScheduledStopEnvFile, "0644")
