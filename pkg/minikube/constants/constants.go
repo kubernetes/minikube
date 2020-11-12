@@ -79,6 +79,10 @@ const (
 	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
 	// TestDiskUsedEnv is used in integration tests for insufficient storage with 'minikube status'
 	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
+
+	// scheduled stop constants
+	ScheduledStopEnvFile        = "/var/lib/minikube/scheduled-stop/environment"
+	ScheduledStopSystemdService = "minikube-scheduled-stop"
 )
 
 var (
