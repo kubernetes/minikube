@@ -19,7 +19,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 ## Known Issues
 
-- The following Docker runtime security options are currently *unsupported and will not work* with the Docker driver:
+- The following Docker runtime security options are currently *unsupported and will not work* with the Docker driver (see [#9607](https://github.com/kubernetes/minikube/issues/9607)):
   - [userns-remap](https://docs.docker.com/engine/security/userns-remap/)
   - [rootless](https://docs.docker.com/engine/security/rootless/)
 
