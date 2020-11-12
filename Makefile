@@ -654,8 +654,19 @@ ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
 	$(MAKE) push-kic-base-image AUTOPUSH=true
 else
-	$(MAKE) push-kic-base-image-gcr push-kic-base-image-hub push-kic-base-image-gh 
+	$(MAKE) push-kic-base-image-gcr push-kic-base-image-hub push-kic-base-image-gh push-kic-base-image-foo
 endif
+
+X_DOCKER_BUILDER ?= minikube-builder
+X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
+X_IMG = gcr.io/minikube-295421/kicbase
+
+.PHONY: kic-base-image-x
+kic-base-image-x: ## todo
+	env $(X_BUILD_ENV) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --use || true
+	env $(X_BUILD_ENV) docker buildx build --platform linux/arm64,linux/amd64 -t $(X_IMG):$(KIC_VERSION) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
+
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
