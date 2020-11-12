@@ -22,9 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"fmt"
-	"time"
-
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -33,38 +30,31 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-// KillExisting will kill existing scheduled stops
-func KillExisting(profiles []string) {
+func killExisting(profiles []string) error {
 	for _, profile := range profiles {
-		if err := killExisting(profile); err != nil {
-			klog.Errorf("error terminating scheduled stop for profile %s: %v", profile, err)
+		klog.Infof("trying to kill existing schedule stop for profile %s...", profile)
+		api, err := machine.NewAPIClient()
+		if err != nil {
+			return errors.Wrapf(err, "getting api client for profile %s", profile)
 		}
-	}
-}
-
-func killExisting(profile string) error {
-	klog.Infof("trying to kill existing schedule stop for profile %s...", profile)
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		return errors.Wrapf(err, "getting api client for profile %s", profile)
-	}
-	h, err := api.Load(profile)
-	if err != nil {
-		return errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
-	}
-	runner, err := machine.CommandRunner(h)
-	if err != nil {
-		return errors.Wrap(err, "getting command runner")
-	}
-	// restart scheduled stop service in container
-	sysManger := sysinit.New(runner)
-	if err := sysManger.Stop(constants.ScheduledStopSystemdService); err != nil {
-		return errors.Wrapf(err, "stopping schedule-stop service for profile %s", profile)
+		h, err := api.Load(profile)
+		if err != nil {
+			return errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
+		}
+		runner, err := machine.CommandRunner(h)
+		if err != nil {
+			return errors.Wrap(err, "getting command runner")
+		}
+		// restart scheduled stop service in container
+		sysManger := sysinit.New(runner)
+		if err := sysManger.Stop(constants.ScheduledStopSystemdService); err != nil {
+			return errors.Wrapf(err, "stopping schedule-stop service for profile %s", profile)
+		}
 	}
 	return nil
 }
 
-func daemonize(profiles []string, duration time.Duration) error {
+func killWithin(profiles []string, duration time.Duration) error {
 	for _, profile := range profiles {
 		if err := startSystemdService(profile, duration); err != nil {
 			return errors.Wrapf(err, "implementing scheduled stop for %s", profile)
