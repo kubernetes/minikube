@@ -44,9 +44,6 @@ func TestScheduledStopWindows(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("--schedule does not work with the none driver")
 	}
-	if !KicDriver() {
-		t.Skip("currently only works with container-based drivers on windows")
-	}
 	profile := UniqueProfileName("scheduled-stop")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
 	defer CleanupWithLogs(t, profile, cancel)

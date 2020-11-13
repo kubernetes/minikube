@@ -17,7 +17,6 @@ limitations under the License.
 package schedule
 
 import (
-	"runtime"
 	"time"
 
 	"github.com/pkg/errors"
@@ -39,10 +38,6 @@ func Daemonize(profiles []string, duration time.Duration) error {
 		_, cc := mustload.Partial(p)
 		if driver.BareMetal(cc.Driver) {
 			out.WarningT("scheduled stop is not supported on the none driver, skipping scheduling")
-			continue
-		}
-		if runtime.GOOS == "windows" && driver.IsVM(cc.Driver) {
-			out.WarningT("scheduled stop is not yet supported with VM drivers on Windows, skipping scheduling")
 			continue
 		}
 		daemonizeProfiles = append(daemonizeProfiles, p)
