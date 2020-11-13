@@ -276,7 +276,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 
 		if cmd.Flags().Changed(imageRepository) || cmd.Flags().Changed(imageMirrorCountry) {
-			out.T(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
+			out.Step(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
 		}
 
 		// Backwards compatibility with --enable-default-cni
