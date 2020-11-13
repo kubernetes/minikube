@@ -58,6 +58,8 @@ func TestScheduledStop(t *testing.T) {
 	checkPID(t, profile)
 	// wait allotted time to make sure minikube status is "Stopped"
 	checkStatus := func() error {
+		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(10*time.Second))
+		defer cancel()
 		got := Status(ctx, t, Target(), profile, "Host", profile)
 		if got != state.Stopped.String() {
 			return fmt.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
