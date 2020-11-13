@@ -45,7 +45,6 @@ Thank you to our contributors for this release!
 - Sharif Elgamal
 - Thomas Strömberg
 - Yehiyam Livneh
-- minikube-bot
 - prezha
 - vinu2003
 - zouyu
