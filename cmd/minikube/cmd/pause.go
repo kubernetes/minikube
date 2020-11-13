@@ -71,7 +71,7 @@ func runPause(cmd *cobra.Command, args []string) {
 			name = co.Config.Name
 		}
 
-		out.T(style.Pause, "Pausing node {{.name}} ... ", out.V{"name": name})
+		out.Step(style.Pause, "Pausing node {{.name}} ... ", out.V{"name": name})
 
 		host, err := machine.LoadHost(co.API, driver.MachineName(*co.Config, n))
 		if err != nil {
@@ -97,9 +97,9 @@ func runPause(cmd *cobra.Command, args []string) {
 
 	register.Reg.SetStep(register.Done)
 	if namespaces == nil {
-		out.T(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
+		out.Step(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
 	} else {
-		out.T(style.Unpause, "Paused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+		out.Step(style.Unpause, "Paused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
 	}
 }
 

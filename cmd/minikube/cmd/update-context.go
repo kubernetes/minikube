@@ -41,15 +41,15 @@ var updateContextCmd = &cobra.Command{
 			exit.Error(reason.HostKubeconfigUpdate, "update config", err)
 		}
 		if updated {
-			out.T(style.Celebrate, `"{{.context}}" context has been updated to point to {{.hostname}}:{{.port}}`, out.V{"context": cname, "hostname": co.CP.Hostname, "port": co.CP.Port})
+			out.Step(style.Celebrate, `"{{.context}}" context has been updated to point to {{.hostname}}:{{.port}}`, out.V{"context": cname, "hostname": co.CP.Hostname, "port": co.CP.Port})
 		} else {
-			out.T(style.Meh, `No changes required for the "{{.context}}" context`, out.V{"context": cname})
+			out.Step(style.Meh, `No changes required for the "{{.context}}" context`, out.V{"context": cname})
 		}
 
 		if err := kubeconfig.SetCurrentContext(cname, kubeconfig.PathFromEnv()); err != nil {
 			out.ErrT(style.Sad, `Error while setting kubectl current context:  {{.error}}`, out.V{"error": err})
 		} else {
-			out.T(style.Kubectl, `Current context is "{{.context}}"`, out.V{"context": cname})
+			out.Step(style.Kubectl, `Current context is "{{.context}}"`, out.V{"context": cname})
 		}
 	},
 }

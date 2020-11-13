@@ -37,7 +37,7 @@ var ProfileCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			profile := ClusterFlagValue()
-			out.T(style.Empty, profile)
+			out.Step(style.Empty, profile)
 			os.Exit(0)
 		}
 
