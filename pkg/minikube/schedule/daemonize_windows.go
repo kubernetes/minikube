@@ -21,7 +21,6 @@ package schedule
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -93,7 +92,7 @@ func startSystemdService(profile string, duration time.Duration) error {
 	if err != nil {
 		return errors.Wrap(err, "getting command runner")
 	}
-	if rr, err := runner.RunCmd(exec.Command("sudo", "mkdir", "-p", filepath.Dir(constants.ScheduledStopEnvFile))); err != nil {
+	if rr, err := runner.RunCmd(exec.Command("sudo", "mkdir", "-p", "/var/lib/minikube/scheduled-stop")); err != nil {
 		return errors.Wrapf(err, "creating dirs: %v", rr.Output())
 	}
 	// update environment file to include duration
