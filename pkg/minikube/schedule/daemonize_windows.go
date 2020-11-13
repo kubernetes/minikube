@@ -20,6 +20,8 @@ package schedule
 
 import (
 	"fmt"
+	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -90,6 +92,9 @@ func startSystemdService(profile string, duration time.Duration) error {
 	runner, err := machine.CommandRunner(h)
 	if err != nil {
 		return errors.Wrap(err, "getting command runner")
+	}
+	if rr, err := runner.RunCmd(exec.Command("sudo", "mkdir", "-p", filepath.Dir(constants.ScheduledStopEnvFile))); err != nil {
+		return errors.Wrapf(err, "creating dirs: %v", rr.Output())
 	}
 	// update environment file to include duration
 	if err := runner.Copy(environmentFile(duration)); err != nil {
