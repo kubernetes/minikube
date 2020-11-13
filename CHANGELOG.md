@@ -15,14 +15,12 @@ Features:
 Bug Fixes:
 
 * implement "--log_file" and "--log_dir" for klog [#9592](https://github.com/kubernetes/minikube/pull/9592)
+* GCP Auth Addon: support special location for cloud shell [#9674](https://github.com/kubernetes/minikube/pull/9674)
 * Enable TCP Path MTU Discovery when an ICMP black hole is detected [#9537](https://github.com/kubernetes/minikube/pull/9537)
 * Remove hard-coded list of valid cgroupfs mountpoints to bind mount [#9508](https://github.com/kubernetes/minikube/pull/9508)
-* GCP Auth Addon : support special location for cloud shell [#9674](https://github.com/kubernetes/minikube/pull/9674)
 * Improve parsing of start flag apiserver-names [#9385](https://github.com/kubernetes/minikube/pull/9385)
 * kvm: recover from minikube-net network left over failures  [#9641](https://github.com/kubernetes/minikube/pull/9641)
 * fix help flag 'pflag: help requested' error [#9614](https://github.com/kubernetes/minikube/pull/9614)
-* jenkins/common.sh: Fix comment typo [#9599](https://github.com/kubernetes/minikube/pull/9599)
-* Upgrade buildroot and kernel minor version [#9523](https://github.com/kubernetes/minikube/pull/9523)
 * Update "parallels" driver library and make this driver built into minikube [#9517](https://github.com/kubernetes/minikube/pull/9517)
 
 Minor Improvements:
@@ -30,6 +28,7 @@ Minor Improvements:
 * Upgrade crio to 1.18.4 [#9628](https://github.com/kubernetes/minikube/pull/9628)
 * Update ingress-nginx image to v0.40.2 [#9445](https://github.com/kubernetes/minikube/pull/9445)
 * Improving log message when profile not found [#9613](https://github.com/kubernetes/minikube/pull/9613)
+* Upgrade buildroot and kernel minor version [#9523](https://github.com/kubernetes/minikube/pull/9523)
 
 Thank you to our contributors for this release! 
 
