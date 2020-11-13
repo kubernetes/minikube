@@ -7,5 +7,5 @@ WantedBy=multi-user.target
 [Service]
 Type=simple
 User=root
-ExecStart=/var/lib/minikube/scheduled-stop/minikube-scheduled-stop
+ExecStart=/usr/sbin/minikube-scheduled-stop
 EnvironmentFile=/var/lib/minikube/scheduled-stop/environment
