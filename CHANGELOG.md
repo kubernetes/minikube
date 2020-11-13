@@ -1,5 +1,57 @@
 # Release Notes
 
+## Version 1.15.0 - 2020-11-13
+
+Features:
+
+* Add support for latest kubernetes version v1.20.0-beta.1  [#9693](https://github.com/kubernetes/minikube/pull/9693)
+* Implement schedule stop for unix [#9503](https://github.com/kubernetes/minikube/pull/9503)
+* New flag --watch flag for minikube status with optional interval duration [#9487](https://github.com/kubernetes/minikube/pull/9487)
+* New flag  --namespace for activating non default kubeconfig context [#9506](https://github.com/kubernetes/minikube/pull/9506)
+* Add JSON output to stop, pause and unpause [#9576](https://github.com/kubernetes/minikube/pull/9576)
+* Add support for podman v2 to podman-env command [#9535](https://github.com/kubernetes/minikube/pull/9535)
+* Support ImageRepository for addons [#9551](https://github.com/kubernetes/minikube/pull/9551)
+
+Bug Fixes:
+
+* implement "--log_file" and "--log_dir" for klog [#9592](https://github.com/kubernetes/minikube/pull/9592)
+* Enable TCP Path MTU Discovery when an ICMP black hole is detected [#9537](https://github.com/kubernetes/minikube/pull/9537)
+* Remove hard-coded list of valid cgroupfs mountpoints to bind mount [#9508](https://github.com/kubernetes/minikube/pull/9508)
+* GCP Auth Addon : support special location for cloud shell [#9674](https://github.com/kubernetes/minikube/pull/9674)
+* Improve parsing of start flag apiserver-names [#9385](https://github.com/kubernetes/minikube/pull/9385)
+* kvm: recover from minikube-net network left over failures  [#9641](https://github.com/kubernetes/minikube/pull/9641)
+* fix help flag 'pflag: help requested' error [#9614](https://github.com/kubernetes/minikube/pull/9614)
+* jenkins/common.sh: Fix comment typo [#9599](https://github.com/kubernetes/minikube/pull/9599)
+* Upgrade buildroot and kernel minor version [#9523](https://github.com/kubernetes/minikube/pull/9523)
+* Update "parallels" driver library and make this driver built into minikube [#9517](https://github.com/kubernetes/minikube/pull/9517)
+
+Minor Improvements:
+
+* Upgrade crio to 1.18.4 [#9628](https://github.com/kubernetes/minikube/pull/9628)
+* Update ingress-nginx image to v0.40.2 [#9445](https://github.com/kubernetes/minikube/pull/9445)
+* Improving log message when profile not found [#9613](https://github.com/kubernetes/minikube/pull/9613)
+
+Thank you to our contributors for this release! 
+
+- Anders F Björklund
+- Evgeny Shmarnev
+- Ma Xinjian
+- Manuel Alejandro de Brito Fontes
+- Medya Ghazizadeh
+- Michael Ryan Dempsey
+- Mikhail Zholobov
+- Peter Lin
+- Predrag Rogic
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- Yehiyam Livneh
+- minikube-bot
+- prezha
+- vinu2003
+- zouyu
+
+
 ## Version 1.14.2 - 2020-10-27
 
 Bug Fixes:
