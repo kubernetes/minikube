@@ -80,9 +80,17 @@ fix_cgroup_mounts() {
   # environment by doing another bind mount for each subsystem.
   local cgroup_mounts
 
-  # NOTE: This extracts fields 4 and on
+  # This regexp finds all /sys/fs/cgroup mounts that are cgroupfs and mounted somewhere other than / - extracting fields 4+
   # See https://man7.org/linux/man-pages/man5/proc.5.html for field names
-  cgroup_mounts=$(egrep -o '(/docker|libpod_parent|/kubepods).*/sys/fs/cgroup.*' /proc/self/mountinfo || true)
+
+  # Example inputs:
+  #
+  # Docker:               /docker/562a56986a84b3cd38d6a32ac43fdfcc8ad4d2473acf2839cbf549273f35c206 /sys/fs/cgroup/devices rw,nosuid,nodev,noexec,relatime shared:143 master:23 - cgroup devices rw,devices
+  # podman:               /libpod_parent/libpod-73a4fb9769188ae5dc51cb7e24b9f2752a4af7b802a8949f06a7b2f2363ab0e9 ...
+  # Cloud Shell:          /kubepods/besteffort/pod3d6beaa3004913efb68ce073d73494b0/accdf94879f0a494f317e9a0517f23cdd18b35ff9439efd0175f17bbc56877c4 /sys/fs/cgroup/memory rw,nosuid,nodev,noexec,relatime master:19 - cgroup cgroup rw,memory
+  # GitHub actions #9304: /actions_job/0924fbbcf7b18d2a00c171482b4600747afc367a9dfbeac9d6b14b35cda80399 /sys/fs/cgroup/memory rw,nosuid,nodev,noexec,relatime shared:263 master:24 - cgroup cgroup rw,memory
+
+  cgroup_mounts=$(grep -E -o '/[[:alnum:]].* /sys/fs/cgroup.*.*cgroup' /proc/self/mountinfo || true)
 
   if [[ -n "${cgroup_mounts}" ]]; then
     local mount_root

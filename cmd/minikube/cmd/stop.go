@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+	"runtime"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -35,13 +37,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/schedule"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
-	stopAll    bool
-	keepActive bool
+	stopAll               bool
+	keepActive            bool
+	scheduledStopDuration time.Duration
 )
 
 // stopCmd represents the stop command
@@ -55,6 +59,11 @@ var stopCmd = &cobra.Command{
 func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
+	stopCmd.Flags().DurationVar(&scheduledStopDuration, "schedule", 0*time.Second, "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
+	if err := stopCmd.Flags().MarkHidden("schedule"); err != nil {
+		klog.Info("unable to mark --schedule flag as hidden")
+	}
+	stopCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
 		exit.Error(reason.InternalFlagsBind, "unable to bind flags", err)
@@ -63,8 +72,13 @@ func init() {
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
-	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	out.SetJSON(outputFormat == "json")
 	register.Reg.SetStep(register.Stopping)
+
+	// check if profile path exists, if no PathError log file exists for valid profile
+	if _, err := os.Stat(localpath.Profile(ClusterFlagValue())); err == nil {
+		register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	}
 
 	// new code
 	var profilesToStop []string
@@ -79,6 +93,20 @@ func runStop(cmd *cobra.Command, args []string) {
 	} else {
 		cname := ClusterFlagValue()
 		profilesToStop = append(profilesToStop, cname)
+	}
+
+	// Kill any existing scheduled stops
+	schedule.KillExisting(profilesToStop)
+
+	if scheduledStopDuration != 0 {
+		if runtime.GOOS == "windows" {
+			exit.Message(reason.Usage, "the --schedule flag is currently not supported on windows")
+		}
+		if err := schedule.Daemonize(profilesToStop, scheduledStopDuration); err != nil {
+			exit.Message(reason.DaemonizeError, "unable to daemonize: {{.err}}", out.V{"err": err.Error()})
+		}
+		klog.Infof("sleeping %s before completing stop...", scheduledStopDuration.String())
+		time.Sleep(scheduledStopDuration)
 	}
 
 	stoppedNodes := 0

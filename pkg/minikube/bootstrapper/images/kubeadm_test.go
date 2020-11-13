@@ -38,8 +38,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.4.3-0",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v3",
-			"kubernetesui/dashboard:v2.0.3",
-			"kubernetesui/metrics-scraper:v1.0.4",
+			"docker.io/kubernetesui/dashboard:v2.0.3",
+			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
 		{"v1.16.1", "mirror.k8s.io", []string{
 			"mirror.k8s.io/kube-proxy:v1.16.1",
@@ -62,8 +62,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.3.10",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v3",
-			"kubernetesui/dashboard:v2.0.3",
-			"kubernetesui/metrics-scraper:v1.0.4",
+			"docker.io/kubernetesui/dashboard:v2.0.3",
+			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
 		{"v1.14.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.14.0",
@@ -74,8 +74,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.3.10",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v3",
-			"kubernetesui/dashboard:v2.0.3",
-			"kubernetesui/metrics-scraper:v1.0.4",
+			"docker.io/kubernetesui/dashboard:v2.0.3",
+			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
 		{"v1.13.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.13.0",
@@ -86,8 +86,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.2.24",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v3",
-			"kubernetesui/dashboard:v2.0.3",
-			"kubernetesui/metrics-scraper:v1.0.4",
+			"docker.io/kubernetesui/dashboard:v2.0.3",
+			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
 		{"v1.12.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.12.0",
@@ -98,8 +98,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.2.24",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v3",
-			"kubernetesui/dashboard:v2.0.3",
-			"kubernetesui/metrics-scraper:v1.0.4",
+			"docker.io/kubernetesui/dashboard:v2.0.3",
+			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
 	}
 	for _, tc := range tests {

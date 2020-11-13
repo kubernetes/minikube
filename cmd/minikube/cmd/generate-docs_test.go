@@ -23,10 +23,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/spf13/pflag"
 	"k8s.io/minikube/pkg/generate"
 )
 
 func TestGenerateDocs(t *testing.T) {
+	pflag.BoolP("help", "h", false, "") // avoid 'Docs are not updated. Please run `make generate-docs` to update commands documentation' error
 	dir := "../../../site/content/en/docs/commands/"
 
 	for _, sc := range RootCmd.Commands() {
