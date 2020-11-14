@@ -6,10 +6,9 @@ aliases:
   - /docs/start
 ---
 
-minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes. 
+minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes.
 
 All you need is Docker (or similarly compatible) container or a Virtual Machine environment, and Kubernetes is a single command away: `minikube start`
-
 
 ## What you’ll need
 
@@ -199,7 +198,6 @@ minikube start -p aged --kubernetes-version=v1.16.1
 ```
 
 Delete all of the minikube clusters:
-
 
 ```shell
 minikube delete --all

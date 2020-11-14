@@ -74,7 +74,7 @@ make integration -e TEST_ARGS="-test.parallel=1"
 - Readers should need to read only the test body to understand the test
 - Top-to-bottom readability is more important than code de-duplication
 
-Tests are typically read with a great air of skepticism, because chances are they are being read only when things are broken. 
+Tests are typically read with a great air of skepticism, because chances are they are being read only when things are broken.
 
 ## Conformance Tests
 
