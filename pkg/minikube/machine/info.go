@@ -81,7 +81,7 @@ func RemoteHostInfo(r command.Runner) (*HostInfo, error, error, error) {
 		klog.Warningf("Unable to get mem info: %v", memErr)
 	}
 	free := rr.Stdout.String()
-	memory, _, err := util.ParseMemFree(free)
+	memory, err := util.ParseMemFree(free)
 	if err != nil {
 		klog.Warningf("Unable to parse mem info: %v", err)
 	}
@@ -90,7 +90,7 @@ func RemoteHostInfo(r command.Runner) (*HostInfo, error, error, error) {
 		klog.Warningf("Unable to get disk info: %v", diskErr)
 	}
 	df := rr.Stdout.String()
-	disksize, _, err := util.ParseDiskFree(df)
+	disksize, err := util.ParseDiskFree(df)
 	if err != nil {
 		klog.Warningf("Unable to parse disk info: %v", err)
 	}
