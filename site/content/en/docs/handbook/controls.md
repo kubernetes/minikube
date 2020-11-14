@@ -5,7 +5,9 @@ weight: 2
 description: >
   See minikube in action!
 aliases:
-  - /docs/examples/
+
+- /docs/examples/
+
 ---
 
 Start a cluster by running:

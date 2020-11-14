@@ -23,7 +23,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
   - [userns-remap](https://docs.docker.com/engine/security/userns-remap/)
   - [rootless](https://docs.docker.com/engine/security/rootless/)
 
-- Docker driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/_index.md" >}}) 
+- Docker driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/_index.md" >}})
 
 - On macOS, containers might get hung and require a restart of Docker for Desktop. See [docker/for-mac#1835](https://github.com/docker/for-mac/issues/1835)
 
@@ -36,9 +36,10 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 ## Troubleshooting
 
 [comment]: <> (this title is used in the docs links, don't change)
+
 ### Verify Docker container type is Linux
 
-- On Windows, make sure Docker Desktop's container type setting is Linux and not windows. see docker docs on [switching container type](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers). 
+- On Windows, make sure Docker Desktop's container type setting is Linux and not windows. see docker docs on [switching container type](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers).
 You can verify your Docker container type by running:
    ```shell
    docker info --format '{{.OSType}}'

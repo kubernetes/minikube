@@ -30,7 +30,7 @@ minikube start
 
 ## Other approaches
 
-With a bit of work, one could setup [Syncthing](https://syncthing.net) between the host and the guest VM for persistent file synchronization. 
+With a bit of work, one could setup [Syncthing](https://syncthing.net) between the host and the guest VM for persistent file synchronization.
 
 If you are looking for a solution tuned for iterative application development, consider using a Kubernetes tool that is known to work well with minikube:
 

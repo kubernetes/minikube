@@ -43,7 +43,7 @@ minikube tunnel
 You can now access Ambassador at the external IP allotted to the `ambassador` service.
 Get the external IP with the following command:
 ```shell script
-kubectl get service ambassador -n ambassador 
+kubectl get service ambassador -n ambassador
 NAME         TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)                      AGE
 ambassador   LoadBalancer   10.104.86.124   10.104.86.124   80:31287/TCP,443:31934/TCP   77m
 ```
@@ -84,7 +84,7 @@ spec:
           serviceName: hello-minikube
           servicePort: 8080
 ```
-Run the command: 
+Run the command:
 ```shell
 kubectl apply -f hello-ingress.yaml
 ```
@@ -123,7 +123,7 @@ spec:
   prefix: /hello-mapping/
   service: mapping-minikube.default:8080
 ```
-Run the command: 
+Run the command:
 ```shell
 kubectl apply -f hello-mapping.yaml
 ```

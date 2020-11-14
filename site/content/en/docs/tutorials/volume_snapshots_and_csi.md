@@ -22,7 +22,7 @@ CRDs and deploys the Volume Snapshot Controller. It is <b>disabled by default</b
 
 Furthermore, the default storage provider in minikube does not implement the CSI interface and thus is NOT capable of creating/handling
 volume snapshots. For that, you must first deploy a CSI driver. To make this step easy, minikube offers the `csi-hostpath-driver` addon,
-which deploys the [CSI Hostpath Driver](https://github.com/kubernetes-csi/csi-driver-host-path). This addon is <b>disabled</b> 
+which deploys the [CSI Hostpath Driver](https://github.com/kubernetes-csi/csi-driver-host-path). This addon is <b>disabled</b>
 by default as well.
 
 Thus, to utilize the volume snapshots functionality, you must:
@@ -37,10 +37,10 @@ minikube addons enable [ADDON_NAME]
 minikube addons disable [ADDON_NAME]
 ```
 
-The `csi-hostpath-driver` addon deploys its required resources into the `kube-system` namespace and sets up a dedicated 
+The `csi-hostpath-driver` addon deploys its required resources into the `kube-system` namespace and sets up a dedicated
 storage class called `csi-hostpath-sc` that you need to reference in your PVCs. The driver itself is created under the
 name `hostpath.csi.k8s.io`. Use this wherever necessary (e.g. snapshot class definitions).
 
 Once both addons are enabled, you can create persistent volumes and snapshots using standard ways (for a quick test of
 volume snapshots, you can find some example yaml files along with a step-by-step [here](https://kubernetes-csi.github.io/docs/snapshot-restore-feature.html)).
-The driver stores all persistent volumes in the `/var/lib/csi-hostpath-data/` directory of minikube's host. 
+The driver stores all persistent volumes in the `/var/lib/csi-hostpath-data/` directory of minikube's host.

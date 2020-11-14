@@ -36,4 +36,4 @@ minikube start --cpus 6 --memory 8000
 
 ## Do I need to install kubectl locally?
 
-No, minikube comes with built-in kubectl [see minikube's kubectl documentation]({{< ref "docs/handbook/kubectl.md" >}}). 
+No, minikube comes with built-in kubectl [see minikube's kubectl documentation]({{< ref "docs/handbook/kubectl.md" >}}).
