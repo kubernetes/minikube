@@ -175,7 +175,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if h.Driver.DriverName() == driver.Generic {
+	if driver.IsGeneric(h.Driver.DriverName()) {
 		if _, err := h.RunSSHCommand(fmt.Sprintf("sudo usermod -aG docker %s", h.Driver.GetSSHUsername())); err != nil {
 			return h, errors.Wrap(err, "usermod")
 		}
@@ -296,7 +296,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	if driver.BareMetal(mc.Driver) {
 		showLocalOsRelease()
 	}
-	if driver.IsVM(mc.Driver) || driver.IsKIC(mc.Driver) || mc.Driver == driver.Generic {
+	if driver.IsVM(mc.Driver) || driver.IsKIC(mc.Driver) || driver.IsGeneric(mc.Driver) {
 		logRemoteOsRelease(r)
 	}
 	return syncLocalAssets(r)

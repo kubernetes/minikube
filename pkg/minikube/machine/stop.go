@@ -55,7 +55,7 @@ func stop(h *host.Host) error {
 		}
 	}
 
-	if h.DriverName == driver.Generic {
+	if driver.IsGeneric(h.DriverName) {
 		return nil
 	}
 

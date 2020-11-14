@@ -129,7 +129,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 		}
 	}
 
-	if h.Driver.DriverName() == driver.Generic {
+	if driver.IsGeneric(h.Driver.DriverName()) {
 		if s == state.Running {
 			out.Step(style.Running, `Using the {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
 		} else {

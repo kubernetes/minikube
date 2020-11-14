@@ -96,7 +96,7 @@ func MachineType(name string) string {
 		return "container"
 	}
 
-	if name == Generic {
+	if IsGeneric(name) {
 		return "bare metal machine"
 	}
 
@@ -145,6 +145,11 @@ func IsVM(name string) bool {
 // BareMetal returns if this driver is unisolated
 func BareMetal(name string) bool {
 	return name == None || name == Mock
+}
+
+// IsGeneric checks if the driver is generic
+func IsGeneric(name string) bool {
+	return name == Generic
 }
 
 // NeedsRoot returns true if driver needs to run with root privileges
