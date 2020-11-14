@@ -338,7 +338,7 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 		info, cpuErr, memErr, DiskErr := LocalHostInfo()
 		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningLocalhost)
-			out.T(style.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+			out.Step(style.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 		return
 	}
@@ -357,11 +357,11 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 	}
 	if driver.IsKIC(cfg.Driver) { // TODO:medyagh add free disk space on docker machine
 		register.Reg.SetStep(register.CreatingContainer)
-		out.T(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
+		out.Step(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
 		return
 	}
 	register.Reg.SetStep(register.CreatingVM)
-	out.T(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
+	out.Step(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
 }
 
 // AddHostAlias makes fine adjustments to pod resources that aren't possible via kubeadm config.

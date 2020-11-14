@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/hack/update"
 )
 
@@ -55,13 +56,13 @@ var (
 		},
 	}
 
-	// pull request data
+	// PR data
 	prBranchPrefix = "update-kubernetes-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update_kubernetes_version: {stable:"{{.StableVersion}}", latest:"{{.LatestVersion}}"}`
+	prTitle        = `update_kubernetes_version: {stable: "{{.StableVersion}}", latest: "{{.LatestVersion}}"}`
 	prIssue        = 4392
 )
 
-// Data holds stable and latest Kubernetes versions
+// Data holds greatest current stable release and greatest latest rc or beta pre-release Kubernetes versions
 type Data struct {
 	StableVersion string `json:"StableVersion"`
 	LatestVersion string `json:"LatestVersion"`
@@ -73,9 +74,9 @@ func main() {
 	defer cancel()
 
 	// get Kubernetes versions from GitHub Releases
-	stable, latest, err := update.GHVersions(ctx, "kubernetes", "kubernetes")
+	stable, latest, err := update.GHReleases(ctx, "kubernetes", "kubernetes")
 	if err != nil || stable == "" || latest == "" {
-		klog.Fatalf("Error getting Kubernetes versions: %v", err)
+		klog.Fatalf("Unable to get Kubernetes versions: %v", err)
 	}
 	data := Data{StableVersion: stable, LatestVersion: latest}
 	klog.Infof("Kubernetes versions: 'stable' is %s and 'latest' is %s", data.StableVersion, data.LatestVersion)

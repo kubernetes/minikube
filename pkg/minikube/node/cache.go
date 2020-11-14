@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -85,7 +86,7 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.Error(reason.InetCacheTar, "Failed to cache images to tar", err)
 	}
-	out.T(style.Check, "Download complete!")
+	out.Step(style.Check, "Download complete!")
 	os.Exit(0)
 }
 
@@ -117,7 +118,8 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	}
 
 	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-	out.T(style.Pulling, "Pulling base image ...")
+	register.Reg.SetStep(register.PullingBaseImage)
+	out.Step(style.Pulling, "Pulling base image ...")
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
@@ -167,7 +169,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 				klog.Warningf("Error downloading kic artifacts: %v", err)
 				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": strings.Split(kic.BaseImage, "@")[0]})
 				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
-				out.T(style.Documentation, `Please visit the following link for documentation around this: 
+				out.Step(style.Documentation, `Please visit the following link for documentation around this: 
 	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages
 `)
 			}
