@@ -53,6 +53,9 @@ const (
 	HyperV = "hyperv"
 	// Parallels driver
 	Parallels = "parallels"
+
+	// AliasKVM is driver name alias for kvm2
+	AliasKVM = "kvm"
 )
 
 var (
@@ -281,6 +284,17 @@ func Status(name string) registry.DriverState {
 		Priority: d.Priority,
 		State:    registry.Status(name),
 	}
+}
+
+// IsAlias checks if an alias belongs to provided driver by name.
+func IsAlias(name, alias string) bool {
+	d := registry.Driver(name)
+	for _, da := range d.Alias {
+		if da == alias {
+			return true
+		}
+	}
+	return false
 }
 
 // SetLibvirtURI sets the URI to perform libvirt health checks against

@@ -77,7 +77,7 @@ func getExtraOptsPodCidr() []config.ExtraOption {
 
 func recentReleases() ([]string, error) {
 	// test the 6 most recent releases
-	versions := []string{"v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	versions := []string{"v1.20.0-beta.1", "v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
 	foundNewest := false
 	foundDefault := false
 
@@ -108,7 +108,7 @@ This test case has only 1 thing to test and that is the
 nnetworking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
-	versions := []string{"v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	versions := []string{"v1.20.0-beta.1", "v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
 		"docker info --format {{.CgroupDriver}}": "systemd\n",
