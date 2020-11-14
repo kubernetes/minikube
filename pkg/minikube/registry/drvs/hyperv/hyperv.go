@@ -107,14 +107,26 @@ func status() registry.State {
 
 	// Ensure user is either a Windows Administrator or a Hyper-V Administrator.
 	adminCheckCmd := exec.CommandContext(ctx, path, `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
-	adminCheckOut, _ := adminCheckCmd.CombinedOutput()
+	adminCheckOut, adminCheckErr := adminCheckCmd.CombinedOutput()
+
+	if adminCheckErr != nil {
+		errorMessage := fmt.Errorf("%s returned %q", strings.Join(adminCheckCmd.Args, " "), adminCheckOut)
+		fixMessage := "Unable to determine current user's administrator privileges"
+		return registry.State{Installed: false, Running: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
+	}
 
 	hypervAdminCheckCmd := exec.CommandContext(ctx, path, `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(([System.Security.Principal.SecurityIdentifier]::new("S-1-5-32-578")))`)
-	hypervAdminCheckOut, _ := hypervAdminCheckCmd.CombinedOutput()
+	hypervAdminCheckOut, hypervAdminCheckErr := hypervAdminCheckCmd.CombinedOutput()
+
+	if hypervAdminCheckErr != nil {
+		errorMessage := fmt.Errorf("%s returned %q", strings.Join(hypervAdminCheckCmd.Args, " "), hypervAdminCheckOut)
+		fixMessage := "Unable to determine current user's Hyper-V administrator privileges."
+		return registry.State{Installed: false, Running: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
+	}
 
 
 	if (strings.TrimSpace(string(adminCheckOut)) != "True") && (strings.TrimSpace(string(hypervAdminCheckOut)) != "True") {
-		err := fmt.Errorf("Hyper-v commands have to be run as an Administrator")
+		err := fmt.Errorf("Hyper-V requires Administrator privileges")
 		fixMessage := "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode."
 		return registry.State{Installed: true, Running: false, Error: err, Fix: fixMessage, Doc: docURL}
 	}
