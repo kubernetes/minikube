@@ -94,7 +94,7 @@ func ParseMemFree(out string) (uint64, uint64, error) {
 
 // ParseDiskFree parses the output of the `df -m` command
 // returns: total, available
-func ParseDiskFree(out string, mountpoint string) (uint64, uint64, error) {
+func ParseDiskFree(out string) (uint64, uint64, error) {
 	// Filesystem     1M-blocks  Used Available Use% Mounted on
 	// /dev/sda1          39643  3705     35922  10% /
 	outlines := strings.Split(out, "\n")
@@ -113,7 +113,7 @@ func ParseDiskFree(out string, mountpoint string) (uint64, uint64, error) {
 			return 0, 0, err
 		}
 		m := parsedLine[5]
-		if m == mountpoint {
+		if m == "/" {
 			return t, a, nil
 		}
 	}
