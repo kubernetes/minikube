@@ -812,7 +812,7 @@ func validateUser(drvName string) {
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor, the return value is in MiB
 func memoryLimits(drvName string) (int, int, error) {
-	info, cpuErr, memErr, diskErr := machine.LocalHostInfo()
+	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
 	if cpuErr != nil {
 		klog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}

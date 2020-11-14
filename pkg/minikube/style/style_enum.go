@@ -81,7 +81,6 @@ const (
 	Shutdown
 	Sparkle
 	StartingNone
-	StartingGeneric
 	StartingVM
 	Stopped
 	Stopping

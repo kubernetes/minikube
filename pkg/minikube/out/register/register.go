@@ -30,7 +30,6 @@ const (
 	StartingNode         RegStep = "Starting Node"
 	PullingBaseImage     RegStep = "Pulling Base Image"
 	RunningLocalhost     RegStep = "Running on Localhost"
-	RunningRemotely      RegStep = "Running Remotely"
 	LocalOSRelease       RegStep = "Local OS Release"
 	CreatingContainer    RegStep = "Creating Container"
 	CreatingVM           RegStep = "Creating VM"
@@ -74,7 +73,6 @@ func init() {
 				LocalOSRelease,
 				CreatingContainer,
 				CreatingVM,
-				RunningRemotely,
 				PreparingKubernetes,
 				ConfiguringLHEnv,
 				VerifyingKubernetes,

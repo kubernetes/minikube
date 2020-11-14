@@ -122,7 +122,6 @@ var Config = map[Enum]Options{
 	Resetting:        {Prefix: "🔄  "},
 	Shutdown:         {Prefix: "🛑  "},
 	StartingNone:     {Prefix: "🤹  "},
-	StartingGeneric:  {Prefix: "🔗  "},
 	StartingVM:       {Prefix: "🔥  "},
 	Tip:              {Prefix: "💡  "},
 	Unmount:          {Prefix: "🔥  "},

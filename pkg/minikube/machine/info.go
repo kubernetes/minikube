@@ -19,8 +19,6 @@ package machine
 import (
 	"io/ioutil"
 	"os/exec"
-	"strconv"
-	"strings"
 
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/shirou/gopsutil/cpu"
@@ -41,8 +39,8 @@ type HostInfo struct {
 	DiskSize int64
 }
 
-// LocalHostInfo returns system information such as memory,CPU, DiskSize
-func LocalHostInfo() (*HostInfo, error, error, error) {
+// CachedHostInfo returns system information such as memory,CPU, DiskSize
+func CachedHostInfo() (*HostInfo, error, error, error) {
 	var cpuErr, memErr, diskErr error
 	i, cpuErr := cachedCPUInfo()
 	if cpuErr != nil {
@@ -62,43 +60,6 @@ func LocalHostInfo() (*HostInfo, error, error, error) {
 	info.CPUs = len(i)
 	info.Memory = util.ConvertUnsignedBytesToMB(v.Total)
 	info.DiskSize = util.ConvertUnsignedBytesToMB(d.Total)
-	return &info, cpuErr, memErr, diskErr
-}
-
-// RemoteHostInfo returns system information such as memory,CPU, DiskSize
-func RemoteHostInfo(r command.Runner) (*HostInfo, error, error, error) {
-	rr, cpuErr := r.RunCmd(exec.Command("nproc"))
-	if cpuErr != nil {
-		klog.Warningf("Unable to get CPU info: %v", cpuErr)
-	}
-	nproc := rr.Stdout.String()
-	ncpus, err := strconv.Atoi(strings.TrimSpace(nproc))
-	if err != nil {
-		klog.Warningf("Failed to parse CPU info: %v", err)
-	}
-	rr, memErr := r.RunCmd(exec.Command("free", "-m"))
-	if memErr != nil {
-		klog.Warningf("Unable to get mem info: %v", memErr)
-	}
-	free := rr.Stdout.String()
-	memory, err := util.ParseMemFree(free)
-	if err != nil {
-		klog.Warningf("Unable to parse mem info: %v", err)
-	}
-	rr, diskErr := r.RunCmd(exec.Command("df", "-m"))
-	if diskErr != nil {
-		klog.Warningf("Unable to get disk info: %v", diskErr)
-	}
-	df := rr.Stdout.String()
-	disksize, err := util.ParseDiskFree(df)
-	if err != nil {
-		klog.Warningf("Unable to parse disk info: %v", err)
-	}
-
-	var info HostInfo
-	info.CPUs = ncpus
-	info.Memory = memory
-	info.DiskSize = disksize
 	return &info, cpuErr, memErr, diskErr
 }
 
