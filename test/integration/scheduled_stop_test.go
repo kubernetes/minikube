@@ -66,7 +66,7 @@ func TestScheduledStop(t *testing.T) {
 		}
 		return nil
 	}
-	if err := retry.Expo(checkStatus, time.Second, 30*time.Second); err != nil {
+	if err := retry.Expo(checkStatus, time.Second, time.Minute); err != nil {
 		t.Fatalf("error %v", err)
 	}
 }
