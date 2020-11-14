@@ -65,7 +65,7 @@ func ConvertUnsignedBytesToMB(byteSize uint64) int64 {
 
 // ParseMemFree parses the output of the `free -m` command
 // returns: total, available
-func ParseMemFree(out string) (uint64, uint64, error) {
+func ParseMemFree(out string) (int64, int64, error) {
 	//             total        used        free      shared  buff/cache   available
 	//Mem:           1987         706         194           1        1086        1173
 	//Swap:             0           0           0
@@ -76,11 +76,11 @@ func ParseMemFree(out string) (uint64, uint64, error) {
 		if len(parsedLine) < 7 {
 			continue
 		}
-		t, err := strconv.ParseUint(parsedLine[1], 10, 64)
+		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
 		if err != nil {
 			return 0, 0, err
 		}
-		a, err := strconv.ParseUint(parsedLine[6], 10, 64)
+		a, err := strconv.ParseInt(parsedLine[6], 10, 64)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -94,7 +94,7 @@ func ParseMemFree(out string) (uint64, uint64, error) {
 
 // ParseDiskFree parses the output of the `df -m` command
 // returns: total, available
-func ParseDiskFree(out string) (uint64, uint64, error) {
+func ParseDiskFree(out string) (int64, int64, error) {
 	// Filesystem     1M-blocks  Used Available Use% Mounted on
 	// /dev/sda1          39643  3705     35922  10% /
 	outlines := strings.Split(out, "\n")
@@ -104,11 +104,11 @@ func ParseDiskFree(out string) (uint64, uint64, error) {
 		if len(parsedLine) < 6 {
 			continue
 		}
-		t, err := strconv.ParseUint(parsedLine[1], 10, 64)
+		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
 		if err != nil {
 			return 0, 0, err
 		}
-		a, err := strconv.ParseUint(parsedLine[3], 10, 64)
+		a, err := strconv.ParseInt(parsedLine[3], 10, 64)
 		if err != nil {
 			return 0, 0, err
 		}
