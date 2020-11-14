@@ -351,7 +351,7 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 		info, cpuErr, memErr, DiskErr := RemoteHostInfo(r)
 		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningRemotely)
-			out.T(style.StartingGeneric, "Running remotely (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+			out.Step(style.StartingGeneric, "Running remotely (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 		return
 	}
