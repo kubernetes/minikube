@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pmezard/go-difflib/difflib"
+	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -77,7 +78,10 @@ func getExtraOptsPodCidr() []config.ExtraOption {
 
 func recentReleases() ([]string, error) {
 	// test the 6 most recent releases
-	versions := []string{"v1.20.0-beta.1", "v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	versions, err := ReverseDirList("testdata", 6)
+	if err != nil {
+		return nil, fmt.Errorf("no testdata found: %w", err)
+	}
 	foundNewest := false
 	foundDefault := false
 
@@ -108,7 +112,17 @@ This test case has only 1 thing to test and that is the
 nnetworking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
-	versions := []string{"v1.20.0-beta.1", "v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	// test all testdata releases greater than v1.11
+	versions, err := ReverseDirList("testdata", 0)
+	if err != nil {
+		t.Fatalf("no testdata found: %v", err)
+	}
+	for i, v := range versions {
+		if semver.Compare(v, "v1.11") <= 0 {
+			versions = versions[0:i]
+			break
+		}
+	}
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
 		"docker info --format {{.CgroupDriver}}": "systemd\n",
@@ -138,6 +152,11 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 					},
 				}
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
+				// if version+".0" does not yet have a stable release, use NewestKubernetesVersion
+				// ie, 'v1.20.0-beta.1' NewestKubernetesVersion indicates that 'v1.20.0' is not yet released as stable
+				if semver.Compare(cfg.KubernetesConfig.KubernetesVersion, constants.NewestKubernetesVersion) == 1 {
+					cfg.KubernetesConfig.KubernetesVersion = constants.NewestKubernetesVersion
+				}
 				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
 				got, err := GenerateKubeadmYAML(cfg, cfg.Nodes[0], runtime)
@@ -225,6 +244,11 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 					}
 				}
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
+				// if version+".0" does not yet have a stable release, use NewestKubernetesVersion
+				// ie, 'v1.20.0-beta.1' NewestKubernetesVersion indicates that 'v1.20.0' is not yet released as stable
+				if semver.Compare(cfg.KubernetesConfig.KubernetesVersion, constants.NewestKubernetesVersion) == 1 {
+					cfg.KubernetesConfig.KubernetesVersion = constants.NewestKubernetesVersion
+				}
 				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
 				got, err := GenerateKubeadmYAML(cfg, cfg.Nodes[0], runtime)
