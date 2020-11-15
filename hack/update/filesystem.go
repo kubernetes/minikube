@@ -46,11 +46,10 @@ func fsUpdate(fsRoot string, schema map[string]Item, data interface{}) (changed 
 			}
 			item.Content = content
 		}
-		_, err := item.apply(data)
-		if err != nil {
+		if err := item.apply(data); err != nil {
 			return false, fmt.Errorf("unable to update file: %w", err)
 		}
-		if bytes.Compare(content, item.Content) != 0 {
+		if !bytes.Equal(content, item.Content) {
 			// make sure path exists
 			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 				return false, fmt.Errorf("unable to create directory: %w", err)

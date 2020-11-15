@@ -84,23 +84,23 @@ type Item struct {
 }
 
 // apply updates Item Content by replacing all occurrences of Replace map's keys with their actual map values (with placeholders replaced with data).
-func (i *Item) apply(data interface{}) (changed bool, err error) {
+func (i *Item) apply(data interface{}) error {
 	if i.Content == nil {
-		return false, fmt.Errorf("unable to update content: nothing to update")
+		return fmt.Errorf("unable to update content: nothing to update")
 	}
 	org := string(i.Content)
 	str := org
 	for src, dst := range i.Replace {
 		out, err := ParseTmpl(dst, data, "")
 		if err != nil {
-			return false, err
+			return err
 		}
 		re := regexp.MustCompile(src)
 		str = re.ReplaceAllString(str, out)
 	}
 	i.Content = []byte(str)
 
-	return str != org, nil
+	return nil
 }
 
 // Apply applies concrete update plan (schema + data) to GitHub or local filesystem repo
