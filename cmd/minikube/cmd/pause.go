@@ -50,6 +50,7 @@ var pauseCmd = &cobra.Command{
 }
 
 func runPause(cmd *cobra.Command, args []string) {
+	out.SetJSON(outputFormat == "json")
 	co := mustload.Running(ClusterFlagValue())
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Pausing)
@@ -70,7 +71,7 @@ func runPause(cmd *cobra.Command, args []string) {
 			name = co.Config.Name
 		}
 
-		out.T(style.Pause, "Pausing node {{.name}} ... ", out.V{"name": name})
+		out.Step(style.Pause, "Pausing node {{.name}} ... ", out.V{"name": name})
 
 		host, err := machine.LoadHost(co.API, driver.MachineName(*co.Config, n))
 		if err != nil {
@@ -96,13 +97,14 @@ func runPause(cmd *cobra.Command, args []string) {
 
 	register.Reg.SetStep(register.Done)
 	if namespaces == nil {
-		out.T(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
+		out.Step(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
 	} else {
-		out.T(style.Unpause, "Paused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+		out.Step(style.Unpause, "Paused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
 	}
 }
 
 func init() {
 	pauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", constants.DefaultNamespaces, "namespaces to pause")
 	pauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, pause all namespaces")
+	pauseCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 }

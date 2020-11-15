@@ -27,10 +27,10 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.19.2"
+	DefaultKubernetesVersion = "v1.19.4"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.19.2"
+	NewestKubernetesVersion = "v1.20.0-beta.1"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.13.0"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -68,6 +68,10 @@ const (
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
+	// PodmanContainerHostEnv is used for podman settings
+	PodmanContainerHostEnv = "CONTAINER_HOST"
+	// PodmanContainerSSHKeyEnv is used for podman settings
+	PodmanContainerSSHKeyEnv = "CONTAINER_SSHKEY"
 	// MinikubeActivePodmanEnv holds the podman service that the user's shell is pointing at
 	// value would be profile or empty if pointing to the user's host.
 	MinikubeActivePodmanEnv = "MINIKUBE_ACTIVE_PODMAN"

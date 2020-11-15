@@ -29,10 +29,6 @@ import (
 	"strconv"
 	"strings"
 
-	// initflag must be imported before any other minikube pkg.
-	// Fix for https://github.com/kubernetes/minikube/issues/4866
-	_ "k8s.io/minikube/pkg/initflag"
-
 	"github.com/golang-collections/collections/stack"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/util/lock"

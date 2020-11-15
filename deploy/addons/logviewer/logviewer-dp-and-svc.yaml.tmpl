@@ -42,7 +42,7 @@ spec:
       containers:
       - name: logviewer
         imagePullPolicy: Always
-        image: docker.io/ivans3/minikube-log-viewer:latest
+        image: {{default "docker.io/ivans3" .ImageRepository}}/minikube-log-viewer:latest
         volumeMounts:
          - name: logs
            mountPath: /var/log/containers/

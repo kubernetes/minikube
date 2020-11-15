@@ -67,7 +67,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", vmpath.GuestAddonsDir, "dashboard-configmap.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml", vmpath.GuestAddonsDir, "dashboard-dp.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml.tmpl", vmpath.GuestAddonsDir, "dashboard-dp.yaml", "0640", true),
 		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", vmpath.GuestAddonsDir, "dashboard-role.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-rolebinding.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", vmpath.GuestAddonsDir, "dashboard-sa.yaml", "0640", false),
@@ -110,13 +110,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"glusterfs-daemonset.yaml",
 			"0640",
-			false),
+			true),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"heketi-deployment.yaml",
 			"0640",
-			false),
+			true),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
 			vmpath.GuestAddonsDir,
@@ -154,7 +154,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"kibana-rc.yaml",
 			"0640",
-			false),
+			true),
 		MustBinAsset(
 			"deploy/addons/efk/kibana-svc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
@@ -246,7 +246,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-rc.yaml",
 			"0640",
-			false),
+			true),
 		MustBinAsset(
 			"deploy/addons/registry/registry-svc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
@@ -258,7 +258,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-proxy.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "registry"),
 	"registry-creds": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -292,13 +292,13 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"node-etc-hosts-update.yaml",
 			"0640",
-			false),
+			true),
 		MustBinAsset(
 			"deploy/addons/registry-aliases/patch-coredns-job.tmpl",
 			vmpath.GuestAddonsDir,
 			"patch-coredns-job.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "registry-aliases"),
 	"freshpod": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -318,11 +318,11 @@ var Addons = map[string]*Addon{
 	}, false, "nvidia-driver-installer"),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml",
+			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "nvidia-gpu-device-plugin"),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -380,19 +380,19 @@ var Addons = map[string]*Addon{
 	}, false, "helm-tiller"),
 	"ingress-dns": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/ingress-dns/ingress-dns-pod.yaml",
+			"deploy/addons/ingress-dns/ingress-dns-pod.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ingress-dns-pod.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "ingress-dns"),
 	"metallb": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/metallb/metallb.yaml",
+			"deploy/addons/metallb/metallb.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"metallb.yaml",
 			"0640",
-			false),
+			true),
 		MustBinAsset(
 			"deploy/addons/metallb/metallb-config.yaml.tmpl",
 			vmpath.GuestAddonsDir,
@@ -434,11 +434,11 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/gcp-auth/gcp-auth-webhook.yaml",
+			"deploy/addons/gcp-auth/gcp-auth-webhook.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-webhook.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "gcp-auth"),
 	"volumesnapshots": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -466,11 +466,11 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/volumesnapshots/volume-snapshot-controller-deployment.yaml",
+			"deploy/addons/volumesnapshots/volume-snapshot-controller-deployment.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"volume-snapshot-controller-deployment.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "volumesnapshots"),
 	"csi-hostpath-driver": NewAddon([]*BinAsset{
 		MustBinAsset(
