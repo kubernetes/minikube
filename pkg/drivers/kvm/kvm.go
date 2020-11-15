@@ -110,6 +110,8 @@ func (d *Driver) PreCommandCheck() error {
 	if err != nil {
 		return errors.Wrap(err, "error connecting to libvirt socket. Have you added yourself to the libvirtd group?")
 	}
+	defer conn.Close()
+
 	libVersion, err := conn.GetLibVersion()
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt version")
@@ -240,14 +242,6 @@ func (d *Driver) Restart() error {
 
 // Start a host
 func (d *Driver) Start() (err error) {
-	// if somebody/something deleted the network in the meantime,
-	// we might need to recreate it. It's (nearly) a noop if the network exists.
-	log.Info("Creating network...")
-	err = d.createNetwork()
-	if err != nil {
-		return errors.Wrap(err, "creating network")
-	}
-
 	// this call ensures that all networks are active
 	log.Info("Ensuring networks are active...")
 	err = d.ensureNetwork()
@@ -489,4 +483,15 @@ func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) erro
 	}
 
 	return dom.Undefine()
+}
+
+// lvErr will return libvirt Error struct containing specific libvirt error code, domain, message and level
+func lvErr(err error) libvirt.Error {
+	if err != nil {
+		if lverr, ok := err.(libvirt.Error); ok {
+			return lverr
+		}
+		return libvirt.Error{Code: libvirt.ERR_INTERNAL_ERROR, Message: "internal error"}
+	}
+	return libvirt.Error{Code: libvirt.ERR_OK, Message: ""}
 }

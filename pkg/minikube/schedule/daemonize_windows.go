@@ -1,5 +1,7 @@
+// +build windows
+
 /*
-Copyright 2019 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +16,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initflag
+package schedule
 
 import (
-	"flag"
+	"fmt"
+	"time"
+
+	"k8s.io/klog/v2"
 )
 
-func init() {
-	// Workaround for "ERROR: logging before flag.Parse"
-	// See: https://github.com/kubernetes/kubernetes/issues/17162
-	fs := flag.NewFlagSet("", flag.ContinueOnError)
-	_ = fs.Parse([]string{})
-	flag.CommandLine = fs
+// KillExisting will kill existing scheduled stops
+func KillExisting(profiles []string) {
+	klog.Errorf("not yet implemented for windows")
+}
+
+func daemonize(profiles []string, duration time.Duration) error {
+	return fmt.Errorf("not yet implemented for windows")
 }

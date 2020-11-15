@@ -40,7 +40,7 @@ import (
 //
 // out.SetOutFile(os.Stdout)
 // out.String("Starting up!")
-// out.T(style.StatusChange, "Configuring things")
+// out.Step(style.StatusChange, "Configuring things")
 
 // out.SetErrFile(os.Stderr)
 // out.Fatal("Oh no, everything failed.")
@@ -72,8 +72,8 @@ type fdWriter interface {
 // V is a convenience wrapper for templating, it represents the variable key/value pair.
 type V map[string]interface{}
 
-// T writes a stylized and templated message to stdout
-func T(st style.Enum, format string, a ...V) {
+// Step writes a stylized and templated message to stdout
+func Step(st style.Enum, format string, a ...V) {
 	if st == style.Option {
 		Infof(format, a...)
 		return
@@ -158,7 +158,7 @@ func ErrLn(format string, a ...interface{}) {
 
 // SuccessT is a shortcut for writing a templated success message to stdout
 func SuccessT(format string, a ...V) {
-	T(style.Success, format, a...)
+	Step(style.Success, format, a...)
 }
 
 // FatalT is a shortcut for writing a templated fatal message to stderr
@@ -243,12 +243,12 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	DisplayError(msg, err)
 
 	for name, lines := range entries {
-		T(style.Failure, "Problems detected in {{.entry}}:", V{"entry": name})
+		Step(style.Failure, "Problems detected in {{.entry}}:", V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
-			T(style.LogEntry, l)
+			Step(style.LogEntry, l)
 		}
 	}
 }
