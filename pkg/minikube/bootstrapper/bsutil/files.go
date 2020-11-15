@@ -69,7 +69,7 @@ func CopyFiles(runner command.Runner, files []assets.CopyableFile) error {
 func ReverseDirList(path string, n int) (list []string, err error) {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to list directory %s: %w", path, err)
+		return nil, fmt.Errorf("unable to list directory %s: %w", path, err)
 	}
 	for _, file := range files {
 		if file.IsDir() {
