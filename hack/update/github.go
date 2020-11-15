@@ -188,8 +188,7 @@ func ghUpdate(ctx context.Context, owner, repo string, token string, schema map[
 			}
 			item.Content = []byte(content)
 		}
-		_, err := item.apply(data)
-		if err != nil {
+		if err := item.apply(data); err != nil {
 			return nil, fmt.Errorf("unable to update file: %w", err)
 		}
 		if content != string(item.Content) {
