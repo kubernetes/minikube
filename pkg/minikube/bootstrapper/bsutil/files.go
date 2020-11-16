@@ -18,11 +18,8 @@ limitations under the License.
 package bsutil
 
 import (
-	"fmt"
-	"io/ioutil"
 	"os/exec"
 	"path"
-	"sort"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -61,24 +58,4 @@ func CopyFiles(runner command.Runner, files []assets.CopyableFile) error {
 		}
 	}
 	return nil
-}
-
-// ReverseDirList returns a list of subdirectories under the given path, sorted in reverse order, and any error.
-// If n > 0, ReverseDirList returns at most n subdirectories.
-// If n <= 0, ReverseDirList returns all the subdirectories from the directory.
-func ReverseDirList(path string, n int) (list []string, err error) {
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		return nil, fmt.Errorf("unable to list directory %s: %w", path, err)
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			list = append(list, file.Name())
-		}
-	}
-	sort.Slice(list, func(i, j int) bool { return list[i] > list[j] })
-	if n <= 0 || n > len(list) {
-		n = len(list)
-	}
-	return list[0:n], nil
 }

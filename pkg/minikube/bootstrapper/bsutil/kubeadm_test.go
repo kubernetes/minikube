@@ -19,6 +19,7 @@ package bsutil
 import (
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strings"
 	"testing"
 
@@ -76,12 +77,28 @@ func getExtraOptsPodCidr() []config.ExtraOption {
 	}
 }
 
-func recentReleases() ([]string, error) {
-	// test the 6 most recent releases
-	versions, err := ReverseDirList("testdata", 6)
+// recentReleases returns a dynamic list of up to n recent testdata versions, sorted from newest to older.
+// If n > 0, returns at most n versions.
+// If n <= 0, returns all the versions.
+// It will error if no testdata are available or in absence of testdata for newest and default minor k8s versions.
+func recentReleases(n int) ([]string, error) {
+	path := "testdata"
+	files, err := ioutil.ReadDir(path)
 	if err != nil {
-		return nil, fmt.Errorf("no testdata found: %w", err)
+		return nil, fmt.Errorf("unable to list testdata directory %s: %w", path, err)
 	}
+	var versions []string
+	for _, file := range files {
+		if file.IsDir() {
+			versions = append(versions, file.Name())
+		}
+	}
+	sort.Slice(versions, func(i, j int) bool { return versions[i] > versions[j] })
+	if n <= 0 || n > len(versions) {
+		n = len(versions)
+	}
+	versions = versions[0:n]
+
 	foundNewest := false
 	foundDefault := false
 
@@ -113,9 +130,9 @@ nnetworking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 	// test all testdata releases greater than v1.11
-	versions, err := ReverseDirList("testdata", 0)
+	versions, err := recentReleases(0)
 	if err != nil {
-		t.Fatalf("no testdata found: %v", err)
+		t.Errorf("versions: %v", err)
 	}
 	for i, v := range versions {
 		if semver.Compare(v, "v1.11") <= 0 {
@@ -194,7 +211,8 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 func TestGenerateKubeadmYAML(t *testing.T) {
 	extraOpts := getExtraOpts()
 	extraOptsPodCidr := getExtraOptsPodCidr()
-	versions, err := recentReleases()
+	// test the 6 most recent releases
+	versions, err := recentReleases(6)
 	if err != nil {
 		t.Errorf("versions: %v", err)
 	}
