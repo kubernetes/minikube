@@ -56,55 +56,55 @@ var (
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd-api-port.yaml": {
-			Content: update.Loadf("testdata_templates/containerd-api-port.yaml"),
+			Content: update.Loadf("templates/v1beta2/containerd-api-port.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd-pod-network-cidr.yaml": {
-			Content: update.Loadf("testdata_templates/containerd-pod-network-cidr.yaml"),
+			Content: update.Loadf("templates/v1beta2/containerd-pod-network-cidr.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd.yaml": {
-			Content: update.Loadf("testdata_templates/containerd.yaml"),
+			Content: update.Loadf("templates/v1beta2/containerd.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/crio-options-gates.yaml": {
-			Content: update.Loadf("testdata_templates/crio-options-gates.yaml"),
+			Content: update.Loadf("templates/v1beta2/crio-options-gates.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/crio.yaml": {
-			Content: update.Loadf("testdata_templates/crio.yaml"),
+			Content: update.Loadf("templates/v1beta2/crio.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/default.yaml": {
-			Content: update.Loadf("testdata_templates/default.yaml"),
+			Content: update.Loadf("templates/v1beta2/default.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/dns.yaml": {
-			Content: update.Loadf("testdata_templates/dns.yaml"),
+			Content: update.Loadf("templates/v1beta2/dns.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/image-repository.yaml": {
-			Content: update.Loadf("testdata_templates/image-repository.yaml"),
+			Content: update.Loadf("templates/v1beta2/image-repository.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/options.yaml": {
-			Content: update.Loadf("testdata_templates/options.yaml"),
+			Content: update.Loadf("templates/v1beta2/options.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
