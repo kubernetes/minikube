@@ -85,14 +85,15 @@ func LogContainerDebug(ociBin string, name string) string {
 		} else {
 			klog.Infof("postmortem docker info: %+v", di)
 		}
-		logDockerNetworkInspect(name)
+		logDockerNetworkInspect(ociBin, name)
 	} else {
 		pi, err := podmanSystemInfo()
 		if err != nil {
-			klog.Warningf("couldn't get postmortem info, failed to to run podman info: %v", err)
+			klog.Warningf("couldn't get postmortem podman info: %v", err)
 		} else {
 			klog.Infof("postmortem podman info: %+v", pi)
 		}
+		logDockerNetworkInspect(ociBin, name)
 	}
 
 	if rr.Stdout.Len() == 0 {
