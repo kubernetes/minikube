@@ -19,6 +19,7 @@ package kic
 import (
 	"fmt"
 	"os/exec"
+	"runtime"
 
 	"github.com/phayes/freeport"
 	v1 "k8s.io/api/core/v1"
@@ -39,7 +40,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 	sshArgs := []string{
 		// TODO: document the options here
 		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "StrictHostKeyChecking no",
+		"-o", "StrictHostKeyChecking=no",
 		"-N",
 		"docker@127.0.0.1",
 		"-p", sshPort,
@@ -66,8 +67,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 	}
 
 	command := "ssh"
-
-	if askForSudo {
+	if askForSudo && runtime.GOOS != "windows" {
 		out.Step(
 			style.Warning,
 			"The service {{.service}} requires privileged ports to be exposed: {{.ports}}",
@@ -79,7 +79,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		command = "sudo"
 		sshArgs = append([]string{"ssh"}, sshArgs...)
 	}
-
+	out.Step(style.Command,"Command - [{{.command}}], Arguments - [{{.args}}]",out.V{"command": command, "args":sshArgs})
 	cmd := exec.Command(command, sshArgs...)
 
 	return &sshConn{
@@ -94,7 +94,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 	sshArgs := []string{
 		// TODO: document the options here
 		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "StrictHostKeyChecking no",
+		"-o", "StrictHostKeyChecking=no",
 		"-N",
 		"docker@127.0.0.1",
 		"-p", sshPort,
@@ -139,7 +139,8 @@ func (c *sshConn) startAndWait() error {
 	}
 
 	// we ignore wait error because the process will be killed
-	_ = c.cmd.Wait()
+	err = c.cmd.Wait()
+	out.Step(style.Running,"Wait Error - [{{.err}}]",out.V{"err": err})
 
 	return nil
 }
