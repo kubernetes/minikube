@@ -31,16 +31,12 @@ func TestSetPreferredLanguage(t *testing.T) {
 		{"C", language.AmericanEnglish},
 		{"zh", language.Chinese},
 		{"fr_FR.utf8", language.French},
+		{"zzyy.utf8", language.AmericanEnglish},
 	}
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
 			// Set something so that we can assert change.
-			if err := SetPreferredLanguage("is"); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
-			if err := SetPreferredLanguage(tc.input); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
+			SetPreferredLanguage(tc.input)
 
 			want, _ := tc.want.Base()
 			got, _ := GetPreferredLanguage().Base()
