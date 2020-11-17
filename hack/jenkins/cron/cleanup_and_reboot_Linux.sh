@@ -38,12 +38,18 @@ killall java
 
 # clean minikube left overs
 echo -e "\ncleanup minikube..."
-killall minikube >/dev/null 2>&1 || true
-USERS="$(lslogins --user-accs --noheadings --output=USER)"
-for user in $USERS; do
-    if sudo su - $user -c "minikube delete --all --purge" >/dev/null 2>&1; then
-	echo "successfully cleaned up minikube for $user user"
-    fi
+for user in $(lslogins --user-accs --noheadings --output=USER); do
+	minikube="$(sudo su - ${user} -c 'command -v minikube')"
+	if [ ! -x "${minikube}" ]; then
+		minikube="/tmp/minikube"
+		curl -sfL https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 -o "${minikube}" && chmod +x "${minikube}" || true
+	fi
+	if [ -x "${minikube}" ]; then
+		if sudo su - "${user}" -c "${minikube} delete --all --purge" >/dev/null 2>&1; then
+			echo "successfully cleaned up minikube for ${user} user using ${minikube}"
+		fi
+	fi
+	sudo killall --user "${user}" minikube >/dev/null 2>&1 || true
 done
 
 # clean docker left overs
