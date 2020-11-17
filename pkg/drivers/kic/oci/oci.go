@@ -17,26 +17,26 @@ limitations under the License.
 package oci
 
 import (
-	"context"
-	"os"
-	"time"
-
 	"bufio"
 	"bytes"
+	"context"
+	"fmt"
+	"net/url"
+	"os"
+	"os/exec"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
-
-	"fmt"
-	"os/exec"
-	"runtime"
-	"strconv"
-	"strings"
 )
 
 // DeleteContainersByLabel deletes all containers that have a specific label
@@ -521,18 +521,29 @@ func ListContainersByLabel(ociBin string, label string, warnSlow ...bool) ([]str
 // PointToHostDockerDaemon will unset env variables that point to docker inside minikube
 // to make sure it points to the docker daemon installed by user.
 func PointToHostDockerDaemon() error {
-	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
-	if p != "" {
+
+	if p := os.Getenv(constants.MinikubeActiveDockerdEnv); p != "" {
 		klog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
+		for _, e := range constants.DockerDaemonEnvs {
+			if err := resetEnv(e); err != nil {
+				return err
+			}
+		}
 	}
 
-	for i := range constants.DockerDaemonEnvs {
-		e := constants.DockerDaemonEnvs[i]
-		err := os.Setenv(e, "")
-		if err != nil {
-			return errors.Wrapf(err, "resetting %s env", e)
-		}
+	return nil
+}
 
+func resetEnv(key string) error {
+	v := os.Getenv(constants.MinikubeExistingPrefix + key)
+	if v == "" {
+		if err := os.Unsetenv(key); err != nil {
+			return errors.Wrapf(err, "resetting %s env", key)
+		}
+		return nil
+	}
+	if err := os.Setenv(key, v); err != nil {
+		return errors.Wrapf(err, "resetting %s env", key)
 	}
 	return nil
 }
@@ -627,4 +638,37 @@ func iptablesFileExists(ociBin string, nameOrID string) bool {
 		return false
 	}
 	return true
+}
+
+// DaemonHost returns the ip/hostname where OCI daemon service for driver is running
+// For Podman it's always DefaultBindIPV4
+// For Docker return the host part of DOCKER_HOST environment variable if set
+// or DefaultBindIPV4 otherwise
+func DaemonHost(driver string) string {
+	if driver != Docker {
+		return DefaultBindIPV4
+	}
+	if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
+		if u, err := url.Parse(dh); err == nil {
+			if u.Host != "" {
+				return u.Hostname()
+			}
+		}
+	}
+	return DefaultBindIPV4
+}
+
+// IsExternalDaemonHost returns whether or not the OCI runtime is running on an external/virtual host
+// For Podman driver it's always false for now
+// For Docker driver return true if DOCKER_HOST is set to a URI, and the URI contains a host item
+func IsExternalDaemonHost(driver string) bool {
+	if driver != Docker {
+		return false
+	}
+	if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
+		if u, err := url.Parse(dh); err == nil {
+			return u.Host != ""
+		}
+	}
+	return false
 }
