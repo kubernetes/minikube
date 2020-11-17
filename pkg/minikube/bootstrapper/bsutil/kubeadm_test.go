@@ -19,11 +19,13 @@ package bsutil
 import (
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pmezard/go-difflib/difflib"
+	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -75,9 +77,28 @@ func getExtraOptsPodCidr() []config.ExtraOption {
 	}
 }
 
-func recentReleases() ([]string, error) {
-	// test the 6 most recent releases
-	versions := []string{"v1.20.0-beta.1", "v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+// recentReleases returns a dynamic list of up to n recent testdata versions, sorted from newest to older.
+// If n > 0, returns at most n versions.
+// If n <= 0, returns all the versions.
+// It will error if no testdata are available or in absence of testdata for newest and default minor k8s versions.
+func recentReleases(n int) ([]string, error) {
+	path := "testdata"
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list testdata directory %s: %w", path, err)
+	}
+	var versions []string
+	for _, file := range files {
+		if file.IsDir() {
+			versions = append(versions, file.Name())
+		}
+	}
+	sort.Slice(versions, func(i, j int) bool { return versions[i] > versions[j] })
+	if n <= 0 || n > len(versions) {
+		n = len(versions)
+	}
+	versions = versions[0:n]
+
 	foundNewest := false
 	foundDefault := false
 
@@ -108,7 +129,17 @@ This test case has only 1 thing to test and that is the
 nnetworking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
-	versions := []string{"v1.20.0-beta.1", "v1.19", "v1.18", "v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	// test all testdata releases greater than v1.11
+	versions, err := recentReleases(0)
+	if err != nil {
+		t.Errorf("versions: %v", err)
+	}
+	for i, v := range versions {
+		if semver.Compare(v, "v1.11") <= 0 {
+			versions = versions[0:i]
+			break
+		}
+	}
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
 		"docker info --format {{.CgroupDriver}}": "systemd\n",
@@ -138,6 +169,11 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 					},
 				}
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
+				// if version+".0" does not yet have a stable release, use NewestKubernetesVersion
+				// ie, 'v1.20.0-beta.1' NewestKubernetesVersion indicates that 'v1.20.0' is not yet released as stable
+				if semver.Compare(cfg.KubernetesConfig.KubernetesVersion, constants.NewestKubernetesVersion) == 1 {
+					cfg.KubernetesConfig.KubernetesVersion = constants.NewestKubernetesVersion
+				}
 				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
 				got, err := GenerateKubeadmYAML(cfg, cfg.Nodes[0], runtime)
@@ -175,7 +211,8 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 func TestGenerateKubeadmYAML(t *testing.T) {
 	extraOpts := getExtraOpts()
 	extraOptsPodCidr := getExtraOptsPodCidr()
-	versions, err := recentReleases()
+	// test the 6 most recent releases
+	versions, err := recentReleases(6)
 	if err != nil {
 		t.Errorf("versions: %v", err)
 	}
@@ -225,6 +262,11 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 					}
 				}
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
+				// if version+".0" does not yet have a stable release, use NewestKubernetesVersion
+				// ie, 'v1.20.0-beta.1' NewestKubernetesVersion indicates that 'v1.20.0' is not yet released as stable
+				if semver.Compare(cfg.KubernetesConfig.KubernetesVersion, constants.NewestKubernetesVersion) == 1 {
+					cfg.KubernetesConfig.KubernetesVersion = constants.NewestKubernetesVersion
+				}
 				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
 				got, err := GenerateKubeadmYAML(cfg, cfg.Nodes[0], runtime)
