@@ -60,7 +60,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
-	"k8s.io/minikube/pkg/trace"
+	pkgtrace "k8s.io/minikube/pkg/trace"
 
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -130,7 +130,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 
 	out.SetJSON(outputFormat == "json")
-	trace.Initialize("gcp")
+	if err := pkgtrace.Initialize(viper.GetString(trace)); err != nil {
+		exit.Message(reason.Usage, "error initializing tracing: {{.Error}}", out.V{"Error": err.Error()})
+	}
+	defer pkgtrace.Cleanup()
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
