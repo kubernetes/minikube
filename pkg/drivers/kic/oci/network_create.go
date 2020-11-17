@@ -51,7 +51,7 @@ func CreateNetwork(ociBin string, name string) (net.IP, error) {
 
 func createDockerNetwork(networkName string) (net.IP, error) {
 	// check if the network is docker native, if this is the case return
-	if networkName == "bridge" {
+	if networkName == dockerDefaultBridge {
 		out.WarningT("Using the bridge network may result in minikube IP changing on restart")
 		return nil, nil
 	}

@@ -24,7 +24,7 @@ import (
 	"testing"
 )
 
-func TestDockerNetworkFlag(t *testing.T) {
+func TestKicCustomNetwork(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("only runs with docker driver")
 	}
@@ -35,7 +35,6 @@ func TestDockerNetworkFlag(t *testing.T) {
 	}{
 		{
 			description: "create custom network",
-			flag:        "--docker-network=\"\"",
 		}, {
 			description: "use default bridge network",
 			flag:        "--docker-network=bridge",
