@@ -38,7 +38,7 @@ killall java
 
 # clean minikube left overs
 echo -e "\ncleanup minikube..."
-killall minikube >/dev/null 2>&1
+killall minikube >/dev/null 2>&1 || true
 USERS="$(lslogins --user-accs --noheadings --output=USER)"
 for user in $USERS; do
     if sudo su - $user -c "minikube delete --all --purge" >/dev/null 2>&1; then
@@ -49,19 +49,19 @@ done
 # clean docker left overs
 echo -e "\ncleanup docker..."
 docker kill $(docker ps -aq) >/dev/null 2>&1 || true
-docker system prune --all --volumes --force || true
+docker system prune --volumes --force || true
 
 # clean KVM left overs
 echo -e "\ncleanup kvm..."
 overview() {
 	echo -e "\n - KVM domains:"
-	sudo virsh list --all
+	sudo virsh list --all || true
 	echo " - KVM pools:"
-	sudo virsh pool-list --all
+	sudo virsh pool-list --all || true
 	echo " - KVM networks:"
-	sudo virsh net-list --all
+	sudo virsh net-list --all || true
 	echo " - host networks:"
-	sudo ip link show
+	sudo ip link show || true
 }
 echo -e "\nbefore the cleanup:"
 overview
