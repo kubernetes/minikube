@@ -73,7 +73,7 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 	}
 
 	// update files
-	changes, err := ghUpdate(ctx, owner, repo, baseTree, token, schema, data)
+	changes, err := ghUpdate(ctx, owner, repo, token, schema, data)
 	if err != nil {
 		return nil, fmt.Errorf("unable to update files: %w", err)
 	}
@@ -126,16 +126,16 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 	klog.Infof("PR branch '%s' successfully created: %s", prBranch, prRef.GetURL())
 
 	// create PR
-	plan, err := GetPlan(schema, data)
+	_, pretty, err := GetPlan(schema, data)
 	if err != nil {
-		klog.Fatalf("Unable to parse schema: %v\n%s", err, plan)
+		klog.Fatalf("Unable to parse schema: %v\n%s", err, pretty)
 	}
 	modifiable := true
 	pr, _, err := ghc.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
 		Title:               github.String(title),
 		Head:                github.String(*fork.Owner.Login + ":" + prBranch),
 		Base:                github.String(base),
-		Body:                github.String(fmt.Sprintf("fixes: #%d\n\nAutomatically created PR to update repo according to the Plan:\n\n```\n%s\n```", issue, plan)),
+		Body:                github.String(fmt.Sprintf("fixes: #%d\n\nAutomatically created PR to update repo according to the Plan:\n\n```\n%s\n```", issue, pretty)),
 		MaintainerCanModify: &modifiable,
 	})
 	if err != nil {
@@ -170,40 +170,40 @@ func ghFindPR(ctx context.Context, title, owner, repo, base, token string) (url 
 
 // ghUpdate updates remote GitHub owner/repo tree according to the given token, schema and data.
 // Returns resulting changes, and any error occurred.
-func ghUpdate(ctx context.Context, owner, repo string, tree *github.Tree, token string, schema map[string]Item, data interface{}) (changes []*github.TreeEntry, err error) {
+func ghUpdate(ctx context.Context, owner, repo string, token string, schema map[string]Item, data interface{}) (changes []*github.TreeEntry, err error) {
 	ghc := ghClient(ctx, token)
 
 	// load each schema item content and update it creating new GitHub TreeEntries
-	cnt := len(schema) // expected number of files to change
-	for _, org := range tree.Entries {
-		if *org.Type == "blob" {
-			if item, match := schema[*org.Path]; match {
-				blob, _, err := ghc.Git.GetBlobRaw(ctx, owner, repo, *org.SHA)
-				if err != nil {
-					return nil, fmt.Errorf("unable to get file: %w", err)
-				}
-				item.Content = blob
-				changed, err := item.apply(data)
-				if err != nil {
-					return nil, fmt.Errorf("unable to update file: %w", err)
-				}
-				if changed {
-					// add github.TreeEntry that will replace original path content with the updated one
-					changes = append(changes, &github.TreeEntry{
-						Path:    org.Path,
-						Mode:    org.Mode,
-						Type:    org.Type,
-						Content: github.String(string(item.Content)),
-					})
-				}
-				if cnt--; cnt == 0 {
-					break
-				}
+	for path, item := range schema {
+		// if the item's content is already set, give it precedence over any current file content
+		var content string
+		if item.Content == nil {
+			file, _, _, err := ghc.Repositories.GetContents(ctx, owner, repo, path, &github.RepositoryContentGetOptions{Ref: ghBase})
+			if err != nil {
+				return nil, fmt.Errorf("unable to get file content: %w", err)
 			}
+			content, err = file.GetContent()
+			if err != nil {
+				return nil, fmt.Errorf("unable to read file content: %w", err)
+			}
+			item.Content = []byte(content)
 		}
-	}
-	if cnt != 0 {
-		return nil, fmt.Errorf("unable to find all the files (%d missing) - check the Plan: %w", cnt, err)
+		if err := item.apply(data); err != nil {
+			return nil, fmt.Errorf("unable to update file: %w", err)
+		}
+		if content != string(item.Content) {
+			// add github.TreeEntry that will replace original path content with the updated one or add new if one doesn't exist already
+			// ref: https://developer.github.com/v3/git/trees/#tree-object
+			rcPath := path // make sure to copy path variable as its reference (not value!) is passed to changes
+			rcMode := "100644"
+			rcType := "blob"
+			changes = append(changes, &github.TreeEntry{
+				Path:    &rcPath,
+				Mode:    &rcMode,
+				Type:    &rcType,
+				Content: github.String(string(item.Content)),
+			})
+		}
 	}
 	return changes, nil
 }
