@@ -30,6 +30,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -43,7 +44,31 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-var dockerEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
+var dockerSetEnvTmpl = fmt.Sprintf(
+	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}"+
+		"{{ if .ExistingDockerTLSVerify }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingDockerTLSVerify }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .ExistingDockerHost }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingDockerHost }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .ExistingDockerCertPath }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingDockerCertPath }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}"+
+		"{{ if .NoProxyVar }}"+
+		"{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ .UsageHint }}",
+	constants.DockerTLSVerifyEnv,
+	constants.DockerHostEnv,
+	constants.DockerCertPathEnv,
+	constants.ExistingDockerTLSVerifyEnv,
+	constants.ExistingDockerHostEnv,
+	constants.ExistingDockerCertPathEnv,
+	constants.MinikubeActiveDockerdEnv)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -54,6 +79,10 @@ type DockerShellConfig struct {
 	MinikubeDockerdProfile string
 	NoProxyVar             string
 	NoProxyValue           string
+
+	ExistingDockerCertPath  string
+	ExistingDockerHost      string
+	ExistingDockerTLSVerify string
 }
 
 var (
@@ -81,6 +110,11 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShel
 	s.DockerCertPath = envMap[constants.DockerCertPathEnv]
 	s.DockerHost = envMap[constants.DockerHostEnv]
 	s.DockerTLSVerify = envMap[constants.DockerTLSVerifyEnv]
+
+	s.ExistingDockerCertPath = envMap[constants.ExistingDockerCertPathEnv]
+	s.ExistingDockerHost = envMap[constants.ExistingDockerHostEnv]
+	s.ExistingDockerTLSVerify = envMap[constants.ExistingDockerTLSVerifyEnv]
+
 	s.MinikubeDockerdProfile = envMap[constants.MinikubeActiveDockerdEnv]
 
 	if ec.noProxy {
@@ -134,8 +168,17 @@ var dockerEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Docker daemon",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
+
+		shl := shell.ForceShell
+		if shl == "" {
+			shl, err = shell.Detect()
+			if err != nil {
+				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
+			}
+		}
 		sh := shell.EnvConfig{
-			Shell: shell.ForceShell,
+			Shell: shl,
 		}
 
 		if dockerUnset {
@@ -167,7 +210,6 @@ var dockerEnvCmd = &cobra.Command{
 			mustRestartDocker(cname, co.CP.Runner)
 		}
 
-		var err error
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
@@ -184,13 +226,6 @@ var dockerEnvCmd = &cobra.Command{
 			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,
-		}
-
-		if ec.Shell == "" {
-			ec.Shell, err = shell.Detect()
-			if err != nil {
-				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
-			}
 		}
 
 		dockerPath, err := exec.LookPath("docker")
@@ -228,7 +263,7 @@ type DockerEnvConfig struct {
 // dockerSetScript writes out a shell-compatible 'docker-env' script
 func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 	envVars := dockerEnvVars(ec)
-	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
+	return shell.SetScript(ec.EnvConfig, w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env unset' script
@@ -246,7 +281,6 @@ func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 			vars = append(vars, k)
 		}
 	}
-
 	return shell.UnsetScript(ec.EnvConfig, w, vars)
 }
 
@@ -257,14 +291,21 @@ func dockerURL(ip string, port int) string {
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec DockerEnvConfig) map[string]string {
-	env := map[string]string{
+	rt := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
 		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
 	}
-
-	return env
+	if os.Getenv(constants.MinikubeActiveDockerdEnv) == "" {
+		for _, env := range constants.DockerDaemonEnvs {
+			if v := oci.InitialEnv(env); v != "" {
+				key := constants.MinikubeExistingPrefix + env
+				rt[key] = v
+			}
+		}
+	}
+	return rt
 }
 
 // dockerEnvVarsList gets the necessary docker env variables to allow the use of minikube's docker daemon to be used in a exec.Command
