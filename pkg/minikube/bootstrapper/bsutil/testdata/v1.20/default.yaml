@@ -11,7 +11,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /var/run/crio/crio.sock
+  criSocket: /var/run/dockershim.sock
   name: "mk"
   kubeletExtraArgs:
     node-ip: 1.1.1.1
@@ -23,18 +23,12 @@ apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
   extraArgs:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-    fail-no-swap: "true"
-    feature-gates: "a=b"
 controllerManager:
   extraArgs:
-    feature-gates: "a=b"
-    kube-api-burst: "32"
     leader-elect: "false"
 scheduler:
   extraArgs:
-    feature-gates: "a=b"
     leader-elect: "false"
-    scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 controlPlaneEndpoint: control-plane.minikube.internal:8443
@@ -45,7 +39,7 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.20.0-beta.1.0
+kubernetesVersion: v1.20.0-beta.1
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"
@@ -71,4 +65,3 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 clusterCIDR: "10.244.0.0/16"
 metricsBindAddress: 1.1.1.1:10249
-mode: "iptables"
