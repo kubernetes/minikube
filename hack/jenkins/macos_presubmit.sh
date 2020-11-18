@@ -19,10 +19,10 @@ set -ex
 MINIKUBE_LOCATION=$KOKORO_GITHUB_PULL_REQUEST_NUMBER
 COMMIT=$KOKORO_GITHUB_PULL_REQUEST_COMMIT
 OS_ARCH="darwin-amd64"
-VM_DRIVER="hyperkit"
+VM_DRIVER="docker"
 JOB_NAME="Docker_macOS"
 EXTRA_START_ARGS=""
-EXPECTED_DEFAULT_DRIVER="hyperkit"
+EXPECTED_DEFAULT_DRIVER="docker"
 
 cd github/minikube/hack/jenkins
 
@@ -35,24 +35,4 @@ docker version --format {{.Server.Os}}-{{.Server.Version}}
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
 
-#source common.sh
-mkdir -p out/ testdata/
-# Add the out/ directory to the PATH, for using new drivers.
-PATH="$(pwd)/out/":$PATH
-export PATH
-gsutil -qm cp \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
-
-gsutil -qm cp -r "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
-
-gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
-
-export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
-export E2E_BIN="out/e2e-${OS_ARCH}"
-chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
-"${MINIKUBE_BIN}" version
-
-"${MINIKUBE_BIN}" start --driver=docker --wait-timeout=20m
-exit $?
+source common.sh
