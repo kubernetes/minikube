@@ -24,9 +24,9 @@ JOB_NAME="Docker_macOS"
 EXTRA_START_ARGS=""
 EXPECTED_DEFAULT_DRIVER="docker"
 
-cd github/minikube/hack/jenkins
+cd github/minikube
 
-docker-machine create --driver virtualbox  --virtualbox-cpu-count 2 --virtualbox-memory 4000 default
+docker-machine create --driver virtualbox  --virtualbox-cpu-count 2 --virtualbox-memory 8000 default
 docker-machine env default
 eval "$(docker-machine env default)"
 docker info
@@ -35,4 +35,4 @@ docker version --format {{.Server.Os}}-{{.Server.Version}}
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
 
-source common.sh
+make integration-functional-only
