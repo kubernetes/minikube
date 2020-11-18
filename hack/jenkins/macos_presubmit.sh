@@ -26,13 +26,11 @@ EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 cd github/minikube/hack/jenkins
 
-#docker-machine create --driver virtualbox  --virtualbox-cpu-count 2 --virtualbox-memory 4000 default
-#docker-machine env default
-#eval "$(docker-machine env default)"
-#docker info
-#docker version --format {{.Server.Os}}-{{.Server.Version}}
-
-brew install hyperkit
+docker-machine create --driver virtualbox  --virtualbox-cpu-count 2 --virtualbox-memory 4000 default
+docker-machine env default
+eval "$(docker-machine env default)"
+docker info
+docker version --format {{.Server.Os}}-{{.Server.Version}}
 
 # Force python3.7
 export CLOUDSDK_PYTHON=/usr/bin/python3
@@ -53,9 +51,8 @@ gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
-sudo chown root:wheel out/docker-machine-driver-hyperkit
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 "${MINIKUBE_BIN}" version
 
-"${MINIKUBE_BIN}" start --driver=hyperkit --wait-timeout=20m
+"${MINIKUBE_BIN}" start --driver=docker --wait-timeout=20m
 exit $?
