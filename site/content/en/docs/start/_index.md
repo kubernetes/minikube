@@ -149,7 +149,7 @@ To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is 
 
 ```shell
 kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4  
-kubectl expose deployment balanced --type=LoadBalancer --port=8000
+kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 
 In another window, start the tunnel to create a routable IP for the 'balanced' deployment:
@@ -162,7 +162,7 @@ To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
 
 `kubectl get services balanced`
 
-Your deployment is now available at &lt;EXTERNAL-IP&gt;:8000
+Your deployment is now available at &lt;EXTERNAL-IP&gt;:8080
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
 

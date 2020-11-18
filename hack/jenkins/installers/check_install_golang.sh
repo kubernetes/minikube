@@ -18,7 +18,7 @@ set -eux -o pipefail
 
 if (($# < 2)); then
   echo "ERROR: given ! ($#) number of parameters but expect 2."
-  echo "USAGE: ./check_and_install_golang.sh VERSION_TO_INSTALL INSTALL_PATH"
+  echo "USAGE: ./check_install_golang.sh VERSION_TO_INSTALL INSTALL_PATH"
   exit 1
 fi
 

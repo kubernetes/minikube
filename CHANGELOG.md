@@ -1,5 +1,127 @@
 # Release Notes
 
+## Version 1.15.1 - 2020-11-16
+
+Feature:
+* Add Support for driver name alias [#9672](https://github.com/kubernetes/minikube/pull/9672)
+
+Bug fix:
+* less verbose language selector [#9715](https://github.com/kubernetes/minikube/pull/9715)
+
+Thank you to our contributors for this release!
+- Ben Leggett
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sadlil
+- Sharif Elgamal
+- Vasilyev, Viacheslav
+
+
+## Version 1.15.0 - 2020-11-13
+
+Features:
+
+* Add support for latest kubernetes version v1.20.0-beta.1  [#9693](https://github.com/kubernetes/minikube/pull/9693)
+* Implement schedule stop for unix [#9503](https://github.com/kubernetes/minikube/pull/9503)
+* New flag --watch flag for minikube status with optional interval duration [#9487](https://github.com/kubernetes/minikube/pull/9487)
+* New flag  --namespace for activating non default kubeconfig context [#9506](https://github.com/kubernetes/minikube/pull/9506)
+* Add JSON output to stop, pause and unpause [#9576](https://github.com/kubernetes/minikube/pull/9576)
+* Add support for podman v2 to podman-env command [#9535](https://github.com/kubernetes/minikube/pull/9535)
+* Support ImageRepository for addons [#9551](https://github.com/kubernetes/minikube/pull/9551)
+
+Bug Fixes:
+
+* implement "--log_file" and "--log_dir" for klog [#9592](https://github.com/kubernetes/minikube/pull/9592)
+* GCP Auth Addon: support special location for cloud shell [#9674](https://github.com/kubernetes/minikube/pull/9674)
+* Enable TCP Path MTU Discovery when an ICMP black hole is detected [#9537](https://github.com/kubernetes/minikube/pull/9537)
+* Remove hard-coded list of valid cgroupfs mountpoints to bind mount [#9508](https://github.com/kubernetes/minikube/pull/9508)
+* Improve parsing of start flag apiserver-names [#9385](https://github.com/kubernetes/minikube/pull/9385)
+* kvm: recover from minikube-net network left over failures  [#9641](https://github.com/kubernetes/minikube/pull/9641)
+* fix help flag 'pflag: help requested' error [#9614](https://github.com/kubernetes/minikube/pull/9614)
+* Update "parallels" driver library and make this driver built into minikube [#9517](https://github.com/kubernetes/minikube/pull/9517)
+
+Minor Improvements:
+
+* Upgrade crio to 1.18.4 [#9628](https://github.com/kubernetes/minikube/pull/9628)
+* Update ingress-nginx image to v0.40.2 [#9445](https://github.com/kubernetes/minikube/pull/9445)
+* Improving log message when profile not found [#9613](https://github.com/kubernetes/minikube/pull/9613)
+* Upgrade buildroot and kernel minor version [#9523](https://github.com/kubernetes/minikube/pull/9523)
+
+Thank you to our contributors for this release! 
+
+- Anders F Björklund
+- Evgeny Shmarnev
+- Ma Xinjian
+- Manuel Alejandro de Brito Fontes
+- Medya Ghazizadeh
+- Michael Ryan Dempsey
+- Mikhail Zholobov
+- Peter Lin
+- Predrag Rogic
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- Yehiyam Livneh
+- prezha
+- vinu2003
+- zouyu
+
+
+## Version 1.14.2 - 2020-10-27
+
+Bug Fixes:
+
+* fix "profile list" timing out when cluster stopped. [#9557](https://github.com/kubernetes/minikube/pull/9557)
+
+Thank you to our contributors for this release!
+
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Thomas Strömberg
+
+## Version 1.14.1 - 2020-10-23
+
+Features:
+
+* new --wait flag component "kubelet" [#9459](https://github.com/kubernetes/minikube/pull/9459)
+
+Bug Fixes:
+
+* docker: When creating networks, use MTU of built-in bridge network [#9530](https://github.com/kubernetes/minikube/pull/9530)
+* multinode: ensure worker node join control plane on restart [#9476](https://github.com/kubernetes/minikube/pull/9476)
+* Fix "--native-ssh" flag for "minikube ssh" [#9417](https://github.com/kubernetes/minikube/pull/9417)
+* Fix parallels driver initialization [#9494](https://github.com/kubernetes/minikube/pull/9494)
+
+Minor Improvements:
+
+* Omit error message if 100-crio-bridge.conf has already been disabled [#9505](https://github.com/kubernetes/minikube/pull/9505)
+* avoid re-downloading hyperkit driver [#9365](https://github.com/kubernetes/minikube/pull/9365)
+* improve gcp-auth addon failure policy [#9408](https://github.com/kubernetes/minikube/pull/9408)
+* Added deprecation warning for --network-plugin=cni [#9368](https://github.com/kubernetes/minikube/pull/9368)
+* Update warning message for local proxy. [#9490](https://github.com/kubernetes/minikube/pull/9490)
+* bump helm-tiller addon to v2.16.12 [#9444](https://github.com/kubernetes/minikube/pull/9444)
+* bump version for ingress dns addon [#9435](https://github.com/kubernetes/minikube/pull/9435)
+
+Thank you to our contributors for this release! 
+
+- Anders F Björklund
+- Dale Hamel
+- GRXself
+- Ilya Zuyev
+- Josh Woodcock
+- Joshua Mühlfort
+- Kenta Iso
+- Medya Ghazizadeh
+- Mikhail Zholobov
+- Nick Kubala
+- Pablo Caderno
+- Predrag Rogic
+- Priya Modali
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- heyf
+
 ## Version 1.14.0 - 2020-10-08
 
 ## Features

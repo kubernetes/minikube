@@ -1,0 +1,94 @@
+# Copyright 2016 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: minikube-ingress-dns
+  namespace: kube-system
+  labels:
+    app: minikube-ingress-dns
+    kubernetes.io/bootstrapping: rbac-defaults
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: minikube-ingress-dns
+  namespace: kube-system
+  labels:
+    app: minikube-ingress-dns
+    kubernetes.io/bootstrapping: rbac-defaults
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+    gcp-auth-skip-secret: "true"
+rules:
+  - apiGroups:
+      - ""
+      - "extensions"
+      - "networking.k8s.io"
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: minikube-ingress-dns
+  namespace: kube-system
+  labels:
+    app: minikube-ingress-dns
+    kubernetes.io/bootstrapping: rbac-defaults
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: minikube-ingress-dns
+subjects:
+  - kind: ServiceAccount
+    name: minikube-ingress-dns
+    namespace: kube-system
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-ingress-dns-minikube
+  namespace: kube-system
+  labels:
+    app: minikube-ingress-dns
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  serviceAccountName: minikube-ingress-dns
+  hostNetwork: true
+  containers:
+    - name: minikube-ingress-dns
+      image: {{default "cryptexlabs" .ImageRepository}}/minikube-ingress-dns:0.3.0
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 53
+          protocol: UDP
+      env:
+        - name: DNS_PORT
+          value: "53"
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP

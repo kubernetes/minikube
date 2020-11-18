@@ -30,8 +30,14 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
+# install lsof for finding none driver procs, psmisc to use pstree in cronjobs
+sudo apt-get -y install lsof psmisc
+
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.14.6" "/usr/local" || true
+sudo ./installers/check_install_golang.sh "1.15.2" "/usr/local" || true
+
+# install docker and kubectl if not present
+sudo ./installers/check_install_docker.sh
 
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 docker volume prune -f || true
@@ -47,7 +53,7 @@ echo "test home: ${TEST_HOME}"
 echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
 echo "uptime:    $(uptime)"
-# Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
+# Setting KUBECONFIG prevents the version check from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version  --format '{{ .Client.Version }}')"
 echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"
@@ -211,6 +217,7 @@ if [[ "${kprocs}" != "" ]]; then
   ps -f -p ${kprocs} || true
   sudo -E kill ${kprocs} || true
 fi
+
 
 # clean up none drivers binding on 8443
   none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)

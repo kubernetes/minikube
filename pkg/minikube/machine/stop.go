@@ -42,7 +42,7 @@ func StopHost(api libmachine.API, machineName string) error {
 		return errors.Wrapf(err, "load")
 	}
 
-	out.T(style.Stopping, `Stopping node "{{.name}}"  ...`, out.V{"name": machineName})
+	out.Step(style.Stopping, `Stopping node "{{.name}}"  ...`, out.V{"name": machineName})
 	return stop(h)
 }
 
@@ -80,7 +80,8 @@ func trySSHPowerOff(h *host.Host) error {
 		return nil
 	}
 
-	out.T(style.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
+	register.Reg.SetStep(register.PowerOff)
+	out.Step(style.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
 	// differnet for kic because RunSSHCommand is not implemented by kic
 	if driver.IsKIC(h.DriverName) {
 		err := oci.ShutDown(h.DriverName, h.Name)

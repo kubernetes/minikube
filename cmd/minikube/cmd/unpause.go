@@ -46,6 +46,7 @@ var unpauseCmd = &cobra.Command{
 		register.SetEventLogPath(localpath.EventLog(cname))
 
 		co := mustload.Running(cname)
+		out.SetJSON(outputFormat == "json")
 		register.Reg.SetStep(register.Unpausing)
 
 		klog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
@@ -68,7 +69,7 @@ var unpauseCmd = &cobra.Command{
 				name = co.Config.Name
 			}
 
-			out.T(style.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
+			out.Step(style.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
 
 			machineName := driver.MachineName(*co.Config, n)
 			host, err := machine.LoadHost(co.API, machineName)
@@ -96,9 +97,9 @@ var unpauseCmd = &cobra.Command{
 		register.Reg.SetStep(register.Done)
 
 		if namespaces == nil {
-			out.T(style.Pause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
+			out.Step(style.Pause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
 		} else {
-			out.T(style.Pause, "Unpaused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+			out.Step(style.Pause, "Unpaused {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
 		}
 	},
 }
@@ -106,4 +107,5 @@ var unpauseCmd = &cobra.Command{
 func init() {
 	unpauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", constants.DefaultNamespaces, "namespaces to unpause")
 	unpauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, unpause all namespaces")
+	unpauseCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 }

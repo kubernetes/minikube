@@ -283,7 +283,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.T(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
@@ -392,10 +392,13 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 // WaitForNode blocks until the node appears to be healthy
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
-
 	register.Reg.SetStep(register.VerifyingKubernetes)
-	out.T(style.HealthCheck, "Verifying Kubernetes components...")
-
+	out.Step(style.HealthCheck, "Verifying Kubernetes components...")
+	// regardless if waiting is set or not, we will make sure kubelet is not stopped
+	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
+	if err := k.ensureServiceStarted("kubelet"); err != nil {
+		klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
+	}
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
@@ -455,6 +458,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			}
 		}
 	}
+	if cfg.VerifyComponents[kverify.KubeletKey] {
+		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
+			return errors.Wrap(err, "waiting for kubelet")
+		}
+
+	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
 		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
@@ -467,6 +476,15 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, cfg.Name, cfg.Driver)
 		return errors.Wrap(err, "node pressure")
+	}
+	return nil
+}
+
+// ensureKubeletStarted will start a systemd or init.d service if it is not running.
+func (k *Bootstrapper) ensureServiceStarted(svc string) error {
+	if st := kverify.ServiceStatus(k.c, svc); st != state.Running {
+		klog.Warningf("surprisingly %q service status was %s!. will try to start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)
+		return sysinit.New(k.c).Start(svc)
 	}
 	return nil
 }
@@ -655,18 +673,17 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 			klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
 		}
 
-		out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
+		_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 		if err != nil {
 			if strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
-				klog.Infof("Node %s already joined the cluster, skip failure.", n.Name)
-			} else {
-				return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out.Output())
+				klog.Info("still waiting for the worker node to register with the api server")
 			}
+			return errors.Wrapf(err, "kubeadm join")
 		}
 		return nil
 	}
 
-	if err := retry.Expo(join, 10*time.Second, 1*time.Minute); err != nil {
+	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
 		return errors.Wrap(err, "joining cp")
 	}
 
@@ -951,16 +968,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		klog.Warning(diskErr)
 		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
 		// generic advice for all drivers
-		out.T(style.Tip, "Please free up disk or prune images.")
+		out.Step(style.Tip, "Please free up disk or prune images.")
 		if driver.IsVM(drv) {
-			out.T(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
+			out.Step(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.T(style.Stopped, "Please increse Desktop's disk size.")
+			out.Step(style.Stopped, "Please increse Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
-				out.T(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.T(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")
@@ -971,16 +988,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		klog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
-		out.T(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
+		out.Step(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
 		if driver.IsVM(drv) {
-			out.T(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
+			out.Step(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.T(style.Stopped, "Consider increasing Docker Desktop's memory size.")
+			out.Step(style.Stopped, "Consider increasing Docker Desktop's memory size.")
 			if runtime.GOOS == "darwin" {
-				out.T(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.T(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")
