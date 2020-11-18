@@ -18,7 +18,7 @@ set -eux -o pipefail
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   echo "detected darwin, exiting"
-  return
+  exit 0
 fi
 
 echo "Installing latest docker"
