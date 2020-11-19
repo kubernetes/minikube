@@ -60,38 +60,3 @@ func TestOffline(t *testing.T) {
 		}
 	})
 }
-
-func TestOfflineDownload(t *testing.T) {
-	t.Run("group", func(t *testing.T) {
-		for _, runtime := range []string{"docker", "crio", "containerd"} {
-			runtime := runtime
-			t.Run(runtime, func(t *testing.T) {
-				MaybeParallel(t)
-
-				if runtime != "docker" && NoneDriver() {
-					t.Skipf("skipping %s - incompatible with none driver", t.Name())
-				}
-
-				profile := UniqueProfileName(fmt.Sprintf("offline-%s", runtime))
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
-				defer CleanupWithLogs(t, profile, cancel)
-
-				startArgs := []string{"start", "-p", profile, "--download-only", "--alsologtostderr", "-v=1", "--memory=2000", "--wait=true", "--container-runtime", runtime}
-				startArgs = append(startArgs, StartArgs()...)
-				c := exec.CommandContext(ctx, Target(), startArgs...)
-				env := os.Environ()
-				// RFC1918 address that unlikely to host working a proxy server
-				env = append(env, "HTTP_PROXY=172.16.1.1:1")
-				env = append(env, "HTTP_PROXYS=172.16.1.1:1")
-				env = append(env, "DOCKER_HOST=172.16.1.1:1")
-
-				c.Env = env
-				rr, err := Run(t, c)
-				if err != nil {
-					// Fatal so that we may collect logs before stop/delete steps
-					t.Fatalf("%s failed: %v", rr.Command(), err)
-				}
-			})
-		}
-	})
-}
