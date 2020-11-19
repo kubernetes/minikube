@@ -659,7 +659,7 @@ endif
 
 X_DOCKER_BUILDER ?= minikube-builder
 X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
-X_IMG = gcr.io/minikube-295421/kicbase
+X_IMG = gcr.io/minikube-dev-296021/kicbase
 
 .PHONY: kic-base-image-x
 kic-base-image-x: ## todo
