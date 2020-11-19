@@ -642,7 +642,7 @@ ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
 	$(MAKE) push-kic-base-image AUTOPUSH=true
 else
-	$(MAKE) push-kic-base-image-gcr push-kic-base-image-hub push-kic-base-image-gh push-kic-base-image-foo
+	$(MAKE) push-kic-base-image-gcr push-kic-base-image-hub push-kic-base-image-gh
 endif
 
 X_DOCKER_BUILDER ?= minikube-builder
