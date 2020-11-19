@@ -19,8 +19,10 @@ package gcpauth
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -63,6 +65,22 @@ func enableAddon(cfg *config.ClusterConfig) error {
 		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
+	if creds.JSON == nil {
+		// Cloud Shell sends credential files to an unusual location, let's check that location
+		// For example, CLOUDSDK_CONFIG=/tmp/tmp.cflmvysoQE
+		if e := os.Getenv("CLOUDSDK_CONFIG"); e != "" {
+			credFile := path.Join(e, "application_default_credentials.json")
+			b, err := ioutil.ReadFile(credFile)
+			if err != nil {
+				exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+			}
+			creds.JSON = b
+		} else {
+			// We don't currently support authentication through the metadata server
+			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		}
+	}
+
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
 
 	err = r.Copy(f)
@@ -85,7 +103,7 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	out.WarningT("Could not determine a Google Cloud project, which might be ok.")
-	out.T(style.Tip, `To set your Google Cloud project,  run: 
+	out.Step(style.Tip, `To set your Google Cloud project,  run: 
 
 		gcloud config set project <project name>
 

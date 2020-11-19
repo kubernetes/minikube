@@ -107,16 +107,16 @@ RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /e
     clean-install docker-ce docker-ce-cli containerd.io
 
 # Install cri-o/podman dependencies:
-RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \ 
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
     clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins varlink
 
-# install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
-RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.3/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.3/xUbuntu_20.04/Release.key && \
+# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.18/README.md#installing-cri-o
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.18.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
-    clean-install cri-o=1.18.3~3
+    clean-install cri-o cri-o-runc
 
 # install podman
 RUN sh -c "echo 'deb https://dl.bintray.com/afbjorklund/podman focal main' > /etc/apt/sources.list.d/podman.list" && \
@@ -124,13 +124,18 @@ RUN sh -c "echo 'deb https://dl.bintray.com/afbjorklund/podman focal main' > /et
     apt-key add - < afbjorklund-public.key.asc && \
     clean-install podman=1.9.3~1
 
-RUN mkdir -p /usr/lib/cri-o-runc/sbin && cp /usr/bin/runc /usr/lib/cri-o-runc/sbin/runc
-
 # automount service
 COPY automount/minikube-automount /usr/sbin/minikube-automount
 COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
 RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
     /etc/systemd/system/multi-user.target.wants/minikube-automount.service
+
+# scheduled stop service
+COPY scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
+COPY scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
+RUN ln -fs /usr/lib/systemd/system/minikube-scheduled-stop.service \
+    /etc/systemd/system/multi-user.target.wants/minikube-scheduled-stop.service && \
+    chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml

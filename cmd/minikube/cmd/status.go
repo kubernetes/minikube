@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/version"
@@ -53,6 +54,7 @@ var (
 	statusFormat string
 	output       string
 	layout       string
+	watch        time.Duration
 )
 
 const (
@@ -196,13 +198,27 @@ var statusCmd = &cobra.Command{
 	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
 	Run: func(cmd *cobra.Command, args []string) {
+		output = strings.ToLower(output)
 		if output != "text" && statusFormat != defaultStatusFormat {
 			exit.Message(reason.Usage, "Cannot use both --output and --format options")
 		}
 
+		out.SetJSON(output == "json")
+
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname)
 
+		duration := watch
+		if !cmd.Flags().Changed("watch") || watch < 0 {
+			duration = 0
+		}
+		writeStatusesAtInterval(duration, api, cc)
+	},
+}
+
+// writeStatusesAtInterval writes statuses in a given output format - at intervals defined by duration
+func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *config.ClusterConfig) {
+	for {
 		var statuses []*Status
 
 		if nodeName != "" || statusFormat != defaultStatusFormat && len(cc.Nodes) > 1 {
@@ -233,7 +249,7 @@ var statusCmd = &cobra.Command{
 			}
 		}
 
-		switch strings.ToLower(output) {
+		switch output {
 		case "text":
 			for _, st := range statuses {
 				if err := statusText(st, os.Stdout); err != nil {
@@ -255,8 +271,11 @@ var statusCmd = &cobra.Command{
 			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
 		}
 
-		os.Exit(exitCode(statuses))
-	},
+		if duration == 0 {
+			os.Exit(exitCode(statuses))
+		}
+		time.Sleep(duration)
+	}
 }
 
 // exitCode calcluates the appropriate exit code given a set of status messages
@@ -387,6 +406,8 @@ For the list accessible variables for the template, see the struct values here: 
 	statusCmd.Flags().StringVarP(&layout, "layout", "l", "nodes",
 		`output layout (EXPERIMENTAL, JSON only): 'nodes' or 'cluster'`)
 	statusCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.")
+	statusCmd.Flags().DurationVarP(&watch, "watch", "w", 1*time.Second, "Continuously listing/getting the status with optional interval duration.")
+	statusCmd.Flags().Lookup("watch").NoOptDefVal = "1s"
 }
 
 func statusText(st *Status, w io.Writer) error {
@@ -544,7 +565,7 @@ func clusterState(sts []*Status) ClusterState {
 			}
 			exitCode, err := strconv.Atoi(data["exitcode"])
 			if err != nil {
-				klog.Errorf("unable to convert exit code to int: %v", err)
+				klog.Errorf("exit code not found: %v", err)
 				continue
 			}
 			if val, ok := exitCodeToHTTPCode[exitCode]; ok {

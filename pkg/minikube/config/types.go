@@ -71,6 +71,7 @@ type ClusterConfig struct {
 	Addons                  map[string]bool
 	VerifyComponents        map[string]bool // map of components to verify and wait for after start.
 	StartHostTimeout        time.Duration
+	ScheduledStop           *ScheduledStopConfig
 	ExposedPorts            []string // Only used by the docker and podman driver
 }
 
@@ -78,6 +79,7 @@ type ClusterConfig struct {
 type KubernetesConfig struct {
 	KubernetesVersion   string
 	ClusterName         string
+	Namespace           string
 	APIServerName       string
 	APIServerNames      []string
 	APIServerIPs        []net.IP
@@ -136,4 +138,11 @@ type VersionedExtraOption struct {
 	// If it is the default value, it will have no lower bound on versions the
 	// flag is applied to
 	GreaterThanOrEqual semver.Version
+}
+
+// ScheduledStopConfig contains information around scheduled stop
+// not yet used, will be used to show status of scheduled stop
+type ScheduledStopConfig struct {
+	InitiationTime int64
+	Duration       time.Duration
 }

@@ -31,11 +31,11 @@ import (
 )
 
 const (
-	// ghListPerPage uses max value (100) for PerPage to avoid hitting the rate limits
+	// ghListPerPage uses max value (100) for PerPage to avoid hitting the rate limits.
 	// (ref: https://godoc.org/github.com/google/go-github/github#hdr-Rate_Limiting)
 	ghListPerPage = 100
 
-	// ghSearchLimit limits the number of searched items to be <= N * ListPerPage
+	// ghSearchLimit limits the number of searched items to be <= N * ghListPerPage.
 	ghSearchLimit = 100
 )
 
@@ -44,38 +44,38 @@ var (
 	ghToken = os.Getenv("GITHUB_TOKEN")
 	ghOwner = "kubernetes"
 	ghRepo  = "minikube"
-	ghBase  = "master" // could be "main" in the future?
+	ghBase  = "master" // could be "main" in the near future?
 )
 
-// ghCreatePR returns PR created in the GitHub owner/repo, applying the changes to the base head
-// commit fork, as defined by the schema and data, and also returns any error occurred
-// PR branch will be named by the branch, sufixed by '_' and first 7 characters of fork commit SHA
-// PR itself will be named by the title and will reference the issue
+// ghCreatePR returns PR created in the GitHub owner/repo, applying the changes to the base head commit fork, as defined by the schema and data.
+// Returns any error occurred.
+// PR branch will be named by the branch, sufixed by '_' and first 7 characters of the fork commit SHA.
+// PR itself will be named by the title and will reference the issue.
 func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, issue int, token string, schema map[string]Item, data interface{}) (*github.PullRequest, error) {
 	ghc := ghClient(ctx, token)
 
 	// get base branch
 	baseBranch, _, err := ghc.Repositories.GetBranch(ctx, owner, repo, base)
 	if err != nil {
-		return nil, fmt.Errorf("error getting base branch: %w", err)
+		return nil, fmt.Errorf("unable to get base branch: %w", err)
 	}
 
 	// get base commit
 	baseCommit, _, err := ghc.Repositories.GetCommit(ctx, owner, repo, *baseBranch.Commit.SHA)
 	if err != nil {
-		return nil, fmt.Errorf("error getting base commit: %w", err)
+		return nil, fmt.Errorf("unable to get base commit: %w", err)
 	}
 
 	// get base tree
 	baseTree, _, err := ghc.Git.GetTree(ctx, owner, repo, baseCommit.GetSHA(), true)
 	if err != nil {
-		return nil, fmt.Errorf("error getting base tree: %w", err)
+		return nil, fmt.Errorf("unable to get base tree: %w", err)
 	}
 
 	// update files
-	changes, err := ghUpdate(ctx, owner, repo, baseTree, token, schema, data)
+	changes, err := ghUpdate(ctx, owner, repo, token, schema, data)
 	if err != nil {
-		return nil, fmt.Errorf("error updating files: %w", err)
+		return nil, fmt.Errorf("unable to update files: %w", err)
 	}
 	if changes == nil {
 		return nil, nil
@@ -83,22 +83,21 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 
 	// create fork
 	fork, resp, err := ghc.Repositories.CreateFork(ctx, owner, repo, nil)
-	// https://pkg.go.dev/github.com/google/go-github/v32@v32.1.0/github#RepositoriesService.CreateFork
-	// This method might return an *AcceptedError and a status code of 202. This is because this is
-	// the status that GitHub returns to signify that it is now computing creating the fork in a
-	// background task. In this event, the Repository value will be returned, which includes the
-	// details about the pending fork. A follow up request, after a delay of a second or so, should
-	// result in a successful request.
+	// "This method might return an *AcceptedError and a status code of 202.
+	// This is because this is the status that GitHub returns to signify that it is now computing creating the fork in a background task.
+	// In this event, the Repository value will be returned, which includes the details about the pending fork.
+	// A follow up request, after a delay of a second or so, should result in a successful request."
+	// (ref: https://pkg.go.dev/github.com/google/go-github/v32@v32.1.0/github#RepositoriesService.CreateFork)
 	if resp.StatusCode == 202 { // *AcceptedError
 		time.Sleep(time.Second * 5)
 	} else if err != nil {
-		return nil, fmt.Errorf("error creating fork: %w", err)
+		return nil, fmt.Errorf("unable to create fork: %w", err)
 	}
 
 	// create fork tree from base and changed files
 	forkTree, _, err := ghc.Git.CreateTree(ctx, *fork.Owner.Login, *fork.Name, *baseTree.SHA, changes)
 	if err != nil {
-		return nil, fmt.Errorf("error creating fork tree: %w", err)
+		return nil, fmt.Errorf("unable to create fork tree: %w", err)
 	}
 
 	// create fork commit
@@ -108,9 +107,9 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 		Parents: []*github.Commit{{SHA: baseCommit.SHA}},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error creating fork commit: %w", err)
+		return nil, fmt.Errorf("unable to create fork commit: %w", err)
 	}
-	klog.Infof("PR commit '%s' created: %s", forkCommit.GetSHA(), forkCommit.GetHTMLURL())
+	klog.Infof("PR commit '%s' successfully created: %s", forkCommit.GetSHA(), forkCommit.GetHTMLURL())
 
 	// create PR branch
 	prBranch := branch + forkCommit.GetSHA()[:7]
@@ -122,74 +121,34 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error creating PR branch: %w", err)
+		return nil, fmt.Errorf("unable to create PR branch: %w", err)
 	}
-	klog.Infof("PR branch '%s' created: %s", prBranch, prRef.GetURL())
+	klog.Infof("PR branch '%s' successfully created: %s", prBranch, prRef.GetURL())
 
 	// create PR
-	plan, err := GetPlan(schema, data)
+	_, pretty, err := GetPlan(schema, data)
 	if err != nil {
-		klog.Fatalf("Error parsing schema: %v\n%s", err, plan)
+		klog.Fatalf("Unable to parse schema: %v\n%s", err, pretty)
 	}
 	modifiable := true
 	pr, _, err := ghc.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
 		Title:               github.String(title),
 		Head:                github.String(*fork.Owner.Login + ":" + prBranch),
 		Base:                github.String(base),
-		Body:                github.String(fmt.Sprintf("fixes #%d\n\nAutomatically created PR to update repo according to the Plan:\n\n```\n%s\n```", issue, plan)),
+		Body:                github.String(fmt.Sprintf("fixes: #%d\n\nAutomatically created PR to update repo according to the Plan:\n\n```\n%s\n```", issue, pretty)),
 		MaintainerCanModify: &modifiable,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error creating pull request: %w", err)
+		return nil, fmt.Errorf("unable to create PR: %w", err)
 	}
 	return pr, nil
 }
 
-// ghUpdate updates remote GitHub owner/repo tree according to the given token, schema and data,
-// returns resulting changes, and any error occurred
-func ghUpdate(ctx context.Context, owner, repo string, tree *github.Tree, token string, schema map[string]Item, data interface{}) (changes []*github.TreeEntry, err error) {
-	ghc := ghClient(ctx, token)
-
-	// load each schema item content and update it creating new GitHub TreeEntries
-	cnt := len(schema) // expected number of files to change
-	for _, org := range tree.Entries {
-		if *org.Type == "blob" {
-			if item, match := schema[*org.Path]; match {
-				blob, _, err := ghc.Git.GetBlobRaw(ctx, owner, repo, *org.SHA)
-				if err != nil {
-					return nil, fmt.Errorf("error getting file: %w", err)
-				}
-				item.Content = blob
-				changed, err := item.apply(data)
-				if err != nil {
-					return nil, fmt.Errorf("error updating file: %w", err)
-				}
-				if changed {
-					// add github.TreeEntry that will replace original path content with updated one
-					changes = append(changes, &github.TreeEntry{
-						Path:    org.Path,
-						Mode:    org.Mode,
-						Type:    org.Type,
-						Content: github.String(string(item.Content)),
-					})
-				}
-				if cnt--; cnt == 0 {
-					break
-				}
-			}
-		}
-	}
-	if cnt != 0 {
-		return nil, fmt.Errorf("error finding all the files (%d missing) - check the Plan: %w", cnt, err)
-	}
-	return changes, nil
-}
-
-// ghFindPR returns URL of the PR if found in the given GitHub ower/repo base and any error occurred
+// ghFindPR returns URL of the PR if found in the given GitHub ower/repo base and any error occurred.
 func ghFindPR(ctx context.Context, title, owner, repo, base, token string) (url string, err error) {
 	ghc := ghClient(ctx, token)
 
-	// walk through the paginated list of all pull requests, from latest to older releases
+	// walk through the paginated list of up to ghSearchLimit newest pull requests
 	opts := &github.PullRequestListOptions{State: "all", Base: base, ListOptions: github.ListOptions{PerPage: ghListPerPage}}
 	for (opts.Page+1)*ghListPerPage <= ghSearchLimit {
 		prs, resp, err := ghc.PullRequests.List(ctx, owner, repo, opts)
@@ -209,28 +168,54 @@ func ghFindPR(ctx context.Context, title, owner, repo, base, token string) (url 
 	return "", nil
 }
 
-// ghClient returns GitHub Client with a given context and optional token for authenticated requests
-func ghClient(ctx context.Context, token string) *github.Client {
-	if token == "" {
-		return github.NewClient(nil)
+// ghUpdate updates remote GitHub owner/repo tree according to the given token, schema and data.
+// Returns resulting changes, and any error occurred.
+func ghUpdate(ctx context.Context, owner, repo string, token string, schema map[string]Item, data interface{}) (changes []*github.TreeEntry, err error) {
+	ghc := ghClient(ctx, token)
+
+	// load each schema item content and update it creating new GitHub TreeEntries
+	for path, item := range schema {
+		// if the item's content is already set, give it precedence over any current file content
+		var content string
+		if item.Content == nil {
+			file, _, _, err := ghc.Repositories.GetContents(ctx, owner, repo, path, &github.RepositoryContentGetOptions{Ref: ghBase})
+			if err != nil {
+				return nil, fmt.Errorf("unable to get file content: %w", err)
+			}
+			content, err = file.GetContent()
+			if err != nil {
+				return nil, fmt.Errorf("unable to read file content: %w", err)
+			}
+			item.Content = []byte(content)
+		}
+		if err := item.apply(data); err != nil {
+			return nil, fmt.Errorf("unable to update file: %w", err)
+		}
+		if content != string(item.Content) {
+			// add github.TreeEntry that will replace original path content with the updated one or add new if one doesn't exist already
+			// ref: https://developer.github.com/v3/git/trees/#tree-object
+			rcPath := path // make sure to copy path variable as its reference (not value!) is passed to changes
+			rcMode := "100644"
+			rcType := "blob"
+			changes = append(changes, &github.TreeEntry{
+				Path:    &rcPath,
+				Mode:    &rcMode,
+				Type:    &rcType,
+				Content: github.String(string(item.Content)),
+			})
+		}
 	}
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	return github.NewClient(tc)
+	return changes, nil
 }
 
-// GHVersions returns greatest current stable release and greatest latest rc or beta pre-release
-// from GitHub owner/repo repository, and any error;
-// if latest pre-release version is lower than current stable release, then it
-// will return current stable release for both
-func GHVersions(ctx context.Context, owner, repo string) (stable, latest string, err error) {
+// GHReleases returns greatest current stable release and greatest latest rc or beta pre-release from GitHub owner/repo repository, and any error occurred.
+// If latest pre-release version is lower than the current stable release, then it will return current stable release for both.
+func GHReleases(ctx context.Context, owner, repo string) (stable, latest string, err error) {
 	ghc := ghClient(ctx, ghToken)
 
-	// walk through the paginated list of all owner/repo releases, from newest to oldest
+	// walk through the paginated list of up to ghSearchLimit newest releases
 	opts := &github.ListOptions{PerPage: ghListPerPage}
-	for {
+	for (opts.Page+1)*ghListPerPage <= ghSearchLimit {
 		rls, resp, err := ghc.Repositories.ListReleases(ctx, owner, repo, opts)
 		if err != nil {
 			return "", "", err
@@ -258,4 +243,16 @@ func GHVersions(ctx context.Context, owner, repo string) (stable, latest string,
 		opts.Page = resp.NextPage
 	}
 	return stable, latest, nil
+}
+
+// ghClient returns GitHub Client with a given context and optional token for authenticated requests.
+func ghClient(ctx context.Context, token string) *github.Client {
+	if token == "" {
+		return github.NewClient(nil)
+	}
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	return github.NewClient(tc)
 }

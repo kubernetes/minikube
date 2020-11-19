@@ -83,6 +83,7 @@ func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile strin
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=1"}
+	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to second start a running minikube with args: %q : %v", rr.Command(), err)
