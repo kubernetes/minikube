@@ -26,9 +26,9 @@ EXPECTED_DEFAULT_DRIVER="docker"
 
 cd github/minikube
 
-docker-machine create --driver virtualbox  --virtualbox-cpu-count 2 --virtualbox-memory 8000 default
-docker-machine env default
-eval "$(docker-machine env default)"
+#docker-machine create --driver virtualbox  --virtualbox-cpu-count 2 --virtualbox-memory 8000 default
+#docker-machine env default
+#eval "$(docker-machine env default)"
 docker info
 docker version --format {{.Server.Os}}-{{.Server.Version}}
 
