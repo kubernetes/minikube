@@ -89,7 +89,7 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, path, "@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent")
+	cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive","@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent")
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -106,29 +106,29 @@ func status() registry.State {
 	}
 
 	// Ensure user is either a Windows Administrator or a Hyper-V Administrator.
-	adminCheckCmd := exec.CommandContext(ctx, path, `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
+	adminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive",`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
 	adminCheckOut, adminCheckErr := adminCheckCmd.CombinedOutput()
 
 	if adminCheckErr != nil {
 		errorMessage := fmt.Errorf("%s returned %q", strings.Join(adminCheckCmd.Args, " "), adminCheckOut)
 		fixMessage := "Unable to determine current user's administrator privileges"
-		return registry.State{Installed: false, Running: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
+		return registry.State{Installed: true, Running: false, Error: errorMessage, Fix: fixMessage}
 	}
 
-	hypervAdminCheckCmd := exec.CommandContext(ctx, path, `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(([System.Security.Principal.SecurityIdentifier]::new("S-1-5-32-578")))`)
+	hypervAdminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(([System.Security.Principal.SecurityIdentifier]::new("S-1-5-32-578")))`)
 	hypervAdminCheckOut, hypervAdminCheckErr := hypervAdminCheckCmd.CombinedOutput()
 
 	if hypervAdminCheckErr != nil {
 		errorMessage := fmt.Errorf("%s returned %q", strings.Join(hypervAdminCheckCmd.Args, " "), hypervAdminCheckOut)
 		fixMessage := "Unable to determine current user's Hyper-V administrator privileges."
-		return registry.State{Installed: false, Running: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
+		return registry.State{Installed: true, Running: false, Error: errorMessage, Fix: fixMessage}
 	}
 
 
 	if (strings.TrimSpace(string(adminCheckOut)) != "True") && (strings.TrimSpace(string(hypervAdminCheckOut)) != "True") {
 		err := fmt.Errorf("Hyper-V requires Administrator privileges")
 		fixMessage := "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode."
-		return registry.State{Installed: true, Running: false, Error: err, Fix: fixMessage, Doc: docURL}
+		return registry.State{Installed: true, Running: false, Error: err, Fix: fixMessage}
 	}
 
 
