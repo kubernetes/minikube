@@ -86,6 +86,9 @@ type DriverDef struct {
 	// Name of the machine driver. It has to be unique.
 	Name string
 
+	// Alias contains a list of machine driver aliases. Each alias should also be unique.
+	Alias []string
+
 	// Config is a function that emits a configured driver struct
 	Config Configurator
 
@@ -109,13 +112,15 @@ func (d DriverDef) String() string {
 }
 
 type driverRegistry struct {
-	drivers map[string]DriverDef
-	lock    sync.RWMutex
+	drivers        map[string]DriverDef
+	driversByAlias map[string]DriverDef
+	lock           sync.RWMutex
 }
 
 func newRegistry() *driverRegistry {
 	return &driverRegistry{
-		drivers: make(map[string]DriverDef),
+		drivers:        make(map[string]DriverDef),
+		driversByAlias: make(map[string]DriverDef),
 	}
 }
 
@@ -129,6 +134,13 @@ func (r *driverRegistry) Register(def DriverDef) error {
 	}
 
 	r.drivers[def.Name] = def
+
+	for _, alias := range def.Alias {
+		if _, ok := r.driversByAlias[alias]; ok {
+			return fmt.Errorf("alias %q is already registered: %+v", alias, def)
+		}
+		r.driversByAlias[alias] = def
+	}
 	return nil
 }
 
@@ -150,5 +162,12 @@ func (r *driverRegistry) List() []DriverDef {
 func (r *driverRegistry) Driver(name string) DriverDef {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
-	return r.drivers[name]
+
+	def, ok := r.drivers[name]
+	if ok {
+		return def
+	}
+
+	// Check if we have driver def with name as alias
+	return r.driversByAlias[name]
 }
