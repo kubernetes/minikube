@@ -31,7 +31,7 @@ const (
 
 var (
 	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
-	BaseImage = fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s@sha256:%s", Version, baseImageSHA)
+	BaseImage = fmt.Sprintf("gcr.io/minikube-dev-296021/kicbase:%s@sha256:%s", Version, baseImageSHA)
 
 	// FallbackImages are backup base images in case gcr isn't available
 	FallbackImages = []string{
