@@ -151,7 +151,7 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 			lines = lines[len(lines)-maxLines:]
 		}
 		for _, l := range lines {
-			out.T(style.LogEntry, l)
+			out.Step(style.LogEntry, l)
 		}
 	}
 }
@@ -170,9 +170,9 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			out.T(style.Empty, "")
+			out.Step(style.Empty, "")
 		}
-		out.T(style.Empty, "==> {{.name}} <==", out.V{"name": name})
+		out.Step(style.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 		c := exec.Command("/bin/bash", "-c", cmds[name])
 		c.Stdout = &b
@@ -184,7 +184,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		}
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			out.T(style.Empty, scanner.Text())
+			out.Step(style.Empty, scanner.Text())
 		}
 	}
 

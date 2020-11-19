@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 )

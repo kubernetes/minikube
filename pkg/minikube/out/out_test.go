@@ -29,9 +29,8 @@ import (
 
 func TestOutT(t *testing.T) {
 	// Set the system locale to Arabic and define a dummy translation file.
-	if err := translate.SetPreferredLanguage("ar"); err != nil {
-		t.Fatalf("SetPreferredLanguage: %v", err)
-	}
+	translate.SetPreferredLanguage("ar")
+
 	translate.Translations = map[string]interface{}{
 		"Installing Kubernetes version {{.version}} ...": "... {{.version}} تثبيت Kubernetes الإصدار",
 	}
@@ -58,7 +57,7 @@ func TestOutT(t *testing.T) {
 				os.Setenv(OverrideEnv, strconv.FormatBool(override))
 				f := tests.NewFakeFile()
 				SetOutFile(f)
-				T(tc.style, tc.message, tc.params)
+				Step(tc.style, tc.message, tc.params)
 				got := f.String()
 				want := tc.wantASCII
 				if override {
