@@ -60,7 +60,7 @@ WARNING: For this to work repeatedly, the test must be written so that it cleans
 
 The `--cleanup=false` test arg ensures that the cluster will not be deleted after the test is run.
 
-See [main.go](https://github.com/kubernetes/minikube/blob/master/test/integration/main.go) for details.
+See [main_test.go](https://github.com/kubernetes/minikube/blob/master/test/integration/main_test.go) for details.
 
 ### Disabling parallelism
 
