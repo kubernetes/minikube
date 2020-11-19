@@ -72,7 +72,7 @@ func Partial(name string, miniHome ...string) (libmachine.API, *config.ClusterCo
 	cc, err := config.Load(name, miniHome...)
 	if err != nil {
 		if config.IsNotExist(err) {
-			out.T(style.Shrug, `Profile "{{.cluster}}" not found. Run "minikube profile list" to view all profiles.`, out.V{"cluster": name})
+			out.Step(style.Shrug, `Profile "{{.cluster}}" not found. Run "minikube profile list" to view all profiles.`, out.V{"cluster": name})
 			exitTip("start", name, reason.ExGuestNotFound)
 		}
 		exit.Error(reason.HostConfigLoad, "Error getting cluster config", err)
@@ -97,18 +97,18 @@ func Running(name string) ClusterController {
 	}
 
 	if hs == state.None.String() {
-		out.T(style.Shrug, `The control plane node "{{.name}}" does not exist.`, out.V{"name": cp.Name})
-		out.T(style.Shrug, `Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode.`)
+		out.Step(style.Shrug, `The control plane node "{{.name}}" does not exist.`, out.V{"name": cp.Name}) 
+		out.Step(style.Shrug, `Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode.`)
 		exitTip("start", name, reason.ExGuestNotFound)
 	}
 
 	if hs == state.Stopped.String() {
-		out.T(style.Shrug, `The control plane node must be running for this command`)
+		out.Step(style.Shrug, `The control plane node must be running for this command`)
 		exitTip("start", name, reason.ExGuestUnavailable)
 	}
 
 	if hs != state.Running.String() {
-		out.T(style.Shrug, `The control plane node is not running (state={{.state}})`, out.V{"name": cp.Name, "state": hs})
+		out.Step(style.Shrug, `The control plane node is not running (state={{.state}})`, out.V{"name": cp.Name, "state": hs})
 		exitTip("start", name, reason.ExSvcUnavailable)
 	}
 
@@ -152,12 +152,12 @@ func Healthy(name string) ClusterController {
 	}
 
 	if as == state.Paused {
-		out.T(style.Shrug, `The control plane for "{{.name}}" is paused!`, out.V{"name": name})
+		out.Step(style.Shrug, `The control plane for "{{.name}}" is paused!`, out.V{"name": name})
 		exitTip("unpause", name, reason.ExSvcConfig)
 	}
 
 	if as != state.Running {
-		out.T(style.Shrug, `This control plane is not running! (state={{.state}})`, out.V{"state": as.String()})
+		out.Step(style.Shrug, `This control plane is not running! (state={{.state}})`, out.V{"state": as.String()})
 		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
 		exitTip("start", name, reason.ExSvcUnavailable)
 	}
@@ -175,6 +175,6 @@ func ExampleCmd(cname string, action string) string {
 // exitTip returns an action tip and exits
 func exitTip(action string, profile string, code int) {
 	command := ExampleCmd(profile, action)
-	out.T(style.Workaround, `To start a cluster, run: "{{.command}}"`, out.V{"command": command})
+	out.Step(style.Workaround, `To start a cluster, run: "{{.command}}"`, out.V{"command": command})
 	os.Exit(code)
 }

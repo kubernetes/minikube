@@ -39,13 +39,13 @@ import (
 	"text/template"
 	"time"
 
-	"k8s.io/klog/v2"
-
 	"github.com/cenkalti/backoff/v4"
+
+	"k8s.io/klog/v2"
 )
 
 const (
-	// FSRoot is relative (to scripts in subfolders) root folder of local filesystem repo to update
+	// FSRoot is a relative (to scripts in subfolders) root folder of local filesystem repo to update
 	FSRoot = "../../../"
 )
 
@@ -56,9 +56,11 @@ var (
 // init klog and check general requirements
 func init() {
 	klog.InitFlags(nil)
-	// write log statements to stderr instead of to files
-	if err := flag.Set("logtostderr", "true"); err != nil {
-		fmt.Printf("Error setting 'logtostderr' klog flag: %v\n", err)
+	if err := flag.Set("logtostderr", "false"); err != nil {
+		klog.Warningf("Unable to set flag value for logtostderr: %v", err)
+	}
+	if err := flag.Set("alsologtostderr", "true"); err != nil {
+		klog.Warningf("Unable to set flag value for alsologtostderr: %v", err)
 	}
 	flag.Parse()
 	defer klog.Flush()
@@ -72,21 +74,19 @@ func init() {
 	}
 }
 
-// Item defines Content where all occurrences of each Replace map key, corresponding to
-// GitHub TreeEntry.Path and/or local filesystem repo file path (prefixed with FSRoot),
-// would be swapped with its respective actual map value (having placeholders replaced with data),
-// creating a concrete update plan.
-// Replace map keys can use RegExp and map values can use Golang Text Template
+// Item defines Content where all occurrences of each Replace map key,
+// corresponding to GitHub TreeEntry.Path and/or local filesystem repo file path (prefixed with FSRoot),
+// would be swapped with its respective actual map value (having placeholders replaced with data), creating a concrete update plan.
+// Replace map keys can use RegExp and map values can use Golang Text Template.
 type Item struct {
 	Content []byte            `json:"-"`
 	Replace map[string]string `json:"replace"`
 }
 
-// apply updates Item Content by replacing all occurrences of Replace map's keys
-// with their actual map values (with placeholders replaced with data))
+// apply updates Item Content by replacing all occurrences of Replace map's keys with their actual map values (with placeholders replaced with data).
 func (i *Item) apply(data interface{}) (changed bool, err error) {
 	if i.Content == nil || i.Replace == nil {
-		return false, fmt.Errorf("want something, got nothing to update")
+		return false, fmt.Errorf("unable to update content: nothing to update")
 	}
 	org := string(i.Content)
 	str := org
@@ -108,18 +108,18 @@ func (i *Item) apply(data interface{}) (changed bool, err error) {
 func Apply(ctx context.Context, schema map[string]Item, data interface{}, prBranchPrefix, prTitle string, prIssue int) {
 	plan, err := GetPlan(schema, data)
 	if err != nil {
-		klog.Fatalf("Error parsing schema: %v\n%s", err, plan)
+		klog.Fatalf("Unable to parse schema: %v\n%s", err, plan)
 	}
 	klog.Infof("The Plan:\n%s", plan)
 
 	if target == "fs" || target == "all" {
 		changed, err := fsUpdate(FSRoot, schema, data)
 		if err != nil {
-			klog.Errorf("Error updating local repo: %v", err)
+			klog.Errorf("Unable to update local repo: %v", err)
 		} else if !changed {
 			klog.Infof("Local repo update skipped: nothing changed")
 		} else {
-			klog.Infof("Local repo updated")
+			klog.Infof("Local repo successfully updated")
 		}
 	}
 
@@ -128,32 +128,31 @@ func Apply(ctx context.Context, schema map[string]Item, data interface{}, prBran
 		tmpl := template.Must(template.New("prTitle").Parse(prTitle))
 		buf := new(bytes.Buffer)
 		if err := tmpl.Execute(buf, data); err != nil {
-			klog.Fatalf("Error parsing PR Title: %v", err)
+			klog.Fatalf("Unable to parse PR Title: %v", err)
 		}
 		prTitle = buf.String()
 
 		// check if PR already exists
 		prURL, err := ghFindPR(ctx, prTitle, ghOwner, ghRepo, ghBase, ghToken)
 		if err != nil {
-			klog.Errorf("Error checking if PR already exists: %v", err)
+			klog.Errorf("Unable to check if PR already exists: %v", err)
 		} else if prURL != "" {
 			klog.Infof("PR create skipped: already exists (%s)", prURL)
 		} else {
 			// create PR
 			pr, err := ghCreatePR(ctx, ghOwner, ghRepo, ghBase, prBranchPrefix, prTitle, prIssue, ghToken, schema, data)
 			if err != nil {
-				klog.Fatalf("Error creating PR: %v", err)
+				klog.Fatalf("Unable to create PR: %v", err)
 			} else if pr == nil {
 				klog.Infof("PR create skipped: nothing changed")
 			} else {
-				klog.Infof("PR created: %s", *pr.HTMLURL)
+				klog.Infof("PR successfully created: %s", *pr.HTMLURL)
 			}
 		}
 	}
 }
 
-// GetPlan returns concrete plan replacing placeholders in schema with actual data values,
-// returns JSON-formatted representation of the plan and any error
+// GetPlan returns concrete plan replacing placeholders in schema with actual data values, returns JSON-formatted representation of the plan and any error occurred.
 func GetPlan(schema map[string]Item, data interface{}) (prettyprint string, err error) {
 	for _, item := range schema {
 		for src, dst := range item.Replace {

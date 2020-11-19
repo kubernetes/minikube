@@ -164,7 +164,7 @@ func openURLs(svc string, urls []string) {
 			continue
 		}
 
-		out.T(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+		out.Step(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
 		if err := browser.OpenURL(u); err != nil {
 			exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
 		}

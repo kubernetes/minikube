@@ -167,7 +167,7 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the Kubernetes cluster")
 	startCmd.Flags().Int(apiServerPort, constants.APIServerPort, "The apiserver listening port")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+	startCmd.Flags().StringSliceVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 }
 
@@ -276,7 +276,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 
 		if cmd.Flags().Changed(imageRepository) || cmd.Flags().Changed(imageMirrorCountry) {
-			out.T(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
+			out.Step(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
 		}
 
 		// Backwards compatibility with --enable-default-cni
