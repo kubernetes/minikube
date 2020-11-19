@@ -660,6 +660,12 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
+	// hostDriver always returns original driver name even if an alias is used to start minikube.
+	// For all next start with alias needs to be check against the host driver aliases.
+	if driver.IsAlias(old, requested) {
+		return
+	}
+
 	exit.Advice(
 		reason.GuestDrvMismatch,
 		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
