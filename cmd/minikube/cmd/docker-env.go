@@ -153,11 +153,20 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 }
 
 // ensureDockerd ensures dockerd inside minikube is running before a docker-env  command
-func ensureDockerd(name string, runner command.Runner) {
-	if ok := isDockerActive(runner); ok {
+func ensureDockerd(name string, r command.Runner) {
+	if ok := isDockerActive(r); ok {
 		return
 	}
+	mustRestartDockerd(name, r)
+}
 
+// isDockerActive checks if Docker is active
+func isDockerActive(r command.Runner) bool {
+	return sysinit.New(r).Active("docker")
+}
+
+// mustRestartDockerd will attemp to reload dockerd if fails, will try restart and exit if fails again
+func mustRestartDockerd(name string, runner command.Runner) {
 	// Docker Docs: https://docs.docker.com/config/containers/live-restore
 	//  On Linux, you can avoid a restart (and avoid any downtime for your containers) by reloading the Docker daemon.
 	klog.Warningf("dockerd is not active will try to reload it...")
@@ -172,11 +181,6 @@ func ensureDockerd(name string, runner command.Runner) {
 		klog.Warningf("waiting 5 seconds to ensure apisever container is up...")
 		time.Sleep(time.Second * 5)
 	}
-}
-
-// isDockerActive checks if Docker is active
-func isDockerActive(r command.Runner) bool {
-	return sysinit.New(r).Active("docker")
 }
 
 // dockerEnvCmd represents the docker-env command
@@ -252,8 +256,8 @@ var dockerEnvCmd = &cobra.Command{
 			out, err := tryDockerConnectivity("docker", ec)
 			if err != nil { // docker might be up but been loaded with wrong certs/config
 				// to fix issues like this #8185
-				klog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
-				ensureDockerd(cname, co.CP.Runner)
+				klog.Warningf("couldn't connect to docker inside minikube.  output: %s error: %v", string(out), err)
+				mustRestartDockerd(cname, co.CP.Runner)
 			}
 		}
 
