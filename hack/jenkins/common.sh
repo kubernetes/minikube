@@ -30,8 +30,10 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-# install lsof for finding none driver procs, psmisc to use pstree in cronjobs
-sudo apt-get -y install lsof psmisc
+if [ "$(uname)" != "Darwin" ]; then
+  # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
+  sudo apt-get -y install lsof psmisc
+fi
 
 # installing golang so we could do go get for gopogh
 sudo ./installers/check_install_golang.sh "1.15.2" "/usr/local" || true
