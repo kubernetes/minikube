@@ -165,10 +165,10 @@ func isDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
-// mustRestartDockerd will attemp to reload dockerd if fails, will try restart and exit if fails again
+// mustRestartDockerd will attempt to reload dockerd if fails, will try restart and exit if fails again
 func mustRestartDockerd(name string, runner command.Runner) {
 	// Docker Docs: https://docs.docker.com/config/containers/live-restore
-	//  On Linux, you can avoid a restart (and avoid any downtime for your containers) by reloading the Docker daemon.
+	// On Linux, you can avoid a restart (and avoid any downtime for your containers) by reloading the Docker daemon.
 	klog.Warningf("dockerd is not active will try to reload it...")
 	if err := sysinit.New(runner).Reload("docker"); err != nil {
 		klog.Warningf("will try to restart dockerd because reload failed: %v", err)
@@ -256,6 +256,7 @@ var dockerEnvCmd = &cobra.Command{
 			out, err := tryDockerConnectivity("docker", ec)
 			if err != nil { // docker might be up but been loaded with wrong certs/config
 				// to fix issues like this #8185
+				// even though docker maybe running just fine it could be holding on to old certs and needs a refresh
 				klog.Warningf("couldn't connect to docker inside minikube.  output: %s error: %v", string(out), err)
 				mustRestartDockerd(cname, co.CP.Runner)
 			}
