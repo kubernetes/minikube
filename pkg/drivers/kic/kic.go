@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"context"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -203,6 +205,33 @@ func (d *Driver) prepareSSH() error {
 
 	if rr, err := cmder.RunCmd(exec.Command("chown", "docker:docker", "/home/docker/.ssh/authorized_keys")); err != nil {
 		return errors.Wrapf(err, "apply authorized_keys file ownership, output %s", rr.Output())
+	}
+
+	if runtime.GOOS == "windows" {
+		path, _ := exec.LookPath("powershell")
+		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		defer cancel()
+
+		klog.Infof("ensuring only current user has permissions to key file located at : %s...", keyPath)
+
+		// Get the SID of the current user
+		currentUserSidCmd := exec.CommandContext(ctx, path, "-NoProfile","-NonInteractive","([System.Security.Principal.WindowsIdentity]::GetCurrent()).User.Value")
+		currentUserSidOut, currentUserSidErr := currentUserSidCmd.CombinedOutput()
+		if currentUserSidErr != nil {
+			return errors.Wrap(currentUserSidErr, "unable to determine current user's SID")
+		}
+
+		icaclsArguments := fmt.Sprintf(`"%s" /grant:r *%s:F /inheritancelevel:r`, keyPath, strings.TrimSpace(string(currentUserSidOut)))
+		icaclsCmd := exec.CommandContext(ctx, path, "-NoProfile","-NonInteractive","icacls.exe", icaclsArguments)
+		icaclsCmdOut, icaclsCmdErr := icaclsCmd.CombinedOutput()
+
+		if icaclsCmdErr != nil {
+			return errors.Wrap(icaclsCmdErr, "unable to execute icacls to set permissions")
+		}
+
+		if !strings.Contains(string(icaclsCmdOut),"Successfully processed 1 files; Failed processing 0 files") {
+			return errors.Errorf("icacls failed applying permissions - %s, output - [%s]", icaclsCmdErr, strings.TrimSpace(string(icaclsCmdOut)))
+		}
 	}
 
 	return nil
