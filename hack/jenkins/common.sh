@@ -30,8 +30,8 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-# install lsof for finding none driver procs, psmisc to use pstree in cronjobs
 if [ "$(uname)" != "Darwin" ]; then
+  # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
   sudo apt-get -y install lsof psmisc
 fi
 

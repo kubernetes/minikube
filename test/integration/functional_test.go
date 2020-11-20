@@ -731,7 +731,9 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	defer func() {
 		if t.Failed() {
 			t.Logf("service test failed - dumping debug information")
-
+			t.Logf("-----------------------service failure post-mortem--------------------------------")
+			ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
+			defer cancel()
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
