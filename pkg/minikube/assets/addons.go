@@ -206,12 +206,12 @@ var Addons = map[string]*Addon{
 	}, false, "metrics-server"),
 	"olm": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/olm/crds.yaml",
+			"deploy/addons/olm/crds.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"crds.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/olm/olm.yaml",
+			"deploy/addons/olm/olm.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"olm.yaml",
 			"0640"),
