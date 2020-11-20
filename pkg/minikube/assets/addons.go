@@ -307,7 +307,7 @@ var Addons = map[string]*Addon{
 			"gvisor-pod.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/gvisor/gvisor-runtimeclass.yaml",
+			"deploy/addons/gvisor/gvisor-runtimeclass.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gvisor-runtimeclass.yaml",
 			"0640"),
@@ -355,56 +355,56 @@ var Addons = map[string]*Addon{
 	}, false, "metallb"),
 	"ambassador": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/ambassador/ambassador-operator-crds.yaml",
+			"deploy/addons/ambassador/ambassador-operator-crds.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ambassador-operator-crds.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/ambassador/ambassador-operator.yaml",
+			"deploy/addons/ambassador/ambassador-operator.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ambassador-operator.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/ambassador/ambassadorinstallation.yaml",
+			"deploy/addons/ambassador/ambassadorinstallation.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ambassadorinstallation.yaml",
 			"0640"),
 	}, false, "ambassador"),
 	"gcp-auth": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/gcp-auth/gcp-auth-ns.yaml",
+			"deploy/addons/gcp-auth/gcp-auth-ns.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-ns.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/gcp-auth/gcp-auth-service.yaml",
+			"deploy/addons/gcp-auth/gcp-auth-service.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-service.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/gcp-auth/gcp-auth-webhook.yaml.tmpl",
+			"deploy/addons/gcp-auth/gcp-auth-webhook.yaml.tmpl.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-webhook.yaml",
 			"0640"),
 	}, false, "gcp-auth"),
 	"volumesnapshots": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
+			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotclasses.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
+			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotcontents.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshots.yaml",
+			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshots.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"snapshot.storage.k8s.io_volumesnapshots.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/volumesnapshots/rbac-volume-snapshot-controller.yaml",
+			"deploy/addons/volumesnapshots/rbac-volume-snapshot-controller.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-volume-snapshot-controller.yaml",
 			"0640"),
@@ -416,57 +416,57 @@ var Addons = map[string]*Addon{
 	}, false, "volumesnapshots"),
 	"csi-hostpath-driver": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-attacher.yaml",
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-attacher.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-attacher.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-provisioner.yaml",
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-provisioner.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-provisioner.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-resizer.yaml",
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-resizer.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-resizer.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-snapshotter.yaml",
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-snapshotter.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-snapshotter.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-attacher.yaml",
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-attacher.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-attacher.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-driverinfo.yaml",
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-driverinfo.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-driverinfo.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-plugin.yaml",
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-plugin.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-plugin.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-provisioner.yaml",
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-provisioner.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-provisioner.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-resizer.yaml",
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-resizer.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-resizer.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-snapshotter.yaml",
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-snapshotter.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-snapshotter.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-storageclass.yaml",
+			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-storageclass.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-storageclass.yaml",
 			"0640"),
