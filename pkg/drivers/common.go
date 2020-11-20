@@ -109,11 +109,6 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 	if err := ssh.GenerateSSHKey(keyPath); err != nil {
 		return errors.Wrap(err, "generate ssh key")
 	}
-	
-	// Make the key file read only.
-	if err := os.Chmod(keyPath,0400); err != nil {
-		return errors.Wrap(err, "chmod dir windows")
-	}
 
 	diskPath := GetDiskPath(d)
 	klog.Infof("Creating raw disk image: %s...", diskPath)
