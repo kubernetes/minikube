@@ -79,7 +79,6 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		command = "sudo"
 		sshArgs = append([]string{"ssh"}, sshArgs...)
 	}
-	out.Step(style.Command,"Command - [{{.command}}], Arguments - [{{.args}}]",out.V{"command": command, "args":sshArgs})
 	cmd := exec.Command(command, sshArgs...)
 
 	return &sshConn{
