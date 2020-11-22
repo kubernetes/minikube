@@ -52,7 +52,10 @@ export MINIKUBE_ACTIVE_DOCKERD="dockerdriver"
 # To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p dockerdriver docker-env)
 `,
-			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
+			`unset DOCKER_TLS_VERIFY;
+unset DOCKER_HOST;
+unset DOCKER_CERT_PATH;
+unset MINIKUBE_ACTIVE_DOCKERD;
 `,
 		},
 		{
@@ -65,7 +68,10 @@ export MINIKUBE_ACTIVE_DOCKERD="dockerdriver"
 # To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p dockerdriver docker-env --ssh-host)
 `,
-			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
+			`unset DOCKER_TLS_VERIFY;
+unset DOCKER_HOST;
+unset DOCKER_CERT_PATH;
+unset MINIKUBE_ACTIVE_DOCKERD;
 `,
 		},
 		{
@@ -80,7 +86,10 @@ export MINIKUBE_ACTIVE_DOCKERD="bash"
 # To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p bash docker-env)
 `,
-			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
+			`unset DOCKER_TLS_VERIFY;
+unset DOCKER_HOST;
+unset DOCKER_CERT_PATH;
+unset MINIKUBE_ACTIVE_DOCKERD;
 `,
 		},
 		{
@@ -95,7 +104,10 @@ export MINIKUBE_ACTIVE_DOCKERD="ipv6"
 # To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p ipv6 docker-env)
 `,
-			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
+			`unset DOCKER_TLS_VERIFY;
+unset DOCKER_HOST;
+unset DOCKER_CERT_PATH;
+unset MINIKUBE_ACTIVE_DOCKERD;
 `,
 		},
 		{
@@ -128,7 +140,10 @@ $Env:MINIKUBE_ACTIVE_DOCKERD = "powershell"
 # & minikube -p powershell docker-env | Invoke-Expression
 `,
 
-			`Remove-Item Env:\\DOCKER_TLS_VERIFY Env:\\DOCKER_HOST Env:\\DOCKER_CERT_PATH Env:\\MINIKUBE_ACTIVE_DOCKERD
+			`Remove-Item Env:\\DOCKER_TLS_VERIFY
+Remove-Item Env:\\DOCKER_HOST
+Remove-Item Env:\\DOCKER_CERT_PATH
+Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
 `,
 		},
 		{
@@ -180,7 +195,11 @@ export NO_PROXY="127.0.0.1"
 # eval $(minikube -p bash-no-proxy docker-env)
 `,
 
-			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD NO_PROXY
+			`unset DOCKER_TLS_VERIFY;
+unset DOCKER_HOST;
+unset DOCKER_CERT_PATH;
+unset MINIKUBE_ACTIVE_DOCKERD;
+unset NO_PROXY;
 `,
 		},
 		{
@@ -197,7 +216,11 @@ export no_proxy="127.0.0.1"
 # eval $(minikube -p bash-no-proxy-lower docker-env)
 `,
 
-			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD no_proxy
+			`unset DOCKER_TLS_VERIFY;
+unset DOCKER_HOST;
+unset DOCKER_CERT_PATH;
+unset MINIKUBE_ACTIVE_DOCKERD;
+unset no_proxy;
 `,
 		},
 		{
@@ -213,7 +236,11 @@ $Env:no_proxy = "192.168.0.1"
 # & minikube -p powershell-no-proxy-idempotent docker-env | Invoke-Expression
 `,
 
-			`Remove-Item Env:\\DOCKER_TLS_VERIFY Env:\\DOCKER_HOST Env:\\DOCKER_CERT_PATH Env:\\MINIKUBE_ACTIVE_DOCKERD Env:\\no_proxy
+			`Remove-Item Env:\\DOCKER_TLS_VERIFY
+Remove-Item Env:\\DOCKER_HOST
+Remove-Item Env:\\DOCKER_CERT_PATH
+Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
+Remove-Item Env:\\no_proxy
 `,
 		},
 		{
@@ -230,7 +257,11 @@ export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
 # eval $(minikube -p sh-no-proxy-add docker-env)
 `,
 
-			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD NO_PROXY
+			`unset DOCKER_TLS_VERIFY;
+unset DOCKER_HOST;
+unset DOCKER_CERT_PATH;
+unset MINIKUBE_ACTIVE_DOCKERD;
+unset NO_PROXY;
 `,
 		},
 		{
@@ -242,7 +273,10 @@ DOCKER_HOST=tcp://127.0.0.1:32842
 DOCKER_CERT_PATH=/certs
 MINIKUBE_ACTIVE_DOCKERD=noneshell
 `,
-			`DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
+			`DOCKER_TLS_VERIFY
+DOCKER_HOST
+DOCKER_CERT_PATH
+MINIKUBE_ACTIVE_DOCKERD
 `,
 		},
 	}

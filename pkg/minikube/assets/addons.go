@@ -266,7 +266,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-creds-rc.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "registry-creds"),
 	"registry-aliases": NewAddon([]*BinAsset{
 		MustBinAsset(

@@ -731,7 +731,9 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	defer func() {
 		if t.Failed() {
 			t.Logf("service test failed - dumping debug information")
-
+			t.Logf("-----------------------service failure post-mortem--------------------------------")
+			ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
+			defer cancel()
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node"))
 			if err != nil {
 				t.Logf("%q failed: %v", rr.Command(), err)
@@ -754,11 +756,11 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.4"))
 	if err != nil {
-		t.Logf("%q failed: %v (may not be an error).", rr.Command(), err)
+		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
 	if err != nil {
-		t.Logf("%q failed: %v (may not be an error)", rr.Command(), err)
+		t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {

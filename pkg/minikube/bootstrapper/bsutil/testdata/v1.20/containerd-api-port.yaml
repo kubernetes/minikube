@@ -39,7 +39,7 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.20.0-beta.1.0
+kubernetesVersion: v1.20.0-beta.1
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"

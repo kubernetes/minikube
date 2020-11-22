@@ -24,11 +24,20 @@ import (
 	"io"
 	"os"
 	"runtime"
-	"strings"
 	"text/template"
 
 	"github.com/docker/machine/libmachine/shell"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
+
+var unsetEnvTmpl = "{{ $root := .}}" +
+	"{{ range .Unset }}" +
+	"{{ $root.UnsetPrefix }}{{ . }}{{ $root.UnsetDelimiter }}{{ $root.UnsetSuffix }}" +
+	"{{ end }}" +
+	"{{ range .Set }}" +
+	"{{ $root.SetPrefix }}{{ .Env }}{{ $root.SetDelimiter }}{{ .Value }}{{ $root.SetSuffix }}" +
+	"{{ end }}"
 
 // Config represents the shell config
 type Config struct {
@@ -107,7 +116,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 		suffix:         "\"\n",
 		delimiter:      "=\"",
 		unsetPrefix:    "unset ",
-		unsetSuffix:    "\n",
+		unsetSuffix:    ";\n",
 		unsetDelimiter: "",
 		usageHint: func(s ...interface{}) string {
 			return fmt.Sprintf(`
@@ -181,24 +190,46 @@ func SetScript(ec EnvConfig, w io.Writer, envTmpl string, data interface{}) erro
 	return tmpl.Execute(w, data)
 }
 
+type unsetConfigItem struct {
+	Env, Value string
+}
+type unsetConfig struct {
+	Set            []unsetConfigItem
+	Unset          []string
+	SetPrefix      string
+	SetDelimiter   string
+	SetSuffix      string
+	UnsetPrefix    string
+	UnsetDelimiter string
+	UnsetSuffix    string
+}
+
 // UnsetScript writes out a shell-compatible unset script
 func UnsetScript(ec EnvConfig, w io.Writer, vars []string) error {
-	var sb strings.Builder
 	shellCfg := ec.getShell()
-	pfx, sfx, delim := shellCfg.unsetPrefix, shellCfg.unsetSuffix, shellCfg.unsetDelimiter
-	switch ec.Shell {
-	case "cmd", "emacs", "fish":
-		break
-	case "powershell":
-		vars = []string{strings.Join(vars, " Env:\\\\")}
-	default:
-		vars = []string{strings.Join(vars, " ")}
+	cfg := unsetConfig{
+		SetPrefix:      shellCfg.prefix,
+		SetDelimiter:   shellCfg.delimiter,
+		SetSuffix:      shellCfg.suffix,
+		UnsetPrefix:    shellCfg.unsetPrefix,
+		UnsetDelimiter: shellCfg.unsetDelimiter,
+		UnsetSuffix:    shellCfg.unsetSuffix,
 	}
-	for _, v := range vars {
-		if _, err := sb.WriteString(fmt.Sprintf("%s%s%s%s", pfx, v, delim, sfx)); err != nil {
-			return err
+	var tempUnset []string
+	for _, env := range vars {
+		exEnv := constants.MinikubeExistingPrefix + env
+		if v := os.Getenv(exEnv); v == "" {
+			cfg.Unset = append(cfg.Unset, env)
+		} else {
+			cfg.Set = append(cfg.Set, unsetConfigItem{
+				Env:   env,
+				Value: v,
+			})
+			tempUnset = append(tempUnset, exEnv)
 		}
 	}
-	_, err := w.Write([]byte(sb.String()))
-	return err
+	cfg.Unset = append(cfg.Unset, tempUnset...)
+
+	tmpl := template.Must(template.New("unsetEnv").Parse(unsetEnvTmpl))
+	return tmpl.Execute(w, &cfg)
 }
