@@ -41,11 +41,19 @@ func Daemonize(profiles []string, duration time.Duration) error {
 			continue
 		}
 		daemonizeProfiles = append(daemonizeProfiles, p)
+	}
+
+	if err := daemonize(daemonizeProfiles, duration); err != nil {
+		return errors.Wrap(err, "daemonizing")
+	}
+
+	// save scheduled stop config if daemonize was successful
+	for _, d := range daemonizeProfiles {
+		_, cc := mustload.Partial(d)
 		cc.ScheduledStop = scheduledStop
-		if err := config.SaveProfile(p, cc); err != nil {
+		if err := config.SaveProfile(d, cc); err != nil {
 			return errors.Wrap(err, "saving profile")
 		}
 	}
-
-	return daemonize(daemonizeProfiles, duration)
+	return nil
 }

@@ -87,16 +87,19 @@ func TestUnsetScript(t *testing.T) {
 		ec       EnvConfig
 		expected string
 	}{
-		{[]string{"baz", "bar"}, EnvConfig{""}, `unset baz bar`},
-		{[]string{"baz", "bar"}, EnvConfig{"bash"}, `unset baz bar`},
-		{[]string{"baz", "bar"}, EnvConfig{"powershell"}, `Remove-Item Env:\\baz Env:\\bar`},
+		{[]string{"baz", "bar"}, EnvConfig{""}, `unset baz;
+unset bar;`},
+		{[]string{"baz", "bar"}, EnvConfig{"bash"}, `unset baz;
+unset bar;`},
+		{[]string{"baz", "bar"}, EnvConfig{"powershell"}, `Remove-Item Env:\\baz
+Remove-Item Env:\\bar`},
 		{[]string{"baz", "bar"}, EnvConfig{"cmd"}, `SET baz=
 SET bar=`},
 		{[]string{"baz", "bar"}, EnvConfig{"fish"}, `set -e baz;
 set -e bar;`},
 		{[]string{"baz", "bar"}, EnvConfig{"emacs"}, `(setenv "baz" nil)
 (setenv "bar" nil)`},
-		{[]string{"baz", "bar"}, EnvConfig{"none"}, `baz bar`},
+		{[]string{"baz", "bar"}, EnvConfig{"none"}, "baz\nbar"},
 	}
 	for _, tc := range testCases {
 		tc := tc
