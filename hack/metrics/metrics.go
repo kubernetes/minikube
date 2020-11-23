@@ -42,7 +42,7 @@ const (
 )
 
 var (
-	// The task latency in milliseconds.
+	// The task latency in seconds
 	latencyS = stats.Float64("repl/start_time", "start time in seconds", "s")
 )
 
@@ -56,7 +56,7 @@ func main() {
 func execute() error {
 	projectID := os.Getenv(projectEnvVar)
 	if projectID == "" {
-		return nil, fmt.Errorf("GCP tracer requires a valid GCP project id set via the %s env variable", projectEnvVar)
+		return fmt.Errorf("metrics collector requires a valid GCP project id set via the %s env variable", projectEnvVar)
 	}
 
 	osMethod, err := tag.NewKey("os")
@@ -64,7 +64,7 @@ func execute() error {
 		return errors.Wrap(err, "new tag key")
 	}
 
-	ctx, err := tag.New(context.Background(), tag.Insert(osMethod, runtime.GOOS), tag.Insert(driverMethod, "docker"))
+	ctx, err := tag.New(context.Background(), tag.Insert(osMethod, runtime.GOOS))
 	if err != nil {
 		return errors.Wrap(err, "new tag")
 	}
@@ -102,17 +102,16 @@ func execute() error {
 	}
 	defer sd.StopMetricsExporter()
 
-	// Record 2p0 start time values
 	for {
 		st := minikubeStartTime(ctx)
 		fmt.Printf("Latency: %f\n", st)
 		stats.Record(ctx, latencyS.M(st))
-		time.Sleep(2 * time.Second)
+		time.Sleep(30 * time.Second)
 	}
 }
 
 func minikubeStartTime(ctx context.Context) (float64, error) {
-	defer deleteMinikube(ctx, profile)
+	defer deleteMinikube(ctx)
 
 	minikube := filepath.Join(os.Getenv("HOME"), "minikube/out/minikube")
 
