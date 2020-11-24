@@ -1,13 +1,27 @@
+# Copyright 2018 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 kind: Service
 apiVersion: v1
 metadata:
-  name: csi-hostpath-attacher
+  name: csi-hostpath-snapshotter
   namespace: kube-system
   labels:
-    app: csi-hostpath-attacher
+    app: csi-hostpath-snapshotter
 spec:
   selector:
-    app: csi-hostpath-attacher
+    app: csi-hostpath-snapshotter
   ports:
     - name: dummy
       port: 12345
@@ -16,18 +30,18 @@ spec:
 kind: StatefulSet
 apiVersion: apps/v1
 metadata:
-  name: csi-hostpath-attacher
+  name: csi-hostpath-snapshotter
   namespace: kube-system
 spec:
-  serviceName: "csi-hostpath-attacher"
+  serviceName: "csi-hostpath-snapshotter"
   replicas: 1
   selector:
     matchLabels:
-      app: csi-hostpath-attacher
+      app: csi-hostpath-snapshotter
   template:
     metadata:
       labels:
-        app: csi-hostpath-attacher
+        app: csi-hostpath-snapshotter
         kubernetes.io/minikube-addons: csi-hostpath-driver
     spec:
       affinity:
@@ -40,12 +54,12 @@ spec:
                 values:
                 - csi-hostpathplugin
             topologyKey: kubernetes.io/hostname
-      serviceAccountName: csi-attacher
+      serviceAccount: csi-snapshotter
       containers:
-        - name: csi-attacher
-          image: quay.io/k8scsi/csi-attacher:v3.0.0-rc1
+        - name: csi-snapshotter
+          image: {{default "quay.io/k8scsi" .ImageRepository}}/csi-snapshotter:v2.1.0
           args:
-            - --v=5
+            - -v=5
             - --csi-address=/csi/csi.sock
           securityContext:
             # This is necessary only for systems with SELinux, where
@@ -53,9 +67,8 @@ spec:
             # created by privileged CSI driver container.
             privileged: true
           volumeMounts:
-          - mountPath: /csi
-            name: socket-dir
-
+            - mountPath: /csi
+              name: socket-dir
       volumes:
         - hostPath:
             path: /var/lib/kubelet/plugins/csi-hostpath
