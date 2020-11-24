@@ -80,7 +80,7 @@ StartLimitBurst=5
 StartLimitIntervalSec=60
 
 [Service]
-Restart=always
+Restart=on-failure
 RestartSec=1
 Type=notify
 `
