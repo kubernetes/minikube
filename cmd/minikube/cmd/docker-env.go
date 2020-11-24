@@ -27,9 +27,11 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -43,7 +45,31 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-var dockerEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
+var dockerSetEnvTmpl = fmt.Sprintf(
+	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}"+
+		"{{ if .ExistingDockerTLSVerify }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingDockerTLSVerify }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .ExistingDockerHost }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingDockerHost }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .ExistingDockerCertPath }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingDockerCertPath }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}"+
+		"{{ if .NoProxyVar }}"+
+		"{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ .UsageHint }}",
+	constants.DockerTLSVerifyEnv,
+	constants.DockerHostEnv,
+	constants.DockerCertPathEnv,
+	constants.ExistingDockerTLSVerifyEnv,
+	constants.ExistingDockerHostEnv,
+	constants.ExistingDockerCertPathEnv,
+	constants.MinikubeActiveDockerdEnv)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -54,6 +80,10 @@ type DockerShellConfig struct {
 	MinikubeDockerdProfile string
 	NoProxyVar             string
 	NoProxyValue           string
+
+	ExistingDockerCertPath  string
+	ExistingDockerHost      string
+	ExistingDockerTLSVerify string
 }
 
 var (
@@ -81,6 +111,11 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShel
 	s.DockerCertPath = envMap[constants.DockerCertPathEnv]
 	s.DockerHost = envMap[constants.DockerHostEnv]
 	s.DockerTLSVerify = envMap[constants.DockerTLSVerifyEnv]
+
+	s.ExistingDockerCertPath = envMap[constants.ExistingDockerCertPathEnv]
+	s.ExistingDockerHost = envMap[constants.ExistingDockerHostEnv]
+	s.ExistingDockerTLSVerify = envMap[constants.ExistingDockerTLSVerifyEnv]
+
 	s.MinikubeDockerdProfile = envMap[constants.MinikubeActiveDockerdEnv]
 
 	if ec.noProxy {
@@ -117,14 +152,34 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 	return noProxyVar, noProxyValue
 }
 
+// ensureDockerd ensures dockerd inside minikube is running before a docker-env  command
+func ensureDockerd(name string, r command.Runner) {
+	if ok := isDockerActive(r); ok {
+		return
+	}
+	mustRestartDockerd(name, r)
+}
+
 // isDockerActive checks if Docker is active
 func isDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
-func mustRestartDocker(name string, runner command.Runner) {
-	if err := sysinit.New(runner).Restart("docker"); err != nil {
-		exit.Message(reason.RuntimeRestart, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+// mustRestartDockerd will attempt to reload dockerd if fails, will try restart and exit if fails again
+func mustRestartDockerd(name string, runner command.Runner) {
+	// Docker Docs: https://docs.docker.com/config/containers/live-restore
+	// On Linux, you can avoid a restart (and avoid any downtime for your containers) by reloading the Docker daemon.
+	klog.Warningf("dockerd is not active will try to reload it...")
+	if err := sysinit.New(runner).Reload("docker"); err != nil {
+		klog.Warningf("will try to restart dockerd because reload failed: %v", err)
+		if err := sysinit.New(runner).Restart("docker"); err != nil {
+			exit.Message(reason.RuntimeRestart, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+		}
+		// if we get to the point that we have to restart docker (instead of reload)
+		// will need to wait for apisever container to come up, this usually takes 5 seconds
+		// verifying apisever using kverify would add code complexity for a rare case.
+		klog.Warningf("waiting 5 seconds to ensure apisever container is up...")
+		time.Sleep(time.Second * 5)
 	}
 }
 
@@ -134,8 +189,17 @@ var dockerEnvCmd = &cobra.Command{
 	Short: "Configure environment to use minikube's Docker daemon",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
+
+		shl := shell.ForceShell
+		if shl == "" {
+			shl, err = shell.Detect()
+			if err != nil {
+				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
+			}
+		}
 		sh := shell.EnvConfig{
-			Shell: shell.ForceShell,
+			Shell: shl,
 		}
 
 		if dockerUnset {
@@ -162,12 +226,8 @@ var dockerEnvCmd = &cobra.Command{
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
-		if ok := isDockerActive(co.CP.Runner); !ok {
-			klog.Warningf("dockerd is not active will try to restart it...")
-			mustRestartDocker(cname, co.CP.Runner)
-		}
+		ensureDockerd(cname, co.CP.Runner)
 
-		var err error
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
@@ -186,13 +246,6 @@ var dockerEnvCmd = &cobra.Command{
 			noProxy:   noProxy,
 		}
 
-		if ec.Shell == "" {
-			ec.Shell, err = shell.Detect()
-			if err != nil {
-				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
-			}
-		}
-
 		dockerPath, err := exec.LookPath("docker")
 		if err != nil {
 			klog.Warningf("Unable to find docker in path - skipping connectivity check: %v", err)
@@ -203,8 +256,9 @@ var dockerEnvCmd = &cobra.Command{
 			out, err := tryDockerConnectivity("docker", ec)
 			if err != nil { // docker might be up but been loaded with wrong certs/config
 				// to fix issues like this #8185
-				klog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
-				mustRestartDocker(cname, co.CP.Runner)
+				// even though docker maybe running just fine it could be holding on to old certs and needs a refresh
+				klog.Warningf("couldn't connect to docker inside minikube.  output: %s error: %v", string(out), err)
+				mustRestartDockerd(cname, co.CP.Runner)
 			}
 		}
 
@@ -228,7 +282,7 @@ type DockerEnvConfig struct {
 // dockerSetScript writes out a shell-compatible 'docker-env' script
 func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 	envVars := dockerEnvVars(ec)
-	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
+	return shell.SetScript(ec.EnvConfig, w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env unset' script
@@ -246,7 +300,6 @@ func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 			vars = append(vars, k)
 		}
 	}
-
 	return shell.UnsetScript(ec.EnvConfig, w, vars)
 }
 
@@ -257,14 +310,21 @@ func dockerURL(ip string, port int) string {
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec DockerEnvConfig) map[string]string {
-	env := map[string]string{
+	rt := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
 		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
 	}
-
-	return env
+	if os.Getenv(constants.MinikubeActiveDockerdEnv) == "" {
+		for _, env := range constants.DockerDaemonEnvs {
+			if v := oci.InitialEnv(env); v != "" {
+				key := constants.MinikubeExistingPrefix + env
+				rt[key] = v
+			}
+		}
+	}
+	return rt
 }
 
 // dockerEnvVarsList gets the necessary docker env variables to allow the use of minikube's docker daemon to be used in a exec.Command

@@ -1,0 +1,351 @@
+# Copyright 2016 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: olm
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: operators
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: olm-operator-serviceaccount
+  namespace: olm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:controller:operator-lifecycle-manager
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+- nonResourceURLs: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: olm-operator-binding-olm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:controller:operator-lifecycle-manager
+subjects:
+- kind: ServiceAccount
+  name: olm-operator-serviceaccount
+  namespace: olm
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: olm-operator
+  namespace: olm
+  labels:
+    app: olm-operator
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: olm-operator
+  template:
+    metadata:
+      labels:
+        app: olm-operator
+    spec:
+      serviceAccountName: olm-operator-serviceaccount
+      containers:
+        - name: olm-operator
+          command:
+          - /bin/olm
+          args:
+          - -namespace
+          - $(OPERATOR_NAMESPACE)
+          - -writeStatusName
+          - ""
+          image: quay.io/operator-framework/olm@sha256:0d15ffb5d10a176ef6e831d7865f98d51255ea5b0d16403618c94a004d049373
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+            - containerPort: 8081
+              name: metrics
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          terminationMessagePolicy: FallbackToLogsOnError
+          env:
+        
+          - name: OPERATOR_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: OPERATOR_NAME
+            value: olm-operator
+          resources:
+            requests:
+              cpu: 10m
+              memory: 160Mi
+          
+      
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-operator
+  namespace: olm
+  labels:
+    app: catalog-operator
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-operator
+  template:
+    metadata:
+      labels:
+        app: catalog-operator
+    spec:
+      serviceAccountName: olm-operator-serviceaccount
+      containers:
+        - name: catalog-operator
+          command:
+          - /bin/catalog
+          args:
+          - '-namespace'
+          - olm
+          - -configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
+          image: quay.io/operator-framework/olm@sha256:0d15ffb5d10a176ef6e831d7865f98d51255ea5b0d16403618c94a004d049373
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+            - containerPort: 8081
+              name: metrics
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          terminationMessagePolicy: FallbackToLogsOnError
+          env:
+          
+          resources:
+            requests:
+              cpu: 10m
+              memory: 80Mi
+          
+      
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aggregate-olm-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+- apiGroups: ["operators.coreos.com"]
+  resources: ["subscriptions"]
+  verbs: ["create", "update", "patch", "delete"]
+- apiGroups: ["operators.coreos.com"]
+  resources: ["clusterserviceversions", "catalogsources", "installplans", "subscriptions"]
+  verbs: ["delete"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aggregate-olm-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+- apiGroups: ["operators.coreos.com"]
+  resources: ["clusterserviceversions", "catalogsources", "installplans", "subscriptions", "operatorgroups"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["packages.operators.coreos.com"]
+  resources: ["packagemanifests", "packagemanifests/icon"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: global-operators
+  namespace: operators
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: olm-operators
+  namespace: olm
+spec:
+  targetNamespaces:
+    - olm
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: packageserver
+  namespace: olm
+  labels:
+    olm.version: 0.14.1
+spec:
+  displayName: Package Server
+  description: Represents an Operator package that is available from a given CatalogSource which will resolve to a ClusterServiceVersion.
+  minKubeVersion: 1.11.0
+  keywords: ['packagemanifests', 'olm', 'packages']
+  maintainers:
+  - name: Red Hat
+    email: openshift-operators@redhat.com
+  provider:
+    name: Red Hat
+  links:
+  - name: Package Server
+    url: https://github.com/operator-framework/operator-lifecycle-manager/tree/master/pkg/package-server
+  installModes:
+  - type: OwnNamespace
+    supported: true
+  - type: SingleNamespace
+    supported: true
+  - type: MultiNamespace
+    supported: true
+  - type: AllNamespaces
+    supported: true
+  install:
+    strategy: deployment
+    spec:
+      clusterPermissions:
+      - serviceAccountName: olm-operator-serviceaccount
+        rules:
+        - apiGroups:
+            - authorization.k8s.io
+          resources:
+            - subjectaccessreviews
+          verbs:
+            - create
+            - get
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - "operators.coreos.com"
+          resources:
+          - catalogsources
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - "packages.operators.coreos.com"
+          resources:
+          - packagemanifests
+          verbs:
+          - get
+          - list
+      deployments:
+      - name: packageserver
+        spec:
+          strategy:
+            type: RollingUpdate
+          replicas: 2
+          selector:
+            matchLabels:
+              app: packageserver
+          template:
+            metadata:
+              labels:
+                app: packageserver
+            spec:
+              serviceAccountName: olm-operator-serviceaccount
+              nodeSelector:
+                beta.kubernetes.io/os: linux
+              containers:
+              - name: packageserver
+                command:
+                - /bin/package-server
+                - -v=4
+                - --secure-port
+                - "5443"
+                - --global-namespace
+                - olm
+                image: quay.io/operator-framework/olm@sha256:0d15ffb5d10a176ef6e831d7865f98d51255ea5b0d16403618c94a004d049373
+                imagePullPolicy: Always
+                ports:
+                - containerPort: 5443
+                livenessProbe:
+                  httpGet:
+                    scheme: HTTPS
+                    path: /healthz
+                    port: 5443
+                readinessProbe:
+                  httpGet:
+                    scheme: HTTPS
+                    path: /healthz
+                    port: 5443
+                terminationMessagePolicy: FallbackToLogsOnError
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 50Mi
+  maturity: alpha
+  version: 0.14.1
+  apiservicedefinitions:
+    owned:
+    - group: packages.operators.coreos.com
+      version: v1
+      kind: PackageManifest
+      name: packagemanifests
+      displayName: PackageManifest
+      description: A PackageManifest is a resource generated from existing CatalogSources and their ConfigMaps
+      deploymentName: packageserver
+      containerPort: 5443
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: operatorhubio-catalog
+  namespace: olm
+spec:
+  sourceType: grpc
+  image: quay.io/operator-framework/upstream-community-operators:latest
+  displayName: Community Operators
+  publisher: OperatorHub.io
