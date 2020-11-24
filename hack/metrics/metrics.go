@@ -22,7 +22,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"runtime"
 	"time"
 
 	_ "cloud.google.com/go/storage"
@@ -63,10 +62,6 @@ func execute() error {
 		return errors.Wrap(err, "new tag key")
 	}
 
-	ctx, err := tag.New(context.Background(), tag.Insert(osMethod, runtime.GOOS))
-	if err != nil {
-		return errors.Wrap(err, "new tag")
-	}
 	// Register the view. It is imperative that this step exists,
 	// otherwise recorded metrics will be dropped and never exported.
 	v := &view.View{
@@ -74,6 +69,7 @@ func execute() error {
 		Measure:     latencyS,
 		Description: "minikube start time",
 		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{osMethod},
 	}
 	if err := view.Register(v); err != nil {
 		return errors.Wrap(err, "registering view")
@@ -100,7 +96,7 @@ func execute() error {
 		return errors.Wrap(err, "starting metric exporter")
 	}
 	defer sd.StopMetricsExporter()
-
+	ctx := context.Background()
 	for {
 		st, err := minikubeStartTime(ctx)
 		if err != nil {
