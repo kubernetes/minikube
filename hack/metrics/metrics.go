@@ -76,7 +76,7 @@ func execute() error {
 		Aggregation: view.LastValue(),
 	}
 	if err := view.Register(v); err != nil {
-		log.Fatalf("Failed to register the view: %v", err)
+		return errors.Wrap(err, "registering view")
 	}
 
 	sd, err := stackdriver.NewExporter(stackdriver.Options{
