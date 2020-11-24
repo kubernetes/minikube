@@ -1,5 +1,22 @@
 # Release Notes
 
+## Version 1.15.1 - 2020-11-16
+
+Feature:
+* Add Support for driver name alias [#9672](https://github.com/kubernetes/minikube/pull/9672)
+
+Bug fix:
+* less verbose language selector [#9715](https://github.com/kubernetes/minikube/pull/9715)
+
+Thank you to our contributors for this release!
+- Ben Leggett
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sadlil
+- Sharif Elgamal
+- Vasilyev, Viacheslav
+
+
 ## Version 1.15.0 - 2020-11-13
 
 Features:

@@ -19,10 +19,10 @@ package oci
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -135,10 +135,22 @@ type netInfo struct {
 	mtu     int
 }
 
+// networkInspect is only used to unmarshal the docker network inspect output and translate it to netInfo
+type networkInspect struct {
+	Name         string
+	Driver       string
+	Subnet       string
+	Gateway      string
+	MTU          int
+	ContainerIPs []string
+}
+
 // if exists returns subnet, gateway and mtu
 func dockerNetworkInspect(name string) (netInfo, error) {
+	var vals networkInspect
 	var info = netInfo{name: name}
-	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}},{{(index .Options "com.docker.network.driver.mtu")}}`)
+
+	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{(index .Options "com.docker.network.driver.mtu")}},{{$first := true}} "ContainerIPs": [{{range $k,$v := .Containers }}{{if $first}}{{$first = false}}{{else}}, {{end}}"{{$v.IPv4Address}}"{{end}}]}`)
 	rr, err := runCmd(cmd)
 	if err != nil {
 		logDockerNetworkInspect(name)
@@ -149,23 +161,15 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 		return info, err
 	}
 
-	// results looks like 172.17.0.0/16,172.17.0.1,1500
-	vals := strings.Split(strings.TrimSpace(rr.Stdout.String()), ",")
-	if len(vals) == 0 {
-		return info, fmt.Errorf("empty list network inspect: %q", rr.Output())
+	// results looks like {"Name": "bridge","Driver": "bridge","Subnet": "172.17.0.0/16","Gateway": "172.17.0.1","MTU": 1500, "ContainerIPs": ["172.17.0.3/16", "172.17.0.2/16"]}
+	if err := json.Unmarshal(rr.Stdout.Bytes(), &vals); err != nil {
+		return info, fmt.Errorf("error parsing network inspect output: %q", rr.Stdout.String())
 	}
 
-	if len(vals) > 0 {
-		info.gateway = net.ParseIP(vals[1])
-		mtu, err := strconv.Atoi(vals[2])
-		if err != nil {
-			klog.Warningf("couldn't parse mtu for docker network %q: %v", name, err)
-		} else {
-			info.mtu = mtu
-		}
-	}
+	info.gateway = net.ParseIP(vals.Gateway)
+	info.mtu = vals.MTU
 
-	_, info.subnet, err = net.ParseCIDR(vals[0])
+	_, info.subnet, err = net.ParseCIDR(vals.Subnet)
 	if err != nil {
 		return info, errors.Wrapf(err, "parse subnet for %s", name)
 	}
