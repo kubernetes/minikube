@@ -49,7 +49,7 @@ func getTracer(t string) (minikubeTracer, error) {
 	case "":
 		return nil, nil
 	}
-	return nil, fmt.Errorf("%s is not a valid tracer", t)
+	return nil, fmt.Errorf("%s is not a valid tracer, valid tracers include: [gcp]", t)
 }
 
 // StartSpan starts a span with the given name
