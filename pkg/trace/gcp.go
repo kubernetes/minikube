@@ -31,7 +31,9 @@ import (
 )
 
 const (
-	projectEnvVar  = "MINIKUBE_GCP_PROJECT_ID"
+	projectEnvVar = "MINIKUBE_GCP_PROJECT_ID"
+	// this is the name of the parent span to help identify it
+	// in the Cloud Trace UI.
 	parentSpanName = "minikube start"
 )
 
@@ -43,10 +45,15 @@ type gcpTracer struct {
 	cleanup func()
 }
 
+// StartSpan starts a span for the next step of
+// `minikube start` via the GCP tracer
 func (t *gcpTracer) StartSpan(name string) {
 	_, span := t.Tracer.Start(t.parentCtx, name)
 	t.spans[name] = span
 }
+
+// EndSpan ends the most recent span, indicating
+// that one step of `minikube start` has completed
 func (t *gcpTracer) EndSpan(name string) {
 	span, ok := t.spans[name]
 	if !ok {
