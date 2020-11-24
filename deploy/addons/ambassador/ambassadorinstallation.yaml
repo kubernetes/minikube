@@ -1,9 +1,0 @@
-apiVersion: getambassador.io/v2
-kind: AmbassadorInstallation
-metadata:
-  name: ambassador
-  namespace: ambassador
-spec:
-  installOSS: true
-  helmValues:
-    deploymentTool: amb-oper-minikube
