@@ -16,11 +16,62 @@ limitations under the License.
 
 package main
 
-const (
-	repo = "https://github.com/kubernetes/minikube"
+import (
+	"context"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"runtime"
+
+	"log"
+
+	"cloud.google.com/go/storage"
+	"github.com/pkg/errors"
 )
 
-// buildMinikubeAtHEAD copies minikube to a temp dir
-func buildMinikubeAtHEAD() error {
+const (
+	bucketName = "priya-test-bucket/latest"
+)
 
+// download minikube latest to a tmp file
+func downloadMinikube() (string, error) {
+	b := binary()
+	tmp, err := ioutil.TempFile("", b)
+	if err != nil {
+		return "", errors.Wrap(err, "creating tmp file")
+	}
+	if err := tmp.Close(); err != nil {
+		return "", errors.Wrap(err, "closing tmp file")
+	}
+	client, err := storage.NewClient(context.Background())
+	if err != nil {
+		return "", errors.Wrap(err, "creating client")
+	}
+	ctx := context.Background()
+	rc, err := client.Bucket(bucketName).Object(b).NewReader(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "gcs new reader")
+	}
+	defer rc.Close()
+
+	data, err := ioutil.ReadAll(rc)
+	if err != nil {
+		return "", errors.Wrap(err, "ioutil read all")
+	}
+	log.Printf("downloading gs://%s/%s to %v", bucketName, b, tmp.Name())
+	if err := ioutil.WriteFile(tmp.Name(), data, 0777); err != nil {
+		return "", errors.Wrap(err, "writing file")
+	}
+	if err := os.Chmod(tmp.Name(), 0700); err != nil {
+		return "", errors.Wrap(err, "chmod")
+	}
+	return tmp.Name(), nil
+}
+
+func binary() string {
+	b := fmt.Sprintf("minikube-%s-amd64", runtime.GOOS)
+	if runtime.GOOS == "windows" {
+		b += ".exe"
+	}
+	return b
 }
