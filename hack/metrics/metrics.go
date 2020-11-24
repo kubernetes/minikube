@@ -22,7 +22,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"time"
 
@@ -98,12 +97,16 @@ func execute() error {
 	trace.RegisterExporter(sd)
 
 	if err := sd.StartMetricsExporter(); err != nil {
-		log.Fatalf("Error starting metric exporter: %v", err)
+		return errors.Wrap(err, "starting metric exporter")
 	}
 	defer sd.StopMetricsExporter()
 
 	for {
-		st := minikubeStartTime(ctx)
+		st, err := minikubeStartTime(ctx)
+		if err != nil {
+			log.Printf("error collecting start time: %v", err)
+			continue
+		}
 		fmt.Printf("Latency: %f\n", st)
 		stats.Record(ctx, latencyS.M(st))
 		time.Sleep(30 * time.Second)
@@ -111,24 +114,27 @@ func execute() error {
 }
 
 func minikubeStartTime(ctx context.Context) (float64, error) {
-	defer deleteMinikube(ctx)
+	minikubePath, err := downloadMinikube()
+	if err != nil {
+		return 0, errors.Wrap(err, "downloading minikube")
+	}
+	defer os.Remove(minikubePath)
+	defer deleteMinikube(ctx, minikubePath)
 
-	minikube := filepath.Join(os.Getenv("HOME"), "minikube/out/minikube")
-
-	cmd := exec.CommandContext(ctx, minikube, "start", "--driver=docker", "-p", profile)
+	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
 	t := time.Now()
 	log.Print("Running minikube start....")
 	if err := cmd.Run(); err != nil {
-		log.Fatal(err)
+		return 0, errors.Wrapf(err, "running %v", cmd.Args)
 	}
-	return time.Since(t).Seconds()
+	return time.Since(t).Seconds(), nil
 }
 
-func deleteMinikube(ctx context.Context) {
-	cmd := exec.CommandContext(ctx, minikube, "delete", "-p", profile)
+func deleteMinikube(ctx context.Context, minikubePath string) {
+	cmd := exec.CommandContext(ctx, minikubePath, "delete", "-p", profile)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
