@@ -121,7 +121,7 @@ func minikubeStartTime(ctx context.Context) (float64, error) {
 	defer os.Remove(minikubePath)
 	defer deleteMinikube(ctx, minikubePath)
 
-	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile)
+	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2000")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
