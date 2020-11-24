@@ -27,6 +27,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -151,14 +152,34 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 	return noProxyVar, noProxyValue
 }
 
+// ensureDockerd ensures dockerd inside minikube is running before a docker-env  command
+func ensureDockerd(name string, r command.Runner) {
+	if ok := isDockerActive(r); ok {
+		return
+	}
+	mustRestartDockerd(name, r)
+}
+
 // isDockerActive checks if Docker is active
 func isDockerActive(r command.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
-func mustRestartDocker(name string, runner command.Runner) {
-	if err := sysinit.New(runner).Restart("docker"); err != nil {
-		exit.Message(reason.RuntimeRestart, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+// mustRestartDockerd will attempt to reload dockerd if fails, will try restart and exit if fails again
+func mustRestartDockerd(name string, runner command.Runner) {
+	// Docker Docs: https://docs.docker.com/config/containers/live-restore
+	// On Linux, you can avoid a restart (and avoid any downtime for your containers) by reloading the Docker daemon.
+	klog.Warningf("dockerd is not active will try to reload it...")
+	if err := sysinit.New(runner).Reload("docker"); err != nil {
+		klog.Warningf("will try to restart dockerd because reload failed: %v", err)
+		if err := sysinit.New(runner).Restart("docker"); err != nil {
+			exit.Message(reason.RuntimeRestart, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+		}
+		// if we get to the point that we have to restart docker (instead of reload)
+		// will need to wait for apisever container to come up, this usually takes 5 seconds
+		// verifying apisever using kverify would add code complexity for a rare case.
+		klog.Warningf("waiting 5 seconds to ensure apisever container is up...")
+		time.Sleep(time.Second * 5)
 	}
 }
 
@@ -205,10 +226,7 @@ var dockerEnvCmd = &cobra.Command{
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
-		if ok := isDockerActive(co.CP.Runner); !ok {
-			klog.Warningf("dockerd is not active will try to restart it...")
-			mustRestartDocker(cname, co.CP.Runner)
-		}
+		ensureDockerd(cname, co.CP.Runner)
 
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
@@ -238,8 +256,9 @@ var dockerEnvCmd = &cobra.Command{
 			out, err := tryDockerConnectivity("docker", ec)
 			if err != nil { // docker might be up but been loaded with wrong certs/config
 				// to fix issues like this #8185
-				klog.Warningf("couldn't connect to docker inside minikube. will try to restart dockerd service... output: %s error: %v", string(out), err)
-				mustRestartDocker(cname, co.CP.Runner)
+				// even though docker maybe running just fine it could be holding on to old certs and needs a refresh
+				klog.Warningf("couldn't connect to docker inside minikube.  output: %s error: %v", string(out), err)
+				mustRestartDockerd(cname, co.CP.Runner)
 			}
 		}
 
