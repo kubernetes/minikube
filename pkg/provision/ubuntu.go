@@ -79,8 +79,12 @@ BindsTo=containerd.service
 After=network-online.target firewalld.service containerd.service
 Wants=network-online.target
 Requires=docker.socket
+StartLimitBurst=5
+StartLimitIntervalSec=60
 
 [Service]
+Restart=always
+RestartSec=1
 Type=notify
 `
 	if noPivot {

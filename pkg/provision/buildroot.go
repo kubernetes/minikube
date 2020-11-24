@@ -76,8 +76,12 @@ Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
 After=network.target  minikube-automount.service docker.socket
 Requires= minikube-automount.service docker.socket 
+StartLimitBurst=5
+StartLimitIntervalSec=60
 
 [Service]
+Restart=always
+RestartSec=1
 Type=notify
 `
 	if noPivot {
