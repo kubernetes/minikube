@@ -165,5 +165,7 @@ func KindNet(repo string) string {
 	if repo == "" {
 		repo = "kindest"
 	}
+
+	// latest stable version from https://github.com/kubernetes-sigs/kind/blob/3b6648aeb4aac593461e16c52665e58774d97910/pkg/build/nodeimage/const_cni.go#L23
 	return path.Join(repo, "kindnetd:v20200928-6a47034c")
 }
