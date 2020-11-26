@@ -48,9 +48,9 @@ cwd=$(pwd)
 cd "${outdir}"
 mkdir ./results; tar xzf *.tar.gz -C ./results
 
-version=$(${MINIKUBE} version  | cut -d" " -f3)
+version=$(${cwd}/${MINIKUBE} version  | cut -d" " -f3)
 
-mkdir "minikube-${version}"
+mkdir -p "minikube-${version}"
 cd "minikube-${version}"
 
 cat <<EOF >PRODUCT.yaml
@@ -69,6 +69,6 @@ cat <<EOF >README.md
 ./hack/conformance_tests.sh $MINIKUBE $START_ARGS
 EOF
 
-cp ../results/plugins/e2e/results/* .
+cp -r ../results/plugins/e2e/results/global/* .
 cd ..
 cp -r "minikube-${version}" "${cwd}"
