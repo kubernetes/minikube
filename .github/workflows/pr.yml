@@ -76,7 +76,9 @@ jobs:
       - name: Unit Test
         env:
           TESTSUITE: unittest
-        run: make test
+        run: |
+          TMPDIR=$(mktemp -d)
+          TMPDIR="$TMPDIR" make test && ! ls "$TMPDIR"/*[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] 2>/dev/null && rm -rf "$TMPDIR"
         continue-on-error: false
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
