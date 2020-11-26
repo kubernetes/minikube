@@ -46,6 +46,7 @@ var (
 	stopAll               bool
 	keepActive            bool
 	scheduledStopDuration time.Duration
+	cancelScheduledStop   bool
 )
 
 // stopCmd represents the stop command
@@ -60,6 +61,7 @@ func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 	stopCmd.Flags().DurationVar(&scheduledStopDuration, "schedule", 0*time.Second, "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
+	stopCmd.Flags().BoolVar(&cancelScheduledStop, "cancel-scheduled-stop", false, "Set flag to cancel all scheduled stop. Defaults to false.")
 	if err := stopCmd.Flags().MarkHidden("schedule"); err != nil {
 		klog.Info("unable to mark --schedule flag as hidden")
 	}
@@ -95,9 +97,15 @@ func runStop(cmd *cobra.Command, args []string) {
 		profilesToStop = append(profilesToStop, cname)
 	}
 
+	if cancelScheduledStop {
+		klog.Infof("cancelling scheduled stops...")
+		schedule.KillExisting(profilesToStop)
+		klog.Info("cancelled scheduled stops")
+		return
+	}
+
 	// Kill any existing scheduled stops
 	schedule.KillExisting(profilesToStop)
-
 	if scheduledStopDuration != 0 {
 		if err := schedule.Daemonize(profilesToStop, scheduledStopDuration); err != nil {
 			exit.Message(reason.DaemonizeError, "unable to daemonize: {{.err}}", out.V{"err": err.Error()})

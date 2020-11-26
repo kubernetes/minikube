@@ -20,9 +20,10 @@ minikube stop [flags]
 ### Options
 
 ```
-      --all                   Set flag to stop all profiles (clusters)
-      --keep-context-active   keep the kube-context active after cluster is stopped. Defaults to false.
-  -o, --output string         Format to print stdout in. Options include: [text,json] (default "text")
+      --all                     Set flag to stop all profiles (clusters)
+      --cancel-scheduled-stop   Set flag to cancel all scheduled stop. Defaults to false.
+      --keep-context-active     keep the kube-context active after cluster is stopped. Defaults to false.
+  -o, --output string           Format to print stdout in. Options include: [text,json] (default "text")
 ```
 
 ### Options inherited from parent commands
