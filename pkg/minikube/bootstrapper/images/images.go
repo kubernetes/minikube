@@ -165,5 +165,5 @@ func KindNet(repo string) string {
 	if repo == "" {
 		repo = "kindest"
 	}
-	return path.Join(repo, "kindnetd:0.5.4")
+	return path.Join(repo, "kindnetd:v20200928-6a47034c")
 }
