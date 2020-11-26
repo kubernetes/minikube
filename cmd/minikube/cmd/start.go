@@ -786,10 +786,6 @@ func validateUser(drvName string) {
 
 	useForce := viper.GetBool(force)
 
-	if driver.NeedsRoot(drvName) && u.Uid != "0" && !useForce {
-		exit.Message(reason.DrvNeedsRoot, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo -E minikube start --driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
-	}
-
 	// None driver works with root and without root on Linux
 	if runtime.GOOS == "linux" && drvName == driver.None {
 		if !viper.GetBool(interactive) {
@@ -801,8 +797,8 @@ func validateUser(drvName string) {
 		return
 	}
 
-	// If root is required, or we are not root, exit early
-	if driver.NeedsRoot(drvName) || u.Uid != "0" {
+	// If we are not root, exit early
+	if u.Uid != "0" {
 		return
 	}
 
