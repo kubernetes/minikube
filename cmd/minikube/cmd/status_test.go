@@ -20,6 +20,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+	"time"
+
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
 func TestExitCode(t *testing.T) {
@@ -94,6 +97,70 @@ func TestStatusJSON(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var b bytes.Buffer
 			err := statusJSON([]*Status{tc.state}, &b)
+			if err != nil {
+				t.Errorf("json(%+v) error: %v", tc.state, err)
+			}
+
+			st := &Status{}
+			if err := json.Unmarshal(b.Bytes(), st); err != nil {
+				t.Errorf("json(%+v) unmarshal error: %v", tc.state, err)
+			}
+		})
+	}
+}
+
+func TestScheduledStopStatusText(t *testing.T) {
+	now := time.Now().Unix()
+	initiationTime := time.Unix(now, 0).String()
+
+	stopAt := time.Now().Add(time.Minute * 10).Unix()
+	scheduledTime := time.Unix(stopAt, 0).String()
+	var tests = []struct {
+		name  string
+		state *config.ScheduledStopConfig
+		want  string
+	}{
+		{
+			name:  "valid",
+			state: &config.ScheduledStopConfig{InitiationTime: now, Duration: time.Minute * 10},
+			want:  "type: ScheduledDuration\ninitiatedTime: " + initiationTime + "\nscheduledTime: " + scheduledTime + "\n\n",
+		},
+		{
+			name:  "missing",
+			state: &config.ScheduledStopConfig{},
+			want:  "type: ScheduledDuration\ninitiatedTime: -\nscheduledTime: -\n\n",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var b bytes.Buffer
+			err := scheduledStopStatusText(tc.state, &b)
+			if err != nil {
+				t.Errorf("text(%+v) error: %v", tc.state, err)
+			}
+
+			got := b.String()
+			if got != tc.want {
+				t.Errorf("text(%+v) = %q, want: %q", tc.state, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestScheduledStopStatusJSON(t *testing.T) {
+	var tests = []struct {
+		name  string
+		state *config.ScheduledStopConfig
+	}{
+		{
+			name:  "valid",
+			state: &config.ScheduledStopConfig{InitiationTime: time.Now().Unix(), Duration: time.Minute * 5},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var b bytes.Buffer
+			err := scheduledStopStatusJSON(tc.state, &b)
 			if err != nil {
 				t.Errorf("json(%+v) error: %v", tc.state, err)
 			}

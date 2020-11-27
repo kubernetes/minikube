@@ -170,6 +170,12 @@ type BaseState struct {
 	StepDetail string `json:",omitempty"`
 }
 
+// ScheduledStopStatus holds string representation of scheduledStopDuration
+type ScheduledStopStatus struct {
+	InitiatedTime string `json:",omitempty"`
+	ScheduledTime string `json:",omitempty"`
+}
+
 const (
 	minikubeNotRunningStatusFlag = 1 << 0
 	clusterNotRunningStatusFlag  = 1 << 1
@@ -186,6 +192,12 @@ kubeconfig: {{.Kubeconfig}}
 type: Worker
 host: {{.Host}}
 kubelet: {{.Kubelet}}
+
+`
+
+	scheduledStopStatusFormat = `type: ScheduledDuration
+initiatedTime: {{.InitiatedTime}}
+scheduledTime: {{.ScheduledTime}}
 
 `
 )
@@ -256,6 +268,11 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 					exit.Error(reason.InternalStatusText, "status text failure", err)
 				}
 			}
+			if cc.ScheduledStop != nil {
+				if err := scheduledStopStatusText(cc.ScheduledStop, os.Stdout); err != nil {
+					exit.Error(reason.InternalStatusText, "status text failure", err)
+				}
+			}
 		case "json":
 			// Layout is currently only supported for JSON mode
 			if layout == "cluster" {
@@ -265,6 +282,11 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 			} else {
 				if err := statusJSON(statuses, os.Stdout); err != nil {
 					exit.Error(reason.InternalStatusJSON, "status json failure", err)
+				}
+			}
+			if cc.ScheduledStop != nil {
+				if err := scheduledStopStatusJSON(cc.ScheduledStop, os.Stdout); err != nil {
+					exit.Error(reason.InternalStatusJSON, "scheduledstop status json failure", err)
 				}
 			}
 		default:
@@ -437,6 +459,39 @@ func statusJSON(st []*Status, w io.Writer) error {
 	} else {
 		js, err = json.Marshal(st)
 	}
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(js)
+	return err
+}
+
+func scheduledStopStatusText(sd *config.ScheduledStopConfig, w io.Writer) error {
+	var scheduledStopStatus ScheduledStopStatus
+	if sd.InitiationTime == 0 {
+		scheduledStopStatus.InitiatedTime = "-"
+	} else {
+		scheduledStopStatus.InitiatedTime = time.Unix(sd.InitiationTime, 0).String()
+	}
+	if sd.Duration == 0 {
+		scheduledStopStatus.ScheduledTime = "-"
+	} else {
+		stopAt := time.Now().Add(sd.Duration).Unix()
+		scheduledStopStatus.ScheduledTime = time.Unix(stopAt, 0).String()
+	}
+	tmpl, err := template.New("scheduled-stop-status").Parse(scheduledStopStatusFormat)
+	if err != nil {
+		return err
+	}
+	if err := tmpl.Execute(w, scheduledStopStatus); err != nil {
+		return err
+	}
+	return nil
+}
+
+func scheduledStopStatusJSON(sd *config.ScheduledStopConfig, w io.Writer) error {
+	var js []byte
+	js, err := json.Marshal(sd)
 	if err != nil {
 		return err
 	}
