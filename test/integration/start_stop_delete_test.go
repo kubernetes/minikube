@@ -110,7 +110,7 @@ func TestStartStop(t *testing.T) {
 						{"UserAppExistsAfterStop", validateAppExistsAfterStop},
 						{"AddonExistsAfterStop", validateAddonAfterStop},
 						{"VerifyKubernetesImages", validateKubernetesImages},
-						{"Pause", validatePauseAfterSart},
+						{"Pause", validatePauseAfterStart},
 					}
 					for _, stc := range serialTests {
 						if ctx.Err() == context.DeadlineExceeded {
@@ -233,7 +233,7 @@ func validateKubernetesImages(ctx context.Context, t *testing.T, profile string,
 	}
 }
 
-func validatePauseAfterSart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validatePauseAfterStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	testPause(ctx, t, profile)
 }
@@ -317,8 +317,16 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	}
 	sort.Strings(want)
 	sort.Strings(gotImages)
-	if diff := cmp.Diff(want, gotImages); diff != "" {
-		t.Errorf("%s images mismatch (-want +got):\n%s", version, diff)
+	// check if we got all the images we want, ignoring any extraneous ones in cache (eg, may be created by other tests)
+	missing := false
+	for _, img := range want {
+		if sort.SearchStrings(gotImages, img) == len(gotImages) {
+			missing = true
+			break
+		}
+	}
+	if missing {
+		t.Errorf("%s images missing (-want +got):\n%s", version, cmp.Diff(want, gotImages))
 	}
 }
 
