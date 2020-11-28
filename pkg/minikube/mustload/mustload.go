@@ -18,9 +18,13 @@ limitations under the License.
 package mustload
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -77,8 +81,47 @@ func Partial(name string, miniHome ...string) (libmachine.API, *config.ClusterCo
 		}
 		exit.Error(reason.HostConfigLoad, "Error getting cluster config", err)
 	}
+	if cc.Driver == driver.HyperV {
+		errorMessage := hasAdminPrivilege()
+		if errorMessage != "" {
+			advice := "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode"
+			exit.Advice(reason.HypervPrivilegeError, errorMessage, advice, out.V{
+				"name":    name,
+				"command": ExampleCmd(name, "Partial"),
+			})
+		}
+	}
 
 	return api, cc
+}
+
+// Check user is either a Windows Administrator or a Hyper-V Administrator
+func hasAdminPrivilege() string {
+	path, err := exec.LookPath("powershell")
+	if err != nil {
+		return "failed to look powershell path"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	adminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
+	adminCheckOut, adminCheckErr := adminCheckCmd.CombinedOutput()
+
+	if adminCheckErr != nil {
+		return fmt.Sprintf("%s returned %q", strings.Join(adminCheckCmd.Args, " "), adminCheckOut)
+	}
+
+	hypervAdminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(([System.Security.Principal.SecurityIdentifier]::new("S-1-5-32-578")))`)
+	hypervAdminCheckOut, hypervAdminCheckErr := hypervAdminCheckCmd.CombinedOutput()
+
+	if hypervAdminCheckErr != nil {
+		return fmt.Sprintf("%s returned %q", strings.Join(hypervAdminCheckCmd.Args, " "), hypervAdminCheckOut)
+	}
+
+	if (strings.TrimSpace(string(adminCheckOut)) != "True") && (strings.TrimSpace(string(hypervAdminCheckOut)) != "True") {
+		return "Hyper-v commands have to be run as an Administrator"
+	}
+	return ""
 }
 
 // Running is a cmd-friendly way to load a running cluster

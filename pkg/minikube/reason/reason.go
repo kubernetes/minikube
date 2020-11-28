@@ -115,6 +115,7 @@ var (
 	InternalCredsNotFound    = Kind{ID: "MK_CREDENTIALS_NOT_FOUND", ExitCode: ExProgramNotFound, Style: style.Shrug}
 	InternalSemverParse      = Kind{ID: "MK_SEMVER_PARSE", ExitCode: ExProgramError}
 	DaemonizeError           = Kind{ID: "MK_DAEMONIZE", ExitCode: ExProgramError}
+	HypervPrivilegeError     = Kind{ID: "MK_HYPERV_PRIVILEGE", ExitCode: ExControlPlaneError}
 
 	RsrcInsufficientCores             = Kind{ID: "RSRC_INSUFFICIENT_CORES", ExitCode: ExInsufficientCores, Style: style.UnmetRequirement}
 	RsrcInsufficientDarwinDockerCores = Kind{
