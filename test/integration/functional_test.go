@@ -88,6 +88,7 @@ func TestFunctional(t *testing.T) {
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
+			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -332,6 +333,32 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	rr, err := Run(t, exec.CommandContext(ctx, dstfn, kubectlArgs...))
 	if err != nil {
 		t.Fatalf("failed to run kubectl directly. args %q: %v", rr.Command(), err)
+	}
+
+}
+
+func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	start := time.Now()
+	// The tests before this already created a profile, starting minikube with different --extra-config cmdline option.
+	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision"}
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Errorf("failed to restart minikube. args %q: %v", rr.Command(), err)
+	}
+	t.Logf("restart took %s for %q cluster.", time.Since(start), profile)
+
+	afterCfg, err := config.LoadProfile(profile)
+	if err != nil {
+		t.Errorf("error reading cluster config after soft start: %v", err)
+	}
+
+	expectedExtraOptions := "apiserver.enable-admission-plugins=NamespaceAutoProvision"
+
+	if !strings.Contains(afterCfg.Config.KubernetesConfig.ExtraOptions.String(), expectedExtraOptions) {
+		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
 	}
 
 }
