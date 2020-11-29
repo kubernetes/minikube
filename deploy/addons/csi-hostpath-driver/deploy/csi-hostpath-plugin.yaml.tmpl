@@ -1,3 +1,17 @@
+# Copyright 2018 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Service defined here, plus serviceName below in StatefulSet,
 # are needed only because of condition explained in
 # https://github.com/kubernetes/kubernetes/issues/69608
@@ -39,7 +53,7 @@ spec:
     spec:
       containers:
         - name: node-driver-registrar
-          image: quay.io/k8scsi/csi-node-driver-registrar:v1.3.0
+          image: {{default "quay.io/k8scsi" .ImageRepository}}/csi-node-driver-registrar:v1.3.0
           args:
             - --v=5
             - --csi-address=/csi/csi.sock
@@ -64,7 +78,7 @@ spec:
             name: csi-data-dir
 
         - name: hostpath
-          image: quay.io/k8scsi/hostpathplugin:v1.4.0-rc2
+          image: {{default "quay.io/k8scsi" .ImageRepository}}/hostpathplugin:v1.4.0-rc2
           args:
             - "--drivername=hostpath.csi.k8s.io"
             - "--v=5"
@@ -109,7 +123,7 @@ spec:
           volumeMounts:
           - mountPath: /csi
             name: socket-dir
-          image: quay.io/k8scsi/livenessprobe:v1.1.0
+          image: {{default "quay.io/k8scsi" .ImageRepository}}/livenessprobe:v1.1.0
           args:
           - --csi-address=/csi/csi.sock
           - --health-port=9898

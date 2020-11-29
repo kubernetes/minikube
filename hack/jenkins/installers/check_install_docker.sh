@@ -18,17 +18,14 @@ set -eux -o pipefail
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   echo "detected darwin, exiting"
-  return
+  exit 0
 fi
 
 echo "Installing latest docker"
-sudo apt-get -y update
-sudo apt-get -y install apt-transport-https ca-certificates curl gnupg-agent software-properties-common  
-curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian `lsb_release -cs` stable"
-sudo apt-get -y update
-sudo apt-get -y install docker-ce docker-ce-cli containerd.io
-sudo usermod -aG docker jenkins
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+rm get-docker.sh
+sudo adduser jenkins docker || true
 
 echo "Installing latest kubectl"
 curl -LO "https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl"

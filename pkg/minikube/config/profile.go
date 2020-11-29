@@ -38,9 +38,6 @@ func (p *Profile) IsValid() bool {
 	if p.Config == nil {
 		return false
 	}
-	if p.Config == nil {
-		return false
-	}
 	if p.Config.Driver == "" {
 		return false
 	}

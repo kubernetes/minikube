@@ -50,6 +50,9 @@ type Manager interface {
 	// Restart restarts a service
 	Restart(string) error
 
+	// Reload restarts a service
+	Reload(string) error
+
 	// Stop stops a service
 	Stop(string) error
 
