@@ -22,7 +22,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
 {{% tabs %}}
-{{% tab "Linux" %}}
+{{% linuxtab %}}
 
 For Linux users, we provide 3 easy download options:
 
@@ -47,8 +47,8 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest
 sudo rpm -ivh minikube-latest.x86_64.rpm
 ```
 
-{{% /tab %}}
-{{% tab "macOS" %}}
+{{% /linuxtab %}}
+{{% mactab %}}
 
 If the [Brew Package Manager](https://brew.sh/) installed:
 
@@ -70,8 +70,8 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 sudo install minikube-darwin-amd64 /usr/local/bin/minikube
 ```
 
-{{% /tab %}}
-{{% tab "Windows" %}}
+{{% /mactab %}}
+{{% windowstab %}}
 
 If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use it to install minikube:
 
@@ -81,7 +81,7 @@ choco install minikube
 
 Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
-{{% /tab %}}
+{{% /windowstab %}}
 {{% /tabs %}}
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>Start your cluster</h2>
