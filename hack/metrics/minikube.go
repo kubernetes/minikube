@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	bucketName = "priya-test-bucket/latest"
+	bucketName = "minikube/latest"
 )
 
 // download minikube latest to a tmp file
