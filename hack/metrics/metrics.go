@@ -31,10 +31,10 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
+	pkgtrace "k8s.io/minikube/pkg/trace"
 )
 
 const (
-	projectEnvVar    = "MINIKUBE_GCP_PROJECT_ID"
 	customMetricName = "custom.googleapis.com/minikube/start_time"
 	profile          = "cloud-monitoring"
 )
@@ -52,9 +52,9 @@ func main() {
 }
 
 func execute() error {
-	projectID := os.Getenv(projectEnvVar)
+	projectID := os.Getenv(pkgtrace.ProjectEnvVar)
 	if projectID == "" {
-		return fmt.Errorf("metrics collector requires a valid GCP project id set via the %s env variable", projectEnvVar)
+		return fmt.Errorf("metrics collector requires a valid GCP project id set via the %s env variable", pkgtrace.ProjectEnvVar)
 	}
 
 	osMethod, err := tag.NewKey("os")
@@ -98,7 +98,7 @@ func execute() error {
 	defer sd.StopMetricsExporter()
 	ctx := context.Background()
 	for {
-		st, err := minikubeStartTime(ctx)
+		st, err := minikubeStartTime(ctx, projectID)
 		if err != nil {
 			log.Printf("error collecting start time: %v", err)
 			continue
@@ -109,7 +109,7 @@ func execute() error {
 	}
 }
 
-func minikubeStartTime(ctx context.Context) (float64, error) {
+func minikubeStartTime(ctx context.Context, projectID string) (float64, error) {
 	minikubePath, err := downloadMinikube()
 	if err != nil {
 		return 0, errors.Wrap(err, "downloading minikube")
@@ -117,7 +117,8 @@ func minikubeStartTime(ctx context.Context) (float64, error) {
 	defer os.Remove(minikubePath)
 	defer deleteMinikube(ctx, minikubePath)
 
-	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2000")
+	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2000", "--trace=gcp")
+	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", pkgtrace.ProjectEnvVar, projectID))
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 

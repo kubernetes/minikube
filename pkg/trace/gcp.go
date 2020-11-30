@@ -31,7 +31,8 @@ import (
 )
 
 const (
-	projectEnvVar = "MINIKUBE_GCP_PROJECT_ID"
+	// ProjectEnvVar is the name of the env variable that the user must pass in their GCP project ID through
+	ProjectEnvVar = "MINIKUBE_GCP_PROJECT_ID"
 	// this is the name of the parent span to help identify it
 	// in the Cloud Trace UI.
 	parentSpanName = "minikube start"
@@ -72,9 +73,9 @@ func (t *gcpTracer) Cleanup() {
 }
 
 func initGCPTracer() (*gcpTracer, error) {
-	projectID := os.Getenv(projectEnvVar)
+	projectID := os.Getenv(ProjectEnvVar)
 	if projectID == "" {
-		return nil, fmt.Errorf("GCP tracer requires a valid GCP project id set via the %s env variable", projectEnvVar)
+		return nil, fmt.Errorf("GCP tracer requires a valid GCP project id set via the %s env variable", ProjectEnvVar)
 	}
 
 	_, flush, err := texporter.InstallNewPipeline(
