@@ -82,6 +82,9 @@ Requires=docker.socket
 
 [Service]
 Type=notify
+Restart=on-failure
+StartLimitBurst=3
+StartLimitIntervalSec=60
 `
 	if noPivot {
 		klog.Warning("Using fundamentally insecure --no-pivot option")
