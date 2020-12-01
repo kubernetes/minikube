@@ -60,7 +60,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
           sudo apt-get install -y jq
           rm -f gopogh-linux-amd64 || true
