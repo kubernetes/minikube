@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	bucketName = "minikube/latest"
+	bucketName = "minikube"
 )
 
 // download minikube latest to file
@@ -41,15 +41,15 @@ func downloadMinikube(ctx context.Context, minikubePath string) error {
 	if err != nil {
 		return errors.Wrap(err, "creating client")
 	}
+	obj := client.Bucket("minikube").Object(fmt.Sprintf("latest/%s", binary()))
 
-	if localMinikubeIsLatest(ctx, minikubePath, client) {
+	if localMinikubeIsLatest(ctx, minikubePath, obj) {
 		log.Print("local minikube is latest, skipping download...")
 		return nil
 	}
 
 	os.Remove(minikubePath)
 	// download minikube binary from GCS
-	obj := client.Bucket("minikube").Object(fmt.Sprintf("latest/%s", binary()))
 	rc, err := obj.NewReader(ctx)
 	if err != nil {
 		return errors.Wrap(err, "gcs new reader")
@@ -72,9 +72,8 @@ func downloadMinikube(ctx context.Context, minikubePath string) error {
 
 // localMinikubeIsLatest returns true if the local version of minikube
 // matches the latest version in GCS
-func localMinikubeIsLatest(ctx context.Context, minikubePath string, client *storage.Client) bool {
+func localMinikubeIsLatest(ctx context.Context, minikubePath string, obj *storage.ObjectHandle) bool {
 	log.Print("checking if local minikube is latest...")
-	obj := client.Bucket("minikube").Object(fmt.Sprintf("latest/%s", binary()))
 	attrs, err := obj.Attrs(ctx)
 	if err != nil {
 		log.Printf("error getting %s object attrs: %v", obj.ObjectName(), err)
