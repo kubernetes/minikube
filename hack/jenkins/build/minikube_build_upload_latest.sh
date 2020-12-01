@@ -28,9 +28,18 @@ WANT_GOLANG_VERSION=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
 
 declare -rx GOPATH=/var/lib/jenkins/go
 
+GIT_COMMIT_AT_HEAD=$(git rev-parse HEAD | xargs)
+MINIKUBE_LATEST_COMMIT=$(gsutil stat gs://minikube/latest/minikube-linux-amd64 | grep commit | awk '{ print $2 }' | xargs)
+
+if [ "$GIT_COMMIT_AT_HEAD" = "$MINIKUBE_LATEST_COMMIT" ]; then
+  echo "The current uploaded binary is already latest, skipping build"
+  exit 0
+fi
+
 make cross && failed=$? || failed=$?
 if [[ "${failed}" -ne 0 ]]; then
   echo "build failed"
   exit "${failed}"
 fi
 gsutil cp out/minikube-* "gs://${bucket}"
+gsutil setmeta -r -h "x-goog-meta-commit:$GIT_COMMIT_AT_HEAD" "gs://${bucket}"
