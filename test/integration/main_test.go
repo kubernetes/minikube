@@ -135,6 +135,11 @@ func GithubActionRunner() bool {
 	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
+// Arm64Platform returns true if running on arm64/* platform
+func Arm64Platform() bool {
+	return runtime.GOARCH == "arm64"
+}
+
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
 // (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {

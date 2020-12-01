@@ -42,6 +42,10 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		t.Skip("Skip if not linux.")
 	}
 
+	if Arm64Platform() {
+		t.Skip("Skip if arm64.")
+	}
+
 	MaybeParallel(t)
 
 	tests := []struct {

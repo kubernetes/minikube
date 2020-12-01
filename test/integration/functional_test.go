@@ -496,7 +496,22 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	defer cancel()
 
 	// Too little memory!
-	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgs()...)
+	var startArgs []string
+	orgStartArgs := StartArgs()
+
+	for i := 0; i < len(orgStartArgs); i++ {
+		arg := orgStartArgs[i]
+		if strings.HasPrefix(arg, "--memory=") {
+			continue
+		}
+		if arg == "--memory" {
+			i++ // skip next
+			continue
+		}
+		startArgs = append(startArgs, arg)
+	}
+
+	startArgs = append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, startArgs...)
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
@@ -591,7 +606,13 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
-			if !strings.Contains(rr.Output(), "0184c1613d929") {
+			var pauseID string
+			if Arm64Platform() {
+				pauseID = "3d18732f8686c"
+			} else {
+				pauseID = "0184c1613d929"
+			}
+			if !strings.Contains(rr.Output(), pauseID) {
 				t.Errorf("expected sha for pause:3.3 '0184c1613d929' to be in the output but got *%s*", rr.Output())
 			}
 
@@ -786,7 +807,14 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 	}()
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.4"))
+	var echoServerArg string
+	if Arm64Platform() {
+		echoServerArg = "k8s.gcr.io/echoserver-arm:1.8"
+	} else {
+		echoServerArg = "k8s.gcr.io/echoserver:1.10"
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image="+echoServerArg))
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
@@ -958,6 +986,11 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	if Arm64Platform() {
+		t.Skip("arm64 is not supported by mysql. skip the test")
+		return
+	}
+
 	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
