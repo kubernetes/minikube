@@ -462,6 +462,11 @@ out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
 	chmod 0755 out/minikube_$(DEB_VERSION)/DEBIAN
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
 	sed -E -i 's/--ARCH--/'$*'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
+	if [ "$*" = "amd64" ]; then \
+	    sed -E -i 's/--RECOMMENDS--/virtualbox/' out/minikube_$(DEB_VERSION)/DEBIAN/control; \
+	else \
+	    sed -E -i '/Recommends: --RECOMMENDS--/d' out/minikube_$(DEB_VERSION)/DEBIAN/control; \
+	fi
 	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
 	cp $< out/minikube_$(DEB_VERSION)/usr/bin/minikube
 	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION) $@
