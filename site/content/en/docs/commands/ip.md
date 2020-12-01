@@ -13,7 +13,7 @@ Retrieves the IP address of the running cluster
 
 Retrieves the IP address of the running cluster, and writes it to STDOUT.
 
-```
+```shell
 minikube ip [flags]
 ```
 

@@ -13,7 +13,7 @@ Starts a local Kubernetes cluster
 
 Starts a local Kubernetes cluster
 
-```
+```shell
 minikube start [flags]
 ```
 

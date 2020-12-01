@@ -13,7 +13,7 @@ Returns logs to debug a local Kubernetes cluster
 
 Gets the logs of the running instance, used for debugging minikube, not user code.
 
-```
+```shell
 minikube logs [flags]
 ```
 
