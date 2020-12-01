@@ -29,7 +29,7 @@ import (
 // Pause returns the image name to pull for a given Kubernetes version
 func Pause(v semver.Version, mirror string) string {
 	// Should match `PauseVersion` in:
-	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
+	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
 	pv := "3.2"
 	if semver.MustParseRange("<1.18.0-alpha.0")(v) {
 		pv = "3.1"
@@ -37,7 +37,7 @@ func Pause(v semver.Version, mirror string) string {
 	return path.Join(kubernetesRepo(mirror), "pause"+archTag(false)+pv)
 }
 
-// essentials returns images needed too bootstrap a kubenretes
+// essentials returns images needed too bootstrap a Kubernetes
 func essentials(mirror string, v semver.Version) []string {
 	imgs := []string{
 		componentImage("kube-proxy", v, mirror),

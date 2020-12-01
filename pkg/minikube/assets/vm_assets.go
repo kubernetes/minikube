@@ -198,8 +198,8 @@ type BinAsset struct {
 }
 
 // MustBinAsset creates a new BinAsset, or panics if invalid
-func MustBinAsset(name, targetDir, targetName, permissions string, isTemplate bool) *BinAsset {
-	asset, err := NewBinAsset(name, targetDir, targetName, permissions, isTemplate)
+func MustBinAsset(name, targetDir, targetName, permissions string) *BinAsset {
+	asset, err := NewBinAsset(name, targetDir, targetName, permissions)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to define asset %s: %v", name, err))
 	}
@@ -207,7 +207,7 @@ func MustBinAsset(name, targetDir, targetName, permissions string, isTemplate bo
 }
 
 // NewBinAsset creates a new BinAsset
-func NewBinAsset(name, targetDir, targetName, permissions string, isTemplate bool) (*BinAsset, error) {
+func NewBinAsset(name, targetDir, targetName, permissions string) (*BinAsset, error) {
 	m := &BinAsset{
 		BaseAsset: BaseAsset{
 			SourcePath:  name,
@@ -217,7 +217,7 @@ func NewBinAsset(name, targetDir, targetName, permissions string, isTemplate boo
 		},
 		template: nil,
 	}
-	err := m.loadData(isTemplate)
+	err := m.loadData()
 	return m, err
 }
 
@@ -232,20 +232,18 @@ func defaultValue(defValue string, val interface{}) string {
 	return strVal
 }
 
-func (m *BinAsset) loadData(isTemplate bool) error {
+func (m *BinAsset) loadData() error {
 	contents, err := Asset(m.SourcePath)
 	if err != nil {
 		return err
 	}
 
-	if isTemplate {
-		tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
-		if err != nil {
-			return err
-		}
-
-		m.template = tpl
+	tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
+	if err != nil {
+		return err
 	}
+
+	m.template = tpl
 
 	m.length = len(contents)
 	m.reader = bytes.NewReader(contents)

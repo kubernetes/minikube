@@ -24,9 +24,9 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.14"
+	Version = "v0.0.15-snapshot2"
 	// SHA of the kic base image
-	baseImageSHA = "2bd97b482faf5b6a403ac39dd5e7c6fe2006425c6663a12f94f64f5f81a7787e"
+	baseImageSHA = "0973e4bcdfef0dc8c5a581ecfcca5e36fa6a1cc8773e832ecfd31de3d2b6bf46"
 )
 
 var (
