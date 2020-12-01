@@ -8,8 +8,11 @@ date: 2020-07-15
 If you have a containerized GCP app with a Kubernetes yaml, you can automatically add your credentials to all your deployed pods dynamically with this minikube addon. You just need to have a credentials file, which can be generated with `gcloud auth application-default login`. If you already have a json credentials file you want specify, use the GOOGLE_APPLICATION_CREDENTIALS environment variable.
 
 - Start a cluster:
-```
+```shell
 minikube start
+```
+
+```
 😄  minikube v1.12.0 on Darwin 10.15.5
 ✨  Automatically selected the docker driver. Other choices: hyperkit, virtualbox
 👍  Starting control plane node minikube in cluster minikube
@@ -21,8 +24,11 @@ minikube start
 ```
 
 - Enable the `gcp-auth` addon:
-```
+```shell
 minikube addons enable gcp-auth
+```
+
+```
 🔎  Verifying gcp-auth addon...
 📌  Your GCP credentials will now be mounted into every pod created in the minikube cluster.
 📌  If you don't want credential mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.
@@ -30,14 +36,17 @@ minikube addons enable gcp-auth
 ```
 
 - For credentials in an arbitrary path:
-```
+```shell
 export GOOGLE_APPLICATION_CREDENTIALS=<creds-path>.json 
 minikube addons enable gcp-auth
 ```
 
 - Deploy your GCP app as normal:
-```
+```shell
 kubectl apply -f test.yaml
+```
+
+```
 deployment.apps/pytest created
 ```
 
