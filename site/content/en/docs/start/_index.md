@@ -58,7 +58,7 @@ brew install minikube
 
 If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
 
-```
+```shell
 brew cask remove minikube
 brew link minikube
 ```
@@ -160,7 +160,9 @@ minikube tunnel
 
 To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
 
-`kubectl get services balanced`
+```shell
+kubectl get services balanced
+```
 
 Your deployment is now available at &lt;EXTERNAL-IP&gt;:8080
 
