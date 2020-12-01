@@ -13,5 +13,7 @@ menu "System tools"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/gluster/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/vbox-guest/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/containerd-bin/Config.in"
+    source "$BR2_EXTERNAL_MINIKUBE_PATH/package/buildkit-bin/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/package/falco-module/Config.in"
+    source "$BR2_EXTERNAL_MINIKUBE_PATH/package/scheduled-stop/Config.in"
 endmenu

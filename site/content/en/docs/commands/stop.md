@@ -21,6 +21,7 @@ minikube stop [flags]
 
 ```
       --all                   Set flag to stop all profiles (clusters)
+      --cancel-scheduled      cancel any existing scheduled stop requests
       --keep-context-active   keep the kube-context active after cluster is stopped. Defaults to false.
   -o, --output string         Format to print stdout in. Options include: [text,json] (default "text")
 ```

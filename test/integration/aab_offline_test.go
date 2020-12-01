@@ -49,7 +49,6 @@ func TestOffline(t *testing.T) {
 				// RFC1918 address that unlikely to host working a proxy server
 				env = append(env, "HTTP_PROXY=172.16.1.1:1")
 				env = append(env, "HTTP_PROXYS=172.16.1.1:1")
-				env = append(env, "DOCKER_HOST=172.16.1.1:1")
 
 				c.Env = env
 				rr, err := Run(t, c)

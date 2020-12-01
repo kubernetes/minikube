@@ -20,6 +20,7 @@ package sysinit
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"html/template"
 	"os/exec"
 	"path"
@@ -126,6 +127,12 @@ func (s *OpenRC) Restart(svc string) error {
 	rr, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "restart"))
 	klog.Infof("restart output: %s", rr.Output())
 	return err
+}
+
+// Reload reloads a service
+// currently only used by our docker-env that doesn't need openrc implementation
+func (s *OpenRC) Reload(svc string) error {
+	return fmt.Errorf("reload is not implemented for OpenRC yet ! Please implement if needed")
 }
 
 // Stop stops a service

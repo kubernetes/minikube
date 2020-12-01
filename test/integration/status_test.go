@@ -40,7 +40,7 @@ func TestInsufficientStorage(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
 	defer Cleanup(t, profile, cancel)
 
-	startArgs := []string{"start", "-p", profile, "--output=json", "--wait=true"}
+	startArgs := []string{"start", "-p", profile, "--memory=1900", "--output=json", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	// artificially set /var to 100% capacity

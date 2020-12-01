@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/trace"
 )
 
 const (
@@ -117,6 +118,7 @@ func (r *Register) currentStep() string {
 
 // SetStep sets the current step
 func (r *Register) SetStep(s RegStep) {
+	defer trace.StartSpan(string(s))
 	if r.first == RegStep("") {
 		_, ok := r.steps[s]
 		if ok {
@@ -124,6 +126,8 @@ func (r *Register) SetStep(s RegStep) {
 		} else {
 			klog.Errorf("unexpected first step: %q", r.first)
 		}
+	} else {
+		trace.EndSpan(string(r.current))
 	}
 
 	r.current = s
