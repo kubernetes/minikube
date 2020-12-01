@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"runtime"
+	"strings"
 
 	"log"
 
@@ -33,39 +35,62 @@ const (
 	bucketName = "minikube/latest"
 )
 
-// download minikube latest to a tmp file
-func downloadMinikube() (string, error) {
-	b := binary()
-	tmp, err := ioutil.TempFile("", b)
+// download minikube latest to file
+func downloadMinikube(ctx context.Context, minikubePath string) error {
+	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "creating tmp file")
+		return errors.Wrap(err, "creating client")
 	}
-	if err := tmp.Close(); err != nil {
-		return "", errors.Wrap(err, "closing tmp file")
+
+	if localMinikubeIsLatest(ctx, minikubePath, client) {
+		log.Print("local minikube is latest, skipping download...")
+		return nil
 	}
-	client, err := storage.NewClient(context.Background())
+
+	os.Remove(minikubePath)
+	// download minikube binary from GCS
+	obj := client.Bucket("minikube").Object(fmt.Sprintf("latest/%s", binary()))
+	rc, err := obj.NewReader(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "creating client")
-	}
-	ctx := context.Background()
-	rc, err := client.Bucket(bucketName).Object(b).NewReader(ctx)
-	if err != nil {
-		return "", errors.Wrap(err, "gcs new reader")
+		return errors.Wrap(err, "gcs new reader")
 	}
 	defer rc.Close()
 
 	data, err := ioutil.ReadAll(rc)
 	if err != nil {
-		return "", errors.Wrap(err, "ioutil read all")
+		return errors.Wrap(err, "ioutil read all")
 	}
-	log.Printf("downloading gs://%s/%s to %v", bucketName, b, tmp.Name())
-	if err := ioutil.WriteFile(tmp.Name(), data, 0777); err != nil {
-		return "", errors.Wrap(err, "writing file")
+	log.Printf("downloading gs://%s/%s to %v", bucketName, binary(), minikubePath)
+	if err := ioutil.WriteFile(minikubePath, data, 0777); err != nil {
+		return errors.Wrap(err, "writing minikubePath")
 	}
-	if err := os.Chmod(tmp.Name(), 0700); err != nil {
-		return "", errors.Wrap(err, "chmod")
+	if err := os.Chmod(minikubePath, 0700); err != nil {
+		return errors.Wrap(err, "chmod")
 	}
-	return tmp.Name(), nil
+	return nil
+}
+
+// localMinikubeIsLatest returns true if the local version of minikube
+// matches the latest version in GCS
+func localMinikubeIsLatest(ctx context.Context, minikubePath string, client *storage.Client) bool {
+	log.Print("checking if local minikube is latest...")
+	obj := client.Bucket("minikube").Object(fmt.Sprintf("latest/%s", binary()))
+	attrs, err := obj.Attrs(ctx)
+	if err != nil {
+		log.Printf("error getting %s object attrs: %v", obj.ObjectName(), err)
+		return false
+	}
+	gcsMinikubeVersion, ok := attrs.Metadata["commit"]
+	if !ok {
+		log.Printf("there is no commit: %v", attrs.Metadata)
+		return false
+	}
+	currentMinikubeVersion, err := exec.Command(minikubePath, "version", "--output=json").Output()
+	if err != nil {
+		log.Printf("error running [%s version]: %v", minikubePath, err)
+		return false
+	}
+	return strings.Contains(string(currentMinikubeVersion), gcsMinikubeVersion)
 }
 
 func binary() string {

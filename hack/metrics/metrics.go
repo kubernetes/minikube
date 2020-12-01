@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -97,8 +98,20 @@ func execute() error {
 	}
 	defer sd.StopMetricsExporter()
 	ctx := context.Background()
+
+	// create a tmp file to download minikube to
+	tmp, err := ioutil.TempFile("", binary())
+	if err != nil {
+		return errors.Wrap(err, "creating tmp file")
+	}
+	if err := tmp.Close(); err != nil {
+		return errors.Wrap(err, "closing file")
+	}
+	defer os.Remove(tmp.Name())
+
+	// start loop where we will track minikube start time
 	for {
-		st, err := minikubeStartTime(ctx, projectID)
+		st, err := minikubeStartTime(ctx, projectID, tmp.Name())
 		if err != nil {
 			log.Printf("error collecting start time: %v", err)
 			continue
@@ -109,12 +122,10 @@ func execute() error {
 	}
 }
 
-func minikubeStartTime(ctx context.Context, projectID string) (float64, error) {
-	minikubePath, err := downloadMinikube()
-	if err != nil {
+func minikubeStartTime(ctx context.Context, projectID, minikubePath string) (float64, error) {
+	if err := downloadMinikube(ctx, minikubePath); err != nil {
 		return 0, errors.Wrap(err, "downloading minikube")
 	}
-	defer os.Remove(minikubePath)
 	defer deleteMinikube(ctx, minikubePath)
 
 	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2000", "--trace=gcp")
@@ -123,11 +134,12 @@ func minikubeStartTime(ctx context.Context, projectID string) (float64, error) {
 	cmd.Stderr = os.Stderr
 
 	t := time.Now()
-	log.Print("Running minikube start....")
+	log.Printf("Running [%v]....", cmd.Args)
 	if err := cmd.Run(); err != nil {
 		return 0, errors.Wrapf(err, "running %v", cmd.Args)
 	}
-	return time.Since(t).Seconds(), nil
+	totalTime := time.Since(t).Seconds()
+	return totalTime, nil
 }
 
 func deleteMinikube(ctx context.Context, minikubePath string) {
