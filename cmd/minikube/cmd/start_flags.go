@@ -407,7 +407,7 @@ func upgradeExistingConfig(cc *config.ClusterConfig) {
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
-// skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
+// skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to suppress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
 
 	validateFlags(cmd, existing.Driver)
@@ -563,6 +563,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed("apiserver-names") {
 		cc.KubernetesConfig.APIServerNames = viper.GetStringSlice("apiserver-names")
+	}
+
+	if cmd.Flags().Changed("apiserver-ips") {
+		// https://github.com/spf13/viper/issues/460
+		cc.KubernetesConfig.APIServerIPs = apiServerIPs
 	}
 
 	if cmd.Flags().Changed(apiServerPort) {
