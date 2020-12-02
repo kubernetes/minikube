@@ -122,13 +122,13 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	wg.Add(2)
 
 	go func() {
-		if err := teePrefix(ErrPrefix, errPipe, errB, klog.V(8).Infof); err != nil {
+		if err := teePrefix(ErrPrefix, errPipe, errB, klog.Infof); err != nil {
 			klog.Errorf("tee stderr: %v", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		if err := teePrefix(OutPrefix, outPipe, outB, klog.V(8).Infof); err != nil {
+		if err := teePrefix(OutPrefix, outPipe, outB, klog.Infof); err != nil {
 			klog.Errorf("tee stdout: %v", err)
 		}
 		wg.Done()
