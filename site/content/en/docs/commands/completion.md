@@ -34,7 +34,7 @@ Outputs minikube shell completion for the given shell (bash, zsh or fish)
 	Note for fish users: [2] please refer to this docs for more details https://fishshell.com/docs/current/#tab-completion
 
 
-```
+```shell
 minikube completion SHELL [flags]
 ```
 

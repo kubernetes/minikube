@@ -24,7 +24,9 @@ A NodePort service is the most basic way to get external traffic directly to you
 
 We also have a shortcut for fetching the minikube IP and a service's `NodePort`:
 
-`minikube service --url $SERVICE`
+```shell
+minikube service --url $SERVICE
+```
 
 ## Getting the NodePort using kubectl
 
@@ -32,13 +34,17 @@ The minikube VM is exposed to the host system via a host-only IP address, that c
 
 To determine the NodePort for your service, you can use a `kubectl` command like this (note that `nodePort` begins with lowercase `n` in JSON output):
 
-`kubectl get service $SERVICE --output='jsonpath="{.spec.ports[0].nodePort}"'`
+```shell
+kubectl get service $SERVICE --output='jsonpath="{.spec.ports[0].nodePort}"'
+```
 
 ### Increasing the NodePort range
 
 By default, minikube only exposes ports 30000-32767. If this does not work for you, you can adjust the range by using:
 
-`minikube start --extra-config=apiserver.service-node-port-range=1-65535`
+```shell
+minikube start --extra-config=apiserver.service-node-port-range=1-65535
+```
 
 This flag also accepts a comma separated list of ports and port ranges.
 
@@ -57,7 +63,7 @@ Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command
 #### Run tunnel in a separate terminal
 it will ask for password.
 
-```
+```shell
 minikube tunnel
 ```
 
@@ -88,16 +94,16 @@ Status:
 
 
 #### Create a kubernetes deployment 
-```
+```shell
 kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
 ```
 #### Create a kubernetes service type LoadBalancer
-```
+```shell
 kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
 ```
 
 ### Check external IP 
-```
+```shell
 kubectl get svc
 ```
 <pre>

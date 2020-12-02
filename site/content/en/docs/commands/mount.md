@@ -13,7 +13,7 @@ Mounts the specified directory into minikube
 
 Mounts the specified directory into minikube.
 
-```
+```shell
 minikube mount [flags] <source directory>:<target directory>
 ```
 

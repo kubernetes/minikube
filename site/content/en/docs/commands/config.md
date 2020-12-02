@@ -43,7 +43,7 @@ Configurable fields:
  * embed-certs
  * native-ssh
 
-```
+```shell
 minikube config SUBCOMMAND [flags]
 ```
 
@@ -79,7 +79,7 @@ Acceptable fields:
 
  * driver
 
-```
+```shell
 minikube config defaults PROPERTY_NAME [flags]
 ```
 
@@ -118,7 +118,7 @@ Gets the value of PROPERTY_NAME from the minikube config file
 
 Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.
 
-```
+```shell
 minikube config get PROPERTY_NAME [flags]
 ```
 
@@ -152,7 +152,7 @@ Help about any command
 Help provides help for any command in the application.
 Simply type config help [path to command] for full details.
 
-```
+```shell
 minikube config help [command] [flags]
 ```
 
@@ -186,7 +186,7 @@ Sets an individual value in a minikube config file
 Sets the PROPERTY_NAME config value to PROPERTY_VALUE
 	These values can be overwritten by flags or environment variables at runtime.
 
-```
+```shell
 minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
 ```
 
@@ -219,7 +219,7 @@ unsets an individual value in a minikube config file
 
 unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables
 
-```
+```shell
 minikube config unset PROPERTY_NAME [flags]
 ```
 
@@ -252,7 +252,7 @@ Display values currently set in the minikube config file
 
 Display values currently set in the minikube config file.
 
-```
+```shell
 minikube config view [flags]
 ```
 

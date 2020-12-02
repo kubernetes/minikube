@@ -13,7 +13,7 @@ Stops a running local Kubernetes cluster
 
 Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the "start" command.
 
-```
+```shell
 minikube stop [flags]
 ```
 
