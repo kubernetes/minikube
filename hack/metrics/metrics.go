@@ -20,7 +20,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -45,6 +44,7 @@ var (
 	// The task latency in seconds
 	latencyS = stats.Float64("repl/start_time", "start time in seconds", "s")
 	labels   string
+	tmpFile  string
 )
 
 func main() {
@@ -56,6 +56,7 @@ func main() {
 
 func init() {
 	flag.StringVar(&labels, "label", "", "Comma separated list of labels to add to metrics in key:value format")
+	flag.StringVar(&tmpFile, "file", "/tmp/minikube", "Download minikube to this file for testing")
 	flag.Parse()
 }
 
@@ -101,27 +102,15 @@ func execute() error {
 	defer sd.StopMetricsExporter()
 	ctx := context.Background()
 
-	// create a tmp file to download minikube to
-	tmp, err := ioutil.TempFile("", binary())
+	// track minikube start time and record it to metrics collector
+	st, err := minikubeStartTime(ctx, projectID, tmpFile)
 	if err != nil {
-		return errors.Wrap(err, "creating tmp file")
+		return errors.Wrap(err, "collecting start time")
 	}
-	if err := tmp.Close(); err != nil {
-		return errors.Wrap(err, "closing file")
-	}
-	defer os.Remove(tmp.Name())
-
-	// start loop where we will track minikube start time
-	for {
-		st, err := minikubeStartTime(ctx, projectID, tmp.Name())
-		if err != nil {
-			log.Printf("error collecting start time: %v", err)
-			continue
-		}
-		fmt.Printf("Latency: %f\n", st)
-		stats.Record(ctx, latencyS.M(st))
-		time.Sleep(30 * time.Second)
-	}
+	fmt.Printf("Latency: %f\n", st)
+	stats.Record(ctx, latencyS.M(st))
+	time.Sleep(30 * time.Second)
+	return nil
 }
 
 func getLabels() *stackdriver.Labels {
