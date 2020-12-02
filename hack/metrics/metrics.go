@@ -18,11 +18,13 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	_ "cloud.google.com/go/storage"
@@ -30,7 +32,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 	pkgtrace "k8s.io/minikube/pkg/trace"
 )
@@ -43,6 +44,7 @@ const (
 var (
 	// The task latency in seconds
 	latencyS = stats.Float64("repl/start_time", "start time in seconds", "s")
+	labels   string
 )
 
 func main() {
@@ -52,15 +54,15 @@ func main() {
 	}
 }
 
+func init() {
+	flag.StringVar(&labels, "label", "", "Comma separated list of labels to add to metrics in key:value format")
+	flag.Parse()
+}
+
 func execute() error {
 	projectID := os.Getenv(pkgtrace.ProjectEnvVar)
 	if projectID == "" {
 		return fmt.Errorf("metrics collector requires a valid GCP project id set via the %s env variable", pkgtrace.ProjectEnvVar)
-	}
-
-	osMethod, err := tag.NewKey("os")
-	if err != nil {
-		return errors.Wrap(err, "new tag key")
 	}
 
 	// Register the view. It is imperative that this step exists,
@@ -70,7 +72,6 @@ func execute() error {
 		Measure:     latencyS,
 		Description: "minikube start time",
 		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{osMethod},
 	}
 	if err := view.Register(v); err != nil {
 		return errors.Wrap(err, "registering view")
@@ -82,7 +83,8 @@ func execute() error {
 		MetricPrefix: "minikube_start",
 		// ReportingInterval sets the frequency of reporting metrics
 		// to stackdriver backend.
-		ReportingInterval: 1 * time.Second,
+		ReportingInterval:       1 * time.Second,
+		DefaultMonitoringLabels: getLabels(),
 	})
 	if err != nil {
 		return errors.Wrap(err, "getting stackdriver exporter")
@@ -120,6 +122,23 @@ func execute() error {
 		stats.Record(ctx, latencyS.M(st))
 		time.Sleep(30 * time.Second)
 	}
+}
+
+func getLabels() *stackdriver.Labels {
+	l := &stackdriver.Labels{}
+	if labels == "" {
+		return l
+	}
+	separated := strings.Split(labels, ",")
+	for _, s := range separated {
+		sep := strings.Split(s, ":")
+		if len(sep) != 2 {
+			continue
+		}
+		log.Printf("Adding label %s=%s to metrics...", sep[0], sep[1])
+		l.Set(sep[0], sep[1], "")
+	}
+	return l
 }
 
 func minikubeStartTime(ctx context.Context, projectID, minikubePath string) (float64, error) {
