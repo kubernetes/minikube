@@ -20,14 +20,15 @@ package out
 import (
 	"bytes"
 	"fmt"
+	"github.com/briandowns/spinner"
+	isatty "github.com/mattn/go-isatty"
 	"html"
 	"html/template"
 	"io"
 	"os"
 	"strconv"
 	"strings"
-
-	isatty "github.com/mattn/go-isatty"
+	"time"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -58,6 +59,8 @@ var (
 	OverrideEnv = "MINIKUBE_IN_STYLE"
 	// JSON is whether or not we should output stdout in JSON format. Set using SetJSON()
 	JSON = false
+	// spin is spinner showed at starting minikube
+	spin = spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
@@ -87,6 +90,21 @@ func Step(st style.Enum, format string, a ...V) {
 	String(outStyled)
 }
 
+// Step writes a stylized and templated message to stdout
+func SpinnerStep(st style.Enum, format string, a ...V) {
+	if st == style.Option {
+		Infof(format, a...)
+		return
+	}
+	outStyled := spinnerStylized(st, useColor, format, a...)
+	if JSON {
+		register.PrintStep(outStyled)
+		return
+	}
+	register.RecordStep(outStyled)
+	SpinnerString(outStyled)
+}
+
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
 	outStyled := stylized(style.Option, useColor, format, a...)
@@ -108,11 +126,32 @@ func String(format string, a ...interface{}) {
 	}
 
 	klog.Infof(format, a...)
-
+	if spin.Active() == true {
+		spin.Stop()
+	}
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
 		klog.Errorf("Fprintf failed: %v", err)
 	}
+}
+
+// SpinnerString writes a basic formatted string and spinner to stdout
+func SpinnerString(format string, a ...interface{}) {
+	// Flush log buffer so that output order makes sense
+	klog.Flush()
+
+	if outFile == nil {
+		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
+		return
+	}
+
+	klog.Infof(format, a...)
+	_, err := fmt.Fprintf(outFile, format, a...)
+	if err != nil {
+		klog.Errorf("Fprintf failed: %v", err)
+	}
+	spin.Start()
+
 }
 
 // Ln writes a basic formatted string with a newline to stdout
