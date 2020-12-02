@@ -11,6 +11,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21
 	github.com/blang/semver v3.5.0+incompatible
+	github.com/briandowns/spinner v1.11.1
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.0
@@ -75,7 +76,6 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
-	go.opencensus.io v0.22.4
 	go.opentelemetry.io/otel v0.13.0
 	go.opentelemetry.io/otel/sdk v0.13.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
@@ -103,6 +103,7 @@ require (
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
+	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.0
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200810185219-7d42fed1b770
 	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.0.0-20200902152226-fbad78ec2813
