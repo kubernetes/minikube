@@ -31,11 +31,11 @@ func applyPrefix(prefix, format string) string {
 }
 
 // applyStyle translates the given string if necessary then adds any appropriate style prefix.
-func applyStyle(st style.Enum, useColor bool, format string) string {
+func applyStyle(st style.Enum, useColor bool, format string, spinner bool) string {
 	format = translate.T(format)
 
 	s, ok := style.Config[st]
-	if !s.OmitNewline {
+	if !s.OmitNewline && !spinner {
 		format += "\n"
 	}
 
@@ -55,6 +55,15 @@ func stylized(st style.Enum, useColor bool, format string, a ...V) string {
 	if a == nil {
 		a = []V{{}}
 	}
-	format = applyStyle(st, useColor, format)
+	format = applyStyle(st, useColor, format, false)
+	return Fmt(format, a...)
+}
+
+// spinnerStylized applies formatting to the provided template
+func spinnerStylized(st style.Enum, useColor bool, format string, a ...V) string {
+	if a == nil {
+		a = []V{{}}
+	}
+	format = applyStyle(st, useColor, format, true)
 	return Fmt(format, a...)
 }
