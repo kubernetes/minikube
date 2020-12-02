@@ -180,7 +180,7 @@ section.td-box--height-auto {
 // Allow code tags to span most of a window length (default is 80%)
 pre {
     max-width: 99% !important;
-    font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'liberation mono', 'courier new', monospace !important;
+    font-family: 'Inconsolata', monospace !important;
     font-size: 13px !important;
 }
 
@@ -197,17 +197,6 @@ div.td-content {
         padding: 0.5em !important;
         margin-top: 1.25em;
         margin-bottom: 1.25em;
-        background-color: $gray-100;
-        max-width: 99% !important;
-
-        pre {
-            background-color: inherit !important;
-            padding: 0 !important;
-
-            code {
-                font-family: inherit !important;
-            }
-        }
     }
 }
 
@@ -225,6 +214,3 @@ div.td-content {
     max-width: 460px;
 }
 
-div.code-toolbar > .toolbar {
-    top: -.3em !important;
-}
