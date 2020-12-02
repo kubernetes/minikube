@@ -13,7 +13,7 @@ Connect to LoadBalancer services
 
 tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer
 
-```
+```shell
 minikube tunnel [flags]
 ```
 
