@@ -135,6 +135,7 @@ type Status struct {
 	APIServer  string
 	Kubeconfig string
 	Worker     bool
+	TimeToStop string
 }
 
 // ClusterState holds a cluster state representation
@@ -170,12 +171,6 @@ type BaseState struct {
 	StepDetail string `json:",omitempty"`
 }
 
-// ScheduledStopStatus holds string representation of scheduledStopDuration
-type ScheduledStopStatus struct {
-	InitiatedTime string `json:",omitempty"`
-	ScheduledTime string `json:",omitempty"`
-}
-
 const (
 	minikubeNotRunningStatusFlag = 1 << 0
 	clusterNotRunningStatusFlag  = 1 << 1
@@ -186,18 +181,13 @@ host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
+timeToStop: {{.TimeToStop}}
 
 `
 	workerStatusFormat = `{{.Name}}
 type: Worker
 host: {{.Host}}
 kubelet: {{.Kubelet}}
-
-`
-
-	scheduledStopStatusFormat = `type: ScheduledDuration
-initiatedTime: {{.InitiatedTime}}
-scheduledTime: {{.ScheduledTime}}
 
 `
 )
@@ -268,11 +258,6 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 					exit.Error(reason.InternalStatusText, "status text failure", err)
 				}
 			}
-			if cc.ScheduledStop != nil {
-				if err := scheduledStopStatusText(cc.ScheduledStop, os.Stdout); err != nil {
-					exit.Error(reason.InternalStatusText, "status text failure", err)
-				}
-			}
 		case "json":
 			// Layout is currently only supported for JSON mode
 			if layout == "cluster" {
@@ -282,11 +267,6 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 			} else {
 				if err := statusJSON(statuses, os.Stdout); err != nil {
 					exit.Error(reason.InternalStatusJSON, "status json failure", err)
-				}
-			}
-			if cc.ScheduledStop != nil {
-				if err := scheduledStopStatusJSON(cc.ScheduledStop, os.Stdout); err != nil {
-					exit.Error(reason.InternalStatusJSON, "scheduledstop status json failure", err)
 				}
 			}
 		default:
@@ -329,6 +309,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		Kubelet:    Nonexistent,
 		Kubeconfig: Nonexistent,
 		Worker:     !controlPlane,
+		TimeToStop: Nonexistent,
 	}
 
 	hs, err := machine.Status(api, name)
@@ -388,7 +369,12 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 
 	stk := kverify.ServiceStatus(cr, "kubelet")
 	st.Kubelet = stk.String()
-
+	if cc.ScheduledStop != nil {
+		initiationTime := time.Unix(cc.ScheduledStop.InitiationTime, 0)
+		st.TimeToStop = time.Until(initiationTime.Add(cc.ScheduledStop.Duration)).String()
+	} else {
+		st.TimeToStop = Irrelevant
+	}
 	// Early exit for worker nodes
 	if !controlPlane {
 		return st, nil
@@ -459,39 +445,6 @@ func statusJSON(st []*Status, w io.Writer) error {
 	} else {
 		js, err = json.Marshal(st)
 	}
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(js)
-	return err
-}
-
-func scheduledStopStatusText(sd *config.ScheduledStopConfig, w io.Writer) error {
-	var scheduledStopStatus ScheduledStopStatus
-	if sd.InitiationTime == 0 {
-		scheduledStopStatus.InitiatedTime = "-"
-	} else {
-		scheduledStopStatus.InitiatedTime = time.Unix(sd.InitiationTime, 0).String()
-	}
-	if sd.Duration == 0 {
-		scheduledStopStatus.ScheduledTime = "-"
-	} else {
-		stopAt := time.Now().Add(sd.Duration).Unix()
-		scheduledStopStatus.ScheduledTime = time.Unix(stopAt, 0).String()
-	}
-	tmpl, err := template.New("scheduled-stop-status").Parse(scheduledStopStatusFormat)
-	if err != nil {
-		return err
-	}
-	if err := tmpl.Execute(w, scheduledStopStatus); err != nil {
-		return err
-	}
-	return nil
-}
-
-func scheduledStopStatusJSON(sd *config.ScheduledStopConfig, w io.Writer) error {
-	var js []byte
-	js, err := json.Marshal(sd)
 	if err != nil {
 		return err
 	}

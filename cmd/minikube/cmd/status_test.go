@@ -20,9 +20,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
-	"time"
-
-	"k8s.io/minikube/pkg/minikube/config"
 )
 
 func TestExitCode(t *testing.T) {
@@ -54,18 +51,18 @@ func TestStatusText(t *testing.T) {
 	}{
 		{
 			name:  "ok",
-			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured},
-			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Running\napiserver: Running\nkubeconfig: Configured\n\n",
+			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured, TimeToStop: "10m"},
+			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Running\napiserver: Running\nkubeconfig: Configured\ntimeToStop: 10m\n\n",
 		},
 		{
 			name:  "paused",
-			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured},
-			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Stopped\napiserver: Paused\nkubeconfig: Configured\n\n",
+			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured, TimeToStop: Nonexistent},
+			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Stopped\napiserver: Paused\nkubeconfig: Configured\ntimeToStop: Nonexistent\n\n",
 		},
 		{
 			name:  "down",
-			state: &Status{Name: "minikube", Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured},
-			want:  "minikube\ntype: Control Plane\nhost: Stopped\nkubelet: Stopped\napiserver: Stopped\nkubeconfig: Misconfigured\n\n\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n",
+			state: &Status{Name: "minikube", Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured, TimeToStop: Nonexistent},
+			want:  "minikube\ntype: Control Plane\nhost: Stopped\nkubelet: Stopped\napiserver: Stopped\nkubeconfig: Misconfigured\ntimeToStop: Nonexistent\n\n\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n",
 		},
 	}
 	for _, tc := range tests {
@@ -89,78 +86,14 @@ func TestStatusJSON(t *testing.T) {
 		name  string
 		state *Status
 	}{
-		{"ok", &Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured}},
-		{"paused", &Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured}},
-		{"down", &Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured}},
+		{"ok", &Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured, TimeToStop: "10m"}},
+		{"paused", &Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured, TimeToStop: Nonexistent}},
+		{"down", &Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured, TimeToStop: Nonexistent}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var b bytes.Buffer
 			err := statusJSON([]*Status{tc.state}, &b)
-			if err != nil {
-				t.Errorf("json(%+v) error: %v", tc.state, err)
-			}
-
-			st := &Status{}
-			if err := json.Unmarshal(b.Bytes(), st); err != nil {
-				t.Errorf("json(%+v) unmarshal error: %v", tc.state, err)
-			}
-		})
-	}
-}
-
-func TestScheduledStopStatusText(t *testing.T) {
-	now := time.Now().Unix()
-	initiationTime := time.Unix(now, 0).String()
-
-	stopAt := time.Now().Add(time.Minute * 10).Unix()
-	scheduledTime := time.Unix(stopAt, 0).String()
-	var tests = []struct {
-		name  string
-		state *config.ScheduledStopConfig
-		want  string
-	}{
-		{
-			name:  "valid",
-			state: &config.ScheduledStopConfig{InitiationTime: now, Duration: time.Minute * 10},
-			want:  "type: ScheduledDuration\ninitiatedTime: " + initiationTime + "\nscheduledTime: " + scheduledTime + "\n\n",
-		},
-		{
-			name:  "missing",
-			state: &config.ScheduledStopConfig{},
-			want:  "type: ScheduledDuration\ninitiatedTime: -\nscheduledTime: -\n\n",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var b bytes.Buffer
-			err := scheduledStopStatusText(tc.state, &b)
-			if err != nil {
-				t.Errorf("text(%+v) error: %v", tc.state, err)
-			}
-
-			got := b.String()
-			if got != tc.want {
-				t.Errorf("text(%+v) = %q, want: %q", tc.state, got, tc.want)
-			}
-		})
-	}
-}
-
-func TestScheduledStopStatusJSON(t *testing.T) {
-	var tests = []struct {
-		name  string
-		state *config.ScheduledStopConfig
-	}{
-		{
-			name:  "valid",
-			state: &config.ScheduledStopConfig{InitiationTime: time.Now().Unix(), Duration: time.Minute * 5},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var b bytes.Buffer
-			err := scheduledStopStatusJSON(tc.state, &b)
 			if err != nil {
 				t.Errorf("json(%+v) error: %v", tc.state, err)
 			}
