@@ -767,6 +767,11 @@ out/mkcmp:
 out/performance-bot:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/pr-bot/bot.go
 
+.PHONY: out/metrics-collector
+out/metrics-collector:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ hack/metrics/*.go
+
+
 .PHONY: compare
 compare: out/mkcmp out/minikube
 	mv out/minikube out/$(CURRENT_GIT_BRANCH).minikube
