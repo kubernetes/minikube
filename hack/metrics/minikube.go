@@ -19,7 +19,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
@@ -50,6 +52,15 @@ func downloadMinikube(ctx context.Context, minikubePath string) error {
 
 	os.Remove(minikubePath)
 	// download minikube binary from GCS
+	if err := downloadFromStorage(ctx, minikubePath, obj); err != nil {
+		log.Printf("error downloading via storage API, will try another way: %v", err)
+		url := fmt.Sprintf("https://storage.googleapis.com/minikube/latest/%s", binary())
+		return download(minikubePath, url, 0700)
+	}
+	return nil
+}
+
+func downloadFromStorage(ctx context.Context, minikubePath string, obj *storage.ObjectHandle) error {
 	rc, err := obj.NewReader(ctx)
 	if err != nil {
 		return errors.Wrap(err, "gcs new reader")
@@ -68,6 +79,24 @@ func downloadMinikube(ctx context.Context, minikubePath string) error {
 		return errors.Wrap(err, "chmod")
 	}
 	return nil
+}
+
+func download(minikubePath string, url string, perms os.FileMode) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return errors.Wrap(err, "getting url")
+	}
+	defer resp.Body.Close()
+	out, err := os.Create(minikubePath)
+	if err != nil {
+		return errors.Wrap(err, "creating")
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "copying")
+	}
+	return os.Chmod(minikubePath, perms)
 }
 
 // localMinikubeIsLatest returns true if the local version of minikube
