@@ -13,7 +13,7 @@ Print current and latest version number
 
 Print current and latest version number
 
-```
+```shell
 minikube update-check [flags]
 ```
 

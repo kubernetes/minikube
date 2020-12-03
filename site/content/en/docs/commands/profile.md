@@ -13,7 +13,7 @@ Get or list the current profiles (clusters)
 
 profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`
 
-```
+```shell
 minikube profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikube profile by running `minikube profile default` [flags]
 ```
 
@@ -47,7 +47,7 @@ Help about any command
 Help provides help for any command in the application.
 Simply type profile help [path to command] for full details.
 
-```
+```shell
 minikube profile help [command] [flags]
 ```
 
@@ -80,7 +80,7 @@ Lists all minikube profiles.
 
 Lists all valid minikube profiles and detects all possible invalid profiles.
 
-```
+```shell
 minikube profile list [flags]
 ```
 

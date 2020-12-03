@@ -47,7 +47,13 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 		cpb.progress = pb.New64(totalSize)
 	}
 	p := pb.Full.Start64(totalSize)
-	p.Set("prefix", "    > "+filepath.Base(src+": "))
+	fn := filepath.Base(src)
+	// abbreviate filename for progress
+	maxwidth := 30 - len("...")
+	if len(fn) > maxwidth {
+		fn = fn[0:maxwidth] + "..."
+	}
+	p.Set("prefix", "    > "+fn+": ")
 	p.SetCurrent(currentSize)
 	p.Set(pb.Bytes, true)
 

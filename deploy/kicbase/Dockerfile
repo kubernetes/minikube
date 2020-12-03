@@ -21,6 +21,8 @@
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20200925
 
+ARG BUILDKIT_VERSION="v0.7.2"
+
 # copy in static files (configs, scripts)
 COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
 COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
@@ -106,6 +108,17 @@ RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /e
     apt-key add - < docker.key && \
     clean-install docker-ce docker-ce-cli containerd.io
 
+# install buildkit
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
+ && echo "Installing buildkit ..." \
+    && export BUILDKIT_BASE_URL="https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}" \
+    && curl -sSL --retry 5 --output /tmp/buildkit.tgz "${BUILDKIT_BASE_URL}/buildkit-${BUILDKIT_VERSION}.linux-${ARCH}.tar.gz" \
+    && tar -C /usr/local -xzvf /tmp/buildkit.tgz \
+    && rm -rf /tmp/buildkit.tgz \
+    && chmod 755 /usr/local/bin/buildctl \
+    && chmod 755 /usr/local/bin/buildkit-runc \
+    && chmod 755 /usr/local/bin/buildkitd
+
 # Install cri-o/podman dependencies:
 RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
@@ -113,8 +126,8 @@ RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/li
     clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins varlink
 
 # install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.18/README.md#installing-cri-o
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.18.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18/xUbuntu_20.04/Release.key && \
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.4/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.18.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.18:/1.18.4/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
     clean-install cri-o cri-o-runc
 

@@ -146,6 +146,12 @@ func CreateContainerNode(p CreateParams) error {
 		// label th enode wuth the node ID
 		"--label", p.NodeLabel,
 	}
+	// to provide a static IP
+	if p.Network != "" && p.IP != "" {
+		runArgs = append(runArgs, "--network", p.Network)
+		runArgs = append(runArgs, "--ip", p.IP)
+	}
+
 	memcgSwap := true
 	if runtime.GOOS == "linux" {
 		if _, err := os.Stat("/sys/fs/cgroup/memory/memsw.limit_in_bytes"); os.IsNotExist(err) {
@@ -170,11 +176,6 @@ func CreateContainerNode(p CreateParams) error {
 		virtualization = "podman" // VIRTUALIZATION_PODMAN
 	}
 	if p.OCIBinary == Docker {
-		// to provide a static IP for docker
-		if p.Network != "" && p.IP != "" {
-			runArgs = append(runArgs, "--network", p.Network)
-			runArgs = append(runArgs, "--ip", p.IP)
-		}
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")

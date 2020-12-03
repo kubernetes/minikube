@@ -13,7 +13,7 @@ Retrieve the ssh identity key path of the specified cluster
 
 Retrieve the ssh identity key path of the specified cluster.
 
-```
+```shell
 minikube ssh-key [flags]
 ```
 
