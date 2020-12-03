@@ -109,6 +109,7 @@ const (
 	ports                   = "ports"
 	network                 = "network"
 	startNamespace          = "namespace"
+	trace                   = "trace"
 )
 
 var (
@@ -154,6 +155,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
 	startCmd.Flags().StringP(network, "", "", "Docker network to run minikube with. Only available with the docker driver. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
+	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -278,7 +280,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 
 		if cmd.Flags().Changed(imageRepository) || cmd.Flags().Changed(imageMirrorCountry) {
-			out.T(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
+			out.Step(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
 		}
 
 		// Backwards compatibility with --enable-default-cni

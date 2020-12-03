@@ -34,8 +34,8 @@ func (s *Systemd) Name() string {
 	return "systemd"
 }
 
-// reload reloads systemd configuration
-func (s *Systemd) reload() error {
+// daemonReload reloads systemd configuration
+func (s *Systemd) daemonReload() error {
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "daemon-reload"))
 	return err
 }
@@ -63,7 +63,7 @@ func (s *Systemd) Enable(svc string) error {
 
 // Start starts a service
 func (s *Systemd) Start(svc string) error {
-	if err := s.reload(); err != nil {
+	if err := s.daemonReload(); err != nil {
 		return err
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "start", svc))
@@ -72,10 +72,19 @@ func (s *Systemd) Start(svc string) error {
 
 // Restart restarts a service
 func (s *Systemd) Restart(svc string) error {
-	if err := s.reload(); err != nil {
+	if err := s.daemonReload(); err != nil {
 		return err
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "restart", svc))
+	return err
+}
+
+// Reload reloads a service
+func (s *Systemd) Reload(svc string) error {
+	if err := s.daemonReload(); err != nil {
+		return err
+	}
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "reload", svc))
 	return err
 }
 

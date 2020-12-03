@@ -19,6 +19,7 @@ package localpath
 import (
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -84,6 +85,11 @@ func ClientCert(name string) string {
 	}
 
 	return new
+}
+
+// PID returns the path to the pid file used by profile for scheduled stop
+func PID(profile string) string {
+	return path.Join(Profile(profile), "pid")
 }
 
 // ClientKey returns client certificate path, used by kubeconfig

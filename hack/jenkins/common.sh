@@ -30,8 +30,10 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-# install lsof for finding none driver procs, psmisc to use pstree in cronjobs
-sudo apt-get -y install lsof psmisc
+if [ "$(uname)" != "Darwin" ]; then
+  # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
+  sudo apt-get -y install lsof psmisc
+fi
 
 # installing golang so we could do go get for gopogh
 sudo ./installers/check_install_golang.sh "1.15.2" "/usr/local" || true
@@ -345,9 +347,9 @@ fi
 
 echo ">> Installing gopogh"
 if [ "$(uname)" != "Darwin" ]; then
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
 else
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
 fi
 
 echo ">> Running gopogh"

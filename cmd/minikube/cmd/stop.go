@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -36,13 +37,16 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/schedule"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
-	stopAll    bool
-	keepActive bool
+	stopAll               bool
+	keepActive            bool
+	scheduledStopDuration time.Duration
+	cancelScheduledStop   bool
 )
 
 // stopCmd represents the stop command
@@ -56,6 +60,12 @@ var stopCmd = &cobra.Command{
 func init() {
 	stopCmd.Flags().BoolVar(&stopAll, "all", false, "Set flag to stop all profiles (clusters)")
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
+	stopCmd.Flags().DurationVar(&scheduledStopDuration, "schedule", 0*time.Second, "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
+	stopCmd.Flags().BoolVar(&cancelScheduledStop, "cancel-scheduled", false, "cancel any existing scheduled stop requests")
+
+	if err := stopCmd.Flags().MarkHidden("schedule"); err != nil {
+		klog.Info("unable to mark --schedule flag as hidden")
+	}
 	stopCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {
@@ -88,6 +98,26 @@ func runStop(cmd *cobra.Command, args []string) {
 		profilesToStop = append(profilesToStop, cname)
 	}
 
+	// Kill any existing scheduled stops
+	schedule.KillExisting(profilesToStop)
+	if cancelScheduledStop {
+		register.Reg.SetStep(register.Done)
+		out.Step(style.Stopped, `All existing scheduled stops cancelled`)
+		return
+	}
+
+	if scheduledStopDuration != 0 {
+		if err := schedule.Daemonize(profilesToStop, scheduledStopDuration); err != nil {
+			exit.Message(reason.DaemonizeError, "unable to daemonize: {{.err}}", out.V{"err": err.Error()})
+		}
+		// if OS is windows, scheduled stop is now being handled within minikube, so return
+		if runtime.GOOS == "windows" {
+			return
+		}
+		klog.Infof("sleeping %s before completing stop...", scheduledStopDuration.String())
+		time.Sleep(scheduledStopDuration)
+	}
+
 	stoppedNodes := 0
 	for _, profile := range profilesToStop {
 		stoppedNodes = stopProfile(profile)
@@ -95,7 +125,7 @@ func runStop(cmd *cobra.Command, args []string) {
 
 	register.Reg.SetStep(register.Done)
 	if stoppedNodes > 0 {
-		out.T(style.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
+		out.Step(style.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
 	}
 }
 
@@ -141,7 +171,7 @@ func stop(api libmachine.API, machineName string) bool {
 
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
+			out.Step(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
 			nonexistent = true
 			return nil
 		default:

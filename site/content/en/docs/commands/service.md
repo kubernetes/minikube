@@ -13,7 +13,7 @@ Returns a URL to connect to a service
 
 Returns the Kubernetes URL for a service in your local cluster. In the case of multiple URLs they will be printed one at a time.
 
-```
+```shell
 minikube service [flags] SERVICE
 ```
 
@@ -58,7 +58,7 @@ Help about any command
 Help provides help for any command in the application.
 Simply type service help [path to command] for full details.
 
-```
+```shell
 minikube service help [command] [flags]
 ```
 
@@ -92,7 +92,7 @@ Lists the URLs for the services in your local cluster
 
 Lists the URLs for the services in your local cluster
 
-```
+```shell
 minikube service list [flags]
 ```
 

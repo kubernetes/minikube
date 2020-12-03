@@ -60,6 +60,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	pkgtrace "k8s.io/minikube/pkg/trace"
 
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -129,6 +130,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 
 	out.SetJSON(outputFormat == "json")
+	if err := pkgtrace.Initialize(viper.GetString(trace)); err != nil {
+		exit.Message(reason.Usage, "error initializing tracing: {{.Error}}", out.V{"Error": err.Error()})
+	}
+	defer pkgtrace.Cleanup()
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
@@ -295,7 +300,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
-		out.T(style.DryRun, `dry-run validation complete!`)
+		out.Step(style.DryRun, `dry-run validation complete!`)
 		os.Exit(0)
 	}
 
@@ -395,7 +400,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 
 func warnAboutMultiNode() {
 	out.WarningT("Multi-node clusters are currently experimental and might exhibit unintended behavior.")
-	out.T(style.Documentation, "To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
+	out.Step(style.Documentation, "To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
 func updateDriver(driverName string) {
@@ -414,7 +419,7 @@ func displayVersion(version string) {
 	}
 
 	register.Reg.SetStep(register.InitialSetup)
-	out.T(style.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
+	out.Step(style.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
 }
 
 // displayEnviron makes the user aware of environment variables that will affect how minikube operates
@@ -434,15 +439,15 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	defer func() {
 		register.Reg.SetStep(register.Done)
 		if kcs.KeepContext {
-			out.T(style.Kubectl, "To connect to this cluster, use:  --context={{.name}}", out.V{"name": kcs.ClusterName})
+			out.Step(style.Kubectl, "To connect to this cluster, use:  --context={{.name}}", out.V{"name": kcs.ClusterName})
 		} else {
-			out.T(style.Ready, `Done! kubectl is now configured to use "{{.name}}" cluster and "{{.ns}}" namespace by default`, out.V{"name": machineName, "ns": kcs.Namespace})
+			out.Step(style.Ready, `Done! kubectl is now configured to use "{{.name}}" cluster and "{{.ns}}" namespace by default`, out.V{"name": machineName, "ns": kcs.Namespace})
 		}
 	}()
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		out.T(style.Tip, "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'")
+		out.Step(style.Tip, "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'")
 		return nil
 	}
 
@@ -551,7 +556,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	if existing != nil {
 		old := hostDriver(existing)
 		ds := driver.Status(old)
-		out.T(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
+		out.Step(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 		return ds, nil, true
 	}
 
@@ -571,7 +576,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		if ds.Name == "" {
 			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
-		out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
+		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
 	}
 
@@ -581,14 +586,14 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		if ds.Name == "" {
 			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
-		out.T(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
+		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
 	}
 
 	choices := driver.Choices(viper.GetBool("vm"))
 	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
-		out.T(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
+		out.Step(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
 		for _, r := range rejects {
 			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
 		}
@@ -600,9 +605,9 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		for _, a := range alts {
 			altNames = append(altNames, a.String())
 		}
-		out.T(style.Sparkle, `Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}`, out.V{"driver": pick.Name, "alternates": strings.Join(altNames, ", ")})
+		out.Step(style.Sparkle, `Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}`, out.V{"driver": pick.Name, "alternates": strings.Join(altNames, ", ")})
 	} else {
-		out.T(style.Sparkle, `Automatically selected the {{.driver}} driver`, out.V{"driver": pick.String()})
+		out.Step(style.Sparkle, `Automatically selected the {{.driver}} driver`, out.V{"driver": pick.String()})
 	}
 	return pick, alts, false
 }
@@ -660,6 +665,12 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
+	// hostDriver always returns original driver name even if an alias is used to start minikube.
+	// For all next start with alias needs to be check against the host driver aliases.
+	if driver.IsAlias(old, requested) {
+		return
+	}
+
 	exit.Advice(
 		reason.GuestDrvMismatch,
 		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
@@ -691,7 +702,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	klog.Infof("status for %s: %+v", name, st)
 
 	if st.NeedsImprovement {
-		out.T(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
+		out.Step(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
 	}
 
 	if st.Error == nil {
@@ -956,7 +967,7 @@ func validateCPUCount(drvName string) {
 
 	si, err := oci.CachedDaemonInfo(drvName)
 	if err != nil {
-		out.T(style.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
+		out.Step(style.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
 		si, err = oci.DaemonInfo(drvName)
 		if err != nil {
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
@@ -1208,7 +1219,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 	}
 	if defaultVersion.GT(nvs) {
-		out.T(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
+		out.Step(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 }
 

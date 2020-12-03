@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -96,12 +97,17 @@ func configureAuth(p miniProvisioner) error {
 		return errors.Wrap(err, "error getting ip during provisioning")
 	}
 
+	hostIP, err := driver.GetSSHHostname()
+	if err != nil {
+		return errors.Wrap(err, "error getting ssh hostname during provisioning")
+	}
+
 	if err := copyHostCerts(authOptions); err != nil {
 		return err
 	}
 
 	// The Host IP is always added to the certificate's SANs list
-	hosts := append(authOptions.ServerCertSANs, ip, "localhost", "127.0.0.1", "minikube", machineName)
+	hosts := append(authOptions.ServerCertSANs, ip, hostIP, "localhost", "127.0.0.1", "minikube", machineName)
 	klog.Infof("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
 		authOptions.ServerCertPath,
 		authOptions.CaCertPath,

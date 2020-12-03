@@ -12,7 +12,7 @@ You may need to add logs to the registry if the `TestJSONOutput` integration tes
 ### Background
 minikube provides JSON output for `minikube start`, accesible via the `--output` flag:
 
-```
+```shell
 minikube start --output json
 ```
 
@@ -61,7 +61,7 @@ You will need to add your new log in two places:
 
 Finally, set your new step in the cod by placing this line before you call `out.T`:
 
-```
+```go
 register.Reg.SetStep(register.MyNewStep)
 ```
 
@@ -69,5 +69,5 @@ You can see an example of setting the registry step in the code in [config.go](h
 
 ```go
 	register.Reg.SetStep(register.PreparingKubernetes)
-	out.T(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
+	out.Step(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 ```
