@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+$env:MINIKUBE_LOCATION=$env:KOKORO_GITHUB_PULL_REQUEST_NUMBER
+$env:COMMIT=$env:KOKORO_GITHUB_PULL_REQUEST_COMMIT
+
 cd github/minikube
 mkdir -p out
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
+
+out/minikube-windows-amd64.exe delete --all
 
 out/e2e-windows-amd64.exe -minikube-start-args="--driver=docker" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m -test.run=TestFunctional
