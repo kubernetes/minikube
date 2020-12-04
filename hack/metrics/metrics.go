@@ -82,28 +82,35 @@ func execute() error {
 		return errors.Wrap(err, "registering view")
 	}
 	for _, cr := range []string{"docker", "containerd", "crio"} {
-		sd, err := getExporter(projectID, cr)
-		if err != nil {
-			return errors.Wrap(err, "getting stackdriver exporter")
+		if err := exportMinikubeStart(ctx, projectID, cr); err != nil {
+			log.Printf("error exporting minikube start data for runtime %v: %v", cr, err)
 		}
-		// Register it as a trace exporter
-		trace.RegisterExporter(sd)
-
-		if err := sd.StartMetricsExporter(); err != nil {
-			return errors.Wrap(err, "starting metric exporter")
-		}
-		// track minikube start time and record it to metrics collector
-		st, err := minikubeStartTime(ctx, projectID, tmpFile, cr)
-		if err != nil {
-			return errors.Wrap(err, "collecting start time")
-		}
-		fmt.Printf("Latency: %f\n", st)
-		stats.Record(ctx, latencyS.M(st))
-		time.Sleep(30 * time.Second)
-		sd.Flush()
-		sd.StopMetricsExporter()
-		trace.UnregisterExporter(sd)
 	}
+	return nil
+}
+
+func exportMinikubeStart(ctx context.Context, projectID, containerRuntime string) error {
+	sd, err := getExporter(projectID, containerRuntime)
+	if err != nil {
+		return errors.Wrap(err, "getting stackdriver exporter")
+	}
+	// Register it as a trace exporter
+	trace.RegisterExporter(sd)
+
+	if err := sd.StartMetricsExporter(); err != nil {
+		return errors.Wrap(err, "starting metric exporter")
+	}
+	// track minikube start time and record it to metrics collector
+	st, err := minikubeStartTime(ctx, projectID, tmpFile, containerRuntime)
+	if err != nil {
+		return errors.Wrap(err, "collecting start time")
+	}
+	fmt.Printf("Latency: %f\n", st)
+	stats.Record(ctx, latencyS.M(st))
+	time.Sleep(30 * time.Second)
+	sd.Flush()
+	sd.StopMetricsExporter()
+	trace.UnregisterExporter(sd)
 	return nil
 }
 
