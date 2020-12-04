@@ -91,7 +91,6 @@ func main() {
 	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get gopogh stable version: %v", err)
 	}
-	stable = "v1.2.3"
 	data := Data{StableVersion: stable}
 	klog.Infof("gopogh stable version: %s", data.StableVersion)
 
