@@ -88,8 +88,7 @@ func (i *Item) apply(data interface{}) error {
 	if i.Content == nil {
 		return fmt.Errorf("unable to update content: nothing to update")
 	}
-	org := string(i.Content)
-	str := org
+	str := string(i.Content)
 	for src, dst := range i.Replace {
 		out, err := ParseTmpl(dst, data, "")
 		if err != nil {
