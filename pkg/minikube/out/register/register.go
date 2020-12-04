@@ -69,6 +69,7 @@ func init() {
 				SelectingDriver,
 				DownloadingArtifacts,
 				StartingNode,
+				PullingBaseImage,
 				RunningLocalhost,
 				LocalOSRelease,
 				CreatingContainer,
