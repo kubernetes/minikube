@@ -38,7 +38,7 @@ killall java
 
 # clean minikube left overs
 echo -e "\ncleanup minikube..."
-for user in $(lslogins --user-accs --noheadings --output=USER); do
+for user in "jenkins" "root"; do
 	minikube="$(sudo su - ${user} -c 'command -v minikube')"
 	if [ ! -x "${minikube}" ]; then
 		minikube="/tmp/minikube"
