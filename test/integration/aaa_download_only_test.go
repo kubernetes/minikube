@@ -76,12 +76,10 @@ func TestDownloadOnly(t *testing.T) {
 						err = json.Unmarshal(s.Bytes(), &rtObj)
 						if err != nil {
 							t.Errorf("failed to parse output: %v", err)
-						} else {
-							if step, ok := rtObj["data"]; ok {
-								if stepMap, ok := step.(map[string]interface{}); ok {
-									if stepMap["currentstep"] == "" {
-										t.Errorf("Empty step number for %v", stepMap["name"])
-									}
+						} else if step, ok := rtObj["data"]; ok {
+							if stepMap, ok := step.(map[string]interface{}); ok {
+								if stepMap["currentstep"] == "" {
+									t.Errorf("Empty step number for %v", stepMap["name"])
 								}
 							}
 						}
