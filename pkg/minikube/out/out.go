@@ -26,7 +26,6 @@ import (
 	"html/template"
 	"io"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -128,10 +127,6 @@ func String(format string, a ...interface{}) {
 
 	klog.Infof(format, a...)
 	if spin.Active() == true {
-		spin.Stop()
-		if runtime.GOOS == "windows" {
-			fmt.Print("\n")
-		}
 	}
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
