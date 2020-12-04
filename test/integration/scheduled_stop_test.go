@@ -165,6 +165,10 @@ func ensureMinikubeStatus(ctx context.Context, t *testing.T, profile, wantStatus
 		if got != wantStatus {
 			return fmt.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
 		}
+		got = Status(ctx, t, Target(), profile, "TimeToStop", profile)
+		if got != "Nonexistent" {
+			return fmt.Errorf("expected post-stop timetostop status to be -%q- but got *%q*", "Nonexistent", got)
+		}
 		return nil
 	}
 	if err := retry.Expo(checkStatus, time.Second, time.Minute); err != nil {
