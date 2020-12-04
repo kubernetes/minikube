@@ -372,8 +372,6 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	if cc.ScheduledStop != nil {
 		initiationTime := time.Unix(cc.ScheduledStop.InitiationTime, 0)
 		st.TimeToStop = time.Until(initiationTime.Add(cc.ScheduledStop.Duration)).String()
-	} else {
-		st.TimeToStop = Irrelevant
 	}
 	// Early exit for worker nodes
 	if !controlPlane {
@@ -486,6 +484,11 @@ func clusterState(sts []*Status) ClusterState {
 		statusName = sts[0].Host
 	}
 	sc := statusCode(statusName)
+
+	timeToStopStatusCode := Configured
+	if sts[0].TimeToStop == Nonexistent {
+		timeToStopStatusCode = Nonexistent
+	}
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
@@ -498,6 +501,7 @@ func clusterState(sts []*Status) ClusterState {
 
 		Components: map[string]BaseState{
 			"kubeconfig": {Name: "kubeconfig", StatusCode: statusCode(sts[0].Kubeconfig)},
+			"timetostop": {Name: "timetostop", StatusCode: statusCode(timeToStopStatusCode)},
 		},
 	}
 
