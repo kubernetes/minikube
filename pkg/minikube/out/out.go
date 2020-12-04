@@ -127,6 +127,7 @@ func String(format string, a ...interface{}) {
 
 	klog.Infof(format, a...)
 	if spin.Active() == true {
+		spin.Stop()
 	}
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
