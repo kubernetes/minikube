@@ -51,10 +51,8 @@ func TestScheduledStopWindows(t *testing.T) {
 
 	// schedule a stop for 5m from now
 	stopMinikube(ctx, t, profile, []string{"--schedule", "5m"})
-	// sleep for 1 second
-	time.Sleep(time.Second)
 	// make sure timeToStop is present in status
-	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "4m")
+	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "3m")
 	// make sure the systemd service is running
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), []string{"ssh", "-p", profile, "--", "sudo", "systemctl", "show", constants.ScheduledStopSystemdService, "--no-page"}...))
 	if err != nil {
@@ -89,10 +87,8 @@ func TestScheduledStopUnix(t *testing.T) {
 
 	// schedule a stop for 5 min from now and make sure PID is created
 	stopMinikube(ctx, t, profile, []string{"--schedule", "5m"})
-	// sleep for 1 second
-	time.Sleep(time.Second)
 	// make sure timeToStop is present in status
-	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "4m")
+	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "3m")
 	pid := checkPID(t, profile)
 	if !processRunning(t, pid) {
 		t.Fatalf("process %v is not running", pid)
@@ -173,8 +169,8 @@ func ensureMinikubeStatus(ctx context.Context, t *testing.T, profile, key string
 		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(10*time.Second))
 		defer cancel()
 		got := Status(ctx, t, Target(), profile, key, profile)
-		if got != wantStatus {
-			return fmt.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
+		if !strings.Contains(got, wantStatus) {
+			return fmt.Errorf("expected post-stop %q status to be -%q- but got *%q*", key, wantStatus, got)
 		}
 		return nil
 	}
