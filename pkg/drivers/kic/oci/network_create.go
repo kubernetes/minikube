@@ -38,14 +38,21 @@ const firstSubnetAddr = "192.168.49.0"
 const defaultSubnetMask = 24
 
 // name of the default bridge network, used to lookup the MTU (see #9528)
-const defaultBridgeName = "bridge"
+const dockerDefaultBridge = "bridge"
+
+// name of the default bridge network
+const podmanDefaultBridge = "podman"
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
-func CreateNetwork(ociBin string, name string) (net.IP, error) {
-	return createDockerNetwork(ociBin, name)
-}
+func CreateNetwork(ociBin string, clusterName string) (net.IP, error) {
+	var defaultBridgeName string
+	if ociBin == Docker {
+		defaultBridgeName = dockerDefaultBridge
+	}
+	if ociBin == Podman {
+		defaultBridgeName = podmanDefaultBridge
+	}
 
-func createDockerNetwork(ociBin string, clusterName string) (net.IP, error) {
 	// check if the network already exists
 	info, err := containerNetworkInspect(ociBin, clusterName)
 	if err == nil {
@@ -124,6 +131,9 @@ func tryCreateDockerNetwork(ociBin string, subnetAddr string, subnetMask int, mt
 		if strings.Contains(rr.Output(), "failed to allocate gateway") && strings.Contains(rr.Output(), "Address already in use") {
 			return nil, ErrNetworkGatewayTaken
 		}
+		if strings.Contains(rr.Output(), "is being used by a network interface") {
+			return nil, ErrNetworkGatewayTaken
+		}
 		return nil, errors.Wrapf(err, "create network %s", fmt.Sprintf("%s %s/%d", name, subnetAddr, subnetMask))
 	}
 	return gateway, nil
@@ -191,7 +201,7 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 
 func podmanNetworkInspect(name string) (netInfo, error) {
 	var info = netInfo{name: name}
-	cmd := exec.Command(Podman, "network", "inspect", name, "--format", `{{(index .IPAM.Config 0).Subnet}},{{(index .IPAM.Config 0).Gateway}}`)
+	cmd := exec.Command(Podman, "network", "inspect", name, "--format", `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`)
 	rr, err := runCmd(cmd)
 	if err != nil {
 		logDockerNetworkInspect(Podman, name)
