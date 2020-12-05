@@ -46,12 +46,17 @@ var (
 type SSHRunner struct {
 	d drivers.Driver
 	c *ssh.Client
+	s *ssh.Session
 }
 
 // NewSSHRunner returns a new SSHRunner that will run commands
 // through the ssh.Client provided.
-func NewSSHRunner(d drivers.Driver) *SSHRunner {
-	return &SSHRunner{d: d, c: nil}
+func NewSSHRunner(d drivers.Driver) (*SSHRunner, error) {
+	sshRunner := &SSHRunner{d: d, c: nil}
+	if _, err := sshRunner.session(); err != nil {
+		return nil, err
+	}
+	return sshRunner, nil
 }
 
 // client returns an ssh client (uses retry underneath)
@@ -89,8 +94,8 @@ func (s *SSHRunner) session() (*ssh.Session, error) {
 	if err := retry.Expo(getSession, 250*time.Millisecond, 2*time.Second); err != nil {
 		return nil, err
 	}
-
-	return sess, nil
+	s.s = sess
+	return s.s, nil
 }
 
 // Remove runs a command to delete a file on the remote.
@@ -98,13 +103,7 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
 	klog.Infof("rm: %s", dst)
 
-	sess, err := s.session()
-	if err != nil {
-		return errors.Wrap(err, "getting ssh session")
-	}
-
-	defer sess.Close()
-	return sess.Run(fmt.Sprintf("sudo rm %s", dst))
+	return s.s.Run(fmt.Sprintf("sudo rm %s", dst))
 }
 
 // teeSSH runs an SSH command, streaming stdout, stderr to logs
@@ -164,20 +163,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		errb = io.MultiWriter(cmd.Stderr, &rr.Stderr)
 	}
 
-	sess, err := s.session()
-	if err != nil {
-		return rr, errors.Wrap(err, "NewSession")
-	}
-
-	defer func() {
-		if err := sess.Close(); err != nil {
-			if err != io.EOF {
-				klog.Errorf("session close: %v", err)
-			}
-		}
-	}()
-
-	err = teeSSH(sess, shellquote.Join(cmd.Args...), outb, errb)
+	err := teeSSH(s.s, shellquote.Join(cmd.Args...), outb, errb)
 	elapsed := time.Since(start)
 
 	if exitError, ok := err.(*exec.ExitError); ok {
@@ -217,19 +203,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		klog.Warningf("0 byte asset: %+v", f)
 	}
 
-	sess, err := s.session()
-	if err != nil {
-		return errors.Wrap(err, "NewSession")
-	}
-	defer func() {
-		if err := sess.Close(); err != nil {
-			if err != io.EOF {
-				klog.Errorf("session close: %v", err)
-			}
-		}
-	}()
-
-	w, err := sess.StdinPipe()
+	w, err := s.s.StdinPipe()
 	if err != nil {
 		return errors.Wrap(err, "StdinPipe")
 	}
@@ -266,7 +240,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	} else if mtime != (time.Time{}) {
 		scp += fmt.Sprintf(" && sudo touch -d \"%s\" %s", mtime.Format(layout), dst)
 	}
-	out, err := sess.CombinedOutput(scp)
+	out, err := s.s.CombinedOutput(scp)
 	if err != nil {
 		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
 	}

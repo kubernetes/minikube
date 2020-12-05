@@ -157,7 +157,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 		return command.NewExecRunner(), nil
 	}
 
-	return command.NewSSHRunner(h.Driver), nil
+	return command.NewSSHRunner(h.Driver)
 }
 
 // Create creates the host

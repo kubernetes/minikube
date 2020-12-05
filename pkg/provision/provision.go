@@ -170,7 +170,10 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		authOptions.ServerKeyPath:  authOptions.ServerKeyRemotePath,
 	}
 
-	sshRunner := command.NewSSHRunner(driver)
+	sshRunner, err := command.NewSSHRunner(driver)
+	if err != nil {
+		return err
+	}
 
 	dirs := []string{}
 	for _, dst := range remoteCerts {
