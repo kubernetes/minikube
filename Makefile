@@ -92,7 +92,7 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # storage provisioner tag to push changes to
-STORAGE_PROVISIONER_TAG ?= v3
+STORAGE_PROVISIONER_TAG ?= v4
 
 STORAGE_PROVISIONER_MANIFEST ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
@@ -766,6 +766,11 @@ out/mkcmp:
 .PHONY: out/performance-bot
 out/performance-bot:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/pr-bot/bot.go
+
+.PHONY: out/metrics-collector
+out/metrics-collector:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ hack/metrics/*.go
+
 
 .PHONY: compare
 compare: out/mkcmp out/minikube

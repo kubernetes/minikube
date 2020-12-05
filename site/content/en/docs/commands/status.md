@@ -15,7 +15,7 @@ Gets the status of a local Kubernetes cluster.
 	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)
 
-```
+```shell
 minikube status [flags]
 ```
 

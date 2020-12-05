@@ -13,7 +13,7 @@ Configure environment to use minikube's Podman service
 
 Sets up podman env variables; similar to '$(podman-machine env)'.
 
-```
+```shell
 minikube podman-env [flags]
 ```
 
