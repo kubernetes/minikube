@@ -489,6 +489,7 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		ImageRepository           string
 		LoadBalancerStartIP       string
 		LoadBalancerEndIP         string
+		CustomIngressCert         string
 		StorageProvisionerVersion string
 	}{
 		Arch:                      a,
@@ -496,6 +497,7 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		ImageRepository:           cfg.ImageRepository,
 		LoadBalancerStartIP:       cfg.LoadBalancerStartIP,
 		LoadBalancerEndIP:         cfg.LoadBalancerEndIP,
+		CustomIngressCert:         cfg.CustomIngressCert,
 		StorageProvisionerVersion: version.GetStorageProvisionerVersion(),
 	}
 

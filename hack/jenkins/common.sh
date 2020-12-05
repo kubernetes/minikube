@@ -347,9 +347,9 @@ fi
 
 echo ">> Installing gopogh"
 if [ "$(uname)" != "Darwin" ]; then
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
 else
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.2.4/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
 fi
 
 echo ">> Running gopogh"

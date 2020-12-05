@@ -1,0 +1,4 @@
+config BR2_PACKAGE_BUILDKIT_BIN
+	bool "buildkit-bin"
+	default y
+	depends on BR2_x86_64

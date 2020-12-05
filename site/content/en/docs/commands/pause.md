@@ -13,7 +13,7 @@ pause Kubernetes
 
 pause Kubernetes
 
-```
+```shell
 minikube pause [flags]
 ```
 

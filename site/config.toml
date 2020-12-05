@@ -92,6 +92,9 @@ github_subdir = "site"
 # enabling local search https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
 offlineSearch = true
 
+# Enable syntax highlighting and copy buttons on code blocks with Prism
+prism_syntax_highlighting = true
+
 # User interface configuration
 [params.ui]
 # Enable to show the side bar menu in its compact state.

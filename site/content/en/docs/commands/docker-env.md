@@ -13,7 +13,7 @@ Configure environment to use minikube's Docker daemon
 
 Sets up docker env variables; similar to '$(docker-machine env)'.
 
-```
+```shell
 minikube docker-env [flags]
 ```
 

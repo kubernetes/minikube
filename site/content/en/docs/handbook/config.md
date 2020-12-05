@@ -49,7 +49,9 @@ This flag is repeated, so you can pass it several times with several different v
 
 By default, minikube installs the latest stable version of Kubernetes that was available at the time of the minikube release. You may select a different Kubernetes release by using the `--kubernetes-version` flag, for example:
 
-`minikube start --kubernetes-version=v1.11.10`
+```shell
+minikube start --kubernetes-version=v1.11.10
+```
   
 minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube aims to support older releases as well so that users can emulate legacy environments.
 

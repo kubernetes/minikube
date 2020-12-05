@@ -35,7 +35,7 @@ import (
 func RoutableHostIPFromInside(ociBin string, clusterName string, containerName string) (net.IP, error) {
 	if ociBin == Docker {
 		if runtime.GOOS == "linux" {
-			info, err := dockerNetworkInspect(clusterName)
+			info, err := containerNetworkInspect(ociBin, clusterName)
 			if err != nil {
 				if errors.Is(err, ErrNetworkNotFound) {
 					klog.Infof("The container %s is not attached to a network, this could be because the cluster was created by minikube <v1.14, will try to get the IP using container gatway", containerName)
@@ -51,7 +51,7 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 	}
 	// podman
 	if runtime.GOOS == "linux" {
-		return containerGatewayIP(Podman, containerName)
+		return containerGatewayIP(ociBin, containerName)
 	}
 
 	return nil, fmt.Errorf("RoutableHostIPFromInside is currently only implemented for linux")
@@ -128,14 +128,14 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
 func ContainerIPs(ociBin string, name string) (string, string, error) {
 	if ociBin == Podman {
-		return podmanContainerIP(name)
+		return podmanContainerIP(ociBin, name)
 	}
-	return dockerContainerIP(name)
+	return dockerContainerIP(ociBin, name)
 }
 
 // podmanContainerIP returns ipv4, ipv6 of container or error
-func podmanContainerIP(name string) (string, string, error) {
-	rr, err := runCmd(exec.Command(Podman, "container", "inspect",
+func podmanContainerIP(ociBin string, name string) (string, string, error) {
+	rr, err := runCmd(exec.Command(ociBin, "container", "inspect",
 		"-f", "{{.NetworkSettings.IPAddress}}",
 		name))
 	if err != nil {
@@ -143,15 +143,20 @@ func podmanContainerIP(name string) (string, string, error) {
 	}
 	output := strings.TrimSpace(rr.Stdout.String())
 	if err == nil && output == "" { // podman returns empty for 127.0.0.1
+		// check network, if the ip address is missing
+		ipv4, ipv6, err := dockerContainerIP(ociBin, name)
+		if err == nil {
+			return ipv4, ipv6, nil
+		}
 		return DefaultBindIPV4, "", nil
 	}
 	return output, "", nil
 }
 
 // dockerContainerIP returns ipv4, ipv6 of container or error
-func dockerContainerIP(name string) (string, string, error) {
+func dockerContainerIP(ociBin string, name string) (string, string, error) {
 	// retrieve the IP address of the node using docker inspect
-	lines, err := inspect(Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	lines, err := inspect(ociBin, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
 		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
 	}
