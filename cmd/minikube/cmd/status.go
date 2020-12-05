@@ -143,6 +143,7 @@ type ClusterState struct {
 	BaseState
 
 	BinaryVersion string
+	TimeToStop    string
 	Components    map[string]BaseState
 	Nodes         []NodeState
 }
@@ -485,10 +486,6 @@ func clusterState(sts []*Status) ClusterState {
 	}
 	sc := statusCode(statusName)
 
-	timeToStopStatusCode := Configured
-	if sts[0].TimeToStop == Nonexistent {
-		timeToStopStatusCode = Nonexistent
-	}
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
@@ -499,9 +496,10 @@ func clusterState(sts []*Status) ClusterState {
 			StatusDetail: codeDetails[sc],
 		},
 
+		TimeToStop: sts[0].TimeToStop,
+
 		Components: map[string]BaseState{
 			"kubeconfig": {Name: "kubeconfig", StatusCode: statusCode(sts[0].Kubeconfig)},
-			"timetostop": {Name: "timetostop", StatusCode: statusCode(timeToStopStatusCode)},
 		},
 	}
 
