@@ -42,21 +42,21 @@ import (
 
 var podmanEnv1Tmpl = fmt.Sprintf(
 	"{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}"+
-	"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}"+
-	"{{ .UsageHint }}",
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}"+
+		"{{ .UsageHint }}",
 	constants.PodmanVarlinkBridgeEnv,
 	constants.MinikubeActivePodmanEnv)
 
 var podmanEnv2Tmpl = fmt.Sprintf(
 	"{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerHost }}{{ .Suffix }}"+
-	"{{ if .ContainerSSHKey }}"+
-	"{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerSSHKey}}{{ .Suffix }}"+
-	"{{ end }}"+
-	"{{ if .ExistingContainerHost }}"+
-	"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingContainerHost }}{{ .Suffix }}"+
-	"{{ end }}"+
-	"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}"+
-	"{{ .UsageHint }}",
+		"{{ if .ContainerSSHKey }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerSSHKey}}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .ExistingContainerHost }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingContainerHost }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}"+
+		"{{ .UsageHint }}",
 	constants.PodmanContainerHostEnv,
 	constants.PodmanContainerSSHKeyEnv,
 	constants.ExistingContainerHostEnv,
