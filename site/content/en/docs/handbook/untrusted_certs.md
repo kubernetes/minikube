@@ -17,7 +17,7 @@ You may install the Root Certificate into the minikube cluster to access these c
 
 You will need a corporate X.509 Root Certificate in PEM format. If it's in DER format, convert it:
 
-```
+```shell
 openssl x509 -inform der -in my_company.cer -out my_company.pem
 ```
 

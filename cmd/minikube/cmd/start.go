@@ -60,6 +60,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	pkgtrace "k8s.io/minikube/pkg/trace"
 
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -129,6 +130,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 
 	out.SetJSON(outputFormat == "json")
+	if err := pkgtrace.Initialize(viper.GetString(trace)); err != nil {
+		exit.Message(reason.Usage, "error initializing tracing: {{.Error}}", out.V{"Error": err.Error()})
+	}
+	defer pkgtrace.Cleanup()
 	displayVersion(version.GetVersion())
 
 	// No need to do the update check if no one is going to see it
@@ -241,6 +246,17 @@ func runStart(cmd *cobra.Command, args []string) {
 					"new":    mount,
 					"old":    old,
 				})
+			}
+		}
+
+		if existing.KubernetesConfig.ContainerRuntime == "crio" {
+			// Stop and start again if it's crio because it's broken above v1.17.3
+			out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
+			out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
+			stopProfile(existing.Name)
+			starter, err = provisionWithDriver(cmd, ds, existing)
+			if err != nil {
+				exitGuestProvision(err)
 			}
 		}
 	}

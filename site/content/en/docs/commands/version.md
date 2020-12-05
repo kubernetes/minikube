@@ -13,7 +13,7 @@ Print the version of minikube
 
 Print the version of minikube.
 
-```
+```shell
 minikube version [flags]
 ```
 
