@@ -19,6 +19,16 @@ set -o nounset
 set -o pipefail
 set -x
 
+configure_proxy() {
+  # ensure all processes receive the proxy settings by default
+  # https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html
+  mkdir -p /etc/systemd/system.conf.d/
+  cat <<EOF >/etc/systemd/system.conf.d/proxy-default-environment.conf
+[Manager]
+DefaultEnvironment="HTTP_PROXY=${HTTP_PROXY:-}" "HTTPS_PROXY=${HTTPS_PROXY:-}" "NO_PROXY=${NO_PROXY:-}"
+EOF
+}
+
 update-alternatives() {
     echo "retryable update-alternatives: $*"
     local args=$*
@@ -48,7 +58,7 @@ fix_mount() {
   # This is a workaround to an AUFS bug that might cause `Text file
   # busy` on `mount` command below. See more details in
   # https://github.com/moby/moby/issues/9547
-  if [[ "$(stat -f -c %T /bin/mount)" == 'aufs' ]]; then
+  if [[ "$(stat -f -c %T "$(which mount)")" == 'aufs' ]]; then
     echo 'INFO: detected aufs, calling sync' >&2
     sync
   fi
@@ -174,16 +184,6 @@ fix_kmsg() {
   fi
 }
 
-configure_proxy() {
-  # ensure all processes receive the proxy settings by default
-  # https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html
-  mkdir -p /etc/systemd/system.conf.d/
-  cat <<EOF >/etc/systemd/system.conf.d/proxy-default-environment.conf
-[Manager]
-DefaultEnvironment="HTTP_PROXY=${HTTP_PROXY:-}" "HTTPS_PROXY=${HTTPS_PROXY:-}" "NO_PROXY=${NO_PROXY:-}"
-EOF
-}
-
 select_iptables() {
   # based on: https://github.com/kubernetes/kubernetes/blob/ffe93b3979486feb41a0f85191bdd189cbd56ccc/build/debian-iptables/iptables-wrapper
   local mode=nft
@@ -229,7 +229,7 @@ enable_network_magic(){
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
   # fixup IPs in manifests ...
-  curr_ipv4="$( (getent ahostsv4 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv4="$( (getent ahostsv4 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
   if [ -f /kind/old-ipv4 ]; then
       old_ipv4=$(cat /kind/old-ipv4)
@@ -249,7 +249,7 @@ enable_network_magic(){
   fi
 
   # do IPv6
-  curr_ipv6="$( (getent ahostsv6 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv6="$( (getent ahostsv6 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
   if [ -f /kind/old-ipv6 ]; then
       old_ipv6=$(cat /kind/old-ipv6)
@@ -269,14 +269,15 @@ enable_network_magic(){
 }
 
 # run pre-init fixups
-select_iptables
+# NOTE: it's important that we do configure* first in this order to avoid races
+configure_proxy
 fix_kmsg
 fix_mount
 retryable_fix_cgroup_mounts
 fix_machine_id
 fix_product_name
 fix_product_uuid
-configure_proxy
+select_iptables
 enable_network_magic
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
