@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRICTL_BIN_VERSION = v1.17.0
+CRICTL_BIN_VERSION = v1.18.0
 CRICTL_BIN_SITE = https://github.com/kubernetes-sigs/cri-tools/releases/download/$(CRICTL_BIN_VERSION)
 CRICTL_BIN_SOURCE = crictl-$(CRICTL_BIN_VERSION)-linux-amd64.tar.gz
 CRICTL_BIN_STRIP_COMPONENTS = 0
