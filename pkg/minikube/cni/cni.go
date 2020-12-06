@@ -109,13 +109,23 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return Bridge{cc: cc}
 	}
 
-	if len(cc.Nodes) > 1 {
-		klog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
-		return KindNet{cc: cc}
-	}
-
-	klog.Infof("CNI unnecessary in this configuration, recommending no CNI")
-	return Disabled{}
+	// Recommending KindNet for single and multi node clusters as well. This comes at a very small
+	// cost of having one extra KindNet pod running in all control plane node, but provides the
+	// following benefits:
+	//   - With Disabled CNI, Single node cluster doesn't respect the podCIDR even users ask for it
+	// via --extra-config=kubeadm.pod-network-cidr=10.244.0.0/16. This results in pods having ips
+	// like 172.17.0.2.
+	//
+	//   - Enables KindNet CNI in master in multi node cluster, This solves the network problem
+	// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.
+	//
+	//   - Reduces the complexities for reconfiguring the control plane node, in a scenario
+	// where minikube cluster is created as a single node cluster and more node was added later.
+	//
+	// If a --cni flag is explicitly specified we do not do a node length check, this behaviour should
+	// also be persevered for chooseDefault.
+	klog.Infof("Recommending kindnet as default CNI", len(cc.Nodes))
+	return KindNet{cc: cc}
 }
 
 // manifestPath returns the path to the CNI manifest

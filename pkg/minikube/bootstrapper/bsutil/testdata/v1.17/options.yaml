@@ -26,6 +26,7 @@ apiServer:
     fail-no-swap: "true"
 controllerManager:
   extraArgs:
+    allocate-node-cidrs: "true"
     kube-api-burst: "32"
     leader-elect: "false"
 scheduler:
