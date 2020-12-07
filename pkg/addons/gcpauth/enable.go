@@ -107,7 +107,7 @@ func enableAddon(cfg *config.ClusterConfig) error {
 
 		gcloud config set project <project name>
 
-or set the GOOGLE_CLOUD_PROJECT environment variable.`)
+or set the GOOGLE_CLOUD_PROJECT environment variable.`, false)
 
 	// Copy an empty file in to avoid errors about missing files
 	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")

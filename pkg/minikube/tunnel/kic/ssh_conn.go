@@ -71,10 +71,11 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		out.Step(
 			style.Warning,
 			"The service {{.service}} requires privileged ports to be exposed: {{.ports}}",
+			false,
 			out.V{"service": svc.Name, "ports": fmt.Sprintf("%v", privilegedPorts)},
 		)
 
-		out.Step(style.Permissions, "sudo permission will be asked for it.")
+		out.Step(style.Permissions, "sudo permission will be asked for it.", false)
 
 		command = "sudo"
 		sshArgs = append([]string{"ssh"}, sshArgs...)
@@ -131,7 +132,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 }
 
 func (c *sshConn) startAndWait() error {
-	out.Step(style.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
+	out.Step(style.Running, "Starting tunnel for service {{.service}}.", false, out.V{"service": c.service})
 
 	err := c.cmd.Start()
 	if err != nil {
@@ -145,7 +146,7 @@ func (c *sshConn) startAndWait() error {
 }
 
 func (c *sshConn) stop() error {
-	out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
+	out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", false, out.V{"service": c.service})
 
 	return c.cmd.Process.Kill()
 }

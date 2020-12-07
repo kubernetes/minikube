@@ -86,7 +86,7 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.Error(reason.InetCacheTar, "Failed to cache images to tar", err)
 	}
-	out.Step(style.Check, "Download complete!")
+	out.Step(style.Check, "Download complete!", false)
 	os.Exit(0)
 }
 
@@ -119,7 +119,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 
 	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 	register.Reg.SetStep(register.PullingBaseImage)
-	out.Step(style.Pulling, "Pulling base image ...")
+	out.Step(style.Pulling, "Pulling base image ...", false)
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
@@ -171,7 +171,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
 				out.Step(style.Documentation, `Please visit the following link for documentation around this: 
 	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages
-`)
+`, false)
 			}
 			if errors.Is(err, image.ErrGithubNeedsLogin) || errors.Is(err, image.ErrNeedsLogin) {
 				exit.Message(reason.Usage, `Please either authenticate to the registry or use --base-image flag to use a different registry.`)

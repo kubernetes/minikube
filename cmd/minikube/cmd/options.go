@@ -37,9 +37,9 @@ var optionsCmd = &cobra.Command{
 
 // runOptions handles the executes the flow of "minikube options"
 func runOptions(cmd *cobra.Command, args []string) {
-	out.String("The following options can be passed to any command:\n\n")
+	out.String("The following options can be passed to any command:\n\n", false)
 	cmd.Root().PersistentFlags().VisitAll(func(flag *pflag.Flag) {
-		out.String(flagUsage(flag))
+		out.String(flagUsage(flag), false)
 	})
 }
 

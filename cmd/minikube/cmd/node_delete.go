@@ -38,7 +38,7 @@ var nodeDeleteCmd = &cobra.Command{
 		name := args[0]
 
 		co := mustload.Healthy(ClusterFlagValue())
-		out.Step(style.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
+		out.Step(style.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", false, out.V{"name": name, "cluster": co.Config.Name})
 
 		n, err := node.Delete(*co.Config, name)
 		if err != nil {
@@ -50,7 +50,7 @@ var nodeDeleteCmd = &cobra.Command{
 			deletePossibleKicLeftOver(machineName, co.Config.Driver)
 		}
 
-		out.Step(style.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})
+		out.Step(style.Deleted, "Node {{.name}} was successfully deleted.", false, out.V{"name": name})
 	},
 }
 

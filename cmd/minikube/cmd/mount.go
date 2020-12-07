@@ -154,7 +154,7 @@ var mountCmd = &cobra.Command{
 		if driver.IsKIC(co.CP.Host.Driver.DriverName()) && runtime.GOOS != "linux" {
 			bindIP = "127.0.0.1"
 		}
-		out.Step(style.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+		out.Step(style.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", false, out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Infof("Mount type:   {{.name}}", out.V{"type": cfg.Type})
 		out.Infof("User ID:      {{.userID}}", out.V{"userID": cfg.UID})
 		out.Infof("Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
@@ -168,9 +168,9 @@ var mountCmd = &cobra.Command{
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func() {
-				out.Step(style.Fileserver, "Userspace file server: ")
+				out.Step(style.Fileserver, "Userspace file server: ", false)
 				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
-				out.Step(style.Stopped, "Userspace file server is shutdown")
+				out.Step(style.Stopped, "Userspace file server is shutdown", false)
 				wg.Done()
 			}()
 		}
@@ -180,7 +180,7 @@ var mountCmd = &cobra.Command{
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			for sig := range c {
-				out.Step(style.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
+				out.Step(style.Unmount, "Unmounting {{.path}} ...", false, out.V{"path": vmPath})
 				err := cluster.Unmount(co.CP.Runner, vmPath)
 				if err != nil {
 					out.FailureT("Failed unmount: {{.error}}", out.V{"error": err})
@@ -193,9 +193,9 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			exit.Error(reason.GuestMount, "mount failed", err)
 		}
-		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", false, out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Ln("")
-		out.Step(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
+		out.Step(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...", false)
 		wg.Wait()
 	},
 }

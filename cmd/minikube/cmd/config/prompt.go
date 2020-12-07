@@ -36,7 +36,7 @@ func AskForYesNoConfirmation(s string, posResponses, negResponses []string) bool
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		out.String("%s [y/n]: ", s)
+		out.String("%s [y/n]: ", false, s)
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
@@ -78,7 +78,7 @@ func AskForStaticValueOptional(s string) string {
 }
 
 func getStaticValue(reader *bufio.Reader, s string) string {
-	out.String("%s", s)
+	out.String("%s", false, s)
 
 	response, err := reader.ReadString('\n')
 	if err != nil {

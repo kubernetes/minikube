@@ -155,16 +155,16 @@ func openURLs(svc string, urls []string) {
 		_, err := url.Parse(u)
 		if err != nil {
 			klog.Warningf("failed to parse url %q: %v (will not open)", u, err)
-			out.String(fmt.Sprintf("%s\n", u))
+			out.String(fmt.Sprintf("%s\n", u), false)
 			continue
 		}
 
 		if serviceURLMode {
-			out.String(fmt.Sprintf("%s\n", u))
+			out.String(fmt.Sprintf("%s\n", u), false)
 			continue
 		}
 
-		out.Step(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+		out.Step(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", false, out.V{"namespace_name": namespace, "service_name": svc})
 		if err := browser.OpenURL(u); err != nil {
 			exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
 		}
