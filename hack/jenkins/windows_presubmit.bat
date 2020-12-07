@@ -21,8 +21,8 @@ call gsutil -m cp gs://minikube-builds/%MINIKUBE_LOCATION%/minikube-windows-amd6
 call gsutil -m cp gs://minikube-builds/%MINIKUBE_LOCATION%/e2e-windows-amd64.exe out/
 call gsutil -m cp -r gs://minikube-builds/%MINIKUBE_LOCATION%/testdata .
 
-call out/minikube-windows-amd64.exe delete --all
+start /w .\out\minikube-windows-amd64.exe delete --all
 
-call out/e2e-windows-amd64.exe -minikube-start-args="--driver=docker" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m -test.run=TestFunctional
+call /w .\out\e2e-windows-amd64.exe -minikube-start-args="--driver=docker" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m -test.run=TestFunctional
 
 if not "%ERRORLEVEL%" == "0" exit /B 1
