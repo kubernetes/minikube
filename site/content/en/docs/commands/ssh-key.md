@@ -1,20 +1,26 @@
 ---
 title: "ssh-key"
 description: >
-  Retrieve the ssh identity key path of the specified cluster
+  Retrieve the ssh identity key path of the specified node
 ---
 
 
 ## minikube ssh-key
 
-Retrieve the ssh identity key path of the specified cluster
+Retrieve the ssh identity key path of the specified node
 
 ### Synopsis
 
-Retrieve the ssh identity key path of the specified cluster.
+Retrieve the ssh identity key path of the specified node, and writes it to STDOUT.
 
 ```shell
 minikube ssh-key [flags]
+```
+
+### Options
+
+```
+  -n, --node string   The node to get ssh-key path. Defaults to the primary control plane.
 ```
 
 ### Options inherited from parent commands
