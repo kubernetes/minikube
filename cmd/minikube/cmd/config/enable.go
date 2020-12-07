@@ -39,7 +39,7 @@ var addonsEnableCmd = &cobra.Command{
 		addon := args[0]
 		// replace heapster as metrics-server because heapster is deprecated
 		if addon == "heapster" {
-			out.Step(style.Waiting, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
+			out.Step(style.Waiting, "enable metrics-server addon instead of heapster addon because heapster is deprecated", false)
 			addon = "metrics-server"
 		}
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
@@ -55,11 +55,11 @@ var addonsEnableCmd = &cobra.Command{
 
 	minikube{{.profileArg}} addons enable metrics-server	
 
-`, out.V{"profileArg": tipProfileArg})
+`, false, out.V{"profileArg": tipProfileArg})
 
 		}
 
-		out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
+		out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", false, out.V{"addonName": addon})
 	},
 }
 

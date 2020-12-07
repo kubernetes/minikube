@@ -283,7 +283,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", false, out.V{"name": cnm.String()})
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
@@ -393,7 +393,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 	register.Reg.SetStep(register.VerifyingKubernetes)
-	out.Step(style.HealthCheck, "Verifying Kubernetes components...")
+	out.Step(style.HealthCheck, "Verifying Kubernetes components...", false)
 	// regardless if waiting is set or not, we will make sure kubelet is not stopped
 	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
 	if err := k.ensureServiceStarted("kubelet"); err != nil {
@@ -968,16 +968,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		klog.Warning(diskErr)
 		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
 		// generic advice for all drivers
-		out.Step(style.Tip, "Please free up disk or prune images.")
+		out.Step(style.Tip, "Please free up disk or prune images.", false)
 		if driver.IsVM(drv) {
-			out.Step(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
+			out.Step(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ", false)
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Step(style.Stopped, "Please increse Desktop's disk size.")
+			out.Step(style.Stopped, "Please increse Desktop's disk size.", false)
 			if runtime.GOOS == "darwin" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.Step(style.Documentation, "Documentation: {{.url}}", false, out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.Step(style.Documentation, "Documentation: {{.url}}", false, out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")
@@ -988,16 +988,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		klog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
-		out.Step(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
+		out.Step(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A", false)
 		if driver.IsVM(drv) {
-			out.Step(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
+			out.Step(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ", false)
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Step(style.Stopped, "Consider increasing Docker Desktop's memory size.")
+			out.Step(style.Stopped, "Consider increasing Docker Desktop's memory size.", false)
 			if runtime.GOOS == "darwin" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.Step(style.Documentation, "Documentation: {{.url}}", false, out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.Step(style.Documentation, "Documentation: {{.url}}", false, out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")

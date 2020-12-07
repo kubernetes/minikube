@@ -76,47 +76,32 @@ type fdWriter interface {
 type V map[string]interface{}
 
 // Step writes a stylized and templated message to stdout
-func Step(st style.Enum, format string, a ...V) {
+func Step(st style.Enum, format string, spinner bool, a ...V) {
 	if st == style.Option {
 		Infof(format, a...)
 		return
 	}
-	outStyled := stylized(st, useColor, format, a...)
+	outStyled := stylized(st, useColor, spinner, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
 		return
 	}
 	register.RecordStep(outStyled)
-	String(outStyled)
-}
-
-// Step writes a stylized and templated message to stdout
-func SpinnerStep(st style.Enum, format string, a ...V) {
-	if st == style.Option {
-		Infof(format, a...)
-		return
-	}
-	outStyled := spinnerStylized(st, useColor, format, a...)
-	if JSON {
-		register.PrintStep(outStyled)
-		return
-	}
-	register.RecordStep(outStyled)
-	SpinnerString(outStyled)
+	String(outStyled, spinner)
 }
 
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
-	outStyled := stylized(style.Option, useColor, format, a...)
+	outStyled := stylized(style.Option, useColor, false, format, a...)
 	if JSON {
 		register.PrintInfo(outStyled)
 		return
 	}
-	String(outStyled)
+	String(outStyled, false)
 }
 
 // String writes a basic formatted string to stdout
-func String(format string, a ...interface{}) {
+func String(format string, spinner bool, a ...interface{}) {
 	// Flush log buffer so that output order makes sense
 	klog.Flush()
 
@@ -133,25 +118,10 @@ func String(format string, a ...interface{}) {
 	if err != nil {
 		klog.Errorf("Fprintf failed: %v", err)
 	}
-}
 
-// SpinnerString writes a basic formatted string and spinner to stdout
-func SpinnerString(format string, a ...interface{}) {
-	// Flush log buffer so that output order makes sense
-	klog.Flush()
-
-	if outFile == nil {
-		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
-		return
+	if spinner{
+		spin.Start()
 	}
-
-	klog.Infof(format, a...)
-	_, err := fmt.Fprintf(outFile, format, a...)
-	if err != nil {
-		klog.Errorf("Fprintf failed: %v", err)
-	}
-	spin.Start()
-
 }
 
 // Ln writes a basic formatted string with a newline to stdout
@@ -160,12 +130,12 @@ func Ln(format string, a ...interface{}) {
 		klog.Warningf("please use out.T to log steps in JSON")
 		return
 	}
-	String(format+"\n", a...)
+	String(format+"\n", false, a...)
 }
 
 // ErrT writes a stylized and templated error message to stderr
 func ErrT(st style.Enum, format string, a ...V) {
-	errStyled := stylized(st, useColor, format, a...)
+	errStyled := stylized(st, useColor, false, format, a...)
 	Err(errStyled)
 }
 
@@ -197,7 +167,7 @@ func ErrLn(format string, a ...interface{}) {
 
 // SuccessT is a shortcut for writing a templated success message to stdout
 func SuccessT(format string, a ...V) {
-	Step(style.Success, format, a...)
+	Step(style.Success, format, false, a...)
 }
 
 // FatalT is a shortcut for writing a templated fatal message to stderr
@@ -208,7 +178,7 @@ func FatalT(format string, a ...V) {
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
 	if JSON {
-		register.PrintWarning(stylized(style.Warning, useColor, format, a...))
+		register.PrintWarning(stylized(style.Warning, useColor, false, format, a...))
 		return
 	}
 	ErrT(style.Warning, format, a...)
@@ -282,12 +252,12 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	DisplayError(msg, err)
 
 	for name, lines := range entries {
-		Step(style.Failure, "Problems detected in {{.entry}}:", V{"entry": name})
+		Step(style.Failure, "Problems detected in {{.entry}}:", false, V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
-			Step(style.LogEntry, l)
+			Step(style.LogEntry, l, false)
 		}
 	}
 }

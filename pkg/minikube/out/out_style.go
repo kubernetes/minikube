@@ -51,19 +51,10 @@ func applyStyle(st style.Enum, useColor bool, format string, spinner bool) strin
 }
 
 // stylized applies formatting to the provided template
-func stylized(st style.Enum, useColor bool, format string, a ...V) string {
+func stylized(st style.Enum, useColor bool, spinner bool, format string, a ...V) string {
 	if a == nil {
 		a = []V{{}}
 	}
-	format = applyStyle(st, useColor, format, false)
-	return Fmt(format, a...)
-}
-
-// spinnerStylized applies formatting to the provided template
-func spinnerStylized(st style.Enum, useColor bool, format string, a ...V) string {
-	if a == nil {
-		a = []V{{}}
-	}
-	format = applyStyle(st, useColor, format, true)
+	format = applyStyle(st, useColor, format, spinner)
 	return Fmt(format, a...)
 }

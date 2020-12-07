@@ -57,7 +57,7 @@ func TestOutT(t *testing.T) {
 				os.Setenv(OverrideEnv, strconv.FormatBool(override))
 				f := tests.NewFakeFile()
 				SetOutFile(f)
-				Step(tc.style, tc.message, tc.params)
+				Step(tc.style, tc.message, false, tc.params)
 				got := f.String()
 				want := tc.wantASCII
 				if override {
@@ -89,9 +89,9 @@ func TestOut(t *testing.T) {
 			SetOutFile(f)
 			ErrLn("unrelated message")
 			if tc.arg == nil {
-				String(tc.format)
+				String(tc.format, false)
 			} else {
-				String(tc.format, tc.arg)
+				String(tc.format, false, tc.arg)
 			}
 			got := f.String()
 			if got != tc.want {

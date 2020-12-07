@@ -50,7 +50,7 @@ var nodeStartCmd = &cobra.Command{
 
 		machineName := driver.MachineName(*cc, *n)
 		if machine.IsRunning(api, machineName) {
-			out.Step(style.Check, "{{.name}} is already running", out.V{"name": name})
+			out.Step(style.Check, "{{.name}} is already running", false, out.V{"name": name})
 			os.Exit(0)
 		}
 
@@ -77,7 +77,7 @@ var nodeStartCmd = &cobra.Command{
 				exit.Error(reason.GuestNodeStart, "failed to start node", err)
 			}
 		}
-		out.Step(style.Happy, "Successfully started node {{.name}}!", out.V{"name": machineName})
+		out.Step(style.Happy, "Successfully started node {{.name}}!", false, out.V{"name": machineName})
 	},
 }
 

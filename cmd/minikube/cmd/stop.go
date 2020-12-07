@@ -117,7 +117,7 @@ func runStop(cmd *cobra.Command, args []string) {
 
 	register.Reg.SetStep(register.Done)
 	if stoppedNodes > 0 {
-		out.Step(style.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
+		out.Step(style.Stopped, `{{.count}} nodes stopped.`, false, out.V{"count": stoppedNodes})
 	}
 }
 
@@ -163,7 +163,7 @@ func stop(api libmachine.API, machineName string) bool {
 
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.Step(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
+			out.Step(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, false, out.V{"machineName": machineName})
 			nonexistent = true
 			return nil
 		default:
