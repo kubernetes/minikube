@@ -23,6 +23,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// If you add a new step here, please also add it to register.Reg registry inside the init() function
 const (
 	InitialSetup         RegStep = "Initial Minikube Setup"
 	SelectingDriver      RegStep = "Selecting Driver"
