@@ -70,20 +70,22 @@ func TestDownloadOnly(t *testing.T) {
 					if err != nil {
 						t.Errorf("failed to download only. args: %q %v", args, err)
 					}
-					s := bufio.NewScanner(bytes.NewReader(rt.Stdout.Bytes()))
-					for s.Scan() {
-						var rtObj map[string]interface{}
-						err = json.Unmarshal(s.Bytes(), &rtObj)
-						if err != nil {
-							t.Errorf("failed to parse output: %v", err)
-						} else if step, ok := rtObj["data"]; ok {
-							if stepMap, ok := step.(map[string]interface{}); ok {
-								if stepMap["currentstep"] == "" {
-									t.Errorf("Empty step number for %v", stepMap["name"])
+					t.Run("check json events", func(t *testing.T) {
+						s := bufio.NewScanner(bytes.NewReader(rt.Stdout.Bytes()))
+						for s.Scan() {
+							var rtObj map[string]interface{}
+							err = json.Unmarshal(s.Bytes(), &rtObj)
+							if err != nil {
+								t.Errorf("failed to parse output: %v", err)
+							} else if step, ok := rtObj["data"]; ok {
+								if stepMap, ok := step.(map[string]interface{}); ok {
+									if stepMap["currentstep"] == "" {
+										t.Errorf("Empty step number for %v", stepMap["name"])
+									}
 								}
 							}
 						}
-					}
+					})
 
 					// skip for none, as none driver does not have preload feature.
 					if !NoneDriver() {
