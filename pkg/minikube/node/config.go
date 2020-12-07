@@ -18,6 +18,12 @@ package node
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"sync"
+
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -30,11 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strconv"
-	"sync"
 )
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
