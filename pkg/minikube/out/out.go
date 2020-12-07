@@ -20,8 +20,6 @@ package out
 import (
 	"bytes"
 	"fmt"
-	"github.com/briandowns/spinner"
-	isatty "github.com/mattn/go-isatty"
 	"html"
 	"html/template"
 	"io"
@@ -29,6 +27,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/briandowns/spinner"
+	isatty "github.com/mattn/go-isatty"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -111,7 +112,7 @@ func String(format string, spinner bool, a ...interface{}) {
 	}
 
 	klog.Infof(format, a...)
-	if spin.Active() == true {
+	if spin.Active() {
 		spin.Stop()
 	}
 	_, err := fmt.Fprintf(outFile, format, a...)
@@ -119,7 +120,7 @@ func String(format string, spinner bool, a ...interface{}) {
 		klog.Errorf("Fprintf failed: %v", err)
 	}
 
-	if spinner{
+	if spinner {
 		spin.Start()
 	}
 }
