@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$env:MINIKUBE_LOCATION=$env:KOKORO_GITHUB_PULL_REQUEST_NUMBER
-$env:COMMIT=$env:KOKORO_GITHUB_PULL_REQUEST_COMMIT
+set MINIKUBE_LOCATION=%KOKORO_GITHUB_PULL_REQUEST_NUMBER%
+set COMMIT=%KOKORO_GITHUB_PULL_REQUEST_COMMIT%
 
 cd github/minikube
 mkdir -p out
-gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
-gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
-gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
+gsutil -m cp gs://minikube-builds/%MINIKUBE_LOCATION%/minikube-windows-amd64.exe out/
+gsutil -m cp gs://minikube-builds/%MINIKUBE_LOCATION%/e2e-windows-amd64.exe out/
+gsutil -m cp -r gs://minikube-builds/%MINIKUBE_LOCATION%/testdata .
 
 out/minikube-windows-amd64.exe delete --all
 
