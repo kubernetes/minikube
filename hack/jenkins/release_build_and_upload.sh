@@ -48,7 +48,9 @@ env BUILD_IN_DOCKER=y \
   all \
   out/minikube-installer.exe \
   "out/minikube_${DEB_VERSION}-0_amd64.deb" \
+  "out/minikube_${DEB_VERSION}-0_arm64.deb" \
   "out/minikube-${RPM_VERSION}-0.x86_64.rpm" \
+  "out/minikube-${RPM_VERSION}-0.aarch64.rpm" \
   "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
   "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
 
@@ -56,7 +58,9 @@ make checksum
 
 # unversioned names to avoid updating upstream Kubernetes documentation each release
 cp "out/minikube_${DEB_VERSION}-0_amd64.deb" out/minikube_latest_amd64.deb
+cp "out/minikube_${DEB_VERSION}-0_arm64.deb" out/minikube_latest_arm64.deb
 cp "out/minikube-${RPM_VERSION}-0.x86_64.rpm" out/minikube-latest.x86_64.rpm
+cp "out/minikube-${RPM_VERSION}-0.aarch64.rpm" out/minikube-latest.aarch64.rpm
 
 gsutil -m cp out/* "gs://$BUCKET/releases/$TAGNAME/"
 
