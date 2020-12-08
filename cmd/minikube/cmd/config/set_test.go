@@ -38,6 +38,10 @@ func TestSetNotAllowed(t *testing.T) {
 	if err == nil || err.Error() != "run validations for \"driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
 		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
+	err = Set("memory", "10a")
+	if err == nil || err.Error() != "run validations for \"memory\" with value of \"10a\": [invalid disk size: invalid size: '10a']" {
+		t.Fatalf("Set did not return error for unallowed value: %+v", err)
+	}
 }
 
 func TestSetOK(t *testing.T) {
