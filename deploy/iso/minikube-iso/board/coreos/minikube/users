@@ -1,1 +1,1 @@
-docker 1000 docker 1000 =tcuser /home/docker /bin/bash wheel,vboxsf -
+docker 1000 docker 1000 =tcuser /home/docker /bin/bash wheel,vboxsf,podman -

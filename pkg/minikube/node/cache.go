@@ -124,6 +124,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		baseImg := cc.KicBaseImage
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
 			baseImg = strings.Replace(baseImg, "gcr.io/k8s-minikube", cc.KubernetesConfig.ImageRepository, 1)
+			cc.KicBaseImage = baseImg
 		}
 		var finalImg string
 		// If we end up using a fallback image, notify the user

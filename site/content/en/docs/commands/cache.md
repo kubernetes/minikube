@@ -42,7 +42,7 @@ Add an image to local cache.
 
 Add an image to local cache.
 
-```
+```shell
 minikube cache add [flags]
 ```
 
@@ -75,7 +75,7 @@ Delete an image from the local cache.
 
 Delete an image from the local cache.
 
-```
+```shell
 minikube cache delete [flags]
 ```
 
@@ -109,7 +109,7 @@ Help about any command
 Help provides help for any command in the application.
 Simply type cache help [path to command] for full details.
 
-```
+```shell
 minikube cache help [command] [flags]
 ```
 
@@ -142,7 +142,7 @@ List all available images from the local cache.
 
 List all available images from the local cache.
 
-```
+```shell
 minikube cache list [flags]
 ```
 
@@ -182,7 +182,7 @@ reload cached images.
 
 reloads images previously added using the 'cache add' subcommand
 
-```
+```shell
 minikube cache reload [flags]
 ```
 

@@ -136,7 +136,7 @@ eval $(minikube podman-env)
 You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
 
 {{% tabs %}}
-{{% tab "Linux" %}}
+{{% linuxtab %}}
 
 ```shell
 podman-remote help
@@ -146,8 +146,8 @@ podman-remote help
 Note: On Linux the remote client is called "podman-remote", while the local program is called "podman".
 {{% /pageinfo %}}
 
-{{% /tab %}}
-{{% tab "macOS" %}}
+{{% /linuxtab %}}
+{{% mactab %}}
 
 ```shell
 podman help
@@ -157,8 +157,8 @@ podman help
 Note: On macOS the remote client is called "podman", since there is no local "podman" program available.
 {{% /pageinfo %}}
 
-{{% /tab %}}
-{{% tab "Windows" %}}
+{{% /mactab %}}
+{{% windowstab %}}
 
 ```shell
 podman help
@@ -168,7 +168,7 @@ podman help
 Note: On Windows the remote client is called "podman", since there is no local "podman" program available.
 {{% /pageinfo %}}
 
-{{% /tab %}}
+{{% /windowstab %}}
 {{% /tabs %}}
 
 

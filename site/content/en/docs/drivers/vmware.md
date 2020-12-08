@@ -10,15 +10,15 @@ aliases:
 The vmware driver supports virtualization across all VMware based hypervisors.
 
 {{% tabs %}}
-{{% tab "macOS" %}}
+{{% mactab %}}
 {{% readfile file="/docs/drivers/includes/vmware_macos_usage.inc" %}}
-{{% /tab %}}
-{{% tab "Linux" %}}
+{{% /mactab %}}
+{{% linuxtab %}}
 No documentation is available yet.
-{{% /tab %}}
-{{% tab "Windows" %}}
+{{% /linuxtab %}}
+{{% windowstab %}}
 No documentation is available yet.
-{{% /tab %}}
+{{% /windowstab %}}
 {{% /tabs %}}
 
 ## Issues

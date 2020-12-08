@@ -25,6 +25,7 @@ import (
 var initialEnvs = make(map[string]string)
 
 func init() {
+	// docker
 	for _, env := range constants.DockerDaemonEnvs {
 		if v, set := os.LookupEnv(env); set {
 			initialEnvs[env] = v
@@ -33,6 +34,15 @@ func init() {
 		if v, set := os.LookupEnv(exEnv); set {
 			initialEnvs[exEnv] = v
 		}
+	}
+	// podman
+	env := constants.PodmanContainerHostEnv
+	if v, set := os.LookupEnv(env); set {
+		initialEnvs[env] = v
+	}
+	exEnv := constants.ExistingContainerHostEnv
+	if v, set := os.LookupEnv(exEnv); set {
+		initialEnvs[exEnv] = v
 	}
 }
 

@@ -93,6 +93,9 @@ const (
 	ExistingDockerCertPathEnv = MinikubeExistingPrefix + "DOCKER_CERT_PATH"
 	// ExistingDockerTLSVerifyEnv is used to save original docker environment
 	ExistingDockerTLSVerifyEnv = MinikubeExistingPrefix + "DOCKER_TLS_VERIFY"
+
+	// ExistingContainerHostEnv is used to save original podman environment
+	ExistingContainerHostEnv = MinikubeExistingPrefix + "CONTAINER_HOST"
 )
 
 var (

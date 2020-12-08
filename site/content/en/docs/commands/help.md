@@ -14,7 +14,7 @@ Help about any command
 Help provides help for any command in the application.
 Simply type minikube help [path to command] for full details.
 
-```
+```shell
 minikube help [command] [flags]
 ```
 

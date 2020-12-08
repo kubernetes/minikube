@@ -84,7 +84,10 @@ spec:
           serviceName: hello-minikube
           servicePort: 8080
 ```
-Run the command: `kubectl apply -f hello-ingress.yaml`
+Run the command: 
+```shell
+kubectl apply -f hello-ingress.yaml
+```
 
 That's it! You can now access your service via Ambassador:
 ```shell script
@@ -120,7 +123,10 @@ spec:
   prefix: /hello-mapping/
   service: mapping-minikube.default:8080
 ```
-Run the command: `kubectl apply -f hello-mapping.yaml`
+Run the command: 
+```shell
+kubectl apply -f hello-mapping.yaml
+```
 
 That's it! You can now access your service via Ambassador:
 ```shell script

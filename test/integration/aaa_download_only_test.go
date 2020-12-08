@@ -19,8 +19,11 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -41,7 +44,6 @@ func TestDownloadOnly(t *testing.T) {
 		t.Run(r, func(t *testing.T) {
 			// Stores the startup run result for later error messages
 			var rrr *RunResult
-			var err error
 
 			profile := UniqueProfileName(r)
 			ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
@@ -58,18 +60,32 @@ func TestDownloadOnly(t *testing.T) {
 					defer PostMortemLogs(t, profile)
 
 					// --force to avoid uid check
-					args := append([]string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v), fmt.Sprintf("--container-runtime=%s", r)}, StartArgs()...)
+					args := append([]string{"start", "-o=json", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v), fmt.Sprintf("--container-runtime=%s", r)}, StartArgs()...)
 
-					// Preserve the initial run-result for debugging
+					rt, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 					if rrr == nil {
-						rrr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
-					} else {
-						_, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+						// Preserve the initial run-result for debugging
+						rrr = rt
 					}
-
 					if err != nil {
 						t.Errorf("failed to download only. args: %q %v", args, err)
 					}
+					t.Run("check json events", func(t *testing.T) {
+						s := bufio.NewScanner(bytes.NewReader(rt.Stdout.Bytes()))
+						for s.Scan() {
+							var rtObj map[string]interface{}
+							err = json.Unmarshal(s.Bytes(), &rtObj)
+							if err != nil {
+								t.Errorf("failed to parse output: %v", err)
+							} else if step, ok := rtObj["data"]; ok {
+								if stepMap, ok := step.(map[string]interface{}); ok {
+									if stepMap["currentstep"] == "" {
+										t.Errorf("Empty step number for %v", stepMap["name"])
+									}
+								}
+							}
+						}
+					})
 
 					// skip for none, as none driver does not have preload feature.
 					if !NoneDriver() {
