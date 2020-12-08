@@ -13,7 +13,7 @@ Enable or disable a minikube addon
 
 addons modifies minikube addons files using subcommands like "minikube addons enable dashboard"
 
-```
+```shell
 minikube addons SUBCOMMAND [flags]
 ```
 
@@ -46,7 +46,7 @@ Configures the addon w/ADDON_NAME within minikube (example: minikube addons conf
 
 Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list
 
-```
+```shell
 minikube addons configure ADDON_NAME [flags]
 ```
 
@@ -79,7 +79,7 @@ Disables the addon w/ADDON_NAME within minikube (example: minikube addons disabl
 
 Disables the addon w/ADDON_NAME within minikube (example: minikube addons disable dashboard). For a list of available addons use: minikube addons list 
 
-```
+```shell
 minikube addons disable ADDON_NAME [flags]
 ```
 
@@ -112,7 +112,7 @@ Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable 
 
 Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list 
 
-```
+```shell
 minikube addons enable ADDON_NAME [flags]
 ```
 
@@ -146,7 +146,7 @@ Help about any command
 Help provides help for any command in the application.
 Simply type addons help [path to command] for full details.
 
-```
+```shell
 minikube addons help [command] [flags]
 ```
 
@@ -179,7 +179,7 @@ Lists all available minikube addons as well as their current statuses (enabled/d
 
 Lists all available minikube addons as well as their current statuses (enabled/disabled)
 
-```
+```shell
 minikube addons list [flags]
 ```
 
@@ -218,7 +218,7 @@ Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dash
 
 Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list 
 
-```
+```shell
 minikube addons open ADDON_NAME [flags]
 ```
 

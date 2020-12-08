@@ -9,23 +9,33 @@ description: >
 
 To create an addon, first fork the minikube repository, and check out your fork:
 
-`git clone git@github.com:<username>/minikube.git`
+```shell
+git clone git@github.com:<username>/minikube.git
+```
 
 Then go into the source directory:
 
-`cd minikube`
+```shell
+cd minikube
+```
 
 Create a subdirectory:
 
-`mkdir deploy/addons/<addon name>`
+```shell
+mkdir deploy/addons/<addon name>
+```
 
 Add your manifest YAML's to the directory you have created:
 
-`cp *.yaml deploy/addons/<addon name>`
+```shell
+cp *.yaml deploy/addons/<addon name>
+```
 
 Note: If the addon never needs authentication to GCP, then consider adding the following label to the pod's yaml:
 
-`gcp-auth-skip-secret: "true"`
+```yaml
+gcp-auth-skip-secret: "true"
+```
 
 To make the addon appear in `minikube addons list`, add it to `pkg/addons/config.go`. Here is the entry used by the `registry` addon, which will work for any addon which does not require custom code:
 

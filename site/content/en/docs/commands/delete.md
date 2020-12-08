@@ -14,7 +14,7 @@ Deletes a local Kubernetes cluster
 Deletes a local Kubernetes cluster. This command deletes the VM, and removes all
 associated files.
 
-```
+```shell
 minikube delete [flags]
 ```
 
