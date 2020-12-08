@@ -113,7 +113,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 		}
 
 		if !me || err == constants.ErrMachineMissing {
-			out.Step(style.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, false, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+			out.Step(style.Shrug, false, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 			demolish(api, *cc, *n, h)
 
 			klog.Infof("Sleeping 1 second for extra luck!")
@@ -135,13 +135,13 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 
 	if s == state.Running {
 		if !recreated {
-			out.Step(style.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, false, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+			out.Step(style.Running, false, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 		}
 		return h, nil
 	}
 
 	if !recreated {
-		out.Step(style.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, false, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+		out.Step(style.Restarting, false,`Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 	}
 	if err := h.Driver.Start(); err != nil {
 		MaybeDisplayAdvice(err, h.DriverName)
@@ -161,7 +161,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 		return
 	}
 	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
-		out.Step(style.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", false, out.V{"driver_name": drver})
+		out.Step(style.Notice, false, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		// TODO: refactor docker-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
 		out.WarningT(`Please re-eval your docker-env, To ensure your environment variables have updated ports:
 
@@ -170,7 +170,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	`, out.V{"profile_name": name})
 	}
 	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
-		out.Step(style.Notice, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", false, out.V{"driver_name": drver})
+		out.Step(style.Notice, false, "Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 		// TODO: refactor podman-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
 		out.WarningT(`Please re-eval your podman-env, To ensure your environment variables have updated ports:
 
