@@ -195,8 +195,8 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 			if err != nil {
 				return errors.Wrap(err, "registry port")
 			}
-			out.Step(style.Tip, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, false, out.V{"driver": cc.Driver, "port": port})
-			out.Step(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, false, out.V{"driver": cc.Driver})
+			out.Step(style.Tip, false, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, out.V{"driver": cc.Driver, "port": port})
+			out.Step(style.Documentation, false, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
 		}
 	}
 
@@ -331,8 +331,8 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
 
 	if enable && err == nil {
-		out.Step(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", false, out.V{"name": cc.Name})
-		out.Step(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.", false)
+		out.Step(style.Notice, false, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
+		out.Step(style.Notice, false, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
 	}
 
 	return err
@@ -347,7 +347,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 
 	label, ok := addonPodLabels[name]
 	if ok && enable {
-		out.Step(style.HealthCheck, "Verifying {{.addon_name}} addon...", false, out.V{"addon_name": name})
+		out.Step(style.HealthCheck, false,"Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
 			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
@@ -410,7 +410,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
-		out.Step(style.AddonEnable, "Enabled addons: {{.addons}}", false, out.V{"addons": strings.Join(enabledAddons, ", ")})
+		out.Step(style.AddonEnable, false,"Enabled addons: {{.addons}}", out.V{"addons": strings.Join(enabledAddons, ", ")})
 	}()
 	for _, a := range toEnableList {
 		awg.Add(1)

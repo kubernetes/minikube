@@ -91,7 +91,7 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 		example.WriteString(fmt.Sprintf("    $ %s \n", strings.Join(c.Args, " ")))
 	}
 
-	out.Step(style.Permissions, "The '{{.driver}}' driver requires elevated permissions. The following commands will be executed:\n\n{{ .example }}\n", false, out.V{"driver": name, "example": example.String()})
+	out.Step(style.Permissions, false, "The '{{.driver}}' driver requires elevated permissions. The following commands will be executed:\n\n{{ .example }}\n", out.V{"driver": name, "example": example.String()})
 	for _, c := range cmds {
 		testArgs := append([]string{"-n"}, c.Args[1:]...)
 		test := exec.Command("sudo", testArgs...)

@@ -103,11 +103,11 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	out.WarningT("Could not determine a Google Cloud project, which might be ok.")
-	out.Step(style.Tip, `To set your Google Cloud project,  run: 
+	out.Step(style.Tip, false, `To set your Google Cloud project,  run: 
 
 		gcloud config set project <project name>
 
-or set the GOOGLE_CLOUD_PROJECT environment variable.`, false)
+or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 
 	// Copy an empty file in to avoid errors about missing files
 	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")

@@ -77,7 +77,7 @@ type fdWriter interface {
 type V map[string]interface{}
 
 // Step writes a stylized and templated message to stdout
-func Step(st style.Enum, format string, spinner bool, a ...V) {
+func Step(st style.Enum, spinner bool, format string, a ...V) {
 	if st == style.Option {
 		Infof(format, a...)
 		return
@@ -168,7 +168,7 @@ func ErrLn(format string, a ...interface{}) {
 
 // SuccessT is a shortcut for writing a templated success message to stdout
 func SuccessT(format string, a ...V) {
-	Step(style.Success, format, false, a...)
+	Step(style.Success, false, format, a...)
 }
 
 // FatalT is a shortcut for writing a templated fatal message to stderr
@@ -253,12 +253,12 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	DisplayError(msg, err)
 
 	for name, lines := range entries {
-		Step(style.Failure, "Problems detected in {{.entry}}:", false, V{"entry": name})
+		Step(style.Failure, false, "Problems detected in {{.entry}}:", V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
-			Step(style.LogEntry, l, false)
+			Step(style.LogEntry, false, l)
 		}
 	}
 }
