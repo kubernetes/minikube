@@ -320,7 +320,7 @@ func (d *Driver) Remove() error {
 		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
 
-	if err := oci.RemoveNetwork(d.NodeConfig.ClusterName); err != nil {
+	if err := oci.RemoveNetwork(d.OCIBinary, d.NodeConfig.ClusterName); err != nil {
 		klog.Warningf("failed to remove network (which might be okay) %s: %v", d.NodeConfig.ClusterName, err)
 	}
 	return nil

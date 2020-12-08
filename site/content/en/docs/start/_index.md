@@ -22,33 +22,59 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
 {{% tabs %}}
-{{% tab "Linux" %}}
+{{% linuxtab %}}
 
-For Linux users, we provide 3 easy download options:
+For Linux users, we provide 3 easy download options (for each architecture):
 
-### Binary download
+### x86
+
+#### Binary download
+
 
 ```shell
  curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
  sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
 
-### Debian package
+#### Debian package
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
 sudo dpkg -i minikube_latest_amd64.deb
 ```
 
-### RPM package
+#### RPM package
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
 sudo rpm -ivh minikube-latest.x86_64.rpm
 ```
 
-{{% /tab %}}
-{{% tab "macOS" %}}
+### ARM
+
+#### Binary download
+
+```shell
+ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm64
+ sudo install minikube-linux-arm64 /usr/local/bin/minikube
+```
+
+#### Debian package
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_arm64.deb
+sudo dpkg -i minikube_latest_arm64.deb
+```
+
+#### RPM package
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.aarch64.rpm
+sudo rpm -ivh minikube-latest.aarch64.rpm
+```
+
+{{% /linuxtab %}}
+{{% mactab %}}
 
 If the [Brew Package Manager](https://brew.sh/) installed:
 
@@ -58,7 +84,7 @@ brew install minikube
 
 If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
 
-```
+```shell
 brew cask remove minikube
 brew link minikube
 ```
@@ -70,8 +96,8 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 sudo install minikube-darwin-amd64 /usr/local/bin/minikube
 ```
 
-{{% /tab %}}
-{{% tab "Windows" %}}
+{{% /mactab %}}
+{{% windowstab %}}
 
 If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use it to install minikube:
 
@@ -81,7 +107,7 @@ choco install minikube
 
 Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
-{{% /tab %}}
+{{% /windowstab %}}
 {{% /tabs %}}
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>Start your cluster</h2>
@@ -160,7 +186,9 @@ minikube tunnel
 
 To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
 
-`kubectl get services balanced`
+```shell
+kubectl get services balanced
+```
 
 Your deployment is now available at &lt;EXTERNAL-IP&gt;:8080
 

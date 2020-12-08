@@ -13,7 +13,7 @@ Log into the minikube environment (for debugging)
 
 Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.
 
-```
+```shell
 minikube ssh [flags]
 ```
 

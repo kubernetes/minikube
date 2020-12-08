@@ -20,7 +20,9 @@ This tutorial explains how to start minikube with Pod Security Policies (PSP) en
 Start minikube with the `PodSecurityPolicy` admission controller and the
 `pod-security-policy` addon enabled.
 
-`minikube start --extra-config=apiserver.enable-admission-plugins=PodSecurityPolicy --addons=pod-security-policy`
+```shell
+minikube start --extra-config=apiserver.enable-admission-plugins=PodSecurityPolicy --addons=pod-security-policy
+```
 
 The `pod-security-policy` addon must be enabled along with the admission
 controller to prevent issues during bootstrap.
@@ -35,12 +37,16 @@ the policies that addon enables must be separately applied to the cluster.
 Before starting minikube, you need to give it the PSP YAMLs in order to allow minikube to bootstrap.
 
 Create the directory:
-`mkdir -p ~/.minikube/files/etc/kubernetes/addons`
+```shell
+mkdir -p ~/.minikube/files/etc/kubernetes/addons
+```
 
 Copy the YAML below into this file: `~/.minikube/files/etc/kubernetes/addons/psp.yaml`
 
 Now start minikube:
-`minikube start --extra-config=apiserver.enable-admission-plugins=PodSecurityPolicy`
+```shell
+minikube start --extra-config=apiserver.enable-admission-plugins=PodSecurityPolicy
+```
 
 ```yaml
 ---
@@ -191,7 +197,7 @@ Next, apply the YAML shown above to the cluster.
 Finally, stop the cluster and then restart it with the admission controller
 enabled.
 
-```
+```shell
 minikube start
 kubectl apply -f /path/to/psp.yaml
 minikube stop
