@@ -22,7 +22,7 @@ Place files to be synced in `$MINIKUBE_HOME/files`
 
 For example, running the following will result in the deployment of a custom /etc/resolv.conf:
 
-```
+```shell
 mkdir -p ~/.minikube/files/etc
 echo nameserver 8.8.8.8 > ~/.minikube/files/etc/resolv.conf
 minikube start

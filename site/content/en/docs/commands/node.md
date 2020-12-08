@@ -13,7 +13,7 @@ Add, remove, or list additional nodes
 
 Operations on nodes
 
-```
+```shell
 minikube node [flags]
 ```
 
@@ -46,7 +46,7 @@ Adds a node to the given cluster.
 
 Adds a node to the given cluster config, and starts it.
 
-```
+```shell
 minikube node add [flags]
 ```
 
@@ -87,7 +87,7 @@ Deletes a node from a cluster.
 
 Deletes a node from a cluster.
 
-```
+```shell
 minikube node delete [flags]
 ```
 
@@ -121,7 +121,7 @@ Help about any command
 Help provides help for any command in the application.
 Simply type node help [path to command] for full details.
 
-```
+```shell
 minikube node help [command] [flags]
 ```
 
@@ -154,7 +154,7 @@ List nodes.
 
 List existing minikube nodes.
 
-```
+```shell
 minikube node list [flags]
 ```
 
@@ -187,7 +187,7 @@ Starts a node.
 
 Starts an existing stopped node in a cluster.
 
-```
+```shell
 minikube node start [flags]
 ```
 
@@ -226,7 +226,7 @@ Stops a node in a cluster.
 
 Stops a node in a cluster.
 
-```
+```shell
 minikube node stop [flags]
 ```
 

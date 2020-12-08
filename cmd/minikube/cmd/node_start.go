@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -54,6 +55,7 @@ var nodeStartCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
+		register.Reg.SetStep(register.InitialSetup)
 		r, p, m, h, err := node.Provision(cc, n, false, viper.GetBool(deleteOnFailure))
 		if err != nil {
 			exit.Error(reason.GuestNodeProvision, "provisioning host for node", err)

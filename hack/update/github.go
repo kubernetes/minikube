@@ -221,7 +221,7 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest string,
 			return "", "", err
 		}
 		for _, rl := range rls {
-			ver := rl.GetName()
+			ver := rl.GetTagName()
 			if !semver.IsValid(ver) {
 				continue
 			}

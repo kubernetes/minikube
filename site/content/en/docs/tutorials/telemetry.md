@@ -14,7 +14,7 @@ Currently, minikube supports the following exporters for tracing data:
 
 To collect trace data with minikube and the Stackdriver exporter, run:
 
-```
+```shell
 MINIKUBE_GCP_PROJECT_ID=<project ID> minikube start --output json --trace gcp
 ```
 

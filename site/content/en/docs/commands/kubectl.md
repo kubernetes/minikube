@@ -17,7 +17,7 @@ Examples:
 minikube kubectl -- --help
 minikube kubectl -- get pods --namespace kube-system
 
-```
+```shell
 minikube kubectl [flags]
 ```
 
