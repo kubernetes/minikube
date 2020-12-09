@@ -347,7 +347,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 
 	label, ok := addonPodLabels[name]
 	if ok && enable {
-		out.Step(style.HealthCheck, false,"Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
+		out.Step(style.HealthCheck, false, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
 			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)
@@ -410,7 +410,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
-		out.Step(style.AddonEnable, false,"Enabled addons: {{.addons}}", out.V{"addons": strings.Join(enabledAddons, ", ")})
+		out.Step(style.AddonEnable, false, "Enabled addons: {{.addons}}", out.V{"addons": strings.Join(enabledAddons, ", ")})
 	}()
 	for _, a := range toEnableList {
 		awg.Add(1)
