@@ -48,7 +48,7 @@ var nodeAddCmd = &cobra.Command{
 
 		name := node.Name(len(cc.Nodes) + 1)
 
-		out.Step(style.Happy, false, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		out.Step(style.Happy, out.NoSpinner, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 
 		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
 		n := config.Node{
@@ -77,7 +77,7 @@ var nodeAddCmd = &cobra.Command{
 			exit.Error(reason.HostSaveProfile, "failed to save config", err)
 		}
 
-		out.Step(style.Ready, false, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})
+		out.Step(style.Ready, out.NoSpinner, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})
 	},
 }
 

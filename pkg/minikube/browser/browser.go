@@ -30,7 +30,7 @@ func OpenURL(url string) error {
 	if runtime.GOOS == "linux" {
 		_, err := exec.LookPath("xdg-open")
 		if err != nil {
-			out.Step(style.URL, false, url)
+			out.Step(style.URL, out.NoSpinner, url)
 			return nil
 		}
 	}

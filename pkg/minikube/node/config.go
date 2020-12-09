@@ -41,7 +41,7 @@ import (
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
 	register.Reg.SetStep(register.PreparingKubernetes)
-	out.Step(cr.Style(), true, "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
+	out.Step(cr.Style(), out.Spinning, "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 	for _, v := range config.DockerOpt {
 		out.Infof("opt {{.docker_option}}", out.V{"docker_option": v})
 	}
@@ -59,7 +59,7 @@ func configureMounts(wg *sync.WaitGroup) {
 		return
 	}
 
-	out.Step(style.Mounting, false, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
+	out.Step(style.Mounting, out.NoSpinner, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
 	path := os.Args[0]
 	mountDebugVal := 0
 	if klog.V(8).Enabled() {

@@ -78,7 +78,7 @@ func showLocalOsRelease() {
 	}
 
 	register.Reg.SetStep(register.LocalOSRelease)
-	out.Step(style.Provisioner, false, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+	out.Step(style.Provisioner, out.NoSpinner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
 }
 
 // logRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM

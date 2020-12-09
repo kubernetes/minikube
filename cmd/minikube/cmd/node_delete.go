@@ -38,7 +38,7 @@ var nodeDeleteCmd = &cobra.Command{
 		name := args[0]
 
 		co := mustload.Healthy(ClusterFlagValue())
-		out.Step(style.DeletingHost, false, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
+		out.Step(style.DeletingHost, out.NoSpinner, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
 
 		n, err := node.Delete(*co.Config, name)
 		if err != nil {

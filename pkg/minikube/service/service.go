@@ -287,7 +287,7 @@ func WaitForService(api libmachine.API, cname string, namespace string, service 
 	}
 
 	if len(serviceURL.URLs) == 0 {
-		out.Step(style.Sad, false, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
+		out.Step(style.Sad, out.NoSpinner, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
 		return urlList, nil
 	}
 

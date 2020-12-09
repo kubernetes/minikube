@@ -47,7 +47,7 @@ var generateDocs = &cobra.Command{
 		if err := generate.Docs(RootCmd, path); err != nil {
 			exit.Error(reason.InternalGenerateDocs, "Unable to generate docs", err)
 		}
-		out.Step(style.Documentation, false, "Docs have been saved at - {{.path}}", out.V{"path": path})
+		out.Step(style.Documentation, out.NoSpinner, "Docs have been saved at - {{.path}}", out.V{"path": path})
 	},
 }
 
