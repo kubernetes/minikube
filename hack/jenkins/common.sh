@@ -21,7 +21,7 @@
 # OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
 # VM_DRIVER: the driver to use for the test
 # EXTRA_START_ARGS: additional flags to pass into minikube start
-# EXTRA_ARGS: additional flags to pass into minikube
+# EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
@@ -221,17 +221,17 @@ fi
 
 
 # clean up none drivers binding on 8443
-  none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
-  if [[ "${none_procs}" != "" ]]; then
-    echo "Found stale api servers listening on 8443 processes to kill: "
-    for p in $none_procs
-    do
+none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
+if [[ "${none_procs}" != "" ]]; then
+  echo "Found stale api servers listening on 8443 processes to kill: "
+  for p in $none_procs
+  do
     echo "Kiling stale none driver:  $p"
     sudo -E ps -f -p $p || true
     sudo -E kill $p || true
     sudo -E kill -9 $p || true
-    done
-  fi
+  done
+fi
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
