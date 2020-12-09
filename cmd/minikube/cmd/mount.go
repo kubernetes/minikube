@@ -170,7 +170,7 @@ var mountCmd = &cobra.Command{
 			go func() {
 				out.Step(style.Fileserver, out.NoSpinner, "Userspace file server: ")
 				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
-				out.Step(style.Stopped, false, "Userspace file server is shutdown")
+				out.Step(style.Stopped, out.NoSpinner, "Userspace file server is shutdown")
 				wg.Done()
 			}()
 		}

@@ -127,7 +127,7 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 		return nil
 	}
 
-	out.Step(style.ISODownload, false, "Downloading VM boot image ...")
+	out.Step(style.ISODownload, out.NoSpinner, "Downloading VM boot image ...")
 
 	urlWithChecksum := isoURL + "?checksum=file:" + isoURL + ".sha256"
 	if skipChecksum {

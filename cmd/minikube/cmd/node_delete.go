@@ -50,7 +50,7 @@ var nodeDeleteCmd = &cobra.Command{
 			deletePossibleKicLeftOver(machineName, co.Config.Driver)
 		}
 
-		out.Step(style.Deleted, false, "Node {{.name}} was successfully deleted.", out.V{"name": name})
+		out.Step(style.Deleted, out.NoSpinner, "Node {{.name}} was successfully deleted.", out.V{"name": name})
 	},
 }
 
