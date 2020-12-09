@@ -36,7 +36,7 @@ if [ "$(uname)" != "Darwin" ]; then
 fi
 
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.15.2" "/usr/local" || true
+sudo ./installers/check_install_golang.sh "1.15.5" "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ./installers/check_install_docker.sh
