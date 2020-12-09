@@ -199,8 +199,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Error(err)
 	}
 
-	const numberOfTotalProfiles = 9
-	if numberOfTotalProfiles != len(validProfiles)+len(inValidProfiles) {
+	if numberOfTotalProfileDirs != len(validProfiles)+len(inValidProfiles) {
 		t.Errorf("ListProfiles length = %d, expected %d\nvalid: %v\ninvalid: %v\n", len(validProfiles)+len(inValidProfiles), numberOfTotalProfileDirs, validProfiles, inValidProfiles)
 	}
 
