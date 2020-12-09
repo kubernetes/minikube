@@ -19,7 +19,6 @@ kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
 
 minikube has a built-in list of applications and services that may be easily deployed, such as Istio or Ingress. To list the available addons for your version of minikube:
 
-
 ```shell
 minikube addons list
 ```
@@ -42,7 +41,6 @@ minikube addons open <name>
 ```
 
 To disable an addon:
-
 
 ```shell
 minikube addons disable <name>

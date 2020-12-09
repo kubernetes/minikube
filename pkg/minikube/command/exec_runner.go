@@ -20,10 +20,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -85,11 +87,11 @@ func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 }
 
 // Copy copies a file and its permissions
-func (*execRunner) Copy(f assets.CopyableFile) error {
+func (e *execRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(dst); err == nil {
 		klog.Infof("found %s, removing ...", dst)
-		if err := os.Remove(dst); err != nil {
+		if err := e.Remove(f); err != nil {
 			return errors.Wrapf(err, "error removing file %s", dst)
 		}
 	}
@@ -105,12 +107,47 @@ func (*execRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
 
-	return writeFile(dst, f, os.FileMode(perms))
+	switch runtime.GOOS {
+	case "linux":
+		// write to temp location ...
+		tmpfile, err := ioutil.TempFile("", "minikube")
+		if err != nil {
+			return errors.Wrapf(err, "error creating tempfile")
+		}
+		defer os.Remove(tmpfile.Name())
+		err = writeFile(tmpfile.Name(), f, os.FileMode(perms))
+		if err != nil {
+			return errors.Wrapf(err, "error writing to tempfile %s", tmpfile.Name())
+		}
+
+		// ... then use sudo to move to target ...
+		_, err = e.RunCmd(exec.Command("sudo", "cp", "-a", tmpfile.Name(), dst))
+		if err != nil {
+			return errors.Wrapf(err, "error copying tempfile %s to dst %s", tmpfile.Name(), dst)
+		}
+
+		// ... then fix file permission that should have been fine because of "cp -a"
+		err = os.Chmod(dst, os.FileMode(perms))
+		return err
+
+	default:
+		return writeFile(dst, f, os.FileMode(perms))
+	}
+
 }
 
 // Remove removes a file
-func (*execRunner) Remove(f assets.CopyableFile) error {
+func (e *execRunner) Remove(f assets.CopyableFile) error {
 	dst := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	klog.Infof("rm: %s", dst)
-	return os.Remove(dst)
+	if err := os.Remove(dst); err != nil {
+		if !os.IsPermission(err) {
+			return err
+		}
+		_, err = e.RunCmd(exec.Command("sudo", "rm", "-f", dst))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

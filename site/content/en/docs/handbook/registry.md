@@ -35,7 +35,7 @@ We recommend you use _ImagePullSecrets_, but if you would like to configure acce
 
 ## Enabling Insecure Registries
 
-minikube allows users to configure the docker engine's `--insecure-registry` flag. 
+minikube allows users to configure the docker engine's `--insecure-registry` flag.
 
 You can use the `--insecure-registry` flag on the
 `minikube start` command to enable insecure communication between the docker engine and registries listening to requests from the CIDR range.
@@ -83,7 +83,7 @@ minikube addons enable registry
 
 When enabled, the registry addon exposes its port 5000 on the minikube's virtual machine.
 
-In order to make docker accept pushing images to this registry, we have to redirect port 5000 on the docker virtual machine over to port 5000 on the minikube machine. Unfortunately, the docker vm cannot directly see the IP address of the minikube vm. To fix this, you will have to add one more level of redirection. 
+In order to make docker accept pushing images to this registry, we have to redirect port 5000 on the docker virtual machine over to port 5000 on the minikube machine. Unfortunately, the docker vm cannot directly see the IP address of the minikube vm. To fix this, you will have to add one more level of redirection.
 
 Use kubectl port-forward to map your local workstation to the minikube vm
 ```shell
@@ -107,4 +107,4 @@ docker push localhost:5000/myimage
 
 After the image is pushed, refer to it by `localhost:5000/{name}` in kubectl specs.
 
-## 
+##

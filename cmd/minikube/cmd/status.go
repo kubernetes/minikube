@@ -135,6 +135,7 @@ type Status struct {
 	APIServer  string
 	Kubeconfig string
 	Worker     bool
+	TimeToStop string
 }
 
 // ClusterState holds a cluster state representation
@@ -142,6 +143,7 @@ type ClusterState struct {
 	BaseState
 
 	BinaryVersion string
+	TimeToStop    string
 	Components    map[string]BaseState
 	Nodes         []NodeState
 }
@@ -180,6 +182,7 @@ host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
+timeToStop: {{.TimeToStop}}
 
 `
 	workerStatusFormat = `{{.Name}}
@@ -307,6 +310,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		Kubelet:    Nonexistent,
 		Kubeconfig: Nonexistent,
 		Worker:     !controlPlane,
+		TimeToStop: Nonexistent,
 	}
 
 	hs, err := machine.Status(api, name)
@@ -366,7 +370,10 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 
 	stk := kverify.ServiceStatus(cr, "kubelet")
 	st.Kubelet = stk.String()
-
+	if cc.ScheduledStop != nil {
+		initiationTime := time.Unix(cc.ScheduledStop.InitiationTime, 0)
+		st.TimeToStop = time.Until(initiationTime.Add(cc.ScheduledStop.Duration)).String()
+	}
 	// Early exit for worker nodes
 	if !controlPlane {
 		return st, nil
@@ -478,6 +485,7 @@ func clusterState(sts []*Status) ClusterState {
 		statusName = sts[0].Host
 	}
 	sc := statusCode(statusName)
+
 	cs := ClusterState{
 		BinaryVersion: version.GetVersion(),
 
@@ -487,6 +495,8 @@ func clusterState(sts []*Status) ClusterState {
 			StatusName:   statusName,
 			StatusDetail: codeDetails[sc],
 		},
+
+		TimeToStop: sts[0].TimeToStop,
 
 		Components: map[string]BaseState{
 			"kubeconfig": {Name: "kubeconfig", StatusCode: statusCode(sts[0].Kubeconfig)},

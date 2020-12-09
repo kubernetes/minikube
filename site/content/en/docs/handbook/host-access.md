@@ -20,14 +20,14 @@ To make it easier to access your host, minikube v1.10 adds a hostname entry `hos
 You can use `minikube ssh` to confirm connectivity:
 
 ```
-                         _             _            
-            _         _ ( )           ( )           
+                         _             _
+            _         _ ( )           ( )
   ___ ___  (_)  ___  (_)| |/')  _   _ | |_      __  
 /' _ ` _ `\| |/' _ `\| || , <  ( ) ( )| '_`\  /'__`\
 | ( ) ( ) || || ( ) || || |\`\ | (_) || |_) )(  ___/
 (_) (_) (_)(_)(_) (_)(_)(_) (_)`\___/'(_,__/'`\____)
 
-$ ping host.minikube.internal 
+$ ping host.minikube.internal
 PING host.minikube.internal (192.168.64.1): 56 data bytes
 64 bytes from 192.168.64.1: seq=0 ttl=64 time=0.225 ms
 ```
