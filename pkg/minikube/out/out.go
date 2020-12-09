@@ -61,11 +61,16 @@ var (
 	// JSON is whether or not we should output stdout in JSON format. Set using SetJSON()
 	JSON = false
 	// spin is spinner showed at starting minikube
-	spin = spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+	spin = spinner.New(spinner.CharSets[SpinnerCharacter], 100*time.Millisecond)
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
-const MaxLogEntries = 3
+const (
+	MaxLogEntries = 3
+	Spinning = true
+	NoSpinner = false
+	SpinnerCharacter = 9
+)
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
 type fdWriter interface {
@@ -88,7 +93,11 @@ func Step(st style.Enum, spinner bool, format string, a ...V) {
 		return
 	}
 	register.RecordStep(outStyled)
-	String(outStyled, spinner)
+	if spinner {
+		spinnerString(outStyled)
+	} else {
+		String(outStyled)
+	}
 }
 
 // Infof is used for informational logs (options, env variables, etc)
@@ -102,7 +111,7 @@ func Infof(format string, a ...V) {
 }
 
 // String writes a basic formatted string to stdout
-func String(format string, spinner bool, a ...interface{}) {
+func String(format string, a ...interface{}) {
 	// Flush log buffer so that output order makes sense
 	klog.Flush()
 
@@ -120,10 +129,25 @@ func String(format string, spinner bool, a ...interface{}) {
 	if err != nil {
 		klog.Errorf("Fprintf failed: %v", err)
 	}
+}
 
-	if spinner {
-		spin.Start()
+// spinnerString writes a basic formatted string to stdout with spinner character
+func spinnerString(format string, a ...interface{}) {
+	// Flush log buffer so that output order makes sense
+	klog.Flush()
+
+	if outFile == nil {
+		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
+		return
 	}
+
+	klog.Infof(format, a...)
+	_, err := fmt.Fprintf(outFile, format, a...)
+	if err != nil {
+		klog.Errorf("Fprintf failed: %v", err)
+	}
+	// Start spinning at the end of the printed line
+	spin.Start()
 }
 
 // Ln writes a basic formatted string with a newline to stdout
@@ -132,7 +156,7 @@ func Ln(format string, a ...interface{}) {
 		klog.Warningf("please use out.T to log steps in JSON")
 		return
 	}
-	String(format+"\n", false, a...)
+	String(format+"\n", a...)
 }
 
 // ErrT writes a stylized and templated error message to stderr

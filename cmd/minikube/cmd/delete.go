@@ -142,7 +142,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if purge && len(profilesToDelete) > 1 && !deleteAll {
 		out.ErrT(style.Notice, "Multiple minikube profiles were found - ")
 		for _, p := range profilesToDelete {
-			out.Step(style.Notice, false, "    - {{.profile}}", out.V{"profile": p.Name})
+			out.Step(style.Notice, out.NoSpinner, "    - {{.profile}}", out.V{"profile": p.Name})
 		}
 		exit.Message(reason.Usage, "Usage: minikube delete --all --purge")
 	}
@@ -157,7 +157,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		} else {
-			out.Step(style.DeletingHost, false, "Successfully deleted all profiles")
+			out.Step(style.DeletingHost, out.NoSpinner, "Successfully deleted all profiles")
 		}
 	} else {
 		if len(args) > 0 {

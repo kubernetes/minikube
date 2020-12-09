@@ -51,7 +51,7 @@ var nodeStopCmd = &cobra.Command{
 		if err != nil {
 			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})
 		}
-		out.Step(style.Stopped, false, "Successfully stopped node {{.name}}", out.V{"name": machineName})
+		out.Step(style.Stopped, out.NoSpinner, "Successfully stopped node {{.name}}", out.V{"name": machineName})
 	},
 }
 

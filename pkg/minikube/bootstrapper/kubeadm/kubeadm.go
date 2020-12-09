@@ -283,7 +283,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.Step(style.CNI, false, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	out.Step(style.CNI, out.NoSpinner, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
@@ -393,7 +393,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 	register.Reg.SetStep(register.VerifyingKubernetes)
-	out.Step(style.HealthCheck, false, "Verifying Kubernetes components...")
+	out.Step(style.HealthCheck, out.NoSpinner, "Verifying Kubernetes components...")
 	// regardless if waiting is set or not, we will make sure kubelet is not stopped
 	// to solve corner cases when a container is hibernated and once coming back kubelet not running.
 	if err := k.ensureServiceStarted("kubelet"); err != nil {

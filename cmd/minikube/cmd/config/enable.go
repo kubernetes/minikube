@@ -39,7 +39,7 @@ var addonsEnableCmd = &cobra.Command{
 		addon := args[0]
 		// replace heapster as metrics-server because heapster is deprecated
 		if addon == "heapster" {
-			out.Step(style.Waiting, false, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
+			out.Step(style.Waiting, out.NoSpinner, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
 			addon = "metrics-server"
 		}
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
@@ -51,7 +51,7 @@ var addonsEnableCmd = &cobra.Command{
 			if ClusterFlagValue() != constants.DefaultClusterName {
 				tipProfileArg = fmt.Sprintf(" -p %s", ClusterFlagValue())
 			}
-			out.Step(style.Tip, false, `Some dashboard features require the metrics-server addon. To enable all features please run:
+			out.Step(style.Tip, out.NoSpinner, `Some dashboard features require the metrics-server addon. To enable all features please run:
 
 	minikube{{.profileArg}} addons enable metrics-server	
 
@@ -59,7 +59,7 @@ var addonsEnableCmd = &cobra.Command{
 
 		}
 
-		out.Step(style.AddonEnable, false, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
+		out.Step(style.AddonEnable, out.NoSpinner, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
 	},
 }
 
