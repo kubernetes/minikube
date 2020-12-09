@@ -57,7 +57,7 @@ func TestOutT(t *testing.T) {
 				os.Setenv(OverrideEnv, strconv.FormatBool(override))
 				f := tests.NewFakeFile()
 				SetOutFile(f)
-				Step(tc.style, tc.message, false, tc.params)
+				Step(tc.style, false, tc.message, tc.params)
 				got := f.String()
 				want := tc.wantASCII
 				if override {

@@ -112,6 +112,7 @@ func String(format string, spinner bool, a ...interface{}) {
 	}
 
 	klog.Infof(format, a...)
+	// if spin is active from a previous step, it will stop spinner displaying
 	if spin.Active() {
 		spin.Stop()
 	}
