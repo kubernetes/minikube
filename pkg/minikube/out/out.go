@@ -102,7 +102,7 @@ func Step(st style.Enum, spinner bool, format string, a ...V) {
 
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
-	outStyled := stylized(style.Option, useColor, false, format, a...)
+	outStyled := stylized(style.Option, useColor, NoSpinner, format, a...)
 	if JSON {
 		register.PrintInfo(outStyled)
 		return
@@ -193,7 +193,7 @@ func ErrLn(format string, a ...interface{}) {
 
 // SuccessT is a shortcut for writing a templated success message to stdout
 func SuccessT(format string, a ...V) {
-	Step(style.Success, false, format, a...)
+	Step(style.Success, NoSpinner, format, a...)
 }
 
 // FatalT is a shortcut for writing a templated fatal message to stderr
@@ -278,12 +278,12 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	DisplayError(msg, err)
 
 	for name, lines := range entries {
-		Step(style.Failure, false, "Problems detected in {{.entry}}:", V{"entry": name})
+		Step(style.Failure, NoSpinner, "Problems detected in {{.entry}}:", V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
-			Step(style.LogEntry, false, l)
+			Step(style.LogEntry, NoSpinner, l)
 		}
 	}
 }

@@ -702,7 +702,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	klog.Infof("status for %s: %+v", name, st)
 
 	if st.NeedsImprovement {
-		out.Step(style.Improvement, false, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
+		out.Step(style.Improvement, out.NoSpinner, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
 	}
 
 	if st.Error == nil {
@@ -967,7 +967,7 @@ func validateCPUCount(drvName string) {
 
 	si, err := oci.CachedDaemonInfo(drvName)
 	if err != nil {
-		out.Step(style.Confused, false, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
+		out.Step(style.Confused, out.NoSpinner, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
 		si, err = oci.DaemonInfo(drvName)
 		if err != nil {
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
@@ -1219,7 +1219,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 	}
 	if defaultVersion.GT(nvs) {
-		out.Step(style.New, false, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
+		out.Step(style.New, out.NoSpinner, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 }
 
