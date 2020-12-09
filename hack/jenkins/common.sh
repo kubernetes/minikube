@@ -21,7 +21,7 @@
 # OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
 # VM_DRIVER: the driver to use for the test
 # EXTRA_START_ARGS: additional flags to pass into minikube start
-# EXTRA_ARGS: additional flags to pass into minikube
+# EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
@@ -296,7 +296,7 @@ touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=70m -test.v \
-  ${EXTRA_ARGS} \
+  ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
 
 result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
