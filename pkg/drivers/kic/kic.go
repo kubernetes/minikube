@@ -218,19 +218,19 @@ func (d *Driver) prepareSSH() error {
 		currentUserSidCmd := exec.CommandContext(ctx, path, "-NoProfile","-NonInteractive","([System.Security.Principal.WindowsIdentity]::GetCurrent()).User.Value")
 		currentUserSidOut, currentUserSidErr := currentUserSidCmd.CombinedOutput()
 		if currentUserSidErr != nil {
-			return errors.Wrap(currentUserSidErr, "unable to determine current user's SID")
-		}
+			klog.Warningf("unable to determine current user's SID. minikube tunnel may not work.")
+		} else {
+			icaclsArguments := fmt.Sprintf(`"%s" /grant:r *%s:F /inheritancelevel:r`, keyPath, strings.TrimSpace(string(currentUserSidOut)))
+			icaclsCmd := exec.CommandContext(ctx, path, "-NoProfile","-NonInteractive","icacls.exe", icaclsArguments)
+			icaclsCmdOut, icaclsCmdErr := icaclsCmd.CombinedOutput()
 
-		icaclsArguments := fmt.Sprintf(`"%s" /grant:r *%s:F /inheritancelevel:r`, keyPath, strings.TrimSpace(string(currentUserSidOut)))
-		icaclsCmd := exec.CommandContext(ctx, path, "-NoProfile","-NonInteractive","icacls.exe", icaclsArguments)
-		icaclsCmdOut, icaclsCmdErr := icaclsCmd.CombinedOutput()
+			if icaclsCmdErr != nil {
+				return errors.Wrap(icaclsCmdErr, "unable to execute icacls to set permissions")
+			}
 
-		if icaclsCmdErr != nil {
-			return errors.Wrap(icaclsCmdErr, "unable to execute icacls to set permissions")
-		}
-
-		if !strings.Contains(string(icaclsCmdOut),"Successfully processed 1 files; Failed processing 0 files") {
-			return errors.Errorf("icacls failed applying permissions - err - [%s], output - [%s]", icaclsCmdErr, strings.TrimSpace(string(icaclsCmdOut)))
+			if !strings.Contains(string(icaclsCmdOut),"Successfully processed 1 files; Failed processing 0 files") {
+				return errors.Errorf("icacls failed applying permissions - err - [%s], output - [%s]", icaclsCmdErr, strings.TrimSpace(string(icaclsCmdOut)))
+			}
 		}
 	}
 
