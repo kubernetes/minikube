@@ -60,6 +60,22 @@ unset MINIKUBE_ACTIVE_DOCKERD;
 		},
 		{
 			"bash",
+			DockerEnvConfig{profile: "dockerdriver", driver: "docker", ssh: true, username: "root", hostname: "host", sshport: 22},
+			nil,
+			`export DOCKER_HOST="ssh://root@host:22"
+export MINIKUBE_ACTIVE_DOCKERD="dockerdriver"
+
+# To point your shell to minikube's docker-daemon, run:
+# eval $(minikube -p dockerdriver docker-env --ssh-host)
+`,
+			`unset DOCKER_TLS_VERIFY;
+unset DOCKER_HOST;
+unset DOCKER_CERT_PATH;
+unset MINIKUBE_ACTIVE_DOCKERD;
+`,
+		},
+		{
+			"bash",
 			DockerEnvConfig{profile: "bash", driver: "kvm2", hostIP: "127.0.0.1", port: 2376, certsDir: "/certs"},
 			nil,
 			`export DOCKER_TLS_VERIFY="1"

@@ -22,6 +22,8 @@ minikube docker-env [flags]
 ```
       --no-proxy       Add machine IP to NO_PROXY environment variable
       --shell string   Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect
+      --ssh-add        Add SSH identity key to SSH authentication agent
+      --ssh-host       Use SSH connection instead of HTTPS (port 2376)
   -u, --unset          Unset variables instead of setting them
 ```
 
