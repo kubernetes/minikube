@@ -29,7 +29,7 @@ set -e
 OS_ARCH="darwin-amd64"
 VM_DRIVER="hyperkit"
 JOB_NAME="HyperKit_macOS"
-EXTRA_ARGS="--bootstrapper=kubeadm"
+EXTRA_ARGS="-test.run TestFunctional"
 EXTRA_START_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 

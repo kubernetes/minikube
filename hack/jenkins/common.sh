@@ -221,17 +221,17 @@ fi
 
 
 # clean up none drivers binding on 8443
-  none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
-  if [[ "${none_procs}" != "" ]]; then
-    echo "Found stale api servers listening on 8443 processes to kill: "
-    for p in $none_procs
-    do
+none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
+if [[ "${none_procs}" != "" ]]; then
+  echo "Found stale api servers listening on 8443 processes to kill: "
+  for p in $none_procs
+  do
     echo "Kiling stale none driver:  $p"
     sudo -E ps -f -p $p || true
     sudo -E kill $p || true
     sudo -E kill -9 $p || true
-    done
-  fi
+  done
+fi
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
@@ -296,7 +296,7 @@ touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=70m -test.v \
-  ${EXTRA_TEST_ARGS} \
+  ${EXTRA_ARGS} \
   -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
 
 result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
