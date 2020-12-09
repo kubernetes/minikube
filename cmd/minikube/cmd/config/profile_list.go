@@ -177,11 +177,11 @@ func printProfilesJSON() {
 		body["valid"] = profilesOrDefault(validProfiles)
 		body["invalid"] = profilesOrDefault(invalidProfiles)
 		jsonString, _ := json.Marshal(body)
-		out.String(string(jsonString), false)
+		out.String(string(jsonString))
 	} else {
 		body["error"] = err
 		jsonString, _ := json.Marshal(body)
-		out.String(string(jsonString), false)
+		out.String(string(jsonString))
 		os.Exit(reason.ExGuestError)
 	}
 }

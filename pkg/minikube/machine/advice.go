@@ -40,26 +40,26 @@ func MaybeDisplayAdvice(err error, driver string) {
 	if errors.Is(err, oci.ErrExitedUnexpectedly) || errors.Is(err, oci.ErrDaemonInfo) {
 		out.Step(style.Tip, out.NoSpinner, "If you are still interested to make {{.driver_name}} driver work. The following suggestions might help you get passed this issue:", out.V{"driver_name": driver})
 		if driver == oci.Docker || driver == oci.Podman {
-			out.String("\n\t", false)
+			out.String("\n\t")
 			out.Step(style.Empty, out.NoSpinner, `- Prune unused {{.driver_name}} images, volumes, networks and abandoned containers.
 
 				{{.driver_name}} system prune --volumes`, out.V{"driver_name": driver})
 		}
-		out.String("\n\t", false)
+		out.String("\n\t")
 		out.Step(style.Empty, out.NoSpinner, `- Restart your {{.driver_name}} service`, out.V{"driver_name": driver})
 		if runtime.GOOS != "linux" {
-			out.String("\n\t", false)
+			out.String("\n\t")
 			out.Step(style.Empty, out.NoSpinner, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": driver})
 			if runtime.GOOS == "darwin" && driver == oci.Docker {
-				out.String("\n\t", false)
+				out.String("\n\t")
 				out.Step(style.Empty, out.NoSpinner, `- Docs https://docs.docker.com/docker-for-mac/#resources`, out.V{"driver_name": driver})
 			}
 			if runtime.GOOS == "windows" && driver == oci.Docker {
-				out.String("\n\t", false)
+				out.String("\n\t")
 				out.Step(style.Empty, out.NoSpinner, `- Docs https://docs.docker.com/docker-for-windows/#resources`, out.V{"driver_name": driver})
 			}
 		}
-		out.String("\n\t", false)
+		out.String("\n\t")
 		out.Step(style.Empty, out.NoSpinner, `- Delete and recreate minikube cluster
 		minikube delete
 		minikube start --driver={{.driver_name}}`, out.V{"driver_name": driver})

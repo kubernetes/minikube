@@ -141,5 +141,5 @@ var printAddonsJSON = func(cc *config.ClusterConfig) {
 	}
 	jsonString, _ := json.Marshal(addonsMap)
 
-	out.String(string(jsonString), false)
+	out.String(string(jsonString))
 }
