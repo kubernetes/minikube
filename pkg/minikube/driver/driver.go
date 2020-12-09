@@ -144,11 +144,6 @@ func BareMetal(name string) bool {
 	return name == None || name == Mock
 }
 
-// NeedsRoot returns true if driver needs to run with root privileges
-func NeedsRoot(name string) bool {
-	return name == None
-}
-
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
 	if !IsKIC(name) {
