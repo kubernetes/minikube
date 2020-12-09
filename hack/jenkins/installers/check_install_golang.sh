@@ -52,10 +52,15 @@ function check_and_install_golang() {
 function install_golang() {
   echo "Installing golang version: $1 on $2"
   pushd /tmp >/dev/null
+
+  INSTALLOS=linux
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    INSTALLOS=darwin
+  fi
   # using sudo because previously installed versions might have been installed by a different user.
   # as it was the case on jenkins VM.
-  sudo curl -qL -O "https://storage.googleapis.com/golang/go${1}.linux-amd64.tar.gz" &&
-    sudo tar xfa go${1}.linux-amd64.tar.gz &&
+  sudo curl -qL -O "https://storage.googleapis.com/golang/go${1}.${INSTALLOS}-amd64.tar.gz" &&
+    sudo tar xfa go${1}.${INSTALLOS}-amd64.tar.gz &&
     sudo rm -rf "${2}/go" &&
     sudo mv go "${2}/" && sudo chown -R $(whoami): ${2}/go
   popd >/dev/null
