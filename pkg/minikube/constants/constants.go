@@ -115,7 +115,7 @@ var (
 	ExistingDockerDaemonEnvs = [3]string{ExistingDockerHostEnv, ExistingDockerTLSVerifyEnv, ExistingDockerCertPathEnv}
 
 	// PodmanRemoteEnvs is list of podman-remote related environment variables.
-	PodmanRemoteEnvs = [1]string{PodmanVarlinkBridgeEnv}
+	PodmanRemoteEnvs = [2]string{PodmanVarlinkBridgeEnv, PodmanContainerHostEnv}
 
 	// DefaultMinipath is the default minikube path (under the home directory)
 	DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
