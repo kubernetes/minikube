@@ -613,6 +613,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 	}
 
+	if cmd.Flags().Changed("extra-config") {
+		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
+	}
+
 	if cmd.Flags().Changed(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
 		if viper.GetBool(enableDefaultCNI) {
 			klog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
