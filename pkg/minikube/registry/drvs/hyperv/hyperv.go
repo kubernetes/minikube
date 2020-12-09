@@ -89,7 +89,7 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive","@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent")
+	cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", "@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent")
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -106,7 +106,7 @@ func status() registry.State {
 	}
 
 	// Ensure user is either a Windows Administrator or a Hyper-V Administrator.
-	adminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive",`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
+	adminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
 	adminCheckOut, adminCheckErr := adminCheckCmd.CombinedOutput()
 
 	if adminCheckErr != nil {
@@ -124,13 +124,11 @@ func status() registry.State {
 		return registry.State{Installed: true, Running: false, Error: errorMessage, Fix: fixMessage}
 	}
 
-
 	if (strings.TrimSpace(string(adminCheckOut)) != "True") && (strings.TrimSpace(string(hypervAdminCheckOut)) != "True") {
 		err := fmt.Errorf("Hyper-V requires Administrator privileges")
 		fixMessage := "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode."
 		return registry.State{Installed: true, Running: false, Error: err, Fix: fixMessage}
 	}
-
 
 	return registry.State{Installed: true, Healthy: true}
 }
