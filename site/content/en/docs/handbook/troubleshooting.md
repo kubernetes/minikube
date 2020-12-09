@@ -19,7 +19,7 @@ Example:
 
 ## Post-mortem minikube debug logs
 
-minikube stores post-mortem INFO logs in the temporary directory of your system. On macOS or Linux, it's easy to get a list of recent INFO logs: 
+minikube stores post-mortem INFO logs in the temporary directory of your system. On macOS or Linux, it's easy to get a list of recent INFO logs:
 
 ```shell
 find $TMPDIR -mtime -1 -type f -name "*minikube*INFO*" -ls  2>/dev/null

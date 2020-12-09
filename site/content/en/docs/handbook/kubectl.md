@@ -8,7 +8,7 @@ aliases:
 ---
 
 By default, [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) gets configured to access the kubernetes cluster control plane
-inside minikube when the `minikube start` command is executed. 
+inside minikube when the `minikube start` command is executed.
 
 However if `kubectl` is not installed locally, minikube already includes kubectl which can be used like this:
 
@@ -50,5 +50,5 @@ minikube kubectl -- --help
 
 ### Shell autocompletion
 
-After applying the alias or the symbolic link you can follow https://kubernetes.io/docs/tasks/tools/install-kubectl/#enabling-shell-autocompletion to enable shell-autocompletion. 
+After applying the alias or the symbolic link you can follow https://kubernetes.io/docs/tasks/tools/install-kubectl/#enabling-shell-autocompletion to enable shell-autocompletion.
 When using zsh and the alias approach you also have to execute `setopt complete_aliases`.

@@ -8,7 +8,7 @@ description: >
 
 This document is written for contributors who are familiar with minikube, who would like to add support for a new VM driver.
 
-minikube relies on docker-machine drivers to manage machines. This document discusses how to modify minikube, so that this driver may be used by `minikube start --driver=<new_driver>`. 
+minikube relies on docker-machine drivers to manage machines. This document discusses how to modify minikube, so that this driver may be used by `minikube start --driver=<new_driver>`.
 
 ## Creating a new driver
 
@@ -35,7 +35,7 @@ The integration process is effectively 3 steps.
 
 ### The driver shim
 
-The primary duty of the driver shim is to register a VM driver with minikube, and translate minikube VM hardware configuration into a format that the driver understands. 
+The primary duty of the driver shim is to register a VM driver with minikube, and translate minikube VM hardware configuration into a format that the driver understands.
 
 ### Registering your driver
 
@@ -54,7 +54,6 @@ pretty simple once you understand your driver well:
 on your `$USER/.minikube` directory. Most likely the driver config is the driver itself.
 
 - DriverCreator: Only needed when driver is builtin, to instantiate the driver instance.
-
 
 ## Integration example: vmwarefusion
 
@@ -103,7 +102,4 @@ earlier, it's builtin, so you also need to specify `DriverCreator` to tell minik
 runs on MacOS, so that the releases on Windows and Linux won't have this driver in registry.
 - Last but not least, import the driver in `pkg/minikube/cluster/default_drivers.go` to include it in build.
 
-
-
 Any Questions: please ping your friend [@anfernee](https://github.com/anfernee) or the #minikube Slack channel.
-

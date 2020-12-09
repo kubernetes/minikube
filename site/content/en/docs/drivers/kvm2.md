@@ -42,6 +42,7 @@ Also see [co/kvm2 open issues](https://github.com/kubernetes/minikube/labels/co%
 If you are running KVM in a nested virtualization environment ensure your config the kernel modules correctly follow either [this](https://stafwag.github.io/blog/blog/2018/06/04/nested-virtualization-in-kvm/) or [this](https://computingforgeeks.com/how-to-install-kvm-virtualization-on-debian/) tutorial.
 
 ## Troubleshooting
+
 * Run `virt-host-validate` and check for the suggestions.
 * Run `minikube start --alsologtostderr -v=7` to debug crashes
 * Run `docker-machine-driver-kvm2 version` to verify the kvm2 driver executes properly.
