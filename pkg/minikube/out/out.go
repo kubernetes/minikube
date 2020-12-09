@@ -66,9 +66,9 @@ var (
 
 // MaxLogEntries controls the number of log entries to show for each source
 const (
-	MaxLogEntries = 3
-	Spinning = true
-	NoSpinner = false
+	MaxLogEntries    = 3
+	Spinning         = true
+	NoSpinner        = false
 	SpinnerCharacter = 9
 )
 
