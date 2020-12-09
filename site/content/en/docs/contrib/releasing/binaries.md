@@ -40,7 +40,7 @@ Paste the output into CHANGELOG.md, sorting changes by importance to an end-user
 - The changelog should only contain user facing change. This means removing PR's for:
   - Documentation
   - Low-risk refactors
-  - Test-only changes 
+  - Test-only changes
 - Remove bots from the contributor list
 - Remove duplicated similar names from the contributor list
 

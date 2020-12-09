@@ -12,6 +12,7 @@ description: >
 - kvm2 driver
 
 ### Enable KubeVirt on minikube
+
 Minikube can be started with default values and those will be enough to run a quick example, that being said, if you can spare a few more GiBs of RAM (by default it uses 2GiB), it’ll allow you to experiment further.
 
 We’ll create a profile for KubeVirt so it gets its own settings without interfering what any configuration you might have already, let’s start by increasing the default memory to 4GiB:
@@ -30,8 +31,8 @@ minikube addons enable kubevirt
 In a minute or so kubevirt's default components will be installed into your cluster.
 You can run `kubectl get pods -n kubevirt` to see the progress of the kubevirt installation.
 
-
 ### Disable KubeVirt
+
 To disable this addon, simply run:
 ```shell script
 minikube addons disable kubevirt

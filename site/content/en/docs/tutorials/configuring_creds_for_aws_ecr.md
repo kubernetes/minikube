@@ -13,7 +13,6 @@ The minikube [registry-creds addon](https://github.com/kubernetes/minikube/tree/
 
 The addon automagically refreshes the service account token for the `default` service account in the `default` namespace.
 
-
 ## Prerequisites
 
 - a working minikube cluster
@@ -21,13 +20,11 @@ The addon automagically refreshes the service account token for the `default` se
 - AWS access keys that can be used to pull the above image
 - AWS account number of the account hosting the registry
 
-
 ## Configuring and enabling the registry-creds addon
 
+### Configure the registry-creds addon
 
-### Configure the registry-creds addon 
-
-Configure the minikube registry-creds addon with the following command: 
+Configure the minikube registry-creds addon with the following command:
 
 Note: In this tutorial, we will focus only on the AWS ECR.
 
@@ -56,9 +53,9 @@ Do you want to enable Azure Container Registry? [y/n]: n
 
 ```
 
-### Enable the registry-creds addon 
+### Enable the registry-creds addon
 
-Enable the minikube registry-creds addon with the following command: 
+Enable the minikube registry-creds addon with the following command:
 
 ```shell
 minikube addons enable registry-creds
@@ -116,11 +113,9 @@ Successfully pulled image "<<account_number>>.dkr.ecr.<<aws_region>>.amazonaws.c
 
 If you do not see that event, look at the troubleshooting section.
 
-
 ## Review
 
 In the above tutorial, we configured the `registry-creds` addon to refresh the credentials for AWS ECR so that we could pull private container images onto our minikube cluster. We ultimately created a deployment that used an image in a private AWS ECR repository.
-
 
 ## Troubleshooting
 
