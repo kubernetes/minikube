@@ -30,4 +30,6 @@ The image is located at `gcr.io/k8s-minikube/gvisor-addon`
 
 ## Updating the gVisor image
 
-`make push-gvisor-addon-image`
+```shell
+make push-gvisor-addon-image
+```

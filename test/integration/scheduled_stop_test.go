@@ -24,19 +24,61 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-func TestScheduledStop(t *testing.T) {
+func TestScheduledStopWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("test only runs on windows")
+	}
 	if NoneDriver() {
-		t.Skip("--schedule does not apply to none driver ")
+		t.Skip("--schedule does not work with the none driver")
+	}
+	profile := UniqueProfileName("scheduled-stop")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	defer CleanupWithLogs(t, profile, cancel)
+	startMinikube(ctx, t, profile)
+
+	// schedule a stop for 5m from now
+	stopMinikube(ctx, t, profile, []string{"--schedule", "5m"})
+	// make sure timeToStop is present in status
+	ensureMinikubeScheduledTime(ctx, t, profile, 5*time.Minute)
+	// make sure the systemd service is running
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), []string{"ssh", "-p", profile, "--", "sudo", "systemctl", "show", constants.ScheduledStopSystemdService, "--no-page"}...))
+	if err != nil {
+		t.Fatalf("getting minikube-scheduled-stop status: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), "ActiveState=active") {
+		t.Fatalf("minikube-scheduled-stop is not running: %v", rr.Output())
+	}
+
+	// reschedule stop for 5 seconds from now
+	stopMinikube(ctx, t, profile, []string{"--schedule", "5s"})
+
+	// sleep for 5 seconds
+	time.Sleep(5 * time.Second)
+	// make sure minikube status is "Stopped"
+	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
+	// make sure minikube timtostop is "Nonexistent"
+	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "Nonexistent")
+}
+
+func TestScheduledStopUnix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test only runs on unix")
+	}
+	if NoneDriver() {
+		t.Skip("--schedule does not work with the none driver")
 	}
 	profile := UniqueProfileName("scheduled-stop")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
@@ -44,41 +86,50 @@ func TestScheduledStop(t *testing.T) {
 	startMinikube(ctx, t, profile)
 
 	// schedule a stop for 5 min from now and make sure PID is created
-	scheduledStopMinikube(ctx, t, profile, "5m")
+	stopMinikube(ctx, t, profile, []string{"--schedule", "5m"})
+	// make sure timeToStop is present in status
+	ensureMinikubeScheduledTime(ctx, t, profile, 5*time.Minute)
 	pid := checkPID(t, profile)
 	if !processRunning(t, pid) {
 		t.Fatalf("process %v is not running", pid)
 	}
 
-	// redo scheduled stop to be in 10s
-	scheduledStopMinikube(ctx, t, profile, "10s")
+	// schedule a second stop which should cancel the first scheduled stop
+	stopMinikube(ctx, t, profile, []string{"--schedule", "8s"})
 	if processRunning(t, pid) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
 	checkPID(t, profile)
-	// wait allotted time to make sure minikube status is "Stopped"
-	checkStatus := func() error {
-		got := Status(ctx, t, Target(), profile, "Host", profile)
-		if got != state.Stopped.String() {
-			return fmt.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
-		}
-		return nil
+
+	// cancel the shutdown and make sure minikube is still running after 8 seconds
+	// sleep 12 just to be safe
+	stopMinikube(ctx, t, profile, []string{"--cancel-scheduled"})
+	time.Sleep(12 * time.Second)
+	ensureMinikubeStatus(ctx, t, profile, "Host", state.Running.String())
+
+	// schedule another stop, make sure minikube status is "Stopped"
+	stopMinikube(ctx, t, profile, []string{"--schedule", "5s"})
+	if processRunning(t, pid) {
+		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
-	if err := retry.Expo(checkStatus, time.Second, 30*time.Second); err != nil {
-		t.Fatalf("error %v", err)
-	}
+
+	// make sure minikube status is "Stopped"
+	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
+	// make sure minikube timtostop is "Nonexistent"
+	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "Nonexistent")
 }
 
 func startMinikube(ctx context.Context, t *testing.T, profile string) {
-	args := append([]string{"start", "-p", profile}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=1900"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
 	}
 }
 
-func scheduledStopMinikube(ctx context.Context, t *testing.T, profile string, stop string) {
-	args := []string{"stop", "-p", profile, "--schedule", stop}
+func stopMinikube(ctx context.Context, t *testing.T, profile string, additionalArgs []string) {
+	args := []string{"stop", "-p", profile}
+	args = append(args, additionalArgs...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
@@ -113,4 +164,34 @@ func processRunning(t *testing.T, pid string) bool {
 	err = process.Signal(syscall.Signal(0))
 	t.Log("signal error was: ", err)
 	return err == nil
+}
+func ensureMinikubeStatus(ctx context.Context, t *testing.T, profile, key string, wantStatus string) {
+	checkStatus := func() error {
+		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(10*time.Second))
+		defer cancel()
+		got := Status(ctx, t, Target(), profile, key, profile)
+		if got != wantStatus {
+			return fmt.Errorf("expected post-stop %q status to be -%q- but got *%q*", key, wantStatus, got)
+		}
+		return nil
+	}
+	if err := retry.Expo(checkStatus, time.Second, time.Minute); err != nil {
+		t.Fatalf("error %v", err)
+	}
+}
+
+func ensureMinikubeScheduledTime(ctx context.Context, t *testing.T, profile string, givenTime time.Duration) {
+	checkTime := func() error {
+		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(10*time.Second))
+		defer cancel()
+		got := Status(ctx, t, Target(), profile, "TimeToStop", profile)
+		gotTime, _ := time.ParseDuration(got)
+		if gotTime < givenTime {
+			return nil
+		}
+		return fmt.Errorf("expected scheduled stop TimeToStop to be less than *%q* but got *%q*", givenTime, got)
+	}
+	if err := retry.Expo(checkTime, time.Second, time.Minute); err != nil {
+		t.Fatalf("error %v", err)
+	}
 }

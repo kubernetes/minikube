@@ -92,6 +92,7 @@ type KubernetesConfig struct {
 	ImageRepository     string
 	LoadBalancerStartIP string // currently only used by MetalLB addon
 	LoadBalancerEndIP   string // currently only used by MetalLB addon
+	CustomIngressCert   string // used by Ingress addon
 	ExtraOptions        ExtraOptionSlice
 
 	ShouldLoadCachedImages bool

@@ -10,9 +10,10 @@ This document is written for minikube contributors who need to add logs to the m
 You may need to add logs to the registry if the `TestJSONOutput` integration test is failing on your PR.
 
 ### Background
+
 minikube provides JSON output for `minikube start`, accesible via the `--output` flag:
 
-```
+```shell
 minikube start --output json
 ```
 
@@ -39,6 +40,7 @@ $ minikube start --output json
 ```
 
 There are a few key points to note in the above output:
+
 1. Each log of type `io.k8s.sigs.minikube.step` indicates a distinct step in the `minikube start` process
 1. Each step has a `currentstep` field which allows clients to track `minikube start` progress
 1. Each `currentstep` is distinct and increasing in order
@@ -48,12 +50,12 @@ This way, minikube knows how many expected `totalsteps` there are at the beginni
 
 If you change logs, or add a new log, you need to update the minikube registry to pass integration tests.
 
-
 ### Adding a Log to the Registry
 
 There are three steps to adding a log to the registry, which exists in [register.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/out/register/register.go).
 
 You will need to add your new log in two places:
+
 1. As a constant of type `RegStep` [here](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/out/register/register.go#L24)
 1. In the register itself in the `init()` function, [here](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/out/register/register.go#L52)
 
@@ -61,13 +63,13 @@ You will need to add your new log in two places:
 
 Finally, set your new step in the cod by placing this line before you call `out.T`:
 
-```
+```go
 register.Reg.SetStep(register.MyNewStep)
 ```
 
 You can see an example of setting the registry step in the code in [config.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/node/config.go):
 
 ```go
-	register.Reg.SetStep(register.PreparingKubernetes)
-	out.T(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
+ register.Reg.SetStep(register.PreparingKubernetes)
+ out.Step(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 ```

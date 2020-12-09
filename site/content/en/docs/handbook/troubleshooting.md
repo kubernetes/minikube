@@ -19,9 +19,11 @@ Example:
 
 ## Post-mortem minikube debug logs
 
-minikube stores post-mortem INFO logs in the temporary directory of your system. On macOS or Linux, it's easy to get a list of recent INFO logs: 
+minikube stores post-mortem INFO logs in the temporary directory of your system. On macOS or Linux, it's easy to get a list of recent INFO logs:
 
-`find $TMPDIR -mtime -1 -type f -name "*minikube*INFO*" -ls  2>/dev/null`
+```shell
+find $TMPDIR -mtime -1 -type f -name "*minikube*INFO*" -ls  2>/dev/null
+```
 
 For instance, this shows:
 
@@ -29,7 +31,9 @@ For instance, this shows:
 
 These are plain text log files: you may rename them to "<filename>.log" and then drag/drop them into a GitHub issue for further analysis by the minikube team. You can quickly inspect the final lines of any of these logs via:
   
-`tail -n 10 <filename>`
+```shell
+tail -n 10 <filename>
+```
 
 for example, this shows:
 
@@ -83,4 +87,3 @@ minikube logs --problems
 ```
 
 This will attempt to surface known errors, such as invalid configuration flags. If nothing interesting shows up, try `minikube logs`.
-

@@ -67,8 +67,10 @@ func status() registry.State {
 	}
 
 	if u.Uid != "0" {
-		return registry.State{Error: fmt.Errorf("the 'none' driver must be run as the root user"), Healthy: false, Fix: "For non-root usage, try the newer 'docker' driver", Installed: true}
+		test := exec.Command("sudo", "-n", "echo", "-n")
+		if err := test.Run(); err != nil {
+			return registry.State{Error: fmt.Errorf("running the 'none' driver as a regular user requires sudo permissions"), Healthy: false}
+		}
 	}
-
 	return registry.State{Installed: true, Healthy: true}
 }

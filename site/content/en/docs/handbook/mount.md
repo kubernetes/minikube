@@ -14,13 +14,13 @@ aliases:
 
 To mount a directory from the host into the guest using the `mount` subcommand:
 
-```
+```shell
 minikube mount <source directory>:<target directory>
 ```
 
 For example, this would mount your home directory to appear as /host within the minikube VM:
 
-```
+```shell
 minikube mount $HOME:/host
 ```
 
@@ -73,8 +73,8 @@ Some hypervisors, have built-in host folder sharing. Driver mounts are reliable 
 | VirtualBox | macOS | /Users | /Users |
 | VirtualBox | Windows | C://Users | /c/Users |
 | VMware Fusion | macOS | /Users | /Users |
-| KVM | Linux | Unsupported | | 
-| HyperKit | Linux | Unsupported (see NFS mounts) | | 
+| KVM | Linux | Unsupported | |
+| HyperKit | Linux | Unsupported (see NFS mounts) | |
 
 These mounts can be disabled by passing `--disable-driver-mounts` to `minikube start`.
 

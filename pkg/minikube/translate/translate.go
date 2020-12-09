@@ -62,18 +62,10 @@ func T(s string) string {
 func DetermineLocale() {
 	locale, err := jibber_jabber.DetectIETF()
 	if err != nil {
-		klog.Infof("Getting system locale failed: %v", err)
+		klog.V(1).Infof("Getting system locale failed: %v", err)
 		locale = ""
 	}
-	err = SetPreferredLanguage(locale)
-	if err != nil {
-		klog.Infof("Setting locale failed: %v", err)
-		preferredLanguage = defaultLanguage
-	}
-
-	if preferredLanguage == defaultLanguage {
-		return
-	}
+	SetPreferredLanguage(locale)
 
 	// Load translations for preferred language into memory.
 	p := preferredLanguage.String()
@@ -86,18 +78,18 @@ func DetermineLocale() {
 			translationFile := path.Join("translations", fmt.Sprintf("%s.json", p))
 			t, err = Asset(translationFile)
 			if err != nil {
-				klog.Infof("Failed to load translation file for %s: %v", p, err)
+				klog.V(1).Infof("Failed to load translation file for %s: %v", p, err)
 				return
 			}
 		} else {
-			klog.Infof("Failed to load translation file for %s: %v", preferredLanguage.String(), err)
+			klog.V(1).Infof("Failed to load translation file for %s: %v", preferredLanguage.String(), err)
 			return
 		}
 	}
 
 	err = json.Unmarshal(t, &Translations)
 	if err != nil {
-		klog.Infof("Failed to populate translation map: %v", err)
+		klog.V(1).Infof("Failed to populate translation map: %v", err)
 	}
 
 }
@@ -110,21 +102,22 @@ func setPreferredLanguageTag(l language.Tag) {
 }
 
 // SetPreferredLanguage configures which language future messages should use, based on a LANG string.
-func SetPreferredLanguage(s string) error {
+func SetPreferredLanguage(s string) {
 	// "C" is commonly used to denote a neutral POSIX locale. See http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap07.html#tag_07_02
 	if s == "" || s == "C" {
 		setPreferredLanguageTag(defaultLanguage)
-		return nil
+		return
 	}
 	// Handles "de_DE" or "de_DE.utf8"
 	// We don't process encodings, since Rob Pike invented utf8 and we're mostly stuck with it.
+	// Fallback to the default language if not detected
 	parts := strings.Split(s, ".")
 	l, err := language.Parse(parts[0])
 	if err != nil {
-		return err
+		setPreferredLanguageTag(defaultLanguage)
+		return
 	}
 	setPreferredLanguageTag(l)
-	return nil
 }
 
 // GetPreferredLanguage returns the preferred language tag.

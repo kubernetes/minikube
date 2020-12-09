@@ -11,7 +11,7 @@ description: >
 
 eBPF tools are performance tools used for observing the Linux kernel.
 These tools can be used to monitor your Kubernetes application in minikube.
-This tutorial will cover how to set up your minikube cluster so that you can run eBPF tools from a Docker container within minikube. 
+This tutorial will cover how to set up your minikube cluster so that you can run eBPF tools from a Docker container within minikube.
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ $ minikube start --iso-url https://storage.googleapis.com/minikube-performance/m
 You will need to download and extract necessary kernel headers within minikube:
 
 ```shell
-minikube ssh -- curl -Lo /tmp/kernel-headers-linux-4.19.94.tar.lz4 https://storage.googleapis.com/minikube-kernel-headers/kernel-headers-linux-4.19.94.tar.lz4 
+minikube ssh -- curl -Lo /tmp/kernel-headers-linux-4.19.94.tar.lz4 https://storage.googleapis.com/minikube-kernel-headers/kernel-headers-linux-4.19.94.tar.lz4
 
 minikube ssh -- sudo mkdir -p /lib/modules/4.19.94/build
 
@@ -45,13 +45,13 @@ $ minikube ssh -- docker run --rm   --privileged   -v /lib/modules:/lib/modules:
 
 Unable to find image 'zlim/bcc:latest' locally
 latest: Pulling from zlim/bcc
-6cf436f81810: Pull complete 
-987088a85b96: Pull complete 
-b4624b3efe06: Pull complete 
-d42beb8ded59: Pull complete 
-90970d1ebfd9: Pull complete 
-29c3815350eb: Pull complete 
-e21dfbd8fcfc: Pull complete 
+6cf436f81810: Pull complete
+987088a85b96: Pull complete
+b4624b3efe06: Pull complete
+d42beb8ded59: Pull complete
+90970d1ebfd9: Pull complete
+29c3815350eb: Pull complete
+e21dfbd8fcfc: Pull complete
 Digest: sha256:914bea8970535cd6b0d5dee13f99569c5f0d597942c8333c0aa92443473aff27
 Status: Downloaded newer image for zlim/bcc:latest
 PCOMM            PID    PPID   RET ARGS

@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -39,9 +40,27 @@ import (
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
-var podmanEnv1Tmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanVarlinkBridgeEnv, constants.MinikubeActivePodmanEnv)
+var podmanEnv1Tmpl = fmt.Sprintf(
+	"{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}"+
+		"{{ .UsageHint }}",
+	constants.PodmanVarlinkBridgeEnv,
+	constants.MinikubeActivePodmanEnv)
 
-var podmanEnv2Tmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerHost }}{{ .Suffix }}{{ if .ContainerSSHKey }}{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerSSHKey}}{{ .Suffix }}{{ end }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}{{ .UsageHint }}", constants.PodmanContainerHostEnv, constants.PodmanContainerSSHKeyEnv, constants.MinikubeActivePodmanEnv)
+var podmanEnv2Tmpl = fmt.Sprintf(
+	"{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerHost }}{{ .Suffix }}"+
+		"{{ if .ContainerSSHKey }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerSSHKey}}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .ExistingContainerHost }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingContainerHost }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}"+
+		"{{ .UsageHint }}",
+	constants.PodmanContainerHostEnv,
+	constants.PodmanContainerSSHKeyEnv,
+	constants.ExistingContainerHostEnv,
+	constants.MinikubeActivePodmanEnv)
 
 // PodmanShellConfig represents the shell config for Podman
 type PodmanShellConfig struct {
@@ -50,6 +69,8 @@ type PodmanShellConfig struct {
 	ContainerHost         string
 	ContainerSSHKey       string
 	MinikubePodmanProfile string
+
+	ExistingContainerHost string
 }
 
 var podmanUnset bool
@@ -65,6 +86,9 @@ func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShel
 	s.VarlinkBridge = envMap[constants.PodmanVarlinkBridgeEnv]
 	s.ContainerHost = envMap[constants.PodmanContainerHostEnv]
 	s.ContainerSSHKey = envMap[constants.PodmanContainerSSHKeyEnv]
+
+	s.ExistingContainerHost = envMap[constants.ExistingContainerHostEnv]
+
 	s.MinikubePodmanProfile = envMap[constants.MinikubeActivePodmanEnv]
 
 	return s
@@ -258,6 +282,13 @@ func podmanEnvVars(ec PodmanEnvConfig) map[string]string {
 	}
 	for k, v := range env0 {
 		env[k] = v
+	}
+	if os.Getenv(constants.MinikubeActivePodmanEnv) == "" {
+		e := constants.PodmanContainerHostEnv
+		if v := oci.InitialEnv(e); v != "" {
+			key := constants.ExistingContainerHostEnv
+			env[key] = v
+		}
 	}
 	return env
 }

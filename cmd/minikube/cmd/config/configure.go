@@ -19,6 +19,7 @@ package config
 import (
 	"io/ioutil"
 	"net"
+	"regexp"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -202,6 +203,22 @@ var addonsConfigureCmd = &cobra.Command{
 
 			if cfg.KubernetesConfig.LoadBalancerEndIP == "" {
 				cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
+			}
+
+			if err := config.SaveProfile(profile, cfg); err != nil {
+				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+			}
+		case "ingress":
+			profile := ClusterFlagValue()
+			_, cfg := mustload.Partial(profile)
+
+			validator := func(s string) bool {
+				format := regexp.MustCompile("^.+/.+$")
+				return format.MatchString(s)
+			}
+
+			if cfg.KubernetesConfig.CustomIngressCert == "" {
+				cfg.KubernetesConfig.CustomIngressCert = AskForStaticValidatedValue("-- Enter custom cert(format is \"namespace/secret\"): ", validator)
 			}
 
 			if err := config.SaveProfile(profile, cfg); err != nil {

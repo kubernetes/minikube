@@ -63,3 +63,31 @@ func TestList(t *testing.T) {
 		t.Errorf("list mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestDriverAlias(t *testing.T) {
+	foo := DriverDef{Name: "foo", Alias: []string{"foo-alias"}}
+	r := newRegistry()
+
+	if err := r.Register(foo); err != nil {
+		t.Errorf("Register = %v, expected nil", err)
+	}
+
+	d := r.Driver("foo")
+	if d.Empty() {
+		t.Errorf("driver.Empty = true, expected false")
+	}
+
+	d = r.Driver("foo-alias")
+	if d.Empty() {
+		t.Errorf("driver.Empty = true, expected false")
+	}
+
+	if diff := cmp.Diff(r.List(), []DriverDef{foo}); diff != "" {
+		t.Errorf("list mismatch (-want +got):\n%s", diff)
+	}
+
+	d = r.Driver("bar")
+	if !d.Empty() {
+		t.Errorf("driver.Empty = false, expected true")
+	}
+}

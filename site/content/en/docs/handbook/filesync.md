@@ -22,7 +22,7 @@ Place files to be synced in `$MINIKUBE_HOME/files`
 
 For example, running the following will result in the deployment of a custom /etc/resolv.conf:
 
-```
+```shell
 mkdir -p ~/.minikube/files/etc
 echo nameserver 8.8.8.8 > ~/.minikube/files/etc/resolv.conf
 minikube start
@@ -30,7 +30,7 @@ minikube start
 
 ## Other approaches
 
-With a bit of work, one could setup [Syncthing](https://syncthing.net) between the host and the guest VM for persistent file synchronization. 
+With a bit of work, one could setup [Syncthing](https://syncthing.net) between the host and the guest VM for persistent file synchronization.
 
 If you are looking for a solution tuned for iterative application development, consider using a Kubernetes tool that is known to work well with minikube:
 

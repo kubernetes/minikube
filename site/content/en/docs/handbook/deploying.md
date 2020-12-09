@@ -10,7 +10,7 @@ aliases:
 
 ## kubectl
 
-```
+```shell
 kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
 ```
@@ -18,7 +18,6 @@ kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
 ## Addons
 
 minikube has a built-in list of applications and services that may be easily deployed, such as Istio or Ingress. To list the available addons for your version of minikube:
-
 
 ```shell
 minikube addons list
@@ -42,7 +41,6 @@ minikube addons open <name>
 ```
 
 To disable an addon:
-
 
 ```shell
 minikube addons disable <name>

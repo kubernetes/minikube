@@ -142,7 +142,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if purge && len(profilesToDelete) > 1 && !deleteAll {
 		out.ErrT(style.Notice, "Multiple minikube profiles were found - ")
 		for _, p := range profilesToDelete {
-			out.T(style.Notice, "    - {{.profile}}", out.V{"profile": p.Name})
+			out.Step(style.Notice, "    - {{.profile}}", out.V{"profile": p.Name})
 		}
 		exit.Message(reason.Usage, "Usage: minikube delete --all --purge")
 	}
@@ -157,7 +157,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		} else {
-			out.T(style.DeletingHost, "Successfully deleted all profiles")
+			out.Step(style.DeletingHost, "Successfully deleted all profiles")
 		}
 	} else {
 		if len(args) > 0 {
@@ -198,7 +198,7 @@ func purgeMinikubeDirectory() {
 	if err := os.RemoveAll(localpath.MiniPath()); err != nil {
 		exit.Error(reason.HostPurge, "unable to delete minikube config folder", err)
 	}
-	out.T(style.Deleted, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
+	out.Step(style.Deleted, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
 }
 
 // DeleteProfiles deletes one or more profiles
@@ -246,7 +246,7 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	cs, err := oci.ListContainersByLabel(bin, delLabel)
 	if err == nil && len(cs) > 0 {
 		for _, c := range cs {
-			out.T(style.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
+			out.Step(style.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
 			err := oci.DeleteContainer(bin, c)
 			if err != nil { // it will error if there is no container to delete
 				klog.Errorf("error deleting container %q. You may want to delete it manually :\n%v", cname, err)
@@ -260,7 +260,7 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 		klog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
 	}
 
-	errs = oci.DeleteKICNetworks()
+	errs = oci.DeleteKICNetworks(bin)
 	if errs != nil {
 		klog.Warningf("error deleting leftover networks (might be okay).\nTo see the list of networks: 'docker network ls'\n:%v", errs)
 	}
@@ -286,7 +286,7 @@ func deleteProfile(profile *config.Profile) error {
 
 		// if driver is oci driver, delete containers and volumes
 		if driver.IsKIC(profile.Config.Driver) {
-			out.T(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
 			for _, n := range profile.Config.Nodes {
 				machineName := driver.MachineName(*profile.Config, n)
 				deletePossibleKicLeftOver(machineName, profile.Config.Driver)
@@ -337,7 +337,7 @@ func deleteProfile(profile *config.Profile) error {
 	if err := deleteContext(profile.Name); err != nil {
 		return err
 	}
-	out.T(style.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
+	out.Step(style.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
 	return nil
 }
 
@@ -353,7 +353,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 					klog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
 				default:
 					out.FailureT("Failed to delete cluster: {{.error}}", out.V{"error": err})
-					out.T(style.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
+					out.Step(style.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
 				}
 			}
 		}
@@ -384,7 +384,7 @@ func deleteContext(machineName string) error {
 }
 
 func deleteInvalidProfile(profile *config.Profile) []error {
-	out.T(style.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
+	out.Step(style.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
 	pathToProfile := config.ProfileFolderPath(profile.Name, localpath.MiniPath())
@@ -410,7 +410,7 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 }
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
-	out.T(style.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
+	out.Step(style.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
 	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to load host: %v", err), Errtype: MissingCluster}
@@ -488,7 +488,7 @@ func handleMultipleDeletionErrors(errors []error) {
 func deleteProfileDirectory(profile string) {
 	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
 	if _, err := os.Stat(machineDir); err == nil {
-		out.T(style.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
+		out.Step(style.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
 		err := os.RemoveAll(machineDir)
 		if err != nil {
 			exit.Error(reason.GuestProfileDeletion, "Unable to remove machine directory", err)

@@ -11,19 +11,18 @@ aliases:
 ---
 
 
-## Comparison table for different methods 
+## Comparison table for different methods
+
 The best method to push your image to minikube depends on the container-runtime you built your cluster with (the default is docker).
 Here is a comparison table to help you choose:
 
-
-| Method   	| Supported Runtimes   	| 	|  Performance 	|
-|---	|---	|---	|---	|---	|
-|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env)	|   only docker	|  good 	|
-|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env)	|   only cri-o |  good 	|
-|  [cache add command]({{< ref "/docs/commands/cache.md#minikube-cache-add" >}}) 	|  all 	|  ok 	|
-|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok 	|
-|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all	| best 	|
-
+| Method    | Supported Runtimes    |  |  Performance  |
+|--- |--- |--- |--- |--- |
+|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  |
+|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  |
+|  [cache add command]({{< ref "/docs/commands/cache.md#minikube-cache-add" >}})  |  all  |  ok  |
+|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  |
+|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  |
 
 * note1 : the default container-runtime on minikube is 'docker'.
 * note2 : 'none' driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the kuberentes.
@@ -31,6 +30,7 @@ Here is a comparison table to help you choose:
 ---
 
 ## 1. Pushing directly to the in-cluster Docker daemon (docker-env)
+
 When using a container or VM driver (all drivers except none), you can reuse the Docker daemon inside minikube cluster.
 this means you don't have to build on your host machine and push the image into a docker registry. You can just build inside the same docker daemon as minikube which speeds up local experiments.
 
@@ -57,12 +57,12 @@ docker build -t my_image .
 To verify your terminal is using minikuber's docker-env you can check the value of the environment variable MINIKUBE_ACTIVE_DOCKERD to reflect the cluster name.
 
 {{% pageinfo color="info" %}}
-Tip 1: 
+Tip 1:
 Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`) in your yaml file. Otherwise Kubernetes won't use your locally build image and it will pull from the network.
 {{% /pageinfo %}}
 
 {{% pageinfo color="info" %}}
-Tip 2: 
+Tip 2:
 Evaluating the docker-env is only valid for the current terminal.
 By closing the terminal, you will go back to using your own system's docker daemon.
 {{% /pageinfo %}}
@@ -71,7 +71,6 @@ By closing the terminal, you will go back to using your own system's docker daem
 Tip 3:
 In container-based drivers such as Docker or Podman, you will need to re-do docker-env each time you restart your minikube cluster.
 {{% /pageinfo %}}
-
 
 more information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/docker-env/)
 
@@ -92,7 +91,6 @@ Tip 1 :
 If your image changes after your cached it, you need to do 'cache reload'.
 {{% /pageinfo %}}
 
-
 minikube refreshes the cache images on each start. however to reload all the cached images on demand, run this command :
 ```shell
 minikube cache reload
@@ -103,7 +101,6 @@ Tip 2 :
 if you have multiple clusters, the cache command will load the image for all of them.
 {{% /pageinfo %}}
 
-
 To display images you have added to the cache:
 
 ```shell
@@ -111,8 +108,6 @@ minikube cache list
 ```
 
 This listing will not include the images minikube's built-in system images.
-
-
 
 ```shell
 minikube cache delete <image name>
@@ -136,7 +131,7 @@ eval $(minikube podman-env)
 You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
 
 {{% tabs %}}
-{{% tab "Linux" %}}
+{{% linuxtab %}}
 
 ```shell
 podman-remote help
@@ -146,8 +141,8 @@ podman-remote help
 Note: On Linux the remote client is called "podman-remote", while the local program is called "podman".
 {{% /pageinfo %}}
 
-{{% /tab %}}
-{{% tab "macOS" %}}
+{{% /linuxtab %}}
+{{% mactab %}}
 
 ```shell
 podman help
@@ -157,8 +152,8 @@ podman help
 Note: On macOS the remote client is called "podman", since there is no local "podman" program available.
 {{% /pageinfo %}}
 
-{{% /tab %}}
-{{% tab "Windows" %}}
+{{% /mactab %}}
+{{% windowstab %}}
 
 ```shell
 podman help
@@ -168,9 +163,8 @@ podman help
 Note: On Windows the remote client is called "podman", since there is no local "podman" program available.
 {{% /pageinfo %}}
 
-{{% /tab %}}
+{{% /windowstab %}}
 {{% /tabs %}}
-
 
 Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`), as otherwise Kubernetes won't use images you built locally.
 

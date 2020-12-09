@@ -84,33 +84,31 @@ type Item struct {
 }
 
 // apply updates Item Content by replacing all occurrences of Replace map's keys with their actual map values (with placeholders replaced with data).
-func (i *Item) apply(data interface{}) (changed bool, err error) {
-	if i.Content == nil || i.Replace == nil {
-		return false, fmt.Errorf("unable to update content: nothing to update")
+func (i *Item) apply(data interface{}) error {
+	if i.Content == nil {
+		return fmt.Errorf("unable to update content: nothing to update")
 	}
-	org := string(i.Content)
-	str := org
+	str := string(i.Content)
 	for src, dst := range i.Replace {
-		tmpl := template.Must(template.New("").Parse(dst))
-		buf := new(bytes.Buffer)
-		if err := tmpl.Execute(buf, data); err != nil {
-			return false, err
+		out, err := ParseTmpl(dst, data, "")
+		if err != nil {
+			return err
 		}
 		re := regexp.MustCompile(src)
-		str = re.ReplaceAllString(str, buf.String())
+		str = re.ReplaceAllString(str, out)
 	}
 	i.Content = []byte(str)
 
-	return str != org, nil
+	return nil
 }
 
 // Apply applies concrete update plan (schema + data) to GitHub or local filesystem repo
 func Apply(ctx context.Context, schema map[string]Item, data interface{}, prBranchPrefix, prTitle string, prIssue int) {
-	plan, err := GetPlan(schema, data)
+	schema, pretty, err := GetPlan(schema, data)
 	if err != nil {
-		klog.Fatalf("Unable to parse schema: %v\n%s", err, plan)
+		klog.Fatalf("Unable to parse schema: %v\n%s", err, pretty)
 	}
-	klog.Infof("The Plan:\n%s", plan)
+	klog.Infof("The Plan:\n%s", pretty)
 
 	if target == "fs" || target == "all" {
 		changed, err := fsUpdate(FSRoot, schema, data)
@@ -125,12 +123,9 @@ func Apply(ctx context.Context, schema map[string]Item, data interface{}, prBran
 
 	if target == "gh" || target == "all" {
 		// update prTitle replacing template placeholders with actual data values
-		tmpl := template.Must(template.New("prTitle").Parse(prTitle))
-		buf := new(bytes.Buffer)
-		if err := tmpl.Execute(buf, data); err != nil {
+		if prTitle, err = ParseTmpl(prTitle, data, "prTitle"); err != nil {
 			klog.Fatalf("Unable to parse PR Title: %v", err)
 		}
-		prTitle = buf.String()
 
 		// check if PR already exists
 		prURL, err := ghFindPR(ctx, prTitle, ghOwner, ghRepo, ghBase, ghToken)
@@ -153,22 +148,31 @@ func Apply(ctx context.Context, schema map[string]Item, data interface{}, prBran
 }
 
 // GetPlan returns concrete plan replacing placeholders in schema with actual data values, returns JSON-formatted representation of the plan and any error occurred.
-func GetPlan(schema map[string]Item, data interface{}) (prettyprint string, err error) {
-	for _, item := range schema {
+func GetPlan(schema map[string]Item, data interface{}) (plan map[string]Item, prettyprint string, err error) {
+	plan = make(map[string]Item)
+	for p, item := range schema {
+		path, err := ParseTmpl(p, data, "")
+		if err != nil {
+			return plan, fmt.Sprintf("%+v", schema), err
+		}
+		plan[path] = item
+	}
+
+	for _, item := range plan {
 		for src, dst := range item.Replace {
-			tmpl := template.Must(template.New("").Parse(dst))
-			buf := new(bytes.Buffer)
-			if err := tmpl.Execute(buf, data); err != nil {
-				return fmt.Sprintf("%+v", schema), err
+			out, err := ParseTmpl(dst, data, "")
+			if err != nil {
+				return plan, fmt.Sprintf("%+v", schema), err
 			}
-			item.Replace[src] = buf.String()
+			item.Replace[src] = out
 		}
 	}
-	str, err := json.MarshalIndent(schema, "", "  ")
+	str, err := json.MarshalIndent(plan, "", "  ")
 	if err != nil {
-		return fmt.Sprintf("%+v", schema), err
+		return plan, fmt.Sprintf("%+v", schema), err
 	}
-	return string(str), nil
+
+	return plan, string(str), nil
 }
 
 // RunWithRetryNotify runs command cmd with stdin using exponential backoff for maxTime duration
@@ -209,4 +213,14 @@ func Run(cmd *exec.Cmd, stdin io.Reader) error {
 		return fmt.Errorf("%w: %s", err, out.String())
 	}
 	return nil
+}
+
+// ParseTmpl replaces placeholders in text with actual data values
+func ParseTmpl(text string, data interface{}, name string) (string, error) {
+	tmpl := template.Must(template.New(name).Parse(text))
+	buf := new(bytes.Buffer)
+	if err := tmpl.Execute(buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

@@ -103,7 +103,7 @@ func enableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	out.WarningT("Could not determine a Google Cloud project, which might be ok.")
-	out.T(style.Tip, `To set your Google Cloud project,  run: 
+	out.Step(style.Tip, `To set your Google Cloud project,  run: 
 
 		gcloud config set project <project name>
 

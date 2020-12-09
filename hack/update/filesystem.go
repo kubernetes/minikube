@@ -17,37 +17,58 @@ limitations under the License.
 package update
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"k8s.io/klog/v2"
 )
 
 // fsUpdate updates local filesystem repo files according to the given schema and data.
 // Returns if the update actually changed anything, and any error occurred.
 func fsUpdate(fsRoot string, schema map[string]Item, data interface{}) (changed bool, err error) {
+	var mode os.FileMode = 0644
 	for path, item := range schema {
 		path = filepath.Join(fsRoot, path)
-		blob, err := ioutil.ReadFile(path)
-		if err != nil {
-			return false, err
+		// if the item's content is already set, give it precedence over any current file content
+		var content []byte
+		if item.Content == nil {
+			info, err := os.Stat(path)
+			if err != nil {
+				return false, fmt.Errorf("unable to get file content: %w", err)
+			}
+			mode = info.Mode()
+			content, err = ioutil.ReadFile(path)
+			if err != nil {
+				return false, fmt.Errorf("unable to read file content: %w", err)
+			}
+			item.Content = content
 		}
-		info, err := os.Stat(path)
-		if err != nil {
-			return false, err
+		if err := item.apply(data); err != nil {
+			return false, fmt.Errorf("unable to update file: %w", err)
 		}
-		mode := info.Mode()
-
-		item.Content = blob
-		chg, err := item.apply(data)
-		if err != nil {
-			return false, err
-		}
-		if chg {
+		if !bytes.Equal(content, item.Content) {
+			// make sure path exists
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				return false, fmt.Errorf("unable to create directory: %w", err)
+			}
+			if err := ioutil.WriteFile(path, item.Content, mode); err != nil {
+				return false, fmt.Errorf("unable to write file: %w", err)
+			}
 			changed = true
-		}
-		if err := ioutil.WriteFile(path, item.Content, mode); err != nil {
-			return false, err
 		}
 	}
 	return changed, nil
+}
+
+// Loadf returns the file content read as byte slice
+func Loadf(path string) []byte {
+	blob, err := ioutil.ReadFile(path)
+	if err != nil {
+		klog.Fatalf("Unable to load file %s: %v", path, err)
+		return nil
+	}
+	return blob
 }
