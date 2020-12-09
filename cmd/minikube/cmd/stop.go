@@ -102,7 +102,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	schedule.KillExisting(profilesToStop)
 	if cancelScheduledStop {
 		register.Reg.SetStep(register.Done)
-		out.Step(style.Stopped, `All existing scheduled stops cancelled`)
+		out.Step(style.Stopped, false, `All existing scheduled stops cancelled`)
 		return
 	}
 
