@@ -155,12 +155,12 @@ func openURLs(svc string, urls []string) {
 		_, err := url.Parse(u)
 		if err != nil {
 			klog.Warningf("failed to parse url %q: %v (will not open)", u, err)
-			out.String(fmt.Sprintf("%s\n", u), false)
+			out.String(fmt.Sprintf("%s\n", u))
 			continue
 		}
 
 		if serviceURLMode {
-			out.String(fmt.Sprintf("%s\n", u), false)
+			out.String(fmt.Sprintf("%s\n", u))
 			continue
 		}
 

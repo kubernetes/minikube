@@ -107,7 +107,7 @@ func Infof(format string, a ...V) {
 		register.PrintInfo(outStyled)
 		return
 	}
-	String(outStyled, false)
+	String(outStyled)
 }
 
 // String writes a basic formatted string to stdout
