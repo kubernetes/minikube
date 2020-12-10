@@ -61,13 +61,12 @@ var (
 	// JSON is whether or not we should output stdout in JSON format. Set using SetJSON()
 	JSON = false
 	// spin is spinner showed at starting minikube
-	spin = spinner.New(spinner.CharSets[SpinnerCharacter], 100*time.Millisecond)
+	spin = spinner.New(spinner.CharSets[style.SpinnerCharacter], 100*time.Millisecond)
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
 const (
 	MaxLogEntries    = 3
-	SpinnerCharacter = 9
 )
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
