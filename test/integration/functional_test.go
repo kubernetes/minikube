@@ -38,6 +38,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -535,7 +536,11 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("add_local", func(t *testing.T) {
 			if GithubActionRunner() && runtime.GOOS == "darwin" {
 				t.Skipf("skipping this test because Docker can not run in macos on github action free version. https://github.community/t/is-it-possible-to-install-and-configure-docker-on-macos-runner/16981")
+			}
 
+			_, err := exec.LookPath(oci.Docker)
+			if err != nil {
+				t.Skipf("docker is not installed, skipping local image test")
 			}
 
 			dname, err := ioutil.TempDir("", profile)
@@ -552,7 +557,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			img := "minikube-local-cache-test:" + profile
 			_, err = Run(t, exec.CommandContext(ctx, "docker", "build", "-t", img, dname))
 			if err != nil {
-				t.Errorf("failed to build docker image: %v", err)
+				t.Skipf("failed to build docker image, skipping local test: %v", err)
 			}
 
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
