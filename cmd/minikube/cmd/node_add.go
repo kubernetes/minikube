@@ -19,6 +19,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -63,6 +64,10 @@ var nodeAddCmd = &cobra.Command{
 			warnAboutMultiNode()
 			if viper.GetString(memory) == "" {
 				cc.Memory = 2200
+			}
+
+			if !cc.MultiNodeRequested || cni.IsDisabled(*cc) {
+				warnAboutMultiNodeCNI()
 			}
 		}
 

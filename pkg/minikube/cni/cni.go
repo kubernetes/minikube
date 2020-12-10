@@ -93,6 +93,21 @@ func New(cc config.ClusterConfig) (Manager, error) {
 	}
 }
 
+func IsDisabled(cc config.ClusterConfig) bool {
+	if cc.KubernetesConfig.NetworkPlugin != "" && cc.KubernetesConfig.NetworkPlugin != "cni" {
+		return true
+	}
+
+	if cc.KubernetesConfig.CNI == "false" {
+		return true
+	}
+
+	if chooseDefault(cc).String() == "Disabled" {
+		return true
+	}
+	return false
+}
+
 func chooseDefault(cc config.ClusterConfig) Manager {
 	// For backwards compatibility with older profiles using --enable-default-cni
 	if cc.KubernetesConfig.EnableDefaultCNI {
@@ -109,23 +124,20 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return Bridge{cc: cc}
 	}
 
-	// Recommending KindNet for single and multi node clusters as well. This comes at a very small
-	// cost of having one extra KindNet pod running in all control plane node, but provides the
-	// following benefits:
-	//   - With Disabled CNI, Single node cluster doesn't respect the podCIDR even users ask for it
-	// via --extra-config=kubeadm.pod-network-cidr=10.244.0.0/16. This results in pods having ips
-	// like 172.17.0.2.
-	//
-	//   - Enables KindNet CNI in master in multi node cluster, This solves the network problem
-	// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.
-	//
-	//   - Reduces the complexities for reconfiguring the control plane node, in a scenario
-	// where minikube cluster is created as a single node cluster and more node was added later.
-	//
-	// If a --cni flag is explicitly specified we do not do a node length check, this behaviour should
-	// also be persevered for chooseDefault.
-	klog.Infof("Recommending kindnet as default CNI", len(cc.Nodes))
-	return KindNet{cc: cc}
+	if driver.BareMetal(cc.Driver) {
+		klog.Infof("Driver %s used, CNI unnecessary in this configuration, recommending no CNI", cc.Driver)
+		return Disabled{cc: cc}
+	}
+
+	if len(cc.Nodes) > 1 || cc.MultiNodeRequested {
+		// Enables KindNet CNI in master in multi node cluster, This solves the network problem
+		// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.
+		klog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
+		return KindNet{cc: cc}
+	}
+
+	klog.Infof("CNI unnecessary in this configuration, recommending no CNI")
+	return Disabled{cc: cc}
 }
 
 // manifestPath returns the path to the CNI manifest
