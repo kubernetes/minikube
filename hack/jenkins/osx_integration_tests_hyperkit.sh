@@ -28,7 +28,7 @@ set -e
 
 OS_ARCH="darwin-amd64"
 VM_DRIVER="hyperkit"
-JOB_NAME="HyperKit_macOS"
+JOB_NAME="HyperKit_Functional_macOS"
 EXTRA_TEST_ARGS="-test.run TestFunctional"
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 
