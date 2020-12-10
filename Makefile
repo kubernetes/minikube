@@ -808,5 +808,5 @@ update-kubernetes-version:
 .PHONY: update-kubernetes-version-pr
 update-kubernetes-version-pr:
 	(cd hack/update/kubernetes_version && \
-	 export UPDATE_TARGET="gh" && \
+	 export UPDATE_TARGET="all" && \
 	 go run update_kubernetes_version.go)
