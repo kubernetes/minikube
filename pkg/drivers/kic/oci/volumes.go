@@ -90,7 +90,7 @@ func ExtractTarballToVolume(ociBin string, tarballPath, volumeName, imageName st
 	if ociBin == Podman && runtime.GOOS == "linux" {
 		cmdArgs = append(cmdArgs, "--security-opt", "label=disable")
 	}
-	cmdArgs = append(cmdArgs, "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
+	cmdArgs = append(cmdArgs, "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xf", "/preloaded.tar", "-C", "/extractDir")
 	cmd := exec.Command(ociBin, cmdArgs...)
 	if _, err := runCmd(cmd); err != nil {
 		return err
