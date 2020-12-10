@@ -42,7 +42,7 @@ var addonsDisableCmd = &cobra.Command{
 		if err != nil {
 			exit.Error(reason.InternalDisable, "disable failed", err)
 		}
-		out.Step(style.AddonDisable, out.NoSpinner, `"The '{{.minikube_addon}}' addon is disabled`, out.V{"minikube_addon": addon})
+		out.Step(style.AddonDisable, `"The '{{.minikube_addon}}' addon is disabled`, out.V{"minikube_addon": addon})
 	},
 }
 

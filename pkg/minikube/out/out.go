@@ -67,8 +67,6 @@ var (
 // MaxLogEntries controls the number of log entries to show for each source
 const (
 	MaxLogEntries    = 3
-	Spinning         = true
-	NoSpinner        = false
 	SpinnerCharacter = 9
 )
 
@@ -82,12 +80,12 @@ type fdWriter interface {
 type V map[string]interface{}
 
 // Step writes a stylized and templated message to stdout
-func Step(st style.Enum, spinner bool, format string, a ...V) {
+func Step(st style.Enum, format string, a ...V) {
 	if st == style.Option {
 		Infof(format, a...)
 		return
 	}
-	outStyled := stylized(st, useColor, spinner, format, a...)
+	outStyled, spinner := stylized(st, useColor, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
 		return
@@ -102,7 +100,7 @@ func Step(st style.Enum, spinner bool, format string, a ...V) {
 
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
-	outStyled := stylized(style.Option, useColor, NoSpinner, format, a...)
+	outStyled, _ := stylized(style.Option, useColor, format, a...)
 	if JSON {
 		register.PrintInfo(outStyled)
 		return
@@ -119,7 +117,6 @@ func String(format string, a ...interface{}) {
 		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
-
 	klog.Infof(format, a...)
 	// if spin is active from a previous step, it will stop spinner displaying
 	if spin.Active() {
@@ -161,7 +158,7 @@ func Ln(format string, a ...interface{}) {
 
 // ErrT writes a stylized and templated error message to stderr
 func ErrT(st style.Enum, format string, a ...V) {
-	errStyled := stylized(st, useColor, false, format, a...)
+	errStyled, _ := stylized(st, useColor, format, a...)
 	Err(errStyled)
 }
 
@@ -193,7 +190,7 @@ func ErrLn(format string, a ...interface{}) {
 
 // SuccessT is a shortcut for writing a templated success message to stdout
 func SuccessT(format string, a ...V) {
-	Step(style.Success, NoSpinner, format, a...)
+	Step(style.Success, format, a...)
 }
 
 // FatalT is a shortcut for writing a templated fatal message to stderr
@@ -204,7 +201,8 @@ func FatalT(format string, a ...V) {
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
 	if JSON {
-		register.PrintWarning(stylized(style.Warning, useColor, false, format, a...))
+		st, _ := stylized(style.Warning, useColor, format, a...)
+		register.PrintWarning(st)
 		return
 	}
 	ErrT(style.Warning, format, a...)
@@ -278,12 +276,12 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	DisplayError(msg, err)
 
 	for name, lines := range entries {
-		Step(style.Failure, NoSpinner, "Problems detected in {{.entry}}:", V{"entry": name})
+		Step(style.Failure, "Problems detected in {{.entry}}:", V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
-			Step(style.LogEntry, NoSpinner, l)
+			Step(style.LogEntry, l)
 		}
 	}
 }
