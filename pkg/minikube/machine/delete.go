@@ -96,7 +96,7 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 		time.Sleep(1 * time.Second)
 	}
 
-	out.Step(style.DeletingHost, out.NoSpinner, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
+	out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
 	return delete(api, host, machineName)
 }
 

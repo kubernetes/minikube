@@ -67,8 +67,8 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) bool {
 			klog.Errorf("write time failed: %v", err)
 		}
 		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
-		out.Step(style.Celebrate, out.NoSpinner, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
-		out.Step(style.Tip, out.NoSpinner, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
+		out.Step(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
+		out.Step(style.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
 		return true
 	}
 	return false

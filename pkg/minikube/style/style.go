@@ -41,6 +41,8 @@ type Options struct {
 	LowPrefix string
 	// OmitNewline omits a newline at the end of a message.
 	OmitNewline bool
+	// Spinner is a character to place at ending of message
+	Spinner bool
 }
 
 // Config is a map of style name to style struct
@@ -104,7 +106,7 @@ var Config = map[Enum]Options{
 	Copying:          {Prefix: "✨  "},
 	CRIO:             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	DeletingHost:     {Prefix: "🔥  "},
-	Docker:           {Prefix: "🐳  "},
+	Docker:           {Prefix: "🐳  ", OmitNewline: true, Spinner: true},
 	DryRun:           {Prefix: "🌵  "},
 	Enabling:         {Prefix: "🔌  "},
 	FileDownload:     {Prefix: "💾  "},
