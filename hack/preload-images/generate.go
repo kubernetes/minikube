@@ -181,7 +181,7 @@ func createImageTarball(tarballFilename, containerRuntime string) error {
 		dirs = append(dirs, "./lib/containers")
 	}
 
-	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename}
+	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cf", tarballFilename}
 	args = append(args, dirs...)
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
