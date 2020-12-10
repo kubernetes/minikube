@@ -403,6 +403,10 @@ func warnAboutMultiNode() {
 	out.Step(style.Documentation, "To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
+func warnAboutMultiNodeCNI() {
+	out.WarningT("Cluster was created without any CNI, adding node to it might cause broken network.")
+}
+
 func updateDriver(driverName string) {
 	v, err := version.GetSemverVersion()
 	if err != nil {
