@@ -66,7 +66,7 @@ var (
 
 // MaxLogEntries controls the number of log entries to show for each source
 const (
-	MaxLogEntries    = 3
+	MaxLogEntries = 3
 )
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
