@@ -154,7 +154,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 		return &command.FakeCommandRunner{}, nil
 	}
 	if driver.BareMetal(h.Driver.DriverName()) {
-		return command.NewExecRunner(), nil
+		return command.NewExecRunner(true), nil
 	}
 
 	return command.NewSSHRunner(h.Driver), nil
