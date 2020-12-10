@@ -30,6 +30,8 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
+readonly TIMEOUT=${1:-70m}
+
 if [ "$(uname)" != "Darwin" ]; then
   # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
   sudo apt-get -y install lsof psmisc
@@ -41,8 +43,8 @@ sudo ./installers/check_install_golang.sh "1.15.5" "/usr/local" || true
 # install docker and kubectl if not present
 sudo ./installers/check_install_docker.sh
 
-docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
-docker volume prune -f || true
+# let's just clean all docker artifacts up
+docker system prune --all --force --volumes || true
 docker system df || true
 
 echo ">> Starting at $(date)"
@@ -293,9 +295,9 @@ if test -f "${TEST_OUT}"; then
   rm "${TEST_OUT}" || true # clean up previous runs of same build
 fi
 touch "${TEST_OUT}"
-${SUDO_PREFIX}${E2E_BIN} \
+${SUDO_PREFIX}${E2E_BIN} 
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
-  -test.timeout=70m -test.v \
+  -test.timeout=${TIMEOUT} -test.v \
   ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
 
