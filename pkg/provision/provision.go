@@ -147,7 +147,7 @@ func copyHostCerts(authOptions auth.Options) error {
 		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
 	}
 
-	execRunner := command.NewExecRunner()
+	execRunner := command.NewExecRunner(false)
 	for src, dst := range hostCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
 		if err != nil {
