@@ -38,17 +38,22 @@ import (
 //
 // It implements the CommandRunner interface.
 type execRunner struct {
+	sudo bool
 }
 
 // NewExecRunner returns a kicRunner implementor of runner which runs cmds inside a container
-func NewExecRunner() Runner {
-	return &execRunner{}
+func NewExecRunner(sudo bool) Runner {
+	return &execRunner{sudo: sudo}
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+func (e *execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
 	klog.Infof("Run: %v", rr.Command())
+
+	if e.sudo && runtime.GOOS != "linux" {
+		return nil, fmt.Errorf("sudo not supported on %s", runtime.GOOS)
+	}
 
 	var outb, errb io.Writer
 	if cmd.Stdout == nil {
@@ -107,8 +112,7 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
 
-	switch runtime.GOOS {
-	case "linux":
+	if e.sudo {
 		// write to temp location ...
 		tmpfile, err := ioutil.TempFile("", "minikube")
 		if err != nil {
@@ -129,25 +133,25 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 		// ... then fix file permission that should have been fine because of "cp -a"
 		err = os.Chmod(dst, os.FileMode(perms))
 		return err
-
-	default:
-		return writeFile(dst, f, os.FileMode(perms))
 	}
-
+	return writeFile(dst, f, os.FileMode(perms))
 }
 
 // Remove removes a file
 func (e *execRunner) Remove(f assets.CopyableFile) error {
 	dst := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	klog.Infof("rm: %s", dst)
-	if err := os.Remove(dst); err != nil {
-		if !os.IsPermission(err) {
-			return err
+	if e.sudo {
+		if err := os.Remove(dst); err != nil {
+			if !os.IsPermission(err) {
+				return err
+			}
+			_, err = e.RunCmd(exec.Command("sudo", "rm", "-f", dst))
+			if err != nil {
+				return err
+			}
 		}
-		_, err = e.RunCmd(exec.Command("sudo", "rm", "-f", dst))
-		if err != nil {
-			return err
-		}
+		return nil
 	}
-	return nil
+	return os.Remove(dst)
 }
