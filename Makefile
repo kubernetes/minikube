@@ -809,7 +809,7 @@ update-kubernetes-version:
 update-kubernetes-version-pr:
 ifndef GITHUB_TOKEN
 	@echo "⚠️ please set GITHUB_TOKEN environment variable with your GitHub token"
-	@echo "you can use https://github.com/settings/tokens/new to create new one"
+	@echo "you can use https://github.com/settings/tokens/new?scopes=repo,write:packages to create new one"
 else
 	(cd hack/update/kubernetes_version && \
 	 export UPDATE_TARGET="all" && \
