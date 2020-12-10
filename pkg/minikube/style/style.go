@@ -45,6 +45,8 @@ type Options struct {
 	Spinner bool
 }
 
+const SpinnerCharacter = 9
+
 // Config is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var Config = map[Enum]Options{
