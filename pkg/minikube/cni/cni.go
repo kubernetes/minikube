@@ -93,6 +93,21 @@ func New(cc config.ClusterConfig) (Manager, error) {
 	}
 }
 
+func IsDisabled(cc config.ClusterConfig) bool {
+	if cc.KubernetesConfig.NetworkPlugin != "" && cc.KubernetesConfig.NetworkPlugin != "cni" {
+		return true
+	}
+
+	if cc.KubernetesConfig.CNI == "false" {
+		return true
+	}
+
+	if chooseDefault(cc).String() == "Disabled" {
+		return true
+	}
+	return false
+}
+
 func chooseDefault(cc config.ClusterConfig) Manager {
 	// For backwards compatibility with older profiles using --enable-default-cni
 	if cc.KubernetesConfig.EnableDefaultCNI {
@@ -109,13 +124,20 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return Bridge{cc: cc}
 	}
 
-	if len(cc.Nodes) > 1 {
+	if driver.BareMetal(cc.Driver) {
+		klog.Infof("Driver %s used, CNI unnecessary in this configuration, recommending no CNI", cc.Driver)
+		return Disabled{cc: cc}
+	}
+
+	if len(cc.Nodes) > 1 || cc.MultiNodeRequested {
+		// Enables KindNet CNI in master in multi node cluster, This solves the network problem
+		// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.
 		klog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
 		return KindNet{cc: cc}
 	}
 
 	klog.Infof("CNI unnecessary in this configuration, recommending no CNI")
-	return Disabled{}
+	return Disabled{cc: cc}
 }
 
 // manifestPath returns the path to the CNI manifest

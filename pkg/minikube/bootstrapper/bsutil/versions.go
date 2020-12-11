@@ -39,7 +39,6 @@ func versionIsBetween(version, gte, lte semver.Version) bool {
 }
 
 var versionSpecificOpts = []config.VersionedExtraOption{
-
 	config.NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
 	config.NewUnversionedOption(Kubelet, "config", "/var/lib/kubelet/config.yaml"),
 	config.NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
@@ -96,6 +95,14 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 			Value:     "0",
 		},
 		LessThanOrEqual: semver.MustParse("1.11.1000"),
+	},
+	{
+		Option: config.ExtraOption{
+			Component: ControllerManager,
+			Key:       "allocate-node-cidrs",
+			Value:     "true",
+		},
+		GreaterThanOrEqual: semver.MustParse("1.14.0"),
 	},
 	{
 		Option: config.ExtraOption{
