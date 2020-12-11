@@ -41,6 +41,12 @@ define CONTAINERD_BIN_INSTALL_TARGET_CMDS
 		$(@D)/bin/containerd-shim \
 		$(TARGET_DIR)/usr/bin
 	$(INSTALL) -Dm755 \
+		$(@D)/bin/containerd-shim-runc-v1 \
+		$(TARGET_DIR)/usr/bin
+	$(INSTALL) -Dm755 \
+		$(@D)/bin/containerd-shim-runc-v2 \
+		$(TARGET_DIR)/usr/bin
+	$(INSTALL) -Dm755 \
 		$(@D)/bin/ctr \
 		$(TARGET_DIR)/usr/bin
 	$(INSTALL) -Dm644 \

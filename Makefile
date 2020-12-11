@@ -801,3 +801,20 @@ help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
 	@printf "\033[1m--------------------------------------\033[21m\n"
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+
+.PHONY: update-kubernetes-version
+update-kubernetes-version:
+	(cd hack/update/kubernetes_version && \
+	 go run update_kubernetes_version.go)
+
+.PHONY: update-kubernetes-version-pr
+update-kubernetes-version-pr:
+ifndef GITHUB_TOKEN
+	@echo "⚠️ please set GITHUB_TOKEN environment variable with your GitHub token"
+	@echo "you can use https://github.com/settings/tokens/new?scopes=repo,write:packages to create new one"
+else
+	(cd hack/update/kubernetes_version && \
+	 export UPDATE_TARGET="all" && \
+	 go run update_kubernetes_version.go)
+endif

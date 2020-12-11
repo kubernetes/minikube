@@ -26,7 +26,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/briandowns/spinner"
 	isatty "github.com/mattn/go-isatty"
 
 	"k8s.io/klog/v2"
@@ -58,10 +60,14 @@ var (
 	OverrideEnv = "MINIKUBE_IN_STYLE"
 	// JSON is whether or not we should output stdout in JSON format. Set using SetJSON()
 	JSON = false
+	// spin is spinner showed at starting minikube
+	spin = spinner.New(spinner.CharSets[style.SpinnerCharacter], 100*time.Millisecond)
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
-const MaxLogEntries = 3
+const (
+	MaxLogEntries = 3
+)
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
 type fdWriter interface {
@@ -78,18 +84,22 @@ func Step(st style.Enum, format string, a ...V) {
 		Infof(format, a...)
 		return
 	}
-	outStyled := stylized(st, useColor, format, a...)
+	outStyled, spinner := stylized(st, useColor, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
 		return
 	}
 	register.RecordStep(outStyled)
-	String(outStyled)
+	if spinner {
+		spinnerString(outStyled)
+	} else {
+		String(outStyled)
+	}
 }
 
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
-	outStyled := stylized(style.Option, useColor, format, a...)
+	outStyled, _ := stylized(style.Option, useColor, format, a...)
 	if JSON {
 		register.PrintInfo(outStyled)
 		return
@@ -106,13 +116,34 @@ func String(format string, a ...interface{}) {
 		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
-
 	klog.Infof(format, a...)
-
+	// if spin is active from a previous step, it will stop spinner displaying
+	if spin.Active() {
+		spin.Stop()
+	}
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
 		klog.Errorf("Fprintf failed: %v", err)
 	}
+}
+
+// spinnerString writes a basic formatted string to stdout with spinner character
+func spinnerString(format string, a ...interface{}) {
+	// Flush log buffer so that output order makes sense
+	klog.Flush()
+
+	if outFile == nil {
+		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
+		return
+	}
+
+	klog.Infof(format, a...)
+	_, err := fmt.Fprintf(outFile, format, a...)
+	if err != nil {
+		klog.Errorf("Fprintf failed: %v", err)
+	}
+	// Start spinning at the end of the printed line
+	spin.Start()
 }
 
 // Ln writes a basic formatted string with a newline to stdout
@@ -126,7 +157,7 @@ func Ln(format string, a ...interface{}) {
 
 // ErrT writes a stylized and templated error message to stderr
 func ErrT(st style.Enum, format string, a ...V) {
-	errStyled := stylized(st, useColor, format, a...)
+	errStyled, _ := stylized(st, useColor, format, a...)
 	Err(errStyled)
 }
 
@@ -169,7 +200,8 @@ func FatalT(format string, a ...V) {
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
 	if JSON {
-		register.PrintWarning(stylized(style.Warning, useColor, format, a...))
+		st, _ := stylized(style.Warning, useColor, format, a...)
+		register.PrintWarning(st)
 		return
 	}
 	ErrT(style.Warning, format, a...)

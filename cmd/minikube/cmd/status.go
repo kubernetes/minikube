@@ -499,7 +499,7 @@ func clusterState(sts []*Status) ClusterState {
 		TimeToStop: sts[0].TimeToStop,
 
 		Components: map[string]BaseState{
-			"kubeconfig": {Name: "kubeconfig", StatusCode: statusCode(sts[0].Kubeconfig)},
+			"kubeconfig": {Name: "kubeconfig", StatusCode: statusCode(sts[0].Kubeconfig), StatusName: codeNames[statusCode(sts[0].Kubeconfig)]},
 		},
 	}
 

@@ -292,7 +292,7 @@ func (d *Driver) Kill() error {
 		klog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
 	}
 
-	cr := command.NewExecRunner() // using exec runner for interacting with dameon.
+	cr := command.NewExecRunner(false) // using exec runner for interacting with dameon.
 	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName))); err != nil {
 		return errors.Wrapf(err, "killing %q", d.MachineName)
 	}
