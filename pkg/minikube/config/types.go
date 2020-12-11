@@ -73,6 +73,7 @@ type ClusterConfig struct {
 	StartHostTimeout        time.Duration
 	ScheduledStop           *ScheduledStopConfig
 	ExposedPorts            []string // Only used by the docker and podman driver
+	MultiNodeRequested      bool
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

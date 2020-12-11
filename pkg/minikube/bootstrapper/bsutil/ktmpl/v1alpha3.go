@@ -57,6 +57,7 @@ etcd:
   local:
     dataDir: {{.EtcdDataDir}}
 controllerManagerExtraArgs:
+  allocate-node-cidrs: "true"
   leader-elect: "false"
 schedulerExtraArgs:
   leader-elect: "false"
