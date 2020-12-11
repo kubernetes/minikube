@@ -47,5 +47,6 @@ func (c Disabled) Apply(r Runner) error {
 
 // CIDR returns the default CIDR used by this CNI
 func (c Disabled) CIDR() string {
-	return ""
+	// Even without any CNI we want our nodes to have spec.PodCIDR set.
+	return DefaultPodCIDR
 }

@@ -27,10 +27,10 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.19.4"
+	DefaultKubernetesVersion = "v1.20.0"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.20.0-beta.1"
+	NewestKubernetesVersion = "v1.20.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.13.0"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -115,7 +115,7 @@ var (
 	ExistingDockerDaemonEnvs = [3]string{ExistingDockerHostEnv, ExistingDockerTLSVerifyEnv, ExistingDockerCertPathEnv}
 
 	// PodmanRemoteEnvs is list of podman-remote related environment variables.
-	PodmanRemoteEnvs = [1]string{PodmanVarlinkBridgeEnv}
+	PodmanRemoteEnvs = [2]string{PodmanVarlinkBridgeEnv, PodmanContainerHostEnv}
 
 	// DefaultMinipath is the default minikube path (under the home directory)
 	DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")

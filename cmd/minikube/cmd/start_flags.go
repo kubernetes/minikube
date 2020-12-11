@@ -347,6 +347,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 				CNI:                    chosenCNI,
 				NodePort:               viper.GetInt(apiServerPort),
 			},
+			MultiNodeRequested: viper.GetInt(nodes) > 1,
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 		if viper.GetBool(createMount) && driver.IsKIC(drvName) {
@@ -611,6 +612,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(imageRepository) {
 		cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
+	}
+
+	if cmd.Flags().Changed("extra-config") {
+		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
 	}
 
 	if cmd.Flags().Changed(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {

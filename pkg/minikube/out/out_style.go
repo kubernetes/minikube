@@ -31,7 +31,7 @@ func applyPrefix(prefix, format string) string {
 }
 
 // applyStyle translates the given string if necessary then adds any appropriate style prefix.
-func applyStyle(st style.Enum, useColor bool, format string) string {
+func applyStyle(st style.Enum, useColor bool, format string) (string, bool) {
 	format = translate.T(format)
 
 	s, ok := style.Config[st]
@@ -41,20 +41,21 @@ func applyStyle(st style.Enum, useColor bool, format string) string {
 
 	// Similar to CSS styles, if no style matches, output an unformatted string.
 	if !ok || JSON {
-		return format
+		return format, s.Spinner
 	}
 
 	if !useColor {
-		return applyPrefix(style.LowPrefix(s), format)
+		return applyPrefix(style.LowPrefix(s), format), s.Spinner
 	}
-	return applyPrefix(s.Prefix, format)
+	return applyPrefix(s.Prefix, format), s.Spinner
 }
 
 // stylized applies formatting to the provided template
-func stylized(st style.Enum, useColor bool, format string, a ...V) string {
+func stylized(st style.Enum, useColor bool, format string, a ...V) (string, bool) {
+	var spinner bool
 	if a == nil {
 		a = []V{{}}
 	}
-	format = applyStyle(st, useColor, format)
-	return Fmt(format, a...)
+	format, spinner = applyStyle(st, useColor, format)
+	return Fmt(format, a...), spinner
 }

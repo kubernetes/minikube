@@ -29,7 +29,7 @@ DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.15.2
+GO_VERSION ?= 1.15.5
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2020.02.8
@@ -296,6 +296,9 @@ integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Tr
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing, logs to ./out/testout_COMMIT.txt
 	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+
+.PHONY: functional
+functional: integration-functional-only
 
 .PHONY: integration-functional-only
 integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl tests in integration test, logs to ./out/testout_COMMIT.txt
@@ -798,3 +801,20 @@ help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
 	@printf "\033[1m--------------------------------------\033[21m\n"
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+
+.PHONY: update-kubernetes-version
+update-kubernetes-version:
+	(cd hack/update/kubernetes_version && \
+	 go run update_kubernetes_version.go)
+
+.PHONY: update-kubernetes-version-pr
+update-kubernetes-version-pr:
+ifndef GITHUB_TOKEN
+	@echo "⚠️ please set GITHUB_TOKEN environment variable with your GitHub token"
+	@echo "you can use https://github.com/settings/tokens/new?scopes=repo,write:packages to create new one"
+else
+	(cd hack/update/kubernetes_version && \
+	 export UPDATE_TARGET="all" && \
+	 go run update_kubernetes_version.go)
+endif

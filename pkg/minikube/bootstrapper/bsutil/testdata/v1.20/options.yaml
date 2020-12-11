@@ -26,6 +26,7 @@ apiServer:
     fail-no-swap: "true"
 controllerManager:
   extraArgs:
+    allocate-node-cidrs: "true"
     kube-api-burst: "32"
     leader-elect: "false"
 scheduler:
@@ -42,7 +43,7 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.20.0-beta.1
+kubernetesVersion: v1.20.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"
