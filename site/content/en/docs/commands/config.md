@@ -11,7 +11,7 @@ Modify persistent configuration values
 
 ### Synopsis
 
-config modifies minikube config files using subcommands like "minikube config set driver kvm2"
+config modifies minikube config files using subcommands like "minikube config set driver kvm"
 Configurable fields: 
 
  * driver
