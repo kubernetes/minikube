@@ -44,7 +44,7 @@ sudo ./installers/check_install_golang.sh "1.15.5" "/usr/local" || true
 sudo ./installers/check_install_docker.sh
 
 # let's just clean all docker artifacts up
-docker system prune --all --force --volumes || true
+docker system prune --force --volumes || true
 docker system df || true
 
 echo ">> Starting at $(date)"
