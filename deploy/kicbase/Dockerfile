@@ -21,7 +21,7 @@
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20201106
 
-ARG BUILDKIT_VERSION="v0.7.2"
+ARG BUILDKIT_VERSION="v0.8.0"
 
 # copy in static files (configs, scripts)
 COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
