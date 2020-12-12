@@ -69,9 +69,27 @@ func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, 
 	return client.Shell(args...)
 }
 
+func GetSSHHostAddrPort(api libmachine.API, cc config.ClusterConfig, n config.Node) (string, int, error) {
+	host, err := getHost(api, cc, n)
+	if err != nil {
+		return "", 0, err
+	}
+
+	addr, err := host.Driver.GetSSHHostname()
+	if err != nil {
+		return "", 0, err
+	}
+	port, err := host.Driver.GetSSHPort()
+	if err != nil {
+		return "", 0, err
+	}
+
+	return addr, port, nil
+}
+
 // RunSSHHostCommand runs a command to the SSH host
 func RunSSHHostCommand(api libmachine.API, cc config.ClusterConfig, n config.Node, command string, args []string) (string, error) {
-	host, err := getHost(api, cc, n)
+	addr, port, err := GetSSHHostAddrPort(api, cc, n)
 	if err != nil {
 		return "", err
 	}
@@ -81,18 +99,8 @@ func RunSSHHostCommand(api libmachine.API, cc config.ClusterConfig, n config.Nod
 		return "", err
 	}
 
-	port, err := host.Driver.GetSSHPort()
-	if err != nil {
-		return "", err
-	}
-
 	args = append(args, "-p")
 	args = append(args, fmt.Sprintf("%d", port))
-
-	addr, err := host.Driver.GetSSHHostname()
-	if err != nil {
-		return "", err
-	}
 
 	args = append(args, addr)
 

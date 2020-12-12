@@ -19,8 +19,10 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/util/homedir"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -30,6 +32,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/sshutil"
+)
+
+var (
+	appendKnown bool
 )
 
 // sshHostCmd represents the sshHostCmd command
@@ -65,10 +72,45 @@ var sshHostCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if appendKnown {
+			addr, port, err := machine.GetSSHHostAddrPort(co.API, *co.Config, *n)
+			if err != nil {
+				out.ErrLn("GetSSHHostAddrPort: %v", err)
+				os.Exit(1)
+			}
+
+			host := addr
+			if port != 22 {
+				host = fmt.Sprintf("[%s]:%d", addr, port)
+			}
+			knownHosts := filepath.Join(homedir.HomeDir(), ".ssh", "known_hosts")
+
+			fmt.Fprintf(os.Stderr, "Host added: %s (%s)\n", knownHosts, host)
+			if sshutil.KnownHost(host, knownHosts) {
+				return
+			}
+
+			f, err := os.OpenFile(knownHosts, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+			if err != nil {
+				out.ErrLn("OpenFile: %v", err)
+				os.Exit(1)
+			}
+			defer f.Close()
+
+			_, err = f.WriteString(keys)
+			if err != nil {
+				out.ErrLn("WriteString: %v", err)
+				os.Exit(1)
+			}
+
+			return
+		}
+
 		fmt.Printf("%s", keys)
 	},
 }
 
 func init() {
 	sshHostCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to ssh into. Defaults to the primary control plane.")
+	sshHostCmd.Flags().BoolVar(&appendKnown, "append-known", false, "Add host key to SSH known_hosts file")
 }

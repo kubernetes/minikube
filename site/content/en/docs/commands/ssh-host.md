@@ -20,7 +20,8 @@ minikube ssh-host [flags]
 ### Options
 
 ```
-  -n, --node string   The node to ssh into. Defaults to the primary control plane.
+      --append-known   Add host key to SSH known_hosts file
+  -n, --node string    The node to ssh into. Defaults to the primary control plane.
 ```
 
 ### Options inherited from parent commands

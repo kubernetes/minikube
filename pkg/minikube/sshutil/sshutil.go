@@ -17,7 +17,9 @@ limitations under the License.
 package sshutil
 
 import (
+	"bufio"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
@@ -25,6 +27,7 @@ import (
 	machinessh "github.com/docker/machine/libmachine/ssh"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/util/retry"
@@ -88,4 +91,29 @@ func newSSHHost(d drivers.Driver) (*sshHost, error) {
 		SSHKeyPath: d.GetSSHKeyPath(),
 		Username:   d.GetSSHUsername(),
 	}, nil
+}
+
+func KnownHost(host string, knownHosts string) bool {
+	fd, err := os.Open(knownHosts)
+	if err != nil {
+		return false
+	}
+	defer fd.Close()
+
+	hashhost := knownhosts.HashHostname(host)
+	scanner := bufio.NewScanner(fd)
+	for scanner.Scan() {
+		_, hosts, _, _, _, err := ssh.ParseKnownHosts(scanner.Bytes())
+		if err != nil {
+			continue
+		}
+
+		for _, h := range hosts {
+			if h == host || h == hashhost {
+				return true
+			}
+		}
+	}
+
+	return false
 }
