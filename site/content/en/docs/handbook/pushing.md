@@ -2,7 +2,7 @@
 title: "Pushing images"
 weight: 5
 description: >
- comparing 5 ways to push your image into a minikiube cluster.
+ comparing 5 ways to push your image into a minikube cluster.
 aliases:
  - /docs/tasks/building
  - /docs/tasks/caching
