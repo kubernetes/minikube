@@ -17,20 +17,20 @@ Docker and Podman are container engines and have almost similar commands for the
 
 The [Docker Machine](https://github.com/docker/machine) library provides dynamic ways to interact with different environments. In simple words, it's a VM that runs docker and Linux simultaneously.   
 
+##Hypervisors
 A hypervisor supervises the creating and running of VMs hence allowing multiple guest VM for a single guest. Through this process, the host is provided access to the resources of the VMs.Different kinds of operating systems need a different kind of hypervisors. 
 
+#Hyper-V
 Hyper-V provides another alternative of running Linux containers on Windows using docker. In this approach, every Window containers share a single kernel but every Linux container has a separate Linux kernel. 
 
+##KVM2
 KVM2 or a VirtualBox can be used as a hypervisor for linux. An alternative container runtime to docker driver is the podman driver.
 
 Macbook doesn't directly run based on any containers and a different set of hypervisor are required. HyperKit, VirtualBox, VMware Fusion are some of the possible hypervisors that can be used. 
-
 Parallels driver is another driver option for users working with the Parallels Desktop. It provides an easy blending of windows and OS.  
 In macbooks, the docker cli is preconfigured to interact with the docker daemon that’s running directly on our macbook.
 
-In the case of a windows system, a docker based native Kubernetes integration can be used. This would be ideal for Windows 10. However, a hypervisor can provide the best performance.
-
-Hyper-V and VirtualBox are two available hypervisor options for windows.
+In the case of a windows system, a docker based native Kubernetes integration can be used. This would be ideal for Windows 10. However, a hypervisor can provide the best performance.Hyper-V and VirtualBox are two available hypervisor options for windows.
 The only problem with the Hyper-V hypervisor is that it requires a restart while switching between the container and VM.
 
 Here's a comprehensive list of all options for getting started on different os:
