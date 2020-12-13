@@ -8,7 +8,7 @@ aliases:
 
 minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes.
 
-All you need is Docker (or similarly compatible) container or a Virtual Machine environment, and Kubernetes is a single command away: `minikube start`
+All you need is a Docker (or similarly compatible) container or a virtual machine environment, and Kubernetes is a single command away: `minikube start`
 
 ## What you’ll need
 
@@ -16,7 +16,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 * 2GB of free memory
 * 20GB of free disk space
 * Internet connection
-* Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMWare]({{<ref "/docs/drivers/vmware">}})
+* Container or virtual machine manager, such as [Docker]({{<ref "/docs/drivers/docker">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMWare]({{<ref "/docs/drivers/vmware">}})
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
@@ -75,7 +75,7 @@ sudo rpm -ivh minikube-latest.aarch64.rpm
 {{% /linuxtab %}}
 {{% mactab %}}
 
-If the [Brew Package Manager](https://brew.sh/) installed:
+If the [Brew](https://brew.sh/) package manager is installed:
 
 ```shell
 brew install minikube
@@ -98,13 +98,13 @@ sudo install minikube-darwin-amd64 /usr/local/bin/minikube
 {{% /mactab %}}
 {{% windowstab %}}
 
-If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use it to install minikube:
+If the [Chocolatey](https://chocolatey.org/) package manager is installed:
 
 ```shell
 choco install minikube
 ```
 
-Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
+Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe):
 
 {{% /windowstab %}}
 {{% /tabs %}}
@@ -117,7 +117,7 @@ From a terminal with administrator access (but not logged in as root), run:
 minikube start
 ```
 
-If minikube fails to start, see the [drivers page]({{<ref "/docs/drivers">}}) for help setting up a compatible container or virtual-machine manager.
+If minikube fails to start, see the [drivers page]({{<ref "/docs/drivers">}}) for help setting up a compatible container or virtual machine manager.
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Interact with your cluster</h2>
 
