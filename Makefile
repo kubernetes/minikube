@@ -600,23 +600,24 @@ kic-base-image: ## builds the kic base image and tags local/kicbase:latest and l
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
+# multi-arch docker images
 X_DOCKER_BUILDER ?= minikube-builder
 X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
+
 .PHONY: docker-multi-arch-builder
 docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --use || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
-X_IMG = gcr.io/kicbase/kicbase
+MA_KICBASE_IMAGE_REGISTRY = $(REGISTRY)/kicbase-multiarch:$(KIC_VERSION) $(REGISTRY_GH)/kicbase-multiarch:$(KIC_VERSION) kicbase/stable-multiarch:$(KIC_VERSION)
 
-.PHONY: kic-base-image-x
-kic-base-image-x: docker-multi-arch-builder
-	env $(X_BUILD_ENV) docker buildx build --platform $(KICBASE_ARCH) -t $(X_IMG):$(KIC_VERSION) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
-
-
-
-
+.PHONY: kic-base-image-multi-arch
+kic-base-image-multi-arch: docker-multi-arch-builder
+#	docker login gcr.io/k8s-minikube
+#	docker login docker.pkg.github.com
+#	docker login
+	env $(X_BUILD_ENV) docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(MA_KICBASE_IMAGE_REGISTRY)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
