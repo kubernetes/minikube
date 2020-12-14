@@ -39,5 +39,6 @@ recent=$(git describe --abbrev=0)
 
 "${DIR}/release-notes" kubernetes minikube --since $recent
 
-echo "Thank you to our contributors for this release! "
+echo "Thank you to our contributors for this release!"
+echo ""
 git log "$recent".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
