@@ -614,9 +614,11 @@ MA_KICBASE_IMAGE_REGISTRY ?= $(REGISTRY)/kicbase-multiarch:$(KIC_VERSION) $(REGI
 
 .PHONY: kic-base-image-multi-arch
 kic-base-image-multi-arch: docker-multi-arch-builder
-#	docker login gcr.io/k8s-minikube
-#	docker login docker.pkg.github.com
-#	docker login
+ifdef AUTOPUSH
+	docker login gcr.io/k8s-minikube
+	docker login docker.pkg.github.com
+	docker login
+endif
 	env $(X_BUILD_ENV) docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(MA_KICBASE_IMAGE_REGISTRY)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
 
 .PHONY: upload-preloaded-images-tar
