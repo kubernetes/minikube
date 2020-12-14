@@ -47,7 +47,7 @@ const (
 	HyperKit = "hyperkit"
 	// VMware driver
 	VMware = "vmware"
-	// VMwareFusion driver (deprecated)
+	// VMwareFusion driver (obsolete)
 	VMwareFusion = "vmwarefusion"
 	// HyperV driver
 	HyperV = "hyperv"

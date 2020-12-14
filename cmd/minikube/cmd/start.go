@@ -705,6 +705,16 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		out.Step(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
 	}
 
+	if ds.Priority == registry.Obsolete {
+		exit.Message(reason.Kind{
+			ID:       fmt.Sprintf("PROVIDER_%s_OBSOLETE", strings.ToUpper(name)),
+			Advice:   translate.T(st.Fix),
+			ExitCode: reason.ExProviderUnsupported,
+			URL:      st.Doc,
+			Style:    style.Shrug,
+		}, st.Error.Error())
+	}
+
 	if st.Error == nil {
 		return
 	}
