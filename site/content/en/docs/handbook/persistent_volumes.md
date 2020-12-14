@@ -18,6 +18,9 @@ minikube is configured to persist files stored under the following directories, 
 * `/data`
 * `/var/lib/minikube`
 * `/var/lib/docker`
+* `/var/lib/containerd`
+* `/var/lib/buildkit`
+* `/var/lib/containers`
 * `/tmp/hostpath_pv`
 * `/tmp/hostpath-provisioner`
 
