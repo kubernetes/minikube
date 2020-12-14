@@ -610,7 +610,7 @@ docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --use || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
-MA_KICBASE_IMAGE_REGISTRY = $(REGISTRY)/kicbase-multiarch:$(KIC_VERSION) $(REGISTRY_GH)/kicbase-multiarch:$(KIC_VERSION) kicbase/stable-multiarch:$(KIC_VERSION)
+MA_KICBASE_IMAGE_REGISTRY ?= $(REGISTRY)/kicbase-multiarch:$(KIC_VERSION) $(REGISTRY_GH)/kicbase-multiarch:$(KIC_VERSION) kicbase/stable-multiarch:$(KIC_VERSION)
 
 .PHONY: kic-base-image-multi-arch
 kic-base-image-multi-arch: docker-multi-arch-builder
