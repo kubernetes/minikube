@@ -600,6 +600,24 @@ kic-base-image: ## builds the kic base image and tags local/kicbase:latest and l
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
+X_DOCKER_BUILDER ?= minikube-builder
+X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
+.PHONY: docker-multi-arch-builder
+docker-multi-arch-builder:
+	env $(X_BUILD_ENV) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --use || true
+
+KICBASE_ARCH = linux/arm64,linux/amd64
+X_IMG = gcr.io/kicbase/kicbase
+
+.PHONY: kic-base-image-x
+kic-base-image-x: docker-multi-arch-builder
+	env $(X_BUILD_ENV) docker buildx build --platform $(KICBASE_ARCH) -t $(X_IMG):$(KIC_VERSION) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
+
+
+
+
+
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o out/upload-preload ./hack/preload-images/*.go
