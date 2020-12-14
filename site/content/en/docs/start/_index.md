@@ -98,12 +98,22 @@ sudo install minikube-darwin-amd64 /usr/local/bin/minikube
 {{% /mactab %}}
 {{% windowstab %}}
 
-If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use it to install minikube:
+### Windows Package Manager
+
+If the [Windows Package Manager](https://docs.microsoft.com/en-us/windows/package-manager/) is installed, use the following command to install minikube:
+
+```shell
+winget install minikube
+```
+
+### Chocolatey
+If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use the following command:
 
 ```shell
 choco install minikube
 ```
 
+### Stand-alone Windows Installer
 Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
 {{% /windowstab %}}
