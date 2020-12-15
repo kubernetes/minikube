@@ -147,7 +147,7 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	if strings.HasPrefix(name, "ingress") && enable {
 		if driver.IsKIC(cc.Driver) {
 			if runtime.GOOS == "windows" {
-				out.Step(style.Tip,`After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
+				out.Step(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
 			} else if runtime.GOOS != "linux" {
 				exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
 Alternatively to use this addon you can use a vm-based driver:
