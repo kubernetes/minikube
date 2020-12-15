@@ -19,6 +19,7 @@ package kic
 import (
 	"fmt"
 	"os/exec"
+	"runtime"
 
 	"github.com/phayes/freeport"
 	v1 "k8s.io/api/core/v1"
@@ -39,7 +40,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 	sshArgs := []string{
 		// TODO: document the options here
 		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "StrictHostKeyChecking no",
+		"-o", "StrictHostKeyChecking=no",
 		"-N",
 		"docker@127.0.0.1",
 		"-p", sshPort,
@@ -66,8 +67,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 	}
 
 	command := "ssh"
-
-	if askForSudo {
+	if askForSudo && runtime.GOOS != "windows" {
 		out.Step(
 			style.Warning,
 			"The service {{.service}} requires privileged ports to be exposed: {{.ports}}",
@@ -79,7 +79,6 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		command = "sudo"
 		sshArgs = append([]string{"ssh"}, sshArgs...)
 	}
-
 	cmd := exec.Command(command, sshArgs...)
 
 	return &sshConn{
@@ -94,7 +93,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 	sshArgs := []string{
 		// TODO: document the options here
 		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "StrictHostKeyChecking no",
+		"-o", "StrictHostKeyChecking=no",
 		"-N",
 		"docker@127.0.0.1",
 		"-p", sshPort,
