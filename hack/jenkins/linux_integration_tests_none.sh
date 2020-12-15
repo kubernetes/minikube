@@ -68,4 +68,7 @@ fi
 mkdir -p cron && gsutil -m rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
+# We need this for reasons now
+sudo sysctl fs.protected_regular=0
+
 source ./common.sh

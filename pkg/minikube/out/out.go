@@ -138,6 +138,10 @@ func spinnerString(format string, a ...interface{}) {
 	}
 
 	klog.Infof(format, a...)
+	// if spin is active from a previous step, it will stop spinner displaying
+	if spin.Active() {
+		spin.Stop()
+	}
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
 		klog.Errorf("Fprintf failed: %v", err)

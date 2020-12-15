@@ -2,7 +2,7 @@
 title: "Pushing images"
 weight: 5
 description: >
- comparing 5 ways to push your image into a minikiube cluster.
+ comparing 5 ways to push your image into a minikube cluster.
 aliases:
  - /docs/tasks/building
  - /docs/tasks/caching
@@ -31,6 +31,7 @@ Here is a comparison table to help you choose:
 
 ## 1. Pushing directly to the in-cluster Docker daemon (docker-env)
 
+This is similar to podman-env but only for Docker runtime.
 When using a container or VM driver (all drivers except none), you can reuse the Docker daemon inside minikube cluster.
 this means you don't have to build on your host machine and push the image into a docker registry. You can just build inside the same docker daemon as minikube which speeds up local experiments.
 
@@ -137,6 +138,12 @@ You should now be able to use podman client on the command line on your host mac
 podman-remote help
 ```
 
+now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+
+```shell
+podman-remote build -t my_image .
+```
+
 {{% pageinfo color="info" %}}
 Note: On Linux the remote client is called "podman-remote", while the local program is called "podman".
 {{% /pageinfo %}}
@@ -148,6 +155,12 @@ Note: On Linux the remote client is called "podman-remote", while the local prog
 podman help
 ```
 
+now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+
+```shell
+podman build -t my_image .
+```
+
 {{% pageinfo color="info" %}}
 Note: On macOS the remote client is called "podman", since there is no local "podman" program available.
 {{% /pageinfo %}}
@@ -155,8 +168,14 @@ Note: On macOS the remote client is called "podman", since there is no local "po
 {{% /mactab %}}
 {{% windowstab %}}
 
+now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+
 ```shell
 podman help
+```
+
+```shell
+podman build -t my_image .
 ```
 
 {{% pageinfo color="info" %}}
@@ -200,8 +219,10 @@ docker push $(minikube ip):5000/test-img
 
 ## 5. Building images inside of minikube using SSH
 
-Use `minikube ssh` to run commands inside the minikube node, and run the `docker build` directly there.
-Any command you run there will run against the same daemon that kubernetes cluster is using.
+Use `minikube ssh` to run commands inside the minikube node, and run the build command directly there.
+Any command you run there will run against the same daemon / storage that kubernetes cluster is using.
+
+For Docker, use:
 
 ```shell
 docker build
@@ -209,15 +230,24 @@ docker build
 
 For more information on the `docker build` command, read the [Docker documentation](https://docs.docker.com/engine/reference/commandline/build/) (docker.com).
 
-For Podman, use:
+For CRI-O, use:
 
 ```shell
 sudo podman build
 ```
 
-For more information on the `podman build` command, read the [Podman documentation](https://github.com/containers/libpod/blob/master/docs/source/markdown/podman-build.1.md) (podman.io).
+For more information on the `podman build` command, read the [Podman documentation](https://github.com/containers/podman/blob/master/docs/source/markdown/podman-build.1.md) (podman.io).
+
+For Containerd, use:
+
+```shell
+sudo buildctl build
+```
+
+For more information on the `buildctl build` command, read the [Buildkit documentation](https://github.com/moby/buildkit#quick-start) (mobyproject.org).
 
 to exit minikube ssh and come back to your terminal type:
+
 ```shell
 exit
 ```

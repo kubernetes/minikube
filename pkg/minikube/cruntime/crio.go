@@ -109,6 +109,26 @@ func (r *CRIO) Active() bool {
 	return r.Init.Active("crio")
 }
 
+// enableIPForwarding configures IP forwarding, which is handled normally by Docker
+// Context: https://github.com/kubernetes/kubeadm/issues/1062
+func enableIPForwarding(cr CommandRunner) error {
+	// The bridge-netfilter module enables iptables rules to work on Linux bridges
+	// NOTE: br_netfilter isn't available in WSL2, but forwarding works fine there anyways
+	c := exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables")
+	if rr, err := cr.RunCmd(c); err != nil {
+		klog.Infof("couldn't verify netfilter by %q which might be okay. error: %v", rr.Command(), err)
+		c = exec.Command("sudo", "modprobe", "br_netfilter")
+		if _, err := cr.RunCmd(c); err != nil {
+			klog.Warningf("%q failed, which may be ok: %v", rr.Command(), err)
+		}
+	}
+	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ip_forward")
+	}
+	return nil
+}
+
 // Enable idempotently enables CRIO on a host
 func (r *CRIO) Enable(disOthers, _ bool) error {
 	if disOthers {
