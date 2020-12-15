@@ -90,6 +90,47 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	return rr, nil
 }
 
+// StartCmd implements the Command Runner interface to start a exec.Cmd object
+func (f *FakeCommandRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
+	rr := &RunResult{Args: cmd.Args}
+	sc := &StartedCmd{cmd: cmd, rr: rr}
+	klog.Infof("(FakeCommandRunner) Start:  %v", rr.Command())
+
+	key := rr.Command()
+	out, ok := f.cmdMap.Load(key)
+	if !ok {
+		cmds := f.commands()
+		if len(cmds) == 0 {
+			return sc, fmt.Errorf("asked to execute %s, but FakeCommandRunner has no commands stored", rr.Command())
+		}
+
+		var txt strings.Builder
+		for _, c := range f.commands() {
+			txt.WriteString(fmt.Sprintf("  `%s`\n", c))
+		}
+		return sc, fmt.Errorf("unregistered command:\n  `%s`\nexpected one of:\n%s", key, txt.String())
+	}
+
+	var buf bytes.Buffer
+	outStr := ""
+	if out != nil {
+		outStr = out.(string)
+	}
+	_, err := buf.WriteString(outStr)
+	if err != nil {
+		return sc, errors.Wrap(err, "Writing outStr to FakeCommandRunner's buffer")
+	}
+	rr.Stdout = buf
+	rr.Stderr = buf
+
+	return sc, nil
+}
+
+// WaitCmd implements the Command Runner interface to wait until a started exec.Cmd object finishes
+func (f *FakeCommandRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+	return sc.rr, nil
+}
+
 // Copy adds the filename, file contents key value pair to the stored map.
 func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	var b bytes.Buffer
