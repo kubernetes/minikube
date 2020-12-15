@@ -229,7 +229,7 @@ func (d *Driver) prepareSSH() error {
 			}
 
 			if !strings.Contains(string(icaclsCmdOut),"Successfully processed 1 files; Failed processing 0 files") {
-				return errors.Errorf("icacls failed applying permissions - err - [%s], output - [%s]", icaclsCmdErr, strings.TrimSpace(string(icaclsCmdOut)))
+				klog.Errorf("icacls failed applying permissions - err - [%s], output - [%s]", icaclsCmdErr, strings.TrimSpace(string(icaclsCmdOut)))
 			}
 		}
 	}
