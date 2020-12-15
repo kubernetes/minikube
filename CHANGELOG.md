@@ -1,4 +1,84 @@
 # Release Notes
+## Version 1.16.0-beta.0 - 2020-12-14
+
+Features:
+* Add persistent storage for /var/lib/buildkit [#9948](https://github.com/kubernetes/minikube/pull/9948)
+* start: Support comma-delimited --addons [#9957](https://github.com/kubernetes/minikube/pull/9957)
+* added statusName for kubeconfig [#9888](https://github.com/kubernetes/minikube/pull/9888)
+* Add spinner at preparing Kubernetes... [#9855](https://github.com/kubernetes/minikube/pull/9855)
+* Make none driver work as regular user (use sudo on demand) [#9379](https://github.com/kubernetes/minikube/pull/9379)
+* Display ScheduledStop status in minikube status [#9793](https://github.com/kubernetes/minikube/pull/9793)
+* Add support for restoring existing podman env [#9801](https://github.com/kubernetes/minikube/pull/9801)
+* Add linux packages for the arm64 architecture [#9859](https://github.com/kubernetes/minikube/pull/9859)
+* Ability to use a custom TLS certificate with the Ingress [#9797](https://github.com/kubernetes/minikube/pull/9797)
+* Add private network implementation for podman [#9716](https://github.com/kubernetes/minikube/pull/9716)
+* Add --cancel-scheduled flag to cancel all existing scheduled stops [#9774](https://github.com/kubernetes/minikube/pull/9774)
+* Add OpenTelemetry tracing to minikube [#9723](https://github.com/kubernetes/minikube/pull/9723)
+* Implement scheduled stop on windows [#9689](https://github.com/kubernetes/minikube/pull/9689)
+* Support non-default docker endpoints [#9510](https://github.com/kubernetes/minikube/pull/9510)
+
+Bug Fixes:
+* wsl2: log warning if br_netfilter cannot be enabled rather than fatally exit [#9932](https://github.com/kubernetes/minikube/pull/9932)
+* Fix podman network inspect format and error [#9866](https://github.com/kubernetes/minikube/pull/9866)
+* Fix multi node two pods getting same IP and nodespec not having PodCIDR [#9875](https://github.com/kubernetes/minikube/pull/9875)
+* Fix `node start` master node [#9833](https://github.com/kubernetes/minikube/pull/9833)
+* Optionally use ssh for docker-env instead of tcp [#9548](https://github.com/kubernetes/minikube/pull/9548)
+* Fix --extra-config when starting an existing cluster [#9634](https://github.com/kubernetes/minikube/pull/9634)
+* fix unable to set memory in config [#9789](https://github.com/kubernetes/minikube/pull/9789)
+* Set 'currentstep' for PullingBaseImage json event [#9844](https://github.com/kubernetes/minikube/pull/9844)
+* Fix missing InitialSetup in `node start` [#9832](https://github.com/kubernetes/minikube/pull/9832)
+* fix base image when using with custom image repository [#9791](https://github.com/kubernetes/minikube/pull/9791)
+* add Restart=on-failure for inner docker systemd service [#9775](https://github.com/kubernetes/minikube/pull/9775)
+* Add number of nodes for cluster in `minikube profile list` [#9702](https://github.com/kubernetes/minikube/pull/9702)
+* Do not auto-select Hyper-V driver if session has no privilege [#9588](https://github.com/kubernetes/minikube/pull/9588)
+* Fix registry-creds addon failure with ImageRepository [#9733](https://github.com/kubernetes/minikube/pull/9733)
+
+Upgrades:
+* Upgrade buildkit from 0.7.2 to 0.8.0 [#9940](https://github.com/kubernetes/minikube/pull/9940)
+* Upgrade crio.conf to version v1.19.0 [#9917](https://github.com/kubernetes/minikube/pull/9917)
+* Update the containerd configuration to v2 [#9915](https://github.com/kubernetes/minikube/pull/9915)
+* update default kubernetes version to 1.20.0 [#9897](https://github.com/kubernetes/minikube/pull/9897)
+* Upgrade CRI-O, from 1.18.4 to 1.19.0 [#9902](https://github.com/kubernetes/minikube/pull/9902)
+* Update crictl to v1.19.0 [#9901](https://github.com/kubernetes/minikube/pull/9901)
+* ISO: Upgrade Podman, from 2.2.0 to 2.2.1 [#9896](https://github.com/kubernetes/minikube/pull/9896)
+* Upgrade go version to 1.15.5 [#9899](https://github.com/kubernetes/minikube/pull/9899)
+* Upgrade Docker, from 19.03.14 to 20.10.0 [#9895](https://github.com/kubernetes/minikube/pull/9895)
+* ISO: Upgrade podman to version 2.2.0 and remove varlink [#9635](https://github.com/kubernetes/minikube/pull/9635)
+* KIC: Upgrade podman to version 2.2.0 and remove varlink [#9636](https://github.com/kubernetes/minikube/pull/9636)
+* Upgrade kicbase to ubuntu:focal-20201106 [#9863](https://github.com/kubernetes/minikube/pull/9863)
+* Upgrade Docker, from 19.03.13 to 19.03.14 [#9861](https://github.com/kubernetes/minikube/pull/9861)
+* Buildroot 2020.02.8 [#9862](https://github.com/kubernetes/minikube/pull/9862)
+* Update crictl to v1.18.0 [#9867](https://github.com/kubernetes/minikube/pull/9867)
+* bump storage provsioner to multi arch [#9822](https://github.com/kubernetes/minikube/pull/9822)
+
+Thank you to our contributors for this release!
+
+- AUT0R3V
+- Anders Björklund
+- Andrea Spadaccini
+- Brian Li
+- Daehyeok Mun
+- Ilya Zuyev
+- Jeroen Dekkers
+- Jituri, Pranav
+- Ling Samuel
+- Martin Schimandl
+- Medya Ghazizadeh
+- Parthvi Vala
+- Peyton Duncan
+- Predrag Rogic
+- Priya Wadhwa
+- Ruben Baez
+- Sadlil
+- Sharif Elgamal
+- Stefan Lobbenmeier
+- Steven Powell
+- Tharun
+- Thomas Strömberg
+- Tpk
+- Yehiyam Livneh
+- edtrist
+- msedzins
 
 ## Version 1.15.1 - 2020-11-16
 
