@@ -127,6 +127,7 @@ var Config = map[Enum]Options{
 	Shutdown:         {Prefix: "🛑  "},
 	StartingNone:     {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
+	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndent, OmitNewline: true, Spinner: true}, // Indented bullet
 	Tip:              {Prefix: "💡  "},
 	Unmount:          {Prefix: "🔥  "},
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},

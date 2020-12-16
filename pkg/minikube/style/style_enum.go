@@ -84,6 +84,7 @@ const (
 	StartingVM
 	Stopped
 	Stopping
+	SubStep
 	Success
 	ThumbsDown
 	ThumbsUp

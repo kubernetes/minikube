@@ -217,6 +217,14 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	}
 }
 
+func (f *FakeRunner) StartCmd(cmd *exec.Cmd) (*command.StartedCmd, error) {
+	return &command.StartedCmd{}, nil
+}
+
+func (f *FakeRunner) WaitCmd(sc *command.StartedCmd) (*command.RunResult, error) {
+	return &command.RunResult{}, nil
+}
+
 func (f *FakeRunner) Copy(assets.CopyableFile) error {
 	return nil
 }

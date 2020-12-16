@@ -53,7 +53,15 @@ func ValidRuntimes() []string {
 
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
+	// RunCmd is a blocking method that runs a command
+	// Use this if you don't need to stream stdout and stderr in real-time
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
+	// StartCmd is a non-blocking method that starts a command
+	// Use WaitCmd to block until the command is complete
+	// Use this if you need to stream stdout and/or stderr in real-time
+	StartCmd(cmd *exec.Cmd) (*command.StartedCmd, error)
+	// WaitCmd blocks until the started command completes
+	WaitCmd(sc *command.StartedCmd) (*command.RunResult, error)
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
 	// Remove is a convenience method that runs a command to remove a file
