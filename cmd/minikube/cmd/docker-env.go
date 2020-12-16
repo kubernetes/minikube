@@ -201,7 +201,6 @@ func mustRestartDockerd(name string, runner command.Runner) {
 		// verifying apisever using kverify would add code complexity for a rare case.
 		klog.Warningf("waiting to ensure apisever container is up...")
 		startTime := time.Now()
-		//time.Sleep(time.Second * 5)
 		WaitForAPIServerProcess(runner, startTime, time.Second*5)
 	}
 }
