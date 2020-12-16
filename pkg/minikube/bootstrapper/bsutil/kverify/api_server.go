@@ -56,7 +56,7 @@ func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
-		if _, ierr := ApiServerPID(cr); ierr != nil {
+		if _, ierr := APIServerPID(cr); ierr != nil {
 			return false, nil
 		}
 
@@ -69,8 +69,8 @@ func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 	return nil
 }
 
-// ApiServerPID returns our best guess to the apiserver pid
-func ApiServerPID(cr command.Runner) (int, error) {
+// APIServerPID returns our best guess to the apiserver pid
+func APIServerPID(cr command.Runner) (int, error) {
 	rr, err := cr.RunCmd(exec.Command("sudo", "pgrep", "-xnf", "kube-apiserver.*minikube.*"))
 	if err != nil {
 		return 0, err
@@ -145,7 +145,7 @@ func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error 
 func APIServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
 	klog.Infof("Checking apiserver status ...")
 
-	pid, err := ApiServerPID(cr)
+	pid, err := APIServerPID(cr)
 	if err != nil {
 		klog.Warningf("stopped: unable to get apiserver pid: %v", err)
 		return state.Stopped, nil
