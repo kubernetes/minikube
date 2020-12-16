@@ -29,7 +29,7 @@ set -e
 OS_ARCH="linux-amd64"
 VM_DRIVER="none"
 JOB_NAME="none_Linux"
-EXTRA_ARGS="--bootstrapper=kubeadm"
+EXTRA_START_ARGS="--bootstrapper=kubeadm"
 EXPECTED_DEFAULT_DRIVER="kvm2"
 
 SUDO_PREFIX="sudo -E "
@@ -67,5 +67,8 @@ fi
 
 mkdir -p cron && gsutil -m rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
+
+# We need this for reasons now
+sudo sysctl fs.protected_regular=0
 
 source ./common.sh

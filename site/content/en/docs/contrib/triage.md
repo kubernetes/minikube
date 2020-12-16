@@ -16,15 +16,17 @@ Triage is an important part of maintaining the health of the minikube repo.
 A well organized repo allows maintainers to prioritize feature requests, fix bugs, and respond to users facing difficulty with the tool as quickly as possible.
 
 Triage includes:
+
 - Labeling issues
 - Responding to issues
 - Closing issues
 
 If you're interested in helping out with minikube triage, this doc covers the basics of doing so.
 
-Additionally, if you'd be interested in participating in our weekly triage meeting, please fill out this [form](https://forms.gle/vNtWZSWXqeYaaNbU9) to express interest. Thank you! 
+Additionally, if you'd be interested in participating in our weekly triage meeting, please fill out this [form](https://forms.gle/vNtWZSWXqeYaaNbU9) to express interest. Thank you!
 
 # Daily Triage
+
 Daily triage has two goals:
 
 1. Responsiveness for new issues
@@ -44,7 +46,8 @@ We typically want at least one of the following labels on every issue, and some 
 - `kind/support`   - The default for most incoming issues
 - `kind/bug` - When it’s a bug or we aren’t delivering the best user experience
 
-Other possibilities: 
+Other possibilities:
+
 - `kind/feature`- Identify new feature requests
 - `kind/flake` - Used for flaky integration or unit tests
 - `kind/cleanup` - Cleaning up/refactoring the codebase
@@ -56,31 +59,30 @@ If the issue is specific to an operating system, hypervisor, container, addon, o
 
 **os/[operating system]** - When the issue appears specific to an operating system
 
-  - `os/linux`
-  - `os/macos`
-  - `os/windows`
+- `os/linux`
+- `os/macos`
+- `os/windows`
 
 **co/[driver]**  - When the issue appears specific to a driver
 
-  - `co/hyperkit`
-  - `co/hyperv`
-  - `co/kvm2`
-  - `co/none-driver`
-  - `co/docker-driver`
-  - `co/podman-driver`
-  - `co/virtualbox`
+- `co/hyperkit`
+- `co/hyperv`
+- `co/kvm2`
+- `co/none-driver`
+- `co/docker-driver`
+- `co/podman-driver`
+- `co/virtualbox`
 
 **co/[kubernetes component]**  - When the issue appears specific to a k8s component
 
-  - `co/apiserver`
-  - `co/etcd`
-  - `co/coredns`
-  - `co/dashboard`
-  - `co/kube-proxy`
-  - `co/kubeadm`
-  - `co/kubelet`
-  - `co/kubeconfig`
- 
+- `co/apiserver`
+- `co/etcd`
+- `co/coredns`
+- `co/dashboard`
+- `co/kube-proxy`
+- `co/kubeadm`
+- `co/kubelet`
+- `co/kubeconfig`
 
 Other useful tags:
 
@@ -102,8 +104,8 @@ Suspected **Root cause**:
 
 `Help wanted` - if the bug could use help from a contributor
 
-
 ## Prioritization
+
 If the issue is not `kind/support`, it needs a [priority label](https://github.com/kubernetes/community/blob/master/contributors/guide/issue-triage.md#define-priority):
 
 `priority/critical-urgent` - someones top priority ASAP, such as security issue, user-visible bug, or build breakage. Rarely used.
@@ -115,7 +117,6 @@ If the issue is not `kind/support`, it needs a [priority label](https://github.c
 `priority/backlog`: agreed that this would be good to have, but no one is available at the moment. Consider tagging as `help wanted`
 
 `priority/awaiting-more-evidence`: may be more useful, but there is not yet enough support.
-
 
 # Weekly Triage
 
@@ -142,10 +143,10 @@ This includes reviewing:
 1. Re-evaluation of long-term issues
 1. Re-evaluation of short-term issues
 
-
 ## Responding to Issues
 
 ### Needs More Information
+
 A sample response to ask for more info:
 
 > I don’t yet have a clear way to replicate this issue. Do you mind adding some additional details. Here is additional information that would be helpful:
@@ -162,16 +163,15 @@ A sample response to ask for more info:
 >
 > Thank you for sharing your experience!
 
-
 Then: Label with `triage/needs-information`.
 
 ### Issue might be resolved
+
 If you think a release may have resolved an issue, ask the author to see if their issue has been resolved:
 
 > Could you please check to see if minikube <x> addresses this issue? We've made some changes with how this is handled, and improved the minikube logs output to help us debug tricky cases like this.
 
 Then: Label with `triage/needs-information`.
-
 
 ## Closing with Care
 
@@ -204,10 +204,11 @@ Then: Close the issue
 Then: Label with `triage/duplicate` and close the issue.
 
 ### Lack of Information
+
 If an issue hasn't been active for more than four weeks, and the author has been pinged at least once, then the issue can be closed.
 
 >Hey @author -- hopefully it's OK if I close this - there wasn't enough information to make it actionable, and some time has already passed. If you are able to provide additional details, you may reopen it at any point by adding /reopen to your comment.
-> 
+>
 >Here is additional information that may be helpful to us:
 >
 >\* Whether the issue occurs with the latest minikube release

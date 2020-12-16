@@ -74,6 +74,7 @@ type ClusterConfig struct {
 	ScheduledStop           *ScheduledStopConfig
 	ExposedPorts            []string // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
+	MultiNodeRequested      bool
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
@@ -93,6 +94,7 @@ type KubernetesConfig struct {
 	ImageRepository     string
 	LoadBalancerStartIP string // currently only used by MetalLB addon
 	LoadBalancerEndIP   string // currently only used by MetalLB addon
+	CustomIngressCert   string // used by Ingress addon
 	ExtraOptions        ExtraOptionSlice
 
 	ShouldLoadCachedImages bool

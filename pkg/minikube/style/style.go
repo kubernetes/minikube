@@ -41,7 +41,11 @@ type Options struct {
 	LowPrefix string
 	// OmitNewline omits a newline at the end of a message.
 	OmitNewline bool
+	// Spinner is a character to place at ending of message
+	Spinner bool
 }
+
+const SpinnerCharacter = 9
 
 // Config is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
@@ -104,7 +108,7 @@ var Config = map[Enum]Options{
 	Copying:          {Prefix: "✨  "},
 	CRIO:             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	DeletingHost:     {Prefix: "🔥  "},
-	Docker:           {Prefix: "🐳  "},
+	Docker:           {Prefix: "🐳  ", OmitNewline: true, Spinner: true},
 	DryRun:           {Prefix: "🌵  "},
 	Enabling:         {Prefix: "🔌  "},
 	FileDownload:     {Prefix: "💾  "},
@@ -123,6 +127,7 @@ var Config = map[Enum]Options{
 	Shutdown:         {Prefix: "🛑  "},
 	StartingNone:     {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
+	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndent, OmitNewline: true, Spinner: true}, // Indented bullet
 	Tip:              {Prefix: "💡  "},
 	Unmount:          {Prefix: "🔥  "},
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},

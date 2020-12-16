@@ -45,7 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-var dockerSetEnvTmpl = fmt.Sprintf(
+var dockerEnvTCPTmpl = fmt.Sprintf(
 	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}"+
 		"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}"+
 		"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}"+
@@ -70,6 +70,12 @@ var dockerSetEnvTmpl = fmt.Sprintf(
 	constants.ExistingDockerHostEnv,
 	constants.ExistingDockerCertPathEnv,
 	constants.MinikubeActiveDockerdEnv)
+var dockerEnvSSHTmpl = fmt.Sprintf(
+	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}"+
+		"{{ .UsageHint }}",
+	constants.DockerHostEnv,
+	constants.MinikubeActiveDockerdEnv)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -88,6 +94,8 @@ type DockerShellConfig struct {
 
 var (
 	noProxy              bool
+	sshHost              bool
+	sshAdd               bool
 	dockerUnset          bool
 	defaultNoProxyGetter NoProxyGetter
 )
@@ -105,12 +113,19 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShel
 	profile := ec.profile
 	const usgPlz = "To point your shell to minikube's docker-daemon, run:"
 	usgCmd := fmt.Sprintf("minikube -p %s docker-env", profile)
+	if ec.ssh {
+		usgCmd += " --ssh-host"
+	}
 	s := &DockerShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
-	s.DockerCertPath = envMap[constants.DockerCertPathEnv]
+	if !ec.ssh {
+		s.DockerCertPath = envMap[constants.DockerCertPathEnv]
+	}
 	s.DockerHost = envMap[constants.DockerHostEnv]
-	s.DockerTLSVerify = envMap[constants.DockerTLSVerifyEnv]
+	if !ec.ssh {
+		s.DockerTLSVerify = envMap[constants.DockerTLSVerifyEnv]
+	}
 
 	s.ExistingDockerCertPath = envMap[constants.ExistingDockerCertPathEnv]
 	s.ExistingDockerHost = envMap[constants.ExistingDockerHostEnv]
@@ -226,8 +241,10 @@ var dockerEnvCmd = &cobra.Command{
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
-		ensureDockerd(cname, co.CP.Runner)
+		r := co.CP.Runner
+		ensureDockerd(cname, r)
 
+		d := co.CP.Host.Driver
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
@@ -236,14 +253,30 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
+		hostname, err := d.GetSSHHostname()
+		if err != nil {
+			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
+		}
+
+		sshport, err := d.GetSSHPort()
+		if err != nil {
+			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
+		}
+
+		hostIP := co.CP.IP.String()
 		ec := DockerEnvConfig{
 			EnvConfig: sh,
 			profile:   cname,
 			driver:    driverName,
-			hostIP:    co.CP.IP.String(),
+			ssh:       sshHost,
+			hostIP:    hostIP,
 			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,
+			username:  d.GetSSHUsername(),
+			hostname:  hostname,
+			sshport:   sshport,
+			keypath:   d.GetSSHKeyPath(),
 		}
 
 		dockerPath, err := exec.LookPath("docker")
@@ -265,6 +298,22 @@ var dockerEnvCmd = &cobra.Command{
 		if err := dockerSetScript(ec, os.Stdout); err != nil {
 			exit.Error(reason.InternalDockerScript, "Error generating set output", err)
 		}
+
+		if sshAdd {
+			klog.Infof("Adding %v", d.GetSSHKeyPath())
+
+			path, err := exec.LookPath("ssh-add")
+			if err != nil {
+				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
+			}
+
+			cmd := exec.Command(path, d.GetSSHKeyPath())
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err != nil {
+				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
+			}
+		}
 	},
 }
 
@@ -273,20 +322,78 @@ type DockerEnvConfig struct {
 	shell.EnvConfig
 	profile  string
 	driver   string
+	ssh      bool
 	hostIP   string
 	port     int
 	certsDir string
 	noProxy  bool
+	username string
+	hostname string
+	sshport  int
+	keypath  string
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env' script
 func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
+	var dockerSetEnvTmpl string
+	if ec.ssh {
+		dockerSetEnvTmpl = dockerEnvSSHTmpl
+	} else {
+		dockerSetEnvTmpl = dockerEnvTCPTmpl
+	}
 	envVars := dockerEnvVars(ec)
 	return shell.SetScript(ec.EnvConfig, w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env unset' script
 func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
+	vars := dockerEnvNames(ec)
+	return shell.UnsetScript(ec.EnvConfig, w, vars)
+}
+
+// dockerURL returns a the docker endpoint URL for an ip/port pair.
+func dockerURL(ip string, port int) string {
+	return fmt.Sprintf("tcp://%s", net.JoinHostPort(ip, strconv.Itoa(port)))
+}
+
+// sshURL returns the docker endpoint URL when using socket over ssh.
+func sshURL(username string, hostname string, port int) string {
+	// assumes standard /var/run/docker.sock as the path (not possible to set it at the moment)
+	return fmt.Sprintf("ssh://%s@%s", username, net.JoinHostPort(hostname, strconv.Itoa(port)))
+}
+
+// dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
+func dockerEnvVars(ec DockerEnvConfig) map[string]string {
+	envTCP := map[string]string{
+		constants.DockerTLSVerifyEnv:       "1",
+		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
+		constants.DockerCertPathEnv:        ec.certsDir,
+		constants.MinikubeActiveDockerdEnv: ec.profile,
+	}
+	envSSH := map[string]string{
+		constants.DockerHostEnv:            sshURL(ec.username, ec.hostname, ec.sshport),
+		constants.MinikubeActiveDockerdEnv: ec.profile,
+	}
+
+	var rt map[string]string
+	if ec.ssh {
+		rt = envSSH
+	} else {
+		rt = envTCP
+	}
+	if os.Getenv(constants.MinikubeActiveDockerdEnv) == "" {
+		for _, env := range constants.DockerDaemonEnvs {
+			if v := oci.InitialEnv(env); v != "" {
+				key := constants.MinikubeExistingPrefix + env
+				rt[key] = v
+			}
+		}
+	}
+	return rt
+}
+
+// dockerEnvNames gets the necessary docker env variables to reset after using minikube's docker daemon
+func dockerEnvNames(ec DockerEnvConfig) []string {
 	vars := []string{
 		constants.DockerTLSVerifyEnv,
 		constants.DockerHostEnv,
@@ -300,31 +407,7 @@ func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 			vars = append(vars, k)
 		}
 	}
-	return shell.UnsetScript(ec.EnvConfig, w, vars)
-}
-
-// dockerURL returns a the docker endpoint URL for an ip/port pair.
-func dockerURL(ip string, port int) string {
-	return fmt.Sprintf("tcp://%s", net.JoinHostPort(ip, strconv.Itoa(port)))
-}
-
-// dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
-func dockerEnvVars(ec DockerEnvConfig) map[string]string {
-	rt := map[string]string{
-		constants.DockerTLSVerifyEnv:       "1",
-		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
-		constants.DockerCertPathEnv:        ec.certsDir,
-		constants.MinikubeActiveDockerdEnv: ec.profile,
-	}
-	if os.Getenv(constants.MinikubeActiveDockerdEnv) == "" {
-		for _, env := range constants.DockerDaemonEnvs {
-			if v := oci.InitialEnv(env); v != "" {
-				key := constants.MinikubeExistingPrefix + env
-				rt[key] = v
-			}
-		}
-	}
-	return rt
+	return vars
 }
 
 // dockerEnvVarsList gets the necessary docker env variables to allow the use of minikube's docker daemon to be used in a exec.Command
@@ -348,6 +431,8 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 func init() {
 	defaultNoProxyGetter = &EnvNoProxyGetter{}
 	dockerEnvCmd.Flags().BoolVar(&noProxy, "no-proxy", false, "Add machine IP to NO_PROXY environment variable")
+	dockerEnvCmd.Flags().BoolVar(&sshHost, "ssh-host", false, "Use SSH connection instead of HTTPS (port 2376)")
+	dockerEnvCmd.Flags().BoolVar(&sshAdd, "ssh-add", false, "Add SSH identity key to SSH authentication agent")
 	dockerEnvCmd.Flags().StringVar(&shell.ForceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
 	dockerEnvCmd.Flags().BoolVarP(&dockerUnset, "unset", "u", false, "Unset variables instead of setting them")
 }

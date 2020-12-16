@@ -65,6 +65,10 @@ func execute() error {
 	if projectID == "" {
 		return fmt.Errorf("metrics collector requires a valid GCP project id set via the %s env variable", pkgtrace.ProjectEnvVar)
 	}
+	ctx := context.Background()
+	if err := downloadMinikube(ctx, tmpFile); err != nil {
+		return errors.Wrap(err, "downloading minikube")
+	}
 
 	// Register the view. It is imperative that this step exists,
 	// otherwise recorded metrics will be dropped and never exported.
@@ -77,44 +81,54 @@ func execute() error {
 	if err := view.Register(v); err != nil {
 		return errors.Wrap(err, "registering view")
 	}
+	for _, cr := range []string{"docker", "containerd", "crio"} {
+		if err := exportMinikubeStart(ctx, projectID, cr); err != nil {
+			log.Printf("error exporting minikube start data for runtime %v: %v", cr, err)
+		}
+	}
+	return nil
+}
 
-	sd, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID: projectID,
-		// MetricPrefix helps uniquely identify your metrics.
-		MetricPrefix: "minikube_start",
-		// ReportingInterval sets the frequency of reporting metrics
-		// to stackdriver backend.
-		ReportingInterval:       1 * time.Second,
-		DefaultMonitoringLabels: getLabels(),
-	})
+func exportMinikubeStart(ctx context.Context, projectID, containerRuntime string) error {
+	sd, err := getExporter(projectID, containerRuntime)
 	if err != nil {
 		return errors.Wrap(err, "getting stackdriver exporter")
 	}
-	// It is imperative to invoke flush before your main function exits
-	defer sd.Flush()
-
 	// Register it as a trace exporter
 	trace.RegisterExporter(sd)
 
 	if err := sd.StartMetricsExporter(); err != nil {
 		return errors.Wrap(err, "starting metric exporter")
 	}
-	defer sd.StopMetricsExporter()
-	ctx := context.Background()
-
 	// track minikube start time and record it to metrics collector
-	st, err := minikubeStartTime(ctx, projectID, tmpFile)
+	st, err := minikubeStartTime(ctx, projectID, tmpFile, containerRuntime)
 	if err != nil {
 		return errors.Wrap(err, "collecting start time")
 	}
 	fmt.Printf("Latency: %f\n", st)
 	stats.Record(ctx, latencyS.M(st))
 	time.Sleep(30 * time.Second)
+	sd.Flush()
+	sd.StopMetricsExporter()
+	trace.UnregisterExporter(sd)
 	return nil
 }
 
-func getLabels() *stackdriver.Labels {
+func getExporter(projectID, containerRuntime string) (*stackdriver.Exporter, error) {
+	return stackdriver.NewExporter(stackdriver.Options{
+		ProjectID: projectID,
+		// MetricPrefix helps uniquely identify your metrics.
+		MetricPrefix: "minikube_start",
+		// ReportingInterval sets the frequency of reporting metrics
+		// to stackdriver backend.
+		ReportingInterval:       1 * time.Second,
+		DefaultMonitoringLabels: getLabels(containerRuntime),
+	})
+}
+
+func getLabels(containerRuntime string) *stackdriver.Labels {
 	l := &stackdriver.Labels{}
+	l.Set("container-runtime", containerRuntime, "container-runtime")
 	if labels == "" {
 		return l
 	}
@@ -130,13 +144,10 @@ func getLabels() *stackdriver.Labels {
 	return l
 }
 
-func minikubeStartTime(ctx context.Context, projectID, minikubePath string) (float64, error) {
-	if err := downloadMinikube(ctx, minikubePath); err != nil {
-		return 0, errors.Wrap(err, "downloading minikube")
-	}
+func minikubeStartTime(ctx context.Context, projectID, minikubePath, containerRuntime string) (float64, error) {
 	defer deleteMinikube(ctx, minikubePath)
 
-	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2000", "--trace=gcp")
+	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2000", "--trace=gcp", fmt.Sprintf("--container-runtime=%s", containerRuntime))
 	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", pkgtrace.ProjectEnvVar, projectID))
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr

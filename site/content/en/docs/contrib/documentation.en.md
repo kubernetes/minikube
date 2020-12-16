@@ -47,7 +47,6 @@ We follow the [Kubernetes Documentation Style Guide](https://kubernetes.io/docs/
 
 For compile-time checking of links, use one of the following forms to link between documentation pages:
 
-
 ```go-html-template
 {{</* ref "document.md" */>}}
 {{</* ref "#anchor" */>}}

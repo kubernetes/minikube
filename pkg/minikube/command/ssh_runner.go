@@ -46,6 +46,7 @@ var (
 type SSHRunner struct {
 	d drivers.Driver
 	c *ssh.Client
+	s *ssh.Session
 }
 
 // NewSSHRunner returns a new SSHRunner that will run commands
@@ -187,6 +188,100 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	if elapsed > (1 * time.Second) {
 		klog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
 	}
+	if err == nil {
+		return rr, nil
+	}
+
+	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
+}
+
+// teeSSHStart starts a non-blocking SSH command, streaming stdout, stderr to logs
+func teeSSHStart(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
+	outPipe, err := s.StdoutPipe()
+	if err != nil {
+		return errors.Wrap(err, "stdout")
+	}
+
+	errPipe, err := s.StderrPipe()
+	if err != nil {
+		return errors.Wrap(err, "stderr")
+	}
+
+	go func() {
+		if err := teePrefix(ErrPrefix, errPipe, errB, klog.V(8).Infof); err != nil {
+			klog.Errorf("tee stderr: %v", err)
+		}
+	}()
+	go func() {
+		if err := teePrefix(OutPrefix, outPipe, outB, klog.V(8).Infof); err != nil {
+			klog.Errorf("tee stdout: %v", err)
+		}
+	}()
+
+	return s.Start(cmd)
+}
+
+// StartCmd implements the Command Runner interface to start a exec.Cmd object
+func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
+	if cmd.Stdin != nil {
+		return nil, fmt.Errorf("SSHRunner does not support stdin - you could be the first to add it")
+	}
+
+	if s.s != nil {
+		return nil, fmt.Errorf("another SSH command has been started and is currently running")
+	}
+
+	rr := &RunResult{Args: cmd.Args}
+	sc := &StartedCmd{cmd: cmd, rr: rr}
+	klog.Infof("Start: %v", rr.Command())
+
+	var outb, errb io.Writer
+
+	if cmd.Stdout == nil {
+		var so bytes.Buffer
+		outb = io.MultiWriter(&so, &rr.Stdout)
+	} else {
+		outb = io.MultiWriter(cmd.Stdout, &rr.Stdout)
+	}
+
+	if cmd.Stderr == nil {
+		var se bytes.Buffer
+		errb = io.MultiWriter(&se, &rr.Stderr)
+	} else {
+		errb = io.MultiWriter(cmd.Stderr, &rr.Stderr)
+	}
+
+	sess, err := s.session()
+	if err != nil {
+		return sc, errors.Wrap(err, "NewSession")
+	}
+
+	s.s = sess
+
+	err = teeSSHStart(s.s, shellquote.Join(cmd.Args...), outb, errb)
+
+	return sc, err
+}
+
+// WaitCmd implements the Command Runner interface to wait until a started exec.Cmd object finishes
+func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+	if s.s == nil {
+		return nil, fmt.Errorf("there is no SSH command started")
+	}
+
+	rr := sc.rr
+
+	err := s.s.Wait()
+	if exitError, ok := err.(*exec.ExitError); ok {
+		rr.ExitCode = exitError.ExitCode()
+	}
+
+	if err := s.s.Close(); err != io.EOF {
+		klog.Errorf("session close: %v", err)
+	}
+
+	s.s = nil
+
 	if err == nil {
 		return rr, nil
 	}

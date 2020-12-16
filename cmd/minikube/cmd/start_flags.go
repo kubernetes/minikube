@@ -139,7 +139,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(containerRuntime, "docker", fmt.Sprintf("The container runtime to be used (%s).", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
-	startCmd.Flags().StringArrayVar(&config.AddonList, "addons", nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
+	startCmd.Flags().StringSliceVar(&config.AddonList, "addons", nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "Kubelet network plug-in to use (default: auto)")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=bridge")
@@ -354,6 +354,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 				CNI:                    chosenCNI,
 				NodePort:               viper.GetInt(apiServerPort),
 			},
+			MultiNodeRequested: viper.GetInt(nodes) > 1,
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 		if viper.GetBool(createMount) && driver.IsKIC(drvName) {
@@ -618,6 +619,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(imageRepository) {
 		cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
+	}
+
+	if cmd.Flags().Changed("extra-config") {
+		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
 	}
 
 	if cmd.Flags().Changed(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {

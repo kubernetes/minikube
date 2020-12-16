@@ -38,6 +38,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -88,6 +89,7 @@ func TestFunctional(t *testing.T) {
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
+			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -336,6 +338,32 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 
 }
 
+func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	start := time.Now()
+	// The tests before this already created a profile, starting minikube with different --extra-config cmdline option.
+	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision"}
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Errorf("failed to restart minikube. args %q: %v", rr.Command(), err)
+	}
+	t.Logf("restart took %s for %q cluster.", time.Since(start), profile)
+
+	afterCfg, err := config.LoadProfile(profile)
+	if err != nil {
+		t.Errorf("error reading cluster config after soft start: %v", err)
+	}
+
+	expectedExtraOptions := "apiserver.enable-admission-plugins=NamespaceAutoProvision"
+
+	if !strings.Contains(afterCfg.Config.KubernetesConfig.ExtraOptions.String(), expectedExtraOptions) {
+		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
+	}
+
+}
+
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
@@ -508,7 +536,11 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("add_local", func(t *testing.T) {
 			if GithubActionRunner() && runtime.GOOS == "darwin" {
 				t.Skipf("skipping this test because Docker can not run in macos on github action free version. https://github.community/t/is-it-possible-to-install-and-configure-docker-on-macos-runner/16981")
+			}
 
+			_, err := exec.LookPath(oci.Docker)
+			if err != nil {
+				t.Skipf("docker is not installed, skipping local image test")
 			}
 
 			dname, err := ioutil.TempDir("", profile)
@@ -525,7 +557,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			img := "minikube-local-cache-test:" + profile
 			_, err = Run(t, exec.CommandContext(ctx, "docker", "build", "-t", img, dname))
 			if err != nil {
-				t.Errorf("failed to build docker image: %v", err)
+				t.Skipf("failed to build docker image, skipping local test: %v", err)
 			}
 
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))

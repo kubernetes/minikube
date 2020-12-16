@@ -216,12 +216,12 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest string,
 	// walk through the paginated list of up to ghSearchLimit newest releases
 	opts := &github.ListOptions{PerPage: ghListPerPage}
 	for (opts.Page+1)*ghListPerPage <= ghSearchLimit {
-		rls, resp, err := ghc.Repositories.ListReleases(ctx, owner, repo, opts)
+		rls, resp, err := ghc.Repositories.ListTags(ctx, owner, repo, opts)
 		if err != nil {
 			return "", "", err
 		}
 		for _, rl := range rls {
-			ver := rl.GetName()
+			ver := *rl.Name
 			if !semver.IsValid(ver) {
 				continue
 			}

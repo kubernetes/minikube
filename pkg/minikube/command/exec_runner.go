@@ -20,10 +20,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -36,17 +38,22 @@ import (
 //
 // It implements the CommandRunner interface.
 type execRunner struct {
+	sudo bool
 }
 
 // NewExecRunner returns a kicRunner implementor of runner which runs cmds inside a container
-func NewExecRunner() Runner {
-	return &execRunner{}
+func NewExecRunner(sudo bool) Runner {
+	return &execRunner{sudo: sudo}
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+func (e *execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
 	klog.Infof("Run: %v", rr.Command())
+
+	if e.sudo && runtime.GOOS != "linux" {
+		return nil, fmt.Errorf("sudo not supported on %s", runtime.GOOS)
+	}
 
 	var outb, errb io.Writer
 	if cmd.Stdout == nil {
@@ -84,12 +91,59 @@ func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 }
 
+// StartCmd implements the Command Runner interface to start a exec.Cmd object
+func (*execRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
+	rr := &RunResult{Args: cmd.Args}
+	sc := &StartedCmd{cmd: cmd, rr: rr}
+	klog.Infof("Start: %v", rr.Command())
+
+	var outb, errb io.Writer
+	if cmd.Stdout == nil {
+		var so bytes.Buffer
+		outb = io.MultiWriter(&so, &rr.Stdout)
+	} else {
+		outb = io.MultiWriter(cmd.Stdout, &rr.Stdout)
+	}
+
+	if cmd.Stderr == nil {
+		var se bytes.Buffer
+		errb = io.MultiWriter(&se, &rr.Stderr)
+	} else {
+		errb = io.MultiWriter(cmd.Stderr, &rr.Stderr)
+	}
+
+	cmd.Stdout = outb
+	cmd.Stderr = errb
+
+	if err := cmd.Start(); err != nil {
+		return sc, errors.Wrap(err, "start")
+	}
+
+	return sc, nil
+}
+
+// WaitCmd implements the Command Runner interface to wait until a started exec.Cmd object finishes
+func (*execRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+	rr := sc.rr
+
+	err := sc.cmd.Wait()
+	if exitError, ok := err.(*exec.ExitError); ok {
+		rr.ExitCode = exitError.ExitCode()
+	}
+
+	if err == nil {
+		return rr, nil
+	}
+
+	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
+}
+
 // Copy copies a file and its permissions
-func (*execRunner) Copy(f assets.CopyableFile) error {
+func (e *execRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(dst); err == nil {
 		klog.Infof("found %s, removing ...", dst)
-		if err := os.Remove(dst); err != nil {
+		if err := e.Remove(f); err != nil {
 			return errors.Wrapf(err, "error removing file %s", dst)
 		}
 	}
@@ -105,12 +159,46 @@ func (*execRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
 
+	if e.sudo {
+		// write to temp location ...
+		tmpfile, err := ioutil.TempFile("", "minikube")
+		if err != nil {
+			return errors.Wrapf(err, "error creating tempfile")
+		}
+		defer os.Remove(tmpfile.Name())
+		err = writeFile(tmpfile.Name(), f, os.FileMode(perms))
+		if err != nil {
+			return errors.Wrapf(err, "error writing to tempfile %s", tmpfile.Name())
+		}
+
+		// ... then use sudo to move to target ...
+		_, err = e.RunCmd(exec.Command("sudo", "cp", "-a", tmpfile.Name(), dst))
+		if err != nil {
+			return errors.Wrapf(err, "error copying tempfile %s to dst %s", tmpfile.Name(), dst)
+		}
+
+		// ... then fix file permission that should have been fine because of "cp -a"
+		err = os.Chmod(dst, os.FileMode(perms))
+		return err
+	}
 	return writeFile(dst, f, os.FileMode(perms))
 }
 
 // Remove removes a file
-func (*execRunner) Remove(f assets.CopyableFile) error {
+func (e *execRunner) Remove(f assets.CopyableFile) error {
 	dst := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	klog.Infof("rm: %s", dst)
+	if e.sudo {
+		if err := os.Remove(dst); err != nil {
+			if !os.IsPermission(err) {
+				return err
+			}
+			_, err = e.RunCmd(exec.Command("sudo", "rm", "-f", dst))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	return os.Remove(dst)
 }

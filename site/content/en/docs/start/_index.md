@@ -6,10 +6,9 @@ aliases:
   - /docs/start
 ---
 
-minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes. 
+minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes.
 
 All you need is Docker (or similarly compatible) container or a Virtual Machine environment, and Kubernetes is a single command away: `minikube start`
-
 
 ## What you’ll need
 
@@ -24,27 +23,53 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 {{% tabs %}}
 {{% linuxtab %}}
 
-For Linux users, we provide 3 easy download options:
+For Linux users, we provide 3 easy download options (for each architecture):
 
-### Binary download
+### x86
+
+#### Binary download
+
 
 ```shell
  curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
  sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
 
-### Debian package
+#### Debian package
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
 sudo dpkg -i minikube_latest_amd64.deb
 ```
 
-### RPM package
+#### RPM package
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
 sudo rpm -ivh minikube-latest.x86_64.rpm
+```
+
+### ARM
+
+#### Binary download
+
+```shell
+ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm64
+ sudo install minikube-linux-arm64 /usr/local/bin/minikube
+```
+
+#### Debian package
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_arm64.deb
+sudo dpkg -i minikube_latest_arm64.deb
+```
+
+#### RPM package
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.aarch64.rpm
+sudo rpm -ivh minikube-latest.aarch64.rpm
 ```
 
 {{% /linuxtab %}}
@@ -73,12 +98,22 @@ sudo install minikube-darwin-amd64 /usr/local/bin/minikube
 {{% /mactab %}}
 {{% windowstab %}}
 
-If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use it to install minikube:
+### Windows Package Manager
+
+If the [Windows Package Manager](https://docs.microsoft.com/en-us/windows/package-manager/) is installed, use the following command to install minikube:
+
+```shell
+winget install minikube
+```
+
+### Chocolatey
+If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use the following command:
 
 ```shell
 choco install minikube
 ```
 
+### Stand-alone Windows Installer
 Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
 {{% /windowstab %}}
@@ -199,7 +234,6 @@ minikube start -p aged --kubernetes-version=v1.16.1
 ```
 
 Delete all of the minikube clusters:
-
 
 ```shell
 minikube delete --all

@@ -32,7 +32,7 @@ if [ "${ghprbPullId}" == "master" ]; then
 fi
 
 jobs=(
-     'HyperKit_macOS'
+     'HyperKit_Functional_macOS'
      'Hyper-V_Windows'
      'VirtualBox_Linux'
      # 'VirtualBox_macOS'

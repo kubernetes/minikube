@@ -51,11 +51,25 @@ type RunResult struct {
 	Args     []string // the args that was passed to Runner
 }
 
+// StartedCmd holds the contents of a started command
+type StartedCmd struct {
+	cmd *exec.Cmd
+	rr  *RunResult
+}
+
 // Runner represents an interface to run commands.
 type Runner interface {
 	// RunCmd runs a cmd of exec.Cmd type. allowing user to set cmd.Stdin, cmd.Stdout,...
 	// not all implementors are guaranteed to handle all the properties of cmd.
 	RunCmd(cmd *exec.Cmd) (*RunResult, error)
+
+	// StartCmd starts a cmd of exec.Cmd type.
+	// This func in non-blocking, use WaitCmd to block until complete.
+	// Not all implementors are guaranteed to handle all the properties of cmd.
+	StartCmd(cmd *exec.Cmd) (*StartedCmd, error)
+
+	// WaitCmd will prevent further execution until the started command has completed.
+	WaitCmd(startedCmd *StartedCmd) (*RunResult, error)
 
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error

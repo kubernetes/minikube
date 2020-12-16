@@ -92,8 +92,8 @@ var settings = []Setting{
 	},
 	{
 		name:        "memory",
-		set:         SetInt,
-		validations: []setFn{IsPositive},
+		set:         SetString,
+		validations: []setFn{IsValidDiskSize},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
@@ -181,7 +181,7 @@ var settings = []Setting{
 var ConfigCmd = &cobra.Command{
 	Use:   "config SUBCOMMAND [flags]",
 	Short: "Modify persistent configuration values",
-	Long: `config modifies minikube config files using subcommands like "minikube config set driver kvm"
+	Long: `config modifies minikube config files using subcommands like "minikube config set driver kvm2"
 Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := cmd.Help(); err != nil {

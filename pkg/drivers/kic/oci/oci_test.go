@@ -71,21 +71,66 @@ func TestPointToHostDockerDaemon(t *testing.T) {
 	}
 }
 
+func TestPointToHostPodmanEmpty(t *testing.T) {
+	_ = os.Setenv("CONTAINER_HOST", "foo_host")
+	_ = os.Setenv("MINIKUBE_ACTIVE_PODMAN", "minikube")
+
+	_ = os.Unsetenv("MINIKUBE_EXISTING_CONTAINER_HOST")
+
+	if err := PointToHostPodman(); err != nil {
+		t.Fatalf("failed to set podman environment: got %v", err)
+	}
+
+	for _, key := range []string{
+		"CONTAINER_HOST",
+	} {
+		if v, set := os.LookupEnv(key); set {
+			t.Errorf("%v env variable should not be set. got: %v", key, v)
+		}
+	}
+}
+
+func TestPointToHostPodman(t *testing.T) {
+	_ = os.Setenv("CONTAINER_HOST", "foo_host")
+
+	_ = os.Setenv("MINIKUBE_EXISTING_CONTAINER_HOST", "bar_host")
+
+	if err := PointToHostPodman(); err != nil {
+		t.Fatalf("failed to set podman environment: got %v", err)
+	}
+
+	expected := []struct {
+		key, value string
+	}{
+		{"CONTAINER_HOST", "bar_host"},
+	}
+	for _, exp := range expected {
+		if v := os.Getenv(exp.key); v != exp.value {
+			t.Errorf("invalid %v env variable. got: %v, want: %v", exp.value, v, exp.value)
+		}
+	}
+}
+
 func TestDaemonHost(t *testing.T) {
 	tests := []struct {
 		driver           string
+		containerHost    string
 		dockerHost       string
 		expectedAddr     string
 		expectedExternal bool
 	}{
-		{"", "", "127.0.0.1", false},
-		{"docker", "tcp://1.1.1.1:2222/foo", "1.1.1.1", true},
-		{"podman", "tcp://1.1.1.1:2222/foo", "127.0.0.1", false},
-		{"_invalid_", "tcp://1.1.1.1:2222/foo", "127.0.0.1", false},
-		{"docker", "unix:///var/run/something", "127.0.0.1", false},
-		{"docker", "tcp://127.0.0.1/foo", "127.0.0.1", true},
+		{"", "", "", "127.0.0.1", false},
+		{"docker", "", "tcp://1.1.1.1:2222/foo", "1.1.1.1", true},
+		{"docker", "ssh://127.0.0.1/bar", "", "127.0.0.1", false},
+		{"podman", "", "tcp://1.1.1.1:2222/foo", "127.0.0.1", false},
+		{"podman", "ssh://127.0.0.1/bar", "", "127.0.0.1", true},
+		{"_invalid_", "", "tcp://1.1.1.1:2222/foo", "127.0.0.1", false},
+		{"docker", "", "unix:///var/run/something", "127.0.0.1", false},
+		{"docker", "", "tcp://127.0.0.1/foo", "127.0.0.1", true},
+		{"docker", "", "ssh://127.0.0.1/bar", "127.0.0.1", true},
 	}
 	for _, test := range tests {
+		_ = os.Setenv("CONTAINER_HOST", test.containerHost)
 		_ = os.Setenv("DOCKER_HOST", test.dockerHost)
 		if v := IsExternalDaemonHost(test.driver); v != test.expectedExternal {
 			t.Errorf("invalid result of IsExternalDaemonHost. got: %v, want: %v", v, test.expectedExternal)

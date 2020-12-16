@@ -29,6 +29,7 @@ etcd:
   local:
     dataDir: /var/lib/minikube/etcd
 controllerManagerExtraArgs:
+  allocate-node-cidrs: "true"
   leader-elect: "false"
 schedulerExtraArgs:
   leader-elect: "false"

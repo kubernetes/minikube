@@ -403,6 +403,10 @@ func warnAboutMultiNode() {
 	out.Step(style.Documentation, "To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
+func warnAboutMultiNodeCNI() {
+	out.WarningT("Cluster was created without any CNI, adding node to it might cause broken network.")
+}
+
 func updateDriver(driverName string) {
 	v, err := version.GetSemverVersion()
 	if err != nil {
@@ -797,12 +801,19 @@ func validateUser(drvName string) {
 
 	useForce := viper.GetBool(force)
 
-	if driver.NeedsRoot(drvName) && u.Uid != "0" && !useForce {
-		exit.Message(reason.DrvNeedsRoot, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo -E minikube start --driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
+	// None driver works with root and without root on Linux
+	if runtime.GOOS == "linux" && drvName == driver.None {
+		if !viper.GetBool(interactive) {
+			test := exec.Command("sudo", "-n", "echo", "-n")
+			if err := test.Run(); err != nil {
+				exit.Message(reason.DrvNeedsRoot, `sudo requires a password, and --interactive=false`)
+			}
+		}
+		return
 	}
 
-	// If root is required, or we are not root, exit early
-	if driver.NeedsRoot(drvName) || u.Uid != "0" {
+	// If we are not root, exit early
+	if u.Uid != "0" {
 		return
 	}
 

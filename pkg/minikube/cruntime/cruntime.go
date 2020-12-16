@@ -22,7 +22,6 @@ import (
 	"os/exec"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -54,7 +53,15 @@ func ValidRuntimes() []string {
 
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
+	// RunCmd is a blocking method that runs a command
+	// Use this if you don't need to stream stdout and stderr in real-time
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
+	// StartCmd is a non-blocking method that starts a command
+	// Use WaitCmd to block until the command is complete
+	// Use this if you need to stream stdout and/or stderr in real-time
+	StartCmd(cmd *exec.Cmd) (*command.StartedCmd, error)
+	// WaitCmd blocks until the started command completes
+	WaitCmd(sc *command.StartedCmd) (*command.RunResult, error)
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
 	// Remove is a convenience method that runs a command to remove a file
@@ -207,24 +214,6 @@ func disableOthers(me Manager, cr CommandRunner) error {
 		if r.Active() {
 			return fmt.Errorf("%s is still active", r.Name())
 		}
-	}
-	return nil
-}
-
-// enableIPForwarding configures IP forwarding, which is handled normally by Docker
-// Context: https://github.com/kubernetes/kubeadm/issues/1062
-func enableIPForwarding(cr CommandRunner) error {
-	c := exec.Command("sudo", "sysctl", "net.bridge.bridge-nf-call-iptables")
-	if rr, err := cr.RunCmd(c); err != nil {
-		klog.Infof("couldn't verify netfilter by %q which might be okay. error: %v", rr.Command(), err)
-		c = exec.Command("sudo", "modprobe", "br_netfilter")
-		if _, err := cr.RunCmd(c); err != nil {
-			return errors.Wrapf(err, "br_netfilter")
-		}
-	}
-	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "ip_forward")
 	}
 	return nil
 }

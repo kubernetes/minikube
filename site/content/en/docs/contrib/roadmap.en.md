@@ -10,7 +10,7 @@ This roadmap is a living document outlining the major technical improvements whi
 
 Please send a PR to suggest any improvements to it.
 
-# 2020 
+# 2020
 
 ## (#1) Inclusive and community-driven
 

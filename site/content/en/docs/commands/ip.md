@@ -1,20 +1,26 @@
 ---
 title: "ip"
 description: >
-  Retrieves the IP address of the running cluster
+  Retrieves the IP address of the specified node
 ---
 
 
 ## minikube ip
 
-Retrieves the IP address of the running cluster
+Retrieves the IP address of the specified node
 
 ### Synopsis
 
-Retrieves the IP address of the running cluster, and writes it to STDOUT.
+Retrieves the IP address of the specified node, and writes it to STDOUT.
 
 ```shell
 minikube ip [flags]
+```
+
+### Options
+
+```
+  -n, --node string   The node to get IP. Defaults to the primary control plane.
 ```
 
 ### Options inherited from parent commands
