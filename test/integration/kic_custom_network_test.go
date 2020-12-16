@@ -67,6 +67,9 @@ func TestKicCustomNetwork(t *testing.T) {
 }
 
 func TestKicExistingNetwork(t *testing.T) {
+	if !KicDriver() {
+		t.Skip("only runs with docker driver")
+	}
 	// create custom network
 	networkName := "existing-network"
 	if _, err := oci.CreateNetwork(oci.Docker, networkName); err != nil {
