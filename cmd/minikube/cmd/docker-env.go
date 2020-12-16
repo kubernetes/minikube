@@ -217,7 +217,7 @@ func WaitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Du
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
-		if _, ierr := kverify.ApiServerPID(cr); ierr != nil {
+		if _, ierr := kverify.APIServerPID(cr); ierr != nil {
 			return false, nil
 		}
 
