@@ -149,3 +149,13 @@ NOTE: `--cleanup` flag's default value is `true`.
 Adding a route requires root privileges for the user, and thus there are differences in how to run `minikube tunnel` depending on the OS. If you want to avoid entering the root password, consider setting NOPASSWD for "ip" and "route" commands:
 
 <https://superuser.com/questions/1328452/sudoers-nopasswd-for-single-executable-but-allowing-others>
+
+
+### Access to ports <1024 on Windows requires root permission
+If you are using Docker driver on Windows, there is a chance that you have an old version of SSH client you might get an error like - `Privileged ports can only be forwarded by root.` or you might not be able to access the service even after `minikube tunnel` if the access port is less than 1024 but for ports greater than 1024 works fine.
+
+In order to resolve this, ensure that you are running the latest version of SSH client. You can install the latest version of the SSH client on Windows by running the following in a Command Prompt with an Administrator Privileges
+```
+choco install openssh
+```
+The latest version (`OpenSSH_for_Windows_7.7p1, LibreSSL 2.6.5`) which is available on Windows 10 by default doesn't work. You can track the issue with this over here - https://github.com/PowerShell/Win32-OpenSSH/issues/1693
