@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -71,6 +72,7 @@ var (
 	insecureRegistry []string
 	apiServerNames   []string
 	apiServerIPs     []net.IP
+	hostRe           = regexp.MustCompile(`[\w\.-]+`)
 )
 
 func init() {
@@ -897,6 +899,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 func validateCPUCount(drvName string) {
 	var cpuCount int
 	if driver.BareMetal(drvName) {
+
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
@@ -1041,6 +1044,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	validateRegistryMirror()
+	validateInsecureRegistry()
+
 }
 
 // This function validates if the --registry-mirror
@@ -1056,6 +1061,34 @@ func validateRegistryMirror() {
 				exit.Message(reason.Usage, "Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}", out.V{"url": loc})
 			}
 
+		}
+	}
+}
+
+// This function validates that the --insecure-registry follows one of the following formats:
+// "<ip>:<port>" "<hostname>:<port>" "<network>/<netmask>"
+func validateInsecureRegistry() {
+	if len(insecureRegistry) > 0 {
+		for _, addr := range insecureRegistry {
+			hostnameOrIP, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				_, _, err := net.ParseCIDR(addr)
+				if err == nil {
+					continue
+				}
+			}
+			if port == "" {
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>:<port>, <hostname>:<port> or <network>/<netmask>", out.V{"addr": addr})
+			}
+			// checks both IPv4 and IPv6
+			ipAddr := net.ParseIP(hostnameOrIP)
+			if ipAddr != nil {
+				continue
+			}
+			isValidHost := hostRe.MatchString(hostnameOrIP)
+			if err != nil || !isValidHost {
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>:<port>, <hostname>:<port> or <network>/<netmask>", out.V{"addr": addr})
+			}
 		}
 	}
 }
