@@ -52,10 +52,10 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	hostOnlyCIDR = strings.Trim(hostOnlyCIDR, "'\"")
+	hostOnlyCIDR = strings.Trim(hostOnlyCIDR, "'"")
 	ip, network, err := net.ParseCIDR(hostOnlyCIDR)
 	if err != nil {
-		return errors.Wrap(err, "invalid address")
+		return nil, errors.Wrap(err, "invalid address")
 	}
 	d := virtualbox.NewDriver(driver.MachineName(cc, n), localpath.MiniPath())
 	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
