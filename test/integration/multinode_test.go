@@ -29,6 +29,8 @@ type clusterStatus struct {
 	totalNodes       int
 	wantRunningNodes int
 	wantStoppedNodes int
+
+	isAzure bool
 }
 
 type validatorFunc func(context.Context, *testing.T, string, *clusterStatus)
@@ -61,6 +63,17 @@ func TestMultiNode(t *testing.T) {
 		}
 
 		s := &clusterStatus{}
+
+		if DockerDriver() {
+			rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
+			if err != nil {
+				t.Fatalf("docker is broken: %v", err)
+			}
+			if strings.Contains(rr.Stdout.String(), "azure") {
+				s.isAzure = true
+			}
+		}
+
 		for _, tc := range tests {
 			tc := tc
 			if ctx.Err() == context.DeadlineExceeded {
@@ -125,15 +138,8 @@ func validateStopRunningNode(nodeName string) validatorFunc {
 
 func validateStartNodeAfterStop(nodeName string) validatorFunc {
 	return func(ctx context.Context, t *testing.T, profile string, s *clusterStatus) {
-		if DockerDriver() {
-			rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
-			if err != nil {
-				t.Fatalf("docker is broken: %v", err)
-			}
-			if strings.Contains(rr.Stdout.String(), "azure") {
-				s.startNode() // Make GitHub test happy
-				t.Skip("kic containers are not supported on docker's azure")
-			}
+		if s.isAzure {
+			t.Skip("kic containers are not supported on docker's azure")
 		}
 
 		// Start the node back up
@@ -160,15 +166,11 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 }
 
 func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile string, s *clusterStatus) {
-	if DockerDriver() {
-		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
-		if err != nil {
-			t.Fatalf("docker is broken: %v", err)
-		}
-		if strings.Contains(rr.Stdout.String(), "azure") {
-			t.Skip("kic containers are not supported on docker's azure")
-		}
+	if s.isAzure {
+		s.startCluster()
+		t.Skip("kic containers are not supported on docker's azure")
 	}
+
 	// Restart a full cluster with minikube start
 	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=8", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -205,7 +207,7 @@ func validateDeleteNodeFromMultiNode(nodeName string, running bool) validatorFun
 			t.Errorf("node stop returned an error. args %q: %v", rr.Command(), err)
 		}
 
-		if running {
+		if running && !s.isAzure {
 			s.deleteRunningNode()
 		} else {
 			s.deleteStoppedNode()
@@ -283,7 +285,7 @@ func validateClusterStatus(ctx context.Context, t *testing.T, profile string, s 
 	// Make sure minikube status shows expected running nodes and stopped nodes
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr"))
 	if err != nil {
-		if s.wantStoppedNodes > 0 {
+		if s.wantStoppedNodes > 0 || s.isAzure { // If isAzure, the start process skipped, so some hosts are stopped
 			// Exit code 7 means one host is stopped, which we are expecting
 			if rr.ExitCode != 7 {
 				t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)

@@ -784,7 +784,6 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig, genCertKey bool) (
 		}
 
 		certCmd := fmt.Sprintf("%s init phase upload-certs --upload-certs --config %s", ka, confPath)
-		out.Step(style.Tip, certCmd)
 		certKeyCmd := exec.Command("/bin/bash", "-c", certCmd)
 		certKeyResult, err := k.c.RunCmd(certKeyCmd)
 		if err != nil {
