@@ -181,7 +181,7 @@ var (
 	RsrcInsufficientPodmanStorage = Kind{
 		ID:       "RSRC_PODMAN_STORAGE",
 		ExitCode: ExInsufficientStorage,
-		Advice: `Try at least one of the following to free up space on the device:
+		Advice: `Try one or more of the following to free up space on the device:
 	
 			1. Run "sudo podman system prune" to remove unused podman data
 			2. Run "minikube ssh -- docker system prune" if using the Docker container runtime`,
