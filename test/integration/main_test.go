@@ -48,6 +48,7 @@ var testdataDir = flag.String("testdata-dir", "testdata", "the directory relativ
 const (
 	SecondNodeName = "m02"
 	ThirdNodeName  = "m03"
+	FourthNodeName = "m04"
 )
 
 // TestMain is the test main
