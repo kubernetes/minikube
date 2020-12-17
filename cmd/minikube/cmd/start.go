@@ -363,11 +363,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.Message(reason.DrvUnsupportedMulti, "The none driver is not compatible with multi-node clusters.")
 		} else {
-			// Only warn users on first start.
 			if existing == nil {
-				out.Ln("")
-				warnAboutMultiNode()
-
 				for i := 1; i < numNodes; i++ {
 					nodeName := node.Name(i + 1)
 					n := config.Node{
@@ -396,11 +392,6 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 	}
 
 	return kubeconfig, nil
-}
-
-func warnAboutMultiNode() {
-	out.WarningT("Multi-node clusters are currently experimental and might exhibit unintended behavior.")
-	out.Step(style.Documentation, "To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
 func warnAboutMultiNodeCNI() {
