@@ -77,3 +77,8 @@ div.code-tabs h2 {
 div.code-tabs h3 {
     font-size: 1.1rem !important;
 }
+div.code-tabs h3.backup-tab-title {
+    font-size: 1.7rem !important;
+    font-weight: 600;
+    margin-top: 1.3rem;
+}
