@@ -311,7 +311,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			DockerOpt:               config.DockerOpt,
 			InsecureRegistry:        insecureRegistry,
 			RegistryMirror:          registryMirror,
-			HostOnlyCIDR:            viper.GetString(hostOnlyCIDR),
+			HostOnlyCIDR:            strings.Trim(viper.GetString(hostOnlyCIDR), "'"))
 			HypervVirtualSwitch:     viper.GetString(hypervVirtualSwitch),
 			HypervUseExternalSwitch: viper.GetBool(hypervUseExternalSwitch),
 			HypervExternalAdapter:   viper.GetString(hypervExternalAdapter),
@@ -349,7 +349,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			},
 			MultiNodeRequested: viper.GetInt(nodes) > 1,
 		}
-		hostOnlyCIDR = strings.Trim(hostOnlyCIDR, "'")
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 		if viper.GetBool(createMount) && driver.IsKIC(drvName) {
 			cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
