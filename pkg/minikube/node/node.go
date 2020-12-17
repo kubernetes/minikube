@@ -89,6 +89,16 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 
 	// leave master
 	if n.ControlPlane {
+		host, err := machine.LoadHost(api, m)
+		if err != nil {
+			return n, err
+		}
+
+		runner, err := machine.CommandRunner(host)
+		if err != nil {
+			return n, err
+		}
+
 		resetCmd := fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))
 		rc := exec.Command("/bin/bash", "-c", resetCmd)
 		_, err = runner.RunCmd(rc)
