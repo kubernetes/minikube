@@ -1,26 +1,27 @@
 ---
-title: "ssh-key"
+title: "ssh-host"
 description: >
-  Retrieve the ssh identity key path of the specified node
+  Retrieve the ssh host key of the specified node
 ---
 
 
-## minikube ssh-key
+## minikube ssh-host
 
-Retrieve the ssh identity key path of the specified node
+Retrieve the ssh host key of the specified node
 
 ### Synopsis
 
-Retrieve the ssh identity key path of the specified node, and writes it to STDOUT.
+Retrieve the ssh host key of the specified node.
 
 ```shell
-minikube ssh-key [flags]
+minikube ssh-host [flags]
 ```
 
 ### Options
 
 ```
-  -n, --node string   The node to get ssh-key path. Defaults to the primary control plane.
+      --append-known   Add host key to SSH known_hosts file
+  -n, --node string    The node to ssh into. Defaults to the primary control plane.
 ```
 
 ### Options inherited from parent commands

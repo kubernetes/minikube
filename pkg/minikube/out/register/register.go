@@ -26,20 +26,23 @@ import (
 
 // If you add a new step here, please also add it to register.Reg registry inside the init() function
 const (
-	InitialSetup         RegStep = "Initial Minikube Setup"
-	SelectingDriver      RegStep = "Selecting Driver"
-	DownloadingArtifacts RegStep = "Downloading Artifacts"
-	StartingNode         RegStep = "Starting Node"
-	PullingBaseImage     RegStep = "Pulling Base Image"
-	RunningLocalhost     RegStep = "Running on Localhost"
-	LocalOSRelease       RegStep = "Local OS Release"
-	CreatingContainer    RegStep = "Creating Container"
-	CreatingVM           RegStep = "Creating VM"
-	ConfiguringLHEnv     RegStep = "Configuring Localhost Environment"
-	PreparingKubernetes  RegStep = "Preparing Kubernetes"
-	VerifyingKubernetes  RegStep = "Verifying Kubernetes"
-	EnablingAddons       RegStep = "Enabling Addons"
-	Done                 RegStep = "Done"
+	InitialSetup                      RegStep = "Initial Minikube Setup"
+	SelectingDriver                   RegStep = "Selecting Driver"
+	DownloadingArtifacts              RegStep = "Downloading Artifacts"
+	StartingNode                      RegStep = "Starting Node"
+	PullingBaseImage                  RegStep = "Pulling Base Image"
+	RunningLocalhost                  RegStep = "Running on Localhost"
+	LocalOSRelease                    RegStep = "Local OS Release"
+	CreatingContainer                 RegStep = "Creating Container"
+	CreatingVM                        RegStep = "Creating VM"
+	ConfiguringLHEnv                  RegStep = "Configuring Localhost Environment"
+	PreparingKubernetes               RegStep = "Preparing Kubernetes"
+	PreparingKubernetesCerts          RegStep = "Generating certificates"
+	PreparingKubernetesControlPlane   RegStep = "Booting control plane"
+	PreparingKubernetesBootstrapToken RegStep = "Configuring RBAC rules"
+	VerifyingKubernetes               RegStep = "Verifying Kubernetes"
+	EnablingAddons                    RegStep = "Enabling Addons"
+	Done                              RegStep = "Done"
 
 	Stopping  RegStep = "Stopping"
 	PowerOff  RegStep = "PowerOff"
@@ -77,6 +80,9 @@ func init() {
 				CreatingContainer,
 				CreatingVM,
 				PreparingKubernetes,
+				PreparingKubernetesCerts,
+				PreparingKubernetesControlPlane,
+				PreparingKubernetesBootstrapToken,
 				ConfiguringLHEnv,
 				VerifyingKubernetes,
 				EnablingAddons,

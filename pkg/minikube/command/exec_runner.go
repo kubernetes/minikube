@@ -91,6 +91,53 @@ func (e *execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 }
 
+// StartCmd implements the Command Runner interface to start a exec.Cmd object
+func (*execRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
+	rr := &RunResult{Args: cmd.Args}
+	sc := &StartedCmd{cmd: cmd, rr: rr}
+	klog.Infof("Start: %v", rr.Command())
+
+	var outb, errb io.Writer
+	if cmd.Stdout == nil {
+		var so bytes.Buffer
+		outb = io.MultiWriter(&so, &rr.Stdout)
+	} else {
+		outb = io.MultiWriter(cmd.Stdout, &rr.Stdout)
+	}
+
+	if cmd.Stderr == nil {
+		var se bytes.Buffer
+		errb = io.MultiWriter(&se, &rr.Stderr)
+	} else {
+		errb = io.MultiWriter(cmd.Stderr, &rr.Stderr)
+	}
+
+	cmd.Stdout = outb
+	cmd.Stderr = errb
+
+	if err := cmd.Start(); err != nil {
+		return sc, errors.Wrap(err, "start")
+	}
+
+	return sc, nil
+}
+
+// WaitCmd implements the Command Runner interface to wait until a started exec.Cmd object finishes
+func (*execRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+	rr := sc.rr
+
+	err := sc.cmd.Wait()
+	if exitError, ok := err.(*exec.ExitError); ok {
+		rr.ExitCode = exitError.ExitCode()
+	}
+
+	if err == nil {
+		return rr, nil
+	}
+
+	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
+}
+
 // Copy copies a file and its permissions
 func (e *execRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())

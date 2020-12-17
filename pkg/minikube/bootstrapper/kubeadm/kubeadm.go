@@ -17,8 +17,10 @@ limitations under the License.
 package kubeadm
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os/exec"
 	"path"
@@ -226,9 +228,17 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	conf := bsutil.KubeadmYamlPath
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
+	kr, kw := io.Pipe()
 	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
-	if _, err := k.c.RunCmd(c); err != nil {
+	c.Stdout = kw
+	c.Stderr = kw
+	sc, err := k.c.StartCmd(c)
+	if err != nil {
+		return errors.Wrap(err, "start")
+	}
+	go outputKubeadmInitSteps(kr)
+	if _, err := k.c.WaitCmd(sc); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return ErrInitTimedout
 		}
@@ -236,9 +246,8 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		if strings.Contains(err.Error(), "'kubeadm': Permission denied") {
 			return ErrNoExecLinux
 		}
-		return errors.Wrap(err, "run")
+		return errors.Wrap(err, "wait")
 	}
-
 	if err := k.applyCNI(cfg); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
@@ -270,6 +279,37 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 
 	wg.Wait()
 	return nil
+}
+
+// outputKubeadmInitSteps streams the pipe and outputs the current step
+func outputKubeadmInitSteps(logs io.Reader) {
+	type step struct {
+		logTag       string
+		registerStep register.RegStep
+		stepMessage  string
+	}
+
+	steps := []step{
+		{logTag: "certs", registerStep: register.PreparingKubernetesCerts, stepMessage: "Generating certificates and keys ..."},
+		{logTag: "control-plane", registerStep: register.PreparingKubernetesControlPlane, stepMessage: "Booting up control plane ..."},
+		{logTag: "bootstrap-token", registerStep: register.PreparingKubernetesBootstrapToken, stepMessage: "Configuring RBAC rules ..."},
+	}
+	nextStepIndex := 0
+
+	scanner := bufio.NewScanner(logs)
+	for scanner.Scan() {
+		if nextStepIndex >= len(steps) {
+			scanner.Text()
+			continue
+		}
+		nextStep := steps[nextStepIndex]
+		if !strings.Contains(scanner.Text(), fmt.Sprintf("[%s]", nextStep.logTag)) {
+			continue
+		}
+		register.Reg.SetStep(nextStep.registerStep)
+		out.Step(style.SubStep, nextStep.stepMessage)
+		nextStepIndex++
+	}
 }
 
 // applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.

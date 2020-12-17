@@ -131,6 +131,14 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 }
 
+func (k *kicRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
+	return nil, fmt.Errorf("kicRunner does not support StartCmd - you could be the first to add it")
+}
+
+func (k *kicRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+	return nil, fmt.Errorf("kicRunner does not support WaitCmd - you could be the first to add it")
+}
+
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
