@@ -154,7 +154,7 @@ Adding a route requires root privileges for the user, and thus there are differe
 ### Access to ports <1024 on Windows requires root permission
 If you are using Docker driver on Windows, there is a chance that you have an old version of SSH client you might get an error like - `Privileged ports can only be forwarded by root.` or you might not be able to access the service even after `minikube tunnel` if the access port is less than 1024 but for ports greater than 1024 works fine.
 
-In order to resolve this, ensure that you are running the latest version of SSH client. You can install the latest version of the SSH client on Windows by running the following in a Command Prompt with an Administrator Privileges
+In order to resolve this, ensure that you are running the latest version of SSH client. You can install the latest version of the SSH client on Windows by running the following in a Command Prompt with an Administrator Privileges (Requires [chocolatey package manager](https://chocolatey.org/install))
 ```
 choco install openssh
 ```
