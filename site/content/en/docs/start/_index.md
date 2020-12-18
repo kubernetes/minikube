@@ -84,7 +84,7 @@ brew install minikube
 If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
 
 ```shell
-brew cask remove minikube
+brew uninstall --cask minikube
 brew link minikube
 ```
 
