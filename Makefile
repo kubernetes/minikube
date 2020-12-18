@@ -26,7 +26,10 @@ KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f
 ISO_VERSION ?= v1.16.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
+DEB_REVISION ?= 0
+
 RPM_VERSION ?= $(DEB_VERSION)
+RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 GO_VERSION ?= 1.15.5
@@ -461,12 +464,12 @@ out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
 deb_version:
-	@echo $(DEB_VERSION)
+	@echo $(DEB_VERSION)-$(DEB_REVISION)
 
-out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-0_amd64.deb
+out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb
 	cp $< $@
 
-out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
+out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
 	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
 	chmod 0755 out/minikube_$(DEB_VERSION)/DEBIAN
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
@@ -484,7 +487,7 @@ out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
 rpm_version:
 	@echo $(RPM_VERSION)
 
-out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-0.x86_64.rpm
+out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-$(RPM_REVISION).x86_64.rpm
 	cp $< $@
 
 out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
@@ -493,7 +496,7 @@ out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
 	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/minikube-$(RPM_VERSION)/minikube.spec
 	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
 		 out/minikube-$(RPM_VERSION)/minikube.spec
-	@mv out/$*/minikube-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
+	@mv out/$*/minikube-$(RPM_VERSION)-$(RPM_REVISION).$*.rpm out/ && rmdir out/$*
 	rm -rf out/minikube-$(RPM_VERSION)
 
 .PHONY: apt
