@@ -50,14 +50,17 @@ func TestMultiNode(t *testing.T) {
 			validator validatorFunc
 		}{
 			{"FreshStart2Nodes", validateMultiNodeStart},
+			// Add worker node
 			{"AddNode", validateAddNodeToMultiNode},
 			{"StopNode", validateStopRunningNode(ThirdNodeName)},
-			{"AddControlPlaneNode", validateAddControlPlaneNodeToMultiNode},
-			{"StopControlPlaneNode", validateStopRunningNode(FourthNodeName)},
 			{"StartAfterStop", validateStartNodeAfterStop(ThirdNodeName)},
-			{"StartControlPlaneAfterStop", validateStartNodeAfterStop(FourthNodeName)},
 			{"DeleteNode", validateDeleteNodeFromMultiNode(ThirdNodeName, true)},
-			{"DeleteControlPlaneNode", validateDeleteNodeFromMultiNode(FourthNodeName, true)},
+			// Add control plane node
+			{"AddControlPlaneNode", validateAddControlPlaneNodeToMultiNode},
+			{"StopControlPlaneNode", validateStopRunningNode(ThirdNodeName)},
+			{"StartControlPlaneAfterStop", validateStartNodeAfterStop(ThirdNodeName)},
+			{"DeleteControlPlaneNode", validateDeleteNodeFromMultiNode(ThirdNodeName, true)},
+			// Test cluster stop && start
 			{"StopMultiNode", validateStopMultiNodeCluster},
 			{"RestartMultiNode", validateRestartMultiNodeCluster},
 		}
