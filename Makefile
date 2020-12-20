@@ -396,6 +396,7 @@ clean: ## Clean build
 	rm -f pkg/minikube/assets/assets.go
 	rm -f pkg/minikube/translate/translations.go
 	rm -rf ./vendor
+	rm -rf /tmp/tmp.*.minikube_*
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md  ## Generate documentation
@@ -467,19 +468,20 @@ out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-0_amd64.deb
 	cp $< $@
 
 out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
-	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
-	chmod 0755 out/minikube_$(DEB_VERSION)/DEBIAN
-	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
-	sed -E -i 's/--ARCH--/'$*'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
+	$(eval DEB_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(DEB_VERSION)-$*-deb"))
+	cp -r installers/linux/deb/minikube_deb_template/* $(DEB_PACKAGING_DIRECTORY_$*)/
+	chmod 0755 $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN
+	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
+	sed -E -i 's/--ARCH--/'$*'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	if [ "$*" = "amd64" ]; then \
-	    sed -E -i 's/--RECOMMENDS--/virtualbox/' out/minikube_$(DEB_VERSION)/DEBIAN/control; \
+	    sed -E -i 's/--RECOMMENDS--/virtualbox/' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	else \
-	    sed -E -i '/Recommends: --RECOMMENDS--/d' out/minikube_$(DEB_VERSION)/DEBIAN/control; \
+	    sed -E -i '/Recommends: --RECOMMENDS--/d' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	fi
-	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
-	cp $< out/minikube_$(DEB_VERSION)/usr/bin/minikube
-	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION) $@
-	rm -rf out/minikube_$(DEB_VERSION)
+	mkdir -p $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin
+	cp $< $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin/minikube
+	fakeroot dpkg-deb --build $(DEB_PACKAGING_DIRECTORY_$*) $@
+	rm -rf $(DEB_PACKAGING_DIRECTORY_$*)
 
 rpm_version:
 	@echo $(RPM_VERSION)
@@ -488,13 +490,14 @@ out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-0.x86_64.rpm
 	cp $< $@
 
 out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
-	cp -r installers/linux/rpm/minikube_rpm_template out/minikube-$(RPM_VERSION)
-	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/minikube-$(RPM_VERSION)/minikube.spec
-	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/minikube-$(RPM_VERSION)/minikube.spec
+	$(eval RPM_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(RPM_VERSION)-$*-rpm"))
+	cp -r installers/linux/rpm/minikube_rpm_template/* $(RPM_PACKAGING_DIRECTORY_$*)/
+	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
+	sed -E -i 's|--OUT--|'$(PWD)/out'|g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
 	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
-		 out/minikube-$(RPM_VERSION)/minikube.spec
+		 $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
 	@mv out/$*/minikube-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
-	rm -rf out/minikube-$(RPM_VERSION)
+	rm -rf $(RPM_PACKAGING_DIRECTORY_$*)
 
 .PHONY: apt
 apt: out/Release ## Generate apt package file
