@@ -44,7 +44,7 @@ const dockerDefaultBridge = "bridge"
 const podmanDefaultBridge = "podman"
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
-func CreateNetwork(ociBin string, clusterName string) (net.IP, error) {
+func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	var defaultBridgeName string
 	if ociBin == Docker {
 		defaultBridgeName = dockerDefaultBridge
@@ -52,9 +52,12 @@ func CreateNetwork(ociBin string, clusterName string) (net.IP, error) {
 	if ociBin == Podman {
 		defaultBridgeName = podmanDefaultBridge
 	}
+	if networkName == defaultBridgeName {
+		return nil, nil
+	}
 
 	// check if the network already exists
-	info, err := containerNetworkInspect(ociBin, clusterName)
+	info, err := containerNetworkInspect(ociBin, networkName)
 	if err == nil {
 		klog.Infof("Found existing network %+v", info)
 		return info.gateway, nil
@@ -71,7 +74,7 @@ func CreateNetwork(ociBin string, clusterName string) (net.IP, error) {
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
 	for attempts < 20 {
-		info.gateway, err = tryCreateDockerNetwork(ociBin, subnetAddr, defaultSubnetMask, info.mtu, clusterName)
+		info.gateway, err = tryCreateDockerNetwork(ociBin, subnetAddr, defaultSubnetMask, info.mtu, networkName)
 		if err == nil {
 			return info.gateway, nil
 		}
