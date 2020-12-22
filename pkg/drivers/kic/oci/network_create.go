@@ -53,6 +53,7 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 		defaultBridgeName = podmanDefaultBridge
 	}
 	if networkName == defaultBridgeName {
+		klog.Infof("skipping creating network since default network %s was specified", networkName)
 		return nil, nil
 	}
 
