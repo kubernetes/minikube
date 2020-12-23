@@ -194,6 +194,11 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		"Port-10250", // For "none" users who already have a kubelet online
 		"Swap",       // For "none" users who have swap configured
 	}
+	if version.GE(semver.MustParse("1.20.0")) {
+		ignore = append(ignore,
+			"Mem", // For "none" users who have too little memory
+		)
+	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
 
 	skipSystemVerification := false
