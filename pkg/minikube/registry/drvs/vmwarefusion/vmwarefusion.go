@@ -16,52 +16,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// vmwarefusion contains a shell of the deprecated vmware vdriver
 package vmwarefusion
 
 import (
 	"fmt"
-	"os/exec"
 
-	"github.com/docker/machine/drivers/vmwarefusion"
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/pkg/errors"
-
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.VMwareFusion,
-		Config:   configure,
 		Status:   status,
-		Init:     func() drivers.Driver { return vmwarefusion.NewDriver("", "") },
-		Priority: registry.Deprecated,
+		Priority: registry.Obsolete,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))
 	}
 }
 
-func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := vmwarefusion.NewDriver(driver.MachineName(cfg, n), localpath.MiniPath()).(*vmwarefusion.Driver)
-	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
-	d.Memory = cfg.Memory
-	d.CPU = cfg.CPUs
-	d.DiskSize = cfg.DiskSize
-
-	// TODO(philips): push these defaults upstream to fixup this driver
-	d.SSHPort = 22
-	d.ISO = d.ResolveStorePath("boot2docker.iso")
-	return d, nil
-}
-
 func status() registry.State {
-	_, err := exec.LookPath("vmrun")
-	if err != nil {
-		return registry.State{Error: errors.Wrap(err, "vmrun path check"), Fix: "Install VMWare Fusion", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmwarefusion/"}
+	return registry.State{
+		Error: fmt.Errorf("The 'vmwarefusion' driver is no longer available"),
+		Fix:   "Switch to the newer 'vmware' driver by using '--driver=vmware'. This may require first deleting your existing cluster",
+		Doc:   "https://minikube.sigs.k8s.io/docs/drivers/vmware/",
 	}
-	return registry.State{Installed: true, Healthy: true}
 }
