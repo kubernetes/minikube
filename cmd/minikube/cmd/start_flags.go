@@ -296,7 +296,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 
 		if !driver.IsKIC(drvName) && viper.GetString(network) != "" {
-			out.WarningT("--network flag is only valid with the docker driver, it will be ignored")
+			out.WarningT("--network flag is only valid with the docker/podman drivers, it will be ignored")
 		}
 
 		cc = config.ClusterConfig{
