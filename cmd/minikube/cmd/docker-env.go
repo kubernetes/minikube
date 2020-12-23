@@ -194,7 +194,7 @@ func mustRestartDockerd(name string, runner command.Runner) {
 	if err := sysinit.New(runner).Reload("docker"); err != nil {
 		klog.Warningf("will try to restart dockerd because reload failed: %v", err)
 		if err := sysinit.New(runner).Restart("docker"); err != nil {
-			klog.Warningf("Returning due to %v: The Docker service within '%v' is not active", reason.RuntimeRestart.ID, name)
+			klog.Warningf("Couldn't restart docker inside minikbue within '%v' because: %v", name, err)
 			return
 		}
 		// if we get to the point that we have to restart docker (instead of reload)
