@@ -138,6 +138,9 @@ for entry in $(ls ${TEST_ROOT}); do
   for kconfig in $(find ${test_path} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
   done
+  
+  ## ultimate shotgun clean up docker after we tried all
+  docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 
   # Be very specific to avoid accidentally deleting other items, like wildcards or devices
   if [[ -d "${test_path}" ]]; then
