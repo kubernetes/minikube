@@ -194,7 +194,8 @@ func mustRestartDockerd(name string, runner command.Runner) {
 	if err := sysinit.New(runner).Reload("docker"); err != nil {
 		klog.Warningf("will try to restart dockerd because reload failed: %v", err)
 		if err := sysinit.New(runner).Restart("docker"); err != nil {
-			exit.Message(reason.RuntimeRestart, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+			klog.Warningf("Couldn't restart docker inside minikbue within '%v' because: %v", name, err)
+			return
 		}
 		// if we get to the point that we have to restart docker (instead of reload)
 		// will need to wait for apisever container to come up, this usually takes 5 seconds
