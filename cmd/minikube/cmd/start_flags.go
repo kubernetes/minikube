@@ -102,6 +102,7 @@ const (
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
 	nodes                   = "nodes"
+	controlPlanes           = "control-planes"
 	preload                 = "preload"
 	deleteOnFailure         = "delete-on-failure"
 	forceSystemd            = "force-systemd"
@@ -150,6 +151,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
+	startCmd.Flags().Int(controlPlanes, 1, "The number of control planes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Defaults to false.")

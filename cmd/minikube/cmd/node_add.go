@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -68,7 +67,7 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		if n.ControlPlane {
-			n.Port = constants.APIServerPort
+			n.Port = cc.KubernetesConfig.NodePort
 		}
 
 		// Make sure to decrease the default amount of memory we use per VM if this is the first worker node

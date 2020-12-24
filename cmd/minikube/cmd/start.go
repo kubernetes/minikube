@@ -131,6 +131,13 @@ func platform() string {
 func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 
+	controlPlanesNum := viper.GetInt(controlPlanes)
+	nodesNum := viper.GetInt(nodes)
+	if controlPlanesNum > nodesNum {
+		out.WarningT(fmt.Sprintf("control planes number %v larger than nodes number %v, enlarge nodes to %v.", controlPlanesNum, nodesNum, controlPlanesNum))
+		viper.Set(nodes, controlPlanesNum)
+	}
+
 	out.SetJSON(outputFormat == "json")
 	if err := pkgtrace.Initialize(viper.GetString(trace)); err != nil {
 		exit.Message(reason.Usage, "error initializing tracing: {{.Error}}", out.V{"Error": err.Error()})
@@ -359,6 +366,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 	}
 
+	numControlPlanes := viper.GetInt(controlPlanes)
 	numNodes := viper.GetInt(nodes)
 	if existing != nil {
 		if numNodes > 1 {
@@ -380,6 +388,10 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 						ControlPlane:        false,
 						PrimaryControlPlane: false,
 						KubernetesVersion:   starter.Cfg.KubernetesConfig.KubernetesVersion,
+					}
+					if i < numControlPlanes {
+						n.ControlPlane = true
+						n.Port = starter.Cfg.KubernetesConfig.NodePort
 					}
 					out.Ln("") // extra newline for clarity on the command line
 					err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
