@@ -176,7 +176,7 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 	var vals networkInspect
 	var info = netInfo{name: name}
 
-	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{(index .Options "com.docker.network.driver.mtu")}},{{$first := true}} "ContainerIPs": [{{range $k,$v := .Containers }}{{if $first}}{{$first = false}}{{else}}, {{end}}"{{$v.IPv4Address}}"{{end}}]}`)
+	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}},{{$first := true}} "ContainerIPs": [{{range $k,$v := .Containers }}{{if $first}}{{$first = false}}{{else}}, {{end}}"{{$v.IPv4Address}}"{{end}}]}`)
 	rr, err := runCmd(cmd)
 	if err != nil {
 		logDockerNetworkInspect(Docker, name)
