@@ -9,5 +9,5 @@ First install the [VMware Workstation](https://www.vmware.com/in/products/workst
 After installation, start a cluster using the vmware driver:
 
 ```shell
-minikube start 
+minikube start --driver vmware
 ```
