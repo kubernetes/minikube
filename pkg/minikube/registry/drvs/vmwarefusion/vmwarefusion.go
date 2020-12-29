@@ -38,7 +38,7 @@ func init() {
 
 func status() registry.State {
 	return registry.State{
-		Error: fmt.Errorf("The 'vmwarefusion' driver is no longer available"),
+		Error: fmt.Errorf("the 'vmwarefusion' driver is no longer available"),
 		Fix:   "Switch to the newer 'vmware' driver by using '--driver=vmware'. This may require first deleting your existing cluster",
 		Doc:   "https://minikube.sigs.k8s.io/docs/drivers/vmware/",
 	}
