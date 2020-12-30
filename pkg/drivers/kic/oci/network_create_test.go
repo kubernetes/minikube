@@ -32,53 +32,53 @@ var dockerInspectGetterMock = func(name string) (*RunResult, error) {
 }
 
 func TestDockerInspectWithMTU(t *testing.T) {
-	dockerInspectResponseWithMtu := `{"Name": "m2","Driver": "bridge","Subnet": "172.19.0.0/16","Gateway": "172.19.0.1","MTU": 9216, "ContainerIPs": []}`
-
-	// setting up mock funcs
-	dockerResponse = dockerInspectResponseWithMtu
-	dockerInsepctGetter = dockerInspectGetterMock
-
-	netInfo, err := dockerNetworkInspect("m2")
-
-	if err != nil {
-		t.Errorf("Expected not to have error but got %v", err)
+	var tests = []struct {
+		name                  string
+		dockerInspectResponse string
+		gateway               string
+		subnetIP              string
+		mtu                   int
+	}{
+		{
+			name:                  "withMTU",
+			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnet": "172.19.0.0/16","Gateway": "172.19.0.1","MTU": 9216, "ContainerIPs": []}`,
+			gateway:               "172.19.0.1",
+			subnetIP:              "172.19.0.0",
+			mtu:                   9216,
+		},
+		{
+			name:                  "withoutMTU",
+			dockerInspectResponse: `{"Name": "m2","Driver": "bridge","Subnet": "172.19.0.0/16","Gateway": "172.19.0.1","MTU": 0, "ContainerIPs": []}`,
+			gateway:               "172.19.0.1",
+			subnetIP:              "172.19.0.0",
+			mtu:                   0,
+		},
 	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dockerInspectResponseWithMtu := tc.dockerInspectResponse
 
-	if netInfo.mtu != 9216 {
-		t.Errorf("Expected not to have MTU as 9216 but got %v", netInfo.mtu)
-	}
+			// setting up mock funcs
+			dockerResponse = dockerInspectResponseWithMtu
+			dockerInsepctGetter = dockerInspectGetterMock
 
-	if !netInfo.gateway.Equal(net.ParseIP("172.19.0.1")) {
-		t.Errorf("Expected not to have gateway as 172.19.0.1 but got %v", netInfo.gateway)
-	}
+			netInfo, err := dockerNetworkInspect("m2")
 
-	if !netInfo.subnet.IP.Equal(net.ParseIP("172.19.0.0")) {
-		t.Errorf("Expected not to have subnet as 172.19.0.0 but got %v", netInfo.gateway)
-	}
-}
+			if err != nil {
+				t.Errorf("Expected not to have error but got %v", err)
+			}
 
-func TestDockerInspectWithoutMTU(t *testing.T) {
-	dockerInspectResponseWithMtu := `{"Name": "m2","Driver": "bridge","Subnet": "172.19.0.0/16","Gateway": "172.19.0.1","MTU": 0, "ContainerIPs": []}`
+			if netInfo.mtu != tc.mtu {
+				t.Errorf("Expected not to have MTU as %v but got %v", tc.mtu, netInfo.mtu)
+			}
 
-	// setting up mock funcs
-	dockerResponse = dockerInspectResponseWithMtu
-	dockerInsepctGetter = dockerInspectGetterMock
+			if !netInfo.gateway.Equal(net.ParseIP(tc.gateway)) {
+				t.Errorf("Expected not to have gateway as %v but got %v", tc.gateway, netInfo.gateway)
+			}
 
-	netInfo, err := dockerNetworkInspect("m2")
-
-	if err != nil {
-		t.Errorf("Expected not to have error but got %v", err)
-	}
-
-	if netInfo.mtu != 0 {
-		t.Errorf("Expected not to have MTU as 0 but got %v", netInfo.mtu)
-	}
-
-	if !netInfo.gateway.Equal(net.ParseIP("172.19.0.1")) {
-		t.Errorf("Expected not to have gateway as 172.19.0.1 but got %v", netInfo.gateway)
-	}
-
-	if !netInfo.subnet.IP.Equal(net.ParseIP("172.19.0.0")) {
-		t.Errorf("Expected not to have subnet as 172.19.0.0 but got %v", netInfo.gateway)
+			if !netInfo.subnet.IP.Equal(net.ParseIP(tc.subnetIP)) {
+				t.Errorf("Expected not to have subnet as %v but got %v", tc.subnetIP, netInfo.gateway)
+			}
+		})
 	}
 }
