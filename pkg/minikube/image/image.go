@@ -212,3 +212,22 @@ func cleanImageCacheDir() error {
 	})
 	return err
 }
+
+// normalizeTagName automatically tag latest to image
+// Example:
+//  nginx -> nginx:latest
+//  localhost:5000/nginx -> localhost:5000/nginx:latest
+//  localhost:5000/nginx:latest -> localhost:5000/nginx:latest
+//  docker.io/dotnet/core/sdk -> docker.io/dotnet/core/sdk:latest
+func normalizeTagName(image string) string {
+	base := image
+	tag := "latest"
+
+	// From google/go-containerregistry/pkg/name/tag.go
+	parts := strings.Split(strings.TrimSpace(image), ":")
+	if len(parts) > 1 && !strings.Contains(parts[len(parts)-1], "/") {
+		base = strings.Join(parts[:len(parts)-1], ":")
+		tag = parts[len(parts)-1]
+	}
+	return base + ":" + tag
+}
