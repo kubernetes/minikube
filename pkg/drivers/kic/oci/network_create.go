@@ -171,13 +171,18 @@ type networkInspect struct {
 	ContainerIPs []string
 }
 
+var dockerInsepctGetter = func(name string) (*RunResult, error) {
+	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}},{{$first := true}} "ContainerIPs": [{{range $k,$v := .Containers }}{{if $first}}{{$first = false}}{{else}}, {{end}}"{{$v.IPv4Address}}"{{end}}]}`)
+	rr, err := runCmd(cmd)
+	return rr, err
+}
+
 // if exists returns subnet, gateway and mtu
 func dockerNetworkInspect(name string) (netInfo, error) {
 	var vals networkInspect
 	var info = netInfo{name: name}
 
-	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}},{{$first := true}} "ContainerIPs": [{{range $k,$v := .Containers }}{{if $first}}{{$first = false}}{{else}}, {{end}}"{{$v.IPv4Address}}"{{end}}]}`)
-	rr, err := runCmd(cmd)
+	rr, err := dockerInsepctGetter(name)
 	if err != nil {
 		logDockerNetworkInspect(Docker, name)
 		if strings.Contains(rr.Output(), "No such network") {
