@@ -329,6 +329,7 @@ func deleteProfile(profile *config.Profile) error {
 
 	// In case DeleteHost didn't complete the job.
 	deleteProfileDirectory(profile.Name)
+	deleteMachineDirectories(cc)
 
 	if err := deleteConfig(profile.Name); err != nil {
 		return err
@@ -492,6 +493,15 @@ func deleteProfileDirectory(profile string) {
 		err := os.RemoveAll(machineDir)
 		if err != nil {
 			exit.Error(reason.GuestProfileDeletion, "Unable to remove machine directory", err)
+		}
+	}
+}
+
+func deleteMachineDirectories(cc *config.ClusterConfig) {
+	if cc != nil {
+		for _, n := range cc.Nodes {
+			machineName := driver.MachineName(*cc, n)
+			deleteProfileDirectory(machineName)
 		}
 	}
 }
