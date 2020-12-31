@@ -31,7 +31,7 @@ var dockerInspectGetterMock = func(name string) (*RunResult, error) {
 	return response, nil
 }
 
-func TestDockerInspectWithMTU(t *testing.T) {
+func TestDockerInspect(t *testing.T) {
 	var tests = []struct {
 		name                  string
 		dockerInspectResponse string
