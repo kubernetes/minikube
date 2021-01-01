@@ -32,7 +32,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.5.2
-	github.com/google/go-containerregistry v0.0.0-20200601195303-96cf69f03a3c
+	github.com/google/go-containerregistry v0.3.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/slowjam v0.0.0-20200530021616-df27e642fe7b
@@ -108,7 +108,7 @@ replace (
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.1
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200810185219-7d42fed1b770
-	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.0.0-20200902152226-fbad78ec2813
+	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.1.2-0.20210101161202-de47504a564f
 	github.com/hashicorp/go-getter => github.com/afbjorklund/go-getter v1.4.1-0.20201020145846-c0da14b4bffe
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/api => k8s.io/api v0.17.3
