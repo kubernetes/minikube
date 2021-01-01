@@ -52,7 +52,7 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	ip, network, err := net.ParseCIDR(hostOnlyCIDR)
+	ip, network, err := net.ParseCIDR(HostOnlyCIDR)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid address")
 	}
