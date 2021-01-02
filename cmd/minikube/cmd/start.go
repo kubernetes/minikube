@@ -668,16 +668,29 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
+	out.WarningT("Start deleting cluster {{.name}} with delete-on-failure flag set", out.V{"name": existing.Name})
+	if viper.GetBool(deleteOnFailure) {
+		// Start failed, delete the cluster
+		profile, err := config.LoadProfile(existing.Name)
+		if err != nil {
+			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			out.WarningT("Failed to delete cluster {{.name}}.", out.V{"name": existing.Name})
+		}
+	}
+
 	exit.Advice(
 		reason.GuestDrvMismatch,
-		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
-		"Delete the existing '{{.name}}' cluster using: '{{.delcommand}}', or start the existing '{{.name}}' cluster using: '{{.command}} --driver={{.old}}'",
+		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver. Deleted the existing '{{.name}}' cluster.`,
+		"Start the new '{{.name}}' cluster using: '{{.command}} --driver={{.new}}'",
 		out.V{
-			"name":       existing.Name,
-			"new":        requested,
-			"old":        old,
-			"command":    mustload.ExampleCmd(existing.Name, "start"),
-			"delcommand": mustload.ExampleCmd(existing.Name, "delete"),
+			"name":    existing.Name,
+			"new":     requested,
+			"old":     old,
+			"command": mustload.ExampleCmd(existing.Name, "start"),
 		},
 	)
 }
