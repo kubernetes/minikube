@@ -55,6 +55,11 @@ var (
 				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/build_master.yml": {
+			Replace: map[string]string{
+				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
 				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,

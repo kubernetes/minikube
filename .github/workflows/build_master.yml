@@ -1,0 +1,78 @@
+name: Build Master
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "**.go"
+      - "Makefile"
+      - "!deploy/kicbase/**"
+      - "!deploy/iso/**"
+env:
+  GOPROXY: https://proxy.golang.org
+jobs:
+  build_minikube:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+      - name: Download Dependencies
+        run: go mod download
+      - name: Build Binaries
+        run: |
+          make cross
+          make e2e-cross
+          cp -r test/integration/testdata ./out
+          whoami
+          echo github ref $GITHUB_REF
+          echo workflow $GITHUB_WORKFLOW
+          echo home $HOME
+          echo event name $GITHUB_EVENT_NAME
+          echo workspace $GITHUB_WORKSPACE
+          echo "end of debug stuff"
+          echo $(which jq)
+      - uses: actions/upload-artifact@v1
+        with:
+          name: minikube_binaries
+          path: out
+  lint:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+      - name: Install libvirt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvirt-dev
+      - name: Download Dependencies
+        run: go mod download
+      - name: Lint
+        env:
+          TESTSUITE: lintall
+        run: make test
+        continue-on-error: false
+  unit_test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+      - name: Install libvirt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvirt-dev
+      - name: Download Dependencies
+        run: go mod download
+      - name: Unit Test
+        env:
+          TESTSUITE: unittest
+        run: make test
+        continue-on-error: false

@@ -1,6 +1,6 @@
 # minikube
 
-[![Actions Status](https://github.com/kubernetes/minikube/workflows/Master/badge.svg)](https://github.com/kubernetes/minikube/actions)
+[![Actions Status](https://github.com/kubernetes/minikube/workflows/Build%20Master/badge.svg)](https://github.com/kubernetes/minikube/actions)
 [![GoReport Widget]][GoReport Status]
 [![Github All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
