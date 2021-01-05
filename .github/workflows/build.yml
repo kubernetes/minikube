@@ -1,4 +1,4 @@
-name: Build Master
+name: build
 on:
   push:
     branches:
