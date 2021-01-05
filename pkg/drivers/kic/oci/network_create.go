@@ -221,8 +221,13 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 		return info, err
 	}
 
+	output := rr.Stdout.String()
+	if output == "" {
+		return info, fmt.Errorf("no bridge network found for %s", name)
+	}
+
 	// results looks like 172.17.0.0/16,172.17.0.1,1500
-	vals := strings.Split(strings.TrimSpace(rr.Stdout.String()), ",")
+	vals := strings.Split(strings.TrimSpace(output), ",")
 	if len(vals) == 0 {
 		return info, fmt.Errorf("empty list network inspect: %q", rr.Output())
 	}
