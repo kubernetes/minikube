@@ -607,7 +607,7 @@ X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
 .PHONY: docker-multi-arch-builder
 docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --use || true
+	env $(X_BUILD_ENV) docker buildx create --node --name kicbase-builder --use || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
 MA_KICBASE_IMAGE_REGISTRY ?= $(REGISTRY)/kicbase:$(KIC_VERSION) $(REGISTRY_GH)/kicbase-multiarch:$(KIC_VERSION) kicbase/stable-multiarch:$(KIC_VERSION)
