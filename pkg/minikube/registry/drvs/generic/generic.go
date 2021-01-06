@@ -19,10 +19,10 @@ package generic
 import (
 	"fmt"
 
-	"github.com/docker/machine/drivers/generic"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 
+	"k8s.io/minikube/pkg/drivers/generic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
