@@ -76,7 +76,7 @@ oom_score = 0
     enable_selinux = false
     sandbox_image = "{{ .PodInfraContainerImage }}"
     stats_collect_period = 10
-    systemd_cgroup = false
+    systemd_cgroup = {{ .SystemdCgroup }}
     enable_tls_streaming = false
     max_container_log_line_size = 16384
     [plugins.cri.containerd]
@@ -172,14 +172,20 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool) error {
 	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err
 	}
 	pauseImage := images.Pause(kv, imageRepository)
-	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
+	opts := struct {
+		PodInfraContainerImage string
+		SystemdCgroup          bool
+	}{
+		PodInfraContainerImage: pauseImage,
+		SystemdCgroup:          forceSystemd,
+	}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
 		return err
@@ -192,7 +198,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 }
 
 // Enable idempotently enables containerd on a host
-func (r *Containerd) Enable(disOthers, _ bool) error {
+func (r *Containerd) Enable(disOthers, forceSystemd bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -201,7 +207,7 @@ func (r *Containerd) Enable(disOthers, _ bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
