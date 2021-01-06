@@ -28,13 +28,14 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/state"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
 
 type Driver struct {
 	*drivers.BaseDriver
+	*pkgdrivers.CommonDriver
 	EnginePort int
 	SSHKey     string
 }
@@ -43,44 +44,8 @@ const (
 	defaultTimeout = 15 * time.Second
 )
 
-// GetCreateFlags registers the flags this driver adds to
-// "docker hosts create"
-func (d *Driver) GetCreateFlags() []mcnflag.Flag {
-	return []mcnflag.Flag{
-		mcnflag.IntFlag{
-			Name:   "generic-engine-port",
-			Usage:  "Docker engine port",
-			Value:  engine.DefaultPort,
-			EnvVar: "GENERIC_ENGINE_PORT",
-		},
-		mcnflag.StringFlag{
-			Name:   "generic-ip-address",
-			Usage:  "IP Address of machine",
-			EnvVar: "GENERIC_IP_ADDRESS",
-		},
-		mcnflag.StringFlag{
-			Name:   "generic-ssh-user",
-			Usage:  "SSH user",
-			Value:  drivers.DefaultSSHUser,
-			EnvVar: "GENERIC_SSH_USER",
-		},
-		mcnflag.StringFlag{
-			Name:   "generic-ssh-key",
-			Usage:  "SSH private key path (if not provided, default SSH key will be used)",
-			Value:  "",
-			EnvVar: "GENERIC_SSH_KEY",
-		},
-		mcnflag.IntFlag{
-			Name:   "generic-ssh-port",
-			Usage:  "SSH port",
-			Value:  drivers.DefaultSSHPort,
-			EnvVar: "GENERIC_SSH_PORT",
-		},
-	}
-}
-
 // NewDriver creates and returns a new instance of the driver
-func NewDriver(hostName, storePath string) drivers.Driver {
+func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
 		EnginePort: engine.DefaultPort,
 		BaseDriver: &drivers.BaseDriver{

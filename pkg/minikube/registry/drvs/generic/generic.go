@@ -49,10 +49,10 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		return nil, errors.Errorf("please provide an IP address")
 	}
 
-	d.(*generic.Driver).IPAddress = cc.GenericIPAddress
-	d.(*generic.Driver).SSHUser = cc.GenericSSHUser
-	d.(*generic.Driver).SSHKey = cc.GenericSSHKey
-	d.(*generic.Driver).SSHPort = cc.GenericSSHPort
+	d.IPAddress = cc.GenericIPAddress
+	d.SSHUser = cc.GenericSSHUser
+	d.SSHKey = cc.GenericSSHKey
+	d.SSHPort = cc.GenericSSHPort
 
 	return d, nil
 }
