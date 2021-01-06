@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path"
 	"strconv"
 	"time"
@@ -30,7 +31,10 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 type Driver struct {
@@ -143,21 +147,75 @@ func (d *Driver) GetState() (state.State, error) {
 	return state.Running, nil
 }
 
+// Start a host
 func (d *Driver) Start() error {
-	return errors.New("generic driver does not support start")
+	return nil
 }
 
+// Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	return errors.New("generic driver does not support stop")
+	exec := command.NewSSHRunner(d)
+	if err := sysinit.New(exec).Stop("kubelet"); err != nil {
+		klog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
+		if err := sysinit.New(exec).ForceStop("kubelet"); err != nil {
+			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
+		}
+	}
+	/* TODO
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
+	if err != nil {
+		return errors.Wrap(err, "containers")
+	}
+	if len(containers) > 0 {
+		if err := d.runtime.StopContainers(containers); err != nil {
+			return errors.Wrap(err, "stop containers")
+		}
+	}
+	*/
+	klog.Infof("generic driver is stopped!")
+	return nil
 }
 
+// Restart a host
 func (d *Driver) Restart() error {
-	_, err := drivers.RunSSHCommandFromDriver(d, "sudo shutdown -r now")
-	return err
+	exec := command.NewSSHRunner(d)
+	return restartKubelet(exec)
 }
 
+// Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	return errors.New("generic driver does not support kill")
+	exec := command.NewSSHRunner(d)
+	if err := sysinit.New(exec).ForceStop("kubelet"); err != nil {
+		klog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
+	}
+
+	/* TODO
+	// First try to gracefully stop containers
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
+	if err != nil {
+		return errors.Wrap(err, "containers")
+	}
+	if len(containers) == 0 {
+		return nil
+	}
+	// Try to be graceful before sending SIGKILL everywhere.
+	if err := d.runtime.StopContainers(containers); err != nil {
+		return errors.Wrap(err, "stop")
+	}
+
+	containers, err = d.runtime.ListContainers(cruntime.ListOptions{})
+	if err != nil {
+		return errors.Wrap(err, "containers")
+	}
+	if len(containers) == 0 {
+		return nil
+	}
+	if err := d.runtime.KillContainers(containers); err != nil {
+		return errors.Wrap(err, "kill")
+	}
+	*/
+	return nil
+
 }
 
 func (d *Driver) Remove() error {
@@ -173,5 +231,15 @@ func copySSHKey(src, dst string) error {
 		return fmt.Errorf("unable to set permissions on the ssh key: %s", err)
 	}
 
+	return nil
+}
+
+// restartKubelet restarts the kubelet
+func restartKubelet(cr command.Runner) error {
+	klog.Infof("restarting kubelet.service ...")
+	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
+	if _, err := cr.RunCmd(c); err != nil {
+		return err
+	}
 	return nil
 }
