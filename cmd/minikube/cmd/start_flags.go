@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -115,6 +114,8 @@ const (
 	genericSSHUser          = "generic-ssh-user"
 	genericSSHKey           = "generic-ssh-key"
 	genericSSHPort          = "generic-ssh-port"
+	defaultSSHUser          = "root"
+	defaultSSHPort          = 22
 )
 
 var (
@@ -229,9 +230,9 @@ func initNetworkingFlags() {
 
 	// generic
 	startCmd.Flags().String(genericIPAddress, "", "IP address (generic)")
-	startCmd.Flags().String(genericSSHUser, drivers.DefaultSSHUser, "SSH user (generic)")
+	startCmd.Flags().String(genericSSHUser, defaultSSHUser, "SSH user (generic)")
 	startCmd.Flags().String(genericSSHKey, "", "SSH key (generic)")
-	startCmd.Flags().Int(genericSSHPort, drivers.DefaultSSHPort, "SSH port (generic)")
+	startCmd.Flags().Int(genericSSHPort, defaultSSHPort, "SSH port (generic)")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
