@@ -17,7 +17,6 @@ limitations under the License.
 package generic
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -74,20 +73,6 @@ func (d *Driver) GetSSHUsername() string {
 
 func (d *Driver) GetSSHKeyPath() string {
 	return d.SSHKeyPath
-}
-
-func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
-	d.EnginePort = flags.Int("generic-engine-port")
-	d.IPAddress = flags.String("generic-ip-address")
-	d.SSHUser = flags.String("generic-ssh-user")
-	d.SSHKey = flags.String("generic-ssh-key")
-	d.SSHPort = flags.Int("generic-ssh-port")
-
-	if d.IPAddress == "" {
-		return errors.New("generic driver requires the --generic-ip-address option")
-	}
-
-	return nil
 }
 
 func (d *Driver) PreCreateCheck() error {
