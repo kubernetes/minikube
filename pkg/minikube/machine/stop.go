@@ -55,10 +55,6 @@ func stop(h *host.Host) error {
 		}
 	}
 
-	if driver.IsGeneric(h.DriverName) {
-		return nil
-	}
-
 	if err := h.Stop(); err != nil {
 		klog.Infof("stop err: %v", err)
 		st, ok := err.(mcnerror.ErrHostAlreadyInState)
