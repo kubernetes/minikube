@@ -44,7 +44,7 @@ const dockerDefaultBridge = "bridge"
 const podmanDefaultBridge = "podman"
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
-func CreateNetwork(ociBin string, clusterName string) (net.IP, error) {
+func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	var defaultBridgeName string
 	if ociBin == Docker {
 		defaultBridgeName = dockerDefaultBridge
@@ -52,9 +52,13 @@ func CreateNetwork(ociBin string, clusterName string) (net.IP, error) {
 	if ociBin == Podman {
 		defaultBridgeName = podmanDefaultBridge
 	}
+	if networkName == defaultBridgeName {
+		klog.Infof("skipping creating network since default network %s was specified", networkName)
+		return nil, nil
+	}
 
 	// check if the network already exists
-	info, err := containerNetworkInspect(ociBin, clusterName)
+	info, err := containerNetworkInspect(ociBin, networkName)
 	if err == nil {
 		klog.Infof("Found existing network %+v", info)
 		return info.gateway, nil
@@ -71,7 +75,7 @@ func CreateNetwork(ociBin string, clusterName string) (net.IP, error) {
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
 	for attempts < 20 {
-		info.gateway, err = tryCreateDockerNetwork(ociBin, subnetAddr, defaultSubnetMask, info.mtu, clusterName)
+		info.gateway, err = tryCreateDockerNetwork(ociBin, subnetAddr, defaultSubnetMask, info.mtu, networkName)
 		if err == nil {
 			return info.gateway, nil
 		}
@@ -167,13 +171,18 @@ type networkInspect struct {
 	ContainerIPs []string
 }
 
+var dockerInsepctGetter = func(name string) (*RunResult, error) {
+	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}},{{$first := true}} "ContainerIPs": [{{range $k,$v := .Containers }}{{if $first}}{{$first = false}}{{else}}, {{end}}"{{$v.IPv4Address}}"{{end}}]}`)
+	rr, err := runCmd(cmd)
+	return rr, err
+}
+
 // if exists returns subnet, gateway and mtu
 func dockerNetworkInspect(name string) (netInfo, error) {
 	var vals networkInspect
 	var info = netInfo{name: name}
 
-	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{(index .Options "com.docker.network.driver.mtu")}},{{$first := true}} "ContainerIPs": [{{range $k,$v := .Containers }}{{if $first}}{{$first = false}}{{else}}, {{end}}"{{$v.IPv4Address}}"{{end}}]}`)
-	rr, err := runCmd(cmd)
+	rr, err := dockerInsepctGetter(name)
 	if err != nil {
 		logDockerNetworkInspect(Docker, name)
 		if strings.Contains(rr.Output(), "No such network") {
@@ -212,8 +221,13 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 		return info, err
 	}
 
+	output := rr.Stdout.String()
+	if output == "" {
+		return info, fmt.Errorf("no bridge network found for %s", name)
+	}
+
 	// results looks like 172.17.0.0/16,172.17.0.1,1500
-	vals := strings.Split(strings.TrimSpace(rr.Stdout.String()), ",")
+	vals := strings.Split(strings.TrimSpace(output), ",")
 	if len(vals) == 0 {
 		return info, fmt.Errorf("empty list network inspect: %q", rr.Output())
 	}

@@ -76,6 +76,7 @@ func SaveToDir(images []string, cacheDir string) error {
 
 // saveToTarFile caches an image
 func saveToTarFile(iname, rawDest string) error {
+	iname = normalizeTagName(iname)
 	start := time.Now()
 	defer func() {
 		klog.Infof("cache image %q -> %q took %s", iname, rawDest, time.Since(start))

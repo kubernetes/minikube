@@ -1,6 +1,6 @@
 # minikube
 
-[![Actions Status](https://github.com/kubernetes/minikube/workflows/Master/badge.svg)](https://github.com/kubernetes/minikube/actions)
+[![Actions Status](https://github.com/kubernetes/minikube/workflows/build/badge.svg)](https://github.com/kubernetes/minikube/actions)
 [![GoReport Widget]][GoReport Status]
 [![Github All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
@@ -55,8 +55,8 @@ See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/control
 minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project.
 
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com) - Live chat with minikube developers!
-* [minikube-users mailing list](https://groups.google.com/forum/#!forum/minikube-users)
-* [minikube-dev mailing list](https://groups.google.com/forum/#!forum/minikube-dev)
+* [minikube-users mailing list](https://groups.google.com/g/minikube-users)
+* [minikube-dev mailing list](https://groups.google.com/g/minikube-dev)
 
 * [Contributing](https://minikube.sigs.k8s.io/docs/contrib/)
 * [Development Roadmap](https://minikube.sigs.k8s.io/docs/contrib/roadmap/)

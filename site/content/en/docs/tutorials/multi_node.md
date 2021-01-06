@@ -1,5 +1,5 @@
 ---
-title: "Using Multi-Node Clusters (Experimental)"
+title: "Using Multi-Node Clusters"
 linkTitle: "Using multi-node clusters"
 weight: 1
 date: 2019-11-24
@@ -22,24 +22,26 @@ date: 2019-11-24
 minikube start --nodes 2 -p multinode-demo
 ```
 ```
-😄  [multinode-demo] minikube v1.10.1 on Darwin 10.15.4
-✨  Automatically selected the hyperkit driver
+😄  [multinode-demo] minikube v1.16.0 on Darwin 10.15.7
+✨  Automatically selected the docker driver. Other choices: hyperkit, virtualbox
 👍  Starting control plane node multinode-demo in cluster multinode-demo
-🔥  Creating hyperkit VM (CPUs=2, Memory=2200MB, Disk=20000MB) ...
-🐳  Preparing Kubernetes v1.18.2 on Docker 19.03.8 ...
+🔥  Creating docker container (CPUs=2, Memory=2200MB) ...
+🐳  Preparing Kubernetes v1.20.0 on Docker 20.10.0 ...
+🔗  Configuring CNI (Container Networking Interface) ...
+    ▪ Generating certificates and keys ...
+    ▪ Booting up control plane ...
+    ▪ Configuring RBAC rules ...
 🔎  Verifying Kubernetes components...
-🌟  Enabled addons: default-storageclass, storage-provisioner
-
-❗  Multi-node clusters are currently experimental and might exhibit unintended behavior.
-To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.
+🌟  Enabled addons: storage-provisioner, default-storageclass
 
 👍  Starting node multinode-demo-m02 in cluster multinode-demo
-🔥  Creating hyperkit VM (CPUs=2, Memory=2200MB, Disk=20000MB) ...
+🔥  Creating docker container (CPUs=2, Memory=2200MB) ...
 🌐  Found network options:
-    ▪ NO_PROXY=192.168.64.11
-🐳  Preparing Kubernetes v1.18.2 on Docker 19.03.8 ...
-🏄  Done! kubectl is now configured to use "multinode-demo"
-
+    ▪ NO_PROXY=192.168.49.2
+🐳  Preparing Kubernetes v1.20.0 on Docker 20.10.0 ...
+    ▪ env NO_PROXY=192.168.49.2
+🔎  Verifying Kubernetes components...
+🏄  Done! kubectl is now configured to use "multinode-demo" cluster and "default" namespace by default
 ```
 
 - Get the list of your nodes:
@@ -66,6 +68,7 @@ host: Running
 kubelet: Running
 apiserver: Running
 kubeconfig: Configured
+timeToStop: Nonexistent
 
 multinode-demo-m02
 type: Worker

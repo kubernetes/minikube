@@ -17,9 +17,11 @@ limitations under the License.
 package kic
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -84,10 +86,14 @@ func (d *Driver) Create() error {
 		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
-	if gateway, err := oci.CreateNetwork(d.OCIBinary, d.NodeConfig.ClusterName); err != nil {
+	networkName := d.NodeConfig.Network
+	if networkName == "" {
+		networkName = d.NodeConfig.ClusterName
+	}
+	if gateway, err := oci.CreateNetwork(d.OCIBinary, networkName); err != nil {
 		out.WarningT("Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}", out.V{"error": err})
-	} else {
-		params.Network = d.NodeConfig.ClusterName
+	} else if gateway != nil {
+		params.Network = networkName
 		ip := gateway.To4()
 		// calculate the container IP based on guessing the machine index
 		ip[3] += byte(driver.IndexFromMachineName(d.NodeConfig.MachineName))
@@ -212,6 +218,33 @@ func (d *Driver) prepareSSH() error {
 
 	if rr, err := cmder.RunCmd(exec.Command("chown", "docker:docker", "/home/docker/.ssh/authorized_keys")); err != nil {
 		return errors.Wrapf(err, "apply authorized_keys file ownership, output %s", rr.Output())
+	}
+
+	if runtime.GOOS == "windows" {
+		path, _ := exec.LookPath("powershell")
+		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		defer cancel()
+
+		klog.Infof("ensuring only current user has permissions to key file located at : %s...", keyPath)
+
+		// Get the SID of the current user
+		currentUserSidCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", "([System.Security.Principal.WindowsIdentity]::GetCurrent()).User.Value")
+		currentUserSidOut, currentUserSidErr := currentUserSidCmd.CombinedOutput()
+		if currentUserSidErr != nil {
+			klog.Warningf("unable to determine current user's SID. minikube tunnel may not work.")
+		} else {
+			icaclsArguments := fmt.Sprintf(`"%s" /grant:r *%s:F /inheritancelevel:r`, keyPath, strings.TrimSpace(string(currentUserSidOut)))
+			icaclsCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", "icacls.exe", icaclsArguments)
+			icaclsCmdOut, icaclsCmdErr := icaclsCmd.CombinedOutput()
+
+			if icaclsCmdErr != nil {
+				return errors.Wrap(icaclsCmdErr, "unable to execute icacls to set permissions")
+			}
+
+			if !strings.Contains(string(icaclsCmdOut), "Successfully processed 1 files; Failed processing 0 files") {
+				klog.Errorf("icacls failed applying permissions - err - [%s], output - [%s]", icaclsCmdErr, strings.TrimSpace(string(icaclsCmdOut)))
+			}
+		}
 	}
 
 	return nil

@@ -40,7 +40,7 @@ if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
   RELEASE_FLAGS="-p"  # Pre-release
 fi
 
-RELEASE_NOTES=$(perl -e "\$p=0; while(<>) { if(/^## Version ${VERSION} -/) { \$p=1 } elsif (/^##/) { \$p=0 }; if (\$p) { print }}" < CHANGELOG.md)
+RELEASE_NOTES=$(perl -e "\$p=0; while(<>) { if(/^## Version ${VERSION} -/) { \$p=1 } elsif (/^## Version/) { \$p=0 }; if (\$p) { print }}" < CHANGELOG.md)
 if [[ "${RELEASE_NOTES}" = "" ]]; then
   RELEASE_NOTES="(missing for ${VERSION})"
 fi
