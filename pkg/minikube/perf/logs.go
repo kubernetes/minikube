@@ -22,7 +22,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
+	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
@@ -34,6 +35,11 @@ func timeCommandLogs(cmd *exec.Cmd) (*result, error) {
 	// matches each log with the amount of time spent on that log
 	r := newResult()
 
+	output = strings.ToLower(output)
+	if output != "text" && statusFormat != defaultStatusFormat {
+		exit.Message(reason.Usage, "Cannot use both --output and --format options")
+		}
+	out.SetJSON(output == "json")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting stdout pipe")
