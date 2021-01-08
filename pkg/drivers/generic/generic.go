@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
 	"path"
 	"strconv"
 	"time"
@@ -182,7 +181,10 @@ func (d *Driver) Stop() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
-	return restartKubelet(d.exec)
+	if err := sysinit.New(d.exec).Restart("kubelet"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
@@ -230,15 +232,5 @@ func copySSHKey(src, dst string) error {
 		return fmt.Errorf("unable to set permissions on the ssh key: %s", err)
 	}
 
-	return nil
-}
-
-// restartKubelet restarts the kubelet
-func restartKubelet(cr command.Runner) error {
-	klog.Infof("restarting kubelet.service ...")
-	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
-	if _, err := cr.RunCmd(c); err != nil {
-		return err
-	}
 	return nil
 }
