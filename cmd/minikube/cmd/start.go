@@ -34,8 +34,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/cpu"
-	gopshost "github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/cpu"
+	gopshost "github.com/shirou/gopsutil/v3/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
