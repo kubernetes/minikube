@@ -521,16 +521,18 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 	}
 
 	images := viper.GetString(config.AddonImages)
-	for _, image := range strings.Split(images, ",") {
-		vals := strings.Split(image, "=")
-		if len(vals) != 2 {
-			out.WarningT("Ignoring invalid custom image {{.conf}}", out.V{"conf": image})
-			continue
+	if images != "" {
+		for _, image := range strings.Split(images, ",") {
+			vals := strings.Split(image, "=")
+			if len(vals) != 2 {
+				out.WarningT("Ignoring invalid custom image {{.conf}}", out.V{"conf": image})
+				continue
+			}
+			if defaultImage, ok := opts.Images[vals[0]]; ok {
+				out.Infof("Using {{.image}} instead default image {{.default}}", out.V{"image": vals[1], "name": defaultImage})
+			}
+			opts.Images[vals[0]] = vals[1]
 		}
-		if defaultImage, ok := opts.Images[vals[0]]; ok {
-			out.Infof("Using {{.image}} instead default image {{.default}}", out.V{"image": vals[1], "name": defaultImage})
-		}
-		opts.Images[vals[0]] = vals[1]
 	}
 
 	return opts

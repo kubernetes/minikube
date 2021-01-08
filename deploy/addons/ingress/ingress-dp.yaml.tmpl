@@ -49,7 +49,7 @@ spec:
       serviceAccountName: ingress-nginx
       containers:
         - name: controller
-          image: {{default "us.gcr.io/k8s-artifacts-prod" .ImageRepository}}/{{default "ingress-nginx/controller:v0.40.2" .Images.IngressController}}
+          image: {{default "us.gcr.io/k8s-artifacts-prod" .ImageRepository}}/{{.Images.IngressController}}
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
@@ -220,7 +220,7 @@ spec:
     spec:
       containers:
         - name: create
-          image: {{default "jettech" .ImageRepository}}/{{default "kube-webhook-certgen:v1.2.2" .Images.KubeWebhookCertgenCreate}}
+          image: {{default "jettech" .ImageRepository}}/{{.Images.KubeWebhookCertgenCreate}}
           imagePullPolicy: IfNotPresent
           args:
             - create
@@ -255,7 +255,7 @@ spec:
     spec:
       containers:
         - name: patch
-          image: {{default "jettech" .ImageRepository}}/{{default "kube-webhook-certgen:v1.3.0" .Images.KubeWebhookCertgenPatch}}
+          image: {{default "jettech" .ImageRepository}}/{{.Images.KubeWebhookCertgenPatch}}
           imagePullPolicy:
           args:
             - patch
