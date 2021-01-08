@@ -38,6 +38,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
+// Driver is a driver designed to run kubeadm w/o VM management.
+// https://minikube.sigs.k8s.io/docs/reference/drivers/generic/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
