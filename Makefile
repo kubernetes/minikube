@@ -607,6 +607,7 @@ X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
 .PHONY: docker-multi-arch-builder
 docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+	env $(X_BUILD_ENV) docker buildx rm --builder $(X_DOCKER_BUILDER) || true
 	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --buildkitd-flags '--debug' --use || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
@@ -618,6 +619,11 @@ ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
 	docker login docker.pkg.github.com
 	docker login
+endif
+	$(foreach REG,$(KICBASE_IMAGE_REGISTRIES), \
+		@docker pull $(REG) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry";)
+ifndef AUTOPUSH
+	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
 	env $(X_BUILD_ENV) docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
 
