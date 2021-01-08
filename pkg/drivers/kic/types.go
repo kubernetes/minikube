@@ -35,9 +35,6 @@ var (
 
 	// FallbackImages are backup base images in case gcr isn't available
 	FallbackImages = []string{
-		// the amd64 only base image is used to spin up kic containers
-		fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s@sha256:%s", Version, baseImageSHA),
-
 		// the fallback of BaseImage in case gcr.io is not available. stored in docker hub
 		// same image is push to https://github.com/kicbase/stable
 		fmt.Sprintf("kicbase/stable:%s@sha256:%s", Version, baseImageSHA),
