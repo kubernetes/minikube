@@ -41,7 +41,7 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := vmwcfg.NewConfig(driver.MachineName(cc, n), localpath.MiniPath())
+	d := vmwcfg.NewConfig(config.MachineName(cc, n), localpath.MiniPath())
 	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
 	d.Memory = cc.Memory
 	d.CPU = cc.CPUs

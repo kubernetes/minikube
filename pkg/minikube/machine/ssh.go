@@ -26,11 +26,10 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 func getHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
-	machineName := driver.MachineName(cc, n)
+	machineName := config.MachineName(cc, n)
 	host, err := LoadHost(api, machineName)
 	if err != nil {
 		return nil, errors.Wrap(err, "host exists and load")

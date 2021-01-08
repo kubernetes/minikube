@@ -18,7 +18,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -45,7 +45,7 @@ var nodeStopCmd = &cobra.Command{
 			exit.Error(reason.GuestNodeRetrieve, "retrieving node", err)
 		}
 
-		machineName := driver.MachineName(*cc, *n)
+		machineName := config.MachineName(*cc, *n)
 
 		err = machine.StopHost(api, machineName)
 		if err != nil {

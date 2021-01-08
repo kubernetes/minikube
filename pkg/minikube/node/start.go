@@ -210,7 +210,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 // Provision provisions the machine/container for the node
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
-	name := driver.MachineName(*cc, *n)
+	name := config.MachineName(*cc, *n)
 	if apiServer {
 		out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
@@ -377,7 +377,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, del
 	klog.Warningf("error starting host: %v", err)
 	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
 	if !exists {
-		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
+		err := machine.DeleteHost(api, config.MachineName(*cc, *n))
 		if err != nil {
 			klog.Warningf("delete host: %v", err)
 		}
@@ -396,7 +396,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, del
 	if delOnFail {
 		klog.Info("Deleting existing host since delete-on-failure was set.")
 		// Delete the failed existing host
-		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
+		err := machine.DeleteHost(api, config.MachineName(*cc, *n))
 		if err != nil {
 			klog.Warningf("delete host: %v", err)
 		}
