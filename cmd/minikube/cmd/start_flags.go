@@ -94,8 +94,8 @@ const (
 	interactive             = "interactive"
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
-	minUsableMem            = 953  // 1GB In MiB: Kubernetes will not start with less
-	minRecommendedMem       = 1907 // 2GB In MiB: Warn at no lower than existing configurations
+	minUsableMem            = 1800 // Kubernetes (kubeadm) will not start with less
+	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
 	minimumCPUS             = 2
 	minimumDiskSize         = 2000
 	autoUpdate              = "auto-update-drivers"
@@ -107,6 +107,7 @@ const (
 	forceSystemd            = "force-systemd"
 	kicBaseImage            = "base-image"
 	ports                   = "ports"
+	network                 = "network"
 	startNamespace          = "namespace"
 	trace                   = "trace"
 )
@@ -151,7 +152,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
-	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
+	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Defaults to false.")
+	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Only available with the docker/podman drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 }
@@ -293,12 +295,17 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			out.WarningT("With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative")
 		}
 
+		if !driver.IsKIC(drvName) && viper.GetString(network) != "" {
+			out.WarningT("--network flag is only valid with the docker/podman drivers, it will be ignored")
+		}
+
 		cc = config.ClusterConfig{
 			Name:                    ClusterFlagValue(),
 			KeepContext:             viper.GetBool(keepContext),
 			EmbedCerts:              viper.GetBool(embedCerts),
 			MinikubeISO:             viper.GetString(isoURL),
 			KicBaseImage:            viper.GetString(kicBaseImage),
+			Network:                 viper.GetString(network),
 			Memory:                  mem,
 			CPUs:                    viper.GetInt(cpus),
 			DiskSize:                diskSize,

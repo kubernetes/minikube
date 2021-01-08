@@ -42,7 +42,7 @@ var cleanupPaths = []string{
 	vmpath.GuestPersistentDir,
 }
 
-// Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
+// Driver is a driver designed to run kubeadm w/o VM management.
 // https://minikube.sigs.k8s.io/docs/reference/drivers/none/
 type Driver struct {
 	*drivers.BaseDriver
@@ -192,7 +192,10 @@ func (d *Driver) Remove() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
-	return restartKubelet(d.exec)
+	if err := sysinit.New(d.exec).Restart("kubelet"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Start a host
@@ -233,14 +236,4 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support ssh commands")
-}
-
-// restartKubelet restarts the kubelet
-func restartKubelet(cr command.Runner) error {
-	klog.Infof("restarting kubelet.service ...")
-	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
-	if _, err := cr.RunCmd(c); err != nil {
-		return err
-	}
-	return nil
 }

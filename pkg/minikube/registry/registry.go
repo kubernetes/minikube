@@ -31,6 +31,8 @@ type Priority int
 const (
 	// Unknown is when there is no status check available
 	Unknown Priority = iota
+	// Obsolete is when a driver has been removed
+	Obsolete
 	// Unhealthy is when a driver does not pass health checks
 	Unhealthy
 	// Experimental is when a driver is not officially supported because it's still experimental

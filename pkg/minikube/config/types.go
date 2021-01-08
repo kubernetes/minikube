@@ -73,6 +73,7 @@ type ClusterConfig struct {
 	StartHostTimeout        time.Duration
 	ScheduledStop           *ScheduledStopConfig
 	ExposedPorts            []string // Only used by the docker and podman driver
+	Network                 string   // only used by docker driver
 	MultiNodeRequested      bool
 }
 

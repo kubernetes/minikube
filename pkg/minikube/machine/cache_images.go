@@ -218,6 +218,7 @@ func CacheAndLoadImages(images []string) error {
 				if err != nil {
 					failed = append(failed, m)
 					klog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+					continue
 				}
 				succeeded = append(succeeded, m)
 			}
