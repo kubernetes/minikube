@@ -30,9 +30,11 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
@@ -41,6 +43,15 @@ type Driver struct {
 	*pkgdrivers.CommonDriver
 	EnginePort int
 	SSHKey     string
+	runtime    cruntime.Manager
+	exec       command.Runner
+}
+
+// Config is configuration for the Generic driver
+type Config struct {
+	MachineName      string
+	StorePath        string
+	ContainerRuntime string
 }
 
 const (
@@ -48,14 +59,23 @@ const (
 )
 
 // NewDriver creates and returns a new instance of the driver
-func NewDriver(hostName, storePath string) *Driver {
-	return &Driver{
+func NewDriver(c Config) *Driver {
+	d := &Driver{
 		EnginePort: engine.DefaultPort,
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: hostName,
-			StorePath:   storePath,
+			MachineName: c.MachineName,
+			StorePath:   c.StorePath,
 		},
 	}
+	runner := command.NewSSHRunner(d)
+	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
+	// Libraries shouldn't panic, but there is no way for drivers to return error :(
+	if err != nil {
+		klog.Fatalf("unable to create container runtime: %v", err)
+	}
+	d.runtime = runtime
+	d.exec = runner
+	return d
 }
 
 // DriverName returns the name of the driver
@@ -139,14 +159,12 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	exec := command.NewSSHRunner(d)
-	if err := sysinit.New(exec).Stop("kubelet"); err != nil {
+	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
 		klog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
-		if err := sysinit.New(exec).ForceStop("kubelet"); err != nil {
+		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
-	/* TODO
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
@@ -156,25 +174,21 @@ func (d *Driver) Stop() error {
 			return errors.Wrap(err, "stop containers")
 		}
 	}
-	*/
 	klog.Infof("generic driver is stopped!")
 	return nil
 }
 
 // Restart a host
 func (d *Driver) Restart() error {
-	exec := command.NewSSHRunner(d)
-	return restartKubelet(exec)
+	return restartKubelet(d.exec)
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	exec := command.NewSSHRunner(d)
-	if err := sysinit.New(exec).ForceStop("kubelet"); err != nil {
+	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		klog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 
-	/* TODO
 	// First try to gracefully stop containers
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
@@ -198,9 +212,7 @@ func (d *Driver) Kill() error {
 	if err := d.runtime.KillContainers(containers); err != nil {
 		return errors.Wrap(err, "kill")
 	}
-	*/
 	return nil
-
 }
 
 func (d *Driver) Remove() error {

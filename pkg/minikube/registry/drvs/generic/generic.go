@@ -35,7 +35,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Priority: registry.Fallback,
-		Init:     func() drivers.Driver { return generic.NewDriver("", "") },
+		Init:     func() drivers.Driver { return generic.NewDriver(generic.Config{}) },
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
@@ -43,7 +43,11 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := generic.NewDriver(driver.MachineName(cc, n), localpath.MiniPath())
+	d := generic.NewDriver(generic.Config{
+		MachineName:      driver.MachineName(cc, n),
+		StorePath:        localpath.MiniPath(),
+		ContainerRuntime: cc.KubernetesConfig.ContainerRuntime,
+	})
 
 	if cc.GenericIPAddress == "" {
 		return nil, errors.Errorf("please provide an IP address")
