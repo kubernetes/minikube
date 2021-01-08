@@ -18,9 +18,12 @@ package assets
 
 import (
 	"runtime"
+	"strings"
 
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/version"
 )
@@ -30,6 +33,7 @@ type Addon struct {
 	Assets    []*BinAsset
 	enabled   bool
 	addonName string
+	Images    map[string]string
 }
 
 // NewAddon creates a new Addon
@@ -56,6 +60,11 @@ func (a *Addon) IsEnabled(cc *config.ClusterConfig) bool {
 
 	// Return the default unconfigured state of the addon
 	return a.enabled
+}
+
+func (a *Addon) setImages(images map[string]string) *Addon {
+	a.Images = images
+	return a
 }
 
 // Addons is the list of addons
@@ -165,7 +174,11 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-dp.yaml",
 			"0640"),
-	}, false, "ingress"),
+	}, false, "ingress").setImages(map[string]string{
+		"IngressController":        "ingress-nginx/controller:v0.40.2",
+		"KubeWebhookCertgenCreate": "kube-webhook-certgen:v1.2.2",
+		"KubeWebhookCertgenPatch":  "kube-webhook-certgen:v1.3.0",
+	}),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/istio-provisioner/istio-operator.yaml.tmpl",
@@ -474,7 +487,7 @@ var Addons = map[string]*Addon{
 }
 
 // GenerateTemplateData generates template data for template assets
-func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
+func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{} {
 
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
@@ -491,6 +504,7 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		LoadBalancerEndIP         string
 		CustomIngressCert         string
 		StorageProvisionerVersion string
+		Images                    map[string]string
 	}{
 		Arch:                      a,
 		ExoticArch:                ea,
@@ -499,6 +513,24 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		LoadBalancerEndIP:         cfg.LoadBalancerEndIP,
 		CustomIngressCert:         cfg.CustomIngressCert,
 		StorageProvisionerVersion: version.GetStorageProvisionerVersion(),
+		Images:                    addon.Images,
+	}
+
+	if opts.Images == nil {
+		opts.Images = make(map[string]string) // Avoid nil access when rendering
+	}
+
+	images := viper.GetString(config.AddonImages)
+	for _, image := range strings.Split(images, ",") {
+		vals := strings.Split(image, "=")
+		if len(vals) != 2 {
+			out.WarningT("Ignoring invalid custom image {{.conf}}", out.V{"conf": image})
+			continue
+		}
+		if defaultImage, ok := opts.Images[vals[0]]; ok {
+			out.Infof("Using {{.image}} instead default image {{.default}}", out.V{"image": vals[1], "name": defaultImage})
+		}
+		opts.Images[vals[0]] = vals[1]
 	}
 
 	return opts

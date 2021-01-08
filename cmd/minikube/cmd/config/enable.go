@@ -20,7 +20,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -42,6 +44,7 @@ var addonsEnableCmd = &cobra.Command{
 			out.Step(style.Waiting, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
 			addon = "metrics-server"
 		}
+		viper.Set(config.AddonImages, images)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
 		if err != nil {
 			exit.Error(reason.InternalEnable, "enable failed", err)
@@ -63,6 +66,11 @@ var addonsEnableCmd = &cobra.Command{
 	},
 }
 
+var (
+	images string
+)
+
 func init() {
+	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Alpha feature. Image names used by this addon. Divided by comma.")
 	AddonsCmd.AddCommand(addonsEnableCmd)
 }
