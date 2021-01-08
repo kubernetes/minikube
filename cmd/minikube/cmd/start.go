@@ -668,6 +668,20 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
+	out.WarningT("Deleting existing cluster {{.name}} with different driver {{.driver_name}} due to --delete-on-failure flag set by the user. ", out.V{"name": existing.Name, "driver_name": old})
+	if viper.GetBool(deleteOnFailure) {
+		// Start failed, delete the cluster
+		profile, err := config.LoadProfile(existing.Name)
+		if err != nil {
+			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			out.WarningT("Failed to delete cluster {{.name}}.", out.V{"name": existing.Name})
+		}
+	}
+
 	exit.Advice(
 		reason.GuestDrvMismatch,
 		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,

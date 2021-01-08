@@ -50,7 +50,7 @@ minikube start [flags]
                                           		Valid kubeadm parameters: ignore-preflight-errors, dry-run, kubeconfig, kubeconfig-dir, node-name, cri-socket, experimental-upload-certs, certificate-key, rootfs, skip-phases, pod-network-cidr
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
-      --force-systemd                     If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.
+      --force-systemd                     If set, force the container runtime to use sytemd as cgroup manager. Defaults to false.
       --generic-ip-address string         IP address (generic)
       --generic-ssh-key string            SSH key (generic)
       --generic-ssh-port int              SSH port (generic) (default 22)
