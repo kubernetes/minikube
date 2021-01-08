@@ -610,16 +610,16 @@ docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --buildkitd-flags '--debug' --use || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
-MA_KICBASE_IMAGE_REGISTRY ?= $(REGISTRY)/kicbase:$(KIC_VERSION) $(REGISTRY_GH)/kicbase:$(KIC_VERSION) kicbase/stable-multiarch:$(KIC_VERSION)
+KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) $(REGISTRY_GH)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
 
-.PHONY: kic-base-image-multi-arch
-kic-base-image-multi-arch: docker-multi-arch-builder
+.PHONY: push-kic-base-image: 
+push-kic-base-image: docker-multi-arch-builder
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
 	docker login docker.pkg.github.com
 	docker login
 endif
-	env $(X_BUILD_ENV) docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(MA_KICBASE_IMAGE_REGISTRY)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
+	env $(X_BUILD_ENV) docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
@@ -669,8 +669,8 @@ push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
 	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_HUB)
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
 
-.PHONY: push-kic-base-image
-push-kic-base-image: ## Push local/kicbase:latest to all remote registries
+.PHONY: push-kic-base-image-x86
+push-kic-base-image-x86: ## Push local/kicbase:latest to all remote registries
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
 	$(MAKE) push-kic-base-image AUTOPUSH=true
