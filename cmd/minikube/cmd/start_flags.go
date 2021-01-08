@@ -229,10 +229,10 @@ func initNetworkingFlags() {
 	startCmd.Flags().StringArrayVar(&config.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 
 	// generic
-	startCmd.Flags().String(genericIPAddress, "", "IP address (generic)")
-	startCmd.Flags().String(genericSSHUser, defaultSSHUser, "SSH user (generic)")
-	startCmd.Flags().String(genericSSHKey, "", "SSH key (generic)")
-	startCmd.Flags().Int(genericSSHPort, defaultSSHPort, "SSH port (generic)")
+	startCmd.Flags().String(genericIPAddress, "", "IP address (generic driver only)")
+	startCmd.Flags().String(genericSSHUser, defaultSSHUser, "SSH user (generic driver only)")
+	startCmd.Flags().String(genericSSHKey, "", "SSH key (generic driver only)")
+	startCmd.Flags().Int(genericSSHPort, defaultSSHPort, "SSH port (generic driver only)")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
