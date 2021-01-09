@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# set -o errexit
+set -o errexit
 set -o nounset
 set -o pipefail
 set -x
@@ -283,7 +283,7 @@ fix_product_uuid
 select_iptables
 enable_network_magic
 
-echo "WE HAVE SUCEEDED"
+echo "entrypoint completed: $(uname -a)"
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"
