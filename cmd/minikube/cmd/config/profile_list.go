@@ -41,6 +41,7 @@ import (
 )
 
 var output string
+var isLight bool
 
 var profileListCmd = &cobra.Command{
 	Use:   "list",
@@ -58,8 +59,18 @@ var profileListCmd = &cobra.Command{
 	},
 }
 
+func listProfiles() (validProfiles, invalidProfiles []*config.Profile, err error) {
+	if isLight {
+		validProfiles, err = config.ListValidProfiles()
+	} else {
+		validProfiles, invalidProfiles, err = config.ListProfiles()
+	}
+
+	return validProfiles, invalidProfiles, err
+}
+
 func printProfilesTable() {
-	validProfiles, invalidProfiles, err := config.ListProfiles()
+	validProfiles, invalidProfiles, err := listProfiles()
 
 	if err != nil {
 		klog.Warningf("error loading profiles: %v", err)
@@ -75,6 +86,13 @@ func printProfilesTable() {
 }
 
 func updateProfilesStatus(profiles []*config.Profile) {
+	if isLight {
+		for _, p := range profiles {
+			p.Status = "Skipped"
+		}
+		return
+	}
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		klog.Errorf("failed to get machine api client %v", err)
@@ -168,7 +186,7 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 }
 
 func printProfilesJSON() {
-	validProfiles, invalidProfiles, err := config.ListProfiles()
+	validProfiles, invalidProfiles, err := listProfiles()
 
 	updateProfilesStatus(validProfiles)
 
@@ -195,5 +213,6 @@ func profilesOrDefault(profiles []*config.Profile) []*config.Profile {
 
 func init() {
 	profileListCmd.Flags().StringVarP(&output, "output", "o", "table", "The output format. One of 'json', 'table'")
+	profileListCmd.Flags().BoolVarP(&isLight, "light", "l", false, "If true, returns list of profiles faster by skipping validating the status of the cluster.")
 	ProfileCmd.AddCommand(profileListCmd)
 }
