@@ -129,7 +129,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		klog.Infof("duration metric: createHost completed in %s", time.Since(start))
 	}()
 
-	if cfg.Driver != driver.Generic {
+	if cfg.Driver != driver.SSH {
 		showHostInfo(nil, *cfg)
 	}
 
@@ -166,7 +166,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		return nil, errors.Wrap(err, "creating host")
 	}
 	klog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
-	if cfg.Driver == driver.Generic {
+	if cfg.Driver == driver.SSH {
 		showHostInfo(h, *cfg)
 	}
 
@@ -174,7 +174,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if driver.IsGeneric(h.Driver.DriverName()) {
+	if driver.IsSSH(h.Driver.DriverName()) {
 		if _, err := h.RunSSHCommand(fmt.Sprintf("sudo usermod -aG docker %s", h.Driver.GetSSHUsername())); err != nil {
 			return h, errors.Wrap(err, "usermod")
 		}
@@ -295,7 +295,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	if driver.BareMetal(mc.Driver) {
 		showLocalOsRelease()
 	}
-	if driver.IsVM(mc.Driver) || driver.IsKIC(mc.Driver) || driver.IsGeneric(mc.Driver) {
+	if driver.IsVM(mc.Driver) || driver.IsKIC(mc.Driver) || driver.IsSSH(mc.Driver) {
 		logRemoteOsRelease(r)
 	}
 	return syncLocalAssets(r)
@@ -336,7 +336,7 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 		}
 		return
 	}
-	if cfg.Driver == driver.Generic {
+	if driver.IsSSH(cfg.Driver) {
 		r, err := CommandRunner(h)
 		if err != nil {
 			klog.Warningf("error getting command runner: %v", err)
@@ -345,7 +345,7 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 		info, cpuErr, memErr, DiskErr := RemoteHostInfo(r)
 		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningRemotely)
-			out.Step(style.StartingGeneric, "Running remotely (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+			out.Step(style.StartingSSH, "Running remotely (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 		return
 	}

@@ -51,10 +51,6 @@ minikube start [flags]
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use sytemd as cgroup manager. Defaults to false.
-      --generic-ip-address string         IP address (generic driver only)
-      --generic-ssh-key string            SSH key (generic driver only)
-      --generic-ssh-port int              SSH port (generic driver only) (default 22)
-      --generic-ssh-user string           SSH user (generic driver only) (default "root")
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
       --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.99.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
@@ -68,6 +64,7 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
+      --ip-address string                 IP address (ssh driver only)
       --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.16.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.16.0/minikube-v1.16.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.16.0.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.20.0, 'latest' for v1.20.0). Defaults to 'stable'.
@@ -92,6 +89,9 @@ minikube start [flags]
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
+      --ssh-key string                    SSH key (ssh driver only)
+      --ssh-port int                      SSH port (ssh driver only) (default 22)
+      --ssh-user string                   SSH user (ssh driver only) (default "root")
       --trace string                      Send trace events. Options include: [gcp]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers

@@ -65,7 +65,7 @@ func TestMachineType(t *testing.T) {
 		Docker:       "container",
 		Mock:         "bare metal machine",
 		None:         "bare metal machine",
-		Generic:      "bare metal machine",
+		SSH:          "bare metal machine",
 		KVM2:         "VM",
 		VirtualBox:   "VM",
 		HyperKit:     "VM",

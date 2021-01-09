@@ -39,8 +39,8 @@ const (
 	Mock = "mock"
 	// None driver
 	None = "none"
-	// Generic driver
-	Generic = "generic"
+	// SSH driver
+	SSH = "ssh"
 	// KVM2 driver
 	KVM2 = "kvm2"
 	// VirtualBox driver
@@ -58,6 +58,8 @@ const (
 
 	// AliasKVM is driver name alias for kvm2
 	AliasKVM = "kvm"
+	// AliasSSH is driver name alias for ssh
+	AliasSSH = "generic"
 )
 
 var (
@@ -99,7 +101,7 @@ func MachineType(name string) string {
 		return "container"
 	}
 
-	if IsGeneric(name) {
+	if IsSSH(name) {
 		return "bare metal machine"
 	}
 
@@ -150,9 +152,9 @@ func BareMetal(name string) bool {
 	return name == None || name == Mock
 }
 
-// IsGeneric checks if the driver is generic
-func IsGeneric(name string) bool {
-	return name == Generic
+// IsSSH checks if the driver is ssh
+func IsSSH(name string) bool {
+	return name == SSH
 }
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity

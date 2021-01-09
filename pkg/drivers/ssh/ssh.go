@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generic
+package ssh
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ import (
 )
 
 // Driver is a driver designed to run kubeadm w/o VM management.
-// https://minikube.sigs.k8s.io/docs/reference/drivers/generic/
+// https://minikube.sigs.k8s.io/docs/reference/drivers/ssh/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -48,7 +48,7 @@ type Driver struct {
 	exec       command.Runner
 }
 
-// Config is configuration for the Generic driver
+// Config is configuration for the SSH driver
 type Config struct {
 	MachineName      string
 	StorePath        string
@@ -81,7 +81,7 @@ func NewDriver(c Config) *Driver {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return "generic"
+	return "ssh"
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
@@ -175,7 +175,7 @@ func (d *Driver) Stop() error {
 			return errors.Wrap(err, "stop containers")
 		}
 	}
-	klog.Infof("generic driver is stopped!")
+	klog.Infof("ssh driver is stopped!")
 	return nil
 }
 

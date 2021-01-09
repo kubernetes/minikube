@@ -40,7 +40,7 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		return oci.RoutableHostIPFromInside(oci.Docker, clusterName, host.Name)
 	case driver.Podman:
 		return oci.RoutableHostIPFromInside(oci.Podman, clusterName, host.Name)
-	case driver.Generic:
+	case driver.SSH:
 		ip, err := host.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")

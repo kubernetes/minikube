@@ -81,7 +81,7 @@ const (
 	Shutdown
 	Sparkle
 	StartingNone
-	StartingGeneric
+	StartingSSH
 	StartingVM
 	Stopped
 	Stopping

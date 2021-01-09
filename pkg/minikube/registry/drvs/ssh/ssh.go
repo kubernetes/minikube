@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generic
+package ssh
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 
-	"k8s.io/minikube/pkg/drivers/generic"
+	"k8s.io/minikube/pkg/drivers/ssh"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -31,11 +31,12 @@ import (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:     driver.Generic,
+		Name:     driver.SSH,
+		Alias:    []string{driver.AliasSSH},
 		Config:   configure,
 		Status:   status,
 		Priority: registry.Fallback,
-		Init:     func() drivers.Driver { return generic.NewDriver(generic.Config{}) },
+		Init:     func() drivers.Driver { return ssh.NewDriver(ssh.Config{}) },
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
@@ -43,20 +44,20 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := generic.NewDriver(generic.Config{
+	d := ssh.NewDriver(ssh.Config{
 		MachineName:      driver.MachineName(cc, n),
 		StorePath:        localpath.MiniPath(),
 		ContainerRuntime: cc.KubernetesConfig.ContainerRuntime,
 	})
 
-	if cc.GenericIPAddress == "" {
+	if cc.IPAddress == "" {
 		return nil, errors.Errorf("please provide an IP address")
 	}
 
-	d.IPAddress = cc.GenericIPAddress
-	d.SSHUser = cc.GenericSSHUser
-	d.SSHKey = cc.GenericSSHKey
-	d.SSHPort = cc.GenericSSHPort
+	d.IPAddress = cc.IPAddress
+	d.SSHUser = cc.SSHUser
+	d.SSHKey = cc.SSHKey
+	d.SSHPort = cc.SSHPort
 
 	return d, nil
 }

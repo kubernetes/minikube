@@ -110,10 +110,10 @@ const (
 	network                 = "network"
 	startNamespace          = "namespace"
 	trace                   = "trace"
-	genericIPAddress        = "generic-ip-address"
-	genericSSHUser          = "generic-ssh-user"
-	genericSSHKey           = "generic-ssh-key"
-	genericSSHPort          = "generic-ssh-port"
+	sshIPAddress            = "ip-address"
+	sshSSHUser              = "ssh-user"
+	sshSSHKey               = "ssh-key"
+	sshSSHPort              = "ssh-port"
 	defaultSSHUser          = "root"
 	defaultSSHPort          = 22
 )
@@ -228,11 +228,11 @@ func initNetworkingFlags() {
 	startCmd.Flags().StringArrayVar(&config.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&config.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 
-	// generic
-	startCmd.Flags().String(genericIPAddress, "", "IP address (generic driver only)")
-	startCmd.Flags().String(genericSSHUser, defaultSSHUser, "SSH user (generic driver only)")
-	startCmd.Flags().String(genericSSHKey, "", "SSH key (generic driver only)")
-	startCmd.Flags().Int(genericSSHPort, defaultSSHPort, "SSH port (generic driver only)")
+	// ssh
+	startCmd.Flags().String(sshIPAddress, "", "IP address (ssh driver only)")
+	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
+	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
+	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
@@ -347,10 +347,10 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			NatNicType:              viper.GetString(natNicType),
 			StartHostTimeout:        viper.GetDuration(waitTimeout),
 			ExposedPorts:            viper.GetStringSlice(ports),
-			GenericIPAddress:        viper.GetString(genericIPAddress),
-			GenericSSHUser:          viper.GetString(genericSSHUser),
-			GenericSSHKey:           viper.GetString(genericSSHKey),
-			GenericSSHPort:          viper.GetInt(genericSSHPort),
+			IPAddress:               viper.GetString(sshIPAddress),
+			SSHUser:                 viper.GetString(sshSSHUser),
+			SSHKey:                  viper.GetString(sshSSHKey),
+			SSHPort:                 viper.GetInt(sshSSHPort),
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),

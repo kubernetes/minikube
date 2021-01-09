@@ -17,9 +17,9 @@ This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/set
 
 ## Usage
 
-The generic driver requires the IP address of the VM to use.
+The ssh driver requires the IP address of the VM to use.
 
 ```shell
-minikube start --driver=generic --generic-ip-address=vm.example.com
+minikube start --driver=ssh --ip-address=vm.example.com
 ```
 
