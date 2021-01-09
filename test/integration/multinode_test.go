@@ -48,6 +48,7 @@ func TestMultiNode(t *testing.T) {
 			{"DeleteNode", validateDeleteNodeFromMultiNode},
 			{"StopMultiNode", validateStopMultiNodeCluster},
 			{"RestartMultiNode", validateRestartMultiNodeCluster},
+			{"ValidateNameConflict", validatNameConflict},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -306,5 +307,41 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 	}
 	if strings.Count(rr.Stdout.String(), "True") != 2 {
 		t.Errorf("expected 2 nodes Ready status to be True, got %v", rr.Output())
+	}
+}
+
+func validatNameConflict(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
+	}
+	curNodeNum := strings.Count(rr.Stdout.String(), profile)
+
+	// Start new profile. It's expected failture
+	profileName := fmt.Sprintf("%s-m0%d", profile, curNodeNum)
+	startArgs := append([]string{"start", "-p", profileName}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err == nil {
+		t.Errorf("expected start profile command to fail. args %q", rr.Command())
+	}
+
+	// Start new profile temporary profile to conflict node name.
+	profileName = fmt.Sprintf("%s-m0%d", profile, curNodeNum+1)
+	startArgs = append([]string{"start", "-p", profileName}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err != nil {
+		t.Errorf("failed to start profile. args %q : %v", rr.Command(), err)
+	}
+
+	// Add a node to the current cluster. It's expected failture
+	addArgs := []string{"node", "add", "-p", profile}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), addArgs...))
+	if err == nil {
+		t.Errorf("expected add node command to fail. args %q : %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profileName))
+	if err != nil {
+		t.Logf("failed to clean temporary profile. args %q : %v", rr.Command(), err)
 	}
 }
