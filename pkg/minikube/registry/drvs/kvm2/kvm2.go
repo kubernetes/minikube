@@ -70,7 +70,7 @@ type kvmDriver struct {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	name := driver.MachineName(cc, n)
+	name := config.MachineName(cc, n)
 	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,

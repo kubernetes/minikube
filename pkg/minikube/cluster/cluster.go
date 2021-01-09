@@ -27,7 +27,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -61,7 +60,7 @@ func ControlPlaneBootstrapper(mAPI libmachine.API, cc *config.ClusterConfig, boo
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting primary control plane")
 	}
-	h, err := machine.LoadHost(mAPI, driver.MachineName(*cc, cp))
+	h, err := machine.LoadHost(mAPI, config.MachineName(*cc, cp))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting control plane host")
 	}

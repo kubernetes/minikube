@@ -56,7 +56,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		klog.Infof("fixHost completed within %s", time.Since(start))
 	}()
 
-	h, err := api.Load(driver.MachineName(*cc, *n))
+	h, err := api.Load(config.MachineName(*cc, *n))
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
@@ -99,7 +99,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 }
 
 func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.Node, h *host.Host) (*host.Host, error) {
-	machineName := driver.MachineName(*cc, *n)
+	machineName := config.MachineName(*cc, *n)
 	machineType := driver.MachineType(cc.Driver)
 	recreated := false
 	s, serr := h.Driver.GetState()
