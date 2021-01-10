@@ -100,8 +100,12 @@ func startSystemdService(profile string, duration time.Duration) error {
 		return errors.Wrap(err, "copying scheduled stop env file")
 	}
 	// restart scheduled stop service in container
-	sysManger := sysinit.New(runner)
-	return sysManger.Restart(constants.ScheduledStopSystemdService)
+	sysManager := sysinit.New(runner)
+	// enable scheduled stop service
+	if err := sysManager.Enable(constants.ScheduledStopSystemdService); err != nil {
+		return err
+	}
+	return sysManager.Start(constants.ScheduledStopSystemdService)
 }
 
 // return the contents of the environment file for minikube-scheduled-stop systemd service
