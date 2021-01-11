@@ -57,7 +57,7 @@ spec:
       serviceAccount: csi-snapshotter
       containers:
         - name: csi-snapshotter
-          image: {{default .Registries.Snapshotter .ImageRepository}}/{{.Images.Snapshotter}}
+          image: {{default .Registries.Snapshotter .ImageRepository}}{{.Images.Snapshotter}}
           args:
             - -v=5
             - --csi-address=/csi/csi.sock

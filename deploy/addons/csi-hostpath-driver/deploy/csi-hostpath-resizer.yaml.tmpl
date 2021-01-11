@@ -57,7 +57,7 @@ spec:
       serviceAccountName: csi-resizer
       containers:
         - name: csi-resizer
-          image: {{default .Registries.Resizer .ImageRepository}}/{{.Images.Resizer}}
+          image: {{default .Registries.Resizer .ImageRepository}}{{.Images.Resizer}}
           args:
             - -v=5
             - -csi-address=/csi/csi.sock

@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: metrics-server
-        image: {{default .Registries.MetricsServer .ImageRepository}}/{{.Images.MetricsServer}}
+        image: {{default .Registries.MetricsServer .ImageRepository}}{{.Images.MetricsServer}}
         imagePullPolicy: IfNotPresent
         command:
         - /metrics-server

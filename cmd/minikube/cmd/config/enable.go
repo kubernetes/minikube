@@ -31,9 +31,10 @@ import (
 )
 
 var addonsEnableCmd = &cobra.Command{
-	Use:   "enable ADDON_NAME",
-	Short: "Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list ",
-	Long:  "Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list ",
+	Use:     "enable ADDON_NAME",
+	Short:   "Enables the addon w/ADDON_NAME within minikube. For a list of available addons use: minikube addons list ",
+	Long:    "Enables the addon w/ADDON_NAME within minikube. For a list of available addons use: minikube addons list ",
+	Example: "minikube addons enable dashboard",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons enable ADDON_NAME")
@@ -45,6 +46,7 @@ var addonsEnableCmd = &cobra.Command{
 			addon = "metrics-server"
 		}
 		viper.Set(config.AddonImages, images)
+		viper.Set(config.AddonRegistries, registries)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
 		if err != nil {
 			exit.Error(reason.InternalEnable, "enable failed", err)
@@ -67,10 +69,12 @@ var addonsEnableCmd = &cobra.Command{
 }
 
 var (
-	images string
+	images     string
+	registries string
 )
 
 func init() {
-	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Alpha feature. Image names used by this addon. Divided by comma.")
+	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Images used by this addon. Divided by comma.")
+	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Divided by comma.")
 	AddonsCmd.AddCommand(addonsEnableCmd)
 }

@@ -212,7 +212,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
-        image: {{default .Registries.Speaker .ImageRepository}}/{{.Images.Speaker}}
+        image: {{default .Registries.Speaker .ImageRepository}}{{.Images.Speaker}}
         imagePullPolicy: IfNotPresent
         name: speaker
         ports:
@@ -268,7 +268,7 @@ spec:
       - args:
         - --port=7472
         - --config=config
-        image: {{default .Registries.Controller .ImageRepository}}/{{.Images.Controller}}
+        image: {{default .Registries.Controller .ImageRepository}}{{.Images.Controller}}
         imagePullPolicy: IfNotPresent
         name: controller
         ports:

@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
         - name: update
-          image: {{default .Registries.Alpine .ImageRepository}}/{{.Images.Alpine}}
+          image: {{default .Registries.Alpine .ImageRepository}}{{.Images.Alpine}}
           volumeMounts:
             - name: etchosts
               mountPath: /host-etc/hosts
@@ -43,7 +43,7 @@ spec:
               echo "Done."
       containers:
         - name: pause-for-update
-          image: {{default .Registries.Pause .ImageRepository}}/{{.Images.Pause}}
+          image: {{default .Registries.Pause .ImageRepository}}{{.Images.Pause}}
       terminationGracePeriodSeconds: 30
       volumes:
         - name: etchosts

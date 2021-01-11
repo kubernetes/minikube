@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/version"
 )
@@ -86,10 +87,7 @@ var Addons = map[string]*Addon{
 	}, false, "dashboard", map[string]string{
 		"Dashboard":      "kubernetesui/dashboard:v2.1.0",
 		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.4",
-	}, map[string]string{
-		"Dashboard":      "docker.io",
-		"MetricsScraper": "docker.io",
-	}),
+	}, nil),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/storageclass/storageclass.yaml.tmpl",
@@ -141,9 +139,7 @@ var Addons = map[string]*Addon{
 		"GlusterfileProvisioner": "gluster/glusterfile-provisioner:latest",
 		"GlusterfsServer":        "nixpanic/glusterfs-server:pr_fake-disk",
 	}, map[string]string{
-		"Heketi":                 "docker.io",
-		"GlusterfileProvisioner": "docker.io",
-		"GlusterfsServer":        "quay.io",
+		"GlusterfsServer": "quay.io",
 	}),
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -184,7 +180,6 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"Elasticsearch":        "k8s.gcr.io",
 		"FluentdElasticsearch": "k8s.gcr.io",
-		"Alpine":               "docker.io",
 		"Kibana":               "docker.elastic.co",
 	}),
 	"ingress": NewAddon([]*BinAsset{
@@ -208,9 +203,7 @@ var Addons = map[string]*Addon{
 		"KubeWebhookCertgenCreate": "jettech/kube-webhook-certgen:v1.2.2",
 		"KubeWebhookCertgenPatch":  "jettech/kube-webhook-certgen:v1.3.0",
 	}, map[string]string{
-		"IngressController":        "us.gcr.io",
-		"KubeWebhookCertgenCreate": "docker.io",
-		"KubeWebhookCertgenPatch":  "docker.io",
+		"IngressController": "us.gcr.io",
 	}),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -220,9 +213,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "istio-provisioner", map[string]string{
 		"IstioOperator": "istio/operator:1.5.0",
-	}, map[string]string{
-		"IstioOperator": "docker.io",
-	}),
+	}, nil),
 	"istio": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/istio/istio-default-profile.yaml.tmpl",
@@ -238,9 +229,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "kubevirt", map[string]string{
 		"Kubectl": "bitnami/kubectl:1.17",
-	}, map[string]string{
-		"Kubectl": "docker.io",
-	}),
+	}, nil),
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
@@ -300,7 +289,6 @@ var Addons = map[string]*Addon{
 		"Registry":          "registry:2.7.1",
 		"KubeRegistryProxy": "google_containers/kube-registry-proxy:0.4",
 	}, map[string]string{
-		"Registry":          "docker.io",
 		"KubeRegistryProxy": "gcr.io",
 	}),
 	"registry-creds": NewAddon([]*BinAsset{
@@ -311,9 +299,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "registry-creds", map[string]string{
 		"RegistryCreds": "upmcenterprises/registry-creds:1.10",
-	}, map[string]string{
-		"RegistryCreds": "docker.io",
-	}),
+	}, nil),
 	"registry-aliases": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/registry-aliases/registry-aliases-sa.tmpl",
@@ -346,7 +332,6 @@ var Addons = map[string]*Addon{
 		"Pause":          "google_containers/pause-amd64:3.1",
 	}, map[string]string{
 		"CoreDNSPatcher": "quay.io",
-		"Alpine":         "docker.io",
 		"Pause":          "gcr.io",
 	}),
 	"freshpod": NewAddon([]*BinAsset{
@@ -381,9 +366,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "nvidia-gpu-device-plugin", map[string]string{
 		"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:1.0.0-beta4",
-	}, map[string]string{
-		"NvidiaDevicePlugin": "docker.io",
-	}),
+	}, nil),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml.tmpl",
@@ -397,9 +380,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "logviewer", map[string]string{
 		"LogViewer": "ivans3/minikube-log-viewer:latest",
-	}, map[string]string{
-		"LogViewer": "docker.io",
-	}),
+	}, nil),
 	"gvisor": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-pod.yaml.tmpl",
@@ -450,9 +431,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "ingress-dns", map[string]string{
 		"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0",
-	}, map[string]string{
-		"IngressDNS": "docker.io",
-	}),
+	}, nil),
 	"metallb": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/metallb/metallb.yaml.tmpl",
@@ -467,10 +446,7 @@ var Addons = map[string]*Addon{
 	}, false, "metallb", map[string]string{
 		"Speaker":    "metallb/speaker:v0.8.2",
 		"Controller": "metallb/controller:v0.8.2",
-	}, map[string]string{
-		"Speaker":    "docker.io",
-		"Controller": "docker.io",
-	}),
+	}, nil),
 	"ambassador": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/ambassador/ambassador-operator-crds.yaml.tmpl",
@@ -512,8 +488,7 @@ var Addons = map[string]*Addon{
 		"KubeWebhookCertgen": "jettech/kube-webhook-certgen:v1.3.0",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.3",
 	}, map[string]string{
-		"KubeWebhookCertgen": "docker.io",
-		"GCPAuthWebhook":     "gcr.io",
+		"GCPAuthWebhook": "gcr.io",
 	}),
 	"volumesnapshots": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -663,12 +638,47 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 				out.WarningT("Ignoring invalid custom image {{.conf}}", out.V{"conf": image})
 				continue
 			}
-			if defaultImage, ok := opts.Images[vals[0]]; ok {
-				out.Infof("Using {{.image}} instead default image {{.default}}", out.V{"image": vals[1], "name": defaultImage})
+			if _, ok := opts.Images[vals[0]]; ok {
+				opts.Images[vals[0]] = vals[1]
+			} else {
+				out.WarningT("Ignoring unknown custom image {{.name}}", out.V{"name": vals[0]})
 			}
-			opts.Images[vals[0]] = vals[1]
 		}
 	}
 
+	if opts.Registries == nil {
+		opts.Registries = make(map[string]string)
+	}
+
+	registries := viper.GetString(config.AddonRegistries)
+	if registries != "" {
+		for _, registry := range strings.Split(registries, ",") {
+			vals := strings.Split(registry, "=")
+			if len(vals) != 2 {
+				out.WarningT("Ignoring invalid custom registry {{.conf}}", out.V{"conf": registry})
+				continue
+			}
+			if _, ok := opts.Registries[vals[0]]; ok {
+				opts.Registries[vals[0]] = vals[1]
+			} else {
+				out.WarningT("Ignoring unknown custom registry {{.name}}", out.V{"name": vals[0]})
+			}
+		}
+	}
+
+	// Append postfix "/" to registries
+	for k, v := range opts.Registries {
+		if !strings.HasSuffix(opts.Registries[k], "/") {
+			opts.Registries[k] = v + "/"
+		}
+	}
+
+	for name, image := range opts.Images {
+		if _, ok := opts.Registries[name]; !ok {
+			opts.Registries[name] = "" // Avoid nil access when rendering
+		}
+		// Send messages to stderr due to some tests rely on stdout
+		out.ErrT(style.Option, "Using image {{.registry}}{{.image}}", out.V{"registry": opts.Registries[name], "image": image})
+	}
 	return opts
 }

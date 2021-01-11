@@ -57,7 +57,7 @@ spec:
       serviceAccountName: csi-attacher
       containers:
         - name: csi-attacher
-          image: {{default .Registries.Attacher .ImageRepository}}/{{.Images.Attacher}}
+          image: {{default .Registries.Attacher .ImageRepository}}{{.Images.Attacher}}
           args:
             - --v=5
             - --csi-address=/csi/csi.sock

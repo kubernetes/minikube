@@ -25,7 +25,7 @@ spec:
   hostPID: true
   containers:
     - name: gvisor
-      image: {{default .Registries.GvisorAddon .ImageRepository}}/{{.Images.GvisorAddon}}
+      image: {{default .Registries.GvisorAddon .ImageRepository}}{{.Images.GvisorAddon}}
       securityContext:
         privileged: true
       volumeMounts:

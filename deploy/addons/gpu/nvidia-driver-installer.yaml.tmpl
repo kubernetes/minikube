@@ -50,7 +50,7 @@ spec:
         hostPath:
           path: /
       initContainers:
-      - image: {{default .Registries.NvidiaDriverInstaller .ImageRepository}}/{{.Images.NvidiaDriverInstaller}}
+      - image: {{default .Registries.NvidiaDriverInstaller .ImageRepository}}{{.Images.NvidiaDriverInstaller}}
         name: nvidia-driver-installer
         resources:
           requests:

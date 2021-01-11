@@ -109,20 +109,27 @@ minikube addons disable ADDON_NAME [flags]
 
 ## minikube addons enable
 
-Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list 
+Enables the addon w/ADDON_NAME within minikube. For a list of available addons use: minikube addons list 
 
 ### Synopsis
 
-Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list 
+Enables the addon w/ADDON_NAME within minikube. For a list of available addons use: minikube addons list 
 
 ```shell
 minikube addons enable ADDON_NAME [flags]
 ```
 
+### Examples
+
+```
+minikube addons enable dashboard
+```
+
 ### Options
 
 ```
-      --images string   Alpha feature. Image names used by this addon. Divided by comma.
+      --images string       Images used by this addon. Divided by comma.
+      --registries string   Registries used by this addon. Divided by comma.
 ```
 
 ### Options inherited from parent commands
