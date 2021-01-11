@@ -18,7 +18,7 @@ spec:
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - image: {{default "upmcenterprises" .ImageRepository}}/registry-creds:1.10
+      - image: {{default "docker.io" .ImageRepository}}/{{.Images.RegistryCreds}}
         name: registry-creds
         imagePullPolicy: Always
         env:

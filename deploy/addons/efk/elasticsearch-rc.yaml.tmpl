@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name: elasticsearch-logging
-        image: {{default "k8s.gcr.io" .ImageRepository}}/elasticsearch:v5.6.2
+        image: {{default "k8s.gcr.io" .ImageRepository}}/{{.Images.Elasticsearch}}
         resources:
           limits:
             cpu: 500m
@@ -62,7 +62,7 @@ spec:
         - name: ES_JAVA_OPTS
           value: "-Xms1024m -Xmx1024m"
       initContainers:
-      - image: {{default "registry.hub.docker.com/library" .ImageRepository}}/alpine:3.6
+      - image: {{default "docker.io" .ImageRepository}}/{{.Images.Alpine}}
         command: ["/sbin/sysctl", "-w", "vm.max_map_count=262144"]
         name: elasticsearch-logging-init
         securityContext:

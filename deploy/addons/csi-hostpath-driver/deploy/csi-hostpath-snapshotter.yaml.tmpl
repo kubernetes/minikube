@@ -57,7 +57,7 @@ spec:
       serviceAccount: csi-snapshotter
       containers:
         - name: csi-snapshotter
-          image: {{default "quay.io/k8scsi" .ImageRepository}}/csi-snapshotter:v2.1.0
+          image: {{default "quay.io" .ImageRepository}}/{{.Images.Snapshotter}}
           args:
             - -v=5
             - --csi-address=/csi/csi.sock

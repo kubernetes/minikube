@@ -220,7 +220,7 @@ spec:
     spec:
       containers:
         - name: create
-          image: {{default "jettech" .ImageRepository}}/{{.Images.KubeWebhookCertgenCreate}}
+          image: {{default "docker.io" .ImageRepository}}/{{.Images.KubeWebhookCertgenCreate}}
           imagePullPolicy: IfNotPresent
           args:
             - create
@@ -255,7 +255,7 @@ spec:
     spec:
       containers:
         - name: patch
-          image: {{default "jettech" .ImageRepository}}/{{.Images.KubeWebhookCertgenPatch}}
+          image: {{default "docker.io" .ImageRepository}}/{{.Images.KubeWebhookCertgenPatch}}
           imagePullPolicy:
           args:
             - patch

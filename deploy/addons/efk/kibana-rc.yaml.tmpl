@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name: kibana-logging
-        image: {{default "docker.elastic.co/kibana" .ImageRepository}}/kibana:5.6.2
+        image: {{default "docker.elastic.co" .ImageRepository}}/{{.Images.Kibana}}
         resources:
           limits:
             cpu: 500m

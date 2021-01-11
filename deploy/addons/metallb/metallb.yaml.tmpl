@@ -212,7 +212,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
-        image: {{default "metallb" .ImageRepository}}/speaker:v0.8.2
+        image: {{default "docker.io" .ImageRepository}}/{{.Images.Speaker}}
         imagePullPolicy: IfNotPresent
         name: speaker
         ports:
@@ -268,7 +268,7 @@ spec:
       - args:
         - --port=7472
         - --config=config
-        image: {{default "metallb" .ImageRepository}}/controller:v0.8.2
+        image: {{default "docker.io" .ImageRepository}}/{{.Images.Controller}}
         imagePullPolicy: IfNotPresent
         name: controller
         ports:

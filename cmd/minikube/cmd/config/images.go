@@ -28,12 +28,13 @@ import (
 )
 
 var addonsImagesCmd = &cobra.Command{
-	Use:   "images ADDON_NAME",
-	Short: "Alpha feature. List image names the addon w/ADDON_NAME used (example: minikube addons images ingress). For a list of available addons use: minikube addons list",
-	Long:  "Alpha feature. List image names the addon w/ADDON_NAME used (example: minikube addons images ingress). For a list of available addons use: minikube addons list",
+	Use:     "images ADDON_NAME",
+	Short:   "List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list",
+	Long:    "List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list",
+	Example: "minikube addons images ingress",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.Message(reason.Usage, "usage: minikube addons configure ADDON_NAME")
+			exit.Message(reason.Usage, "usage: minikube addons images ADDON_NAME")
 		}
 
 		addon := args[0]
@@ -44,19 +45,19 @@ var addonsImagesCmd = &cobra.Command{
 
 				var tData [][]string
 				table := tablewriter.NewWriter(os.Stdout)
-				table.SetHeader([]string{"Image Name", "Default"})
+				table.SetHeader([]string{"Image Name", "Default Image", "Default Registry"})
 				table.SetAutoFormatHeaders(true)
 				table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 				table.SetCenterSeparator("|")
 
 				for imageName, defaultImage := range conf.Images {
-					tData = append(tData, []string{imageName, defaultImage})
+					tData = append(tData, []string{imageName, defaultImage, conf.Registries[imageName]})
 				}
 
 				table.AppendBulk(tData)
 				table.Render()
 			} else {
-				out.Infof("{{.name}} has not been implemented yet", out.V{"name": addon})
+				out.Infof("{{.name}} doesn't have images.", out.V{"name": addon})
 			}
 		} else {
 			out.FailureT("No such addon {{.name}}", out.V{"name": addon})

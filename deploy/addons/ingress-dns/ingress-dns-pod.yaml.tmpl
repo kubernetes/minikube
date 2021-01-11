@@ -80,7 +80,7 @@ spec:
   hostNetwork: true
   containers:
     - name: minikube-ingress-dns
-      image: {{default "cryptexlabs" .ImageRepository}}/minikube-ingress-dns:0.3.0
+      image: {{default "docker.io" .ImageRepository}}/{{.Images.IngressDNS}}
       imagePullPolicy: IfNotPresent
       ports:
         - containerPort: 53

@@ -184,14 +184,20 @@ minikube addons help [command] [flags]
 
 ## minikube addons images
 
-Alpha feature. List image names the addon w/ADDON_NAME used (example: minikube addons images ingress). For a list of available addons use: minikube addons list
+List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list
 
 ### Synopsis
 
-Alpha feature. List image names the addon w/ADDON_NAME used (example: minikube addons images ingress). For a list of available addons use: minikube addons list
+List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list
 
 ```shell
 minikube addons images ADDON_NAME [flags]
+```
+
+### Examples
+
+```
+minikube addons images ingress
 ```
 
 ### Options inherited from parent commands
