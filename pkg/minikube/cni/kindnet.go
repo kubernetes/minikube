@@ -149,7 +149,7 @@ type KindNet struct {
 
 // String returns a string representation of this CNI
 func (c KindNet) String() string {
-	return "CNI"
+	return "KindNet"
 }
 
 // manifest returns a Kubernetes manifest for a CNI

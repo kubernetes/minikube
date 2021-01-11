@@ -21,11 +21,13 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -49,14 +51,23 @@ var nodeAddCmd = &cobra.Command{
 
 		name := node.Name(len(cc.Nodes) + 1)
 
-		out.Step(style.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		if cp {
+			out.Step(style.Happy, "Adding control plane node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		} else {
+			out.Step(style.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		}
 
 		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
 		n := config.Node{
 			Name:              name,
 			Worker:            worker,
 			ControlPlane:      cp,
+			APIEndpointServer: false,
 			KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		}
+
+		if n.ControlPlane {
+			n.Port = constants.APIServerPort
 		}
 
 		// Make sure to decrease the default amount of memory we use per VM if this is the first worker node
@@ -70,6 +81,7 @@ var nodeAddCmd = &cobra.Command{
 			}
 		}
 
+		register.Reg.SetStep(register.InitialSetup)
 		if err := node.Add(cc, n, false); err != nil {
 			_, err := maybeDeleteAndRetry(cmd, *cc, n, nil, err)
 			if err != nil {

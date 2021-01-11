@@ -41,7 +41,7 @@ type Bootstrapper interface {
 	WaitForNode(config.ClusterConfig, config.Node, time.Duration) error
 	JoinCluster(config.ClusterConfig, config.Node, string) error
 	UpdateNode(config.ClusterConfig, config.Node, cruntime.Manager) error
-	GenerateToken(config.ClusterConfig) (string, error)
+	GenerateToken(config.ClusterConfig, bool) (string, error)
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(config.ClusterConfig, LogOptions) map[string]string
 	SetupCerts(config.KubernetesConfig, config.Node) error

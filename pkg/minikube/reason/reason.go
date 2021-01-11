@@ -242,6 +242,7 @@ var (
 	GuestMount            = Kind{ID: "GUEST_MOUNT", ExitCode: ExGuestError}
 	GuestMountConflict    = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}
 	GuestNodeAdd          = Kind{ID: "GUEST_NODE_ADD", ExitCode: ExGuestError}
+	GuestNodeReset        = Kind{ID: "GUEST_NODE_RESET", ExitCode: ExGuestError}
 	GuestNodeDelete       = Kind{ID: "GUEST_NODE_DELETE", ExitCode: ExGuestError}
 	GuestNodeProvision    = Kind{ID: "GUEST_NODE_PROVISION", ExitCode: ExGuestError}
 	GuestNodeRetrieve     = Kind{ID: "GUEST_NODE_RETRIEVE", ExitCode: ExGuestNotFound}

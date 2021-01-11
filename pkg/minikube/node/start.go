@@ -80,7 +80,8 @@ type Starter struct {
 }
 
 // Start spins up a guest and starts the Kubernetes node.
-func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
+func Start(starter Starter) (*kubeconfig.Settings, error) {
+	apiEndpointServer := starter.Node.APIEndpointServer // TODO backward compatibility
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
@@ -103,7 +104,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	var bs bootstrapper.Bootstrapper
 	var kcs *kubeconfig.Settings
-	if apiServer {
+	if apiEndpointServer {
+		out.Step(style.Tip, "Preparing control plane node...")
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 		kcs = setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
 		if err != nil {
@@ -124,6 +126,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed kubeconfig update")
 		}
 	} else {
+		out.Step(style.Tip, "Preparing worker node...")
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
@@ -163,24 +166,26 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		wg.Done()
 	}()
 
-	if apiServer {
-		// special ops for none , like change minikube directory.
+	if apiEndpointServer {
+		// special ops for none, like change minikube directory.
 		// multinode super doesn't work on the none driver
 		if starter.Cfg.Driver == driver.None && len(starter.Cfg.Nodes) == 1 {
 			prepareNone()
 		}
 	} else {
 		// Make sure to use the command runner for the control plane to generate the join token
+		out.Step(style.Tip, "Preparing kubeadm...")
 		cpBs, cpr, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
+		joinCmd, err := cpBs.GenerateToken(*starter.Cfg, starter.Node.ControlPlane)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating join token")
 		}
 
+		out.Step(style.Tip, "Joining cluster...")
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
@@ -190,6 +195,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "cni")
 		}
 
+		out.Step(style.Tip, fmt.Sprintf("Applying CNI %s...", cnm.String()))
 		if err := cnm.Apply(cpr); err != nil {
 			return nil, errors.Wrap(err, "cni apply")
 		}
@@ -208,10 +214,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 }
 
 // Provision provisions the machine/container for the node
-func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
-	if apiServer {
+	if n.ControlPlane {
 		out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
 		out.Step(style.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})

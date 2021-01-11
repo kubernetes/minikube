@@ -70,7 +70,7 @@ var KubeadmExtraArgsAllowed = map[int][]string{
 		"kubeconfig-dir",
 		"node-name",
 		"cri-socket",
-		"experimental-upload-certs",
+		"upload-certs",
 		"certificate-key",
 		"rootfs",
 		"skip-phases",

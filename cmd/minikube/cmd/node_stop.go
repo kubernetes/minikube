@@ -46,7 +46,7 @@ var nodeStopCmd = &cobra.Command{
 		}
 
 		machineName := config.MachineName(*cc, *n)
-
+		node.MustReset(*cc, *n, api, machineName)
 		err = machine.StopHost(api, machineName)
 		if err != nil {
 			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})

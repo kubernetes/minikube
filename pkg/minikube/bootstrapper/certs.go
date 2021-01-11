@@ -93,9 +93,13 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		copyableFiles = append(copyableFiles, certFile)
 	}
 
+	endpoint := net.JoinHostPort(constants.APIEndpointAlias, fmt.Sprint(k8s.NodePort))
+	if n.APIEndpointServer {
+		endpoint = net.JoinHostPort("localhost", fmt.Sprint(n.Port))
+	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          n.Name,
-		ClusterServerAddress: fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprint(n.Port))),
+		ClusterServerAddress: fmt.Sprintf("https://%s", endpoint),
 		ClientCertificate:    path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.crt"),
 		ClientKey:            path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.key"),
 		CertificateAuthority: path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
@@ -111,7 +115,6 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	if err != nil {
 		return nil, errors.Wrap(err, "encoding kubeconfig")
 	}
-
 	if n.ControlPlane {
 		kubeCfgFile := assets.NewMemoryAsset(data, vmpath.GuestPersistentDir, "kubeconfig", "0644")
 		copyableFiles = append(copyableFiles, kubeCfgFile)
@@ -183,7 +186,7 @@ func generateSharedCACerts() (CACerts, error) {
 func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACerts) ([]string, error) {
 
 	// Only generate these certs for the api server
-	if !n.ControlPlane {
+	if !n.APIEndpointServer {
 		return []string{}, nil
 	}
 
@@ -201,7 +204,7 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 		apiServerIPs = append(apiServerIPs, net.ParseIP(v))
 	}
 
-	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName, constants.ControlPlaneAlias)
+	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName, constants.APIEndpointAlias)
 	apiServerAlternateNames := append(
 		apiServerNames,
 		util.GetAlternateDNS(k8s.DNSDomain)...)

@@ -53,7 +53,12 @@ func (p *Profile) IsValid() bool {
 // PrimaryControlPlane gets the node specific config for the first created control plane
 func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 	for _, n := range cc.Nodes {
-		if n.ControlPlane {
+		if n.APIEndpointServer {
+			return n, nil
+		}
+	}
+	for _, n := range cc.Nodes {
+		if n.ControlPlane { // keep n.ControlPlane for backward compatibility
 			return n, nil
 		}
 	}
@@ -65,6 +70,7 @@ func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		ControlPlane:      true,
+		APIEndpointServer: true,
 		Worker:            true,
 	}
 
@@ -291,7 +297,7 @@ func ProfileFolderPath(profile string, miniHome ...string) string {
 // MachineName returns the name of the machine, as seen by the hypervisor given the cluster and node names
 func MachineName(cc ClusterConfig, n Node) string {
 	// For single node cluster, default to back to old naming
-	if len(cc.Nodes) == 1 || n.ControlPlane {
+	if len(cc.Nodes) == 1 || n.APIEndpointServer || (n.ControlPlane && n.Name == "") {
 		return cc.Name
 	}
 	return fmt.Sprintf("%s-%s", cc.Name, n.Name)

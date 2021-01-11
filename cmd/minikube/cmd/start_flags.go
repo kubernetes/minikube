@@ -412,6 +412,22 @@ func upgradeExistingConfig(cc *config.ClusterConfig) {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
 		klog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
 	}
+
+	needTagAPIEndpointServer := true
+	for i := range cc.Nodes {
+		if cc.Nodes[i].APIEndpointServer {
+			needTagAPIEndpointServer = false
+			break
+		}
+	}
+	if needTagAPIEndpointServer {
+		for i := range cc.Nodes {
+			if cc.Nodes[i].ControlPlane {
+				cc.Nodes[i].APIEndpointServer = true
+				break
+			}
+		}
+	}
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start

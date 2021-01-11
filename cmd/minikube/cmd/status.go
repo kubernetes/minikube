@@ -129,13 +129,18 @@ var (
 
 // Status holds string representations of component states
 type Status struct {
-	Name       string
-	Host       string
-	Kubelet    string
+	Name    string
+	Host    string
+	Kubelet string
+
+	// APIServer indicates kube-apiserver status
 	APIServer  string
 	Kubeconfig string
 	Worker     bool
 	TimeToStop string
+	// IsAPIEndpoint indicates primary control plane (api endpoint)
+	IsAPIEndpoint bool
+	IP            string
 }
 
 // ClusterState holds a cluster state representation
@@ -177,18 +182,20 @@ const (
 	clusterNotRunningStatusFlag  = 1 << 1
 	k8sNotRunningStatusFlag      = 1 << 2
 	defaultStatusFormat          = `{{.Name}}
-type: Control Plane
+type: Control Plane{{if .IsAPIEndpoint}} (Primary){{end}}
 host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
 timeToStop: {{.TimeToStop}}
+IP: {{.IP}}
 
 `
 	workerStatusFormat = `{{.Name}}
 type: Worker
 host: {{.Host}}
 kubelet: {{.Kubelet}}
+IP: {{.IP}}
 
 `
 )
@@ -302,15 +309,18 @@ func exitCode(statuses []*Status) int {
 func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 	controlPlane := n.ControlPlane
 	name := config.MachineName(cc, n)
+	apiEndpoint := n.APIEndpointServer
 
 	st := &Status{
-		Name:       name,
-		Host:       Nonexistent,
-		APIServer:  Nonexistent,
-		Kubelet:    Nonexistent,
-		Kubeconfig: Nonexistent,
-		Worker:     !controlPlane,
-		TimeToStop: Nonexistent,
+		Name:          name,
+		Host:          Nonexistent,
+		APIServer:     Nonexistent,
+		Kubelet:       Nonexistent,
+		Kubeconfig:    Nonexistent,
+		Worker:        !controlPlane,
+		TimeToStop:    Nonexistent,
+		IsAPIEndpoint: n.APIEndpointServer,
+		IP:            n.IP,
 	}
 
 	hs, err := machine.Status(api, name)
@@ -343,8 +353,10 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 
 	st.Kubeconfig = Configured
 	if !controlPlane {
-		st.Kubeconfig = Irrelevant
 		st.APIServer = Irrelevant
+	}
+	if !apiEndpoint {
+		st.Kubeconfig = Irrelevant
 	}
 
 	host, err := machine.LoadHost(api, name)
@@ -380,25 +392,29 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	}
 
 	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
-	if err != nil {
-		klog.Errorf("forwarded endpoint: %v", err)
-		st.Kubeconfig = Misconfigured
-	} else {
-		err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
+	if st.Kubeconfig != Irrelevant {
 		if err != nil {
-			klog.Errorf("kubeconfig endpoint: %v", err)
+			klog.Errorf("forwarded endpoint: %v", err)
 			st.Kubeconfig = Misconfigured
+		} else {
+			err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
+			if err != nil {
+				klog.Errorf("kubeconfig endpoint: %v", err)
+				st.Kubeconfig = Misconfigured
+			}
 		}
 	}
 
-	sta, err := kverify.APIServerStatus(cr, hostname, port)
-	klog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
+	if st.APIServer != Irrelevant {
+		sta, err := kverify.APIServerStatus(cr, hostname, port)
+		klog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
 
-	if err != nil {
-		klog.Errorln("Error apiserver status:", err)
-		st.APIServer = state.Error.String()
-	} else {
-		st.APIServer = sta.String()
+		if err != nil {
+			klog.Errorln("Error apiserver status:", err)
+			st.APIServer = state.Error.String()
+		} else {
+			st.APIServer = sta.String()
+		}
 	}
 
 	return st, nil

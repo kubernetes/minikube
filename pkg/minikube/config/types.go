@@ -114,6 +114,7 @@ type Node struct {
 	IP                string
 	Port              int
 	KubernetesVersion string
+	APIEndpointServer bool
 	ControlPlane      bool
 	Worker            bool
 }

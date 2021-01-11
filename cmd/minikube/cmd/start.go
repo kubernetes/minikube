@@ -328,7 +328,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, viper.GetBool(deleteOnFailure))
 	if err != nil {
 		return node.Starter{}, err
 	}
@@ -345,7 +345,13 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 }
 
 func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
-	kubeconfig, err := node.Start(starter, true)
+	// TODO: Currently, we start the primary control plane first. If there are multiple control planes,
+	//  the kube-apiserver will keep crash to wait for other apiserver to respond, which blocks health checks.
+	//  As a temporary solution, we reset the stacked control planes before we stopped it.
+	//  To fix this, we could:
+	//  - Delay the health check.
+	//  - Start all control planes at the same time.
+	kubeconfig, err := node.Start(starter)
 	if err != nil {
 		kubeconfig, err = maybeDeleteAndRetry(cmd, *starter.Cfg, *starter.Node, starter.ExistingAddons, err)
 		if err != nil {
@@ -372,6 +378,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 						Name:              nodeName,
 						Worker:            true,
 						ControlPlane:      false,
+						APIEndpointServer: false,
 						KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 					}
 					out.Ln("") // extra newline for clarity on the command line
@@ -382,7 +389,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 				}
 			} else {
 				for _, n := range existing.Nodes {
-					if !n.ControlPlane {
+					if !n.APIEndpointServer {
 						err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
 						if err != nil {
 							return nil, errors.Wrap(err, "adding node")
@@ -489,7 +496,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 		cc := updateExistingConfigFromFlags(cmd, &existing)
 		var kubeconfig *kubeconfig.Settings
 		for _, n := range cc.Nodes {
-			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane, false)
+			r, p, m, h, err := node.Provision(&cc, &n, false)
 			s := node.Starter{
 				Runner:         r,
 				PreExists:      p,
@@ -504,7 +511,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 				return nil, err
 			}
 
-			k, err := node.Start(s, n.ControlPlane)
+			k, err := node.Start(s)
 			if n.ControlPlane {
 				kubeconfig = k
 			}
@@ -1194,6 +1201,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 		KubernetesVersion: getKubernetesVersion(&cc),
 		Name:              kubeNodeName,
 		ControlPlane:      true,
+		APIEndpointServer: true,
 		Worker:            true,
 	}
 	cc.Nodes = []config.Node{cp}

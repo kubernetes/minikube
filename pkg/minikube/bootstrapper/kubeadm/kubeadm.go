@@ -72,6 +72,8 @@ type Bootstrapper struct {
 	contextName string
 }
 
+var _ bootstrapper.Bootstrapper = (*Bootstrapper)(nil)
+
 // NewBootstrapper creates a new kubeadm.Bootstrapper
 func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
 	return &Bootstrapper{c: r, contextName: cc.Name, k8sClient: nil}, nil
@@ -156,7 +158,7 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) error {
 		return err
 	}
 
-	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(constants.ControlPlaneAlias, strconv.Itoa(cp.Port)))
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(constants.APIEndpointAlias, strconv.Itoa(cp.Port)))
 	for _, path := range paths {
 		_, err := k.c.RunCmd(exec.Command("sudo", "grep", endpoint, path))
 		if err != nil {
@@ -234,7 +236,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
-	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
+	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s --upload-certs",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	c.Stdout = kw
 	c.Stderr = kw
@@ -445,9 +447,15 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		klog.Warningf("Couldn't ensure kubelet is started this might cause issues: %v", err)
 	}
 	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
-	cp, err := config.PrimaryControlPlane(&cfg)
-	if err != nil {
-		return errors.Wrap(err, "get primary control plane")
+	var cp config.Node
+	var err error
+	if n.ControlPlane {
+		cp = n
+	} else {
+		cp, err = config.PrimaryControlPlane(&cfg)
+		if err != nil {
+			return errors.Wrap(err, "get primary control plane")
+		}
 	}
 	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
@@ -710,6 +718,11 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 
 	// Join the master by specifying its token
 	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, config.MachineName(cc, n))
+	if n.ControlPlane {
+		// Specify advertise address here because we are using interface eth1 and port 8443 (by default)
+		// We can't use `--config bsutil.KubeadmYamlPath` here because cannot mix '--config' with [certificate-key control-plane discovery-token-ca-cert-hash token]
+		joinCmd = fmt.Sprintf("%s --control-plane --apiserver-advertise-address %s --apiserver-bind-port %v", joinCmd, n.IP, n.Port)
+	}
 
 	join := func() error {
 		// reset first to clear any possibly existing state
@@ -740,17 +753,59 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 }
 
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
-func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
+func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig, genCertKey bool) (string, error) {
+	ka := bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)
+
 	// Take that generated token and use it to get a kubeadm join command
-	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
+	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", ka))
 	r, err := k.c.RunCmd(tokenCmd)
 	if err != nil {
 		return "", errors.Wrap(err, "generating join command")
 	}
 
 	joinCmd := r.Stdout.String()
-	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
+	joinCmd = strings.Replace(joinCmd, "kubeadm", ka, 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
+	if genCertKey {
+		// Generate config first because init phase upload-certs cannot specify --cert-dir
+		confPath := path.Join(vmpath.GuestPersistentDir, "kubeadm-conf.yaml")
+		// TODO kubeadm config view is deprecated
+		conf, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s config view", ka)))
+		if err != nil {
+			return "", errors.Wrap(err, "generate kubeadm-conf")
+		}
+
+		confAsset := assets.NewMemoryAssetTarget(conf.Stdout.Bytes(), confPath, "0644")
+		err = bsutil.CopyFiles(k.c, []assets.CopyableFile{
+			confAsset,
+		})
+		if err != nil {
+			return "", errors.Wrap(err, "write kubeadm-conf")
+		}
+
+		certCmd := fmt.Sprintf("%s init phase upload-certs --upload-certs --config %s", ka, confPath)
+		out.Step(style.Tip, certCmd)
+		certKeyCmd := exec.Command("/bin/bash", "-c", certCmd)
+		certKeyResult, err := k.c.RunCmd(certKeyCmd)
+		if err != nil {
+			return "", errors.Wrap(err, "generating join command")
+		}
+		out.Step(style.Tip, certKeyResult.Stdout.String())
+		// Currently we have to parse stdout manually to get certificate key
+		outputs := strings.Split(certKeyResult.Stdout.String(), "\n")
+
+		certKey := ""
+		for i, s := range outputs {
+			if strings.Contains(s, "Using certificate key") {
+				certKey = outputs[i+1]
+				break
+			}
+		}
+		if certKey == "" {
+			return "", errors.Wrap(err, "parse certificate-key")
+		}
+		joinCmd = fmt.Sprintf("%s --certificate-key %s", joinCmd, certKey)
+	}
 	if cc.KubernetesConfig.CRISocket != "" {
 		joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, cc.KubernetesConfig.CRISocket)
 	}
@@ -898,7 +953,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "control plane")
 	}
 
-	if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, net.ParseIP(cp.IP)); err != nil {
+	if err := machine.AddHostAlias(k.c, constants.APIEndpointAlias, net.ParseIP(cp.IP)); err != nil {
 		return errors.Wrap(err, "host alias")
 	}
 

@@ -20,14 +20,17 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 // TODO: Share these between cluster and node packages
@@ -42,7 +45,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		return errors.Wrap(err, "save node")
 	}
 
-	r, p, m, h, err := Provision(cc, &n, false, delOnFail)
+	r, p, m, h, err := Provision(cc, &n, delOnFail)
 	if err != nil {
 		return err
 	}
@@ -56,7 +59,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 		ExistingAddons: nil,
 	}
 
-	_, err = Start(s, false)
+	_, err = Start(s)
 	return err
 }
 
@@ -154,4 +157,25 @@ func Save(cfg *config.ClusterConfig, node *config.Node) error {
 // Name returns the appropriate name for the node given the current number of nodes
 func Name(index int) string {
 	return fmt.Sprintf("m%02d", index)
+}
+
+// MustReset reset a stacked control plane to avoid blocking the start of primary control plane
+// Exit if failed
+func MustReset(cc config.ClusterConfig, n config.Node, api libmachine.API, machineName string) {
+	if n.ControlPlane && !n.APIEndpointServer {
+		host, err := machine.LoadHost(api, machineName)
+		if err != nil {
+			exit.Error(reason.GuestLoadHost, "Error getting host", err)
+		}
+		runner, err := machine.CommandRunner(host)
+		if err != nil {
+			exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
+		}
+		resetCmd := fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))
+		rc := exec.Command("/bin/bash", "-c", resetCmd)
+		_, err = runner.RunCmd(rc)
+		if err != nil {
+			exit.Error(reason.GuestNodeReset, "Failed to reset kubeadm", err)
+		}
+	}
 }

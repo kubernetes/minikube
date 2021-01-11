@@ -128,7 +128,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		CgroupDriver:        cgroupDriver,
 		ClientCAFile:        path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
 		StaticPodPath:       vmpath.GuestManifestsDir,
-		ControlPlaneAddress: constants.ControlPlaneAlias,
+		ControlPlaneAddress: constants.APIEndpointAlias,
 		KubeProxyOptions:    createKubeProxyOptions(k8s.ExtraOptions),
 	}
 

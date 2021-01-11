@@ -33,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -136,10 +137,26 @@ func stopProfile(profile string) int {
 	api, cc := mustload.Partial(profile)
 	defer api.Close()
 
+	primaryMachineName := ""
 	for _, n := range cc.Nodes {
 		machineName := config.MachineName(*cc, n)
 
+		if n.APIEndpointServer {
+			// Skip because we need to update etcd members
+			primaryMachineName = machineName
+			continue
+		} else if n.ControlPlane {
+			// Remove from primary control plane
+			node.MustReset(*cc, n, api, machineName)
+		}
+
 		nonexistent := stop(api, machineName)
+		if !nonexistent {
+			stoppedNodes++
+		}
+	}
+	if primaryMachineName != "" {
+		nonexistent := stop(api, primaryMachineName)
 		if !nonexistent {
 			stoppedNodes++
 		}
