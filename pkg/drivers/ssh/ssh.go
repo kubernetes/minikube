@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path"
 	"strconv"
 	"time"
@@ -121,6 +122,12 @@ func (d *Driver) Create() error {
 
 		if err := copySSHKey(d.SSHKey+".pub", d.SSHKeyPath+".pub"); err != nil {
 			log.Infof("Couldn't copy SSH public key : %s", err)
+		}
+	}
+
+	if d.runtime.Name() == "Docker" {
+		if _, err := d.exec.RunCmd(exec.Command("sudo", "usermod", "-aG", "docker", d.GetSSHUsername())); err != nil {
+			return errors.Wrap(err, "usermod")
 		}
 	}
 
