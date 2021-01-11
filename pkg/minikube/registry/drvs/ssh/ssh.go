@@ -54,6 +54,12 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		return nil, errors.Errorf("please provide an IP address")
 	}
 
+	// We don't want the API server listening on loopback interface,
+	// even if we might use a tunneled VM port for the SSH service
+	if cc.IPAddress == "127.0.0.1" || cc.IPAddress == "localhost" {
+		return nil, errors.Errorf("please provide real IP address")
+	}
+
 	d.IPAddress = cc.IPAddress
 	d.SSHUser = cc.SSHUser
 	d.SSHKey = cc.SSHKey
