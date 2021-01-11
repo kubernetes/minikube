@@ -218,7 +218,7 @@ spec:
       serviceAccountName: istio-operator
       containers:
         - name: istio-operator
-          image: {{default "docker.io" .ImageRepository}}/{{.Images.IstioOperator}}
+          image: {{default .Registries.IstioOperator .ImageRepository}}/{{.Images.IstioOperator}}
           command:
           - operator
           - server

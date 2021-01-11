@@ -43,7 +43,7 @@ spec:
         hostPath:
           path: /var/lib/kubelet/device-plugins
       containers:
-      - image: {{default "docker.io" .ImageRepository}}/{{.Images.NvidiaDevicePlugin}}
+      - image: {{default .Registries.NvidiaDevicePlugin .ImageRepository}}/{{.Images.NvidiaDevicePlugin}}
         command: ["/usr/bin/nvidia-device-plugin", "-logtostderr"]
         name: nvidia-gpu-device-plugin
         resources:

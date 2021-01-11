@@ -23,7 +23,7 @@ spec:
       containers:
         - name: volume-snapshot-controller
           # TODO(xyang): Replace with an official image when it is released
-          image: {{default "gcr.io" .ImageRepository}}/{{.Images.SnapshotController}}
+          image: {{default .Registries.SnapshotController .ImageRepository}}/{{.Images.SnapshotController}}
           args:
             - "--v=5"
           imagePullPolicy: Always

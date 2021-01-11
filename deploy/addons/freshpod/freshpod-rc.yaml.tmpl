@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name: freshpod
-        image: {{default "gcr.io" .ImageRepository}}/{{.Images.FreshPod}}
+        image: {{default .Registries.FreshPod .ImageRepository}}/{{.Images.FreshPod}}
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: docker

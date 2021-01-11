@@ -106,7 +106,7 @@ spec:
       serviceAccountName: glusterfile-provisioner
       containers:
       - name: glusterfile-provisioner
-        image: {{default "docker.io" .ImageRepository}}/{{.Images.GlusterfileProvisioner}}
+        image: {{default .Registries.GlusterfileProvisioner .ImageRepository}}/{{.Images.GlusterfileProvisioner}}
         imagePullPolicy: Always
         env:
         - name: PROVISIONER_NAME

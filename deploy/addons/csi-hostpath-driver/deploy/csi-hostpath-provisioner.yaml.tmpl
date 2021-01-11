@@ -57,7 +57,7 @@ spec:
       serviceAccountName: csi-provisioner
       containers:
         - name: csi-provisioner
-          image: {{default "gcr.io" .ImageRepository}}/{{.Images.Provisioner}}
+          image: {{default .Registries.Provisioner .ImageRepository}}/{{.Images.Provisioner}}
           args:
             - -v=5
             - --csi-address=/csi/csi.sock

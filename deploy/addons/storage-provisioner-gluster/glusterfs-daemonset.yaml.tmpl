@@ -31,7 +31,7 @@ spec:
       #  kubernetes.io/hostname: minikube
       hostNetwork: true
       containers:
-      - image: {{default "quay.io" .ImageRepository}}/{{.Images.GlusterfsServer}}
+      - image: {{default .Registries.GlusterfsServer .ImageRepository}}/{{.Images.GlusterfsServer}}
         imagePullPolicy: IfNotPresent
         name: glusterfs
         env:

@@ -639,6 +639,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 		LoadBalancerEndIP   string
 		CustomIngressCert   string
 		Images              map[string]string
+		Registries          map[string]string
 	}{
 		Arch:                a,
 		ExoticArch:          ea,
@@ -647,6 +648,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
 		CustomIngressCert:   cfg.CustomIngressCert,
 		Images:              addon.Images,
+		Registries:          addon.Registries,
 	}
 
 	if opts.Images == nil {
