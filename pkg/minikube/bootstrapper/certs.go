@@ -94,7 +94,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	}
 
 	endpoint := net.JoinHostPort(constants.APIEndpointAlias, fmt.Sprint(k8s.NodePort))
-	if n.APIEndpointServer {
+	if n.PrimaryControlPlane {
 		endpoint = net.JoinHostPort("localhost", fmt.Sprint(n.Port))
 	}
 	kcs := &kubeconfig.Settings{
@@ -186,7 +186,7 @@ func generateSharedCACerts() (CACerts, error) {
 func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACerts) ([]string, error) {
 
 	// Only generate these certs for the api server
-	if !n.APIEndpointServer {
+	if !n.PrimaryControlPlane {
 		return []string{}, nil
 	}
 

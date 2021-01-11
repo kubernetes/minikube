@@ -51,10 +51,11 @@ import (
 )
 
 var (
-	statusFormat string
-	output       string
-	layout       string
-	watch        time.Duration
+	statusFormat                 string
+	output                       string
+	layout                       string
+	watch                        time.Duration
+	updatePrimaryControlPlaneTag bool
 )
 
 const (
@@ -218,6 +219,27 @@ var statusCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname)
 
+		// We should warn user if primary control plane no tagged
+		tagged := false
+		for i := range cc.Nodes {
+			if cc.Nodes[i].PrimaryControlPlane {
+				tagged = true
+				break
+			}
+		}
+		if !tagged {
+			if updatePrimaryControlPlaneTag {
+				out.Ln("Updating primary control plane tag...")
+				config.TagPrimaryControlPlane(cc)
+				err := config.SaveProfile(cc.Name, cc)
+				if err != nil {
+					exit.Error(reason.HostSaveProfile, "failed to save config", err)
+				}
+			} else {
+				out.Ln("There is no primary control plane, set --update-primary-control-plane-tag=true to update profile.")
+			}
+		}
+
 		duration := watch
 		if !cmd.Flags().Changed("watch") || watch < 0 {
 			duration = 0
@@ -309,7 +331,7 @@ func exitCode(statuses []*Status) int {
 func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 	controlPlane := n.ControlPlane
 	name := config.MachineName(cc, n)
-	apiEndpoint := n.APIEndpointServer
+	apiEndpoint := n.PrimaryControlPlane
 
 	st := &Status{
 		Name:          name,
@@ -319,7 +341,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		Kubeconfig:    Nonexistent,
 		Worker:        !controlPlane,
 		TimeToStop:    Nonexistent,
-		IsAPIEndpoint: n.APIEndpointServer,
+		IsAPIEndpoint: n.PrimaryControlPlane,
 		IP:            n.IP,
 	}
 
@@ -431,6 +453,7 @@ For the list accessible variables for the template, see the struct values here: 
 	statusCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.")
 	statusCmd.Flags().DurationVarP(&watch, "watch", "w", 1*time.Second, "Continuously listing/getting the status with optional interval duration.")
 	statusCmd.Flags().Lookup("watch").NoOptDefVal = "1s"
+	statusCmd.Flags().BoolVar(&updatePrimaryControlPlaneTag, "update-primary-control-plane-tag", false, "Update primary control plane tag if there is no control plane marked as API endpoint.")
 }
 
 func statusText(st *Status, w io.Writer) error {

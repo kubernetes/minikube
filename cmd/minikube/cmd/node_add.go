@@ -44,6 +44,7 @@ var nodeAddCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		co := mustload.Healthy(ClusterFlagValue())
 		cc := co.Config
+		config.TagPrimaryControlPlane(cc)
 
 		if driver.BareMetal(cc.Driver) {
 			out.FailureT("none driver does not support multi-node clusters")
@@ -59,11 +60,11 @@ var nodeAddCmd = &cobra.Command{
 
 		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
 		n := config.Node{
-			Name:              name,
-			Worker:            worker,
-			ControlPlane:      cp,
-			APIEndpointServer: false,
-			KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+			Name:                name,
+			Worker:              worker,
+			ControlPlane:        cp,
+			PrimaryControlPlane: false,
+			KubernetesVersion:   cc.KubernetesConfig.KubernetesVersion,
 		}
 
 		if n.ControlPlane {

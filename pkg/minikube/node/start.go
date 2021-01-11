@@ -81,7 +81,7 @@ type Starter struct {
 
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter) (*kubeconfig.Settings, error) {
-	apiEndpointServer := starter.Node.APIEndpointServer // TODO backward compatibility
+	apiEndpointServer := starter.Node.PrimaryControlPlane // TODO backward compatibility
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 

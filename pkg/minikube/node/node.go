@@ -87,6 +87,16 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, err
 	}
 
+	// leave master
+	if n.ControlPlane {
+		resetCmd := fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))
+		rc := exec.Command("/bin/bash", "-c", resetCmd)
+		_, err = runner.RunCmd(rc)
+		if err != nil {
+			klog.Errorf("Failed to reset kubeadm", err)
+		}
+	}
+
 	// kubectl drain
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "drain", m)
@@ -162,7 +172,7 @@ func Name(index int) string {
 // MustReset reset a stacked control plane to avoid blocking the start of primary control plane
 // Exit if failed
 func MustReset(cc config.ClusterConfig, n config.Node, api libmachine.API, machineName string) {
-	if n.ControlPlane && !n.APIEndpointServer {
+	if n.ControlPlane && !n.PrimaryControlPlane {
 		host, err := machine.LoadHost(api, machineName)
 		if err != nil {
 			exit.Error(reason.GuestLoadHost, "Error getting host", err)

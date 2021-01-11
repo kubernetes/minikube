@@ -790,7 +790,6 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig, genCertKey bool) (
 		if err != nil {
 			return "", errors.Wrap(err, "generating join command")
 		}
-		out.Step(style.Tip, certKeyResult.Stdout.String())
 		// Currently we have to parse stdout manually to get certificate key
 		outputs := strings.Split(certKeyResult.Stdout.String(), "\n")
 

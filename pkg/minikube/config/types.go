@@ -110,13 +110,13 @@ type KubernetesConfig struct {
 
 // Node contains information about specific nodes in a cluster
 type Node struct {
-	Name              string
-	IP                string
-	Port              int
-	KubernetesVersion string
-	APIEndpointServer bool
-	ControlPlane      bool
-	Worker            bool
+	Name                string
+	IP                  string
+	Port                int
+	KubernetesVersion   string
+	PrimaryControlPlane bool
+	ControlPlane        bool
+	Worker              bool
 }
 
 // VersionedExtraOption holds information on flags to apply to a specific range

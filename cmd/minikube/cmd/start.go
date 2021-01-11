@@ -375,11 +375,11 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 				for i := 1; i < numNodes; i++ {
 					nodeName := node.Name(i + 1)
 					n := config.Node{
-						Name:              nodeName,
-						Worker:            true,
-						ControlPlane:      false,
-						APIEndpointServer: false,
-						KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
+						Name:                nodeName,
+						Worker:              true,
+						ControlPlane:        false,
+						PrimaryControlPlane: false,
+						KubernetesVersion:   starter.Cfg.KubernetesConfig.KubernetesVersion,
 					}
 					out.Ln("") // extra newline for clarity on the command line
 					err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
@@ -389,7 +389,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 				}
 			} else {
 				for _, n := range existing.Nodes {
-					if !n.APIEndpointServer {
+					if !n.PrimaryControlPlane {
 						err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
 						if err != nil {
 							return nil, errors.Wrap(err, "adding node")
@@ -1197,12 +1197,12 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 	}
 
 	cp := config.Node{
-		Port:              cc.KubernetesConfig.NodePort,
-		KubernetesVersion: getKubernetesVersion(&cc),
-		Name:              kubeNodeName,
-		ControlPlane:      true,
-		APIEndpointServer: true,
-		Worker:            true,
+		Port:                cc.KubernetesConfig.NodePort,
+		KubernetesVersion:   getKubernetesVersion(&cc),
+		Name:                kubeNodeName,
+		ControlPlane:        true,
+		PrimaryControlPlane: true,
+		Worker:              true,
 	}
 	cc.Nodes = []config.Node{cp}
 	return cc, cp, nil
