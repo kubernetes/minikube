@@ -180,6 +180,10 @@ func Err(format string, a ...interface{}) {
 
 	klog.Warningf(format, a...)
 
+	// if spin is active from a previous step, it will stop spinner displaying
+	if spin.Active() {
+		spin.Stop()
+	}
 	_, err := fmt.Fprintf(errFile, format, a...)
 	if err != nil {
 		klog.Errorf("Fprint failed: %v", err)
