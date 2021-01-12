@@ -634,7 +634,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 	if images != "" {
 		for _, image := range strings.Split(images, ",") {
 			vals := strings.Split(image, "=")
-			if len(vals) != 2 {
+			if len(vals) != 2 || vals[1] == "" {
 				out.WarningT("Ignoring invalid custom image {{.conf}}", out.V{"conf": image})
 				continue
 			}
@@ -654,7 +654,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 	if registries != "" {
 		for _, registry := range strings.Split(registries, ",") {
 			vals := strings.Split(registry, "=")
-			if len(vals) != 2 {
+			if len(vals) != 2 || vals[1] == "" {
 				out.WarningT("Ignoring invalid custom registry {{.conf}}", out.V{"conf": registry})
 				continue
 			}
@@ -668,7 +668,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 
 	// Append postfix "/" to registries
 	for k, v := range opts.Registries {
-		if !strings.HasSuffix(opts.Registries[k], "/") {
+		if opts.Registries[k] != "" && !strings.HasSuffix(opts.Registries[k], "/") {
 			opts.Registries[k] = v + "/"
 		}
 	}
