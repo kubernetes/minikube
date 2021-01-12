@@ -169,6 +169,8 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
 		rr, err = Run(t, c)
 	} else {
+		Run(t, exec.CommandContext(context.Background(), Target(), "docker-env","-p", profile, "--alsologtostderr", "-v=8"))
+
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 		// we should be able to get minikube status with a bash which evaled docker-env
 		rr, err = Run(t, c)

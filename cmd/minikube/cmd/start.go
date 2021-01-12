@@ -972,6 +972,8 @@ func validateRequestedMemorySize(req int, drvName string) {
 
 // validateCPUCount validates the cpu count matches the minimum recommended
 func validateCPUCount(drvName string) {
+	klog.Infof("validating cpu count")
+
 	var cpuCount int
 	if driver.BareMetal(drvName) {
 
@@ -1020,7 +1022,10 @@ func validateCPUCount(drvName string) {
 
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
+	klog.Infof("validating flags")
+
 	if cmd.Flags().Changed(humanReadableDiskSize) {
+		klog.Infof("validating disk size")
 		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 		if err != nil {
 			exitIfNotForced(reason.Usage, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
@@ -1032,6 +1037,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if cmd.Flags().Changed(cpus) {
+		klog.Infof("validating driver support cpus")
+
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --cpus flag", out.V{"name": drvName})
 		}
@@ -1040,6 +1047,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateCPUCount(drvName)
 
 	if cmd.Flags().Changed(memory) {
+		klog.Infof("validating memory")
+
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 		}
@@ -1202,6 +1211,8 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 
 // autoSetDriverOptions sets the options needed for specific driver automatically.
 func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
+	klog.Infof("auto set driver options")
+
 	err = nil
 	hints := driver.FlagDefaults(drvName)
 	if len(hints.ExtraOptions) > 0 {
