@@ -675,6 +675,15 @@ push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
 	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_HUB)
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
 
+.PHONY: push-kic-base-image-x86
+push-kic-base-image-x86: ## Push local/kicbase:latest to all remote registries
+ifndef AUTOPUSH
+	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
+	$(MAKE) push-kic-base-image AUTOPUSH=true
+else
+	$(MAKE) push-kic-base-image-gcr push-kic-base-image-hub push-kic-base-image-gh 
+endif
+
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
 	$(if $(quiet),@echo "  GO       $@")
