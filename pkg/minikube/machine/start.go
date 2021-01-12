@@ -34,7 +34,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -69,7 +68,7 @@ var requiredDirectories = []string{
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
-	machineName := driver.MachineName(*cfg, *n)
+	machineName := config.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(machineName, cfg.Driver)
@@ -130,12 +129,6 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		klog.Infof("duration metric: createHost completed in %s", time.Since(start))
 	}()
 
-	if cfg.Driver == driver.VMwareFusion && viper.GetBool(config.ShowDriverDeprecationNotification) {
-		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
-			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
-			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
-			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
-	}
 	showHostInfo(*cfg)
 	def := registry.Driver(cfg.Driver)
 	if def.Empty() {

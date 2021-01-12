@@ -29,10 +29,14 @@ import (
 	"strings"
 	"time"
 
+	apiWait "k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 
+	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -44,6 +48,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/shell"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
+
+const minLogCheckTime = 60 * time.Second
 
 var dockerEnvTCPTmpl = fmt.Sprintf(
 	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}"+
@@ -188,14 +194,43 @@ func mustRestartDockerd(name string, runner command.Runner) {
 	if err := sysinit.New(runner).Reload("docker"); err != nil {
 		klog.Warningf("will try to restart dockerd because reload failed: %v", err)
 		if err := sysinit.New(runner).Restart("docker"); err != nil {
-			exit.Message(reason.RuntimeRestart, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+			klog.Warningf("Couldn't restart docker inside minikbue within '%v' because: %v", name, err)
+			return
 		}
 		// if we get to the point that we have to restart docker (instead of reload)
 		// will need to wait for apisever container to come up, this usually takes 5 seconds
 		// verifying apisever using kverify would add code complexity for a rare case.
-		klog.Warningf("waiting 5 seconds to ensure apisever container is up...")
-		time.Sleep(time.Second * 5)
+		klog.Warningf("waiting to ensure apisever container is up...")
+		startTime := time.Now()
+		if err = waitForAPIServerProcess(runner, startTime, time.Second*30); err != nil {
+			klog.Warningf("apiserver container isn't up, error: %v", err)
+		}
 	}
+}
+
+func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Duration) error {
+	klog.Infof("waiting for apiserver process to appear ...")
+	err := apiWait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
+		if time.Since(start) > timeout {
+			return false, fmt.Errorf("cluster wait timed out during process check")
+		}
+
+		if time.Since(start) > minLogCheckTime {
+			klog.Infof("waiting for apiserver process to appear ...")
+			time.Sleep(kconst.APICallRetryInterval * 5)
+		}
+
+		if _, ierr := kverify.APIServerPID(cr); ierr != nil {
+			return false, nil
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("apiserver process never appeared")
+	}
+	klog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
+	return nil
 }
 
 // dockerEnvCmd represents the docker-env command

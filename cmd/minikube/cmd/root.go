@@ -221,6 +221,7 @@ func init() {
 			Message: translate.T("Troubleshooting Commands:"),
 			Commands: []*cobra.Command{
 				sshKeyCmd,
+				sshHostCmd,
 				ipCmd,
 				logsCmd,
 				updateCheckCmd,

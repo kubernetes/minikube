@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -73,6 +74,7 @@ var (
 	insecureRegistry []string
 	apiServerNames   []string
 	apiServerIPs     []net.IP
+	hostRe           = regexp.MustCompile(`[\w\.-]+`)
 )
 
 func init() {
@@ -363,11 +365,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.Message(reason.DrvUnsupportedMulti, "The none driver is not compatible with multi-node clusters.")
 		} else {
-			// Only warn users on first start.
 			if existing == nil {
-				out.Ln("")
-				warnAboutMultiNode()
-
 				for i := 1; i < numNodes; i++ {
 					nodeName := node.Name(i + 1)
 					n := config.Node{
@@ -396,11 +394,6 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 	}
 
 	return kubeconfig, nil
-}
-
-func warnAboutMultiNode() {
-	out.WarningT("Multi-node clusters are currently experimental and might exhibit unintended behavior.")
-	out.Step(style.Documentation, "To track progress on multi-node clusters, see https://github.com/kubernetes/minikube/issues/7538.")
 }
 
 func warnAboutMultiNodeCNI() {
@@ -632,7 +625,7 @@ func hostDriver(existing *config.ClusterConfig) string {
 		klog.Warningf("Unable to get control plane from existing config: %v", err)
 		return existing.Driver
 	}
-	machineName := driver.MachineName(*existing, cp)
+	machineName := config.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
 		klog.Warningf("api.Load failed for %s: %v", machineName, err)
@@ -675,6 +668,20 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
+	out.WarningT("Deleting existing cluster {{.name}} with different driver {{.driver_name}} due to --delete-on-failure flag set by the user. ", out.V{"name": existing.Name, "driver_name": old})
+	if viper.GetBool(deleteOnFailure) {
+		// Start failed, delete the cluster
+		profile, err := config.LoadProfile(existing.Name)
+		if err != nil {
+			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			out.WarningT("Failed to delete cluster {{.name}}.", out.V{"name": existing.Name})
+		}
+	}
+
 	exit.Advice(
 		reason.GuestDrvMismatch,
 		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
@@ -707,6 +714,16 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 
 	if st.NeedsImprovement {
 		out.Step(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
+	}
+
+	if ds.Priority == registry.Obsolete {
+		exit.Message(reason.Kind{
+			ID:       fmt.Sprintf("PROVIDER_%s_OBSOLETE", strings.ToUpper(name)),
+			Advice:   translate.T(st.Fix),
+			ExitCode: reason.ExProviderUnsupported,
+			URL:      st.Doc,
+			Style:    style.Shrug,
+		}, st.Error.Error())
 	}
 
 	if st.Error == nil {
@@ -957,6 +974,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 func validateCPUCount(drvName string) {
 	var cpuCount int
 	if driver.BareMetal(drvName) {
+
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
@@ -1101,6 +1119,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	validateRegistryMirror()
+	validateInsecureRegistry()
+
 }
 
 // This function validates if the --registry-mirror
@@ -1116,6 +1136,34 @@ func validateRegistryMirror() {
 				exit.Message(reason.Usage, "Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}", out.V{"url": loc})
 			}
 
+		}
+	}
+}
+
+// This function validates that the --insecure-registry follows one of the following formats:
+// "<ip>:<port>" "<hostname>:<port>" "<network>/<netmask>"
+func validateInsecureRegistry() {
+	if len(insecureRegistry) > 0 {
+		for _, addr := range insecureRegistry {
+			hostnameOrIP, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				_, _, err := net.ParseCIDR(addr)
+				if err == nil {
+					continue
+				}
+			}
+			if port == "" {
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>:<port>, <hostname>:<port> or <network>/<netmask>", out.V{"addr": addr})
+			}
+			// checks both IPv4 and IPv6
+			ipAddr := net.ParseIP(hostnameOrIP)
+			if ipAddr != nil {
+				continue
+			}
+			isValidHost := hostRe.MatchString(hostnameOrIP)
+			if err != nil || !isValidHost {
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>:<port>, <hostname>:<port> or <network>/<netmask>", out.V{"addr": addr})
+			}
 		}
 	}
 }

@@ -102,9 +102,6 @@ func TestFunctional(t *testing.T) {
 		}
 	})
 
-	// Now that we are out of the woods, lets go.
-	MaybeParallel(t)
-
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
 		tests := []struct {

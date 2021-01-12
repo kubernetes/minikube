@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -47,7 +46,7 @@ const (
 	HyperKit = "hyperkit"
 	// VMware driver
 	VMware = "vmware"
-	// VMwareFusion driver
+	// VMwareFusion driver (obsolete)
 	VMwareFusion = "vmwarefusion"
 	// HyperV driver
 	HyperV = "hyperv"
@@ -303,15 +302,6 @@ func SetLibvirtURI(v string) {
 	klog.Infof("Setting default libvirt URI to %s", v)
 	os.Setenv("LIBVIRT_DEFAULT_URI", v)
 
-}
-
-// MachineName returns the name of the machine, as seen by the hypervisor given the cluster and node names
-func MachineName(cc config.ClusterConfig, n config.Node) string {
-	// For single node cluster, default to back to old naming
-	if len(cc.Nodes) == 1 || n.ControlPlane {
-		return cc.Name
-	}
-	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
 }
 
 // IndexFromMachineName returns the order of the container based on it is name

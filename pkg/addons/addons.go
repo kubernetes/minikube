@@ -145,14 +145,18 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 
 	// to match both ingress and ingress-dns addons
 	if strings.HasPrefix(name, "ingress") && enable {
-		if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
-			exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
+		if driver.IsKIC(cc.Driver) {
+			if runtime.GOOS == "windows" {
+				out.Step(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
+			} else if runtime.GOOS != "linux" {
+				exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
 Alternatively to use this addon you can use a vm-based driver:
 
 	'minikube start --vm=true'
 
 To track the update on this work in progress feature please check:
 https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
+			}
 		} else if driver.BareMetal(cc.Driver) {
 			exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not supported. Try using a different driver.`,
 				out.V{"driver_name": cc.Driver, "addon_name": name})
@@ -182,7 +186,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
 	}
 
-	mName := driver.MachineName(*cc, cp)
+	mName := config.MachineName(*cc, cp)
 	host, err := machine.LoadHost(api, mName)
 	if err != nil || !machine.IsRunning(api, mName) {
 		klog.Warningf("%q is not running, setting %s=%v and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
@@ -292,8 +296,8 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	if err != nil {
 		return errors.Wrap(err, "getting control plane")
 	}
-	if !machine.IsRunning(api, driver.MachineName(*cc, cp)) {
-		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
+	if !machine.IsRunning(api, config.MachineName(*cc, cp)) {
+		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", config.MachineName(*cc, cp), name, val)
 		return enableOrDisableAddon(cc, name, val)
 	}
 

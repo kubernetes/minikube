@@ -68,7 +68,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	return kic.NewDriver(kic.Config{
 		ClusterName:       cc.Name,
-		MachineName:       driver.MachineName(cc, n),
+		MachineName:       config.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       cc.KicBaseImage,
 		Mounts:            mounts,
@@ -79,6 +79,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 		ExtraArgs:         extraArgs,
+		Network:           cc.Network,
 	}), nil
 }
 

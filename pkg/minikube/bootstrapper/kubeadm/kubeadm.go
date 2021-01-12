@@ -194,6 +194,11 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		"Port-10250", // For "none" users who already have a kubelet online
 		"Swap",       // For "none" users who have swap configured
 	}
+	if version.GE(semver.MustParse("1.20.0")) {
+		ignore = append(ignore,
+			"Mem", // For "none" users who have too little memory
+		)
+	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
 
 	skipSystemVerification := false
@@ -704,7 +709,7 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	}()
 
 	// Join the master by specifying its token
-	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, driver.MachineName(cc, n))
+	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, config.MachineName(cc, n))
 
 	join := func() error {
 		// reset first to clear any possibly existing state
