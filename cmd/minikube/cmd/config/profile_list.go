@@ -92,7 +92,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 		exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
 	}
 
-	host, err := machine.LoadHost(api, driver.MachineName(*p.Config, cp))
+	host, err := machine.LoadHost(api, config.MachineName(*p.Config, cp))
 	if err != nil {
 		klog.Warningf("error loading profiles: %v", err)
 		return "Unknown"
