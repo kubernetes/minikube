@@ -845,3 +845,4 @@ else
 	 export UPDATE_TARGET="all" && \
 	 go run update_kubernetes_version.go)
 endif
+
