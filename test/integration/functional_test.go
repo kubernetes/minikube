@@ -135,7 +135,7 @@ func TestFunctional(t *testing.T) {
 			}
 
 			t.Run(tc.name, func(t *testing.T) {
-				MaybeParallel(t)
+				//MaybeParallel(t)
 				tc.validator(ctx, t, profile)
 			})
 		}
@@ -165,12 +165,15 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer cancel()
 	var rr *RunResult
 	var err error
+	command := exec.CommandContext(context.Background(), Target(), "docker-env", "-p", profile, "--alsologtostderr", "-v=8")
+
+	out, _ := Run(t, command)
+	t.Logf(out.Output())
+
 	if runtime.GOOS == "windows" {
 		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
 		rr, err = Run(t, c)
 	} else {
-		Run(t, exec.CommandContext(context.Background(), Target(), "docker-env","-p", profile, "--alsologtostderr", "-v=8"))
-
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 		// we should be able to get minikube status with a bash which evaled docker-env
 		rr, err = Run(t, c)
@@ -342,7 +345,7 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 	start := time.Now()
 	// The tests before this already created a profile, starting minikube with different --extra-config cmdline option.
-	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision"}
+	startArgs := []string{"start", "-p", profile, "--alsologtostderr", "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision", "--wait=true"}
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
