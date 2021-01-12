@@ -277,11 +277,11 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
-  functional_scheduled_stop_docker_windows:
+  functional_docker_windows:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_scheduled_stop_docker_windows"
+      JOB_NAME: "functional_docker_windows"
       GOPOGH_RESULT: ""
       STAT: ""
     runs-on: [self-hosted, windows-10-ent, 8CPUs]
@@ -364,7 +364,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run="(TestFunctional|TestScheduledStopWindows)" --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -539,6 +539,284 @@ jobs:
           name: functional_hyperv_windows
           path: minikube_binaries/report
       - name: The End Result functional_hyperv_windows
+        shell: powershell
+        run: |
+          $numFail=(echo $Env:STAT | jq '.NumberOfFail')
+          $failedTests=( echo $Env:STAT | jq '.FailedTests')
+          $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
+          $passedTests=( echo $Env:STAT | jq '.PassedTests')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $passedTests
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $failedTests
+          echo "-------------------------------------------------------"
+          If ($numFail -gt 0){ exit 2 }
+          If ($numPass -eq 0){ exit 2 }
+          If ($numPass -lt 33){ exit 2 }
+          If ($numFail -eq 0){ exit 0 }
+  scheduled_stop_docker_windows:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "scheduled_stop_docker_windows"
+      GOPOGH_RESULT: ""
+      STAT: ""
+    runs-on: [self-hosted, windows-10-ent, 8CPUs]
+    steps:
+      - name: Clean up
+        continue-on-error: true
+        shell: powershell
+        run: |
+          echo $env:computerName
+          ls 
+          $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          .\minikube-windows-amd64.exe delete --all --purge
+          Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
+            .\minikube-windows-amd64.exe delete -p $_.Name
+            Suspend-VM $_.Name
+            Stop-VM $_.Name -Force
+            Remove-VM $_.Name -Force
+          }
+          cd ..
+          Remove-Item minikube_binaries -Force -Recurse
+          ls
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+      - name: Start Docker Desktop
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          if (!$docker_running) {
+          Write-Output "Starting Docker as an administrator"
+          Start-Process 'C:/Program Files/Docker/Docker/Docker Desktop.exe' -Verb runAs
+          }
+          while (!$docker_running) {
+          Start-Sleep 5
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          }
+          Write-Output "Docker is running"
+          docker system prune -f 
+      - name: Info
+        shell: powershell
+        run: |
+          echo $env:computername
+          echo "------------------------"
+          docker info
+          echo "------------------------"
+          docker volume ls
+          echo "------------------------"
+          docker system info --format '{{json .}}'
+          echo "------------------------"
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+      - name: Install tools
+        continue-on-error: true
+        shell: powershell
+        run: |
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          choco install -y kubernetes-cli
+          choco install -y jq
+          choco install -y caffeine
+          if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
+      - name: Run Integration Test in powershell
+        continue-on-error: true
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          New-Item -Force -Path "report" -ItemType Directory
+          New-Item -Force -Path "testhome" -ItemType Directory
+          $START_TIME=(GET-DATE)
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          $ErrorActionPreference = "SilentlyContinue"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run=TestScheduledStopWindows --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          $END_TIME=(GET-DATE)
+          echo $END_TIME
+          $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+          echo $DURATION
+          $SECS=($DURATION.TotalSeconds)
+          $MINS=($DURATION.TotalMinutes)
+          $T_ELAPSED="$MINS m $SECS s"
+          echo "----"
+          echo $T_ELAPSED
+          echo "----"
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Generate HTML Report
+        continue-on-error: true
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          Get-Content .\report\testout.txt -Encoding ASCII  | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
+          $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${Env:JOB_NAME} ${Env:GITHUB_REF}" -repo "${Env:GITHUB_REPOSITORY}"  -details "${Env:GITHUB_SHA}")
+          echo status: ${STAT}
+          $FailNum=$(echo $STAT | jq '.NumberOfFail')
+          $TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo ${GOPOGH_RESULT}
+          $numFail=(echo $STAT | jq '.NumberOfFail')
+          $failedTests=( echo $STAT | jq '.FailedTests')
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $failedTest
+          echo "-------------------------------------------------------"
+          $numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*** $numPass Passed ***"
+      - uses: actions/upload-artifact@v1
+        with:
+          name: scheduled_stop_docker_windows
+          path: minikube_binaries/report
+      - name: The End Result scheduled_stop_docker_windows
+        shell: powershell
+        run: |
+          $numFail=(echo $Env:STAT | jq '.NumberOfFail')
+          $failedTests=( echo $Env:STAT | jq '.FailedTests')
+          $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
+          $passedTests=( echo $Env:STAT | jq '.PassedTests')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $passedTests
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $failedTests
+          echo "-------------------------------------------------------"
+          If ($numFail -gt 0){ exit 2 }
+          If ($numPass -eq 0){ exit 2 }
+          If ($numPass -lt 33){ exit 2 }
+          If ($numFail -eq 0){ exit 0 }
+  scheduled_stop_hyperv_windows:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "scheduled_stop_hyperv_windows"
+      GOPOGH_RESULT: ""
+    runs-on: [self-hosted, windows-10-ent, Standard_D16s_v3, hyperv]
+    steps:
+      - name: Clean up
+        continue-on-error: true
+        shell: powershell
+        run: |
+          echo $env:computerName
+          ls
+          $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          .\minikube-windows-amd64.exe delete --all --purge
+          Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
+            Stop-VM -Name $_.Name -Force
+            Remove-VM $_.Name -Force
+          }
+          cd ..
+          Remove-Item minikube_binaries -Force -Recurse
+          ls
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+      - name: Start Docker Desktop
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          if (!$docker_running) {
+          Write-Output "Starting Docker as an administrator"
+          Start-Process 'C:/Program Files/Docker/Docker/Docker Desktop.exe' -Verb runAs
+          }
+          while (!$docker_running) {
+          Start-Sleep 5
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          }
+          Write-Output "Docker is running"
+          docker system prune -f
+      - name: Info
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          echo $env:computername
+          Get-WmiObject -class Win32_ComputerSystem
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+      - name: Install tools
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          choco install -y kubernetes-cli
+          choco install -y jq
+          choco install -y caffeine
+          if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
+      - name: Run Integration Test in powershell
+        continue-on-error: true
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          New-Item -Force -Path "report" -ItemType Directory
+          New-Item -Force -Path "testhome" -ItemType Directory
+          $START_TIME=(GET-DATE)
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          $ErrorActionPreference = "SilentlyContinue"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=20m --timeout-multiplier=1.5 --test.v --test.run=TestScheduledStopWindows --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          $END_TIME=(GET-DATE)
+          echo $END_TIME
+          $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+          echo $DURATION
+          $SECS=($DURATION.TotalSeconds)
+          $MINS=($DURATION.TotalMinutes)
+          $T_ELAPSED="$MINS m $SECS s"
+          echo "----"
+          echo $T_ELAPSED
+          echo "----"
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Generate HTML Report
+        continue-on-error: true
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          Get-Content .\report\testout.txt -Encoding ASCII  | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
+          $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${Env:JOB_NAME} ${Env:GITHUB_REF}" -repo "${Env:GITHUB_REPOSITORY}"  -details "${Env:GITHUB_SHA}")
+          echo status: ${STAT}
+          $FailNum=$(echo $STAT | jq '.NumberOfFail')
+          $TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo ${GOPOGH_RESULT}
+          $numFail=(echo $STAT | jq '.NumberOfFail')
+          $failedTests=( echo $STAT | jq '.FailedTests')
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $failedTest
+          echo "-------------------------------------------------------"
+          $numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*** $numPass Passed ***"
+      - uses: actions/upload-artifact@v1
+        with:
+          name: scheduled_stop_hyperv_windows
+          path: minikube_binaries/report
+      - name: The End Result scheduled_stop_hyperv_windows
         shell: powershell
         run: |
           $numFail=(echo $Env:STAT | jq '.NumberOfFail')
@@ -1233,6 +1511,8 @@ jobs:
         functional_docker_windows,
         functional_hyperv_windows,
         functional_baremetal_ubuntu18_04,
+        scheduled_stop_docker_windows,
+        scheduled_stop_hyperv_windows,
         addons_certs_docker_ubuntu,
         addons_certs_virtualbox_macos,
         multinode_docker_ubuntu,
@@ -1255,6 +1535,8 @@ jobs:
           cp -r ./functional_docker_windows ./all_reports/
           cp -r ./functional_hyperv_windows ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
+          cp -r ./scheduled_stop_docker_windows ./all_reports/
+          cp -r ./scheduled_stop_hyperv_windows ./all_reports/
           cp -r ./addons_certs_docker_ubuntu ./all_reports/
           cp -r ./addons_certs_virtualbox_macos ./all_reports/
           cp -r ./multinode_docker_ubuntu ./all_reports/
