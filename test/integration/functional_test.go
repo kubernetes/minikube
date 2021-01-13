@@ -170,6 +170,11 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	out, _ := Run(t, command)
 	t.Logf(out.Output())
 
+	command = exec.CommandContext(context.Background(), Target(), "status", "-p", profile, "--alsologtostderr", "-v=8")
+
+	out, _ = Run(t, command)
+	t.Logf(out.Output())
+
 	if runtime.GOOS == "windows" {
 		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
 		rr, err = Run(t, c)
