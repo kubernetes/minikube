@@ -192,7 +192,12 @@ func (api *LocalClient) Create(h *host.Host) error {
 				if lockErr != nil {
 					return fmt.Errorf("falied to acquire lock > " + lockErr.Error())
 				}
-				defer api.flock.Unlock()
+				defer func() {
+					lockErr = api.flock.Unlock()
+					if lockErr != nil {
+						klog.Errorf("falied to release lock > %s", lockErr.Error())
+					}
+				}()
 				certErr := cert.BootstrapCertificates(h.AuthOptions())
 				return certErr
 			},
