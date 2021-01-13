@@ -306,7 +306,7 @@ var dockerEnvCmd = &cobra.Command{
 			ssh:       sshHost,
 			hostIP:    hostIP,
 			port:      port,
-			certsDir:  localpath.MakeMiniPath(cname),
+			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,
 			username:  d.GetSSHUsername(),
 			hostname:  hostname,

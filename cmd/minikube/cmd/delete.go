@@ -495,15 +495,6 @@ func deleteProfileDirectory(profile string) {
 			exit.Error(reason.GuestProfileDeletion, "Unable to remove machine directory", err)
 		}
 	}
-
-	certDir := filepath.Join(localpath.MiniPath(), profile)
-	if _, err := os.Stat(certDir); err == nil {
-		out.Step(style.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": certDir})
-		err := os.RemoveAll(certDir)
-		if err != nil {
-			exit.Error(reason.GuestProfileDeletion, "Unable to remove machine directory", err)
-		}
-	}
 }
 
 func deleteMachineDirectories(cc *config.ClusterConfig) {

@@ -40,6 +40,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
+	"github.com/juju/fslock"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -71,6 +72,7 @@ func NewAPIClient(miniHome ...string) (libmachine.API, error) {
 		storePath:    storePath,
 		Filestore:    persist.NewFilestore(storePath, certsDir, certsDir),
 		legacyClient: NewRPCClient(storePath, certsDir),
+		flock:        fslock.New(localpath.MakeMiniPath("fileLock.txt")),
 	}, nil
 }
 
@@ -81,6 +83,7 @@ type LocalClient struct {
 	storePath string
 	*persist.Filestore
 	legacyClient libmachine.API
+	flock        *fslock.Lock
 }
 
 // NewHost creates a new Host
@@ -183,7 +186,16 @@ func (api *LocalClient) Create(h *host.Host) error {
 	}{
 		{
 			"bootstrapping certificates",
-			func() error { return cert.BootstrapCertificates(h.AuthOptions()) },
+			func() error {
+				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error
+				lockErr := api.flock.LockWithTimeout(time.Second * 5)
+				if lockErr != nil {
+					return fmt.Errorf("falied to acquire lock > " + lockErr.Error())
+				}
+				certErr := cert.BootstrapCertificates(h.AuthOptions())
+				api.flock.Unlock()
+				return certErr
+			},
 		},
 		{
 			"precreate",

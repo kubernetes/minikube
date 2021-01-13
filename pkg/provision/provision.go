@@ -40,7 +40,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // generic interface for minikube provisioner
@@ -103,11 +102,7 @@ func configureAuth(p miniProvisioner) error {
 		return errors.Wrap(err, "error getting ssh hostname during provisioning")
 	}
 
-	//if err := copyHostCerts(authOptions); err != nil {
-	//	return err
-	//}
-
-	if err := copyCertsForDockEnv(authOptions, machineName); err != nil {
+	if err := copyHostCerts(authOptions); err != nil {
 		return err
 	}
 
@@ -150,35 +145,6 @@ func copyHostCerts(authOptions auth.Options) error {
 		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
 		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
 		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
-	}
-
-	execRunner := command.NewExecRunner(false)
-	for src, dst := range hostCerts {
-		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
-		if err != nil {
-			return errors.Wrapf(err, "open cert file: %s", src)
-		}
-		if err := execRunner.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring file: %+v", f)
-		}
-	}
-
-	return nil
-}
-
-func copyCertsForDockEnv(authOptions auth.Options, machineName string) error {
-	klog.Infof("copyCertsForDockEnv")
-
-	storePath := localpath.MakeMiniPath(machineName)
-	err := os.MkdirAll(storePath, 0700)
-	if err != nil {
-		klog.Errorf("mkdir failed: %v", err)
-	}
-
-	hostCerts := map[string]string{
-		authOptions.CaCertPath:     path.Join(storePath, "ca.pem"),
-		authOptions.ClientCertPath: path.Join(storePath, "cert.pem"),
-		authOptions.ClientKeyPath:  path.Join(storePath, "key.pem"),
 	}
 
 	execRunner := command.NewExecRunner(false)
