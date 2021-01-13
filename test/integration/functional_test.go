@@ -161,8 +161,6 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
-	defer cancel()
 	var rr *RunResult
 	var err error
 	command := exec.CommandContext(context.Background(), Target(), "docker-env", "-p", profile, "--alsologtostderr", "-v=8")
@@ -174,6 +172,9 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 
 	out, _ = Run(t, command)
 	t.Logf(out.Output())
+
+	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
+	defer cancel()
 
 	if runtime.GOOS == "windows" {
 		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
