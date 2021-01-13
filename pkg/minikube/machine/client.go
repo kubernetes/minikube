@@ -187,7 +187,9 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"bootstrapping certificates",
 			func() error {
-				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error
+				// Due to https://github.com/docker/machine/issues/3634, we need to have lock for certs generation, otherwise
+				// it will break Docker-Env test in parallel tesing.
+				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
 				lockErr := api.flock.LockWithTimeout(time.Second * 5)
 				if lockErr != nil {
 					return fmt.Errorf("failed to acquire bootstrap client lock: %v " + lockErr.Error())
@@ -195,7 +197,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 				defer func() {
 					lockErr = api.flock.Unlock()
 					if lockErr != nil {
-						klog.Errorf("falied to release bootstrap cert client lock  %v", lockErr.Error())
+						klog.Errorf("falied to release bootstrap cert client lock: %v", lockErr.Error())
 					}
 				}()
 				certErr := cert.BootstrapCertificates(h.AuthOptions())
