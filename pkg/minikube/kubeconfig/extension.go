@@ -29,7 +29,7 @@ type Extension struct {
 	runtime.TypeMeta `json:",inline"`
 	Version          string `json:"version"`
 	Provider         string `json:"provider"`
-	LastUpdate       string `json:"last_update"`
+	LastUpdate       string `json:"last-update"`
 }
 
 // NewExtension returns a minikube formated kubeconfig's extension block to idenity clusters and contexts
