@@ -236,7 +236,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
-	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s --upload-certs",
+	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	c.Stdout = kw
 	c.Stderr = kw

@@ -109,3 +109,14 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 func ParseKubernetesVersion(version string) (semver.Version, error) {
 	return semver.Make(version[1:])
 }
+
+func CheckMultiControlPlaneVersion(version string) error {
+	ver, err := ParseKubernetesVersion(version)
+	if err != nil {
+		return err
+	}
+	if ver.Minor < 15 {
+		return errors.Errorf("Multi control plane requires Kubernetes 1.15+, current version %s is not supported.", version)
+	}
+	return nil
+}

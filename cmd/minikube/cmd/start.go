@@ -137,6 +137,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		out.WarningT(fmt.Sprintf("control planes number %v larger than nodes number %v, enlarge nodes to %v.", controlPlanesNum, nodesNum, controlPlanesNum))
 		viper.Set(nodes, controlPlanesNum)
 	}
+	k8sVersion := viper.GetString(kubernetesVersion)
+	if controlPlanesNum > 1 {
+		err := util.CheckMultiControlPlaneVersion(k8sVersion)
+		if err != nil {
+			exit.Error(reason.KubernetesTooOld, "target kubernetes version too old", err)
+		}
+	}
 
 	out.SetJSON(outputFormat == "json")
 	if err := pkgtrace.Initialize(viper.GetString(trace)); err != nil {

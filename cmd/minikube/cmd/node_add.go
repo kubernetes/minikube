@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -67,6 +68,10 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		if n.ControlPlane {
+			err := util.CheckMultiControlPlaneVersion(cc.KubernetesConfig.KubernetesVersion)
+			if err != nil {
+				exit.Error(reason.KubernetesTooOld, "target kubernetes version too old", err)
+			}
 			n.Port = cc.KubernetesConfig.NodePort
 		}
 
