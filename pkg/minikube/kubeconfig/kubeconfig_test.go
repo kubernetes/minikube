@@ -183,6 +183,28 @@ users:
     client-key: /home/la-croix/.minikube/profiles/minikube/client.key
 `)
 
+var kubeConfigWithExtension = []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/.minikube/ca.crt
+    server: https://192.168.10.100:8080
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /home/la-croix/.minikube/profiles/minikube/client.crt
+    client-key: /home/la-croix/.minikube/profiles/minikube/client.key
+`)
+
 func TestUpdate(t *testing.T) {
 	setupCfg := &Settings{
 		ClusterName:          "test",

@@ -17,10 +17,8 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"runtime/debug"
 	"sync/atomic"
 
 	"github.com/juju/mutex"
@@ -95,10 +93,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 
 	if cfg.ExtensionCluster != nil {
 		cluster.Extensions = map[string]runtime.Object{"cluster_info": cfg.ExtensionCluster.DeepCopy()}
-	} else {
-		fmt.Println("extension cluster  is niLL populate")
 	}
-
 	apiCfg.Clusters[clusterName] = cluster
 
 	// user
@@ -127,9 +122,6 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	context.AuthInfo = userName
 	if cfg.ExtensionContext != nil {
 		context.Extensions = map[string]runtime.Object{"context_info": cfg.ExtensionContext.DeepCopy()}
-	} else {
-		debug.PrintStack()
-		fmt.Println("extension context  is niLL populate")
 	}
 
 	apiCfg.Contexts[contextName] = context
