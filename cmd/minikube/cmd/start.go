@@ -851,6 +851,8 @@ func validateUser(drvName string) {
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor, the return value is in MiB
 func memoryLimits(drvName string) (int, int, error) {
+	klog.Infof("getting memory limit")
+
 	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
 	if cpuErr != nil {
 		klog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
@@ -917,12 +919,14 @@ func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
 
 // validateRequestedMemorySize validates the memory size matches the minimum recommended
 func validateRequestedMemorySize(req int, drvName string) {
+	klog.Infof("validating requested memory size")
 	// TODO: Fix MB vs MiB confusion
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
 		klog.Warningf("Unable to query memory limits: %v", err)
 	}
 
+	klog.Infof("validating system memory")
 	// Detect if their system doesn't have enough memory to work with.
 	if driver.IsKIC(drvName) && containerLimit < minUsableMem {
 		if driver.IsDockerDesktop(drvName) {
@@ -935,6 +939,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 		exitIfNotForced(reason.RsrcInsufficientContainerMemory, "{{.driver}} only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "driver": drvName, "req": minUsableMem})
 	}
 
+	klog.Infof("validating sys and req memory size")
 	if sysLimit < minUsableMem {
 		exitIfNotForced(reason.RsrcInsufficientSysMemory, "System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "driver": drvName, "req": minUsableMem})
 	}
@@ -954,6 +959,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 		}
 	}
 
+	klog.Infof("validating over alloc")
 	advised := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 	if req > sysLimit {
 		exitIfNotForced(reason.Kind{ID: "RSRC_OVER_ALLOC_MEM", Advice: "Start minikube with less memory allocated: 'minikube start --memory={{.advised}}mb'"},
@@ -1060,6 +1066,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
+		klog.Infof("validating container runtime")
+
 		runtime := strings.ToLower(viper.GetString(containerRuntime))
 
 		validOptions := cruntime.ValidRuntimes()
@@ -1084,6 +1092,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if driver.BareMetal(drvName) {
+		klog.Infof("validating bare metal")
+
 		if ClusterFlagValue() != constants.DefaultClusterName {
 			exit.Message(reason.DrvUnsupportedProfile, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}
@@ -1102,6 +1112,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
+	klog.Infof("validating extra opts")
 	// validate kubeadm extra args
 	if invalidOpts := bsutil.FindInvalidExtraConfigFlags(config.ExtraOptions); len(invalidOpts) > 0 {
 		out.WarningT(
@@ -1343,8 +1354,10 @@ func validateDockerStorageDriver(drvName string) {
 
 func exitIfNotForced(r reason.Kind, message string, v ...out.V) {
 	if !viper.GetBool(force) {
+		klog.Info("Not force, exit")
 		exit.Message(r, message, v...)
 	}
+	klog.Info("Is force, continue")
 	out.Error(r, message, v...)
 }
 

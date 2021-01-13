@@ -364,6 +364,8 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
 	}
 
+	// Healthy?
+	validateComponentHealth(ctx, t, profile)
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
