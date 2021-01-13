@@ -576,14 +576,14 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		klog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
-	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	k8sVersion, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	phase := "alpha"
 	controlPlane := "controlplane"
-	if version.GTE(semver.MustParse("1.13.0")) {
+	if k8sVersion.GTE(semver.MustParse("1.13.0")) {
 		phase = "init"
 		controlPlane = "control-plane"
 	}
@@ -603,7 +603,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	// Save the costly tax of reinstalling Kubernetes if the only issue is a missing kube context
-	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv())
+	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv(), kubeconfig.NewExtension())
 	if err != nil {
 		klog.Warningf("unable to update kubeconfig (cluster will likely require a reset): %v", err)
 	}

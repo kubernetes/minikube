@@ -17,10 +17,11 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"runtime/debug"
 	"sync/atomic"
-	"time"
 
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
@@ -28,7 +29,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/util/lock"
-	"k8s.io/minikube/pkg/version"
 )
 
 // Settings is the minikubes settings for kubeconfig
@@ -56,6 +56,12 @@ type Settings struct {
 
 	// Should the certificate files be embedded instead of referenced by path
 	EmbedCerts bool
+
+	// Extension meta data for the cluster
+	ExtensionCluster *Extension
+
+	// Extension meta data for the cluster
+	ExtensionContext *Extension
 
 	// kubeConfigFile is the path where the kube config is stored
 	// Only access this with atomic ops
@@ -87,13 +93,12 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 		cluster.CertificateAuthority = cfg.CertificateAuthority
 	}
 
-	ext := &internalExtension{
-		Provider:   "minikube.sigs.k8s.io",
-		Version:    version.GetVersion(),
-		LastUpdate: time.Now().Format(time.RFC3339),
+	if cfg.ExtensionCluster != nil {
+		cluster.Extensions = map[string]runtime.Object{"cluster_info": cfg.ExtensionCluster.DeepCopy()}
+	} else {
+		fmt.Println("extension cluster  is niLL populate")
 	}
 
-	cluster.Extensions = map[string]runtime.Object{"cluster_info": ext.DeepCopy()}
 	apiCfg.Clusters[clusterName] = cluster
 
 	// user
@@ -120,7 +125,13 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	context.Cluster = cfg.ClusterName
 	context.Namespace = cfg.Namespace
 	context.AuthInfo = userName
-	context.Extensions = map[string]runtime.Object{"context_info": ext.DeepCopy()}
+	if cfg.ExtensionContext != nil {
+		context.Extensions = map[string]runtime.Object{"context_info": cfg.ExtensionContext.DeepCopy()}
+	} else {
+		debug.PrintStack()
+		fmt.Println("extension context  is niLL populate")
+	}
+
 	apiCfg.Contexts[contextName] = context
 
 	// Only set current context to minikube if the user has not used the keepContext flag
@@ -150,6 +161,9 @@ func Update(kcs *Settings) error {
 		return err
 	}
 
+	ext := NewExtension()
+	kcs.ExtensionCluster = ext
+	kcs.ExtensionContext = ext
 	err = PopulateFromSettings(kcs, kcfg)
 	if err != nil {
 		return err
