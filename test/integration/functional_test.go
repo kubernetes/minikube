@@ -361,6 +361,23 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+func imageID(image string) string {
+	ids := map[string]map[string]string{
+		"pause": {
+			"amd64": "0184c1613d929",
+			"arm64": "3d18732f8686c",
+		},
+	}
+
+	if imgIds, ok := ids[image]; ok {
+		if id, ok := imgIds[runtime.GOARCH]; ok {
+			return id
+		}
+		panic(fmt.Sprintf("unexpected architecture for image %q: %v", image, runtime.GOARCH))
+	}
+	panic("unexpected image name: " + image)
+}
+
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
@@ -603,16 +620,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
-			var pauseID string
-			if Arm64Platform() {
-				pauseID = "3d18732f8686c"
-			} else {
-				pauseID = "0184c1613d929"
-			}
+			pauseID := imageID("pause")
 			if !strings.Contains(rr.Output(), pauseID) {
-				t.Errorf("expected sha for pause:3.3 '0184c1613d929' to be in the output but got *%s*", rr.Output())
+				t.Errorf("expected sha for pause:3.3 %q to be in the output but got *%s*", pauseID, rr.Output())
 			}
-
 		})
 
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
