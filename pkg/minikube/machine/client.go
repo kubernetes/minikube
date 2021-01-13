@@ -187,7 +187,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"bootstrapping certificates",
 			func() error {
-				// because issue #10107 lock is needed to avoid race conditiion minikube in paralel Docker-Env test.
+				// Lock is needed to avoid race conditiion in parallel Docker-Env test because issue #10107.
 				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
 				lockErr := api.flock.LockWithTimeout(time.Second * 5)
 				if lockErr != nil {
