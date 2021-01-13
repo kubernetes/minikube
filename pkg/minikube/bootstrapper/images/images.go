@@ -20,6 +20,7 @@ package images
 import (
 	"fmt"
 	"path"
+	"runtime"
 
 	"github.com/blang/semver"
 
@@ -120,8 +121,11 @@ func etcd(v semver.Version, mirror string) string {
 }
 
 // archTag returns a CPU architecture suffix for images
-func archTag(hasTag bool) string {
-	return ":"
+func archTag(needsArchSuffix bool) string {
+	if runtime.GOARCH == "amd64" || !needsArchSuffix {
+		return ":"
+	}
+	return "-" + runtime.GOARCH + ":"
 }
 
 // auxiliary returns images that are helpful for running minikube
