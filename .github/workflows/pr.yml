@@ -215,7 +215,7 @@ jobs:
         run: |
           hostname
           VBoxManage --version
-          sysctl hw.physicalcpu hw.logicalcpu
+          sysctl hw.physicalcpu hw.logicalcpu 
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
@@ -291,7 +291,7 @@ jobs:
         shell: powershell
         run: |
           echo $env:computerName
-          ls
+          ls 
           $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
           ls
@@ -328,7 +328,7 @@ jobs:
           $docker_running = $?
           }
           Write-Output "Docker is running"
-          docker system prune -f
+          docker system prune -f 
       - name: Info
         shell: powershell
         run: |
@@ -1228,17 +1228,17 @@ jobs:
     if: always()
     needs:
       [
-          functional_docker_ubuntu,
-          functional_virtualbox_macos,
-          functional_docker_windows,
-          functional_hyperv_windows,
-          functional_baremetal_ubuntu18_04,
-          addons_certs_docker_ubuntu,
-          addons_certs_virtualbox_macos,
-          multinode_docker_ubuntu,
-          multinode_virtualbox_macos,
-          preload_dockerflags_docker_ubuntu,
-          pause_preload_dockerflags_virtualbox_macos,
+        functional_docker_ubuntu,
+        functional_virtualbox_macos,
+        functional_docker_windows,
+        functional_hyperv_windows,
+        functional_baremetal_ubuntu18_04,
+        addons_certs_docker_ubuntu,
+        addons_certs_virtualbox_macos,
+        multinode_docker_ubuntu,
+        multinode_virtualbox_macos,
+        preload_dockerflags_docker_ubuntu,
+        pause_preload_dockerflags_virtualbox_macos,
       ]
     runs-on: ubuntu-18.04
     steps:
