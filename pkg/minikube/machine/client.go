@@ -72,7 +72,7 @@ func NewAPIClient(miniHome ...string) (libmachine.API, error) {
 		storePath:    storePath,
 		Filestore:    persist.NewFilestore(storePath, certsDir, certsDir),
 		legacyClient: NewRPCClient(storePath, certsDir),
-		flock:        fslock.New(localpath.MakeMiniPath("fileLock.txt")),
+		flock:        fslock.New(localpath.MakeMiniPath("machine_client.lock")),
 	}, nil
 }
 
@@ -190,12 +190,12 @@ func (api *LocalClient) Create(h *host.Host) error {
 				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error
 				lockErr := api.flock.LockWithTimeout(time.Second * 5)
 				if lockErr != nil {
-					return fmt.Errorf("falied to acquire lock > " + lockErr.Error())
+					return fmt.Errorf("failed to acquire bootstrap client lock: %v " + lockErr.Error())
 				}
 				defer func() {
 					lockErr = api.flock.Unlock()
 					if lockErr != nil {
-						klog.Errorf("falied to release lock > %s", lockErr.Error())
+						klog.Errorf("falied to release bootstrap cert client lock  %v", lockErr.Error())
 					}
 				}()
 				certErr := cert.BootstrapCertificates(h.AuthOptions())
