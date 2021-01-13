@@ -208,6 +208,10 @@ func FatalT(format string, a ...V) {
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
 	if JSON {
+		// if spin is active from a previous step, it will stop spinner displaying
+		if spin.Active() {
+			spin.Stop()
+		}
 		st, _ := stylized(style.Warning, useColor, format, a...)
 		register.PrintWarning(st)
 		return
