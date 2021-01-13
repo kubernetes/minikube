@@ -50,7 +50,7 @@ spec:
     - /bin/bash
     - -c
     - /kubevirt-scripts/install.sh
-    image: {{default .Registries.Kubectl .ImageRepository}}{{.Images.Kubectl}}
+    image: {{.CustomRegistries.Kubectl  | default .ImageRepository | default .Registries.Kubectl }}{{.Images.Kubectl}}
     imagePullPolicy: IfNotPresent
     name: kubevirt-provisioner
     lifecycle:

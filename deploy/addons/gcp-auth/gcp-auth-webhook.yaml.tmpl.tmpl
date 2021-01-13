@@ -68,7 +68,7 @@ spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
         - name: create
-          image: {{default .Registries.KubeWebhookCertgen .ImageRepository}}{{.Images.KubeWebhookCertgen}}
+          image: {{.CustomRegistries.KubeWebhookCertgen  | default .ImageRepository | default .Registries.KubeWebhookCertgen }}{{.Images.KubeWebhookCertgen}}
           imagePullPolicy: IfNotPresent
           args:
             - create
@@ -94,7 +94,7 @@ spec:
     spec:
       containers:
         - name: gcp-auth
-          image: {{default .Registries.GCPAuthWebhook .ImageRepository}}{{.Images.GCPAuthWebhook}}
+          image: {{.CustomRegistries.GCPAuthWebhook  | default .ImageRepository | default .Registries.GCPAuthWebhook }}{{.Images.GCPAuthWebhook}}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
@@ -127,7 +127,7 @@ spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
         - name: patch
-          image: {{default .Registries.KubeWebhookCertgen .ImageRepository}}{{.Images.KubeWebhookCertgen}}
+          image: {{.CustomRegistries.KubeWebhookCertgen  | default .ImageRepository | default .Registries.KubeWebhookCertgen }}{{.Images.KubeWebhookCertgen}}
           imagePullPolicy: IfNotPresent
           args:
             - patch

@@ -100,7 +100,7 @@ spec:
   hostNetwork: true
   containers:
   - name: storage-provisioner
-    image: {{default .Registries.StorageProvisioner .ImageRepository}}{{.Images.StorageProvisioner}}
+    image: {{.CustomRegistries.StorageProvisioner  | default .ImageRepository | default .Registries.StorageProvisioner }}{{.Images.StorageProvisioner}}
     command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
     volumeMounts:

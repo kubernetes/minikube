@@ -74,7 +74,7 @@ var (
 )
 
 func init() {
-	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Images used by this addon. Divided by comma.")
-	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Divided by comma.")
+	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Images used by this addon. Separated by commas.")
+	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Separated by commas.")
 	AddonsCmd.AddCommand(addonsEnableCmd)
 }

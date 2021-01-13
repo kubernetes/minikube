@@ -615,6 +615,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 		CustomIngressCert   string
 		Images              map[string]string
 		Registries          map[string]string
+		CustomRegistries    map[string]string
 	}{
 		Arch:                a,
 		ExoticArch:          ea,
@@ -624,6 +625,10 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 		CustomIngressCert:   cfg.CustomIngressCert,
 		Images:              addon.Images,
 		Registries:          addon.Registries,
+		CustomRegistries:    make(map[string]string),
+	}
+	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
+		opts.ImageRepository += "/"
 	}
 
 	if opts.Images == nil {
@@ -658,8 +663,8 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 				out.WarningT("Ignoring invalid custom registry {{.conf}}", out.V{"conf": registry})
 				continue
 			}
-			if _, ok := opts.Registries[vals[0]]; ok {
-				opts.Registries[vals[0]] = vals[1]
+			if _, ok := opts.Images[vals[0]]; ok { // check images map because registry map may omitted default registry
+				opts.CustomRegistries[vals[0]] = vals[1]
 			} else {
 				out.WarningT("Ignoring unknown custom registry {{.name}}", out.V{"name": vals[0]})
 			}
@@ -668,8 +673,14 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 
 	// Append postfix "/" to registries
 	for k, v := range opts.Registries {
-		if opts.Registries[k] != "" && !strings.HasSuffix(opts.Registries[k], "/") {
+		if v != "" && !strings.HasSuffix(v, "/") {
 			opts.Registries[k] = v + "/"
+		}
+	}
+
+	for k, v := range opts.CustomRegistries {
+		if v != "" && !strings.HasSuffix(v, "/") {
+			opts.CustomRegistries[k] = v + "/"
 		}
 	}
 
@@ -677,8 +688,24 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 		if _, ok := opts.Registries[name]; !ok {
 			opts.Registries[name] = "" // Avoid nil access when rendering
 		}
+
 		// Send messages to stderr due to some tests rely on stdout
-		out.ErrT(style.Option, "Using image {{.registry}}{{.image}}", out.V{"registry": opts.Registries[name], "image": image})
+		if override, ok := opts.CustomRegistries[name]; ok {
+			out.ErrT(style.Option, "Using image {{.registry}}{{.image}}", out.V{
+				"registry": override,
+				"image":    image,
+			})
+		} else if opts.ImageRepository != "" {
+			out.ErrT(style.Option, "Using image {{.registry}}{{.image}} (global image repository)", out.V{
+				"registry": opts.ImageRepository,
+				"image":    image,
+			})
+		} else {
+			out.ErrT(style.Option, "Using image {{.registry}}{{.image}}", out.V{
+				"registry": opts.Registries[name],
+				"image":    image,
+			})
+		}
 	}
 	return opts
 }

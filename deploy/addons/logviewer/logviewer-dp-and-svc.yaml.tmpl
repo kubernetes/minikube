@@ -41,8 +41,8 @@ spec:
       serviceAccountName: sa-logviewer
       containers:
       - name: logviewer
-        imagePullPolicy: Always
-        image: {{default .Registries.LogViewer .ImageRepository}}{{.Images.LogViewer}}
+        imagePullPolicy: IfNotPresent
+        image: {{.CustomRegistries.LogViewer  | default .ImageRepository | default .Registries.LogViewer }}{{.Images.LogViewer}}
         volumeMounts:
          - name: logs
            mountPath: /var/log/containers/

@@ -19,7 +19,7 @@ spec:
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - image: {{default .Registries.KubeRegistryProxy .ImageRepository}}{{.Images.KubeRegistryProxy}}
+      - image: {{.CustomRegistries.KubeRegistryProxy  | default .ImageRepository | default .Registries.KubeRegistryProxy }}{{.Images.KubeRegistryProxy}}
         imagePullPolicy: IfNotPresent
         name: registry-proxy
         ports:

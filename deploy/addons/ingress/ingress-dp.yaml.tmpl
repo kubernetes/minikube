@@ -49,7 +49,7 @@ spec:
       serviceAccountName: ingress-nginx
       containers:
         - name: controller
-          image: {{default .Registries.IngressController .ImageRepository}}{{.Images.IngressController}}
+          image: {{.CustomRegistries.IngressController  | default .ImageRepository | default .Registries.IngressController }}{{.Images.IngressController}}
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
@@ -220,7 +220,7 @@ spec:
     spec:
       containers:
         - name: create
-          image: {{default .Registries.KubeWebhookCertgenCreate .ImageRepository}}{{.Images.KubeWebhookCertgenCreate}}
+          image: {{.CustomRegistries.KubeWebhookCertgenCreate  | default .ImageRepository | default .Registries.KubeWebhookCertgenCreate }}{{.Images.KubeWebhookCertgenCreate}}
           imagePullPolicy: IfNotPresent
           args:
             - create
@@ -255,7 +255,7 @@ spec:
     spec:
       containers:
         - name: patch
-          image: {{default .Registries.KubeWebhookCertgenPatch .ImageRepository}}{{.Images.KubeWebhookCertgenPatch}}
+          image: {{.CustomRegistries.KubeWebhookCertgenPatch  | default .ImageRepository | default .Registries.KubeWebhookCertgenPatch }}{{.Images.KubeWebhookCertgenPatch}}
           imagePullPolicy:
           args:
             - patch

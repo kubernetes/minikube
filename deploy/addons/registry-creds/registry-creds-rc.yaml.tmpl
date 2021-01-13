@@ -18,9 +18,9 @@ spec:
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - image: {{default .Registries.RegistryCreds .ImageRepository}}{{.Images.RegistryCreds}}
+      - image: {{.CustomRegistries.RegistryCreds  | default .ImageRepository | default .Registries.RegistryCreds }}{{.Images.RegistryCreds}}
         name: registry-creds
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         env:
           - name: AWS_ACCESS_KEY_ID
             valueFrom:

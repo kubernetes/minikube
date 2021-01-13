@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
         - name: dashboard-metrics-scraper
-          image: {{default .Registries.MetricsScraper .ImageRepository}}{{.Images.MetricsScraper}}
+          image: {{.CustomRegistries.MetricsScraper  | default .ImageRepository | default .Registries.MetricsScraper }}{{.Images.MetricsScraper}}
           ports:
             - containerPort: 8000
               protocol: TCP
@@ -91,7 +91,7 @@ spec:
       containers:
         - name: kubernetes-dashboard
           # WARNING: This must match pkg/minikube/bootstrapper/images/images.go
-          image: {{default .Registries.Dashboard .ImageRepository}}{{.Images.Dashboard}}
+          image: {{.CustomRegistries.Dashboard  | default .ImageRepository | default .Registries.Dashboard }}{{.Images.Dashboard}}
           ports:
             - containerPort: 9090
               protocol: TCP
