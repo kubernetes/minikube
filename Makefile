@@ -614,7 +614,7 @@ KICBASE_ARCH = linux/arm64,linux/amd64
 KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) $(REGISTRY_GH)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
 
 .PHONY: push-kic-base-image 
-push-kic-base-image: docker-multi-arch-builder
+push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
 	docker login docker.pkg.github.com
@@ -675,8 +675,8 @@ push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
 	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_HUB)
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
 
-.PHONY: push-kic-base-image-x86
-push-kic-base-image-x86: ## Push local/kicbase:latest to all remote registries
+.PHONY: push-kic-base-image-x86-deprecated
+push-kic-base-image-x86-deprecated: ## Push legacy, non-multiarch local/kicbase:latest to all remote registries
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
 	$(MAKE) push-kic-base-image AUTOPUSH=true
