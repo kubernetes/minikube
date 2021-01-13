@@ -654,7 +654,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 	if registries != "" {
 		for _, registry := range strings.Split(registries, ",") {
 			vals := strings.Split(registry, "=")
-			if len(vals) != 2 || vals[1] == "" {
+			if len(vals) != 2 {
 				out.WarningT("Ignoring invalid custom registry {{.conf}}", out.V{"conf": registry})
 				continue
 			}
