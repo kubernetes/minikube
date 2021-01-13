@@ -68,7 +68,7 @@ var requiredDirectories = []string{
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
-	machineName := driver.MachineName(*cfg, *n)
+	machineName := config.MachineName(*cfg, *n)
 
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(machineName, cfg.Driver)

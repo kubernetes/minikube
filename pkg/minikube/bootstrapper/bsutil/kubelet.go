@@ -123,5 +123,5 @@ func KubeNodeName(cc config.ClusterConfig, n config.Node) string {
 		hostname, _ := os.Hostname()
 		return hostname
 	}
-	return driver.MachineName(cc, n)
+	return config.MachineName(cc, n)
 }

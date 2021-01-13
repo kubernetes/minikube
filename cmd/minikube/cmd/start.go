@@ -625,7 +625,7 @@ func hostDriver(existing *config.ClusterConfig) string {
 		klog.Warningf("Unable to get control plane from existing config: %v", err)
 		return existing.Driver
 	}
-	machineName := driver.MachineName(*existing, cp)
+	machineName := config.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
 		klog.Warningf("api.Load failed for %s: %v", machineName, err)
