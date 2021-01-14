@@ -67,7 +67,7 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, errors.Wrap(err, "retrieve")
 	}
 
-	m := driver.MachineName(cc, *n)
+	m := config.MachineName(cc, *n)
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return n, err
@@ -125,7 +125,7 @@ func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
 		}
 
 		// Accept full machine name as well as just node name
-		if driver.MachineName(cc, n) == name {
+		if config.MachineName(cc, n) == name {
 			klog.Infof("Couldn't find node name %s, but found it as a machine name, returning it anyway.", name)
 			return &n, i, nil
 		}

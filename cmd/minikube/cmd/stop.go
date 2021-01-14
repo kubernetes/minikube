@@ -28,7 +28,6 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -138,7 +137,7 @@ func stopProfile(profile string) int {
 	defer api.Close()
 
 	for _, n := range cc.Nodes {
-		machineName := driver.MachineName(*cc, n)
+		machineName := config.MachineName(*cc, n)
 
 		nonexistent := stop(api, machineName)
 		if !nonexistent {

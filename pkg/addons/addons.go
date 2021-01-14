@@ -186,7 +186,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
 	}
 
-	mName := driver.MachineName(*cc, cp)
+	mName := config.MachineName(*cc, cp)
 	host, err := machine.LoadHost(api, mName)
 	if err != nil || !machine.IsRunning(api, mName) {
 		klog.Warningf("%q is not running, setting %s=%v and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
@@ -296,8 +296,8 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	if err != nil {
 		return errors.Wrap(err, "getting control plane")
 	}
-	if !machine.IsRunning(api, driver.MachineName(*cc, cp)) {
-		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
+	if !machine.IsRunning(api, config.MachineName(*cc, cp)) {
+		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", config.MachineName(*cc, cp), name, val)
 		return enableOrDisableAddon(cc, name, val)
 	}
 

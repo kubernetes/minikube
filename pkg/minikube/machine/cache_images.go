@@ -36,7 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -194,7 +193,7 @@ func CacheAndLoadImages(images []string) error {
 		}
 
 		for _, n := range c.Nodes {
-			m := driver.MachineName(*c, n)
+			m := config.MachineName(*c, n)
 
 			status, err := Status(api, m)
 			if err != nil {

@@ -161,7 +161,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
+	mctx, cancel := context.WithTimeout(ctx, Seconds(120))
 	defer cancel()
 	var rr *RunResult
 	var err error
@@ -183,7 +183,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
 
-	mctx, cancel = context.WithTimeout(ctx, Seconds(30))
+	mctx, cancel = context.WithTimeout(ctx, Seconds(60))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
