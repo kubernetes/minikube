@@ -135,7 +135,7 @@ func TestFunctional(t *testing.T) {
 			}
 
 			t.Run(tc.name, func(t *testing.T) {
-				//MaybeParallel(t)
+				MaybeParallel(t)
 				tc.validator(ctx, t, profile)
 			})
 		}
