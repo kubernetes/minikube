@@ -42,7 +42,7 @@ jobs=(
      'none_Linux'
      'Docker_Linux'
      # 'Docker_macOS'
-     # 'Docker_Windows'
+     'Docker_Windows'
      # 'Podman_Linux'
 )
 
