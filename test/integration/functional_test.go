@@ -361,6 +361,9 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+// imageID returns a docker image id for image `image` and current architecture
+// 'image' is supposed to be one commonly used in minikube integration tests,
+// like k8s 'pause'
 func imageID(image string) string {
 	ids := map[string]map[string]string{
 		"pause": {
