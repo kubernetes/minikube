@@ -122,7 +122,10 @@ func etcd(v semver.Version, mirror string) string {
 
 // archTag returns a CPU architecture suffix for images
 func archTag(needsArchSuffix bool) string {
-	if runtime.GOARCH == "amd64" || !needsArchSuffix {
+	return archTagInt(runtime.GOARCH, needsArchSuffix)
+}
+func archTagInt(arch string, needsArchSuffix bool) string {
+	if arch == "amd64" || !needsArchSuffix {
 		return ":"
 	}
 	return "-" + runtime.GOARCH + ":"
