@@ -803,15 +803,15 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 	}()
 
-	var echoServerArg string
-	// k8s.gcr.io/echoserver is not multiarch
+	var rr *RunResult
+	var err error
+	// k8s.gcr.io/echoserver is not multi-arch
 	if arm64Platform() {
-		echoServerArg = "k8s.gcr.io/echoserver-arm:1.8"
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver-arm:1.8"))
 	} else {
-		echoServerArg = "k8s.gcr.io/echoserver:1.8"
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.8"))
 	}
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image="+echoServerArg))
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
