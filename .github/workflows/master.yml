@@ -750,48 +750,6 @@ jobs:
           echo $T_ELAPSED
           echo "----"
           echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Generate HTML Report
-        continue-on-error: true
-        shell: powershell
-        run: |
-          cd minikube_binaries
-          Get-Content .\report\testout.txt -Encoding ASCII  | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
-          $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${Env:JOB_NAME} ${Env:GITHUB_REF}" -repo "${Env:GITHUB_REPOSITORY}"  -details "${Env:GITHUB_SHA}")
-          echo status: ${STAT}
-          $FailNum=$(echo $STAT | jq '.NumberOfFail')
-          $TestsNum=$(echo $STAT | jq '.NumberOfTests')
-          $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo ${GOPOGH_RESULT}
-          $numFail=(echo $STAT | jq '.NumberOfFail')
-          $failedTests=( echo $STAT | jq '.FailedTests')
-          echo "---------------- ${numFail} Failures :( ----------------------------"
-          echo $failedTest
-          echo "-------------------------------------------------------"
-          $numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
-      - uses: actions/upload-artifact@v1
-        with:
-          name: scheduled_stop_docker_windows
-          path: minikube_binaries/report
-      - name: The End Result scheduled_stop_docker_windows
-        shell: powershell
-        run: |
-          $numFail=(echo $Env:STAT | jq '.NumberOfFail')
-          $failedTests=( echo $Env:STAT | jq '.FailedTests')
-          $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
-          $passedTests=( echo $Env:STAT | jq '.PassedTests')
-          echo "*******************${numPass} Passes :) *******************"
-          echo $passedTests
-          echo "*******************************************************"
-          echo "---------------- ${numFail} Failures :( ----------------------------"
-          echo $failedTests
-          echo "-------------------------------------------------------"
-          If ($numFail -gt 0){ exit 2 }
-          If ($numPass -eq 0){ exit 2 }
-          If ($numPass -lt 33){ exit 2 }
-          If ($numFail -eq 0){ exit 0 }
   scheduled_stop_hyperv_windows:
     needs: [build_minikube]
     env:
@@ -887,48 +845,6 @@ jobs:
           echo $T_ELAPSED
           echo "----"
           echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Generate HTML Report
-        continue-on-error: true
-        shell: powershell
-        run: |
-          cd minikube_binaries
-          Get-Content .\report\testout.txt -Encoding ASCII  | go tool test2json -t | Out-File -FilePath .\report\testout.json -Encoding ASCII
-          $STAT=(gopogh -in .\report\testout.json -out .\report\testout.html -name "${Env:JOB_NAME} ${Env:GITHUB_REF}" -repo "${Env:GITHUB_REPOSITORY}"  -details "${Env:GITHUB_SHA}")
-          echo status: ${STAT}
-          $FailNum=$(echo $STAT | jq '.NumberOfFail')
-          $TestsNum=$(echo $STAT | jq '.NumberOfTests')
-          $GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${Env:TIME_ELAPSED}"
-          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo "STAT=${STAT}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo ${GOPOGH_RESULT}
-          $numFail=(echo $STAT | jq '.NumberOfFail')
-          $failedTests=( echo $STAT | jq '.FailedTests')
-          echo "---------------- ${numFail} Failures :( ----------------------------"
-          echo $failedTest
-          echo "-------------------------------------------------------"
-          $numPass=$(echo $STAT | jq '.NumberOfPass')
-          echo "*** $numPass Passed ***"
-      - uses: actions/upload-artifact@v1
-        with:
-          name: scheduled_stop_hyperv_windows
-          path: minikube_binaries/report
-      - name: The End Result scheduled_stop_hyperv_windows
-        shell: powershell
-        run: |
-          $numFail=(echo $Env:STAT | jq '.NumberOfFail')
-          $failedTests=( echo $Env:STAT | jq '.FailedTests')
-          $numPass=$(echo $Env:STAT | jq '.NumberOfPass')
-          $passedTests=( echo $Env:STAT | jq '.PassedTests')
-          echo "*******************${numPass} Passes :) *******************"
-          echo $passedTests
-          echo "*******************************************************"
-          echo "---------------- ${numFail} Failures :( ----------------------------"
-          echo $failedTests
-          echo "-------------------------------------------------------"
-          If ($numFail -gt 0){ exit 2 }
-          If ($numPass -eq 0){ exit 2 }
-          If ($numPass -lt 33){ exit 2 }
-          If ($numFail -eq 0){ exit 0 }
   addons_certs_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
