@@ -996,7 +996,6 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	if arm64Platform() {
 		t.Skip("arm64 is not supported by mysql. Skip the test. See https://github.com/kubernetes/minikube/issues/10144")
-		return
 	}
 
 	defer PostMortemLogs(t, profile)
