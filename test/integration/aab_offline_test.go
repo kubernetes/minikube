@@ -34,7 +34,7 @@ func TestOffline(t *testing.T) {
 			t.Run(rt, func(t *testing.T) {
 				MaybeParallel(t)
 
-				if rt != "docker" && Arm64Platform() {
+				if rt != "docker" && arm64Platform() {
 					t.Skipf("skipping %s - only docker runtime supported on arm64", t.Name())
 				}
 

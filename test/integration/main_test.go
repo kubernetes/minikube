@@ -135,8 +135,8 @@ func GithubActionRunner() bool {
 	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
-// Arm64Platform returns true if running on arm64/* platform
-func Arm64Platform() bool {
+// arm64Platform returns true if running on arm64/* platform
+func arm64Platform() bool {
 	return runtime.GOARCH == "arm64"
 }
 

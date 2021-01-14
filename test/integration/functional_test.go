@@ -816,7 +816,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	}()
 
 	var echoServerArg string
-	if Arm64Platform() {
+	if arm64Platform() {
 		echoServerArg = "k8s.gcr.io/echoserver-arm:1.8"
 	} else {
 		echoServerArg = "k8s.gcr.io/echoserver:1.10"
@@ -994,7 +994,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
-	if Arm64Platform() {
+	if arm64Platform() {
 		t.Skip("arm64 is not supported by mysql. skip the test")
 		return
 	}

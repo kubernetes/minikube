@@ -42,7 +42,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		t.Skip("Skip if not linux.")
 	}
 
-	if Arm64Platform() {
+	if arm64Platform() {
 		t.Skip("Skip if arm64.")
 	}
 

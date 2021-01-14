@@ -31,7 +31,7 @@ func TestPreload(t *testing.T) {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())
 	}
 
-	if Arm64Platform() {
+	if arm64Platform() {
 		t.Skipf("skipping %s - not yet supported on arm64", t.Name())
 	}
 
