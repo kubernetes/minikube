@@ -194,15 +194,17 @@ func TestDownloadOnlyKic(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to read tarball file %q: %v", tarball, err)
 	}
-	if !arm64Platform() {
-		// Make sure it has the correct checksum
-		checksum := md5.Sum(contents)
-		remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime))
-		if err != nil {
-			t.Errorf("failed to read checksum file %q : %v", download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime), err)
-		}
-		if string(remoteChecksum) != string(checksum[:]) {
-			t.Errorf("failed to verify checksum. checksum of %q does not match remote checksum (%q != %q)", tarball, string(remoteChecksum), string(checksum[:]))
-		}
+
+	if arm64Platform() {
+		t.Skip("Skip for arm64 platform. See https://github.com/kubernetes/minikube/issues/10144")
+	}
+	// Make sure it has the correct checksum
+	checksum := md5.Sum(contents)
+	remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime))
+	if err != nil {
+		t.Errorf("failed to read checksum file %q : %v", download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime), err)
+	}
+	if string(remoteChecksum) != string(checksum[:]) {
+		t.Errorf("failed to verify checksum. checksum of %q does not match remote checksum (%q != %q)", tarball, string(remoteChecksum), string(checksum[:]))
 	}
 }
