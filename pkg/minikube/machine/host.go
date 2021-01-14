@@ -21,8 +21,8 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-
 	"k8s.io/klog/v2"
+	"runtime/debug"
 )
 
 // Status returns the status of a libmachine host
@@ -64,6 +64,7 @@ func IsRunning(api libmachine.API, name string) bool {
 // LoadHost returns a libmachine host by name
 func LoadHost(api libmachine.API, machineName string) (*host.Host, error) {
 	klog.Infof("Checking if %q exists ...", machineName)
+	debug.PrintStack()
 	exists, err := api.Exists(machineName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)

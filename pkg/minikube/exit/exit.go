@@ -53,6 +53,7 @@ func Message(r reason.Kind, format string, args ...out.V) {
 		args[0]["fatal_code"] = r.ID
 		out.Error(r, "Exiting due to {{.fatal_code}}: {{.fatal_msg}}", args...)
 	}
+	out.Error(r, "Exiting code {{.code}}", out.V{"code": r.ExitCode})
 
 	os.Exit(r.ExitCode)
 }

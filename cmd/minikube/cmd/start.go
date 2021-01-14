@@ -27,6 +27,7 @@ import (
 	"os/user"
 	"regexp"
 	"runtime"
+	"runtime/debug"
 	"strings"
 
 	"github.com/blang/semver"
@@ -925,10 +926,10 @@ func validateRequestedMemorySize(req int, drvName string) {
 	if err != nil {
 		klog.Warningf("Unable to query memory limits: %v", err)
 	}
-
-	klog.Infof("validating system memory")
+	debug.PrintStack()
 	// Detect if their system doesn't have enough memory to work with.
 	if driver.IsKIC(drvName) && containerLimit < minUsableMem {
+		klog.Infof("validating system memory")
 		if driver.IsDockerDesktop(drvName) {
 			if runtime.GOOS == "darwin" {
 				exitIfNotForced(reason.RsrcInsufficientDarwinDockerMemory, "Docker Desktop only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "req": minUsableMem, "recommend": "2.25 GB"})
@@ -938,12 +939,14 @@ func validateRequestedMemorySize(req int, drvName string) {
 		}
 		exitIfNotForced(reason.RsrcInsufficientContainerMemory, "{{.driver}} only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "driver": drvName, "req": minUsableMem})
 	}
+	debug.PrintStack()
 
-	klog.Infof("validating sys and req memory size")
+	klog.Infof("validating sys memory size")
 	if sysLimit < minUsableMem {
 		exitIfNotForced(reason.RsrcInsufficientSysMemory, "System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "driver": drvName, "req": minUsableMem})
 	}
 
+	klog.Infof("validating req memory size")
 	if req < minUsableMem {
 		exitIfNotForced(reason.RsrcInsufficientReqMemory, "Requested memory allocation {{.requested}}MiB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
 	}

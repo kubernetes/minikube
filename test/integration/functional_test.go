@@ -89,7 +89,7 @@ func TestFunctional(t *testing.T) {
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
-			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
+			//{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved // temporary disabled
 		}
 		for _, tc := range tests {
 			tc := tc
