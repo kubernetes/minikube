@@ -94,13 +94,14 @@ func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string) e
 
 // timeMinikubeStart returns the time it takes to execute `minikube start`
 func timeMinikubeStart(ctx context.Context, binary *Binary, driver string) (*result, error) {
-	startCmd := exec.CommandContext(ctx, binary.path, "start", fmt.Sprintf("--driver=%s", driver))
-	startCmd.Stderr = os.Stderr
-
-	log.Printf("Running: %v...", startCmd.Args)
-	r, err := timeCommandLogs(startCmd)
+	startCmd := []string{"start", "-p", profile, "--memory=1900", "--output=json", "--wait=true"}
+	startCmd = append(startCmd, StartCmd()...)
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+	
+	log.Printf("Running: %v...", c.Args)
+	r, err := timeCommandLogs(c)
 	if err != nil {
-		return nil, errors.Wrapf(err, "timing cmd: %v", startCmd.Args)
+		return nil, errors.Wrapf(err, "timing cmd: %v", c.Args)	
 	}
 	return r, nil
 }
