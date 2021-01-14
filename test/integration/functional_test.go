@@ -516,6 +516,10 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	var startArgs []string
 	orgStartArgs := StartArgs()
 
+	// remove '--memory=xxx' and '--memory xxx' arguments
+	// 	in this test we need to pass "--memory 250MB"
+	// 	and need to avoid collision if another value for 'memory' was set
+	//	externally in StartArgs()
 	for i := 0; i < len(orgStartArgs); i++ {
 		arg := orgStartArgs[i]
 		if strings.HasPrefix(arg, "--memory=") {
