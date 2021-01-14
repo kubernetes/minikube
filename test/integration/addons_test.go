@@ -43,7 +43,7 @@ import (
 func TestAddons(t *testing.T) {
 
 	if !arm64Platform() {
-		t.Skipf("Skip helm addon test for arm64")
+		t.Skipf("Skip helm addon test for arm64. See https://github.com/kubernetes/minikube/issues/10144")
 	}
 
 	profile := UniqueProfileName("addons")

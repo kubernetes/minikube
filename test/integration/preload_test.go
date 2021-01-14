@@ -32,7 +32,7 @@ func TestPreload(t *testing.T) {
 	}
 
 	if arm64Platform() {
-		t.Skipf("skipping %s - not yet supported on arm64", t.Name())
+		t.Skipf("skipping %s - not yet supported on arm64. See https://github.com/kubernetes/minikube/issues/10144", t.Name())
 	}
 
 	profile := UniqueProfileName("test-preload")

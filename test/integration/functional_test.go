@@ -995,7 +995,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	if arm64Platform() {
-		t.Skip("arm64 is not supported by mysql. skip the test")
+		t.Skip("arm64 is not supported by mysql. Skip the test. See https://github.com/kubernetes/minikube/issues/10144")
 		return
 	}
 

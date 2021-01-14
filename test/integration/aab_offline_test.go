@@ -35,7 +35,7 @@ func TestOffline(t *testing.T) {
 				MaybeParallel(t)
 
 				if rt != "docker" && arm64Platform() {
-					t.Skipf("skipping %s - only docker runtime supported on arm64", t.Name())
+					t.Skipf("skipping %s - only docker runtime supported on arm64. See https://github.com/kubernetes/minikube/issues/10144", t.Name())
 				}
 
 				if rt != "docker" && NoneDriver() {
