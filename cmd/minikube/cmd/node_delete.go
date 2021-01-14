@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -46,7 +47,7 @@ var nodeDeleteCmd = &cobra.Command{
 		}
 
 		if driver.IsKIC(co.Config.Driver) {
-			machineName := driver.MachineName(*co.Config, *n)
+			machineName := config.MachineName(*co.Config, *n)
 			deletePossibleKicLeftOver(machineName, co.Config.Driver)
 		}
 

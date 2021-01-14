@@ -45,7 +45,7 @@ func init() {
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return none.NewDriver(none.Config{
-		MachineName:      driver.MachineName(cc, n),
+		MachineName:      config.MachineName(cc, n),
 		StorePath:        localpath.MiniPath(),
 		ContainerRuntime: cc.KubernetesConfig.ContainerRuntime,
 	}), nil

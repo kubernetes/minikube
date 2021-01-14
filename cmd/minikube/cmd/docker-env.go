@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -455,9 +456,41 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 	}
 }
 
+func isValidDockerProxy(env string) bool {
+	val := os.Getenv(env)
+	if val == "" {
+		return true
+	}
+
+	u, err := url.Parse(val)
+	if err != nil {
+		klog.Warningf("Parsing proxy env variable %s=%s error: %v", env, val, err)
+		return false
+	}
+	switch u.Scheme {
+	// See moby/moby#25740
+	case "socks5", "socks5h":
+		return true
+	default:
+		return false
+	}
+}
+
+func removeInvalidDockerProxy() {
+	for _, env := range []string{"ALL_PROXY", "all_proxy"} {
+		if !isValidDockerProxy(env) {
+			klog.Warningf("Ignoring non socks5 proxy env variable %s=%s", env, os.Getenv(env))
+			os.Unsetenv(env)
+		}
+	}
+}
+
 // tryDockerConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
 func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
+
+	// See #10098 for details
+	removeInvalidDockerProxy()
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
 	klog.Infof("Testing Docker connectivity with: %v", c)
 	return c.CombinedOutput()
