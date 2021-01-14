@@ -96,7 +96,7 @@ func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string) e
 func timeMinikubeStart(ctx context.Context, binary *Binary, driver string) (*result, error) {
 	startCmd := []string{"start", "-p", profile, "--memory=1900", "--output=json", "--wait=true"}
 	startCmd = append(startCmd, StartCmd()...)
-	c := exec.CommandContext(ctx, Target(), startArgs...)
+	c := exec.CommandContext(ctx, Target(), startCmd...)
 	
 	log.Printf("Running: %v...", c.Args)
 	r, err := timeCommandLogs(c)
