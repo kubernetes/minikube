@@ -20,7 +20,6 @@ package images
 import (
 	"fmt"
 	"path"
-	"runtime"
 
 	"github.com/blang/semver"
 
@@ -35,7 +34,7 @@ func Pause(v semver.Version, mirror string) string {
 	if semver.MustParseRange("<1.18.0-alpha.0")(v) {
 		pv = "3.1"
 	}
-	return path.Join(kubernetesRepo(mirror), "pause"+archTag(false)+pv)
+	return path.Join(kubernetesRepo(mirror), "pause:"+pv)
 }
 
 // essentials returns images needed too bootstrap a Kubernetes
@@ -54,13 +53,7 @@ func essentials(mirror string, v semver.Version) []string {
 
 // componentImage returns a Kubernetes component image to pull
 func componentImage(name string, v semver.Version, mirror string) string {
-	needsArchSuffix := false
-	ancient := semver.MustParseRange("<1.12.0")
-	if ancient(v) {
-		needsArchSuffix = true
-	}
-
-	return fmt.Sprintf("%sv%s", path.Join(kubernetesRepo(mirror), name+archTag(needsArchSuffix)), v)
+	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror), name), v)
 }
 
 // coreDNS returns the images used for CoreDNS
@@ -84,17 +77,11 @@ func coreDNS(v semver.Version, mirror string) string {
 	case 11:
 		cv = "1.1.3"
 	}
-	return path.Join(kubernetesRepo(mirror), "coredns"+":"+cv)
+	return path.Join(kubernetesRepo(mirror), "coredns:"+cv)
 }
 
 // etcd returns the image used for etcd
 func etcd(v semver.Version, mirror string) string {
-	needsArchSuffix := false
-	ancient := semver.MustParseRange("<1.12.0")
-	if ancient(v) {
-		needsArchSuffix = true
-	}
-
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	ev := "3.4.13-0"
@@ -117,18 +104,7 @@ func etcd(v semver.Version, mirror string) string {
 		ev = "3.4.9-1"
 	}
 
-	return path.Join(kubernetesRepo(mirror), "etcd"+archTag(needsArchSuffix)+ev)
-}
-
-// archTag returns a CPU architecture suffix for images
-func archTag(needsArchSuffix bool) string {
-	return archTagInt(runtime.GOARCH, needsArchSuffix)
-}
-func archTagInt(arch string, needsArchSuffix bool) string {
-	if arch == "amd64" || !needsArchSuffix {
-		return ":"
-	}
-	return "-" + runtime.GOARCH + ":"
+	return path.Join(kubernetesRepo(mirror), "etcd:"+ev)
 }
 
 // auxiliary returns images that are helpful for running minikube
@@ -143,7 +119,7 @@ func auxiliary(mirror string) []string {
 
 // storageProvisioner returns the minikube storage provisioner image
 func storageProvisioner(mirror string) string {
-	return path.Join(minikubeRepo(mirror), "storage-provisioner"+archTag(false)+version.GetStorageProvisionerVersion())
+	return path.Join(minikubeRepo(mirror), "storage-provisioner:"+version.GetStorageProvisionerVersion())
 }
 
 // dashboardFrontend returns the image used for the dashboard frontend

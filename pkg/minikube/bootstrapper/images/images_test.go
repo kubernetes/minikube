@@ -17,8 +17,6 @@ limitations under the License.
 package images
 
 import (
-	"fmt"
-	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -45,32 +43,5 @@ func TestAuxiliaryMirror(t *testing.T) {
 	got := auxiliary("test.mirror")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("images mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestArchTag(t *testing.T) {
-	tests := []struct {
-		arch     string
-		suffix   bool
-		expected string
-	}{
-		{
-			"amd64", true, ":",
-		},
-		{
-			"amd64", false, ":",
-		},
-		{
-			"arm64", false, ":",
-		},
-		{
-			"arm64", true, fmt.Sprintf("-%s:", runtime.GOARCH),
-		},
-	}
-	for _, test := range tests {
-		if tag := archTagInt(test.arch, test.suffix); tag != test.expected {
-			t.Errorf("For arch: %v and suffix flag: '%v' expected %v got %v",
-				test.arch, test.suffix, test.expected, tag)
-		}
 	}
 }
