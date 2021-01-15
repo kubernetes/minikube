@@ -19,7 +19,7 @@ gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.e
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
 
-./setup_docker_desktop_windows.ps1
+./out/setup_docker_desktop_windows.ps1
 
 ./out/minikube-windows-amd64.exe delete --all
 
