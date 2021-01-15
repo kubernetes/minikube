@@ -364,7 +364,7 @@ jobs:
           $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
           $env:MINIKUBE_HOME="${pwd}\testhome"
           $ErrorActionPreference = "SilentlyContinue"
-          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run="(TestFunctional|TestScheduledStopWindows)" --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run=TestFunctional --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
           $END_TIME=(GET-DATE)
           echo $END_TIME
           $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
@@ -632,7 +632,6 @@ jobs:
           choco install -y caffeine
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
-        continue-on-error: true
         shell: powershell
         run: |
           cd minikube_binaries
@@ -727,7 +726,6 @@ jobs:
           choco install -y caffeine
           if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
       - name: Run Integration Test in powershell
-        continue-on-error: true
         shell: powershell
         run: |
           cd minikube_binaries
