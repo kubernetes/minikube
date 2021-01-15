@@ -41,6 +41,11 @@ import (
 
 // TestAddons tests addons that require no special environment -- in parallel
 func TestAddons(t *testing.T) {
+
+	if !arm64Platform() {
+		t.Skipf("Skip helm addon test for arm64. See https://github.com/kubernetes/minikube/issues/10144")
+	}
+
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
@@ -305,6 +310,7 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 }
 
 func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) {
+
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)

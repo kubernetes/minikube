@@ -77,7 +77,7 @@ authentication:
   x509:
     clientCAFile: {{.ClientCAFile}}
 cgroupDriver: {{.CgroupDriver}}
-clusterDomain: "cluster.local"
+clusterDomain: "{{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
 evictionHard:

@@ -68,7 +68,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	return kic.NewDriver(kic.Config{
 		ClusterName:       cc.Name,
-		MachineName:       driver.MachineName(cc, n),
+		MachineName:       config.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       cc.KicBaseImage,
 		Mounts:            mounts,
@@ -79,14 +79,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 		ExtraArgs:         extraArgs,
+		Network:           cc.Network,
 	}), nil
 }
 
 func status() registry.State {
-	if runtime.GOARCH != "amd64" {
-		return registry.State{Error: fmt.Errorf("docker driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
-	}
-
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}

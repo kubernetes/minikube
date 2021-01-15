@@ -23,16 +23,21 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
+	apiWait "k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 
+	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -44,6 +49,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/shell"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
+
+const minLogCheckTime = 60 * time.Second
 
 var dockerEnvTCPTmpl = fmt.Sprintf(
 	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}"+
@@ -188,14 +195,43 @@ func mustRestartDockerd(name string, runner command.Runner) {
 	if err := sysinit.New(runner).Reload("docker"); err != nil {
 		klog.Warningf("will try to restart dockerd because reload failed: %v", err)
 		if err := sysinit.New(runner).Restart("docker"); err != nil {
-			exit.Message(reason.RuntimeRestart, `The Docker service within '{{.name}}' is not active`, out.V{"name": name})
+			klog.Warningf("Couldn't restart docker inside minikbue within '%v' because: %v", name, err)
+			return
 		}
 		// if we get to the point that we have to restart docker (instead of reload)
 		// will need to wait for apisever container to come up, this usually takes 5 seconds
 		// verifying apisever using kverify would add code complexity for a rare case.
-		klog.Warningf("waiting 5 seconds to ensure apisever container is up...")
-		time.Sleep(time.Second * 5)
+		klog.Warningf("waiting to ensure apisever container is up...")
+		startTime := time.Now()
+		if err = waitForAPIServerProcess(runner, startTime, time.Second*30); err != nil {
+			klog.Warningf("apiserver container isn't up, error: %v", err)
+		}
 	}
+}
+
+func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Duration) error {
+	klog.Infof("waiting for apiserver process to appear ...")
+	err := apiWait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
+		if time.Since(start) > timeout {
+			return false, fmt.Errorf("cluster wait timed out during process check")
+		}
+
+		if time.Since(start) > minLogCheckTime {
+			klog.Infof("waiting for apiserver process to appear ...")
+			time.Sleep(kconst.APICallRetryInterval * 5)
+		}
+
+		if _, ierr := kverify.APIServerPID(cr); ierr != nil {
+			return false, nil
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("apiserver process never appeared")
+	}
+	klog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
+	return nil
 }
 
 // dockerEnvCmd represents the docker-env command
@@ -420,9 +456,41 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 	}
 }
 
+func isValidDockerProxy(env string) bool {
+	val := os.Getenv(env)
+	if val == "" {
+		return true
+	}
+
+	u, err := url.Parse(val)
+	if err != nil {
+		klog.Warningf("Parsing proxy env variable %s=%s error: %v", env, val, err)
+		return false
+	}
+	switch u.Scheme {
+	// See moby/moby#25740
+	case "socks5", "socks5h":
+		return true
+	default:
+		return false
+	}
+}
+
+func removeInvalidDockerProxy() {
+	for _, env := range []string{"ALL_PROXY", "all_proxy"} {
+		if !isValidDockerProxy(env) {
+			klog.Warningf("Ignoring non socks5 proxy env variable %s=%s", env, os.Getenv(env))
+			os.Unsetenv(env)
+		}
+	}
+}
+
 // tryDockerConnectivity will try to connect to docker env from user's POV to detect the problem if it needs reset or not
 func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
+
+	// See #10098 for details
+	removeInvalidDockerProxy()
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
 	klog.Infof("Testing Docker connectivity with: %v", c)
 	return c.CombinedOutput()

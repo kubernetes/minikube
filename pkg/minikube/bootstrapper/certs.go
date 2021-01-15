@@ -99,6 +99,8 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		ClientCertificate:    path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.crt"),
 		ClientKey:            path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.key"),
 		CertificateAuthority: path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
+		ExtensionContext:     kubeconfig.NewExtension(),
+		ExtensionCluster:     kubeconfig.NewExtension(),
 		KeepContext:          false,
 	}
 

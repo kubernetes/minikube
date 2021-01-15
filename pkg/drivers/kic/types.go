@@ -24,9 +24,9 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.15-snapshot4"
+	Version = "v0.0.16-snapshot1"
 	// SHA of the kic base image
-	baseImageSHA = "ef1f485b5a1cfa4c989bc05e153f0a8525968ec999e242efff871cbb31649c16"
+	baseImageSHA = "dff16232547bb3ac3f2a9e09a42246a96ecf8f40d9a1c5bcf5a37953690954b6"
 )
 
 var (
@@ -61,5 +61,6 @@ type Config struct {
 	Envs              map[string]string // key,value of environment variables passed to the node
 	KubernetesVersion string            // Kubernetes version to install
 	ContainerRuntime  string            // container runtime kic is running
+	Network           string            //  network to run with kic
 	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 }

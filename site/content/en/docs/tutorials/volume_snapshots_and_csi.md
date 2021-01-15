@@ -28,7 +28,7 @@ by default as well.
 Thus, to utilize the volume snapshots functionality, you must:
 
 1\) enable the `volumesnapshots` addon AND\
-2a\) either enable the `csi-hostpth-driver` addon OR\
+2a\) either enable the `csi-hostpath-driver` addon OR\
 2b\) deploy your own CSI driver
 
 You can enable/disable either of the above-mentioned addons using

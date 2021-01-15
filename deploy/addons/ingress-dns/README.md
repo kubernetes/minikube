@@ -107,7 +107,7 @@ TODO
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/minikube/master/deploy/addons/ingress-dns/example/example.yaml
 ```
-Note: Minimum Kubernetes version for example ingress is 1.14.7
+Note: Minimum Kubernetes version for example ingress is 1.19
 
 ### Validate DNS queries are returning A records
 ```bash

@@ -7,7 +7,7 @@ env:
   GOPROXY: https://proxy.golang.org
 jobs:
   build_test_kic_image:
-    runs-on: [self-hosted, debian9, gcp]
+    runs-on: [self-hosted, debian9, baremetal, equinix]
     steps:
       - name: Clean up 
         shell: bash

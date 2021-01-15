@@ -35,14 +35,14 @@ schedulerExtraArgs:
   leader-elect: "false"
 kubernetesVersion: v1.13.0
 networking:
-  dnsDomain: 1.1.1.1
+  dnsDomain: minikube.local
   podSubnet: "10.244.0.0/16"
   serviceSubnet: 10.96.0.0/12
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 cgroupDriver: systemd
-clusterDomain: "cluster.local"
+clusterDomain: "minikube.local"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
 evictionHard:

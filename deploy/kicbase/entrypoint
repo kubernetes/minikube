@@ -23,9 +23,12 @@ configure_proxy() {
   # ensure all processes receive the proxy settings by default
   # https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html
   mkdir -p /etc/systemd/system.conf.d/
+  if [[ ! -z "${NO_PROXY-}" ]]; then
+    NO_PROXY="${NO_PROXY},control-plane.minikube.internal"
+  fi
   cat <<EOF >/etc/systemd/system.conf.d/proxy-default-environment.conf
 [Manager]
-DefaultEnvironment="HTTP_PROXY=${HTTP_PROXY:-}" "HTTPS_PROXY=${HTTPS_PROXY:-}" "NO_PROXY=${NO_PROXY:-}"
+DefaultEnvironment="HTTP_PROXY=${HTTP_PROXY:-}" "HTTPS_PROXY=${HTTPS_PROXY:-}" "NO_PROXY=${NO_PROXY:-"control-plane.minikube.internal"}"
 EOF
 }
 
@@ -279,6 +282,8 @@ fix_product_name
 fix_product_uuid
 select_iptables
 enable_network_magic
+
+echo "entrypoint completed: $(uname -a)"
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"

@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -49,7 +49,7 @@ var nodeStartCmd = &cobra.Command{
 			exit.Error(reason.GuestNodeRetrieve, "retrieving node", err)
 		}
 
-		machineName := driver.MachineName(*cc, *n)
+		machineName := config.MachineName(*cc, *n)
 		if machine.IsRunning(api, machineName) {
 			out.Step(style.Check, "{{.name}} is already running", out.V{"name": name})
 			os.Exit(0)
