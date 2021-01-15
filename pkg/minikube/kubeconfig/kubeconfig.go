@@ -105,7 +105,7 @@ func Endpoint(contextName string, configPath ...string) (string, int, error) {
 }
 
 // UpdateEndpoint overwrites the IP stored in kubeconfig with the provided IP.
-func UpdateEndpoint(contextName string, hostname string, port int, confpath string) (bool, error) {
+func UpdateEndpoint(contextName string, hostname string, port int, confpath string, ext *Extension) (bool, error) {
 	if hostname == "" {
 		return false, fmt.Errorf("empty ip")
 	}
@@ -135,6 +135,9 @@ func UpdateEndpoint(contextName string, hostname string, port int, confpath stri
 			ClientKey:            path.Join(lp, "client.key"),
 			CertificateAuthority: path.Join(gp, "ca.crt"),
 			KeepContext:          false,
+		}
+		if ext != nil {
+			kcs.ExtensionCluster = ext
 		}
 		err = PopulateFromSettings(kcs, cfg)
 		if err != nil {
