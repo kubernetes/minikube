@@ -194,6 +194,10 @@ func TestDownloadOnlyKic(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to read tarball file %q: %v", tarball, err)
 	}
+
+	if arm64Platform() {
+		t.Skip("Skip for arm64 platform. See https://github.com/kubernetes/minikube/issues/10144")
+	}
 	// Make sure it has the correct checksum
 	checksum := md5.Sum(contents)
 	remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime))

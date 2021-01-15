@@ -22,6 +22,7 @@ import (
 	"path"
 
 	"github.com/blang/semver"
+
 	"k8s.io/minikube/pkg/version"
 )
 

@@ -361,6 +361,26 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+// imageID returns a docker image id for image `image` and current architecture
+// 'image' is supposed to be one commonly used in minikube integration tests,
+// like k8s 'pause'
+func imageID(image string) string {
+	ids := map[string]map[string]string{
+		"pause": {
+			"amd64": "0184c1613d929",
+			"arm64": "3d18732f8686c",
+		},
+	}
+
+	if imgIds, ok := ids[image]; ok {
+		if id, ok := imgIds[runtime.GOARCH]; ok {
+			return id
+		}
+		panic(fmt.Sprintf("unexpected architecture for image %q: %v", image, runtime.GOARCH))
+	}
+	panic("unexpected image name: " + image)
+}
+
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
@@ -588,10 +608,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
-			if !strings.Contains(rr.Output(), "0184c1613d929") {
-				t.Errorf("expected sha for pause:3.3 '0184c1613d929' to be in the output but got *%s*", rr.Output())
+			pauseID := imageID("pause")
+			if !strings.Contains(rr.Output(), pauseID) {
+				t.Errorf("expected sha for pause:3.3 %q to be in the output but got *%s*", pauseID, rr.Output())
 			}
-
 		})
 
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
@@ -783,7 +803,15 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 	}()
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.4"))
+	var rr *RunResult
+	var err error
+	// k8s.gcr.io/echoserver is not multi-arch
+	if arm64Platform() {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver-arm:1.8"))
+	} else {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.8"))
+	}
+
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
@@ -955,6 +983,10 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	if arm64Platform() {
+		t.Skip("arm64 is not supported by mysql. Skip the test. See https://github.com/kubernetes/minikube/issues/10144")
+	}
+
 	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
