@@ -17,6 +17,9 @@ mkdir -p out
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
+
+./setup_docker_desktop_windows.ps1
 
 ./out/minikube-windows-amd64.exe delete --all
 
@@ -65,8 +68,11 @@ gsutil -qm cp testout.html gs://$gcs_bucket/Docker_Windows.html
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins`", `"target_url`": `"$env:target_url`", `"context`": `"Docker_Windows`"}"
 Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
+# Just shutdown Docker, it's safer than anything else
+Get-Process "*Docker Desktop*" | Stop-Process
+
 # Uncomment once tunnel is fixed on Windows: https://github.com/kubernetes/minikube/issues/8304
 #./out/minikube-windows-amd64.exe tunnel --cleanup
-./out/minikube-windows-amd64.exe delete --all --purge
+#./out/minikube-windows-amd64.exe delete --all --purge
 
 Exit $env:result
