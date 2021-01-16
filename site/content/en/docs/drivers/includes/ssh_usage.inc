@@ -20,6 +20,6 @@ This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/set
 The ssh driver requires the IP address of the VM to use.
 
 ```shell
-minikube start --driver=ssh --ip-address=vm.example.com
+minikube start --driver=ssh --ssh-ip-address=vm.example.com
 ```
 

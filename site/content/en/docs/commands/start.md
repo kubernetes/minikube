@@ -64,7 +64,6 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --ip-address string                 IP address (ssh driver only)
       --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.16.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.16.0/minikube-v1.16.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.16.0.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.20.0, 'latest' for v1.20.0). Defaults to 'stable'.
@@ -89,6 +88,7 @@ minikube start [flags]
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
+      --ssh-ip-address string             IP address (ssh driver only)
       --ssh-key string                    SSH key (ssh driver only)
       --ssh-port int                      SSH port (ssh driver only) (default 22)
       --ssh-user string                   SSH user (ssh driver only) (default "root")

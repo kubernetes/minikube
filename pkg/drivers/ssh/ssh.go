@@ -102,8 +102,6 @@ func (d *Driver) PreCreateCheck() error {
 		if _, err := os.Stat(d.SSHKey); os.IsNotExist(err) {
 			return fmt.Errorf("SSH key does not exist: %q", d.SSHKey)
 		}
-
-		// TODO: validate the key is a valid key
 	}
 
 	return nil

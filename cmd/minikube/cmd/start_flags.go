@@ -110,7 +110,7 @@ const (
 	network                 = "network"
 	startNamespace          = "namespace"
 	trace                   = "trace"
-	sshIPAddress            = "ip-address"
+	sshIPAddress            = "ssh-ip-address"
 	sshSSHUser              = "ssh-user"
 	sshSSHKey               = "ssh-key"
 	sshSSHPort              = "ssh-port"
@@ -347,7 +347,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			NatNicType:              viper.GetString(natNicType),
 			StartHostTimeout:        viper.GetDuration(waitTimeout),
 			ExposedPorts:            viper.GetStringSlice(ports),
-			IPAddress:               viper.GetString(sshIPAddress),
+			SSHIPAddress:            viper.GetString(sshIPAddress),
 			SSHUser:                 viper.GetString(sshSSHUser),
 			SSHKey:                  viper.GetString(sshSSHKey),
 			SSHPort:                 viper.GetInt(sshSSHPort),
