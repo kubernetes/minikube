@@ -1421,7 +1421,7 @@ jobs:
         multinode_virtualbox_macos,
         preload_dockerflags_docker_ubuntu,
         pause_preload_dockerflags_virtualbox_macos,
-        docker_ubuntu_arm64,
+        full_docker_ubuntu_arm64,
       ]
     runs-on: ubuntu-18.04
     steps:
@@ -1445,7 +1445,7 @@ jobs:
           cp -r ./multinode_virtualbox_macos ./all_reports/
           cp -r ./preload_dockerflags_docker_ubuntu ./all_reports/
           cp -r ./pause_preload_dockerflags_virtualbox_macos ./all_reports/
-          cp -r ./docker_ubuntu_arm64 ./all_reports/
+          cp -r ./full_docker_ubuntu_arm64 ./all_reports/
       - uses: actions/upload-artifact@v1
         with:
           name: all_reports
