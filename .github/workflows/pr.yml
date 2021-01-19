@@ -1056,8 +1056,8 @@ jobs:
         with:
           go-version: '1.15.5'
           stable: true
+          
       - name: Install gopogh
-
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64
