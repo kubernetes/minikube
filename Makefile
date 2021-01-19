@@ -846,3 +846,6 @@ else
 	 go run update_kubernetes_version.go)
 endif
 
+.PHONY: stress
+stress:
+	go test -test.v -test.timeout=2h ./test/stress -loops=10
