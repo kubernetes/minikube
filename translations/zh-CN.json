@@ -32,7 +32,6 @@
 	"A set of apiserver names which are used in the generated certificate for kubernetes. This can be used if you want to make the apiserver available from outside the machine": "一组在为 kubernetes 生成的证书中使用的 apiserver 名称。如果您希望将此 apiserver 设置为可从机器外部访问，则可以使用这组 apiserver 名称",
 	"A set of key=value pairs that describe configuration that may be passed to different components.\nThe key should be '.' separated, and the first part before the dot is the component to apply the configuration to.\nValid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler\nValid kubeadm parameters:": "一组用于描述可传递给不同组件的配置的键值对。\n其中键应以英文句点“.”分隔，英文句点前面的第一个部分是应用该配置的组件。\n有效组件包括：kubelet、kubeadm、apiserver、controller-manager、etcd、proxy、scheduler\n有效 kubeadm 参数包括：",
 	"A set of key=value pairs that describe feature gates for alpha/experimental features.": "一组用于描述 alpha 版功能/实验性功能的功能限制的键值对。",
-	"Access the Kubernetes dashboard running within the minikube cluster": "",
 	"Access the kubernetes dashboard running within the minikube cluster": "访问在 minikube 集群中运行的 kubernetes dashboard",
 	"Add an image to local cache.": "将 image 添加到本地缓存。",
 	"Add machine IP to NO_PROXY environment variable": "将机器IP添加到环境变量 NO_PROXY 中",
