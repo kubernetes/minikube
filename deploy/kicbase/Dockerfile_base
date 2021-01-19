@@ -92,6 +92,7 @@ ARG COMMIT_SHA
 # could be changed to any debian that can run systemd
 USER root
 
+
 # install system requirements from the regular distro repositories
 RUN clean-install \
     lz4 \
@@ -112,6 +113,12 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && chmod 755 /usr/local/bin/buildctl \
     && chmod 755 /usr/local/bin/buildkit-runc \
     && chmod 755 /usr/local/bin/buildkitd
+
+# Install crictl and container networking plugins
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
+    apt-key add - < Release.key && \
+    clean-install containernetworking-plugins cri-tools
 
 # automount service
 COPY automount/minikube-automount /usr/sbin/minikube-automount
