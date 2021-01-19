@@ -608,6 +608,14 @@ cr-kic-base-image: ## builds the kic base image and tags local/kicbase:latest an
 		docker build -f ./deploy/kicbase/Dockerfile-runtimes -t local/kicbase-$${containerRuntime}:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg BASE_IMAGE=base:$(KIC_VERSION) --target $${containerRuntime} ./deploy/kicbase; \
 	done
 
+.PHONY: test-cr-kic-base-image
+test-cr-kic-base-image: cr-kic-base-image
+	for containerRuntime in docker containerd crio; do \
+		docker build -f ./deploy/kicbase/Dockerfile-runtimes -t local/kicbase-$${containerRuntime}:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg BASE_IMAGE=base:$(KIC_VERSION) --target $${containerRuntime} ./deploy/kicbase; \
+		env TEST_ARGS="-minikube-start-args=--driver=docker,--container-runtime=$${containerRuntime},--base-image=local/kicbase-$${containerRuntime}:$(KIC_VERSION)" make integration; \
+	done
+
+
 # multi-arch docker images
 X_DOCKER_BUILDER ?= minikube-builder
 X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
