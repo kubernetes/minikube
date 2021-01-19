@@ -847,3 +847,7 @@ else
 	 go run update_kubernetes_version.go)
 endif
 
+.PHONY: update-gopogh-version
+update-gopogh-version:
+	(cd hack/update/gopogh_version && \
+	 go run update_gopogh_version.go)
