@@ -686,6 +686,7 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
+          
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
@@ -1056,7 +1057,7 @@ jobs:
         with:
           go-version: '1.15.5'
           stable: true
-          
+
       - name: Install gopogh
         shell: bash
         run: |
