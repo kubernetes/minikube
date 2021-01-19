@@ -17,8 +17,11 @@ limitations under the License.
 package machine
 
 import (
+	"errors"
 	"io/ioutil"
 	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -39,8 +42,8 @@ type HostInfo struct {
 	DiskSize int64
 }
 
-// CachedHostInfo returns system information such as memory,CPU, DiskSize
-func CachedHostInfo() (*HostInfo, error, error, error) {
+// LocalHostInfo returns system information such as memory,CPU, DiskSize
+func LocalHostInfo() (*HostInfo, error, error, error) {
 	var cpuErr, memErr, diskErr error
 	i, cpuErr := cachedCPUInfo()
 	if cpuErr != nil {
@@ -60,6 +63,43 @@ func CachedHostInfo() (*HostInfo, error, error, error) {
 	info.CPUs = len(i)
 	info.Memory = util.ConvertUnsignedBytesToMB(v.Total)
 	info.DiskSize = util.ConvertUnsignedBytesToMB(d.Total)
+	return &info, cpuErr, memErr, diskErr
+}
+
+// RemoteHostInfo returns system information such as memory,CPU, DiskSize
+func RemoteHostInfo(r command.Runner) (*HostInfo, error, error, error) {
+	rr, cpuErr := r.RunCmd(exec.Command("nproc"))
+	if cpuErr != nil {
+		klog.Warningf("Unable to get CPU info: %v", cpuErr)
+	}
+	nproc := rr.Stdout.String()
+	ncpus, err := strconv.Atoi(strings.TrimSpace(nproc))
+	if err != nil {
+		klog.Warningf("Failed to parse CPU info: %v", err)
+	}
+	rr, memErr := r.RunCmd(exec.Command("free", "-m"))
+	if memErr != nil {
+		klog.Warningf("Unable to get mem info: %v", memErr)
+	}
+	free := rr.Stdout.String()
+	memory, err := parseMemFree(free)
+	if err != nil {
+		klog.Warningf("Unable to parse mem info: %v", err)
+	}
+	rr, diskErr := r.RunCmd(exec.Command("df", "-m"))
+	if diskErr != nil {
+		klog.Warningf("Unable to get disk info: %v", diskErr)
+	}
+	df := rr.Stdout.String()
+	disksize, err := parseDiskFree(df)
+	if err != nil {
+		klog.Warningf("Unable to parse disk info: %v", err)
+	}
+
+	var info HostInfo
+	info.CPUs = ncpus
+	info.Memory = memory
+	info.DiskSize = disksize
 	return &info, cpuErr, memErr, diskErr
 }
 
@@ -149,4 +189,51 @@ func cachedCPUInfo() ([]cpu.InfoStat, error) {
 		return *cachedCPU, nil
 	}
 	return *cachedCPU, *cachedCPUErr
+}
+
+// ParseMemFree parses the output of the `free -m` command
+func parseMemFree(out string) (int64, error) {
+	//             total        used        free      shared  buff/cache   available
+	//Mem:           1987         706         194           1        1086        1173
+	//Swap:             0           0           0
+	outlines := strings.Split(out, "\n")
+	l := len(outlines)
+	for _, line := range outlines[1 : l-1] {
+		parsedLine := strings.Fields(line)
+		if len(parsedLine) < 7 {
+			continue
+		}
+		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		m := strings.Trim(parsedLine[0], ":")
+		if m == "Mem" {
+			return t, nil
+		}
+	}
+	return 0, errors.New("no matching data found")
+}
+
+// ParseDiskFree parses the output of the `df -m` command
+func parseDiskFree(out string) (int64, error) {
+	// Filesystem     1M-blocks  Used Available Use% Mounted on
+	// /dev/sda1          39643  3705     35922  10% /
+	outlines := strings.Split(out, "\n")
+	l := len(outlines)
+	for _, line := range outlines[1 : l-1] {
+		parsedLine := strings.Fields(line)
+		if len(parsedLine) < 6 {
+			continue
+		}
+		t, err := strconv.ParseInt(parsedLine[1], 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		m := parsedLine[5]
+		if m == "/" {
+			return t, nil
+		}
+	}
+	return 0, errors.New("no matching data found")
 }

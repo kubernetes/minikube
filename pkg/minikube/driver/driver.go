@@ -38,6 +38,8 @@ const (
 	Mock = "mock"
 	// None driver
 	None = "none"
+	// SSH driver
+	SSH = "ssh"
 	// KVM2 driver
 	KVM2 = "kvm2"
 	// VirtualBox driver
@@ -55,6 +57,8 @@ const (
 
 	// AliasKVM is driver name alias for kvm2
 	AliasKVM = "kvm"
+	// AliasSSH is driver name alias for ssh
+	AliasSSH = "generic"
 )
 
 var (
@@ -94,6 +98,10 @@ func Supported(name string) bool {
 func MachineType(name string) string {
 	if IsKIC(name) {
 		return "container"
+	}
+
+	if IsSSH(name) {
+		return "bare metal machine"
 	}
 
 	if IsVM(name) {
@@ -141,6 +149,11 @@ func IsVM(name string) bool {
 // BareMetal returns if this driver is unisolated
 func BareMetal(name string) bool {
 	return name == None || name == Mock
+}
+
+// IsSSH checks if the driver is ssh
+func IsSSH(name string) bool {
+	return name == SSH
 }
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
