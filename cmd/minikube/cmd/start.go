@@ -306,7 +306,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		os.Exit(0)
 	}
 
-	if driver.IsVM(driverName) {
+	if driver.IsVM(driverName) && !driver.IsSSH(driverName) {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
 			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
@@ -851,7 +851,7 @@ func validateUser(drvName string) {
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor, the return value is in MiB
 func memoryLimits(drvName string) (int, int, error) {
-	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
+	info, cpuErr, memErr, diskErr := machine.LocalHostInfo()
 	if cpuErr != nil {
 		klog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
