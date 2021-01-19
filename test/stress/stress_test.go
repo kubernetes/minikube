@@ -24,12 +24,14 @@ import (
 	"os/exec"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/go-getter"
 	"k8s.io/minikube/pkg/util"
 )
 
 const newPath = "../../out/minikube"
+const cmdTimeout = int64(90 * 1000)
 
 // TestStress runs the stress test
 func TestStress(t *testing.T) {
@@ -47,7 +49,7 @@ func TestStress(t *testing.T) {
 
 	oldPath := fmt.Sprintf("../../out/minikube-%s", *upgradeFrom)
 	url := util.GetBinaryDownloadURL(*upgradeFrom, runtime.GOOS)
-	t.Log(url)
+	t.Logf("Downloading minikube %s from %s", *upgradeFrom, url)
 	err = getter.GetFile(oldPath, url)
 	if err != nil {
 		t.Fatalf("failed download minikube %s: %v", *upgradeFrom, err)
@@ -69,53 +71,48 @@ func runStress(t *testing.T, oldPath string, profile string, i int) {
 	exec.Command(newPath, "delete", "-p", profile).Run()
 
 	t.Logf("Hot upgrade from %s to HEAD", *upgradeFrom)
-	oldStart := exec.Command(oldPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
-	t.Logf(oldStart.String())
-	err := oldStart.Run()
-	if err != nil {
-		t.Logf("old start failed, which is OK: %v", err)
-	}
+	runCommand(t, true, oldPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 
-	newStart := exec.Command(newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
-	err = newStart.Run()
-	if err != nil {
-		t.Errorf("***hot upgrade loop %d FAILED with %s: %v", i, *startArgs, err)
-	}
+	runCommand(t, true, newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 
-	delete := exec.Command(newPath, "delete", "-p", profile)
-	delete.Run()
+	runCommand(t, false, newPath, "delete", "-p", profile)
 
 	t.Logf("Cold upgrade from %s to HEAD", *upgradeFrom)
-	oldStart2 := exec.Command(oldPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
-	err = oldStart2.Run()
-	if err != nil {
-		t.Logf("old start failed, which is OK: %v", err)
-	}
+	runCommand(t, false, oldPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 
-	oldStop := exec.Command(oldPath, "stop", "-p", profile)
-	oldStop.Run()
+	runCommand(t, false, oldPath, "stop", "-p", profile)
 
-	err = exec.Command(newPath, "start", "-p", profile, *startArgs, "--alsologtostderr").Run()
-	if err != nil {
-		t.Errorf("***cold upgrade loop %d FAILED with %s: %v", i, *startArgs, err)
-	}
+	runCommand(t, true, newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 
 	t.Logf("Restart HEAD test")
-	err = exec.Command(newPath, "start", "-p", profile, *startArgs, "--alsologtostderr").Run()
-	if err != nil {
-		t.Errorf("***hot restart loop %d FAILED with %s: %v", i, *startArgs, err)
-	}
+	runCommand(t, true, newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 
 	t.Logf("Cold HEAD restart")
-	newStop := exec.Command(newPath, "stop", "-p", profile)
-	newStop.Run()
+	runCommand(t, false, newPath, "stop", "-p", profile)
 
-	err = exec.Command(newPath, "start", "-p", profile, *startArgs, "--alsologtostderr").Run()
-	if err != nil {
-		t.Errorf("***cold restart loop %d FAILED with %s: %v", i, *startArgs, err)
-	}
+	runCommand(t, true, newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 
-	exec.Command(newPath, "delete", "-p", profile).Run()
+	runCommand(t, false, newPath, "delete", "-p", profile)
 
 	t.Logf("Loop %d of %d done.", i, *loops)
+}
+
+func runCommand(t *testing.T, errorOut bool, mkPath string, args ...string) {
+	c := exec.Command(mkPath, args...)
+	t.Logf("Running: %s, %v", mkPath, args)
+	start := time.Now()
+	out, err := c.CombinedOutput()
+	if err != nil {
+		if errorOut {
+			t.Errorf("Error running %s %v: %v", mkPath, args, err)
+			t.Logf("Command output: %q", out)
+		} else {
+			t.Logf("Error running %s %v: %v", mkPath, args, err)
+		}
+		return
+	}
+	elapsed := time.Since(start)
+	if elapsed.Milliseconds() > cmdTimeout && errorOut {
+		t.Errorf("Command took too long: %s %v took %f seconds", mkPath, args, elapsed.Seconds())
+	}
 }
