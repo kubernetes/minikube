@@ -1,4 +1,3 @@
-# Copyright 2016 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -599,6 +598,15 @@ kic-base-image: ## builds the kic base image and tags local/kicbase:latest and l
 	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) ./deploy/kicbase
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
+
+.PHONY: cr-kic-base-image
+cr-kic-base-image: ## builds the kic base image and tags local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
+	# first build the base image for each runtime
+	docker build -f ./deploy/kicbase/Dockerfile_base -t base:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) ./deploy/kicbase
+	# now build each runtime
+	for containerRuntime in docker containerd crio; do \
+		docker build -f ./deploy/kicbase/Dockerfile-runtimes -t local/kicbase-$${containerRuntime}:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg BASE_IMAGE=base:$(KIC_VERSION) --target $${containerRuntime} ./deploy/kicbase; \
+	done
 
 # multi-arch docker images
 X_DOCKER_BUILDER ?= minikube-builder

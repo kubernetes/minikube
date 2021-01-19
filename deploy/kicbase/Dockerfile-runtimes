@@ -1,0 +1,106 @@
+# Copyright 2018 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# kind node base image
+#
+# For systemd + docker configuration used below, see the following references:
+# https://systemd.io/CONTAINER_INTERFACE/
+
+# start from ubuntu 20.04, this image is reasonably small as a starting point
+# for a kubernetes node image, it doesn't contain much we don't need
+ARG BASE_IMAGE
+ARG BUILDKIT_VERSION="v0.8.1"
+
+
+FROM $BASE_IMAGE as docker 
+USER root
+# install docker
+RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list" && \
+    curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
+    apt-key add - < docker.key && \
+    clean-install docker-ce docker-ce-cli containerd.io
+
+
+# # making SSH work for docker container 
+# # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
+# RUN mkdir /var/run/sshd
+# RUN echo 'root:root' |chpasswd
+# RUN sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+# RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+
+# # minikube relies on /etc/hosts for control-plane discovery. This prevents nefarious DNS servers from breaking it.
+# RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
+
+# EXPOSE 22
+# # create docker user for minikube ssh. to match VM using "docker" as username
+# RUN groupadd docker
+# RUN groupadd podman
+# RUN adduser --ingroup docker --disabled-password --gecos '' docker 
+# RUN adduser docker sudo
+# RUN adduser docker podman
+# RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+# USER docker
+# RUN mkdir /home/docker/.ssh
+# USER root
+# # kind base-image entry-point expects a "kind" folder for product_name,product_uuid
+# # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
+# RUN mkdir -p /kind
+# # Deleting leftovers
+# RUN rm -rf \
+#   /usr/share/doc/* \
+#   /usr/share/man/* \
+#   /usr/share/local/* \
+# RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+
+# enable docker which is default
+RUN systemctl enable docker.service
+
+FROM $BASE_IMAGE as containerd
+# install containerd, but not docker
+RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list" && \
+    curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
+    apt-key add - < docker.key && \
+    clean-install containerd.io
+
+RUN systemctl enable containerd
+
+FROM $BASE_IMAGE as crio
+# Install cri-o/podman dependencies:
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
+    apt-key add - < Release.key && \
+    clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins
+
+# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.19/README.md#installing-cri-o
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.19/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.18.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.19/xUbuntu_20.04/Release.key && \
+    apt-key add - < Release.key && \
+    clean-install cri-o cri-o-runc
+
+# install podman
+RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
+    apt-key add - < Release.key && \
+    clean-install podman && \
+    addgroup --system podman && \
+    mkdir -p /etc/systemd/system/podman.socket.d && \
+    printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
+           > /etc/systemd/system/podman.socket.d/override.conf && \
+    mkdir -p /etc/tmpfiles.d && \
+    echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
+    systemd-tmpfiles --create
+
+RUN systemctl enable podman.socket
+RUN adduser docker podman
+
