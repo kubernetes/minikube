@@ -667,7 +667,7 @@ jobs:
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
 
-      - name: Install gopoghs
+      - name: Install gopogh
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-arm64
@@ -756,7 +756,7 @@ jobs:
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
 
-      - name: Install gopoghs
+      - name: Install gopogh
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-arm64
