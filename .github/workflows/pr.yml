@@ -755,7 +755,6 @@ jobs:
           if [ "$numPass" -lt 0 ];then echo "*** Failed to pass at least 20! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
 
-
   full_docker_ubuntu_arm64:
     needs: [ build_minikube ]
     runs-on: [ self-hosted, arm64 ]
