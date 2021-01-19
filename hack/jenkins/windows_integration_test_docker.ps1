@@ -65,7 +65,7 @@ gsutil -qm cp testout.json gs://$gcs_bucket/Docker_Windows.json
 gsutil -qm cp testout.html gs://$gcs_bucket/Docker_Windows.html
 
 # Update the PR with the new info
-$json = "{`"state`": `"$env:status`", `"description`": `"Jenkins`", `"target_url`": `"$env:target_url`", `"context`": `"Docker_Windows`"}"
+$json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"Docker_Windows`"}"
 Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
 # Just shutdown Docker, it's safer than anything else
