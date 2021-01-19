@@ -653,7 +653,7 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_docker_ubuntu_arm64:
     needs: [ build_minikube ]
-    runs-on: [ self-hosted, ARM64 ]
+    runs-on: [ self-hosted, arm64 ]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_docker_ubuntu_arm64"
