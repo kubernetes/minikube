@@ -56,7 +56,10 @@ func TestStress(t *testing.T) {
 	}
 
 	if runtime.GOOS != "windows" {
-		os.Chmod(oldPath, 0755)
+		err := os.Chmod(oldPath, 0755)
+		if err != nil {
+			t.Fatalf("Failed to chmod old binary: %v", err)
+		}
 	}
 
 	for i := 1; i <= *loops; i++ {
@@ -68,7 +71,7 @@ func TestStress(t *testing.T) {
 // This run the guts of the actual test
 func runStress(t *testing.T, oldPath string, profile string, i int) {
 	// Cleanup old runs
-	exec.Command(newPath, "delete", "-p", profile).Run()
+	runCommand(t, false, newPath, "delete", "-p", profile)
 
 	t.Logf("Hot upgrade from %s to HEAD", *upgradeFrom)
 	runCommand(t, true, oldPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
