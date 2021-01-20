@@ -88,6 +88,10 @@ minikube start [flags]
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
+      --ssh-ip-address string             IP address (ssh driver only)
+      --ssh-key string                    SSH key (ssh driver only)
+      --ssh-port int                      SSH port (ssh driver only) (default 22)
+      --ssh-user string                   SSH user (ssh driver only) (default "root")
       --trace string                      Send trace events. Options include: [gcp]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers

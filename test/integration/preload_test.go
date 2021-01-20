@@ -31,6 +31,10 @@ func TestPreload(t *testing.T) {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())
 	}
 
+	if arm64Platform() {
+		t.Skipf("skipping %s - not yet supported on arm64. See https://github.com/kubernetes/minikube/issues/10144", t.Name())
+	}
+
 	profile := UniqueProfileName("test-preload")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)

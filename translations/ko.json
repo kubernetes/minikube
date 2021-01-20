@@ -24,7 +24,6 @@
 	"A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine": "",
 	"A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine": "",
 	"A set of key=value pairs that describe feature gates for alpha/experimental features.": "",
-	"Access the Kubernetes dashboard running within the minikube cluster": "minikube 클러스터 내의 쿠버네티스 대시보드에 접근합니다",
 	"Access the kubernetes dashboard running within the minikube cluster": "minikube 클러스터 내의 쿠버네티스 대시보드에 접근합니다",
 	"Access to ports below 1024 may fail on Windows with OpenSSH clients older than v8.1. For more information, see: https://minikube.sigs.k8s.io/docs/handbook/accessing/#access-to-ports-1024-on-windows-requires-root-permission": "",
 	"Add SSH identity key to SSH authentication agent": "",
