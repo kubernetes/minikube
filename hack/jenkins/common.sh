@@ -300,8 +300,14 @@ if test -f "${TEST_OUT}"; then
   rm "${TEST_OUT}" || true # clean up previous runs of same build
 fi
 touch "${TEST_OUT}"
+
+if [ -z "${CONTAINER_RUNTIME}" ]
+then
+    EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
+fi
+
 ${SUDO_PREFIX}${E2E_BIN} \
-  -minikube-start-args="--driver=${VM_DRIVER} --container-runtime=${CONTAINER_RUNTIME} ${EXTRA_START_ARGS}" \
+  -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=${TIMEOUT} -test.v \
   ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
