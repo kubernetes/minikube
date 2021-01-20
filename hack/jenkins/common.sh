@@ -301,7 +301,7 @@ if test -f "${TEST_OUT}"; then
 fi
 touch "${TEST_OUT}"
 
-if [ -z "${CONTAINER_RUNTIME}" ]
+if [ ! -z "${CONTAINER_RUNTIME}" ]
 then
     EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
 fi
