@@ -848,6 +848,6 @@ else
 endif
 
 .PHONY: update-gopogh-version
-update-gopogh-version:
+update-gopogh-version: ## Update GitHub Action workflows to use the latest version of Gopogh
 	(cd hack/update/gopogh_version && \
 	 go run update_gopogh_version.go)
