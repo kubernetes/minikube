@@ -25,7 +25,7 @@ docker ps -aq | ForEach -Process {docker rm -fv $_}
 
 $started=Get-Date -UFormat %s
 
-out/e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --binary=out/minikube-windows-amd64.exe --test.v --test.timeout=180m | tee testout.txt
+out/e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --binary=out/minikube-windows-amd64.exe --test.v --test.timeout=180m | Tee-Object -FilePath testout.txt
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
 If($env:result -eq 0){
@@ -41,7 +41,7 @@ $elapsed=$ended-$started
 $elapsed=$elapsed/60
 $elapsed=[math]::Round($elapsed, 2)
 
-Get-Content testout.txt | go tool test2json -t > testout.json
+Get-Content testout.txt -Encoding ASCII | go tool test2json -t | Out-File -FilePath testout.json -Encoding ASCII
 
 $gopogh_status=gopogh --in testout.json --out testout.html --name "Docker_Windows" -pr $env:MINIKUBE_LOCATION --repo github.com/kubernetes/minikube/ --details $env:COMMIT
 
@@ -70,9 +70,5 @@ Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuse
 
 # Just shutdown Docker, it's safer than anything else
 Get-Process "*Docker Desktop*" | Stop-Process
-
-# Uncomment once tunnel is fixed on Windows: https://github.com/kubernetes/minikube/issues/8304
-#./out/minikube-windows-amd64.exe tunnel --cleanup
-#./out/minikube-windows-amd64.exe delete --all --purge
 
 Exit $env:result
