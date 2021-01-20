@@ -216,8 +216,9 @@ else
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
-.PHONY: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
+.PHONY: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe
 e2e-linux-amd64: out/e2e-linux-amd64 ## Execute end-to-end testing for Linux 64bit
+e2e-linux-arm64: out/e2e-linux-arm64 ## Execute end-to-end testing for Linux ARM 64bit
 e2e-darwin-amd64: out/e2e-darwin-amd64 ## Execute end-to-end testing for Darwin 64bit
 e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## Execute end-to-end testing for Windows 64bit
 
@@ -377,7 +378,7 @@ darwin: minikube-darwin-amd64 ## Build minikube for Darwin 64bit
 linux: minikube-linux-amd64 ## Build minikube for Linux 64bit
 
 .PHONY: e2e-cross
-e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe ## End-to-end cross test
+e2e-cross: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe ## End-to-end cross test
 
 .PHONY: checksum
 checksum: ## Generate checksums
@@ -846,3 +847,7 @@ else
 	 go run update_kubernetes_version.go)
 endif
 
+.PHONY: update-gopogh-version
+update-gopogh-version: ## update gopogh version
+	(cd hack/update/gopogh_version && \
+	 go run update_gopogh_version.go)
