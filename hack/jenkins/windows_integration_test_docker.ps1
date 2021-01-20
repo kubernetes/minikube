@@ -49,7 +49,7 @@ $failures=echo $gopogh_status | jq '.NumberOfFail'
 $tests=echo $gopogh_status | jq '.NumberOfTests'
 $bad_status="$failures / $tests failures"
 
-$description="$status in $elapsed minutes"
+$description="$status in $elapsed minute(s)."
 If($env:status -eq "failure") {
 	$description="completed with $bad_status in $elapsed minutes"
 }
@@ -57,7 +57,7 @@ echo $description
 
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT"
-$env:target_url="https://storage.googleapis.com/$gcs_bucket/Docker_Windows.txt"
+$env:target_url="https://storage.googleapis.com/$gcs_bucket/Docker_Windows.html"
 
 #Upload logs to gcs
 gsutil -qm cp testout.txt gs://$gcs_bucket/Docker_Windowsout.txt
