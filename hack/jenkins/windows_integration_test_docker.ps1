@@ -51,7 +51,7 @@ $bad_status="$failures / $tests failures"
 
 $description="$status in $elapsed minute(s)."
 If($env:status -eq "failure") {
-	$description="completed with $bad_status in $elapsed minutes"
+	$description="completed with $bad_status in $elapsed minute(s)."
 }
 echo $description
 
