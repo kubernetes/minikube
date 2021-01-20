@@ -848,4 +848,4 @@ endif
 
 .PHONY: stress
 stress:
-	go test -test.v -test.timeout=2h ./test/stress -loops=10
+	go test -test.v -test.timeout=2h ./test/stress -loops=10 | tee "./out/testout_$(COMMIT_SHORT).txt"
