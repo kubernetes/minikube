@@ -19,9 +19,9 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_des
 
 ./out/setup_docker_desktop_windows.ps1
 
-docker ps -aq | ForEach -Process {docker rm -fv $_}
-
 ./out/minikube-windows-amd64.exe delete --all
+
+docker ps -aq | ForEach -Process {docker rm -fv $_}
 
 $started=Get-Date -UFormat %s
 
