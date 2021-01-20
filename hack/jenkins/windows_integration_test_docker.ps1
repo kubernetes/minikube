@@ -39,7 +39,7 @@ If($env:result -eq 0){
 $ended=Get-Date -UFormat %s
 $elapsed=$ended-$started
 $elapsed=$elapsed/60
-$elapsed=[math]::Round($elapsed)
+$elapsed=[math]::Round($elapsed, 2)
 
 Get-Content testout.txt | go tool test2json -t > testout.json
 
