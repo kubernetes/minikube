@@ -95,7 +95,7 @@ const (
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
 	minUsableMem            = 1800 // Kubernetes (kubeadm) will not start with less
-	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
+	minRecommendedMem       = 1900 // Warn at no lower than existing configurations
 	minimumCPUS             = 2
 	minimumDiskSize         = 2000
 	autoUpdate              = "auto-update-drivers"
@@ -110,6 +110,12 @@ const (
 	network                 = "network"
 	startNamespace          = "namespace"
 	trace                   = "trace"
+	sshIPAddress            = "ssh-ip-address"
+	sshSSHUser              = "ssh-user"
+	sshSSHKey               = "ssh-key"
+	sshSSHPort              = "ssh-port"
+	defaultSSHUser          = "root"
+	defaultSSHPort          = 22
 )
 
 var (
@@ -221,6 +227,12 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringArrayVar(&config.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&config.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+
+	// ssh
+	startCmd.Flags().String(sshIPAddress, "", "IP address (ssh driver only)")
+	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
+	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
+	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
@@ -335,6 +347,10 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			NatNicType:              viper.GetString(natNicType),
 			StartHostTimeout:        viper.GetDuration(waitTimeout),
 			ExposedPorts:            viper.GetStringSlice(ports),
+			SSHIPAddress:            viper.GetString(sshIPAddress),
+			SSHUser:                 viper.GetString(sshSSHUser),
+			SSHKey:                  viper.GetString(sshSSHKey),
+			SSHPort:                 viper.GetInt(sshSSHPort),
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),

@@ -84,10 +84,6 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
-		return registry.State{Error: fmt.Errorf("docker driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
-	}
-
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
