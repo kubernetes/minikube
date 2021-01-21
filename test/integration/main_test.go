@@ -114,6 +114,11 @@ func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
+// VirtualboxDriver returns whether or not this test is using the VirtualBox driver
+func VirtualboxDriver() bool {
+	return strings.Contains(*startArgs, "--driver=virtualbox") || strings.Contains(*startArgs, "--vm-driver=virtualbox")
+}
+
 // DockerDriver returns whether or not this test is using the docker or podman driver
 func DockerDriver() bool {
 	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker")

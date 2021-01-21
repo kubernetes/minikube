@@ -59,9 +59,7 @@ func TestStartStop(t *testing.T) {
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			}},
-			{"default_k8s_version", constants.DefaultKubernetesVersion, []string{
-				"--apiserver-port=8444",
-			}},
+			{"default_k8s_version", constants.DefaultKubernetesVersion, []string{}},
 			{"disable_driver_mounts", "v1.15.7", []string{
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
@@ -81,6 +79,9 @@ func TestStartStop(t *testing.T) {
 				type validateStartStopFunc func(context.Context, *testing.T, string, string, string, []string)
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
+				}
+				if strings.Contains(tc.name, "disable_driver_mounts") && !VirtualboxDriver() {
+					t.Skipf("skipping %s - only runs on virtualbox", t.Name())
 				}
 
 				waitFlag := "--wait=true"
