@@ -44,33 +44,33 @@ func TestStartStop(t *testing.T) {
 			version string
 			args    []string
 		}{
-			// {"old-k8s-version", constants.OldestKubernetesVersion, []string{
-			// 	// default is the network created by libvirt, if we change the name minikube won't boot
-			// 	// because the given network doesn't exist
-			// 	"--kvm-network=default",
-			// 	"--kvm-qemu-uri=qemu:///system",
-			// 	"--disable-driver-mounts",
-			// 	"--keep-context=false",
-			// 	"--container-runtime=docker",
-			// }},
-			// {"newest-cni", constants.NewestKubernetesVersion, []string{
-			// 	"--feature-gates",
-			// 	"ServerSideApply=true",
-			// 	"--network-plugin=cni",
-			// 	"--extra-config=kubelet.network-plugin=cni",
-			// 	"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
-			// }},
-			// {"containerd", constants.DefaultKubernetesVersion, []string{
-			// 	"--container-runtime=containerd",
-			// 	"--docker-opt",
-			// 	"containerd=/var/run/containerd/containerd.sock",
-			// 	"--apiserver-port=8444",
-			// }},
-			// {"crio", "v1.15.7", []string{
-			// 	"--container-runtime=crio",
-			// 	"--disable-driver-mounts",
-			// 	"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
-			// }},
+			{"old-k8s-version", constants.OldestKubernetesVersion, []string{
+				// default is the network created by libvirt, if we change the name minikube won't boot
+				// because the given network doesn't exist
+				"--kvm-network=default",
+				"--kvm-qemu-uri=qemu:///system",
+				"--disable-driver-mounts",
+				"--keep-context=false",
+				"--container-runtime=docker",
+			}},
+			{"newest-cni", constants.NewestKubernetesVersion, []string{
+				"--feature-gates",
+				"ServerSideApply=true",
+				"--network-plugin=cni",
+				"--extra-config=kubelet.network-plugin=cni",
+				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
+			}},
+			{"containerd", constants.DefaultKubernetesVersion, []string{
+				"--container-runtime=containerd",
+				"--docker-opt",
+				"containerd=/var/run/containerd/containerd.sock",
+				"--apiserver-port=8444",
+			}},
+			{"crio", "v1.15.7", []string{
+				"--container-runtime=crio",
+				"--disable-driver-mounts",
+				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
+			}},
 			{"embed-certs", constants.DefaultKubernetesVersion, []string{
 				"--embed-certs",
 			}},
@@ -103,14 +103,14 @@ func TestStartStop(t *testing.T) {
 						validator validateStartStopFunc
 					}{
 						{"FirstStart", validateFirstStart},
-						// {"DeployApp", validateDeploying},
-						// {"Stop", validateStop},
-						// {"EnableAddonAfterStop", validateEnableAddonAfterStop},
-						// {"SecondStart", validateSecondStart},
-						// {"UserAppExistsAfterStop", validateAppExistsAfterStop},
-						// {"AddonExistsAfterStop", validateAddonAfterStop},
+						{"DeployApp", validateDeploying},
+						{"Stop", validateStop},
+						{"EnableAddonAfterStop", validateEnableAddonAfterStop},
+						{"SecondStart", validateSecondStart},
+						{"UserAppExistsAfterStop", validateAppExistsAfterStop},
+						{"AddonExistsAfterStop", validateAddonAfterStop},
 						{"VerifyKubernetesImages", validateKubernetesImages},
-						// {"Pause", validatePauseAfterStart},
+						{"Pause", validatePauseAfterStart},
 					}
 					for _, stc := range serialTests {
 						if ctx.Err() == context.DeadlineExceeded {
@@ -227,7 +227,6 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 }
 
 func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
-	defer PostMortemLogs(t, profile)
 	if !NoneDriver() {
 		testPulledImages(ctx, t, profile, tcVersion)
 	}
@@ -286,9 +285,16 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	jv := map[string][]struct {
 		Tags []string `json:"repoTags"`
 	}{}
-	err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
+
+	// crictl includes warnings in STDOUT before printing JSON output
+	// this step trims the warnings before JSON output begins
+	stdout := rr.Stdout.String()
+	index := strings.Index(stdout, "{")
+	stdout = stdout[index:]
+
+	err = json.Unmarshal([]byte(stdout), &jv)
 	if err != nil {
-		t.Errorf("failed to decode images json %v. output: %s", err, rr.Output())
+		t.Errorf("failed to decode images json %v. output:\n%s", err, stdout)
 	}
 	found := map[string]bool{}
 	for _, img := range jv["images"] {

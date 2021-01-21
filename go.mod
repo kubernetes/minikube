@@ -90,7 +90,7 @@ require (
 	golang.org/x/text v0.3.3
 	google.golang.org/api v0.29.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/v3 v3.0.2 // indirect
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
