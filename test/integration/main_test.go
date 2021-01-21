@@ -130,8 +130,7 @@ func ContainerRuntime() string {
 	if !strings.Contains(*startArgs, flag) {
 		return ""
 	}
-	split := strings.Split(*startArgs, ",")
-	for _, s := range split {
+	for _, s := range StartArgs() {
 		if strings.HasPrefix(s, flag) {
 			return strings.TrimPrefix(s, flag)
 		}
