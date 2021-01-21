@@ -124,6 +124,21 @@ func PodmanDriver() bool {
 	return strings.Contains(*startArgs, "--vm-driver=podman") || strings.Contains(*startArgs, "driver=podman")
 }
 
+// ContainerRuntime returns the name of a specific container runtime if it was specified
+func ContainerRuntime() string {
+	flag := "--container-runtime="
+	if !strings.Contains(*startArgs, flag) {
+		return ""
+	}
+	split := strings.Split(*startArgs, ",")
+	for _, s := range split {
+		if strings.HasPrefix(s, flag) {
+			return strings.TrimPrefix(s, flag)
+		}
+	}
+	return ""
+}
+
 // KicDriver returns whether or not this test is using the docker or podman driver
 func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()

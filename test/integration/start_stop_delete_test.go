@@ -38,12 +38,12 @@ import (
 func TestStartStop(t *testing.T) {
 	MaybeParallel(t)
 
-	t.Run("group", func(t *testing.T) {
-		tests := []struct {
-			name    string
-			version string
-			args    []string
-		}{
+	tests := map[string][]struct {
+		name    string
+		version string
+		args    []string
+	}{
+		"docker": {
 			{"old-k8s-version", constants.OldestKubernetesVersion, []string{
 				// default is the network created by libvirt, if we change the name minikube won't boot
 				// because the given network doesn't exist
@@ -60,93 +60,104 @@ func TestStartStop(t *testing.T) {
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			}},
+			{"embed-certs", constants.DefaultKubernetesVersion, []string{
+				"--embed-certs",
+			}},
+		},
+		"containerd": {
 			{"containerd", constants.DefaultKubernetesVersion, []string{
 				"--container-runtime=containerd",
 				"--docker-opt",
 				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
 			}},
+		},
+		"crio": {
 			{"crio", "v1.15.7", []string{
 				"--container-runtime=crio",
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
-			{"embed-certs", constants.DefaultKubernetesVersion, []string{
-				"--embed-certs",
-			}},
-		}
+		},
+	}
 
-		for _, tc := range tests {
-			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
-				MaybeParallel(t)
-				profile := UniqueProfileName(tc.name)
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer Cleanup(t, profile, cancel)
-				type validateStartStopFunc func(context.Context, *testing.T, string, string, string, []string)
-				if !strings.Contains(tc.name, "docker") && NoneDriver() {
-					t.Skipf("skipping %s - incompatible with none driver", t.Name())
-				}
-
-				waitFlag := "--wait=true"
-				if strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
-					waitFlag = "--wait=apiserver,system_pods,default_sa"
-				}
-
-				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", waitFlag}, tc.args...)
-				startArgs = append(startArgs, StartArgs()...)
-				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
-
-				t.Run("serial", func(t *testing.T) {
-					serialTests := []struct {
-						name      string
-						validator validateStartStopFunc
-					}{
-						{"FirstStart", validateFirstStart},
-						{"DeployApp", validateDeploying},
-						{"Stop", validateStop},
-						{"EnableAddonAfterStop", validateEnableAddonAfterStop},
-						{"SecondStart", validateSecondStart},
-						{"UserAppExistsAfterStop", validateAppExistsAfterStop},
-						{"AddonExistsAfterStop", validateAddonAfterStop},
-						{"VerifyKubernetesImages", validateKubernetesImages},
-						{"Pause", validatePauseAfterStart},
-					}
-					for _, stc := range serialTests {
-						if ctx.Err() == context.DeadlineExceeded {
-							t.Fatalf("Unable to run more tests (deadline exceeded)")
-						}
-
-						tcName := tc.name
-						tcVersion := tc.version
-						stc := stc
-
-						t.Run(stc.name, func(t *testing.T) {
-							stc.validator(ctx, t, profile, tcName, tcVersion, startArgs)
-						})
+	for cr, tcs := range tests {
+		t.Run(cr, func(t *testing.T) {
+			if runtime := ContainerRuntime(); runtime != "" && runtime != cr {
+				t.Skipf("skipping test for container runtime %s, only testing runtime %s", cr, runtime)
+			}
+			for _, tc := range tcs {
+				tc := tc
+				t.Run(tc.name, func(t *testing.T) {
+					profile := UniqueProfileName(tc.name)
+					ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+					defer Cleanup(t, profile, cancel)
+					type validateStartStopFunc func(context.Context, *testing.T, string, string, string, []string)
+					if !strings.Contains(tc.name, "docker") && NoneDriver() {
+						t.Skipf("skipping %s - incompatible with none driver", t.Name())
 					}
 
-					if *cleanup {
-						// Normally handled by cleanuprofile, but not fatal there
-						rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
-						if err != nil {
-							t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
+					waitFlag := "--wait=true"
+					if strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
+						waitFlag = "--wait=apiserver,system_pods,default_sa"
+					}
+
+					startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", waitFlag}, tc.args...)
+					startArgs = append(startArgs, StartArgs()...)
+					startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
+
+					t.Run("serial", func(t *testing.T) {
+						serialTests := []struct {
+							name      string
+							validator validateStartStopFunc
+						}{
+							{"FirstStart", validateFirstStart},
+							{"DeployApp", validateDeploying},
+							{"Stop", validateStop},
+							{"EnableAddonAfterStop", validateEnableAddonAfterStop},
+							{"SecondStart", validateSecondStart},
+							{"UserAppExistsAfterStop", validateAppExistsAfterStop},
+							{"AddonExistsAfterStop", validateAddonAfterStop},
+							{"VerifyKubernetesImages", validateKubernetesImages},
+							{"Pause", validatePauseAfterStart},
+						}
+						for _, stc := range serialTests {
+							if ctx.Err() == context.DeadlineExceeded {
+								t.Fatalf("Unable to run more tests (deadline exceeded)")
+							}
+
+							tcName := tc.name
+							tcVersion := tc.version
+							stc := stc
+
+							t.Run(stc.name, func(t *testing.T) {
+								stc.validator(ctx, t, profile, tcName, tcVersion, startArgs)
+							})
 						}
 
-						rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
-						if err != nil {
-							t.Logf("config context error: %v (may be ok)", err)
+						if *cleanup {
+							// Normally handled by cleanuprofile, but not fatal there
+							rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+							if err != nil {
+								t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
+							}
+
+							rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
+							if err != nil {
+								t.Logf("config context error: %v (may be ok)", err)
+							}
+							if rr.ExitCode != 1 {
+								t.Errorf("expected exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
+							}
 						}
-						if rr.ExitCode != 1 {
-							t.Errorf("expected exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
-						}
-					}
+
+					})
 
 				})
 
-			})
-		}
-	})
+			}
+		})
+	}
 }
 
 func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
