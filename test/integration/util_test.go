@@ -20,7 +20,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // ReadLineWithTimeout reads a line of text from a buffer with a timeout
@@ -58,4 +61,21 @@ func UniqueProfileName(prefix string) string {
 	}
 	// example: prefix-20200413162239-3215
 	return fmt.Sprintf("%s-%s-%d", prefix, time.Now().Format("20060102150405"), os.Getpid())
+}
+
+// auditContains checks if the provided string is contained within the logs.
+func auditContains(substr string) (bool, error) {
+	f, err := os.Open(localpath.AuditLog())
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if strings.Contains(s.Text(), substr) {
+			return true, nil
+		}
+	}
+	return false, nil
 }

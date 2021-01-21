@@ -19,6 +19,7 @@ package constants
 import (
 	"errors"
 	"path/filepath"
+	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -96,6 +97,9 @@ const (
 
 	// ExistingContainerHostEnv is used to save original podman environment
 	ExistingContainerHostEnv = MinikubeExistingPrefix + "CONTAINER_HOST"
+
+	// TimeFormat is the format that should be used when outputting time
+	TimeFormat = time.RFC1123
 )
 
 var (
