@@ -288,6 +288,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 
 	// crictl includes warnings in STDOUT before printing JSON output
 	// this step trims the warnings before JSON output begins
+	// WARN[0000] image connect using default endpoints: [unix:///var/run/dockershim.sock unix:///run/containerd/containerd.sock unix:///run/crio/crio.sock]. As the default settings are now deprecated, you should set the endpoint instead.
 	stdout := rr.Stdout.String()
 	index := strings.Index(stdout, "{")
 	stdout = stdout[index:]
