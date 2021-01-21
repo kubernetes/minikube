@@ -40,134 +40,129 @@ import (
 )
 
 func TestDownloadOnly(t *testing.T) {
-	for _, r := range []string{"crio", "docker", "containerd"} {
-		t.Run(r, func(t *testing.T) {
-			if requestedRuntime := ContainerRuntime(); requestedRuntime != "" && requestedRuntime != r {
-				t.Skipf("skipping test for container runtime %s, only testing runtime %s", r, requestedRuntime)
+	// Stores the startup run result for later error messages
+	var rrr *RunResult
+
+	profile := UniqueProfileName("download-only")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+	defer Cleanup(t, profile, cancel)
+	containerRuntime := ContainerRuntime()
+
+	versions := []string{
+		constants.OldestKubernetesVersion,
+		constants.DefaultKubernetesVersion,
+		constants.NewestKubernetesVersion,
+	}
+
+	for _, v := range versions {
+		t.Run(v, func(t *testing.T) {
+			defer PostMortemLogs(t, profile)
+
+			// --force to avoid uid check
+			args := append([]string{"start", "-o=json", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}, StartArgs()...)
+
+			rt, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+			if rrr == nil {
+				// Preserve the initial run-result for debugging
+				rrr = rt
 			}
-			// Stores the startup run result for later error messages
-			var rrr *RunResult
-
-			profile := UniqueProfileName(r)
-			ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
-			defer Cleanup(t, profile, cancel)
-
-			versions := []string{
-				constants.OldestKubernetesVersion,
-				constants.DefaultKubernetesVersion,
-				constants.NewestKubernetesVersion,
+			if err != nil {
+				t.Errorf("failed to download only. args: %q %v", args, err)
 			}
-
-			for _, v := range versions {
-				t.Run(v, func(t *testing.T) {
-					defer PostMortemLogs(t, profile)
-
-					// --force to avoid uid check
-					args := append([]string{"start", "-o=json", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v), fmt.Sprintf("--container-runtime=%s", r)}, StartArgs()...)
-
-					rt, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-					if rrr == nil {
-						// Preserve the initial run-result for debugging
-						rrr = rt
-					}
+			t.Run("check json events", func(t *testing.T) {
+				s := bufio.NewScanner(bytes.NewReader(rt.Stdout.Bytes()))
+				for s.Scan() {
+					var rtObj map[string]interface{}
+					err = json.Unmarshal(s.Bytes(), &rtObj)
 					if err != nil {
-						t.Errorf("failed to download only. args: %q %v", args, err)
-					}
-					t.Run("check json events", func(t *testing.T) {
-						s := bufio.NewScanner(bytes.NewReader(rt.Stdout.Bytes()))
-						for s.Scan() {
-							var rtObj map[string]interface{}
-							err = json.Unmarshal(s.Bytes(), &rtObj)
-							if err != nil {
-								t.Errorf("failed to parse output: %v", err)
-							} else if step, ok := rtObj["data"]; ok {
-								if stepMap, ok := step.(map[string]interface{}); ok {
-									if stepMap["currentstep"] == "" {
-										t.Errorf("Empty step number for %v", stepMap["name"])
-									}
-								}
-							}
-						}
-					})
-
-					// skip for none, as none driver does not have preload feature.
-					if !NoneDriver() {
-						if download.PreloadExists(v, r, true) {
-							// Just make sure the tarball path exists
-							if _, err := os.Stat(download.TarballPath(v, r)); err != nil {
-								t.Errorf("failed to verify preloaded tarball file exists: %v", err)
-							}
-							return
-						}
-					}
-					imgs, err := images.Kubeadm("", v)
-					if err != nil {
-						t.Errorf("failed to get kubeadm images for %v: %+v", v, err)
-					}
-
-					// skip verify for cache images if --driver=none
-					if !NoneDriver() {
-						for _, img := range imgs {
-							img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
-							fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
-							_, err := os.Stat(fp)
-							if err != nil {
-								t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+						t.Errorf("failed to parse output: %v", err)
+					} else if step, ok := rtObj["data"]; ok {
+						if stepMap, ok := step.(map[string]interface{}); ok {
+							if stepMap["currentstep"] == "" {
+								t.Errorf("Empty step number for %v", stepMap["name"])
 							}
 						}
 					}
-
-					// checking binaries downloaded (kubelet,kubeadm)
-					for _, bin := range constants.KubernetesReleaseBinaries {
-						fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)
-						_, err := os.Stat(fp)
-						if err != nil {
-							t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
-						}
-					}
-
-					// If we are on darwin/windows, check to make sure OS specific kubectl has been downloaded
-					// as well for the `minikube kubectl` command
-					if runtime.GOOS == "linux" {
-						return
-					}
-					binary := "kubectl"
-					if runtime.GOOS == "windows" {
-						binary = "kubectl.exe"
-					}
-					fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, v, binary)
-					if _, err := os.Stat(fp); err != nil {
-						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
-					}
-				})
-			}
-
-			// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
-			t.Run("DeleteAll", func(t *testing.T) {
-				defer PostMortemLogs(t, profile)
-
-				if !CanCleanup() {
-					t.Skip("skipping, as cleanup is disabled")
-				}
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
-				if err != nil {
-					t.Errorf("failed to delete all. args: %q : %v", rr.Command(), err)
 				}
 			})
-			// Delete should always succeed, even if previously partially or fully deleted.
-			t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
-				defer PostMortemLogs(t, profile)
 
-				if !CanCleanup() {
-					t.Skip("skipping, as cleanup is disabled")
+			// skip for none, as none driver does not have preload feature.
+			if !NoneDriver() {
+				if download.PreloadExists(v, containerRuntime, true) {
+					// Just make sure the tarball path exists
+					if _, err := os.Stat(download.TarballPath(v, containerRuntime)); err != nil {
+						t.Errorf("failed to verify preloaded tarball file exists: %v", err)
+					}
+					return
 				}
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+			}
+			imgs, err := images.Kubeadm("", v)
+			if err != nil {
+				t.Errorf("failed to get kubeadm images for %v: %+v", v, err)
+			}
+
+			// skip verify for cache images if --driver=none
+			if !NoneDriver() {
+				for _, img := range imgs {
+					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+					fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
+					_, err := os.Stat(fp)
+					if err != nil {
+						t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+					}
+				}
+			}
+
+			// checking binaries downloaded (kubelet,kubeadm)
+			for _, bin := range constants.KubernetesReleaseBinaries {
+				fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)
+				_, err := os.Stat(fp)
 				if err != nil {
-					t.Errorf("failed to delete. args: %q: %v", rr.Command(), err)
+					t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
 				}
-			})
+			}
+
+			// If we are on darwin/windows, check to make sure OS specific kubectl has been downloaded
+			// as well for the `minikube kubectl` command
+			if runtime.GOOS == "linux" {
+				return
+			}
+			binary := "kubectl"
+			if runtime.GOOS == "windows" {
+				binary = "kubectl.exe"
+			}
+			fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, v, binary)
+			if _, err := os.Stat(fp); err != nil {
+				t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
+			}
 		})
 	}
+
+	// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
+	t.Run("DeleteAll", func(t *testing.T) {
+		defer PostMortemLogs(t, profile)
+
+		if !CanCleanup() {
+			t.Skip("skipping, as cleanup is disabled")
+		}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
+		if err != nil {
+			t.Errorf("failed to delete all. args: %q : %v", rr.Command(), err)
+		}
+	})
+	// Delete should always succeed, even if previously partially or fully deleted.
+	t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
+		defer PostMortemLogs(t, profile)
+
+		if !CanCleanup() {
+			t.Skip("skipping, as cleanup is disabled")
+		}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to delete. args: %q: %v", rr.Command(), err)
+		}
+	})
+
 }
 
 func TestDownloadOnlyKic(t *testing.T) {
