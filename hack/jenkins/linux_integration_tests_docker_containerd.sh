@@ -26,14 +26,16 @@
 set -e
 
 OS_ARCH="linux-amd64"
-VM_DRIVER="podman"
-JOB_NAME="Experimental_Podman_Linux"
+VM_DRIVER="docker"
+JOB_NAME="Docker_Linux_containerd"
 CONTAINER_RUNTIME="containerd"
+
+
 
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
-# remove possible left over podman containers
-sudo podman rm -f -v $(sudo podman ps -aq) || true
+# removing possible left over docker containers from previous runs
+docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 
 source ./common.sh
