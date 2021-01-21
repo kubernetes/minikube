@@ -218,7 +218,7 @@ func setContainerRuntimeOptions(name string, p miniProvisioner) error {
 	case "crio", "cri-o":
 		return setCrioOptions(p)
 	case "containerd":
-		return nil
+		return setContainerdOptions(p)
 	default:
 		_, err := p.GenerateDockerOptions(engine.DefaultPort)
 		return err
@@ -243,6 +243,35 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 	}
 
 	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setContainerdOptions(p provision.SSHCommander) error {
+	// pass through --insecure-registry
+	var (
+		containerdConfigTmpl = `[plugins]
+  [plugins.cri]
+    [plugins.cri.registry]
+      [plugins.cri.registry.mirrors]
+	{{ range .EngineOptions.InsecureRegistry -}}
+        [plugins.cri.registry.mirrors.\"{{. -}}\"]
+		  endpoint = [\"{{. -}}\"]
+        {{ end -}}`
+		containerdConfigPath = "/etc/containerd/config.minikube.toml"
+	)
+	t, err := template.New("containerdConfigPath").Parse(containerdConfigTmpl)
+	if err != nil {
+		return err
+	}
+	var containerdConfigBuf bytes.Buffer
+	if err := t.Execute(&containerdConfigBuf, p); err != nil {
+		return err
+	}
+
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(containerdConfigPath), containerdConfigBuf.String(), containerdConfigPath)); err != nil {
 		return err
 	}
 
