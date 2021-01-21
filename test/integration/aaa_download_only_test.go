@@ -42,8 +42,8 @@ import (
 func TestDownloadOnly(t *testing.T) {
 	for _, r := range []string{"crio", "docker", "containerd"} {
 		t.Run(r, func(t *testing.T) {
-			if requestedRuntime := ContainerRuntime(); requestedRuntime != "" && requestedRuntime != rt {
-				t.Skipf("skipping test for container runtime %s, only testing runtime %s", rt, requestedRuntime)
+			if requestedRuntime := ContainerRuntime(); requestedRuntime != "" && requestedRuntime != r {
+				t.Skipf("skipping test for container runtime %s, only testing runtime %s", r, requestedRuntime)
 			}
 			// Stores the startup run result for later error messages
 			var rrr *RunResult
