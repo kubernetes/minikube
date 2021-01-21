@@ -122,8 +122,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Guarantee stopped upgrade compatibility from a release that is at least 1 year old
-	// NOTE: <v1.4.0 does not automatically install a hyperkit/KVM driver
-	legacyVersion := "v1.0.0"
+	legacyVersion := "v1.6.2"
 
 	if KicDriver() {
 		// first release with non-experimental KIC
