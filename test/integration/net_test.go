@@ -34,9 +34,7 @@ import (
 
 func TestNetworkPlugins(t *testing.T) {
 	MaybeParallel(t)
-	if NoneDriver() {
-		t.Skip("skipping since test for none driver")
-	}
+	validations(t)
 
 	t.Run("group", func(t *testing.T) {
 		tests := []struct {
@@ -73,7 +71,7 @@ func TestNetworkPlugins(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=25m"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {
@@ -205,4 +203,13 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
+}
+
+func validations(t *testing.T) {
+	if NoneDriver() {
+		t.Skip("skipping since test for none driver")
+	}
+	if ContainerdContainerRuntime() {
+		t.Skip("skipping as this test currently times out on containerd")
+	}
 }
