@@ -27,7 +27,6 @@ apiServer:
     feature-gates: "a=b"
 controllerManager:
   extraArgs:
-    allocate-node-cidrs: "true"
     feature-gates: "a=b"
     kube-api-burst: "32"
     leader-elect: "false"

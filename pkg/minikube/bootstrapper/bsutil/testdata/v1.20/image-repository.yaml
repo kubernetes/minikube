@@ -26,7 +26,6 @@ apiServer:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 controllerManager:
   extraArgs:
-    allocate-node-cidrs: "true"
     leader-elect: "false"
 scheduler:
   extraArgs:
