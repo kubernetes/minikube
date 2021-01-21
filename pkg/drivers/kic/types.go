@@ -26,7 +26,7 @@ const (
 	// Version is the current version of kic
 	Version = "v0.0.17"
 	// SHA of the kic base image
-	baseImageSHA = ""
+	baseImageSHA = "1cd2e039ec9d418e6380b2fa0280503a72e5b282adea674ee67882f59f4f546e"
 )
 
 var (
