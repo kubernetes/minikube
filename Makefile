@@ -201,12 +201,20 @@ out/minikube-linux-aarch64: out/minikube-linux-arm64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
-.PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
+.PHONY: minikube-linux-amd64 minikube-linux-arm64
 minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux 64bit
-minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for ARM 64bit
+minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for arm 64bit
+
+.PHONY: minikube-darwin minikube-darwin-amd64 minikube-darwin-arm64
 minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin x86 64bit
 minikube-darwin-arm64: out/minikube-darwin-arm64 ## Build Minikube for Darwin arm 64bit
+minikube-darwin: out/minikube-darwin ## Build Minikube fat binary for Darwin (both arm and x86 64bit)
+
+.PHONY: minikube-windows-amd64.exe
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for Windows 64bit
+
+out/minikube-darwin: out/minikube-darwin-amd64 out/minikube-darwin-arm64
+	lipo -create $^ -output $@
 
 out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
