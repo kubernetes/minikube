@@ -677,7 +677,8 @@ jobs:
         shell: bash
         run: |
           sudo apt update
-          sudo apt install -y jq docker
+          sudo apt install -y jq docker.io
+          sudo usermod -aG docker ${USER} && newgrp docker
 
       - name: Docker Info
         shell: bash
