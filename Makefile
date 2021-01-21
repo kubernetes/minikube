@@ -204,7 +204,8 @@ out/minikube-linux-aarch64: out/minikube-linux-arm64
 .PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
 minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux 64bit
 minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for ARM 64bit
-minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin 64bit
+minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin x86 64bit
+minikube-darwin-arm64: out/minikube-darwin-arm64 ## Build Minikube for Darwin arm 64bit
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for Windows 64bit
 
 out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
@@ -219,7 +220,8 @@ endif
 .PHONY: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe
 e2e-linux-amd64: out/e2e-linux-amd64 ## Execute end-to-end testing for Linux 64bit
 e2e-linux-arm64: out/e2e-linux-arm64 ## Execute end-to-end testing for Linux ARM 64bit
-e2e-darwin-amd64: out/e2e-darwin-amd64 ## Execute end-to-end testing for Darwin 64bit
+e2e-darwin-amd64: out/e2e-darwin-amd64 ## Execute end-to-end testing for Darwin x86 64bit
+e2e-darwin-arm64: out/e2e-darwin-arm64 ## Execute end-to-end testing for Darwin arm 64bit
 e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## Execute end-to-end testing for Windows 64bit
 
 out/e2e-%: out/minikube-%
@@ -378,7 +380,7 @@ darwin: minikube-darwin-amd64 ## Build minikube for Darwin 64bit
 linux: minikube-linux-amd64 ## Build minikube for Linux 64bit
 
 .PHONY: e2e-cross
-e2e-cross: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe ## End-to-end cross test
+e2e-cross: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-darwin-arm64 e2e-windows-amd64.exe ## End-to-end cross test
 
 .PHONY: checksum
 checksum: ## Generate checksums
