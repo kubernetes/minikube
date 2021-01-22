@@ -226,7 +226,7 @@ else
 endif
 
 .PHONY: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe
-e2e-linux-amd64: out/e2e-linux-amd64 ## build end2end binary for Linux 64bit
+e2e-linux-amd64: out/e2e-linux-amd64 ## build end2end binary for Linux x86 64bit
 e2e-linux-arm64: out/e2e-linux-arm64 ## build end2end binary for Linux ARM 64bit
 e2e-darwin-amd64: out/e2e-darwin-amd64 ## build end2end binary for Darwin x86 64bit
 e2e-darwin-arm64: out/e2e-darwin-arm64 ## build end2end binary for Darwin ARM 64bit
