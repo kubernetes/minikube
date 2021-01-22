@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
@@ -63,6 +64,10 @@ var RootCmd = &cobra.Command{
 			if err := os.MkdirAll(path, 0o777); err != nil {
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
+		}
+		if !config.UserNameValid(viper.GetString(config.UserFlag)) {
+			out.WarningT("User name '{{.username}}' is not valid", out.V{"username": audit.UserName()})
+			exit.Message(reason.Usage, "User name must be 60 chars or less.")
 		}
 	},
 }

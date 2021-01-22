@@ -67,7 +67,7 @@ func UniqueProfileName(prefix string) string {
 func auditContains(substr string) (bool, error) {
 	f, err := os.Open(localpath.AuditLog())
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("Unable to open file %s: %v", localpath.AuditLog(), err)
 	}
 	defer f.Close()
 

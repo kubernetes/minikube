@@ -27,8 +27,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
-// username pulls the user flag, if empty gets the os username.
-func username() string {
+// UserName pulls the user flag, if empty gets the os username.
+func UserName() string {
 	u := viper.GetString(config.UserFlag)
 	if u != "" {
 		return u
@@ -54,7 +54,7 @@ func Log(startTime time.Time) {
 	if !shouldLog() {
 		return
 	}
-	e := newEntry(os.Args[1], args(), username(), startTime, time.Now())
+	e := newEntry(os.Args[1], args(), UserName(), startTime, time.Now())
 	if err := appendToLog(e); err != nil {
 		klog.Error(err)
 	}

@@ -243,7 +243,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	t.Run("Audit", func(t *testing.T) {
 		got, err := auditContains(profile)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("failed to check audit log: %v", err)
 		}
 		if !got {
 			t.Errorf("audit.json does not contain the profile %q", profile)
@@ -285,7 +285,7 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	t.Run("Audit", func(t *testing.T) {
 		got, err := auditContains(profile)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("failed to check audit log: %v", err)
 		}
 		if !got {
 			t.Errorf("audit.json does not contain the profile %q", profile)

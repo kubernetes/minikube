@@ -70,7 +70,7 @@ func TestJSONOutput(t *testing.T) {
 			t.Run("Audit", func(t *testing.T) {
 				got, err := auditContains("testUser")
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("failed to check audit log: %v", err)
 				}
 				if !got {
 					t.Errorf("audit.json does not contain the user testUser")

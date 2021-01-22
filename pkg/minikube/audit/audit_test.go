@@ -49,7 +49,7 @@ func TestAudit(t *testing.T) {
 		for _, test := range tests {
 			viper.Set(config.UserFlag, test.userFlag)
 
-			got := username()
+			got := UserName()
 
 			if got != test.want {
 				t.Errorf("userFlag = %q; username() = %q; want %q", test.userFlag, got, test.want)
