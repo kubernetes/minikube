@@ -485,7 +485,7 @@ out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
 	rm -rf out/minikube_$(DEB_VERSION)
 
 rpm_version:
-	@echo $(RPM_VERSION)
+	@echo $(RPM_VERSION)-$(RPM_REVISION)
 
 out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-$(RPM_REVISION).x86_64.rpm
 	cp $< $@
