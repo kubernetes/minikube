@@ -82,12 +82,32 @@ func TestForceSystemdFlag(t *testing.T) {
 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "docker info --format {{.CgroupDriver}}"))
+	containerRuntime := ContainerRuntime()
+	switch containerRuntime {
+	case "docker":
+		validateDockerSystemd(t, ctx, profile)
+	case "containerd":
+		validateContainerdSystemd(t, ctx, profile)
+	}
+
+}
+
+func validateDockerSystemd(t *testing.T, ctx context.Context, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "docker info --format {{.CgroupDriver}}"))
 	if err != nil {
 		t.Errorf("failed to get docker cgroup driver. args %q: %v", rr.Command(), err)
 	}
-
 	if !strings.Contains(rr.Output(), "systemd") {
+		t.Fatalf("expected systemd cgroup driver, got: %v", rr.Output())
+	}
+}
+
+func validateContainerdSystemd(t *testing.T, ctx context.Context, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/containerd/config.toml"))
+	if err != nil {
+		t.Errorf("failed to get docker cgroup driver. args %q: %v", rr.Command(), err)
+	}
+	if !strings.Contains(rr.Output(), "systemd_cgroup = true") {
 		t.Fatalf("expected systemd cgroup driver, got: %v", rr.Output())
 	}
 }
@@ -109,13 +129,11 @@ func TestForceSystemdEnv(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "docker info --format {{.CgroupDriver}}"))
-	if err != nil {
-		t.Errorf("failed to get docker cgroup driver. args %q: %v", rr.Command(), err)
-	}
-
-	if !strings.Contains(rr.Output(), "systemd") {
-		t.Fatalf("expected systemd cgroup driver, got: %v", rr.Output())
+	containerRuntime := ContainerRuntime()
+	switch containerRuntime {
+	case "docker":
+		validateDockerSystemd(t, ctx, profile)
+	case "containerd":
+		validateContainerdSystemd(t, ctx, profile)
 	}
 }
