@@ -14,6 +14,7 @@ jobs:
   # Runs before all other jobs
   # builds the minikube binaries
   build_minikube:
+    if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     runs-on: [self-hosted, debian9, baremetal, equinix]
     steps:
       - uses: actions/checkout@v2
@@ -41,6 +42,7 @@ jobs:
           name: minikube_binaries
           path: out
   functional_baremetal_debian9:
+    if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -137,7 +139,7 @@ jobs:
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
-    if: always()
+    if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     needs:
       [
         functional_baremetal_debian9,
