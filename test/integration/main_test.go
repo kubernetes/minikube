@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
@@ -137,7 +138,7 @@ func ContainerRuntime() string {
 			return strings.TrimPrefix(s, flag)
 		}
 	}
-	return "docker"
+	return constants.DefaultContainerRuntime
 }
 
 // GithubActionRunner returns true if running inside a github action runner
