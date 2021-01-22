@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
@@ -133,7 +134,7 @@ func KicDriver() bool {
 func ContainerRuntime() string {
 	flag := "--container-runtime="
 	if !strings.Contains(*startArgs, flag) {
-		return "docker"
+		return constants.DefaultContainerRuntime
 	}
 	for _, s := range StartArgs() {
 		if strings.HasPrefix(s, flag) {
