@@ -92,7 +92,26 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	args := append([]string{"start", "-p", profile, "--memory=2200"}, legacyStartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
+		c := exec.CommandContext(ctx, tf.Name(), args...)
+		legacyEnv := []string{}
+		// replace the global KUBECONFIG with a fresh kubeconfig
+		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
+		// see: https://github.com/kubernetes/minikube/issues/10210
+		for _, e := range os.Environ() {
+			if !strings.Contains(e, "KUBECONFIG") { // get all global envs except the Kubeconfig which is used by new versions of minikubes
+				legacyEnv = append(legacyEnv, e)
+			}
+		}
+		// using a fresh kubeconfig for this test
+		legacyKubeConfig, err := ioutil.TempFile("", "legacy_kubeconfig")
+		if err != nil {
+			t.Fatalf("failed to create temp file for legacy kubeconfig %v", err)
+		}
+
+		defer os.Remove(legacyKubeConfig.Name()) // clean up
+		legacyEnv = append(legacyEnv, fmt.Sprintf("KUBECONFIG=%s", legacyKubeConfig.Name()))
+		c.Env = legacyEnv
+		rr, err = Run(t, c)
 		return err
 	}
 
