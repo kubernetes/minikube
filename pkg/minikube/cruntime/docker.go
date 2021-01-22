@@ -84,7 +84,10 @@ func (r *Docker) Version() (string, error) {
 
 // SocketPath returns the path to the socket file for Docker
 func (r *Docker) SocketPath() string {
-	return r.Socket
+	if r.Socket != "" {
+		return r.Socket
+	}
+	return "/var/run/dockershim.sock"
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
@@ -106,6 +109,10 @@ func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
 		}
+	}
+
+	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
+		return err
 	}
 
 	if forceSystemd {
