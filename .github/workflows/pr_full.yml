@@ -62,7 +62,6 @@ jobs:
       - name: Install tools for none
         shell: bash
         run: |
-          # sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
           VERSION="v1.17.0"
