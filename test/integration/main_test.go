@@ -133,7 +133,7 @@ func KicDriver() bool {
 func ContainerRuntime() string {
 	flag := "--container-runtime="
 	if !strings.Contains(*startArgs, flag) {
-		return ""
+		return "docker"
 	}
 	for _, s := range StartArgs() {
 		if strings.HasPrefix(s, flag) {
