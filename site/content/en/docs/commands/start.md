@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.15-snapshot4@sha256:ef1f485b5a1cfa4c989bc05e153f0a8525968ec999e242efff871cbb31649c16")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.17@sha256:1cd2e039ec9d418e6380b2fa0280503a72e5b282adea674ee67882f59f4f546e")
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
       --container-runtime string          The container runtime to be used (docker, cri-o, containerd). (default "docker")
@@ -64,9 +64,9 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.16.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.16.0/minikube-v1.16.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.16.0.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.17.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.17.0/minikube-v1.17.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.17.0.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.20.0, 'latest' for v1.20.0). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.20.2, 'latest' for v1.20.3-rc.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM network name. (kvm2 driver only) (default "default")
@@ -88,6 +88,10 @@ minikube start [flags]
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
+      --ssh-ip-address string             IP address (ssh driver only)
+      --ssh-key string                    SSH key (ssh driver only)
+      --ssh-port int                      SSH port (ssh driver only) (default 22)
+      --ssh-user string                   SSH user (ssh driver only) (default "root")
       --trace string                      Send trace events. Options include: [gcp]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers

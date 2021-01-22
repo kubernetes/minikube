@@ -23,6 +23,7 @@ import (
 
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/util/lock"
@@ -54,6 +55,12 @@ type Settings struct {
 	// Should the certificate files be embedded instead of referenced by path
 	EmbedCerts bool
 
+	// Extension meta data for the cluster
+	ExtensionCluster *Extension
+
+	// Extension meta data for the cluster
+	ExtensionContext *Extension
+
 	// kubeConfigFile is the path where the kube config is stored
 	// Only access this with atomic ops
 	kubeConfigFile atomic.Value
@@ -83,6 +90,10 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	} else {
 		cluster.CertificateAuthority = cfg.CertificateAuthority
 	}
+
+	if cfg.ExtensionCluster != nil {
+		cluster.Extensions = map[string]runtime.Object{"cluster_info": cfg.ExtensionCluster.DeepCopy()}
+	}
 	apiCfg.Clusters[clusterName] = cluster
 
 	// user
@@ -109,6 +120,10 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	context.Cluster = cfg.ClusterName
 	context.Namespace = cfg.Namespace
 	context.AuthInfo = userName
+	if cfg.ExtensionContext != nil {
+		context.Extensions = map[string]runtime.Object{"context_info": cfg.ExtensionContext.DeepCopy()}
+	}
+
 	apiCfg.Contexts[contextName] = context
 
 	// Only set current context to minikube if the user has not used the keepContext flag
@@ -138,6 +153,9 @@ func Update(kcs *Settings) error {
 		return err
 	}
 
+	ext := NewExtension()
+	kcs.ExtensionCluster = ext
+	kcs.ExtensionContext = ext
 	err = PopulateFromSettings(kcs, kcfg)
 	if err != nil {
 		return err

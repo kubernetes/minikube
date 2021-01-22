@@ -66,6 +66,10 @@ type ClusterConfig struct {
 	HostDNSResolver         bool   // Only used by virtualbox
 	HostOnlyNicType         string // Only used by virtualbox
 	NatNicType              string // Only used by virtualbox
+	SSHIPAddress            string // Only used by ssh driver
+	SSHUser                 string // Only used by ssh driver
+	SSHKey                  string // Only used by ssh driver
+	SSHPort                 int    // Only used by ssh driver
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
 	Addons                  map[string]bool

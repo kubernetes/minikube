@@ -84,10 +84,6 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	if runtime.GOARCH != "amd64" {
-		return registry.State{Error: fmt.Errorf("docker driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
-	}
-
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
@@ -99,8 +95,10 @@ func status() registry.State {
 	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
 	o, err := cmd.Output()
 	if err != nil {
+		reason := ""
 		if ctx.Err() == context.DeadlineExceeded {
 			err = errors.Wrapf(err, "deadline exceeded running %q", strings.Join(cmd.Args, " "))
+			reason = "PROVIDER_DOCKER_DEADLINE_EXCEEDED"
 		}
 
 		klog.Warningf("docker version returned error: %v", err)
@@ -108,26 +106,25 @@ func status() registry.State {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			stderr := strings.TrimSpace(string(exitErr.Stderr))
 			newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
-
-			return suggestFix(stderr, newErr)
+			return suggestFix("version", exitErr.ExitCode(), stderr, newErr)
 		}
 
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
+		return registry.State{Reason: reason, Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
 	}
 
 	klog.Infof("docker version: %s", o)
 	if strings.Contains(string(o), "windows-") {
-		return registry.State{Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
+		return registry.State{Reason: "PROVIDER_DOCKER_WINDOWS_CONTAINERS", Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
 	}
 
 	si, err := oci.CachedDaemonInfo("docker")
 	if err != nil {
 		// No known fix because we haven't yet seen a failure here
-		return registry.State{Error: errors.Wrap(err, "docker info"), Installed: true, Healthy: false, Doc: docURL}
+		return registry.State{Reason: "PROVIDER_DOCKER_INFO_FAILED", Error: errors.Wrap(err, "docker info"), Installed: true, Healthy: false, Doc: docURL}
 	}
 
 	for _, serr := range si.Errors {
-		return suggestFix(serr, fmt.Errorf("docker info error: %s", serr))
+		return suggestFix("info", -1, serr, fmt.Errorf("docker info error: %s", serr))
 	}
 
 	return checkNeedsImprovement()
@@ -161,23 +158,43 @@ func checkOverlayMod() registry.State {
 }
 
 // suggestFix matches a stderr with possible fix for the docker driver
-func suggestFix(stderr string, err error) registry.State {
+func suggestFix(src string, exitcode int, stderr string, err error) registry.State {
 	if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
-		return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
+		return registry.State{Reason: "PROVIDER_DOCKER_NEWGRP", Error: err, Installed: true, Running: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
 	}
 
 	if strings.Contains(stderr, "/pipe/docker_engine: The system cannot find the file specified.") && runtime.GOOS == "windows" {
-		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
+		return registry.State{Reason: "PROVIDER_DOCKER_PIPE_NOT_FOUND", Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
 	}
 
-	if dockerNotRunning(stderr) {
-		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
+	reason := dockerNotRunning(stderr)
+	if reason != "" {
+		return registry.State{Reason: reason, Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
 	}
 
 	// We don't have good advice, but at least we can provide a good error message
-	return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Doc: docURL}
+	reason = strings.ToUpper(fmt.Sprintf("PROVIDER_DOCKER_%s_ERROR", src))
+	if exitcode > 0 {
+		reason = strings.ToUpper(fmt.Sprintf("PROVIDER_DOCKER_%s_EXIT_%d", src, exitcode))
+	}
+	return registry.State{Reason: reason, Error: err, Installed: true, Running: true, Healthy: false, Doc: docURL}
 }
 
-func dockerNotRunning(s string) bool {
-	return strings.Contains(s, "Cannot connect") || strings.Contains(s, "refused") || strings.Contains(s, "Is the docker daemon running") || strings.Contains(s, "docker daemon is not running")
+// Return a reason code for Docker not running
+func dockerNotRunning(s string) string {
+	// These codes are explicitly in order of the most likely to be helpful to a user
+
+	if strings.Contains(s, "Is the docker daemon running") || strings.Contains(s, "docker daemon is not running") {
+		return "PROVIDER_DOCKER_NOT_RUNNING"
+	}
+
+	if strings.Contains(s, "Cannot connect") {
+		return "PROVIDER_DOCKER_CANNOT_CONNECT"
+	}
+
+	if strings.Contains(s, "refused") {
+		return "PROVIDER_DOCKER_REFUSED"
+	}
+
+	return ""
 }

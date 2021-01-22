@@ -116,8 +116,8 @@ func installSkaffold() (f *os.File, err error) {
 	}
 	tf.Close()
 
-	url := "https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-amd64"
-	url = fmt.Sprintf(url, runtime.GOOS)
+	url := "https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-%s"
+	url = fmt.Sprintf(url, runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS == "windows" {
 		url += ".exe"
 	}

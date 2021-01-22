@@ -35,8 +35,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/cpu"
-	gopshost "github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/cpu"
+	gopshost "github.com/shirou/gopsutil/v3/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -306,7 +306,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		os.Exit(0)
 	}
 
-	if driver.IsVM(driverName) {
+	if driver.IsVM(driverName) && !driver.IsSSH(driverName) {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
 			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
@@ -740,7 +740,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": name, "error": st.Error})
 	}
 
-	id := fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	id := st.Reason
+	if id == "" {
+		id = fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	}
+
 	code := reason.ExProviderUnavailable
 
 	if !st.Running {
@@ -851,7 +855,7 @@ func validateUser(drvName string) {
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor, the return value is in MiB
 func memoryLimits(drvName string) (int, int, error) {
-	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
+	info, cpuErr, memErr, diskErr := machine.LocalHostInfo()
 	if cpuErr != nil {
 		klog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
