@@ -410,7 +410,7 @@ func TestUpdateIP(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
 			defer os.Remove(configFilename)
-			statusActual, err := UpdateEndpoint("minikube", test.hostname, test.port, configFilename)
+			statusActual, err := UpdateEndpoint("minikube", test.hostname, test.port, configFilename, nil)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -430,7 +430,7 @@ func TestUpdateIP(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !configEquals(actual, expected) {
-				t.Fatal("configs did not match")
+				t.Fatalf("configs did not match: Actual:\n%+v\n Expected:\n%+v", actual, expected)
 			}
 		})
 

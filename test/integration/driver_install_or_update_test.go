@@ -42,6 +42,10 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		t.Skip("Skip if not linux.")
 	}
 
+	if arm64Platform() {
+		t.Skip("Skip if arm64. See https://github.com/kubernetes/minikube/issues/10144")
+	}
+
 	MaybeParallel(t)
 
 	tests := []struct {

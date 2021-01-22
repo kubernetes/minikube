@@ -29,6 +29,7 @@ var supportedDrivers = []string{
 	None,
 	Docker,
 	Podman,
+	SSH,
 }
 
 // VBoxManagePath returns the path to the VBoxManage command
