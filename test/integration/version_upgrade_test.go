@@ -63,7 +63,7 @@ func legacyStartArgs() []string {
 	return strings.Split(strings.Replace(*startArgs, "--driver", "--vm-driver", -1), " ")
 }
 
-// TestRunningBinaryUpgrade does an upgrade test on a running cluster
+// TestRunningBinaryUpgrade upgrades a running legacy cluster to head minikube
 func TestRunningBinaryUpgrade(t *testing.T) {
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
 	if TestingKicBaseImage() {
@@ -127,7 +127,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	}
 }
 
-// TestStoppedBinaryUpgrade does an upgrade test on a stopped cluster
+// TestStoppedBinaryUpgrade starts a legacy minikube and stops it and then upgrades to head minikube
 func TestStoppedBinaryUpgrade(t *testing.T) {
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
 	if TestingKicBaseImage() {
