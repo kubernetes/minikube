@@ -62,7 +62,10 @@ func TestStartStop(t *testing.T) {
 			{"default-k8s-different-port", constants.DefaultKubernetesVersion, []string{
 				"--apiserver-port=8444",
 			}},
-			{"disable-driver-mounts", "v1.15.7", []string{
+			{"no-preload", constants.DefaultKubernetesVersion, []string{
+				"--preload=false",
+			}},
+			{"disable-driver-mounts", constants.DefaultKubernetesVersion, []string{
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
