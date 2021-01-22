@@ -740,7 +740,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": name, "error": st.Error})
 	}
 
-	id := fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	id := st.Reason
+	if id == "" {
+		id = fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	}
+
 	code := reason.ExProviderUnavailable
 
 	if !st.Running {
