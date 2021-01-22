@@ -85,14 +85,14 @@ func TestForceSystemdFlag(t *testing.T) {
 	containerRuntime := ContainerRuntime()
 	switch containerRuntime {
 	case "docker":
-		validateDockerSystemd(t, ctx, profile)
+		validateDockerSystemd(ctx, t, profile)
 	case "containerd":
-		validateContainerdSystemd(t, ctx, profile)
+		validateContainerdSystemd(ctx, t, profile)
 	}
 
 }
 
-func validateDockerSystemd(t *testing.T, ctx context.Context, profile string) {
+func validateDockerSystemd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "docker info --format {{.CgroupDriver}}"))
 	if err != nil {
 		t.Errorf("failed to get docker cgroup driver. args %q: %v", rr.Command(), err)
@@ -102,7 +102,7 @@ func validateDockerSystemd(t *testing.T, ctx context.Context, profile string) {
 	}
 }
 
-func validateContainerdSystemd(t *testing.T, ctx context.Context, profile string) {
+func validateContainerdSystemd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/containerd/config.toml"))
 	if err != nil {
 		t.Errorf("failed to get docker cgroup driver. args %q: %v", rr.Command(), err)
@@ -132,8 +132,8 @@ func TestForceSystemdEnv(t *testing.T) {
 	containerRuntime := ContainerRuntime()
 	switch containerRuntime {
 	case "docker":
-		validateDockerSystemd(t, ctx, profile)
+		validateDockerSystemd(ctx, t, profile)
 	case "containerd":
-		validateContainerdSystemd(t, ctx, profile)
+		validateContainerdSystemd(ctx, t, profile)
 	}
 }
