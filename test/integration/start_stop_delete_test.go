@@ -59,7 +59,9 @@ func TestStartStop(t *testing.T) {
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			}},
-			{"default-k8s-version", constants.DefaultKubernetesVersion, []string{}},
+			{"default-k8s-different-port", constants.DefaultKubernetesVersion, []string{
+				"--apiserver-port=8444",
+			}},
 			{"disable-driver-mounts", "v1.15.7", []string{
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
