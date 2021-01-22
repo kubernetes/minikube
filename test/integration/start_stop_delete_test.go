@@ -62,7 +62,7 @@ func TestStartStop(t *testing.T) {
 			{"default-k8s-different-port", constants.DefaultKubernetesVersion, []string{
 				"--apiserver-port=8444",
 			}},
-			{"no-preload", constants.DefaultKubernetesVersion, []string{
+			{"no-preload", constants.NewestKubernetesVersion, []string{
 				"--preload=false",
 			}},
 			{"disable-driver-mounts", constants.DefaultKubernetesVersion, []string{
