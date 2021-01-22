@@ -617,7 +617,16 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "k8s.gcr.io/pause:latest"
 			// deleting image inside minikube node manually
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
+
+			var binary string
+			switch ContainerRuntime() {
+			case "docker":
+				binary = "docker"
+			case "containerd", "crio":
+				binary = "crictl"
+			}
+
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", binary, "rmi", img))
 
 			if err != nil {
 				t.Errorf("failed to manually delete image %q : %v", rr.Command(), err)
