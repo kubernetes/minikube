@@ -45,6 +45,8 @@ const (
 	RegistryAddonPort = 5000
 	// CRIO is the default name and spelling for the cri-o container runtime
 	CRIO = "crio"
+	// DefaultContainerRuntime is our default container runtime
+	DefaultContainerRuntime = "docker"
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"
