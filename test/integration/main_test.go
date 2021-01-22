@@ -133,15 +133,12 @@ func KicDriver() bool {
 // ContainerRuntime returns the name of a specific container runtime if it was specified
 func ContainerRuntime() string {
 	flag := "--container-runtime="
-	if !strings.Contains(*startArgs, flag) {
-		return constants.DefaultContainerRuntime
-	}
 	for _, s := range StartArgs() {
 		if strings.HasPrefix(s, flag) {
 			return strings.TrimPrefix(s, flag)
 		}
 	}
-	return ""
+	return constants.DefaultContainerRuntime
 }
 
 // GithubActionRunner returns true if running inside a github action runner
