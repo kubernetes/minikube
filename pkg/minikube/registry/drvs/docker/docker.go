@@ -124,7 +124,7 @@ func status() registry.State {
 	}
 
 	for _, serr := range si.Errors {
-		return suggestFix("daemon_info", -1, serr, fmt.Errorf("docker info error: %s", serr))
+		return suggestFix("info", -1, serr, fmt.Errorf("docker info error: %s", serr))
 	}
 
 	return checkNeedsImprovement()
@@ -182,6 +182,8 @@ func suggestFix(src string, exitcode int, stderr string, err error) registry.Sta
 
 // Return a reason code for Docker not running
 func dockerNotRunning(s string) string {
+	// These codes are explicitly in order of the most likely to be helpful to a user
+
 	if strings.Contains(s, "Is the docker daemon running") || strings.Contains(s, "docker daemon is not running") {
 		return "PROVIDER_DOCKER_NOT_RUNNING"
 	}
