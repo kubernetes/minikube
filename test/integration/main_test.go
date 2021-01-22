@@ -129,6 +129,20 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
+// ContainerRuntime returns the name of a specific container runtime if it was specified
+func ContainerRuntime() string {
+	flag := "--container-runtime="
+	if !strings.Contains(*startArgs, flag) {
+		return ""
+	}
+	for _, s := range StartArgs() {
+		if strings.HasPrefix(s, flag) {
+			return strings.TrimPrefix(s, flag)
+		}
+	}
+	return ""
+}
+
 // GithubActionRunner returns true if running inside a github action runner
 func GithubActionRunner() bool {
 	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
