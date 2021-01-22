@@ -22,6 +22,10 @@ jobs:
         with:
           go-version: '1.15.7'
           stable: true
+      - name: Install tools
+        shell: bash
+        run: |
+          sudo apt-get --qq -y install git
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
