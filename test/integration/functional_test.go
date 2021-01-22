@@ -699,9 +699,19 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
-	for _, word := range []string{"Docker", "apiserver", "Linux", "kubelet"} {
+	expectedWords := []string{"apiserver", "Linux", "kubelet"}
+	switch ContainerRuntime() {
+	case "docker":
+		expectedWords = append(expectedWords, "Docker")
+	case "containerd":
+		expectedWords = append(expectedWords, "containerd")
+	case "crio":
+		expectedWords = append(expectedWords, "crio")
+	}
+
+	for _, word := range expectedWords {
 		if !strings.Contains(rr.Stdout.String(), word) {
-			t.Errorf("excpeted minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
+			t.Errorf("expected minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
 		}
 	}
 }
