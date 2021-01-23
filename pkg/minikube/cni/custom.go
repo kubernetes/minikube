@@ -72,8 +72,8 @@ func (c Custom) CIDR() string {
 }
 
 func (c Custom) removeCNIConfig(r Runner) error {
-	klog.Infof("Removing existing cni configuration (/etc/cni/net.d/*bridge*)")
-	rm := fmt.Sprintf("rm -rf /etc/cni/net.d/*bridge*")
+	klog.Infof("Removing existing cni configuration (/etc/cni/net.d/*)")
+	rm := fmt.Sprintf("rm -rf /etc/cni/net.d/*")
 	if _, err := r.RunCmd(exec.Command("sudo", "/bin/bash", "-c", rm)); err != nil {
 		klog.Errorf("netconf update failed: %v", err)
 		return err
