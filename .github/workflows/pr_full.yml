@@ -15,7 +15,7 @@ jobs:
   # builds the minikube binaries
   build_minikube:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
-    runs-on: [self-hosted, debian9, baremetal, equinix]
+    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -25,7 +25,7 @@ jobs:
       - name: Install tools
         shell: bash
         run: |
-          sudo apt-get --qq -y install git
+          sudo apt-get -y install git
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -53,7 +53,7 @@ jobs:
       JOB_NAME: "functional_baremetal_debian9"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: [self-hosted, debian9, baremetal, equinix]
+    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
     steps:
       - name: Install kubectl
         shell: bash
@@ -147,7 +147,7 @@ jobs:
       [
         functional_baremetal_debian9,
       ]
-    runs-on: [self-hosted, debian9, baremetal, equinix]
+    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
     steps:
       - name: download all reports
         uses: actions/download-artifact@v2-preview
