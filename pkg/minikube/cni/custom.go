@@ -17,12 +17,16 @@ limitations under the License.
 package cni
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path"
 
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // Custom is a CNI manager than applies a user-specified manifest
@@ -51,6 +55,9 @@ func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
 
 // Apply enables the CNI
 func (c Custom) Apply(r Runner) error {
+	if err := c.removeCNIConfig(r); err != nil {
+		return errors.Wrap(err, "remove cni config")
+	}
 	m, err := assets.NewFileAsset(c.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644")
 	if err != nil {
 		return errors.Wrap(err, "manifest")
@@ -62,4 +69,15 @@ func (c Custom) Apply(r Runner) error {
 // CIDR returns the default CIDR used by this CNI
 func (c Custom) CIDR() string {
 	return DefaultPodCIDR
+}
+
+func (c Custom) removeCNIConfig(r Runner) error {
+	klog.Infof("Removing existing cni configuration (/etc/cni/net.d/*bridge*)")
+	rm := fmt.Sprintf("rm -rf /etc/cni/net.d/*bridge*")
+	if _, err := r.RunCmd(exec.Command("sudo", "/bin/bash", "-c", rm)); err != nil {
+		klog.Errorf("netconf update failed: %v", err)
+		return err
+	}
+	return sysinit.New(r).Restart(c.cc.KubernetesConfig.ContainerRuntime)
+
 }
