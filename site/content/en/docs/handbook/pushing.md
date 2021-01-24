@@ -38,7 +38,7 @@ this means you don't have to build on your host machine and push the image into 
 To point your terminal to use the docker daemon inside minikube run this:
 
 ```shell
-eval $(minikube docker-env)
+eval $(minikube -p minikube docker-env)
 ```
 
 now any 'docker' command you run in this current terminal will run against the docker inside minikube cluster.
