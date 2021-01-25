@@ -55,6 +55,9 @@ Update the version numbers in  `Makefile`:
   - beta releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)`
   - major/minor releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).0`
   - if the ISO was updated, a patch release may use `v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)`
+* `DEB_REVISION`, `RPM_REVISION`
+  - for all major/minor releases, set to 0
+  - if updating .deb/.rpm files without a major/minor release, increment by 1
 
 {{% alert title="Warning" color="warning" %}}
 Merge this PR only if all non-experimental integration tests pass!

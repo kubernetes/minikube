@@ -159,7 +159,11 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 }
 
 // check functionality of minikube after evaling docker-env
+// TODO: Add validatePodmanEnv for crio runtime: #10231
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
+	if cr := ContainerRuntime(); cr != "docker" {
+		t.Skipf("only validate docker env with docker container runtime, currently testing %s", cr)
+	}
 	defer PostMortemLogs(t, profile)
 	mctx, cancel := context.WithTimeout(ctx, Seconds(120))
 	defer cancel()
