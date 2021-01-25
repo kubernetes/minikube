@@ -21,7 +21,6 @@ jobs:
         shell: bash
         run: |
           sudo rm -rf "/home/jenkins/actions-runner/_work/minikube/minikube/minikube_binaries"
-          sudo apt-get update
           sudo apt-get install \
             apt-transport-https \
             ca-certificates \
