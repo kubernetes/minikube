@@ -163,6 +163,7 @@ jobs:
     needs:
       [
         functional_baremetal_debian9,
+        build_minikube
       ]
     runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
     steps:
