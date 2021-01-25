@@ -21,6 +21,8 @@ jobs:
         shell: bash
         run: |
           sudo rm -rf "/home/jenkins/actions-runner/_work/minikube/minikube/minikube_binaries"
+          sudo add-apt-repository "deb [arch=amd64] http://ftp.debian.org/debian stretch stable main contrib non-free"
+          sudo apt-get update
           sudo apt-get install \
             apt-transport-https \
             ca-certificates \
