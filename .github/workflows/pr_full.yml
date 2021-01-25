@@ -31,8 +31,8 @@ jobs:
           sudo add-apt-repository \
             "deb [arch=amd64] https://download.docker.com/linux/debian \
             $(lsb_release -cs) \
-            stable edge test"
-          sudo apt-get install docker-ce docker-ce-cli containerd.io
+            stable"
+          sudo apt-get install docker-ce=19.03.9~3-0~debian-stretch  docker-ce-cli=19.03.9~3-0~debian-stretch containerd.io
           sudo apt-get -y install git
           sudo apt-get -y install build-essential
       - uses: actions/checkout@v2
