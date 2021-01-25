@@ -84,7 +84,7 @@ jobs:
             "deb [arch=amd64] https://download.docker.com/linux/debian \
             $(lsb_release -cs) \
             stable"
-          sudo apt-get install docker-ce docker-ce-cli containerd.io
+          sudo apt-get install docker-ce-cli containerd.io docker-ce
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
