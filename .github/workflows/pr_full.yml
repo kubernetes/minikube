@@ -25,6 +25,7 @@ jobs:
       - name: Install tools
         shell: bash
         run: |
+          sudo rm -rf "/home/jenkins/actions-runner/_work/minikube/minikube/minikube_binaries"
           sudo apt-get -y install git
           sudo apt-get -y install build-essential
       - name: Download Dependencies
