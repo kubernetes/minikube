@@ -621,7 +621,16 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "k8s.gcr.io/pause:latest"
 			// deleting image inside minikube node manually
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
+
+			var binary string
+			switch ContainerRuntime() {
+			case "docker":
+				binary = "docker"
+			case "containerd", "crio":
+				binary = "crictl"
+			}
+
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", binary, "rmi", img))
 
 			if err != nil {
 				t.Errorf("failed to manually delete image %q : %v", rr.Command(), err)
@@ -694,9 +703,19 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
-	for _, word := range []string{"Docker", "apiserver", "Linux", "kubelet"} {
+	expectedWords := []string{"apiserver", "Linux", "kubelet"}
+	switch ContainerRuntime() {
+	case "docker":
+		expectedWords = append(expectedWords, "Docker")
+	case "containerd":
+		expectedWords = append(expectedWords, "containerd")
+	case "crio":
+		expectedWords = append(expectedWords, "crio")
+	}
+
+	for _, word := range expectedWords {
 		if !strings.Contains(rr.Stdout.String(), word) {
-			t.Errorf("excpeted minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
+			t.Errorf("expected minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
 		}
 	}
 }
