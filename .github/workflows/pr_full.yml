@@ -21,8 +21,6 @@ jobs:
         shell: bash
         run: |
           sudo rm -rf "/home/jenkins/actions-runner/_work/minikube/minikube/minikube_binaries"
-          sudo apt-get -y install git
-          sudo apt-get -y install build-essential
           sudo apt-get install \
             apt-transport-https \
             ca-certificates \
@@ -35,6 +33,8 @@ jobs:
             $(lsb_release -cs) \
             stable"
           sudo apt-get install docker-ce docker-ce-cli containerd.io
+          sudo apt-get -y install git
+          sudo apt-get -y install build-essential
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
