@@ -110,6 +110,10 @@ func TestAudit(t *testing.T) {
 				[]string{"minikube", "version"},
 				false,
 			},
+			{
+				[]string{"minikube"},
+				false,
+			},
 		}
 
 		for _, test := range tests {
