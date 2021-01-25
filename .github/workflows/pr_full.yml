@@ -17,17 +17,17 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: '1.15.7'
-          stable: true
       - name: Install tools
         shell: bash
         run: |
           sudo rm -rf "/home/jenkins/actions-runner/_work/minikube/minikube/minikube_binaries"
           sudo apt-get -y install git
           sudo apt-get -y install build-essential
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.7'
+          stable: true
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
