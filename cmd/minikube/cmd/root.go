@@ -66,7 +66,7 @@ var RootCmd = &cobra.Command{
 			}
 		}
 		userName := viper.GetString(config.UserFlag)
-		if !config.UserNameValid(userName) {
+		if !validateUsername(userName) {
 			out.WarningT("User name '{{.username}}' is not valid", out.V{"username": userName})
 			exit.Message(reason.Usage, "User name must be 60 chars or less.")
 		}
@@ -290,4 +290,8 @@ func addToPath(dir string) {
 	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
 	klog.Infof("Updating PATH: %s", dir)
 	os.Setenv("PATH", new)
+}
+
+func validateUsername(name string) bool {
+	return len(name) <= 60
 }
