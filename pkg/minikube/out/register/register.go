@@ -41,6 +41,7 @@ const (
 	PreparingKubernetesCerts          RegStep = "Generating certificates"
 	PreparingKubernetesControlPlane   RegStep = "Booting control plane"
 	PreparingKubernetesBootstrapToken RegStep = "Configuring RBAC rules"
+	ConfiguringCNI                    RegStep = "Configuring CNI"
 	VerifyingKubernetes               RegStep = "Verifying Kubernetes"
 	EnablingAddons                    RegStep = "Enabling Addons"
 	Done                              RegStep = "Done"
@@ -85,6 +86,7 @@ func init() {
 				PreparingKubernetesCerts,
 				PreparingKubernetesControlPlane,
 				PreparingKubernetesBootstrapToken,
+				ConfiguringCNI,
 				ConfiguringLHEnv,
 				VerifyingKubernetes,
 				EnablingAddons,
