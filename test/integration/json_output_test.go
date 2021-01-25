@@ -122,7 +122,7 @@ func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cl
 	}
 }
 
-func TestJSONOutputError(t *testing.T) {
+func TestErrorJSONOutput(t *testing.T) {
 	profile := UniqueProfileName("json-output-error")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
 	defer Cleanup(t, profile, cancel)
