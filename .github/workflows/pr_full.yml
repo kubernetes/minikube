@@ -36,7 +36,6 @@ jobs:
             stable"
           sudo apt-get -y update
           sudo apt-get -y install docker-ce  docker-ce-cli containerd.io
-          sudo groupadd docker
           sudo usermod -aG docker ${USER}
           su -s ${USER}
           sudo apt-get -y install git
