@@ -21,6 +21,7 @@ jobs:
         shell: bash
         run: |
           sudo rm -rf "/home/jenkins/actions-runner/_work/minikube/minikube/minikube_binaries"
+          sudo apt-get update
           sudo apt-get install \
             apt-transport-https \
             ca-certificates \
@@ -32,7 +33,8 @@ jobs:
             "deb [arch=amd64] https://download.docker.com/linux/debian \
             $(lsb_release -cs) \
             stable"
-          sudo apt-get install docker-ce=19.03.9~3-0~debian-stretch  docker-ce-cli=19.03.9~3-0~debian-stretch containerd.io
+          sudo apt-get update
+          sudo apt-get install docker-ce  docker-ce-cli containerd.io
           sudo apt-get -y install git
           sudo apt-get -y install build-essential
       - uses: actions/checkout@v2
