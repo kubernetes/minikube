@@ -62,7 +62,7 @@ func TestDownloadOnly(t *testing.T) {
 		t.Run(v, func(t *testing.T) {
 			defer PostMortemLogs(t, profile)
 
-			t.Run("check json events", func(t *testing.T) {
+			t.Run("json-events", func(t *testing.T) {
 				// --force to avoid uid check
 				args := append([]string{"start", "-o=json", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v), fmt.Sprintf("--container-runtime=%s", containerRuntime)}, StartArgs()...)
 				rt, err := Run(t, exec.CommandContext(ctx, Target(), args...))
@@ -91,7 +91,7 @@ func TestDownloadOnly(t *testing.T) {
 			})
 
 			preloadExists := false
-			t.Run("check preload exists", func(t *testing.T) {
+			t.Run("preload-exists", func(t *testing.T) {
 				// skip for none, as none driver does not have preload feature.
 				if NoneDriver() {
 					t.Skip("None driver does not have preload")
@@ -107,7 +107,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 			})
 
-			t.Run("check cached images", func(t *testing.T) {
+			t.Run("cached-images", func(t *testing.T) {
 				// skip verify for cache images if --driver=none
 				if NoneDriver() {
 					t.Skip("None driver has no cache")
@@ -130,7 +130,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 			})
 
-			t.Run("check binaries", func(t *testing.T) {
+			t.Run("binaries", func(t *testing.T) {
 				// checking binaries downloaded (kubelet,kubeadm)
 				for _, bin := range constants.KubernetesReleaseBinaries {
 					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)
@@ -141,7 +141,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 			})
 
-			t.Run("check kubectl", func(t *testing.T) {
+			t.Run("kubectl", func(t *testing.T) {
 				// If we are on darwin/windows, check to make sure OS specific kubectl has been downloaded
 				// as well for the `minikube kubectl` command
 				if runtime.GOOS == "linux" {
