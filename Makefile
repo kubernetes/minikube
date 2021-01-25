@@ -213,9 +213,6 @@ minikube-darwin: out/minikube-darwin ## Build Minikube fat binary for Darwin (bo
 .PHONY: minikube-windows-amd64.exe
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for Windows 64bit
 
-out/minikube-darwin: out/minikube-darwin-amd64 out/minikube-darwin-arm64
-	lipo -create $^ -output $@
-
 out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
