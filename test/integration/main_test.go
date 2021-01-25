@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
@@ -132,6 +133,17 @@ func PodmanDriver() bool {
 // KicDriver returns whether or not this test is using the docker or podman driver
 func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
+}
+
+// ContainerRuntime returns the name of a specific container runtime if it was specified
+func ContainerRuntime() string {
+	flag := "--container-runtime="
+	for _, s := range StartArgs() {
+		if strings.HasPrefix(s, flag) {
+			return strings.TrimPrefix(s, flag)
+		}
+	}
+	return constants.DefaultContainerRuntime
 }
 
 // GithubActionRunner returns true if running inside a github action runner

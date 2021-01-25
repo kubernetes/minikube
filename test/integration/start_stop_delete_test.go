@@ -287,12 +287,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 		Tags []string `json:"repoTags"`
 	}{}
 
-	// crictl includes warnings in STDOUT before printing JSON output
-	// this step trims the warnings before JSON output begins
-	// See #10175 for details on fixing these warnings
 	stdout := rr.Stdout.String()
-	index := strings.Index(stdout, "{")
-	stdout = stdout[index:]
 
 	err = json.Unmarshal([]byte(stdout), &jv)
 	if err != nil {
