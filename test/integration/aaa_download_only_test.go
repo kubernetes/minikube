@@ -197,8 +197,7 @@ func TestDownloadOnlyKic(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
-	// TODO: #7795 add containerd to download only too
-	cRuntime := "docker"
+	cRuntime := ContainerRuntime()
 
 	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr"}
 	args = append(args, StartArgs()...)

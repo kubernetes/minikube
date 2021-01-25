@@ -38,6 +38,9 @@ func TestSkaffold(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver doesn't support `minikube docker-env`; skaffold depends on this command")
 	}
+	if cr := ContainerRuntime(); cr != "docker" {
+		t.Skipf("skaffold requires docker-env, currently testing %s container runtime", cr)
+	}
 
 	profile := UniqueProfileName("skaffold")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))

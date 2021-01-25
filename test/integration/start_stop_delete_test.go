@@ -227,7 +227,6 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 }
 
 func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
-	defer PostMortemLogs(t, profile)
 	if !NoneDriver() {
 		testPulledImages(ctx, t, profile, tcVersion)
 	}
@@ -286,9 +285,12 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	jv := map[string][]struct {
 		Tags []string `json:"repoTags"`
 	}{}
-	err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
+
+	stdout := rr.Stdout.String()
+
+	err = json.Unmarshal([]byte(stdout), &jv)
 	if err != nil {
-		t.Errorf("failed to decode images json %v. output: %s", err, rr.Output())
+		t.Errorf("failed to decode images json %v. output:\n%s", err, stdout)
 	}
 	found := map[string]bool{}
 	for _, img := range jv["images"] {
