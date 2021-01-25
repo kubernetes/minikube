@@ -26,7 +26,10 @@ KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f
 ISO_VERSION ?= v1.17.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
+DEB_REVISION ?= 0
+
 RPM_VERSION ?= $(DEB_VERSION)
+RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 GO_VERSION ?= 1.15.5
@@ -463,31 +466,33 @@ out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
 deb_version:
-	@echo $(DEB_VERSION)
+	@echo $(DEB_VERSION)-$(DEB_REVISION)
 
-out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-0_amd64.deb
+out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb
 	cp $< $@
 
-out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
+out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
 	$(eval DEB_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(DEB_VERSION)-$*-deb"))
 	cp -r installers/linux/deb/minikube_deb_template/* $(DEB_PACKAGING_DIRECTORY_$*)/
 	chmod 0755 $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	sed -E -i 's/--ARCH--/'$*'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
+  
 	if [ "$*" = "amd64" ]; then \
 	    sed -E -i 's/--RECOMMENDS--/virtualbox/' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	else \
 	    sed -E -i '/Recommends: --RECOMMENDS--/d' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	fi
+  
 	mkdir -p $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin
 	cp $< $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin/minikube
 	fakeroot dpkg-deb --build $(DEB_PACKAGING_DIRECTORY_$*) $@
 	rm -rf $(DEB_PACKAGING_DIRECTORY_$*)
 
 rpm_version:
-	@echo $(RPM_VERSION)
+	@echo $(RPM_VERSION)-$(RPM_REVISION)
 
-out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-0.x86_64.rpm
+out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-$(RPM_REVISION).x86_64.rpm
 	cp $< $@
 
 out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
@@ -497,7 +502,7 @@ out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
 	sed -E -i 's|--OUT--|'$(PWD)/out'|g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
 	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
 		 $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
-	@mv out/$*/minikube-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
+	@mv out/$*/minikube-$(RPM_VERSION)-$(RPM_REVISION).$*.rpm out/ && rmdir out/$*
 	rm -rf $(RPM_PACKAGING_DIRECTORY_$*)
 
 .PHONY: apt
