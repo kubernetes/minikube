@@ -23,6 +23,18 @@ jobs:
           sudo rm -rf "/home/jenkins/actions-runner/_work/minikube/minikube/minikube_binaries"
           sudo apt-get -y install git
           sudo apt-get -y install build-essential
+          sudo apt-get install \
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg-agent \
+            software-properties-common
+          curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+          sudo add-apt-repository \
+            "deb [arch=amd64] https://download.docker.com/linux/debian \
+            $(lsb_release -cs) \
+            stable"
+          sudo apt-get install docker-ce docker-ce-cli containerd.io
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
@@ -73,18 +85,6 @@ jobs:
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-          sudo apt-get install \
-            apt-transport-https \
-            ca-certificates \
-            curl \
-            gnupg-agent \
-            software-properties-common
-          curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-          sudo add-apt-repository \
-            "deb [arch=amd64] https://download.docker.com/linux/debian \
-            $(lsb_release -cs) \
-            stable"
-          sudo apt-get install docker-ce-cli containerd.io docker-ce
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
