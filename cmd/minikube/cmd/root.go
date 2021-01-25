@@ -65,8 +65,9 @@ var RootCmd = &cobra.Command{
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
 		}
-		if !config.UserNameValid(viper.GetString(config.UserFlag)) {
-			out.WarningT("User name '{{.username}}' is not valid", out.V{"username": audit.UserName()})
+		userName := viper.GetString(config.UserFlag)
+		if !config.UserNameValid(userName) {
+			out.WarningT("User name '{{.username}}' is not valid", out.V{"username": userName})
 			exit.Message(reason.Usage, "User name must be 60 chars or less.")
 		}
 	},
