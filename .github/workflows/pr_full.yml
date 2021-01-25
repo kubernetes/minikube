@@ -72,6 +72,8 @@ jobs:
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
+          curl -o docker.deb https://download.docker.com/linux/debian/dists/stretch/pool/stable/amd64/docker-ce_19.03.9~3-0~debian-stretch_amd64.deb
+          sudo dpkg -i docker.deb
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
