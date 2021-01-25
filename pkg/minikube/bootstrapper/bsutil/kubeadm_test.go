@@ -126,7 +126,7 @@ func recentReleases(n int) ([]string, error) {
 Need a separate test function to test the DNS server IP
 as v1.11 yaml file is very different compared to v1.12+.
 This test case has only 1 thing to test and that is the
-nnetworking/dnsDomain value
+networking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 	// test all testdata releases greater than v1.11
@@ -150,7 +150,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 		shouldErr bool
 		cfg       config.ClusterConfig
 	}{
-		{"dns", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{DNSDomain: "1.1.1.1"}}},
+		{"dns", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{DNSDomain: "minikube.local"}}},
 	}
 	for _, version := range versions {
 		for _, tc := range tests {

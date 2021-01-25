@@ -7,7 +7,7 @@ env:
   GOPROXY: https://proxy.golang.org
 jobs:
   build_test_kic_image:
-    runs-on: [self-hosted, debian9, gcp]
+    runs-on: [self-hosted, debian9, baremetal, equinix]
     steps:
       - name: Clean up 
         shell: bash
@@ -60,7 +60,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
           sudo apt-get install -y jq
           rm -f gopogh-linux-amd64 || true

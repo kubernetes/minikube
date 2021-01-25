@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -34,8 +35,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/cpu"
-	gopshost "github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/cpu"
+	gopshost "github.com/shirou/gopsutil/v3/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -73,6 +74,7 @@ var (
 	insecureRegistry []string
 	apiServerNames   []string
 	apiServerIPs     []net.IP
+	hostRe           = regexp.MustCompile(`[\w\.-]+`)
 )
 
 func init() {
@@ -304,7 +306,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		os.Exit(0)
 	}
 
-	if driver.IsVM(driverName) {
+	if driver.IsVM(driverName) && !driver.IsSSH(driverName) {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
 			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
@@ -623,7 +625,7 @@ func hostDriver(existing *config.ClusterConfig) string {
 		klog.Warningf("Unable to get control plane from existing config: %v", err)
 		return existing.Driver
 	}
-	machineName := driver.MachineName(*existing, cp)
+	machineName := config.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
 		klog.Warningf("api.Load failed for %s: %v", machineName, err)
@@ -666,6 +668,20 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
+	out.WarningT("Deleting existing cluster {{.name}} with different driver {{.driver_name}} due to --delete-on-failure flag set by the user. ", out.V{"name": existing.Name, "driver_name": old})
+	if viper.GetBool(deleteOnFailure) {
+		// Start failed, delete the cluster
+		profile, err := config.LoadProfile(existing.Name)
+		if err != nil {
+			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			out.WarningT("Failed to delete cluster {{.name}}.", out.V{"name": existing.Name})
+		}
+	}
+
 	exit.Advice(
 		reason.GuestDrvMismatch,
 		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
@@ -700,6 +716,16 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		out.Step(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
 	}
 
+	if ds.Priority == registry.Obsolete {
+		exit.Message(reason.Kind{
+			ID:       fmt.Sprintf("PROVIDER_%s_OBSOLETE", strings.ToUpper(name)),
+			Advice:   translate.T(st.Fix),
+			ExitCode: reason.ExProviderUnsupported,
+			URL:      st.Doc,
+			Style:    style.Shrug,
+		}, st.Error.Error())
+	}
+
 	if st.Error == nil {
 		return
 	}
@@ -714,7 +740,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": name, "error": st.Error})
 	}
 
-	id := fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	id := st.Reason
+	if id == "" {
+		id = fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	}
+
 	code := reason.ExProviderUnavailable
 
 	if !st.Running {
@@ -825,7 +855,7 @@ func validateUser(drvName string) {
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor, the return value is in MiB
 func memoryLimits(drvName string) (int, int, error) {
-	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
+	info, cpuErr, memErr, diskErr := machine.LocalHostInfo()
 	if cpuErr != nil {
 		klog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
@@ -948,6 +978,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 func validateCPUCount(drvName string) {
 	var cpuCount int
 	if driver.BareMetal(drvName) {
+
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
@@ -1092,6 +1123,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	validateRegistryMirror()
+	validateInsecureRegistry()
+
 }
 
 // This function validates if the --registry-mirror
@@ -1107,6 +1140,34 @@ func validateRegistryMirror() {
 				exit.Message(reason.Usage, "Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}", out.V{"url": loc})
 			}
 
+		}
+	}
+}
+
+// This function validates that the --insecure-registry follows one of the following formats:
+// "<ip>:<port>" "<hostname>:<port>" "<network>/<netmask>"
+func validateInsecureRegistry() {
+	if len(insecureRegistry) > 0 {
+		for _, addr := range insecureRegistry {
+			hostnameOrIP, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				_, _, err := net.ParseCIDR(addr)
+				if err == nil {
+					continue
+				}
+			}
+			if port == "" {
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>:<port>, <hostname>:<port> or <network>/<netmask>", out.V{"addr": addr})
+			}
+			// checks both IPv4 and IPv6
+			ipAddr := net.ParseIP(hostnameOrIP)
+			if ipAddr != nil {
+				continue
+			}
+			isValidHost := hostRe.MatchString(hostnameOrIP)
+			if err != nil || !isValidHost {
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>:<port>, <hostname>:<port> or <network>/<netmask>", out.V{"addr": addr})
+			}
 		}
 	}
 }

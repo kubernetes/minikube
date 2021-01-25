@@ -159,9 +159,13 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 }
 
 // check functionality of minikube after evaling docker-env
+// TODO: Add validatePodmanEnv for crio runtime: #10231
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
+	if cr := ContainerRuntime(); cr != "docker" {
+		t.Skipf("only validate docker env with docker container runtime, currently testing %s", cr)
+	}
 	defer PostMortemLogs(t, profile)
-	mctx, cancel := context.WithTimeout(ctx, Seconds(30))
+	mctx, cancel := context.WithTimeout(ctx, Seconds(120))
 	defer cancel()
 	var rr *RunResult
 	var err error
@@ -183,7 +187,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
 
-	mctx, cancel = context.WithTimeout(ctx, Seconds(30))
+	mctx, cancel = context.WithTimeout(ctx, Seconds(60))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
@@ -359,6 +363,26 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
 	}
 
+}
+
+// imageID returns a docker image id for image `image` and current architecture
+// 'image' is supposed to be one commonly used in minikube integration tests,
+// like k8s 'pause'
+func imageID(image string) string {
+	ids := map[string]map[string]string{
+		"pause": {
+			"amd64": "0184c1613d929",
+			"arm64": "3d18732f8686c",
+		},
+	}
+
+	if imgIds, ok := ids[image]; ok {
+		if id, ok := imgIds[runtime.GOARCH]; ok {
+			return id
+		}
+		panic(fmt.Sprintf("unexpected architecture for image %q: %v", image, runtime.GOARCH))
+	}
+	panic("unexpected image name: " + image)
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
@@ -588,10 +612,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
-			if !strings.Contains(rr.Output(), "0184c1613d929") {
-				t.Errorf("expected sha for pause:3.3 '0184c1613d929' to be in the output but got *%s*", rr.Output())
+			pauseID := imageID("pause")
+			if !strings.Contains(rr.Output(), pauseID) {
+				t.Errorf("expected sha for pause:3.3 %q to be in the output but got *%s*", pauseID, rr.Output())
 			}
-
 		})
 
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
@@ -783,7 +807,15 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 	}()
 
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.4"))
+	var rr *RunResult
+	var err error
+	// k8s.gcr.io/echoserver is not multi-arch
+	if arm64Platform() {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver-arm:1.8"))
+	} else {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.8"))
+	}
+
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
@@ -955,6 +987,10 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	if arm64Platform() {
+		t.Skip("arm64 is not supported by mysql. Skip the test. See https://github.com/kubernetes/minikube/issues/10144")
+	}
+
 	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))

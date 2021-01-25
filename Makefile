@@ -14,7 +14,7 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 16
+VERSION_MINOR ?= 17
 VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.16.0
+ISO_VERSION ?= v1.17.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -219,8 +219,9 @@ else
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
-.PHONY: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
+.PHONY: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe
 e2e-linux-amd64: out/e2e-linux-amd64 ## Execute end-to-end testing for Linux 64bit
+e2e-linux-arm64: out/e2e-linux-arm64 ## Execute end-to-end testing for Linux ARM 64bit
 e2e-darwin-amd64: out/e2e-darwin-amd64 ## Execute end-to-end testing for Darwin 64bit
 e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## Execute end-to-end testing for Windows 64bit
 
@@ -380,7 +381,7 @@ darwin: minikube-darwin-amd64 ## Build minikube for Darwin 64bit
 linux: minikube-linux-amd64 ## Build minikube for Linux 64bit
 
 .PHONY: e2e-cross
-e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe ## End-to-end cross test
+e2e-cross: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe ## End-to-end cross test
 
 .PHONY: checksum
 checksum: ## Generate checksums
@@ -399,6 +400,7 @@ clean: ## Clean build
 	rm -f pkg/minikube/assets/assets.go
 	rm -f pkg/minikube/translate/translations.go
 	rm -rf ./vendor
+	rm -rf /tmp/tmp.*.minikube_*
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md  ## Generate documentation
@@ -470,19 +472,22 @@ out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd
 	cp $< $@
 
 out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
-	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
-	chmod 0755 out/minikube_$(DEB_VERSION)/DEBIAN
-	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
-	sed -E -i 's/--ARCH--/'$*'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
+	$(eval DEB_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(DEB_VERSION)-$*-deb"))
+	cp -r installers/linux/deb/minikube_deb_template/* $(DEB_PACKAGING_DIRECTORY_$*)/
+	chmod 0755 $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN
+	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
+	sed -E -i 's/--ARCH--/'$*'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
+  
 	if [ "$*" = "amd64" ]; then \
-	    sed -E -i 's/--RECOMMENDS--/virtualbox/' out/minikube_$(DEB_VERSION)/DEBIAN/control; \
+	    sed -E -i 's/--RECOMMENDS--/virtualbox/' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	else \
-	    sed -E -i '/Recommends: --RECOMMENDS--/d' out/minikube_$(DEB_VERSION)/DEBIAN/control; \
+	    sed -E -i '/Recommends: --RECOMMENDS--/d' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	fi
-	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
-	cp $< out/minikube_$(DEB_VERSION)/usr/bin/minikube
-	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION) $@
-	rm -rf out/minikube_$(DEB_VERSION)
+  
+	mkdir -p $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin
+	cp $< $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin/minikube
+	fakeroot dpkg-deb --build $(DEB_PACKAGING_DIRECTORY_$*) $@
+	rm -rf $(DEB_PACKAGING_DIRECTORY_$*)
 
 rpm_version:
 	@echo $(RPM_VERSION)-$(RPM_REVISION)
@@ -491,13 +496,14 @@ out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-$(RPM_REVISION).x86
 	cp $< $@
 
 out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
-	cp -r installers/linux/rpm/minikube_rpm_template out/minikube-$(RPM_VERSION)
-	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/minikube-$(RPM_VERSION)/minikube.spec
-	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/minikube-$(RPM_VERSION)/minikube.spec
+	$(eval RPM_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(RPM_VERSION)-$*-rpm"))
+	cp -r installers/linux/rpm/minikube_rpm_template/* $(RPM_PACKAGING_DIRECTORY_$*)/
+	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
+	sed -E -i 's|--OUT--|'$(PWD)/out'|g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
 	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
-		 out/minikube-$(RPM_VERSION)/minikube.spec
+		 $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
 	@mv out/$*/minikube-$(RPM_VERSION)-$(RPM_REVISION).$*.rpm out/ && rmdir out/$*
-	rm -rf out/minikube-$(RPM_VERSION)
+	rm -rf $(RPM_PACKAGING_DIRECTORY_$*)
 
 .PHONY: apt
 apt: out/Release ## Generate apt package file
@@ -603,6 +609,33 @@ kic-base-image: ## builds the kic base image and tags local/kicbase:latest and l
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
+# multi-arch docker images
+X_DOCKER_BUILDER ?= minikube-builder
+X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
+
+.PHONY: docker-multi-arch-builder
+docker-multi-arch-builder:
+	env $(X_BUILD_ENV) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+	env $(X_BUILD_ENV) docker buildx rm --builder $(X_DOCKER_BUILDER) || true
+	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --buildkitd-flags '--debug' --use || true
+
+KICBASE_ARCH = linux/arm64,linux/amd64
+KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) $(REGISTRY_GH)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
+
+.PHONY: push-kic-base-image 
+push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
+ifdef AUTOPUSH
+	docker login gcr.io/k8s-minikube
+	docker login docker.pkg.github.com
+	docker login
+endif
+	$(foreach REG,$(KICBASE_IMAGE_REGISTRIES), \
+		@docker pull $(REG) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry";)
+ifndef AUTOPUSH
+	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
+endif
+	env $(X_BUILD_ENV) docker buildx build --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
+
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o out/upload-preload ./hack/preload-images/*.go
@@ -651,8 +684,8 @@ push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
 	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_HUB)
 	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
 
-.PHONY: push-kic-base-image
-push-kic-base-image: ## Push local/kicbase:latest to all remote registries
+.PHONY: push-kic-base-image-x86-deprecated
+push-kic-base-image-x86-deprecated: ## Push legacy, non-multiarch local/kicbase:latest to all remote registries
 ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
 	$(MAKE) push-kic-base-image AUTOPUSH=true
@@ -821,3 +854,8 @@ else
 	 export UPDATE_TARGET="all" && \
 	 go run update_kubernetes_version.go)
 endif
+
+.PHONY: update-gopogh-version
+update-gopogh-version: ## update gopogh version
+	(cd hack/update/gopogh_version && \
+	 go run update_gopogh_version.go)

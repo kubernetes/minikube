@@ -288,7 +288,7 @@ func deleteProfile(profile *config.Profile) error {
 		if driver.IsKIC(profile.Config.Driver) {
 			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
 			for _, n := range profile.Config.Nodes {
-				machineName := driver.MachineName(*profile.Config, n)
+				machineName := config.MachineName(*profile.Config, n)
 				deletePossibleKicLeftOver(machineName, profile.Config.Driver)
 			}
 		}
@@ -309,7 +309,7 @@ func deleteProfile(profile *config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
 
-	if err == nil && driver.BareMetal(cc.Driver) {
+	if err == nil && (driver.BareMetal(cc.Driver) || driver.IsSSH(cc.Driver)) {
 		if err := uninstallKubernetes(api, *cc, cc.Nodes[0], viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {
@@ -329,6 +329,7 @@ func deleteProfile(profile *config.Profile) error {
 
 	// In case DeleteHost didn't complete the job.
 	deleteProfileDirectory(profile.Name)
+	deleteMachineDirectories(cc)
 
 	if err := deleteConfig(profile.Name); err != nil {
 		return err
@@ -346,7 +347,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 
 	if cc != nil {
 		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(*cc, n)
+			machineName := config.MachineName(*cc, n)
 			if err := machine.DeleteHost(api, machineName); err != nil {
 				switch errors.Cause(err).(type) {
 				case mcnerror.ErrHostDoesNotExist:
@@ -411,7 +412,7 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
 	out.Step(style.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
-	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
+	host, err := machine.LoadHost(api, config.MachineName(cc, n))
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to load host: %v", err), Errtype: MissingCluster}
 	}
@@ -492,6 +493,15 @@ func deleteProfileDirectory(profile string) {
 		err := os.RemoveAll(machineDir)
 		if err != nil {
 			exit.Error(reason.GuestProfileDeletion, "Unable to remove machine directory", err)
+		}
+	}
+}
+
+func deleteMachineDirectories(cc *config.ClusterConfig) {
+	if cc != nil {
+		for _, n := range cc.Nodes {
+			machineName := config.MachineName(*cc, n)
+			deleteProfileDirectory(machineName)
 		}
 	}
 }

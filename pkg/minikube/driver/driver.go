@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -39,6 +38,8 @@ const (
 	Mock = "mock"
 	// None driver
 	None = "none"
+	// SSH driver
+	SSH = "ssh"
 	// KVM2 driver
 	KVM2 = "kvm2"
 	// VirtualBox driver
@@ -47,7 +48,7 @@ const (
 	HyperKit = "hyperkit"
 	// VMware driver
 	VMware = "vmware"
-	// VMwareFusion driver
+	// VMwareFusion driver (obsolete)
 	VMwareFusion = "vmwarefusion"
 	// HyperV driver
 	HyperV = "hyperv"
@@ -56,6 +57,8 @@ const (
 
 	// AliasKVM is driver name alias for kvm2
 	AliasKVM = "kvm"
+	// AliasSSH is driver name alias for ssh
+	AliasSSH = "generic"
 )
 
 var (
@@ -95,6 +98,10 @@ func Supported(name string) bool {
 func MachineType(name string) string {
 	if IsKIC(name) {
 		return "container"
+	}
+
+	if IsSSH(name) {
+		return "bare metal machine"
 	}
 
 	if IsVM(name) {
@@ -142,6 +149,11 @@ func IsVM(name string) bool {
 // BareMetal returns if this driver is unisolated
 func BareMetal(name string) bool {
 	return name == None || name == Mock
+}
+
+// IsSSH checks if the driver is ssh
+func IsSSH(name string) bool {
+	return name == SSH
 }
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
@@ -303,15 +315,6 @@ func SetLibvirtURI(v string) {
 	klog.Infof("Setting default libvirt URI to %s", v)
 	os.Setenv("LIBVIRT_DEFAULT_URI", v)
 
-}
-
-// MachineName returns the name of the machine, as seen by the hypervisor given the cluster and node names
-func MachineName(cc config.ClusterConfig, n config.Node) string {
-	// For single node cluster, default to back to old naming
-	if len(cc.Nodes) == 1 || n.ControlPlane {
-		return cc.Name
-	}
-	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
 }
 
 // IndexFromMachineName returns the order of the container based on it is name

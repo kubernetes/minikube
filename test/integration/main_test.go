@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
@@ -129,10 +130,30 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
+// ContainerRuntime returns the name of a specific container runtime if it was specified
+func ContainerRuntime() string {
+	flag := "--container-runtime="
+	for _, s := range StartArgs() {
+		if strings.HasPrefix(s, flag) {
+			return strings.TrimPrefix(s, flag)
+		}
+	}
+	return constants.DefaultContainerRuntime
+}
+
 // GithubActionRunner returns true if running inside a github action runner
 func GithubActionRunner() bool {
 	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
 	return os.Getenv("GITHUB_ACTIONS") == "true"
+}
+
+func ContainerdContainerRuntime() bool {
+	return strings.Contains(*startArgs, "--container-runtime=containerd")
+}
+
+// arm64Platform returns true if running on arm64/* platform
+func arm64Platform() bool {
+	return runtime.GOARCH == "arm64"
 }
 
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding

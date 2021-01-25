@@ -25,7 +25,6 @@
 	"A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine": "",
 	"A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine": "",
 	"A set of key=value pairs that describe feature gates for alpha/experimental features.": "",
-	"Access the Kubernetes dashboard running within the minikube cluster": "",
 	"Access the kubernetes dashboard running within the minikube cluster": "Dostęp do dashboardu uruchomionego w klastrze kubernetesa w minikube",
 	"Add an image to local cache.": "",
 	"Add machine IP to NO_PROXY environment variable": "",

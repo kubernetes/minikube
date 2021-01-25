@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -41,7 +41,7 @@ var sshKeyCmd = &cobra.Command{
 			exit.Error(reason.GuestNodeRetrieve, "retrieving node", err)
 		}
 
-		out.Ln(filepath.Join(localpath.MiniPath(), "machines", driver.MachineName(*cc, *n), "id_rsa"))
+		out.Ln(filepath.Join(localpath.MiniPath(), "machines", config.MachineName(*cc, *n), "id_rsa"))
 	},
 }
 

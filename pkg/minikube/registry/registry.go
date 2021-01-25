@@ -31,6 +31,8 @@ type Priority int
 const (
 	// Unknown is when there is no status check available
 	Unknown Priority = iota
+	// Obsolete is when a driver has been removed
+	Obsolete
 	// Unhealthy is when a driver does not pass health checks
 	Unhealthy
 	// Experimental is when a driver is not officially supported because it's still experimental
@@ -77,8 +79,10 @@ type State struct {
 	Running          bool // it at least appears to be running
 	NeedsImprovement bool // healthy but could be improved
 	Error            error
-	Fix              string
-	Doc              string
+
+	Reason string // A reason ID, propagated to reason.Kind.ID
+	Fix    string
+	Doc    string
 }
 
 // DriverDef defines how to initialize and load a machine driver
