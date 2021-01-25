@@ -100,7 +100,10 @@ RUN clean-install \
     openssh-server \
     dnsutils \
     # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0
+    libglib2.0-0 \
+    # required troubleshooting host access https://minikube.sigs.k8s.io/docs/handbook/host-access/
+    iputils-ping \
+    telnet
 
 # install docker
 RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list" && \
