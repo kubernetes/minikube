@@ -64,6 +64,10 @@ func Log(startTime time.Time) {
 func shouldLog() bool {
 	// commands that should not be logged.
 	no := []string{"status", "version"}
+	// in rare chance we get here without a command, don't log
+	if len(os.Args) < 2 {
+		return false
+	}
 	a := os.Args[1]
 	for _, c := range no {
 		if a == c {
