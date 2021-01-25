@@ -26,6 +26,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get -y install git
+          sudo apt-get -y install build-essential
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
