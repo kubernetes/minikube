@@ -31,7 +31,7 @@ jobs:
           sudo add-apt-repository \
             "deb [arch=amd64] https://download.docker.com/linux/debian \
             $(lsb_release -cs) \
-            stable"
+            stable edge test"
           sudo apt-get install docker-ce docker-ce-cli containerd.io
           sudo apt-get -y install git
           sudo apt-get -y install build-essential
