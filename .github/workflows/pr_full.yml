@@ -21,23 +21,7 @@ jobs:
         shell: bash
         run: |
           sudo rm -rf "/home/jenkins/actions-runner/_work/minikube/minikube/minikube_binaries"
-          sudo add-apt-repository "deb [arch=amd64] http://ftp.debian.org/debian stretch stable main contrib non-free"
-          sudo apt-get -y update
-          sudo apt-get -y install \
-            apt-transport-https \
-            ca-certificates \
-            curl \
-            gnupg-agent \
-            software-properties-common
-          curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-          sudo add-apt-repository \
-            "deb [arch=amd64] https://download.docker.com/linux/debian \
-            $(lsb_release -cs) \
-            stable"
-          sudo apt-get -y update
-          sudo apt-get -y install docker-ce  docker-ce-cli containerd.io
-          sudo usermod -aG docker ${USER}
-          sudo chmod 666 /var/run/docker.sock
+          sudo apt-get update
           sudo apt-get -y install git
           sudo apt-get -y install build-essential
       - uses: actions/checkout@v2
@@ -64,9 +48,33 @@ jobs:
         with:
           name: minikube_binaries
           path: out
+  setup_docker:
+    if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
+    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
+    steps:
+      - name: Setup Docker
+        shell: bash
+        run: |
+          sudo add-apt-repository "deb [arch=amd64] http://ftp.debian.org/debian stretch stable main contrib non-free"
+          sudo apt-get update
+          sudo apt-get -y install \
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg-agent \
+            software-properties-common
+          curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+          sudo add-apt-repository \
+            "deb [arch=amd64] https://download.docker.com/linux/debian \
+            $(lsb_release -cs) \
+            stable"
+          sudo apt-get update
+          sudo apt-get -y install docker-ce  docker-ce-cli containerd.io
+          sudo usermod -aG docker ${USER}
+          sudo chmod 666 /var/run/docker.sock
   integration_baremetal_debian9:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
-    needs: [build_minikube]
+    needs: [build_minikube, setup_docker]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "integration_baremetal_debian9"
@@ -85,6 +93,7 @@ jobs:
       - name: Install tools for none
         shell: bash
         run: |
+          sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
           VERSION="v1.17.0"
@@ -159,7 +168,7 @@ jobs:
           if [ "$numPass" -lt 26 ];then echo "*** Failed to pass at least 26 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   integration_docker_debian9:
-    needs: [build_minikube]
+    needs: [build_minikube, setup_docker]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "integration_docker_debian9"
