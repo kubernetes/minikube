@@ -63,8 +63,15 @@ func Profile(name string) string {
 }
 
 // EventLog returns the path to a CloudEvents log
+// This log contains the transient state of minikube and the completed steps on start.
 func EventLog(name string) string {
 	return filepath.Join(Profile(name), "events.json")
+}
+
+// AuditLog returns the path to the audit log.
+// This log contains a history of commands run, by who, when, and what arguments.
+func AuditLog() string {
+	return filepath.Join(MiniPath(), "logs", "audit.json")
 }
 
 // ClientCert returns client certificate path, used by kubeconfig

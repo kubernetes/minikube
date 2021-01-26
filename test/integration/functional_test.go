@@ -243,6 +243,16 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Stderr.String(), want) {
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
+
+	t.Run("Audit", func(t *testing.T) {
+		got, err := auditContains(profile)
+		if err != nil {
+			t.Fatalf("failed to check audit log: %v", err)
+		}
+		if !got {
+			t.Errorf("audit.json does not contain the profile %q", profile)
+		}
+	})
 }
 
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
@@ -276,6 +286,15 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortTest, afterCfg.Config.KubernetesConfig.NodePort)
 	}
 
+	t.Run("Audit", func(t *testing.T) {
+		got, err := auditContains(profile)
+		if err != nil {
+			t.Fatalf("failed to check audit log: %v", err)
+		}
+		if !got {
+			t.Errorf("audit.json does not contain the profile %q", profile)
+		}
+	})
 }
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)

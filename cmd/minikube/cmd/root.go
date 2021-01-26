@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -31,10 +32,12 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
@@ -62,12 +65,19 @@ var RootCmd = &cobra.Command{
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
 		}
+		userName := viper.GetString(config.UserFlag)
+		if !validateUsername(userName) {
+			out.WarningT("User name '{{.username}}' is not valid", out.V{"username": userName})
+			exit.Message(reason.Usage, "User name must be 60 chars or less.")
+		}
 	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	defer audit.Log(time.Now())
+
 	_, callingCmd := filepath.Split(os.Args[0])
 
 	if callingCmd == "kubectl" {
@@ -170,6 +180,7 @@ func init() {
 
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
+	RootCmd.PersistentFlags().String(config.UserFlag, "", "Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.")
 
 	groups := templates.CommandGroups{
 		{
@@ -279,4 +290,8 @@ func addToPath(dir string) {
 	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
 	klog.Infof("Updating PATH: %s", dir)
 	os.Setenv("PATH", new)
+}
+
+func validateUsername(name string) bool {
+	return len(name) <= 60
 }
