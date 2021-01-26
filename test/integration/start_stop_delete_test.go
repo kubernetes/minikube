@@ -51,7 +51,6 @@ func TestStartStop(t *testing.T) {
 				"--kvm-qemu-uri=qemu:///system",
 				"--disable-driver-mounts",
 				"--keep-context=false",
-				"--container-runtime=docker",
 			}},
 			{"newest-cni", constants.NewestKubernetesVersion, []string{
 				"--feature-gates",
@@ -60,14 +59,13 @@ func TestStartStop(t *testing.T) {
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			}},
-			{"containerd", constants.DefaultKubernetesVersion, []string{
-				"--container-runtime=containerd",
-				"--docker-opt",
-				"containerd=/var/run/containerd/containerd.sock",
+			{"default-k8s-different-port", constants.DefaultKubernetesVersion, []string{
 				"--apiserver-port=8444",
 			}},
-			{"crio", "v1.15.7", []string{
-				"--container-runtime=crio",
+			{"no-preload", constants.NewestKubernetesVersion, []string{
+				"--preload=false",
+			}},
+			{"disable-driver-mounts", constants.DefaultKubernetesVersion, []string{
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
@@ -86,6 +84,9 @@ func TestStartStop(t *testing.T) {
 				type validateStartStopFunc func(context.Context, *testing.T, string, string, string, []string)
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
+				}
+				if strings.Contains(tc.name, "disable_driver_mounts") && !VirtualboxDriver() {
+					t.Skipf("skipping %s - only runs on virtualbox", t.Name())
 				}
 
 				waitFlag := "--wait=true"
@@ -227,7 +228,6 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 }
 
 func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
-	defer PostMortemLogs(t, profile)
 	if !NoneDriver() {
 		testPulledImages(ctx, t, profile, tcVersion)
 	}
@@ -286,9 +286,12 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	jv := map[string][]struct {
 		Tags []string `json:"repoTags"`
 	}{}
-	err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
+
+	stdout := rr.Stdout.String()
+
+	err = json.Unmarshal([]byte(stdout), &jv)
 	if err != nil {
-		t.Errorf("failed to decode images json %v. output: %s", err, rr.Output())
+		t.Errorf("failed to decode images json %v. output:\n%s", err, stdout)
 	}
 	found := map[string]bool{}
 	for _, img := range jv["images"] {

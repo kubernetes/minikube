@@ -11,7 +11,7 @@ Enable or disable a minikube addon
 
 ### Synopsis
 
-addons modifies minikube addons files using subcommands like "minikube addons enable dashboard"
+Addons modifies minikube addons files using subcommands like "minikube addons enable dashboard".
 
 ```shell
 minikube addons SUBCOMMAND [flags]
