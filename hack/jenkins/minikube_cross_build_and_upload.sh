@@ -36,10 +36,22 @@ declare -rx ISO_BUCKET="${bucket}/${ghprbPullId}"
 declare -rx ISO_VERSION="testing"
 declare -rx TAG="${ghprbActualCommit}"
 
+declare -rx DEB_VERSION="${ghprbActualCommit}"
+declare -rx RPM_VERSION="${ghprbActualCommit}"
+
 
 docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
-make -j 16 all minikube-darwin-arm64 && failed=$? || failed=$?
+make -j 16 \
+  all \
+  minikube-darwin-arm64 \
+  "out/minikube_${DEB_VERSION}-0_amd64.deb" \
+  "out/minikube_${DEB_VERSION}-0_arm64.deb" \
+  "out/minikube-${RPM_VERSION}-0.x86_64.rpm" \
+  "out/minikube-${RPM_VERSION}-0.aarch64.rpm" \
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
+  "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm" \
+&& failed=$? || failed=$?
 
 "out/minikube-$(go env GOOS)-$(go env GOARCH)" version
 
