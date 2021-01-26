@@ -29,9 +29,6 @@ import (
 )
 
 func TestPause(t *testing.T) {
-	if ContainerdContainerRuntime() {
-		t.Skip("skipping as this test currently times out on containerd")
-	}
 	MaybeParallel(t)
 
 	type validateFunc func(context.Context, *testing.T, string)
