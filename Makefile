@@ -49,7 +49,6 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 #BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
 BUILD_IMAGE 	?= golang:1.16beta1-buster
 #
-#
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
