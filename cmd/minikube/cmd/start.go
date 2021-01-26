@@ -979,8 +979,8 @@ func validateCPUCount(drvName string) {
 	var cpuCount int
 	if driver.BareMetal(drvName) {
 
-		// Uses the gopsutil cpu package to count the number of physical cpu cores
-		ci, err := cpu.Counts(false)
+		// Uses the gopsutil cpu package to count the number of logical cpu cores
+		ci, err := cpu.Counts(true)
 		if err != nil {
 			klog.Warningf("Unable to get CPU info: %v", err)
 		} else {
