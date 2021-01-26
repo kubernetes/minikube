@@ -33,7 +33,7 @@ func TestPause(t *testing.T) {
 
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("pause")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 	defer Cleanup(t, profile, cancel)
 
 	// Serial tests
