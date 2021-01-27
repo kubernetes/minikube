@@ -44,7 +44,9 @@ docker rm $(docker ps -aq) || true
 make -j 16 \
   all \
   minikube-darwin-arm64 \
-  "out/minikube_${DEB_VERSION}-0_amd64.deb" \
+&& failed=$? || failed=$?
+
+make "out/minikube_${DEB_VERSION}-0_amd64.deb" \
   "out/minikube_${DEB_VERSION}-0_arm64.deb" \
   "out/minikube-${RPM_VERSION}-0.x86_64.rpm" \
   "out/minikube-${RPM_VERSION}-0.aarch64.rpm" \
