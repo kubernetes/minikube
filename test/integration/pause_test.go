@@ -29,7 +29,7 @@ import (
 )
 
 func TestPause(t *testing.T) {
-	// MaybeParallel(t)
+	MaybeParallel(t)
 
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("pause")
@@ -71,7 +71,7 @@ func TestPause(t *testing.T) {
 func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=all"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=all", "--wait-timeout=2m"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
@@ -82,7 +82,7 @@ func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
 func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=1"}
+	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--wait-timeout=2m"}
 	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
