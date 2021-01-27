@@ -54,7 +54,7 @@ func TestJSONOutput(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.command, func(t *testing.T) {
-			args := []string{test.command, "-p", profile, "--output=json"}
+			args := []string{test.command, "-p", profile, "--output=json", "--user=testUser"}
 			args = append(args, test.args...)
 
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
@@ -66,6 +66,16 @@ func TestJSONOutput(t *testing.T) {
 			if err != nil {
 				t.Fatalf("converting to cloud events: %v\n", err)
 			}
+
+			t.Run("Audit", func(t *testing.T) {
+				got, err := auditContains("testUser")
+				if err != nil {
+					t.Fatalf("failed to check audit log: %v", err)
+				}
+				if !got {
+					t.Errorf("audit.json does not contain the user testUser")
+				}
+			})
 
 			type validateJSONOutputFunc func(context.Context, *testing.T, []*cloudEvent)
 			t.Run("parallel", func(t *testing.T) {

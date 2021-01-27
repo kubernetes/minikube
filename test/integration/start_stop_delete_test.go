@@ -85,7 +85,7 @@ func TestStartStop(t *testing.T) {
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
-				if strings.Contains(tc.name, "disable_driver_mounts") && !VirtualboxDriver() {
+				if strings.Contains(tc.name, "disable-driver-mounts") && !VirtualboxDriver() {
 					t.Skipf("skipping %s - only runs on virtualbox", t.Name())
 				}
 
