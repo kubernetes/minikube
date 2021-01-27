@@ -29,7 +29,7 @@ import (
 )
 
 func TestPause(t *testing.T) {
-	MaybeParallel(t)
+	// MaybeParallel(t)
 
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("pause")
