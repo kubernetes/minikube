@@ -481,6 +481,10 @@ out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 deb_version:
 	@echo $(DEB_VERSION)-$(DEB_REVISION)
 
+.PHONY: deb
+deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_amd64.deb
+
+
 out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb
 	cp $< $@
 
