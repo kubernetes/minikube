@@ -36,9 +36,8 @@ declare -rx ISO_BUCKET="${bucket}/${ghprbPullId}"
 declare -rx ISO_VERSION="testing"
 declare -rx TAG="${ghprbActualCommit}"
 
-declare -rx DEB_VERSION="${ghprbActualCommit}"
-declare -rx RPM_VERSION="${ghprbActualCommit}"
-
+declare -rx DEB_VERSION="$(make deb_version)"
+declare -rx RPM_VERSION="$(make deb_version)"
 
 docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
