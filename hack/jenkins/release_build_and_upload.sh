@@ -43,7 +43,7 @@ echo "Verifying ISO exists ..."
 make verify-iso
 
 # Build and upload
-env BUILD_IN_DOCKER=y BUILD_IMAGE=golang:1.16beta1-buster \
+env BUILD_IN_DOCKER=y \
   make -j 16 \
   all \
   out/minikube-darwin-arm64 \
