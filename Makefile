@@ -478,12 +478,13 @@ verify-iso: # Make sure the current ISO exists in the expected bucket
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
+.PHONY: deb_version
 deb_version:
 	@echo $(DEB_VERSION)-$(DEB_REVISION)
 
-.PHONY: deb
-deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_amd64.deb
-
+.PHONY: deb_version_base
+deb_version_base:
+	@echo $(DEB_VERSION)
 
 out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb
 	cp $< $@
