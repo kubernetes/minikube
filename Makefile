@@ -490,8 +490,6 @@ out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd
 	cp $< $@
 
 out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
-	echo $@ 
-	exit
 	$(eval DEB_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(DEB_VERSION)-$*-deb"))
 	cp -r installers/linux/deb/minikube_deb_template/* $(DEB_PACKAGING_DIRECTORY_$*)/
 	chmod 0755 $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN
