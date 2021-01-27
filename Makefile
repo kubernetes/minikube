@@ -481,6 +481,10 @@ out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 deb_version:
 	@echo $(DEB_VERSION)-$(DEB_REVISION)
 
+.PHONY: deb_version_base
+deb_version_base:
+	@echo $(DEB_VERSION)
+
 out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb
 	cp $< $@
 
