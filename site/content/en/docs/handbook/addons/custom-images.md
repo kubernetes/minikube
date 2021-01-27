@@ -31,7 +31,7 @@ An empty registry means the image is stored locally or default registry `docker.
 
 The `IMAGE NAME` column is used to customize the corresponding image and registry.
 
-Assume we have a private registry at `localhost:5555` to replace `k8s.gcr.io` and a locally built Kibana called `kibana/kibana:5.6.2-custom`.
+Assume we have a private registry at `192.168.10.2:5555` to replace `k8s.gcr.io` and a locally built Kibana called `kibana/kibana:5.6.2-custom`.
 
 We could load local images to minikube by:
 
@@ -43,12 +43,12 @@ Then we can start `efk` addon with flags `--images` and `--registries`.
 The format is `IMAGE_NAME=CUSTOM_VALUE`, separated by commas, where the `IMAGE_NAME` is the value of `IMAGE NAME` column in the table above.
 
 ```shell
-minikube addons enable efk --images="Kibana=kibana/kibana:5.6.2-custom" --registries="Kibana=,Elasticsearch=localhost:5555,FluentdElasticsearch=localhost:5555"
+minikube addons enable efk --images="Kibana=kibana/kibana:5.6.2-custom" --registries="Kibana=,Elasticsearch=192.168.10.2:5555,FluentdElasticsearch=192.168.10.2:5555"
 ```
 
 ```
-    ▪ Using image localhost:5555/elasticsearch:v5.6.2
-    ▪ Using image localhost:5555/fluentd-elasticsearch:v2.0.2
+    ▪ Using image 192.168.10.2:5555/elasticsearch:v5.6.2
+    ▪ Using image 192.168.10.2:5555/fluentd-elasticsearch:v2.0.2
     ▪ Using image alpine:3.6
     ▪ Using image kibana/kibana:5.6.2-custom
 🌟  The 'efk' addon is enabled
