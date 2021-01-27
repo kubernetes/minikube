@@ -34,7 +34,9 @@ import (
 
 func TestNetworkPlugins(t *testing.T) {
 	MaybeParallel(t)
-	validations(t)
+	if NoneDriver() {
+		t.Skip("skipping since test for none driver")
+	}
 
 	t.Run("group", func(t *testing.T) {
 		tests := []struct {
@@ -203,13 +205,4 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
-}
-
-func validations(t *testing.T) {
-	if NoneDriver() {
-		t.Skip("skipping since test for none driver")
-	}
-	if ContainerdContainerRuntime() {
-		t.Skip("skipping as this test currently times out on containerd")
-	}
 }

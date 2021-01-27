@@ -1,5 +1,78 @@
 # Release Notes
+
+## Version 1.17.0 - 2020-01-22
+
+Features:
+
+* Add multi-arch (arm64) support for docker/podman drivers [#9969](https://github.com/kubernetes/minikube/pull/9969)
+* Add new driver "SSH" to bootstrap generic minkube clusters over ssh [#10099](https://github.com/kubernetes/minikube/pull/10099)
+* Annotate Kubeconfig with  'Extension' to identify contexts/clusters created by minikube [#10126](https://github.com/kubernetes/minikube/pull/10126)
+* Add support for systemd cgroup to containerd runtime [#10100](https://github.com/kubernetes/minikube/pull/10100)
+* Add --network flag to select docker network to run with docker driver [#9538](https://github.com/kubernetes/minikube/pull/9538)
+
+
+
+Minor Improvements:
+
+* Improve exit codes by splitting PROVIDER_DOCKER_ERROR into more specific reason codes [#10212](https://github.com/kubernetes/minikube/pull/10212)
+* Improve warning about the suggested memory size [#10187](https://github.com/kubernetes/minikube/pull/10187)
+* Remove systemd dependency from none driver [#10112](https://github.com/kubernetes/minikube/pull/10112)
+* Delete the existing cluster if guest driver mismatch [#10084](https://github.com/kubernetes/minikube/pull/10084)
+* Remove obsolete 'vmwarefusion' driver, add friendly message [#9958](https://github.com/kubernetes/minikube/pull/9958)
+* UI: Add a spinner for `creating container` step [#10024](https://github.com/kubernetes/minikube/pull/10024)
+* Added validation for --insecure-registry values [#9977](https://github.com/kubernetes/minikube/pull/9977)
+
+
+Bug Fixes:
+
+* Snap package manger: fix cert copy issue    [#10042](https://github.com/kubernetes/minikube/pull/10042)
+* Ignore non-socks5 ALL_PROXY env var when checking docker status [#10109](https://github.com/kubernetes/minikube/pull/10109)
+* Docker-env: avoid race condition in bootstrap certs for parallel runs [#10118](https://github.com/kubernetes/minikube/pull/10118)
+* Fix 'profile list' for multi-node clusters  [#9955](https://github.com/kubernetes/minikube/pull/9955)
+* Change metrics-server pull policy to IfNotPresent [#10096](https://github.com/kubernetes/minikube/pull/10096)
+* Podman driver: Handle installations without default bridge [#10092](https://github.com/kubernetes/minikube/pull/10092)
+* Fix docker inspect network go template for network which doesn't have MTU [#10053](https://github.com/kubernetes/minikube/pull/10053)
+* Docker/Podman: add control-plane to NO_PROXY [#10046](https://github.com/kubernetes/minikube/pull/10046)
+* "cache add": fix command error when not specifying :latest tag  [#10058](https://github.com/kubernetes/minikube/pull/10058)
+* Networking: Fix ClusterDomain value in kubeadm KubeletConfiguration [#10049](https://github.com/kubernetes/minikube/pull/10049)
+* Fix typo in the csi-hostpath-driver addon name [#10034](https://github.com/kubernetes/minikube/pull/10034)
+
+
+Upgrades:
+
+* bump default Kubernetes version to v1.20.2 and add v1.20.3-rc.0 [#10194](https://github.com/kubernetes/minikube/pull/10194)
+* Upgrade Docker, from 20.10.1 to 20.10.2 [#10154](https://github.com/kubernetes/minikube/pull/10154)
+* ISO: Added sch_htb, cls_fw, cls_matchall, act_connmark and ifb kernel modules [#10048](https://github.com/kubernetes/minikube/pull/10048)
+* ISO: add XFS_QUOTA support to guest vm [#9999](https://github.com/kubernetes/minikube/pull/9999)
+
+Thank you to our contributors for this release!
+
+- AUT0R3V
+- Amar Tumballi
+- Anders F Björklund
+- Daehyeok Mun
+- Eric Briand
+- Ilya Zuyev
+- Ivan Milchev
+- Jituri, Pranav
+- Laurent VERDOÏA
+- Ling Samuel
+- Medya Ghazizadeh
+- Oliver Radwell
+- Pablo Caderno
+- Priya Wadhwa
+- Sadlil
+- Sharif Elgamal
+- Steven Powell
+- Thomas Strömberg
+- Yanshu Zhao
+- alonyb
+- anencore94
+- cxsu
+- zouyu
+
 ## Version 1.16.0 - 2020-12-17
+
 * fix ip node retrieve for none driver [#9986](https://github.com/kubernetes/minikube/pull/9986)
 * remove experimental warning for multinode [#9987](https://github.com/kubernetes/minikube/pull/9987)
 * Enable Ingress Addon for Docker Windows [#9761](https://github.com/kubernetes/minikube/pull/9761)

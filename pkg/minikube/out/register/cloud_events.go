@@ -63,8 +63,8 @@ func SetEventLogPath(path string) {
 	eventFile = f
 }
 
-// cloudEvent creates a CloudEvent from a log object & associated data
-func cloudEvent(log Log, data map[string]string) cloudevents.Event {
+// CloudEvent creates a CloudEvent from a log object & associated data
+func CloudEvent(log Log, data map[string]string) cloudevents.Event {
 	event := cloudevents.NewEvent()
 	event.SetSource("https://minikube.sigs.k8s.io/")
 	event.SetType(log.Type())
@@ -78,7 +78,7 @@ func cloudEvent(log Log, data map[string]string) cloudevents.Event {
 
 // print JSON output to configured writer
 func printAsCloudEvent(log Log, data map[string]string) {
-	event := cloudEvent(log, data)
+	event := CloudEvent(log, data)
 
 	bs, err := event.MarshalJSON()
 	if err != nil {
@@ -90,7 +90,7 @@ func printAsCloudEvent(log Log, data map[string]string) {
 
 // print JSON output to configured writer, and record it to disk
 func printAndRecordCloudEvent(log Log, data map[string]string) {
-	event := cloudEvent(log, data)
+	event := CloudEvent(log, data)
 
 	bs, err := event.MarshalJSON()
 	if err != nil {
@@ -118,7 +118,7 @@ func recordCloudEvent(log Log, data map[string]string) {
 	}
 
 	go func() {
-		event := cloudEvent(log, data)
+		event := CloudEvent(log, data)
 		bs, err := event.MarshalJSON()
 		if err != nil {
 			klog.Errorf("error marshalling event: %v", err)

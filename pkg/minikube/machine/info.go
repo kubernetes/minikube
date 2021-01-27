@@ -181,6 +181,7 @@ var (
 //  cachedCPUInfo will return a cached cpu info
 func cachedCPUInfo() ([]cpu.InfoStat, error) {
 	if cachedCPU == nil {
+		// one InfoStat per thread
 		i, err := cpu.Info()
 		cachedCPU = &i
 		cachedCPUErr = &err

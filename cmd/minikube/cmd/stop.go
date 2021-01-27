@@ -61,10 +61,6 @@ func init() {
 	stopCmd.Flags().BoolVar(&keepActive, "keep-context-active", false, "keep the kube-context active after cluster is stopped. Defaults to false.")
 	stopCmd.Flags().DurationVar(&scheduledStopDuration, "schedule", 0*time.Second, "Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)")
 	stopCmd.Flags().BoolVar(&cancelScheduledStop, "cancel-scheduled", false, "cancel any existing scheduled stop requests")
-
-	if err := stopCmd.Flags().MarkHidden("schedule"); err != nil {
-		klog.Info("unable to mark --schedule flag as hidden")
-	}
 	stopCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 
 	if err := viper.GetViper().BindPFlags(stopCmd.Flags()); err != nil {

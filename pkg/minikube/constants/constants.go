@@ -19,6 +19,7 @@ package constants
 import (
 	"errors"
 	"path/filepath"
+	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -27,10 +28,10 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.20.0"
+	DefaultKubernetesVersion = "v1.20.2"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.20.0"
+	NewestKubernetesVersion = "v1.20.3-rc.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.13.0"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -45,6 +46,8 @@ const (
 	RegistryAddonPort = 5000
 	// CRIO is the default name and spelling for the cri-o container runtime
 	CRIO = "crio"
+	// DefaultContainerRuntime is our default container runtime
+	DefaultContainerRuntime = "docker"
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"
@@ -96,6 +99,9 @@ const (
 
 	// ExistingContainerHostEnv is used to save original podman environment
 	ExistingContainerHostEnv = MinikubeExistingPrefix + "CONTAINER_HOST"
+
+	// TimeFormat is the format that should be used when outputting time
+	TimeFormat = time.RFC1123
 )
 
 var (
