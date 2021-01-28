@@ -31,3 +31,4 @@ while($attempt -ne 0) {
   Get-Process "*Docker Desktop*" | Stop-Process
   $attempt -= 1
 }
+exit 1
