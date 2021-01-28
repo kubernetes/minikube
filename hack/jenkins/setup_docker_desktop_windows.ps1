@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+Get-Process "*Docker Desktop*" | Stop-Process
 
 $attempt = 10
 while($attempt -ne 0) {
   Write-Host "Attempt ", $attempt
-  Write-Host "Wait for 4 minutes"
+  Write-Host "Wait for 2 minutes"
   & "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-  Start-Sleep 240
+  Start-Sleep 120
   $dockerInfo = docker info
   Write-Host "Docker Info ", $dockerInfo
   $serverVersion = $dockerInfo | Where-Object {$_ -Match "Server Version"}
