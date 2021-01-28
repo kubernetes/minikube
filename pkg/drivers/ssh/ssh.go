@@ -18,12 +18,15 @@ package ssh
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/ssh"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
@@ -101,6 +104,16 @@ func (d *Driver) PreCreateCheck() error {
 	if d.SSHKey != "" {
 		if _, err := os.Stat(d.SSHKey); os.IsNotExist(err) {
 			return fmt.Errorf("SSH key does not exist: %q", d.SSHKey)
+		}
+
+		key, err := ioutil.ReadFile(d.SSHKey)
+		if err != nil {
+			return err
+		}
+
+		_, err = ssh.ParsePrivateKey(key)
+		if err != nil {
+			return errors.Wrapf(err, "SSH key does not parse: %q", d.SSHKey)
 		}
 	}
 
