@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,6 +38,7 @@ import (
 )
 
 var docURL = "https://minikube.sigs.k8s.io/docs/drivers/docker/"
+var minDockerVersion = []int{18, 9, 0}
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
@@ -113,8 +115,8 @@ func status() registry.State {
 	}
 
 	klog.Infof("docker version: %s", o)
-	if strings.Contains(string(o), "windows-") {
-		return registry.State{Reason: "PROVIDER_DOCKER_WINDOWS_CONTAINERS", Error: oci.ErrWindowsContainers, Installed: true, Healthy: false, Fix: "Change container type to \"linux\" in Docker Desktop settings", Doc: docURL + "#verify-docker-container-type-is-linux"}
+	if s := checkDockerVersion(string(o)); s.Error != nil {
+		return s
 	}
 
 	si, err := oci.CachedDaemonInfo("docker")
@@ -128,6 +130,75 @@ func status() registry.State {
 	}
 
 	return checkNeedsImprovement()
+}
+
+func checkDockerVersion(o string) registry.State {
+	parts := strings.SplitN(o, "-", 2)
+	if len(parts) != 2 {
+		return registry.State{
+			Reason:    "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
+			Error:     errors.Errorf("expected version string format is \"{{.Server.Os}}-{{.Server.Version}}\". but got %s", o),
+			Installed: true,
+			Healthy:   false,
+			Doc:       docURL,
+		}
+	}
+
+	if parts[0] == "windows" {
+		return registry.State{
+			Reason:    "PROVIDER_DOCKER_WINDOWS_CONTAINERS",
+			Error:     oci.ErrWindowsContainers,
+			Installed: true,
+			Healthy:   false,
+			Fix:       "Change container type to \"linux\" in Docker Desktop settings",
+			Doc:       docURL + "#verify-docker-container-type-is-linux",
+		}
+	}
+
+	p := strings.SplitN(parts[1], ".", 3)
+	switch l := len(p); l {
+	case 2:
+		p = append(p, "0") // patch version not found
+	case 3:
+		//remove postfix string for unstable(test/nightly) channel. https://docs.docker.com/engine/install/
+		p[2] = strings.SplitN(p[2], "-", 2)[0]
+	default:
+		return registry.State{
+			Reason:    "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
+			Error:     errors.Errorf("expected version format is \"<year>.<month>.{patch}\". but got %s", parts[1]),
+			Installed: true,
+			Healthy:   false,
+			Doc:       docURL,
+		}
+	}
+
+	for i, s := range p {
+		k, err := strconv.Atoi(s)
+		if err != nil {
+			return registry.State{
+				Reason:    "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
+				Error:     errors.Wrap(err, "docker version"),
+				Installed: true,
+				Healthy:   false,
+				Doc:       docURL,
+			}
+		}
+
+		if k > minDockerVersion[i] {
+			return registry.State{Installed: true, Healthy: true, Error: nil}
+		} else if k < minDockerVersion[i] {
+			return registry.State{
+				Reason:           "PROVIDER_DOCKER_VERSION_LOW",
+				Error:            oci.ErrMinDockerVersion,
+				Installed:        true,
+				Healthy:          false,
+				NeedsImprovement: true,
+				Fix:              fmt.Sprintf("Upgrade %s to a newer version (Minimum supproted version is %2d.%2d.%d)", driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+				Doc:              docURL + "#requirements"}
+		}
+	}
+
+	return registry.State{Installed: true, Healthy: true, Error: nil}
 }
 
 // checkNeedsImprovement if overlay mod is installed on a system
