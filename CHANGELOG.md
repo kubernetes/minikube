@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 1.17.1 - 2020-01-28
+
+Features:
+
+* Add new flag --user and to log executed commands [#10106](https://github.com/kubernetes/minikube/pull/10106)
+* Unhide --schedule flag for scheduled stop [#10274](https://github.com/kubernetes/minikube/pull/10274)
+* Make the ssh driver opt-in and not default [#10269](https://github.com/kubernetes/minikube/pull/10269)
+
+Bugs:
+
+* fixing debian and arch concurrent multiarch builds [#9998](https://github.com/kubernetes/minikube/pull/9998)
+* configure the crictl yaml file to avoid the warning [#10221](https://github.com/kubernetes/minikube/pull/10221)
+
+Upgrades:
+
+* Update BUILD_IMAGE version to 1.16-rc [#10285](https://github.com/kubernetes/minikube/pull/10285)
+* The gopsutil cpu implementation changed in v3 [#10270](https://github.com/kubernetes/minikube/pull/10270)
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- BLasan
+- Ilya Zuyev
+- Jiefeng He
+- Jorropo
+- Medya Ghazizadeh
+- Niels de Vos
+- Priya Wadhwa
+- Sharif Elgamal
+- Steven Powell
+- Thomas Strömberg
+- andrzejsydor
+
+
 ## Version 1.17.0 - 2020-01-22
 
 Features:
