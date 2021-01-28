@@ -14,8 +14,8 @@
 
 Get-Process "*Docker Desktop*" | Stop-Process
 
-$attempt = 10
-while($attempt -ne 0) {
+$attempt = 1
+while($attempt -le 10) {
   Write-Host "Attempt ", $attempt
   Write-Host "Wait for 2 minutes"
   & "C:\Program Files\Docker\Docker\Docker Desktop.exe"
@@ -30,6 +30,6 @@ while($attempt -ne 0) {
   }
   Write-Host "Restarting Docker Desktop"
   Get-Process "*Docker Desktop*" | Stop-Process
-  $attempt -= 1
+  $attempt += 1
 }
 exit 1
