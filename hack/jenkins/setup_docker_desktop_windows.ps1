@@ -16,9 +16,9 @@
 $attempt = 10
 while($attempt -ne 0) {
   Write-Host "Attempt ", $attempt
-  Write-Host "Wait for 3 minutes"
+  Write-Host "Wait for 4 minutes"
   & "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-  Start-Sleep 180
+  Start-Sleep 240
   $dockerInfo = docker info
   Write-Host "Docker Info ", $dockerInfo
   $serverVersion = $dockerInfo | Where-Object {$_ -Match "Server Version"}
