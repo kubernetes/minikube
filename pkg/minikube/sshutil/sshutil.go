@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/util/retry"
@@ -40,9 +42,12 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 		return nil, errors.Wrap(err, "Error creating new ssh host from driver")
 
 	}
+	defaultKeyPath := filepath.Join(homedir.HomeDir(), ".ssh", "id_rsa")
 	auth := &machinessh.Auth{}
 	if h.SSHKeyPath != "" {
 		auth.Keys = []string{h.SSHKeyPath}
+	} else {
+		auth.Keys = []string{defaultKeyPath}
 	}
 
 	klog.Infof("new ssh client: %+v", h)
