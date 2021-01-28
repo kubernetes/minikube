@@ -51,7 +51,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 #
 # TODO: See https://github.com/kubernetes/minikube/issues/10276
 #BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
-BUILD_IMAGE 	?= golang:1.16beta1-buster
+BUILD_IMAGE 	?= golang:1.16-rc-buster
 #
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
