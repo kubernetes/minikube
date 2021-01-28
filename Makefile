@@ -283,11 +283,11 @@ iso_in_docker:
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
-test-iso: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+test-iso: $(SOURCE_GENERATED)
 	go test -v $(INTEGRATION_TESTS_TO_RUN) --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
-test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger packaging test
+test-pkg/%: $(SOURCE_GENERATED) ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
@@ -337,7 +337,7 @@ else
 endif
 
 .PHONY: test
-test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
+test: $(SOURCE_GENERATED) ## Trigger minikube test
 	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
 .PHONY: generate-docs
@@ -432,7 +432,7 @@ vet: ## Run go vet
 	@go vet $(SOURCE_PACKAGES)
 
 .PHONY: golint
-golint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Run golint
+golint: $(SOURCE_GENERATED) ## Run golint
 	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: gocyclo
@@ -447,17 +447,17 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 # this one is meant for local use
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+lint: $(SOURCE_GENERATED)
 	docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
 	golangci-lint run ${GOLINT_OPTIONS} --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" ./...
 else
-lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
+lint: $(SOURCE_GENERATED) out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
 endif
 
 # lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
-lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
+lint-ci: $(SOURCE_GENERATED) out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
 	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
 	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
 
@@ -475,7 +475,7 @@ mdlint:
 verify-iso: # Make sure the current ISO exists in the expected bucket
 	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 
-out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") $(SOURCE_GENERATED)
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
 .PHONY: deb_version
@@ -593,7 +593,7 @@ release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
 
 .PHONY: check-release
-check-release: ## Execute go test
+check-release: $(SOURCE_GENERATED) ## Execute go test
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
@@ -712,7 +712,7 @@ else
 endif
 
 .PHONY: out/gvisor-addon
-out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
+out/gvisor-addon: $(SOURCE_GENERATED) ## Build gvisor addon
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
