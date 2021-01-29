@@ -70,10 +70,10 @@ func TestNetworkPlugins(t *testing.T) {
 				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)
 
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=3m"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {
@@ -158,7 +158,7 @@ func TestNetworkPlugins(t *testing.T) {
 						}
 
 						// If the coredns process was stable, this retry wouldn't be necessary.
-						if err := retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
+						if err := retry.Expo(nslookup, 1*time.Second, Minutes(6)); err != nil {
 							t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
 						}
 
