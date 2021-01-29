@@ -223,7 +223,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=6000", "--cpus=4", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -363,7 +363,7 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 	start := time.Now()
 	// The tests before this already created a profile, starting minikube with different --extra-config cmdline option.
-	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision", "--wait=true", "--memory=4000"}
+	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision"}
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
