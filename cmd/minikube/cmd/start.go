@@ -1097,6 +1097,13 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
+	if driver.IsSSH(drvName) {
+		sshIPAddress := viper.GetString(sshIPAddress)
+		if sshIPAddress == "" {
+			exit.Message(reason.Usage, "No IP address provided. Try specifying --ssh-ip-address, or see https://minikube.sigs.k8s.io/docs/drivers/ssh/")
+		}
+	}
+
 	// validate kubeadm extra args
 	if invalidOpts := bsutil.FindInvalidExtraConfigFlags(config.ExtraOptions); len(invalidOpts) > 0 {
 		out.WarningT(
