@@ -19,6 +19,11 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
 
 ./out/setup_docker_desktop_windows.ps1
+If ($lastexitcode -gt 0) {
+	echo "Docker failed to start, exiting."
+	Exit $lastexitcode
+}
+
 
 ./out/minikube-windows-amd64.exe delete --all
 
