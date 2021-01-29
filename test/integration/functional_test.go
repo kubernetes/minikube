@@ -90,6 +90,7 @@ func TestFunctional(t *testing.T) {
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
+			{"ComponentHealth", validateComponentHealth},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -108,25 +109,24 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"ComponentHealth", validateComponentHealth},
-			//{"ConfigCmd", validateConfigCmd},
-			//{"DashboardCmd", validateDashboardCmd},
-			//{"DryRun", validateDryRun},
-			//{"StatusCmd", validateStatusCmd},
-			//{"LogsCmd", validateLogsCmd},
-			//{"MountCmd", validateMountCmd},
-			//{"ProfileCmd", validateProfileCmd},
-			//{"ServiceCmd", validateServiceCmd},
-			//{"AddonsCmd", validateAddonsCmd},
-			//{"PersistentVolumeClaim", validatePersistentVolumeClaim},
-			//{"TunnelCmd", validateTunnelCmd},
-			//{"SSHCmd", validateSSHCmd},
-			//{"MySQL", validateMySQL},
-			//{"FileSync", validateFileSync},
-			//{"CertSync", validateCertSync},
-			//{"UpdateContextCmd", validateUpdateContextCmd},
-			//{"DockerEnv", validateDockerEnv},
-			//{"NodeLabels", validateNodeLabels},
+			{"ConfigCmd", validateConfigCmd},
+			{"DashboardCmd", validateDashboardCmd},
+			{"DryRun", validateDryRun},
+			{"StatusCmd", validateStatusCmd},
+			{"LogsCmd", validateLogsCmd},
+			{"MountCmd", validateMountCmd},
+			{"ProfileCmd", validateProfileCmd},
+			{"ServiceCmd", validateServiceCmd},
+			{"AddonsCmd", validateAddonsCmd},
+			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
+			{"TunnelCmd", validateTunnelCmd},
+			{"SSHCmd", validateSSHCmd},
+			{"MySQL", validateMySQL},
+			{"FileSync", validateFileSync},
+			{"CertSync", validateCertSync},
+			{"UpdateContextCmd", validateUpdateContextCmd},
+			{"DockerEnv", validateDockerEnv},
+			{"NodeLabels", validateNodeLabels},
 		}
 		for _, tc := range tests {
 			tc := tc
