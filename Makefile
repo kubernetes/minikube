@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 16
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 17
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,10 +23,13 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.16.0
+ISO_VERSION ?= v1.17.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
+DEB_REVISION ?= 0
+
 RPM_VERSION ?= $(DEB_VERSION)
+RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 GO_VERSION ?= 1.15.5
@@ -43,7 +46,14 @@ COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 # NOTE: "latest" as of 2020-05-13. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
+
+
+#
+# TODO: See https://github.com/kubernetes/minikube/issues/10276
+#BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
+BUILD_IMAGE 	?= golang:1.16-rc-buster
+#
+
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 
@@ -201,10 +211,15 @@ out/minikube-linux-aarch64: out/minikube-linux-arm64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
-.PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
+.PHONY: minikube-linux-amd64 minikube-linux-arm64
 minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux 64bit
-minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for ARM 64bit
-minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin 64bit
+minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for arm 64bit
+
+.PHONY: minikube-darwin-amd64 minikube-darwin-arm64
+minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin x86 64bit
+minikube-darwin-arm64: out/minikube-darwin-arm64 ## Build Minikube for Darwin ARM 64bit
+
+.PHONY: minikube-windows-amd64.exe
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for Windows 64bit
 
 out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
@@ -217,10 +232,11 @@ else
 endif
 
 .PHONY: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe
-e2e-linux-amd64: out/e2e-linux-amd64 ## Execute end-to-end testing for Linux 64bit
-e2e-linux-arm64: out/e2e-linux-arm64 ## Execute end-to-end testing for Linux ARM 64bit
-e2e-darwin-amd64: out/e2e-darwin-amd64 ## Execute end-to-end testing for Darwin 64bit
-e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## Execute end-to-end testing for Windows 64bit
+e2e-linux-amd64: out/e2e-linux-amd64 ## build end2end binary for Linux x86 64bit
+e2e-linux-arm64: out/e2e-linux-arm64 ## build end2end binary for Linux ARM 64bit
+e2e-darwin-amd64: out/e2e-darwin-amd64 ## build end2end binary for Darwin x86 64bit
+e2e-darwin-arm64: out/e2e-darwin-arm64 ## build end2end binary for Darwin ARM 64bit
+e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## build end2end binary for Windows 64bit
 
 out/e2e-%: out/minikube-%
 	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go test -ldflags="${MINIKUBE_LDFLAGS}" -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
@@ -267,11 +283,11 @@ iso_in_docker:
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
-test-iso: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+test-iso: $(SOURCE_GENERATED)
 	go test -v $(INTEGRATION_TESTS_TO_RUN) --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
-test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger packaging test
+test-pkg/%: $(SOURCE_GENERATED) ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
@@ -321,7 +337,7 @@ else
 endif
 
 .PHONY: test
-test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
+test: $(SOURCE_GENERATED) ## Trigger minikube test
 	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
 .PHONY: generate-docs
@@ -397,6 +413,7 @@ clean: ## Clean build
 	rm -f pkg/minikube/assets/assets.go
 	rm -f pkg/minikube/translate/translations.go
 	rm -rf ./vendor
+	rm -rf /tmp/tmp.*.minikube_*
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md  ## Generate documentation
@@ -415,7 +432,7 @@ vet: ## Run go vet
 	@go vet $(SOURCE_PACKAGES)
 
 .PHONY: golint
-golint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Run golint
+golint: $(SOURCE_GENERATED) ## Run golint
 	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: gocyclo
@@ -430,17 +447,17 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 # this one is meant for local use
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+lint: $(SOURCE_GENERATED)
 	docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
 	golangci-lint run ${GOLINT_OPTIONS} --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" ./...
 else
-lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
+lint: $(SOURCE_GENERATED) out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
 endif
 
 # lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
-lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
+lint-ci: $(SOURCE_GENERATED) out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
 	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
 	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
 
@@ -458,44 +475,53 @@ mdlint:
 verify-iso: # Make sure the current ISO exists in the expected bucket
 	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 
-out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") $(SOURCE_GENERATED)
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
+.PHONY: deb_version
 deb_version:
+	@echo $(DEB_VERSION)-$(DEB_REVISION)
+
+.PHONY: deb_version_base
+deb_version_base:
 	@echo $(DEB_VERSION)
 
-out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-0_amd64.deb
+out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb
 	cp $< $@
 
-out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
-	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
-	chmod 0755 out/minikube_$(DEB_VERSION)/DEBIAN
-	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
-	sed -E -i 's/--ARCH--/'$*'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
+out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
+	$(eval DEB_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(DEB_VERSION)-$*-deb"))
+	cp -r installers/linux/deb/minikube_deb_template/* $(DEB_PACKAGING_DIRECTORY_$*)/
+	chmod 0755 $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN
+	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
+	sed -E -i 's/--ARCH--/'$*'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
+  
 	if [ "$*" = "amd64" ]; then \
-	    sed -E -i 's/--RECOMMENDS--/virtualbox/' out/minikube_$(DEB_VERSION)/DEBIAN/control; \
+	    sed -E -i 's/--RECOMMENDS--/virtualbox/' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	else \
-	    sed -E -i '/Recommends: --RECOMMENDS--/d' out/minikube_$(DEB_VERSION)/DEBIAN/control; \
+	    sed -E -i '/Recommends: --RECOMMENDS--/d' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	fi
-	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
-	cp $< out/minikube_$(DEB_VERSION)/usr/bin/minikube
-	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION) $@
-	rm -rf out/minikube_$(DEB_VERSION)
+  
+	mkdir -p $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin
+	cp $< $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin/minikube
+	fakeroot dpkg-deb --build $(DEB_PACKAGING_DIRECTORY_$*) $@
+	rm -rf $(DEB_PACKAGING_DIRECTORY_$*)
 
 rpm_version:
-	@echo $(RPM_VERSION)
+	@echo $(RPM_VERSION)-$(RPM_REVISION)
 
-out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-0.x86_64.rpm
+out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-$(RPM_REVISION).x86_64.rpm
 	cp $< $@
 
 out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
-	cp -r installers/linux/rpm/minikube_rpm_template out/minikube-$(RPM_VERSION)
-	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/minikube-$(RPM_VERSION)/minikube.spec
-	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/minikube-$(RPM_VERSION)/minikube.spec
+	$(eval RPM_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(RPM_VERSION)-$*-rpm"))
+	cp -r installers/linux/rpm/minikube_rpm_template/* $(RPM_PACKAGING_DIRECTORY_$*)/
+	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
+	sed -E -i 's|--OUT--|'$(PWD)/out'|g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
 	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
-		 out/minikube-$(RPM_VERSION)/minikube.spec
-	@mv out/$*/minikube-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
-	rm -rf out/minikube-$(RPM_VERSION)
+		 $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
+	@mv out/$*/minikube-$(RPM_VERSION)-$(RPM_REVISION).$*.rpm out/ && rmdir out/$*
+	rm -rf $(RPM_PACKAGING_DIRECTORY_$*)
 
 .PHONY: apt
 apt: out/Release ## Generate apt package file
@@ -567,7 +593,7 @@ release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
 
 .PHONY: check-release
-check-release: ## Execute go test
+check-release: $(SOURCE_GENERATED) ## Execute go test
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
@@ -686,7 +712,7 @@ else
 endif
 
 .PHONY: out/gvisor-addon
-out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
+out/gvisor-addon: $(SOURCE_GENERATED) ## Build gvisor addon
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 

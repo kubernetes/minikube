@@ -328,6 +328,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
+	register.Reg.SetStep(register.ConfiguringCNI)
 	out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
 
 	if err := cnm.Apply(k.c); err != nil {

@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
@@ -114,6 +115,11 @@ func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
+// VirtualboxDriver returns whether or not this test is using the VirtualBox driver
+func VirtualboxDriver() bool {
+	return strings.Contains(*startArgs, "--driver=virtualbox") || strings.Contains(*startArgs, "--vm-driver=virtualbox")
+}
+
 // DockerDriver returns whether or not this test is using the docker or podman driver
 func DockerDriver() bool {
 	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker")
@@ -129,10 +135,25 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
+// ContainerRuntime returns the name of a specific container runtime if it was specified
+func ContainerRuntime() string {
+	flag := "--container-runtime="
+	for _, s := range StartArgs() {
+		if strings.HasPrefix(s, flag) {
+			return strings.TrimPrefix(s, flag)
+		}
+	}
+	return constants.DefaultContainerRuntime
+}
+
 // GithubActionRunner returns true if running inside a github action runner
 func GithubActionRunner() bool {
 	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
 	return os.Getenv("GITHUB_ACTIONS") == "true"
+}
+
+func ContainerdContainerRuntime() bool {
+	return strings.Contains(*startArgs, "--container-runtime=containerd")
 }
 
 // arm64Platform returns true if running on arm64/* platform
