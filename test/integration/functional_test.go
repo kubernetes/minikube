@@ -110,7 +110,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"ComponentHealth", validateComponentHealth},
 			{"ConfigCmd", validateConfigCmd},
-			{"DashboardCmd", validateDashboardCmd},
+			//{"DashboardCmd", validateDashboardCmd},
 			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
