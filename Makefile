@@ -621,13 +621,7 @@ storage-provisioner-image: storage-provisioner-image-$(GOARCH) ## Build storage-
 storage-provisioner-image-%: out/storage-provisioner-%
 	docker build -t $(REGISTRY)/storage-provisioner-$*:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$* .
 
-.PHONY: kic-base-image
-kic-base-image: ## builds the kic base image and tags local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KIC_BASE_IMAGE_GCR) ./deploy/kicbase
-	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
-	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
-# multi-arch docker images
 X_DOCKER_BUILDER ?= minikube-builder
 X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
 
@@ -683,33 +677,6 @@ ifndef AUTOPUSH
 	$(call user_confirm, 'Are you sure you want to push $(IMAGE) ?')
 endif
 	docker push $(IMAGE)
-
-.PHONY: push-kic-base-image-gcr
-push-kic-base-image-gcr: kic-base-image ## Push kic-base to gcr
-	docker login gcr.io/k8s-minikube
-	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_GCR)
-	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GCR)
-
-.PHONY: push-kic-base-image-gh
-push-kic-base-image-gh: kic-base-image ## Push kic-base to github
-	docker login docker.pkg.github.com
-	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_GH)
-	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_GH)
-
-.PHONY: push-kic-base-image-hub
-push-kic-base-image-hub: kic-base-image ## Push kic-base to docker hub
-	docker login
-	docker tag local/kicbase:latest $(KIC_BASE_IMAGE_HUB)
-	$(MAKE) push-docker IMAGE=$(KIC_BASE_IMAGE_HUB)
-
-.PHONY: push-kic-base-image-x86-deprecated
-push-kic-base-image-x86-deprecated: ## Push legacy, non-multiarch local/kicbase:latest to all remote registries
-ifndef AUTOPUSH
-	$(call user_confirm, 'Are you sure you want to push: $(KIC_BASE_IMAGE_GH) & $(KIC_BASE_IMAGE_GCR) & $(KIC_BASE_IMAGE_HUB) ?')
-	$(MAKE) push-kic-base-image AUTOPUSH=true
-else
-	$(MAKE) push-kic-base-image-gcr push-kic-base-image-hub push-kic-base-image-gh 
-endif
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: $(SOURCE_GENERATED) ## Build gvisor addon
