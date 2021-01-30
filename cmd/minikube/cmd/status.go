@@ -232,18 +232,18 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 
 			st, err := nodeStatus(api, *cc, *n)
 			if err != nil {
-				klog.Errorf("status error: %v", err)
+				klog.ErrorS(err, "status error")
 			}
 			statuses = append(statuses, st)
 		} else {
 			for _, n := range cc.Nodes {
 				machineName := driver.MachineName(*cc, n)
-				klog.Infof("checking status of %s ...", machineName)
+				klog.InfoS("checking status of ...", "machineName", machineName)
 				st, err := nodeStatus(api, *cc, n)
-				klog.Infof("%s status: %+v", machineName, st)
+				klog.InfoS("machineName status", "machineName", machineName, "status", st)
 
 				if err != nil {
-					klog.Errorf("status error: %v", err)
+					klog.ErrorS(err,"status error")
 				}
 				if st.Host == Nonexistent {
 					klog.Errorf("The %q host does not exist!", machineName)
@@ -336,7 +336,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 
 	// We have a fully operational host, now we can check for details
 	if _, err := cluster.DriverIP(api, name); err != nil {
-		klog.Errorf("failed to get driver ip: %v", err)
+		klog.ErrorS(err,"failed to get driver ip",)
 		st.Host = state.Error.String()
 		return st, err
 	}
@@ -360,7 +360,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	// Check storage
 	p, err := machine.DiskUsed(cr, "/var")
 	if err != nil {
-		klog.Errorf("failed to get storage capacity of /var: %v", err)
+		klog.ErrorS(err,"failed to get storage capacity of /var")
 		st.Host = state.Error.String()
 		return st, err
 	}
@@ -381,21 +381,21 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 
 	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
 	if err != nil {
-		klog.Errorf("forwarded endpoint: %v", err)
+		klog.ErrorS(err, "forwarded endpoint")
 		st.Kubeconfig = Misconfigured
 	} else {
 		err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
 		if err != nil {
-			klog.Errorf("kubeconfig endpoint: %v", err)
+			klog.ErrorS(err,"kubeconfig endpoint")
 			st.Kubeconfig = Misconfigured
 		}
 	}
 
 	sta, err := kverify.APIServerStatus(cr, hostname, port)
-	klog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
+	klog.InfoS("apiserver status", "name", name, "status", stk, "error", err)
 
 	if err != nil {
-		klog.Errorln("Error apiserver status:", err)
+		klog.ErrorS(err,"Error apiserver status")
 		st.APIServer = state.Error.String()
 	} else {
 		st.APIServer = sta.String()
@@ -530,7 +530,7 @@ func clusterState(sts []*Status) ClusterState {
 
 	evs, mtime, err := readEventLog(sts[0].Name)
 	if err != nil {
-		klog.Errorf("unable to read event log: %v", err)
+		klog.ErrorS(err,"unable to read event log")
 		return cs
 	}
 
@@ -543,7 +543,7 @@ func clusterState(sts []*Status) ClusterState {
 			var data map[string]string
 			err := ev.DataAs(&data)
 			if err != nil {
-				klog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
+				klog.ErrorS(err,"unable to parse data", "raw data", ev.Data())
 				continue
 			}
 
@@ -553,7 +553,7 @@ func clusterState(sts []*Status) ClusterState {
 			case string(register.Done):
 				transientCode = 0
 			case string(register.Stopping):
-				klog.Infof("%q == %q", data["name"], register.Stopping)
+				klog.InfoS("%q == %q", data["name"], register.Stopping)
 				transientCode = Stopping
 			case string(register.Deleting):
 				transientCode = Deleting
@@ -564,18 +564,18 @@ func clusterState(sts []*Status) ClusterState {
 			}
 
 			finalStep = data
-			klog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
+			klog.InfoS("transient code for step", "transientCode", transientCode, "step", codeNames[transientCode], data)
 		}
 		if ev.Type() == "io.k8s.sigs.minikube.error" {
 			var data map[string]string
 			err := ev.DataAs(&data)
 			if err != nil {
-				klog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
+				klog.ErrorS(err, "unable to parse data", "raw data", ev.Data())
 				continue
 			}
 			exitCode, err := strconv.Atoi(data["exitcode"])
 			if err != nil {
-				klog.Errorf("exit code not found: %v", err)
+				klog.ErrorS(err, "exit code not found")
 				continue
 			}
 			if val, ok := exitCodeToHTTPCode[exitCode]; ok {
@@ -593,7 +593,7 @@ func clusterState(sts []*Status) ClusterState {
 
 	if finalStep != nil {
 		if mtime.Before(time.Now().Add(-10 * time.Minute)) {
-			klog.Warningf("event stream is too old (%s) to be considered a transient state", mtime)
+			klog.InfoS("event stream is too old to be considered a transient state", "mtime", mtime)
 		} else {
 			cs.Step = strings.TrimSpace(finalStep["name"])
 			cs.StepDetail = strings.TrimSpace(finalStep["message"])
