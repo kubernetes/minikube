@@ -53,14 +53,14 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 		defaultBridgeName = podmanDefaultBridge
 	}
 	if networkName == defaultBridgeName {
-		klog.Infof("skipping creating network since default network %s was specified", networkName)
+		klog.InfoS("skipping creating network since default network was specified", "network", networkName)
 		return nil, nil
 	}
 
 	// check if the network already exists
 	info, err := containerNetworkInspect(ociBin, networkName)
 	if err == nil {
-		klog.Infof("Found existing network %+v", info)
+		klog.Infof("Found existing network", "info", info)
 		return info.gateway, nil
 	}
 
@@ -82,7 +82,7 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 
 		// don't retry if error is not adddress is taken
 		if !(errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken)) {
-			klog.Errorf("error while trying to create network %v", err)
+			klog.ErrorS(err, "error while trying to create network")
 			return nil, errors.Wrap(err, "un-retryable")
 		}
 		attempts++
@@ -236,12 +236,12 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 
 func logDockerNetworkInspect(ociBin string, name string) {
 	cmd := exec.Command(ociBin, "network", "inspect", name)
-	klog.Infof("running %v to gather additional debugging logs...", cmd.Args)
+	klog.InfoS("running %v to gather additional debugging logs...", cmd.Args)
 	rr, err := runCmd(cmd)
 	if err != nil {
-		klog.Infof("error running %v: %v", rr.Args, err)
+		klog.InfoS("error running", "args", rr.Args, "error", err)
 	}
-	klog.Infof("output of %v: %v", rr.Args, rr.Output())
+	klog.InfoS("output of", "args", rr.Args, "output", rr.Output())
 }
 
 // RemoveNetwork removes a network
@@ -266,7 +266,7 @@ func RemoveNetwork(ociBin string, name string) error {
 func networkExists(ociBin string, name string) bool {
 	_, err := containerNetworkInspect(ociBin, name)
 	if err != nil && !errors.Is(err, ErrNetworkNotFound) { // log unexpected error
-		klog.Warningf("Error inspecting docker network %s: %v", name, err)
+		klog.InfoS("Error inspecting docker network", "name", name, "error", err)
 	}
 	return err == nil
 }
