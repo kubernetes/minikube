@@ -112,11 +112,11 @@ func Execute() {
 
 	// Universally ensure that we never speak to the wrong DOCKER_HOST
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		klog.Errorf("oci env: %v", err)
+		klog.ErrorS(err,"oci env")
 	}
 
 	if err := oci.PointToHostPodman(); err != nil {
-		klog.Errorf("oci env: %v", err)
+		klog.ErrorS(err, "oci env")
 	}
 
 	if err := RootCmd.Execute(); err != nil {
@@ -160,10 +160,10 @@ func init() {
 	// preset logtostderr and alsologtostderr only for test runs, for normal runs consider flags in main()
 	if strings.HasPrefix(filepath.Base(os.Args[0]), "e2e-") || strings.HasSuffix(os.Args[0], "test") {
 		if err := flag.Set("logtostderr", "false"); err != nil {
-			klog.Warningf("Unable to set default flag value for logtostderr: %v", err)
+			klog.InfoS("Unable to set default flag value for logtostderr", "error", err)
 		}
 		if err := flag.Set("alsologtostderr", "false"); err != nil {
-			klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
+			klog.InfoS("Unable to set default flag value for alsologtostderr", "error", err)
 		}
 	}
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine) // avoid `generate-docs_test.go` complaining about "Docs are not updated"
@@ -252,7 +252,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		// This config file is optional, so don't emit errors if missing
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			klog.Warningf("Error reading config file at %s: %v", configPath, err)
+			klog.InfoS("Error reading config file at", "configPath" ,configPath, "error", err)
 		}
 	}
 	setupViper()
