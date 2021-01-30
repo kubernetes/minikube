@@ -18,6 +18,7 @@ package machine
 
 import (
 	"context"
+	"k8s.io/klog"
 	"os/exec"
 	"time"
 
@@ -43,7 +44,7 @@ func deleteOrphanedKIC(ociBin string, name string) {
 
 	_, err := oci.ContainerStatus(ociBin, name)
 	if err != nil {
-		klog.Infof("couldn't inspect container %q before deleting: %v", name, err)
+		klog.InfoS("couldn't inspect container before deleting", "container", name, "error", err)
 		return
 	}
 	// allow no more than 5 seconds for deleting the container
@@ -51,12 +52,12 @@ func deleteOrphanedKIC(ociBin string, name string) {
 	defer cancel()
 
 	if err := oci.ShutDown(ociBin, name); err != nil {
-		klog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
+		klog.InfoS("couldn't shut down (might be okay)", "name", name,  "error", err)
 	}
 	cmd := exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)
 	err = cmd.Run()
 	if err == nil {
-		klog.Infof("Found stale kic container and successfully cleaned it up!")
+		klog.InfoS("Found stale kic container and successfully cleaned it up!")
 	}
 }
 
@@ -121,12 +122,12 @@ func delete(api libmachine.API, h *host.Host, machineName string) error {
 // demolish destroys a host by any means necessary - use only if state is inconsistent
 func demolish(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) {
 	machineName := driver.MachineName(cc, n)
-	klog.Infof("DEMOLISHING %s ...", machineName)
+	klog.InfoS("DEMOLISHING ...", "machineName", machineName)
 
 	// This will probably fail
 	err := stop(h)
 	if err != nil {
-		klog.Infof("stophost failed (probably ok): %v", err)
+		klog.InfoS("stophost failed (probably ok)", "error", err)
 	}
 
 	// For 95% of cases, this should be enough
