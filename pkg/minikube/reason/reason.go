@@ -286,6 +286,7 @@ var (
 	EnvMultiConflict     = Kind{ID: "ENV_MULTINODE_CONFLICT", ExitCode: ExGuestConflict}
 	EnvDockerUnavailable = Kind{ID: "ENV_DOCKER_UNAVAILABLE", ExitCode: ExRuntimeUnavailable}
 	EnvPodmanUnavailable = Kind{ID: "ENV_PODMAN_UNAVAILABLE", ExitCode: ExRuntimeUnavailable}
+	WslExeConflict = Kind{ID: "WSL_EXE_CONFLICT", ExitCode: ExGuestConflict}
 
 	AddonUnsupported = Kind{ID: "SVC_ADDON_UNSUPPORTED", ExitCode: ExSvcUnsupported}
 	AddonNotEnabled  = Kind{ID: "SVC_ADDON_NOT_ENABLED", ExitCode: ExProgramConflict}
