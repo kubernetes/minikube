@@ -180,10 +180,10 @@ spec:
       containers:
         - name: ambassador-operator
           # Replace this with the built image name
-          image: {{default "quay.io/datawire" .ImageRepository}}/ambassador-operator:v1.2.3
+          image: {{.CustomRegistries.AmbassadorOperator  | default .ImageRepository | default .Registries.AmbassadorOperator }}{{.Images.AmbassadorOperator}}
           command:
           - ambassador-operator
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
