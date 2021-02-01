@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/mitchellh/go-ps"
@@ -206,7 +207,7 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	klog.Infof("DeleteProfiles")
 	var errs []error
 	for _, profile := range profiles {
-		err := deleteProfile(profile)
+		err := timedDeleteProfile(2*time.Minute, profile)
 		if err != nil {
 			mm, loadErr := machine.LoadMachine(profile.Name)
 
@@ -273,6 +274,34 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	errs = oci.PruneAllVolumesByLabel(bin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		klog.Warningf("error pruning volume (might be okay):\n%v", errs)
+	}
+}
+
+// timedDeleteProfile puts a time limit on deleting a profile
+func timedDeleteProfile(timeoutDuration time.Duration, profile *config.Profile) error {
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(timeoutDuration)
+		timeout <- true
+	}()
+
+	createFinished := make(chan bool, 1)
+	var err error
+	go func() {
+		err = deleteProfile(profile)
+		createFinished <- true
+	}()
+
+	select {
+	case <-createFinished:
+		if err != nil {
+			// Wait for all the logs to reach the client
+			time.Sleep(2 * time.Second)
+			return errors.Wrap(err, "create")
+		}
+		return nil
+	case <-timeout:
+		return fmt.Errorf("deleting profile %s timed out in %f seconds", profile.Name, timeoutDuration.Seconds())
 	}
 }
 
