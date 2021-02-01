@@ -431,6 +431,15 @@ gofmt: ## Run go fmt and list the files differs from gofmt's
 vet: ## Run go vet
 	@go vet $(SOURCE_PACKAGES)
 
+.PHONY: imports
+imports: ## Run goimports and modify files in place
+	@goimports -w $(SOURCE_DIRS)
+
+.PHONY: goimports
+goimports: ## Run goimports and list the files differs from goimport's
+	@goimports -l $(SOURCE_DIRS)
+	@test -z "`goimports -l $(SOURCE_DIRS)`"
+
 .PHONY: golint
 golint: $(SOURCE_GENERATED) ## Run golint
 	@golint -set_exit_status $(SOURCE_PACKAGES)
