@@ -285,19 +285,19 @@ func timedDeleteProfile(timeoutDuration time.Duration, profile *config.Profile) 
 		timeout <- true
 	}()
 
-	createFinished := make(chan bool, 1)
+	deleteFinished := make(chan bool, 1)
 	var err error
 	go func() {
 		err = deleteProfile(profile)
-		createFinished <- true
+		deleteFinished <- true
 	}()
 
 	select {
-	case <-createFinished:
+	case <-deleteFinished:
 		if err != nil {
 			// Wait for all the logs to reach the client
 			time.Sleep(2 * time.Second)
-			return errors.Wrap(err, "create")
+			return errors.Wrap(err, "delete")
 		}
 		return nil
 	case <-timeout:
