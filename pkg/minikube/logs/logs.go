@@ -29,6 +29,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -188,10 +189,25 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		}
 	}
 
+	outputAudit(lines, failed)
+
 	if len(failed) > 0 {
 		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
 	}
 	return nil
+}
+
+// outputAudit displays the audit logs.
+func outputAudit(lines int, failed []string) {
+	out.Step(style.Empty, "")
+	out.Step(style.Empty, "==> Audit <==")
+	a, err := audit.Retrieve(lines)
+	if err != nil {
+		klog.Errorf("failed to get audit logs with error: %v", err)
+		failed = append(failed, "audit")
+		return
+	}
+	out.Step(style.Empty, a)
 }
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs

@@ -30,7 +30,7 @@ var currentLogFile *os.File
 // setLogFile sets the logPath and creates the log file if it doesn't exist.
 func setLogFile() error {
 	lp := localpath.AuditLog()
-	f, err := os.OpenFile(lp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(lp, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return fmt.Errorf("unable to open %s: %v", lp, err)
 	}
@@ -45,7 +45,7 @@ func appendToLog(entry *entry) error {
 			return err
 		}
 	}
-	e := register.CloudEvent(entry, entry.data)
+	e := register.CloudEvent(entry, entry.Data)
 	bs, err := e.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("error marshalling event: %v", err)

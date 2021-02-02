@@ -17,8 +17,12 @@ limitations under the License.
 package audit
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -26,7 +30,7 @@ import (
 
 // entry represents the execution of a command.
 type entry struct {
-	data map[string]string
+	Data map[string]string `json:"data"`
 }
 
 // Type returns the cloud events compatible type of this struct.
@@ -46,4 +50,40 @@ func newEntry(command string, args string, user string, startTime time.Time, end
 			"user":      user,
 		},
 	}
+}
+
+// toFields converts an entry to an array of fields.
+func (e *entry) toFields() []string {
+	d := e.Data
+	return []string{d["command"], d["args"], d["profile"], d["user"], d["startTime"], d["endTime"]}
+}
+
+// linesToFields converts audit lines into arrays of fields.
+func linesToFields(lines []string) ([][]string, error) {
+	c := [][]string{}
+	for _, l := range lines {
+		e := &entry{}
+		if err := json.Unmarshal([]byte(l), e); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal %q: %v", l, err)
+		}
+		c = append(c, e.toFields())
+	}
+	return c, nil
+}
+
+// linesToTable converts audit lines into a formatted table.
+func linesToTable(lines []string) (string, error) {
+	f, err := linesToFields(lines)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert lines to fields: %v", err)
+	}
+	b := new(bytes.Buffer)
+	t := tablewriter.NewWriter(b)
+	t.SetHeader([]string{"Command", "Args", "Profile", "User", "Start Time", "End Time"})
+	t.SetAutoFormatHeaders(false)
+	t.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	t.SetCenterSeparator("|")
+	t.AppendBulk(f)
+	t.Render()
+	return b.String(), nil
 }
