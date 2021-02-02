@@ -1,7 +1,7 @@
 ## Requirements
 
 - [Install Docker](https://hub.docker.com/search?q=&type=edition&offering=community&sort=updated_at&order=desc)
-- amd64 system.
+- amd64 or arm64 system.
 
 ## Usage
 
