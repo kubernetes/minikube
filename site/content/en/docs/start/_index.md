@@ -25,7 +25,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 For Linux users, we provide 3 easy download options (for each architecture):
 
-### x86
+### amd64
 
 #### Binary download
 
