@@ -36,6 +36,9 @@ func (f *FailFastError) Error() string {
 // ErrWindowsContainers is thrown when docker been configured to run windows containers instead of Linux
 var ErrWindowsContainers = &FailFastError{errors.New("docker container type is windows")}
 
+// ErrMinDockerVersion is thrown when docker version is less than minimum requited by Minikube
+var ErrMinDockerVersion = &FailFastError{errors.New("docker version is less than the minimum required")}
+
 // ErrCPUCountLimit is thrown when docker daemon doesn't have enough CPUs for the requested container
 var ErrCPUCountLimit = &FailFastError{errors.New("not enough CPUs is available for container")}
 
