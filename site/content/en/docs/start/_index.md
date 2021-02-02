@@ -49,7 +49,7 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest
 sudo rpm -ivh minikube-latest.x86_64.rpm
 ```
 
-### ARM
+### ARM64
 
 #### Binary download
 
