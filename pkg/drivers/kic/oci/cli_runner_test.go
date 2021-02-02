@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-func TestCliRunnerOnlyPrintOnce(t *testing.T) {
+func TestRunCmdWarnSlowOnce(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		return
 	}
