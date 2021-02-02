@@ -223,7 +223,25 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	return validPs, inValidPs, nil
 }
 
-// removeDupes removes duplicates
+// ListValidProfiles returns profiles in minikube home dir
+// Unlike `ListProfiles` this function doens't try to get profile from container
+func ListValidProfiles(miniHome ...string) (ps []*Profile, err error) {
+	// try to get profiles list based on left over evidences such as directory
+	pDirs, err := profileDirs(miniHome...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, n := range pDirs {
+		p, err := LoadProfile(n, miniHome...)
+		if err == nil && p.IsValid() {
+			ps = append(ps, p)
+		}
+	}
+	return ps, nil
+}
+
+// removeDupes removes duplipcates
 func removeDupes(profiles []string) []string {
 	// Use map to record duplicates as we find them.
 	seen := map[string]bool{}
@@ -291,7 +309,7 @@ func ProfileFolderPath(profile string, miniHome ...string) string {
 // MachineName returns the name of the machine, as seen by the hypervisor given the cluster and node names
 func MachineName(cc ClusterConfig, n Node) string {
 	// For single node cluster, default to back to old naming
-	if len(cc.Nodes) == 1 || n.ControlPlane {
+	if (len(cc.Nodes) == 1 && cc.Nodes[0].Name == n.Name) || n.ControlPlane {
 		return cc.Name
 	}
 	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
