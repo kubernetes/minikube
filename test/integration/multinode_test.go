@@ -20,10 +20,13 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
 func TestMultiNode(t *testing.T) {
@@ -43,6 +46,7 @@ func TestMultiNode(t *testing.T) {
 		}{
 			{"FreshStart2Nodes", validateMultiNodeStart},
 			{"AddNode", validateAddNodeToMultiNode},
+			{"ProfileList", validateProfileListWithMultiNode},
 			{"StopNode", validateStopRunningNode},
 			{"StartAfterStop", validateStartNodeAfterStop},
 			{"DeleteNode", validateDeleteNodeFromMultiNode},
@@ -108,6 +112,44 @@ func validateAddNodeToMultiNode(ctx context.Context, t *testing.T, profile strin
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 3 {
 		t.Errorf("status says all kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
 	}
+}
+
+func validateProfileListWithMultiNode(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+	if err != nil {
+		t.Errorf("failed to list profiles with json format. args %q: %v", rr.Command(), err)
+	}
+
+	var jsonObject map[string][]config.Profile
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+	if err != nil {
+		t.Errorf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
+	}
+
+	validProfiles := jsonObject["valid"]
+	var profileObject *config.Profile
+	for _, obj := range validProfiles {
+		if obj.Name == profile {
+			profileObject = &obj
+			break
+		}
+	}
+
+	if profileObject == nil {
+		t.Errorf("expected the json of 'profile list' to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
+	} else if expected, numNodes := 3, len(profileObject.Config.Nodes); expected != numNodes {
+		t.Errorf("expected profile %q in json of 'profile list' include %d nodes but have %d nodes. got *%q*. args: %q", profile, expected, numNodes, rr.Stdout.String(), rr.Command())
+	}
+
+	if invalidPs, ok := jsonObject["invalid"]; ok {
+		for _, ps := range invalidPs {
+			if strings.Contains(ps.Name, profile) {
+				t.Errorf("expected the json of 'profile list' to not include profile or node in invalid profile but got *%q*. args: %q", rr.Stdout.String(), rr.Command())
+			}
+		}
+
+	}
+
 }
 
 func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) {
