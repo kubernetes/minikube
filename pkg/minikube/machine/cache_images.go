@@ -18,7 +18,9 @@ package machine
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -58,6 +60,74 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
 
+	return nil
+}
+
+// LoadImage loads the local image into the container runtime
+func LoadImage(profile, img string) error {
+	cc, err := config.Load(profile)
+	if err != nil {
+		return errors.Wrap(err, "loading profile")
+	}
+	// if the image exists in the local daemon, save it as a tarball
+	if image.ExistsImageInDaemon(img) {
+		tmpFile, err := ioutil.TempFile("", "")
+		if err != nil {
+			return errors.Wrap(err, "temp file")
+		}
+		tmpFile.Close()
+		defer os.Remove(tmpFile.Name())
+		img = tmpFile.Name()
+	}
+	dst := "/tmp/img.tar"
+	if err := copyAndLoadTarballIntoHost(cc, img, dst, profile); err != nil {
+		return errors.Wrap(err, "copying tarball into host")
+	}
+	return nil
+}
+
+func copyAndLoadTarballIntoHost(cc *config.ClusterConfig, srcPath, dstPath, profile string) error {
+	c, err := config.Load(profile)
+	if err != nil {
+		return errors.Wrap(err, "loading profile config")
+	}
+	api, err := NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "api")
+	}
+	defer api.Close()
+	for _, n := range c.Nodes {
+		m := config.MachineName(*c, n)
+		h, err := api.Load(m)
+		if err != nil {
+			return errors.Wrap(err, "loading api")
+		}
+		cr, err := CommandRunner(h)
+		if err != nil {
+			return errors.Wrap(err, "command runner")
+		}
+		tarballImg, err := assets.NewFileAsset(srcPath, filepath.Dir(dstPath), filepath.Base(dstPath), "0644")
+		if err != nil {
+			return errors.Wrap(err, "new file asset")
+		}
+		// copy tarball into minikube
+
+		if err := cr.Copy(tarballImg); err != nil {
+			return errors.Wrap(err, "copying tarball")
+		}
+		// load image into container runtime
+		containerRuntime, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: cr})
+		if err != nil {
+			return errors.Wrap(err, "runtime")
+		}
+		if err := containerRuntime.LoadImage(dstPath); err != nil {
+			return errors.Wrap(err, "loading image into container runtime")
+		}
+		// delete destination image tarball on host
+		if _, err := cr.RunCmd(exec.Command("rm", dstPath)); err != nil {
+			return errors.Wrap(err, "removing destination tarball")
+		}
+	}
 	return nil
 }
 

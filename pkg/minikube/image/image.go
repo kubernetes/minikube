@@ -123,6 +123,27 @@ func LoadFromTarball(binary, img string) error {
 
 }
 
+// SaveToTarball saves img as a tarball at the given path
+func SaveToTarball(img, path string) error {
+	if !ExistsImageInDaemon(img) {
+		return fmt.Errorf("%s does not exist in local daemon, can't save to tarball", img)
+	}
+	ref, err := name.ParseReference(img)
+	if err != nil {
+		return errors.Wrap(err, "parsing reference")
+	}
+	i, err := daemon.Image(ref)
+	if err != nil {
+		return errors.Wrap(err, "getting image")
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return errors.Wrap(err, "creating tmp path")
+	}
+	defer f.Close()
+	return tarball.Write(ref, i, f)
+}
+
 // Tag returns just the image with the tag
 // eg image:tag@sha256:digest -> image:tag if there is an associated tag
 // if not possible, just return the initial img
