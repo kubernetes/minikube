@@ -33,8 +33,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
-var Lock sync.Mutex
-var WarningPrintedSet = make(map[string]bool)
+var warnLock sync.Mutex
+var alreadyWarnedCmds = make(map[string]bool)
 
 // RunResult holds the results of a Runner
 type RunResult struct {
@@ -137,15 +137,15 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	elapsed := time.Since(start)
 	if warn {
 		if elapsed > warnTime {
-			Lock.Lock()
-			defer Lock.Unlock()
-			if _, ok := WarningPrintedSet[rr.Command()]; !ok {
+			warnLock.Lock()
+			defer warnLock.Unlock()
+			if _, ok := alreadyWarnedCmds[rr.Command()]; !ok {
 				out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
 				// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
 				if cmd.Args[0] != "sudo" {
 					out.ErrT(style.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
 				}
-				WarningPrintedSet[rr.Command()] = true
+				alreadyWarnedCmds[rr.Command()] = true
 			}
 		}
 
