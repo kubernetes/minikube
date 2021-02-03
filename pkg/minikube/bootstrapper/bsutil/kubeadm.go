@@ -26,6 +26,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -66,7 +67,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	cgroupDriver, err := r.CGroupDriver()
 	if err != nil {
 		if driver.BareMetal(cc.Driver) && r.Name() == "Docker" && strings.Contains(err.Error(), "panic") {
-			return nil, errors.Wrap(err, "Docker daemon is not running with None driver")
+			return nil, oci.ErrDockerNotRunning
 		}
 		return nil, errors.Wrap(err, "getting cgroup driver")
 	}

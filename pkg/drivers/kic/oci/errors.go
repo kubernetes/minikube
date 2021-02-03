@@ -33,6 +33,9 @@ func (f *FailFastError) Error() string {
 	return f.Err.Error()
 }
 
+// ErrDockerDaemonNotRunning is thrown when docker been configured to run windows containers instead of Linux
+var ErrDockerDaemonNotRunning = &FailFastError{errors.New("docker daemon is not running")}
+
 // ErrWindowsContainers is thrown when docker been configured to run windows containers instead of Linux
 var ErrWindowsContainers = &FailFastError{errors.New("docker container type is windows")}
 

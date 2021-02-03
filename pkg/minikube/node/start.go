@@ -297,6 +297,9 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	// update cluster and set up certs
 
 	if err := bs.UpdateCluster(cfg); err != nil {
+		if errors.Is(err, oci.ErrDockerNotRunning) {
+			exit.Message(reason.EnvDockerUnavailable, "Docker deamon is not running.")
+		}
 		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 	}
 
