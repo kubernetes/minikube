@@ -23,8 +23,6 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
   - [userns-remap](https://docs.docker.com/engine/security/userns-remap/)
   - [rootless](https://docs.docker.com/engine/security/rootless/)
 
-- Docker driver is not supported on non-amd64 architectures such as arm yet. For non-amd64 archs please use [other drivers]({{< ref "/docs/drivers/_index.md" >}})
-
 - On macOS, containers might get hung and require a restart of Docker for Desktop. See [docker/for-mac#1835](https://github.com/docker/for-mac/issues/1835)
 
 - The `ingress`, and `ingress-dns` addons are currently only supported on Linux. See [#7332](https://github.com/kubernetes/minikube/issues/7332)
