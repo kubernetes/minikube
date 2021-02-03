@@ -26,12 +26,12 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
@@ -65,8 +65,9 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 
 	cgroupDriver, err := r.CGroupDriver()
 	if err != nil {
-		if driver.BareMetal(cc.Driver) && r.Name() == "Docker" && strings.Contains(err.Error(), "panic") {
-			return nil, errors.Wrap(err, "Docker daemon is not running with None driver")
+		// Whether it is a known failure and replace it with the correct ErrorType.
+		if known, err := IsKnownError(err); known {
+			return nil, err
 		}
 		return nil, errors.Wrap(err, "getting cgroup driver")
 	}
@@ -202,4 +203,18 @@ func etcdExtraArgs(extraOpts config.ExtraOptionSlice) map[string]string {
 		args[eo.Key] = eo.Value
 	}
 	return args
+}
+
+// IsKnownError replaces raw error type if the error is known.
+func IsKnownError(err error) (bool, error) {
+	// If docker runtime is not running, some docker command will crash and
+	// others will return a error message.
+	if strings.Contains(err.Error(), "github.com/docker/cli/cli/command/system.formatInfo") || strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
+		return true, oci.ErrDockerRuntimeNotRunning
+	}
+	// handle containerd error.
+	if strings.Contains(err.Error(), "runtime has been started") || strings.Contains(err.Error(), "endpoint has been started") {
+		return true, oci.ErrDockerRuntimeNotRunning
+	}
+	return false, err
 }

@@ -33,6 +33,9 @@ func (f *FailFastError) Error() string {
 	return f.Err.Error()
 }
 
+// ErrDockerRuntimeNotRunning is thrown when docker runtime is not running
+var ErrDockerRuntimeNotRunning = &FailFastError{errors.New("docker runtime is not running")}
+
 // ErrWindowsContainers is thrown when docker been configured to run windows containers instead of Linux
 var ErrWindowsContainers = &FailFastError{errors.New("docker container type is windows")}
 
