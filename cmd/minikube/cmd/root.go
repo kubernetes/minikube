@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -97,6 +98,17 @@ func Execute() {
 			os.Args = append([]string{RootCmd.Use, callingCmd, profile, "--"}, os.Args[1:]...)
 		} else {
 			os.Args = append([]string{RootCmd.Use, callingCmd, "--"}, os.Args[1:]...)
+		}
+	} else if filepath.Ext(callingCmd) == ".exe" && driver.IsMicrosoftWSL() {
+		var found = false
+		for _, a := range os.Args {
+			if a == "--force" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			exit.Message(reason.WrongBinary, "Cannot run Windows binary inside WSL, please download linux binary from https://minikube.sigs.k8s.io/docs/start/. Or you can use '--force' to force execution which would be at your own risk.")
 		}
 	}
 	for _, c := range RootCmd.Commands() {

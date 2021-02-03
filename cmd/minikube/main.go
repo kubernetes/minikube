@@ -24,13 +24,9 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-  "path/filepath"
 
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
-  "k8s.io/minikube/pkg/minikube/driver"
-  "k8s.io/minikube/pkg/minikube/exit"
-  "k8s.io/minikube/pkg/minikube/reason"
 
 	// Register drivers
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
@@ -76,11 +72,6 @@ func main() {
 	}
 	out.SetOutFile(os.Stdout)
 	out.SetErrFile(os.Stderr)
-
-  if filepath.Ext(os.Args[0]) == ".exe" && driver.IsMicrosoftWSL() {
-    exit.Message(reason.WslExeConflict, "Cannot run windows binary inside WSL.")
-  }
-
 	cmd.Execute()
 }
 
