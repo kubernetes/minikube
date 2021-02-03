@@ -29,14 +29,11 @@ import (
 )
 
 func TestPause(t *testing.T) {
-	if ContainerdContainerRuntime() {
-		t.Skip("skipping as this test currently times out on containerd")
-	}
 	MaybeParallel(t)
 
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("pause")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
 	// Serial tests

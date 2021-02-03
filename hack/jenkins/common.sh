@@ -393,8 +393,8 @@ if grep -q html "$HTML_OUT"; then
 fi
 
 echo ">> Cleaning up after ourselves ..."
-${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
-${SUDO_PREFIX}${MINIKUBE_BIN} delete --all --purge >/dev/null 2>/dev/null || true
+timeout 3m ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
+timeout 5m ${SUDO_PREFIX}${MINIKUBE_BIN} delete --all --purge >/dev/null 2>/dev/null || true
 cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true

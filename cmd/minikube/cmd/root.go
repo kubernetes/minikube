@@ -99,7 +99,7 @@ func Execute() {
 		} else {
 			os.Args = append([]string{RootCmd.Use, callingCmd, "--"}, os.Args[1:]...)
 		}
-	} else if filepath.Ext(callingCmd) == ".exe" && driver.IsMicrosoftWSL() {
+	} else if runtime.GOOS == "windows" && driver.IsMicrosoftWSL() {
 		var found = false
 		for _, a := range os.Args {
 			if a == "--force" {

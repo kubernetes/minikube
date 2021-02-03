@@ -169,7 +169,9 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 	// No helper because it makes the call log confusing.
 	if *cleanup {
 		t.Logf("Cleaning up %q profile ...", profile)
-		_, err := Run(t, exec.Command(Target(), "delete", "-p", profile))
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		_, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
 		if err != nil {
 			t.Logf("failed cleanup: %v", err)
 		}

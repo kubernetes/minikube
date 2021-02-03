@@ -90,6 +90,7 @@ func TestFunctional(t *testing.T) {
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
+			{"ComponentHealth", validateComponentHealth},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -108,7 +109,6 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"ComponentHealth", validateComponentHealth},
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DryRun", validateDryRun},
