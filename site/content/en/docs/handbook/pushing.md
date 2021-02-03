@@ -25,7 +25,7 @@ Here is a comparison table to help you choose:
 |  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  |
 
 * note1 : the default container-runtime on minikube is 'docker'.
-* note2 : 'none' driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the kuberentes.
+* note2 : 'none' driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the kubernetes.
 
 ---
 

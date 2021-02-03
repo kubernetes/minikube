@@ -146,10 +146,8 @@ func TestStartHostExists(t *testing.T) {
 	mc := defaultClusterConfig
 	mc.Name = ih.Name
 
-	n := config.Node{Name: ih.Name}
-
 	// This should pass without calling Create because the host exists already.
-	h, _, err := StartHost(api, &mc, &n)
+	h, _, err := StartHost(api, &mc, &(mc.Nodes[0]))
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
