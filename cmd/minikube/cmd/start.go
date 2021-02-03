@@ -176,6 +176,8 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	if existing != nil {
 		upgradeExistingConfig(existing)
+	} else {
+		validateProfileName()
 	}
 
 	validateSpecifiedDriver(existing)
@@ -636,6 +638,25 @@ func hostDriver(existing *config.ClusterConfig) string {
 	}
 
 	return h.Driver.DriverName()
+}
+
+// validateProfileName makes sure that new profile name not duplicated with any of machine names in existing multi-node clusters.
+func validateProfileName() {
+	profiles, err := config.ListValidProfiles()
+	if err != nil {
+		exit.Message(reason.InternalListConfig, "Unable to list profiles: {{.error}}", out.V{"error": err})
+	}
+	for _, p := range profiles {
+		for _, n := range p.Config.Nodes {
+			machineName := config.MachineName(*p.Config, n)
+			if ClusterFlagValue() == machineName {
+				out.WarningT("Profile name '{{.name}}' is duplicated with machine name '{{.machine}}' in profile '{{.profile}}'", out.V{"name": ClusterFlagValue(),
+					"machine": machineName,
+					"profile": p.Name})
+				exit.Message(reason.Usage, "Profile name should be unique")
+			}
+		}
+	}
 }
 
 // validateSpecifiedDriver makes sure that if a user has passed in a driver

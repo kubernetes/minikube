@@ -209,7 +209,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		return errors.Wrap(err, "command runner")
 	}
 
-	data := assets.GenerateTemplateData(cc.KubernetesConfig)
+	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig)
 	return enableOrDisableAddonInternal(cc, addon, cmd, data, enable)
 }
 
