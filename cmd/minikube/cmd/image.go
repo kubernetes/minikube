@@ -45,7 +45,7 @@ var loadImageCmd = &cobra.Command{
 		profile := viper.GetString(config.ProfileName)
 		img := args[0]
 		if err := machine.LoadImage(profile, img); err != nil {
-			exit.Error(reason.InternalCacheLoad, "Failed to cache and load images", err)
+			exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 		}
 	},
 }

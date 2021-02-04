@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -65,69 +64,56 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 
 // LoadImage loads the local image into the container runtime
 func LoadImage(profile, img string) error {
-	cc, err := config.Load(profile)
+	// save image in temporary dir
+	tmpDir, err := ioutil.TempDir("", "")
 	if err != nil {
-		return errors.Wrap(err, "loading profile")
+		return errors.Wrap(err, "temp dir")
 	}
-	// if the image exists in the local daemon, save it as a tarball
-	if image.ExistsImageInDaemon(img) {
-		tmpFile, err := ioutil.TempFile("", "")
-		if err != nil {
-			return errors.Wrap(err, "temp file")
-		}
-		tmpFile.Close()
-		defer os.Remove(tmpFile.Name())
-		img = tmpFile.Name()
-	}
-	dst := "/tmp/img.tar"
-	if err := copyAndLoadTarballIntoHost(cc, img, dst, profile); err != nil {
-		return errors.Wrap(err, "copying tarball into host")
-	}
-	return nil
-}
+	defer os.Remove(tmpDir)
+	imgPath := filepath.Join(tmpDir, img)
+	imgPath = localpath.SanitizeCacheDir(imgPath)
 
-func copyAndLoadTarballIntoHost(cc *config.ClusterConfig, srcPath, dstPath, profile string) error {
-	c, err := config.Load(profile)
-	if err != nil {
-		return errors.Wrap(err, "loading profile config")
+	// save the docker image to tarball
+	if err := image.SaveToTarball(img, imgPath); err != nil {
+		return errors.Wrapf(err, "saving %s to tarball", img)
 	}
+
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "api")
 	}
 	defer api.Close()
+
+	c, err := config.Load(profile)
+	if err != nil {
+		return errors.Wrap(err, "loading profile")
+	}
+
 	for _, n := range c.Nodes {
 		m := config.MachineName(*c, n)
+		status, err := Status(api, m)
+		if err != nil {
+			klog.Warningf("error getting status for %s: %v", m, err)
+			continue
+		}
+		if status != state.Running.String() { // the not running hosts will load on next start
+			continue
+		}
 		h, err := api.Load(m)
 		if err != nil {
-			return errors.Wrap(err, "loading api")
+			klog.Warningf("Failed to load machine %q: %v", m, err)
+			continue
 		}
 		cr, err := CommandRunner(h)
 		if err != nil {
-			return errors.Wrap(err, "command runner")
+			klog.Warningf("Failed to get command runner %q: %v", m, err)
+			continue
 		}
-		tarballImg, err := assets.NewFileAsset(srcPath, filepath.Dir(dstPath), filepath.Base(dstPath), "0644")
-		if err != nil {
-			return errors.Wrap(err, "new file asset")
-		}
-		// copy tarball into minikube
-
-		if err := cr.Copy(tarballImg); err != nil {
-			return errors.Wrap(err, "copying tarball")
-		}
-		// load image into container runtime
-		containerRuntime, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: cr})
-		if err != nil {
-			return errors.Wrap(err, "runtime")
-		}
-		if err := containerRuntime.LoadImage(dstPath); err != nil {
-			return errors.Wrap(err, "loading image into container runtime")
-		}
-		// delete destination image tarball on host
-		if _, err := cr.RunCmd(exec.Command("rm", dstPath)); err != nil {
-			return errors.Wrap(err, "removing destination tarball")
+		if err := LoadImages(c, cr, []string{img}, tmpDir); err != nil {
+			klog.Warningf("Failed to load %s into node %s, skipping and trying other nodes: %v", img, n.Name, err)
 		}
 	}
+
 	return nil
 }
 
