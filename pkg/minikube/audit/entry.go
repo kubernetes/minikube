@@ -58,10 +58,10 @@ func (e *entry) toFields() []string {
 	return []string{d["command"], d["args"], d["profile"], d["user"], d["startTime"], d["endTime"]}
 }
 
-// linesToFields converts audit lines into arrays of fields.
-func linesToFields(lines []string) ([][]string, error) {
+// logsToFields converts audit logs into arrays of fields.
+func logsToFields(logs []string) ([][]string, error) {
 	c := [][]string{}
-	for _, l := range lines {
+	for _, l := range logs {
 		e := &entry{}
 		if err := json.Unmarshal([]byte(l), e); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal %q: %v", l, err)
@@ -71,11 +71,11 @@ func linesToFields(lines []string) ([][]string, error) {
 	return c, nil
 }
 
-// linesToTable converts audit lines into a formatted table.
-func linesToTable(lines []string, headers []string) (string, error) {
-	f, err := linesToFields(lines)
+// logsToTable converts audit lines into a formatted table.
+func logsToTable(logs []string, headers []string) (string, error) {
+	f, err := logsToFields(logs)
 	if err != nil {
-		return "", fmt.Errorf("failed to convert lines to fields: %v", err)
+		return "", fmt.Errorf("failed to convert logs to fields: %v", err)
 	}
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)

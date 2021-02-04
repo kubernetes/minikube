@@ -55,11 +55,11 @@ func Report(lines int) (*Data, error) {
 	return r, nil
 }
 
-// Table creates a formatted table using last n lines from the report.
+// Table creates a formatted table using last n logs from the report.
 func (r *Data) Table() (string, error) {
-	t, err := linesToTable(r.logs, r.headers)
+	t, err := logsToTable(r.logs, r.headers)
 	if err != nil {
-		return "", fmt.Errorf("failed to convert lines to table: %v", err)
+		return "", fmt.Errorf("failed to convert logs to table: %v", err)
 	}
 	return t, nil
 }
