@@ -72,14 +72,14 @@ func linesToFields(lines []string) ([][]string, error) {
 }
 
 // linesToTable converts audit lines into a formatted table.
-func linesToTable(lines []string) (string, error) {
+func linesToTable(lines []string, headers []string) (string, error) {
 	f, err := linesToFields(lines)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert lines to fields: %v", err)
 	}
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
-	t.SetHeader([]string{"Command", "Args", "Profile", "User", "Start Time", "End Time"})
+	t.SetHeader(headers)
 	t.SetAutoFormatHeaders(false)
 	t.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	t.SetCenterSeparator("|")

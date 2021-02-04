@@ -17,8 +17,6 @@ limitations under the License.
 package audit
 
 import (
-	"bufio"
-	"fmt"
 	"os"
 	"os/user"
 	"strings"
@@ -77,33 +75,4 @@ func shouldLog() bool {
 		}
 	}
 	return true
-}
-
-// Retrieve the last n lines from the log.
-func Retrieve(n int) (string, error) {
-	if n <= 0 {
-		return "", fmt.Errorf("number of lines to retrieve must be 1 or greater")
-	}
-	if currentLogFile == nil {
-		if err := setLogFile(); err != nil {
-			return "", fmt.Errorf("failed to set the log file: %v", err)
-		}
-	}
-	var l []string
-	s := bufio.NewScanner(currentLogFile)
-	for s.Scan() {
-		// pop off the earliest line if already at desired log length
-		if len(l) == n {
-			l = l[1:]
-		}
-		l = append(l, s.Text())
-	}
-	if err := s.Err(); err != nil {
-		return "", fmt.Errorf("failed to read from audit file: %v", err)
-	}
-	t, err := linesToTable(l)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert lines to table: %v", err)
-	}
-	return t, nil
 }

@@ -189,7 +189,10 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		}
 	}
 
-	outputAudit(lines, failed)
+	if err := outputAudit(lines); err != nil {
+		klog.Error(err)
+		failed = append(failed, "audit")
+	}
 
 	if len(failed) > 0 {
 		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
@@ -198,16 +201,19 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 }
 
 // outputAudit displays the audit logs.
-func outputAudit(lines int, failed []string) {
+func outputAudit(lines int) error {
 	out.Step(style.Empty, "")
 	out.Step(style.Empty, "==> Audit <==")
-	a, err := audit.Retrieve(lines)
+	r, err := audit.Report(lines)
 	if err != nil {
-		klog.Errorf("failed to get audit logs with error: %v", err)
-		failed = append(failed, "audit")
-		return
+		return fmt.Errorf("failed to create audit report with error: %v", err)
 	}
-	out.Step(style.Empty, a)
+	t, err := r.Table()
+	if err != nil {
+		return fmt.Errorf("failed to create audit table with error: %v", err)
+	}
+	out.Step(style.Empty, t)
+	return nil
 }
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs
