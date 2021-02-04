@@ -66,7 +66,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	cgroupDriver, err := r.CGroupDriver()
 	if err != nil {
 		// Whether it is a known failure and replace it with the correct ErrorType.
-		if known, err := IsKnownError(err); known {
+		if known, err := detectRuntImeError(err); known {
 			return nil, err
 		}
 		return nil, errors.Wrap(err, "getting cgroup driver")
@@ -205,8 +205,8 @@ func etcdExtraArgs(extraOpts config.ExtraOptionSlice) map[string]string {
 	return args
 }
 
-// IsKnownError replaces raw error type if the error is known.
-func IsKnownError(err error) (bool, error) {
+// detectRuntImeError replaces raw error type if the error is known.
+func detectRuntImeError(err error) (bool, error) {
 	// If docker runtime is not running, some docker command will crash and
 	// others will return a error message.
 	if strings.Contains(err.Error(), "github.com/docker/cli/cli/command/system.formatInfo") || strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
