@@ -108,7 +108,7 @@ func Execute() {
 			}
 		}
 		if !found {
-			exit.Message(reason.WrongBinaryWSL, "You are trying to run windows .exe binary inside WSL, for better integration please use Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force"
+			exit.Message(reason.WrongBinaryWSL, "You are trying to run windows .exe binary inside WSL, for better integration please use Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force")
 		}
 	}
 	for _, c := range RootCmd.Commands() {
