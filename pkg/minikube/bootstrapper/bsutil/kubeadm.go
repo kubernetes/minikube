@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -65,9 +64,8 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 
 	cgroupDriver, err := r.CGroupDriver()
 	if err != nil {
-		// Whether it is a known failure and replace it with the correct ErrorType.
-		if known, err := detectRuntImeError(err); known {
-			return nil, err
+		if !r.Active() {
+			return nil, oci.ErrDockerRuntimeNotRunning
 		}
 		return nil, errors.Wrap(err, "getting cgroup driver")
 	}
@@ -203,18 +201,4 @@ func etcdExtraArgs(extraOpts config.ExtraOptionSlice) map[string]string {
 		args[eo.Key] = eo.Value
 	}
 	return args
-}
-
-// detectRuntImeError replaces raw error type if the error is known.
-func detectRuntImeError(err error) (bool, error) {
-	// If docker runtime is not running, some docker command will crash and
-	// others will return a error message.
-	if strings.Contains(err.Error(), "github.com/docker/cli/cli/command/system.formatInfo") || strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
-		return true, oci.ErrDockerRuntimeNotRunning
-	}
-	// handle containerd error.
-	if strings.Contains(err.Error(), "runtime has been started") || strings.Contains(err.Error(), "endpoint has been started") {
-		return true, oci.ErrDockerRuntimeNotRunning
-	}
-	return false, err
 }
