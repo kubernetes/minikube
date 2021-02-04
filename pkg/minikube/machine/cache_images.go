@@ -70,12 +70,8 @@ func LoadImage(profile, img string) error {
 		return errors.Wrap(err, "temp dir")
 	}
 	defer os.Remove(tmpDir)
-	imgPath := filepath.Join(tmpDir, img)
-	imgPath = localpath.SanitizeCacheDir(imgPath)
-
-	// save the docker image to tarball
-	if err := image.SaveToTarball(img, imgPath); err != nil {
-		return errors.Wrapf(err, "saving %s to tarball", img)
+	if err := image.SaveToDir([]string{img}, tmpDir); err != nil {
+		return errors.Wrap(err, "save to dir")
 	}
 
 	api, err := NewAPIClient()
