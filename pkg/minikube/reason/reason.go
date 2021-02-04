@@ -190,7 +190,7 @@ var (
 
 	RsrcInsufficientStorage = Kind{ID: "RSRC_INSUFFICIENT_STORAGE", ExitCode: ExInsufficientStorage, Style: style.UnmetRequirement}
 
-	WrongBinary        = Kind{ID: "WRONG_BINARY", ExitCode: ExHostError}
+	WrongBinaryWSL     = Kind{ID: "WRONG_BINARY_WSL", ExitCode: ExHostError}
 	HostHomeMkdir      = Kind{ID: "HOST_HOME_MKDIR", ExitCode: ExHostPermission}
 	HostHomeChown      = Kind{ID: "HOST_HOME_CHOWN", ExitCode: ExHostPermission}
 	HostBrowser        = Kind{ID: "HOST_BROWSER", ExitCode: ExHostError}
