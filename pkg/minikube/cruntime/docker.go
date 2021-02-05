@@ -137,6 +137,10 @@ func (r *Docker) Restart() error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
+	// because #10373
+	if err := r.Init.ForceStop("docker.socket"); err != nil {
+		return err
+	}
 	return r.Init.ForceStop("docker")
 }
 
