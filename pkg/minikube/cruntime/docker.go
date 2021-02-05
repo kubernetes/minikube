@@ -139,7 +139,7 @@ func (r *Docker) Restart() error {
 func (r *Docker) Disable() error {
 	// because #10373
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
-		return err
+		klog.ErrorS(err, "Failed to stop", "service", "docker.socket")
 	}
 	return r.Init.ForceStop("docker")
 }
