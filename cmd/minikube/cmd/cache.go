@@ -72,14 +72,13 @@ func cacheAddProfiles() []*config.Profile {
 			klog.Warningf("error listing profiles: %v", err)
 		}
 		return validProfiles
-	} else {
-		profile := viper.GetString(config.ProfileName)
-		p, err := config.LoadProfile(profile)
-		if err != nil {
-			exit.Message(reason.Usage, "{{.profile}} profile is not valid: {{.err}}", out.V{"profile": profile, "err": err})
-		}
-		return []*config.Profile{p}
 	}
+	profile := viper.GetString(config.ProfileName)
+	p, err := config.LoadProfile(profile)
+	if err != nil {
+		exit.Message(reason.Usage, "{{.profile}} profile is not valid: {{.err}}", out.V{"profile": profile, "err": err})
+	}
+	return []*config.Profile{p}
 }
 
 // deleteCacheCmd represents the cache delete command
@@ -113,6 +112,7 @@ var reloadCacheCmd = &cobra.Command{
 }
 
 func init() {
+	addCacheCmdFlags()
 	cacheCmd.AddCommand(addCacheCmd)
 	cacheCmd.AddCommand(deleteCacheCmd)
 	cacheCmd.AddCommand(reloadCacheCmd)

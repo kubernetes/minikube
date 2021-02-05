@@ -127,6 +127,7 @@ func TestFunctional(t *testing.T) {
 			{"UpdateContextCmd", validateUpdateContextCmd},
 			{"DockerEnv", validateDockerEnv},
 			{"NodeLabels", validateNodeLabels},
+			{"LoadImage", validateLoadImage},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -155,6 +156,40 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 		if !strings.Contains(rr.Output(), el) {
 			t.Errorf("expected to have label %q in node labels but got : %s", el, rr.Output())
 		}
+	}
+}
+
+// validateLoadImage makes sure that `minikube load image` works as expected
+func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	// pull busybox
+	busybox := "busybox:latest"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busybox))
+	if err != nil {
+		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
+	}
+
+	// tag busybox
+	newImage := fmt.Sprintf("busybox:%s", profile)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busybox, newImage))
+	if err != nil {
+		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
+	}
+
+	// try to load the new image into minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", newImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// make sure the image was correctly loaded
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "ctr", "-n=k8s.io", "image", "ls"))
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), newImage) {
+		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 }
 
