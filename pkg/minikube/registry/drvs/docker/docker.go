@@ -191,7 +191,7 @@ func checkDockerVersion(o string) registry.State {
 				Installed:        true,
 				Healthy:          true,
 				NeedsImprovement: true,
-				Fix:              fmt.Sprintf("Upgrade %s to a newer version (Minimum supproted version is %2d.%02d.%d)", driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+				Fix:              fmt.Sprintf("Upgrade %s to a newer version (Minimum recommended version is %2d.%02d.%d)", driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
 				Doc:              docURL + "#requirements"}
 		}
 	}
