@@ -188,12 +188,10 @@ func checkDockerVersion(o string) registry.State {
 			return registry.State{Installed: true, Healthy: true, Error: nil}
 		} else if k < minDockerVersion[i] {
 			return registry.State{
-				Reason:           "PROVIDER_DOCKER_VERSION_LOW",
-				Error:            oci.ErrMinDockerVersion,
 				Installed:        true,
-				Healthy:          false,
+				Healthy:          true,
 				NeedsImprovement: true,
-				Fix:              fmt.Sprintf("Upgrade %s to a newer version (Minimum supproted version is %2d.%2d.%d)", driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+				Fix:              fmt.Sprintf("Upgrade %s to a newer version (Minimum supproted version is %2d.%02d.%d)", driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
 				Doc:              docURL + "#requirements"}
 		}
 	}
