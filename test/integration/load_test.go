@@ -31,8 +31,8 @@ func TestImageLoad(t *testing.T) {
 		t.Skip("skipping on none driver")
 	}
 	profile := UniqueProfileName("load-image")
-	ctx, _ := context.WithTimeout(context.Background(), Minutes(5))
-	// defer CleanupWithLogs(t, profile, cancel)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	defer CleanupWithLogs(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--memory=2000"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
