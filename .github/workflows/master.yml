@@ -12,6 +12,8 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
+env:
+  GOPROXY: https://proxy.golang.org
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
@@ -289,12 +291,6 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-20.04
     steps:
-      - name: Install kubectl
-        shell: bash
-        run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
-          sudo install kubectl /usr/local/bin/kubectl
-          kubectl version --client=true
       - name: Docker Info
         shell: bash
         run: |
