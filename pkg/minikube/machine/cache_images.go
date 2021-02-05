@@ -18,7 +18,6 @@ package machine
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -57,57 +56,6 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 
 	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
-	}
-
-	return nil
-}
-
-// LoadImage loads the local image into the container runtime
-func LoadImage(profile, img string) error {
-	// save image in temporary dir
-	tmpDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		return errors.Wrap(err, "temp dir")
-	}
-	defer os.Remove(tmpDir)
-	if err := image.SaveToDir([]string{img}, tmpDir); err != nil {
-		return errors.Wrap(err, "save to dir")
-	}
-
-	api, err := NewAPIClient()
-	if err != nil {
-		return errors.Wrap(err, "api")
-	}
-	defer api.Close()
-
-	c, err := config.Load(profile)
-	if err != nil {
-		return errors.Wrap(err, "loading profile")
-	}
-
-	for _, n := range c.Nodes {
-		m := config.MachineName(*c, n)
-		status, err := Status(api, m)
-		if err != nil {
-			klog.Warningf("error getting status for %s: %v", m, err)
-			continue
-		}
-		if status != state.Running.String() { // the not running hosts will load on next start
-			continue
-		}
-		h, err := api.Load(m)
-		if err != nil {
-			klog.Warningf("Failed to load machine %q: %v", m, err)
-			continue
-		}
-		cr, err := CommandRunner(h)
-		if err != nil {
-			klog.Warningf("Failed to get command runner %q: %v", m, err)
-			continue
-		}
-		if err := LoadImages(c, cr, []string{img}, tmpDir); err != nil {
-			klog.Warningf("Failed to load %s into node %s, skipping and trying other nodes: %v", img, n.Name, err)
-		}
 	}
 
 	return nil
@@ -210,7 +158,7 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 }
 
 // CacheAndLoadImages caches and loads images to all profiles
-func CacheAndLoadImages(images []string) error {
+func CacheAndLoadImages(images []string, profiles []*config.Profile) error {
 	if len(images) == 0 {
 		return nil
 	}
@@ -225,10 +173,6 @@ func CacheAndLoadImages(images []string) error {
 		return errors.Wrap(err, "api")
 	}
 	defer api.Close()
-	profiles, _, err := config.ListProfiles() // need to load image to all profiles
-	if err != nil {
-		return errors.Wrap(err, "list profiles")
-	}
 
 	succeeded := []string{}
 	failed := []string{}

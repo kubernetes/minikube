@@ -145,10 +145,14 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	wg.Add(1)
 	go func() {
-		if err := CacheAndLoadImagesInConfig(); err != nil {
+		defer wg.Done()
+		profile, err := config.LoadProfile(starter.Cfg.Name)
+		if err != nil {
+			out.FailureT("Unable to load profile: {{.error}}", out.V{"error": err})
+		}
+		if err := CacheAndLoadImagesInConfig([]*config.Profile{profile}); err != nil {
 			out.FailureT("Unable to push cached images: {{.error}}", out.V{"error": err})
 		}
-		wg.Done()
 	}()
 
 	// enable addons, both old and new!

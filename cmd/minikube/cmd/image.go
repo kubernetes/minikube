@@ -39,12 +39,15 @@ var loadImageCmd = &cobra.Command{
 	Long:  "Load a local image into minikube",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			exit.Message(reason.Usage, "Please provide an image in your local daemon or a path to an image tarball to load into minikube via <minikube image load IMAGE_NAME>")
+			exit.Message(reason.Usage, "Please provide an image in your local daemon to load into minikube via <minikube image load IMAGE_NAME>")
 		}
 		// Cache and load images into docker daemon
-		profile := viper.GetString(config.ProfileName)
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
 		img := args[0]
-		if err := machine.LoadImage(profile, img); err != nil {
+		if err := machine.CacheAndLoadImages([]string{img}, []*config.Profile{profile}); err != nil {
 			exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 		}
 	},
