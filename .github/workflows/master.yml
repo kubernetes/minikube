@@ -197,7 +197,7 @@ jobs:
       JOB_NAME: "functional_docker_ubuntu20_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Install kubectl
         shell: bash
