@@ -1637,7 +1637,6 @@ jobs:
       [
         functional_docker_ubuntu16_04,
         functional_docker_ubuntu18_04,
-        functional_docker_ubuntu20_04,
         functional_docker_ubuntu_arm64,
         functional_virtualbox_macos,
         functional_docker_windows,
@@ -1664,7 +1663,6 @@ jobs:
           ls -lah
           cp -r ./functional_docker_ubuntu16_04 ./all_reports/
           cp -r ./functional_docker_ubuntu18_04 ./all_reports/
-          cp -r ./functional_docker_ubuntu20_04 ./all_reports/
           cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
           cp -r ./functional_virtualbox_macos ./all_reports/
           cp -r ./functional_docker_windows ./all_reports/
