@@ -161,7 +161,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 
 // validateLoadImage makes sure that `minikube load image` works as expected
 func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
-	defer PostMortemLogs(t, profile)
+	// defer PostMortemLogs(t, profile)
 
 	// pull busybox
 	busybox := "busybox:latest"
@@ -184,7 +184,13 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// make sure the image was correctly loaded
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "ctr", "-n=k8s.io", "image", "ls"))
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images", "--format", "{{.Repository}}:{{.Tag}}")
+	} else {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "ctr", "-n=k8s.io", "image", "ls")
+	}
+	rr, err = Run(t, cmd)
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
