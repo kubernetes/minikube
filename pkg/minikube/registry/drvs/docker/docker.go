@@ -115,7 +115,7 @@ func status() registry.State {
 	}
 
 	klog.Infof("docker version: %s", o)
-	if s := checkDockerVersion(string(o)); s.Error != nil {
+	if s := checkDockerVersion(strings.TrimSpace(string(o))); s.Error != nil { // remove '\n' from o at the end
 		return s
 	}
 
