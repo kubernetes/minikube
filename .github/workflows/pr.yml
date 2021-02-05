@@ -888,6 +888,8 @@ jobs:
           echo "--------------------------"
           hostname || true
           echo "--------------------------"
+          env || true
+          echo "--------------------------"
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
