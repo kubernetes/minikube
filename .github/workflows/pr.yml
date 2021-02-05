@@ -10,8 +10,6 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-env:
-  GOPROXY: https://proxy.golang.org
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
