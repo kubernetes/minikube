@@ -113,7 +113,7 @@ func Running(name string) ClusterController {
 
 	host, err := machine.LoadHost(api, name)
 	if err != nil {
-		exit.Error(reason.GuestImageLoad, "Unable to load host", err)
+		exit.Error(reason.GuestLoadHost, "Unable to load host", err)
 	}
 
 	cr, err := machine.CommandRunner(host)
