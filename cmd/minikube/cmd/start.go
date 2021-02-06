@@ -995,7 +995,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 	}
 }
 
-// validateCPUCount validates the cpu count matches the minimum recommended
+// validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
 func validateCPUCount(drvName string) {
 	var cpuCount int
 	if driver.BareMetal(drvName) {
@@ -1027,6 +1027,10 @@ func validateCPUCount(drvName string) {
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}
 
+	}
+
+	if si.CPUs < cpuCount {
+		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": si.CPUs})
 	}
 
 	// looks good
