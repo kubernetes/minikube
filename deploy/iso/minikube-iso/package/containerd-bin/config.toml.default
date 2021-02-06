@@ -5,7 +5,6 @@ plugin_dir = ""
 disabled_plugins = []
 required_plugins = []
 oom_score = 0
-imports = ["/etc/containerd/config.minikube.toml"]
 
 [grpc]
   address = "/run/containerd/containerd.sock"

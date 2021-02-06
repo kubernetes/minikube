@@ -130,6 +130,8 @@ type Config struct {
 	ImageRepository string
 	// KubernetesVersion Kubernetes version
 	KubernetesVersion semver.Version
+	// InsecureRegistry list of insecure registries
+	InsecureRegistry []string
 }
 
 // ListOptions are the options to use for listing containers
@@ -168,6 +170,7 @@ func New(c Config) (Manager, error) {
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
+			InsecureRegistry:  c.InsecureRegistry,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
