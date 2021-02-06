@@ -244,6 +244,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		Runner:            runner,
 		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
+		InsecureRegistry:  cc.InsecureRegistry,
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
