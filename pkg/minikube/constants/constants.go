@@ -41,6 +41,9 @@ const (
 	DockerDaemonPort = 2376
 	// APIServerPort is the default API server port
 	APIServerPort = 8443
+	// AutoPauseProxyPort is the port to be used as a reverse proxy for apiserver port
+	AutoPauseProxyPort = 38443
+
 	// SSHPort is the SSH serviceport on the node vm and container
 	SSHPort = 22
 	// RegistryAddonPort os the default registry addon port
