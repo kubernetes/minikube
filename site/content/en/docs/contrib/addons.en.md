@@ -43,7 +43,7 @@ To make the addon appear in `minikube addons list`, add it to `pkg/addons/config
   {
     name:      "registry",
     set:       SetBool,
-    callbacks: []setFn{enableOrDisableAddon},
+    callbacks: []setFn{EnableOrDisableAddon},
   },
 ```
 
