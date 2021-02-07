@@ -28,8 +28,8 @@ mkdir -p $HOME/.minikube/certs
 cp my_company.pem $HOME/.minikube/certs/my_company.pem
 ```
 
-Then restart minikube to sync the certificates:
+Then restart minikube with the `--embed-certs` flag to sync the certificates:
 
 ```shell
-minikube start
+minikube start --embed-certs
 ```
