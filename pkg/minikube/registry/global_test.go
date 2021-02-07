@@ -97,7 +97,7 @@ func TestGlobalAvailable(t *testing.T) {
 		},
 		{
 			Name:     "unhealthy-foo",
-			Priority: Unhealthy,
+			Priority: Default,
 			State:    State{Healthy: false},
 		},
 	}

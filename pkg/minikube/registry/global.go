@@ -110,10 +110,6 @@ func Available(vm bool) []DriverState {
 		klog.Infof("%s priority: %d, state: %+v", d.Name, d.Priority, s)
 
 		priority := d.Priority
-		if !s.Healthy {
-			priority = Unhealthy
-		}
-
 		if vm {
 			if IsVM(d.Name) {
 				sts = append(sts, DriverState{Name: d.Name, Priority: priority, State: s})

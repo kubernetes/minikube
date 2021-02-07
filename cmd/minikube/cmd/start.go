@@ -27,6 +27,7 @@ import (
 	"os/user"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/blang/semver"
@@ -593,7 +594,11 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
 		out.Step(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
-		for _, r := range rejects {
+		altsAndRejects := append(alts, rejects...)
+		sort.Slice(altsAndRejects, func(i, j int) bool {
+			return altsAndRejects[i].Priority > altsAndRejects[j].Priority
+		})
+		for _, r := range altsAndRejects {
 			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
 		}
 		exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")

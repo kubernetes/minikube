@@ -279,7 +279,11 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 				continue
 			}
 
-			ds.Rejection = fmt.Sprintf("%s is preferred", pick.Name)
+			if pick.Name == "" {
+				ds.Rejection = "Rejected due to low priority"
+			} else {
+				ds.Rejection = fmt.Sprintf("%s is preferred", pick.Name)
+			}
 			alternates = append(alternates, ds)
 		}
 	}
