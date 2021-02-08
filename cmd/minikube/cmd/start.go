@@ -1030,6 +1030,18 @@ func validateCPUCount(drvName string) {
 	}
 
 	if si.CPUs < cpuCount {
+
+		if driver.IsDockerDesktop(drvName) {
+			out.Step(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
+			if runtime.GOOS == "darwin" {
+				out.Step(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`, out.V{"driver_name": drvName})
+			}
+			if runtime.GOOS == "windows" {
+				out.String("\n\t")
+				out.Step(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`, out.V{"driver_name": drvName})
+			}
+		}
+
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": si.CPUs})
 	}
 
