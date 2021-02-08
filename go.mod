@@ -104,7 +104,7 @@ require (
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
-	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.1
+	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.6
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200810185219-7d42fed1b770
 	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.1.2-0.20210101161202-de47504a564f
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
