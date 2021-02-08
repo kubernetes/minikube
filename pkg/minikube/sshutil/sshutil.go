@@ -93,6 +93,7 @@ func newSSHHost(d drivers.Driver) (*sshHost, error) {
 	}, nil
 }
 
+// KnownHost checks if this host is in the knownHosts file
 func KnownHost(host string, knownHosts string) bool {
 	fd, err := os.Open(knownHosts)
 	if err != nil {
