@@ -247,7 +247,7 @@ func deletePossibleKicLeftOver(ctx context.Context, cname string, driverName str
 		return
 	}
 
-	klog.Infof("deleting possible KIC leftovers for %s (driver=%s) with timeout of 5m...", cname, driverName)
+	klog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
 	cs, err := oci.ListContainersByLabel(ctx, bin, delLabel)
 	if err == nil && len(cs) > 0 {
