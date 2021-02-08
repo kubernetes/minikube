@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -241,14 +242,15 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 		return
 	}
 
-	klog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
-
+	klog.Infof("deleting possible KIC leftovers for %s (driver=%s) with timeout of 5m...", cname, driverName)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
-	cs, err := oci.ListContainersByLabel(bin, delLabel)
+	cs, err := oci.ListContainersByLabel(ctx, bin, delLabel)
 	if err == nil && len(cs) > 0 {
 		for _, c := range cs {
 			out.Step(style.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
-			err := oci.DeleteContainer(bin, c)
+			err := oci.DeleteContainer(ctx, bin, c)
 			if err != nil { // it will error if there is no container to delete
 				klog.Errorf("error deleting container %q. You may want to delete it manually :\n%v", cname, err)
 			}

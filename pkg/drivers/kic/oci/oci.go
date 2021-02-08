@@ -43,8 +43,8 @@ import (
 // if there no containers found with the given 	label, it will return nil
 func DeleteContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
-
-	cs, err := ListContainersByLabel(ociBin, label)
+	ctx := context.Background()
+	cs, err := ListContainersByLabel(ctx, ociBin, label)
 	if err != nil {
 		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
@@ -75,7 +75,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 }
 
 // DeleteContainer deletes a container by ID or Name
-func DeleteContainer(ociBin string, name string) error {
+func DeleteContainer(ctx context.Context, ociBin string, name string) error {
 	_, err := ContainerStatus(ociBin, name)
 	if err == context.DeadlineExceeded {
 		out.WarningT("{{.ocibin}} is taking an unsually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
@@ -87,7 +87,7 @@ func DeleteContainer(ociBin string, name string) error {
 		klog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
 
-	if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
+	if _, err := runCmd(exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)); err != nil {
 		return errors.Wrapf(err, "delete %s", name)
 	}
 	return nil
@@ -373,7 +373,7 @@ func IsCreatedByMinikube(ociBin string, nameOrID string) bool {
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
 func ListOwnedContainers(ociBin string) ([]string, error) {
-	return ListContainersByLabel(ociBin, ProfileLabelKey)
+	return ListContainersByLabel(context.Background(), ociBin, ProfileLabelKey)
 }
 
 // inspect return low-level information on containers
@@ -503,8 +503,8 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 }
 
 // ListContainersByLabel returns all the container names with a specified label
-func ListContainersByLabel(ociBin string, label string, warnSlow ...bool) ([]string, error) {
-	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
+func ListContainersByLabel(ctx context.Context, ociBin string, label string, warnSlow ...bool) ([]string, error) {
+	rr, err := runCmd(exec.CommandContext(ctx, ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
 	if err != nil {
 		return nil, err
 	}
