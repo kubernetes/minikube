@@ -166,6 +166,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
 			exit.Message(reason.Usage, "usage: minikube delete")
 		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
 
 		cname := ClusterFlagValue()
 		profile, err := config.LoadProfile(cname)
@@ -185,8 +187,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 		if orphan {
 			// TODO: generalize for non-KIC drivers: #8040
-			deletePossibleKicLeftOver(cname, driver.Docker)
-			deletePossibleKicLeftOver(cname, driver.Podman)
+			deletePossibleKicLeftOver(ctx, cname, driver.Docker)
+			deletePossibleKicLeftOver(ctx, cname, driver.Podman)
 		}
 	}
 
@@ -209,7 +211,9 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	klog.Infof("DeleteProfiles")
 	var errs []error
 	for _, profile := range profiles {
-		err := timedDeleteProfile(2*time.Minute, profile)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		err := deleteProfile(ctx, profile)
 		if err != nil {
 			mm, loadErr := machine.LoadMachine(profile.Name)
 
@@ -227,7 +231,7 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 }
 
 // TODO: remove and/or move to delete package: #8040
-func deletePossibleKicLeftOver(cname string, driverName string) {
+func deletePossibleKicLeftOver(ctx context.Context, cname string, driverName string) {
 	bin := ""
 	switch driverName {
 	case driver.Docker:
@@ -244,8 +248,6 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	}
 
 	klog.Infof("deleting possible KIC leftovers for %s (driver=%s) with timeout of 5m...", cname, driverName)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
 	cs, err := oci.ListContainersByLabel(ctx, bin, delLabel)
 	if err == nil && len(cs) > 0 {
@@ -280,35 +282,7 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 	}
 }
 
-// timedDeleteProfile puts a time limit on deleting a profile
-func timedDeleteProfile(timeoutDuration time.Duration, profile *config.Profile) error {
-	timeout := make(chan bool, 1)
-	go func() {
-		time.Sleep(timeoutDuration)
-		timeout <- true
-	}()
-
-	deleteFinished := make(chan bool, 1)
-	var err error
-	go func() {
-		err = deleteProfile(profile)
-		deleteFinished <- true
-	}()
-
-	select {
-	case <-deleteFinished:
-		if err != nil {
-			// Wait for all the logs to reach the client
-			time.Sleep(2 * time.Second)
-			return errors.Wrap(err, "delete")
-		}
-		return nil
-	case <-timeout:
-		return fmt.Errorf("deleting profile %s timed out in %f seconds", profile.Name, timeoutDuration.Seconds())
-	}
-}
-
-func deleteProfile(profile *config.Profile) error {
+func deleteProfile(ctx context.Context, profile *config.Profile) error {
 	klog.Infof("Deleting %s", profile.Name)
 	register.Reg.SetStep(register.Deleting)
 
@@ -321,7 +295,7 @@ func deleteProfile(profile *config.Profile) error {
 			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
 			for _, n := range profile.Config.Nodes {
 				machineName := config.MachineName(*profile.Config, n)
-				deletePossibleKicLeftOver(machineName, profile.Config.Driver)
+				deletePossibleKicLeftOver(ctx, machineName, profile.Config.Driver)
 			}
 		}
 	} else {
