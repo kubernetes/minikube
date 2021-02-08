@@ -19,6 +19,7 @@ package oci
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -31,7 +32,7 @@ import (
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
-func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
+func DeleteAllVolumesByLabel(ctx context.Context, ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
 	klog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
 
@@ -42,7 +43,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []er
 	}
 
 	for _, v := range vs {
-		if _, err := runCmd(exec.Command(ociBin, "volume", "rm", "--force", v), warnSlow...); err != nil {
+		if _, err := runCmd(exec.CommandContext(ctx, ociBin, "volume", "rm", "--force", v), warnSlow...); err != nil {
 			deleteErrs = append(deleteErrs, fmt.Errorf("deleting %q", v))
 		}
 	}
@@ -53,10 +54,10 @@ func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []er
 // PruneAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
 // example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
-func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
+func PruneAllVolumesByLabel(ctx context.Context, ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
 	klog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
-	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
+	cmd := exec.CommandContext(ctx, ociBin, "volume", "prune", "-f", "--filter", "label="+label)
 	if _, err := runCmd(cmd, warnSlow...); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s", label))
 	}

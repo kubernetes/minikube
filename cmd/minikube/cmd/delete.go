@@ -110,7 +110,8 @@ func deleteContainersAndVolumes(ociBin string) {
 		klog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.DeleteAllVolumesByLabel(ociBin, delLabel)
+	ctx := context.Background()
+	errs = oci.DeleteAllVolumesByLabel(ctx, ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		klog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
@@ -120,7 +121,7 @@ func deleteContainersAndVolumes(ociBin string) {
 		return
 	}
 
-	errs = oci.PruneAllVolumesByLabel(ociBin, delLabel)
+	errs = oci.PruneAllVolumesByLabel(ctx, ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		klog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
@@ -258,7 +259,7 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 		}
 	}
 
-	errs := oci.DeleteAllVolumesByLabel(bin, delLabel)
+	errs := oci.DeleteAllVolumesByLabel(ctx, bin, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
 		klog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
 	}
@@ -273,7 +274,7 @@ func deletePossibleKicLeftOver(cname string, driverName string) {
 		return
 	}
 
-	errs = oci.PruneAllVolumesByLabel(bin, delLabel)
+	errs = oci.PruneAllVolumesByLabel(ctx, bin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		klog.Warningf("error pruning volume (might be okay):\n%v", errs)
 	}
