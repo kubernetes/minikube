@@ -45,6 +45,7 @@ type Options struct {
 	Spinner bool
 }
 
+// SpinnerCharacter is which of the spinner.CharSets to use
 const SpinnerCharacter = 9
 
 // Config is a map of style name to style struct

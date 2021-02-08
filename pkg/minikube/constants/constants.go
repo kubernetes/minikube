@@ -84,7 +84,10 @@ const (
 	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
 
 	// scheduled stop constants
-	ScheduledStopEnvFile        = "/var/lib/minikube/scheduled-stop/environment"
+
+	// ScheduledStopEnvFile is the environment file for scheduled-stop
+	ScheduledStopEnvFile = "/var/lib/minikube/scheduled-stop/environment"
+	// ScheduledStopSystemdService is the service file for scheduled-stop
 	ScheduledStopSystemdService = "minikube-scheduled-stop"
 
 	// MinikubeExistingPrefix is used to save the original environment when executing docker-env
