@@ -161,8 +161,10 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 
 // validateLoadImage makes sure that `minikube load image` works as expected
 func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
-	// defer PostMortemLogs(t, profile)
-
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	defer PostMortemLogs(t, profile)
 	// pull busybox
 	busybox := "busybox:latest"
 	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busybox))
