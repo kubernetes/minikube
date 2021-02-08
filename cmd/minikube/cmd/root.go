@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -78,6 +79,20 @@ var RootCmd = &cobra.Command{
 func Execute() {
 	defer audit.Log(time.Now())
 
+	// Check whether this is a windows binary (.exe) running inisde WSL.
+	if runtime.GOOS == "windows" && driver.IsMicrosoftWSL() {
+		var found = false
+		for _, a := range os.Args {
+			if a == "--force" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			exit.Message(reason.WrongBinaryWSL, "You are trying to run windows .exe binary inside WSL, for better integration please use Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force")
+		}
+	}
+
 	_, callingCmd := filepath.Split(os.Args[0])
 
 	if callingCmd == "kubectl" {
@@ -99,6 +114,7 @@ func Execute() {
 			os.Args = append([]string{RootCmd.Use, callingCmd, "--"}, os.Args[1:]...)
 		}
 	}
+
 	for _, c := range RootCmd.Commands() {
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
