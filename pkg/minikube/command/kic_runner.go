@@ -195,7 +195,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		if err != nil {
 			return errors.Wrap(err, "detecting home dir")
 		}
-		tmpFolder = os.Getenv(home)
+		tmpFolder = home
 	}
 	tf, err := ioutil.TempFile(tmpFolder, "tmpf-memory-asset")
 	if err != nil {

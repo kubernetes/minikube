@@ -35,7 +35,7 @@ const (
 	AppsRunningKey = "apps_running"
 	// NodeReadyKey is the name used in the flags for waiting for the node status to be ready
 	NodeReadyKey = "node_ready"
-	// NodeReadyKey is the name used in the flags for waiting for the node status to be ready
+	// KubeletKey is the name used in the flags for waiting for the kubelet status to be ready
 	KubeletKey = "kubelet"
 )
 

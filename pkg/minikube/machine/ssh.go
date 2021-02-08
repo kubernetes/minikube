@@ -68,6 +68,7 @@ func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, 
 	return client.Shell(args...)
 }
 
+// GetSSHHostAddrPort returns the host address and port for ssh
 func GetSSHHostAddrPort(api libmachine.API, cc config.ClusterConfig, n config.Node) (string, int, error) {
 	host, err := getHost(api, cc, n)
 	if err != nil {

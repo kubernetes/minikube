@@ -103,8 +103,6 @@ github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21 h1:Pgxfz/g+Xy
 github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21/go.mod h1:Y8CJ3IwPIAkMhv/rRUWIlczaeqd9ty9yrl+nc2AbaL4=
 github.com/afbjorklund/go-containerregistry v0.1.2-0.20210101161202-de47504a564f h1:wu0jbxgv7MVpK/NydAoD7nAYFyDigjpKO2uighXRx1E=
 github.com/afbjorklund/go-containerregistry v0.1.2-0.20210101161202-de47504a564f/go.mod h1:BJ7VxR1hAhdiZBGGnvGETHEmFs1hzXc4VM1xjOPO9wA=
-github.com/afbjorklund/go-getter v1.4.3-0.20201119203610-3f740b1eaf7d h1:OrAMhXPmPx2ZO7PcwAYSfxZiirjhaBB3HnANHUvhuLo=
-github.com/afbjorklund/go-getter v1.4.3-0.20201119203610-3f740b1eaf7d/go.mod h1:a7z7NPPfNQpJWcn4rSWFtdrSldqLdLPEF3d8nFMsSLM=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -487,6 +485,8 @@ github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brv
 github.com/hashicorp/go-cleanhttp v0.5.0/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
 github.com/hashicorp/go-cleanhttp v0.5.1 h1:dH3aiDG9Jvb5r5+bYHsikaOUIpcM0xvgMXVoDkXMzJM=
 github.com/hashicorp/go-cleanhttp v0.5.1/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
+github.com/hashicorp/go-getter v1.5.1 h1:lM9sM02nvEApQGFgkXxWbhfqtyN+AyhQmi+MaMdBDOI=
+github.com/hashicorp/go-getter v1.5.1/go.mod h1:a7z7NPPfNQpJWcn4rSWFtdrSldqLdLPEF3d8nFMsSLM=
 github.com/hashicorp/go-hclog v0.9.2 h1:CG6TE5H9/JXsFWJCfoIVpKFIkFe6ysEuHirp4DxCsHI=
 github.com/hashicorp/go-hclog v0.9.2/go.mod h1:5CU+agLiy3J7N7QjHK5d05KxGsuXiQLrjA0H7acj2lQ=
 github.com/hashicorp/go-immutable-radix v1.0.0/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=

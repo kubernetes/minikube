@@ -25,6 +25,8 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // implementing the runtime.Object internally so we can write extensions to kubeconfig
+
+// Extension represents information to identify clusters and contexts
 type Extension struct {
 	runtime.TypeMeta `json:",inline"`
 	Version          string `json:"version"`

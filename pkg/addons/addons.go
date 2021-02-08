@@ -126,8 +126,8 @@ func SetBool(cc *config.ClusterConfig, name string, val string) error {
 	return nil
 }
 
-// enableOrDisableAddon updates addon status executing any commands necessary
-func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) error {
+// EnableOrDisableAddon updates addon status executing any commands necessary
+func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) error {
 	klog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
@@ -298,7 +298,7 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	}
 	if !machine.IsRunning(api, config.MachineName(*cc, cp)) {
 		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", config.MachineName(*cc, cp), name, val)
-		return enableOrDisableAddon(cc, name, val)
+		return EnableOrDisableAddon(cc, name, val)
 	}
 
 	storagev1, err := storageclass.GetStoragev1(cc.Name)
@@ -320,7 +320,7 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 		}
 	}
 
-	return enableOrDisableAddon(cc, name, val)
+	return EnableOrDisableAddon(cc, name, val)
 }
 
 func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
