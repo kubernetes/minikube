@@ -45,7 +45,7 @@ var Addons = []*Addon{
 	{
 		name:      "dashboard",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 
 	{
@@ -56,95 +56,95 @@ var Addons = []*Addon{
 	{
 		name:      "efk",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "freshpod",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:        "gvisor",
 		set:         SetBool,
 		validations: []setFn{IsRuntimeContainerd},
-		callbacks:   []setFn{enableOrDisableAddon, verifyAddonStatus},
+		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
 		name:      "helm-tiller",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "ingress",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon, verifyAddonStatus},
+		callbacks: []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
 		name:      "ingress-dns",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "istio-provisioner",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "istio",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "kubevirt",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "logviewer",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "metrics-server",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "nvidia-driver-installer",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "nvidia-gpu-device-plugin",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "olm",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "registry",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon, verifyAddonStatus},
+		callbacks: []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
 		name:      "registry-creds",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "registry-aliases",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 		//TODO - add other settings
 		//TODO check if registry addon is enabled
 	},
 	{
 		name:      "storage-provisioner",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "storage-provisioner-gluster",
@@ -154,32 +154,32 @@ var Addons = []*Addon{
 	{
 		name:      "metallb",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "ambassador",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "pod-security-policy",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "gcp-auth",
 		set:       SetBool,
-		callbacks: []setFn{gcpauth.EnableOrDisable, enableOrDisableAddon, verifyGCPAuthAddon},
+		callbacks: []setFn{gcpauth.EnableOrDisable, EnableOrDisableAddon, verifyGCPAuthAddon},
 	},
 	{
 		name:      "volumesnapshots",
 		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:        "csi-hostpath-driver",
 		set:         SetBool,
 		validations: []setFn{IsVolumesnapshotsEnabled},
-		callbacks:   []setFn{enableOrDisableAddon, verifyAddonStatus},
+		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 }
