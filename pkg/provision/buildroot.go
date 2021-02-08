@@ -76,12 +76,12 @@ Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
 After=network.target  minikube-automount.service docker.socket
 Requires= minikube-automount.service docker.socket 
+StartLimitBurst=3
+StartLimitIntervalSec=60
 
 [Service]
 Type=notify
 Restart=on-failure
-StartLimitBurst=3
-StartLimitIntervalSec=60
 `
 	if noPivot {
 		klog.Warning("Using fundamentally insecure --no-pivot option")
