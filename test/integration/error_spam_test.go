@@ -20,7 +20,10 @@ package integration
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -102,6 +105,98 @@ func TestErrorSpam(t *testing.T) {
 	for _, step := range steps {
 		if !strings.Contains(stdout, step) {
 			t.Errorf("missing kubeadm init sub-step %q", step)
+		}
+	}
+
+	logTests := []struct {
+		command          string
+		args             []string
+		runCount         int // number of times to run command
+		expectedLogFiles int // number of logfiles expected after running command runCount times
+	}{
+		{
+			command:          "logs",
+			runCount:         15, // calling this 15 times should create 2 files with 1 greater than 1M
+			expectedLogFiles: 2,
+		},
+		{
+			command:          "status",
+			runCount:         100,
+			expectedLogFiles: 1,
+		}, {
+			command:          "pause",
+			runCount:         5,
+			expectedLogFiles: 1,
+		}, {
+			command:          "unpause",
+			runCount:         1,
+			expectedLogFiles: 1,
+		}, {
+			command:          "stop",
+			runCount:         1,
+			expectedLogFiles: 1,
+		},
+	}
+
+	for _, test := range logTests {
+		t.Run(test.command, func(t *testing.T) {
+			args := []string{test.command, "-p", profile}
+			args = append(args, test.args...)
+			// run command runCount times
+			for i := 0; i < test.runCount; i++ {
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+				if err != nil {
+					t.Fatalf("%q failed: %v", rr.Command(), err)
+				}
+			}
+			// get log files generated above
+			logFiles, err := getLogFiles(test.command)
+			if err != nil {
+				t.Errorf("failed to find tmp log files: command %s : %v", test.command, err)
+			}
+			// cleanup generated logfiles
+			defer cleanupLogFiles(t, logFiles)
+			// if not the expected number of files, throw err
+			if len(logFiles) != test.expectedLogFiles {
+				t.Errorf("failed to find expected number of log files: cmd %s: expected: %d got %d", test.command, test.expectedLogFiles, len(logFiles))
+			}
+			// if more than 1 logfile is expected, only one file should be less than 1M
+			if test.expectedLogFiles > 1 {
+				foundSmall := false
+				maxSize := 1024 * 1024 // 1M
+				for _, logFile := range logFiles {
+					isSmall := int(logFile.Size()) < maxSize
+					if isSmall && !foundSmall {
+						foundSmall = true
+					} else if isSmall && foundSmall {
+						t.Errorf("expected to find only one file less than 1M: cmd %s:", test.command)
+					}
+				}
+			}
+		})
+
+	}
+}
+
+// getLogFiles returns logfiles corresponding to cmd
+func getLogFiles(cmdName string) ([]os.FileInfo, error) {
+	var logFiles []os.FileInfo
+	err := filepath.Walk(os.TempDir(), func(path string, info os.FileInfo, err error) error {
+		if strings.Contains(info.Name(), fmt.Sprintf("minikube_%s", cmdName)) {
+			logFiles = append(logFiles, info)
+		}
+		return nil
+	})
+	return logFiles, err
+}
+
+// cleanupLogFiles removes logfiles generated during testing
+func cleanupLogFiles(t *testing.T, logFiles []os.FileInfo) {
+	for _, logFile := range logFiles {
+		logFilePath := filepath.Join(os.TempDir(), logFile.Name())
+		t.Logf("Cleaning up logfile %s ...", logFilePath)
+		if err := os.Remove(logFilePath); err != nil {
+			t.Errorf("failed to cleanup log file: %s : %v", logFilePath, err)
 		}
 	}
 }
