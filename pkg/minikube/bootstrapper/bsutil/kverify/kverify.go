@@ -60,6 +60,15 @@ var (
 		"kube-proxy",
 		"kube-scheduler",
 	}
+	// SystemPodsList is a list of essential pods for running kurnetes to wait for them to be Ready
+	SystemPodsList = []string{
+		"kube-dns", // coredns
+		"etcd",
+		"kube-apiserver",
+		"kube-controller-manager",
+		"kube-proxy",
+		"kube-scheduler",
+	}
 )
 
 // ShouldWait will return true if the config says need to wait

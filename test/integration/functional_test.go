@@ -474,12 +474,22 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 
 	for _, i := range cs.Items {
 		for _, l := range i.Labels {
-			t.Logf("%s phase: %s", l, i.Status.Phase)
-			_, ok := found[l]
-			if ok {
+			if _, ok := found[l]; ok { // skip irrelevant (eg, repeating/redundant '"tier": "control-plane"') labels
 				found[l] = true
-				if i.Status.Phase != "Running" {
+				t.Logf("%s phase: %s", l, i.Status.Phase)
+				if i.Status.Phase != api.PodRunning {
 					t.Errorf("%s is not Running: %+v", l, i.Status)
+					continue
+				}
+				for _, c := range i.Status.Conditions {
+					if c.Type == api.PodReady {
+						if c.Status != api.ConditionTrue {
+							t.Errorf("%s is not Ready: %+v", l, i.Status)
+						} else {
+							t.Logf("%s status: %s", l, c.Type)
+						}
+						break
+					}
 				}
 			}
 		}

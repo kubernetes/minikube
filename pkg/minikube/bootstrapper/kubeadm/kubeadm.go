@@ -477,12 +477,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 
 	if n.ControlPlane {
 		if cfg.VerifyComponents[kverify.APIServerWaitKey] {
-			if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
-				return errors.Wrap(err, "wait for apiserver proc")
-			}
-
-			if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
-				return errors.Wrap(err, "wait for healthy API server")
+			if err := kverify.WaitForPodReadyByLabel(client, "component: kube-apiserver", "kube-system", timeout); err != nil {
+				return errors.Wrapf(err, "waiting for API server pod to be Ready")
 			}
 		}
 
