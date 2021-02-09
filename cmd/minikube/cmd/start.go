@@ -176,6 +176,8 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	if existing != nil {
 		upgradeExistingConfig(existing)
+	} else {
+		validateProfileName()
 	}
 
 	validateSpecifiedDriver(existing)
@@ -306,7 +308,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		os.Exit(0)
 	}
 
-	if driver.IsVM(driverName) {
+	if driver.IsVM(driverName) && !driver.IsSSH(driverName) {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
 			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
@@ -638,6 +640,25 @@ func hostDriver(existing *config.ClusterConfig) string {
 	return h.Driver.DriverName()
 }
 
+// validateProfileName makes sure that new profile name not duplicated with any of machine names in existing multi-node clusters.
+func validateProfileName() {
+	profiles, err := config.ListValidProfiles()
+	if err != nil {
+		exit.Message(reason.InternalListConfig, "Unable to list profiles: {{.error}}", out.V{"error": err})
+	}
+	for _, p := range profiles {
+		for _, n := range p.Config.Nodes {
+			machineName := config.MachineName(*p.Config, n)
+			if ClusterFlagValue() == machineName {
+				out.WarningT("Profile name '{{.name}}' is duplicated with machine name '{{.machine}}' in profile '{{.profile}}'", out.V{"name": ClusterFlagValue(),
+					"machine": machineName,
+					"profile": p.Name})
+				exit.Message(reason.Usage, "Profile name should be unique")
+			}
+		}
+	}
+}
+
 // validateSpecifiedDriver makes sure that if a user has passed in a driver
 // it matches the existing cluster if there is one
 func validateSpecifiedDriver(existing *config.ClusterConfig) {
@@ -740,7 +761,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": name, "error": st.Error})
 	}
 
-	id := fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	id := st.Reason
+	if id == "" {
+		id = fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	}
+
 	code := reason.ExProviderUnavailable
 
 	if !st.Running {
@@ -851,7 +876,7 @@ func validateUser(drvName string) {
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor, the return value is in MiB
 func memoryLimits(drvName string) (int, int, error) {
-	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
+	info, cpuErr, memErr, diskErr := machine.LocalHostInfo()
 	if cpuErr != nil {
 		klog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
@@ -975,8 +1000,8 @@ func validateCPUCount(drvName string) {
 	var cpuCount int
 	if driver.BareMetal(drvName) {
 
-		// Uses the gopsutil cpu package to count the number of physical cpu cores
-		ci, err := cpu.Counts(false)
+		// Uses the gopsutil cpu package to count the number of logical cpu cores
+		ci, err := cpu.Counts(true)
 		if err != nil {
 			klog.Warningf("Unable to get CPU info: %v", err)
 		} else {
@@ -1089,6 +1114,20 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {
 				exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
+			}
+		}
+	}
+
+	if driver.IsSSH(drvName) {
+		sshIPAddress := viper.GetString(sshIPAddress)
+		if sshIPAddress == "" {
+			exit.Message(reason.Usage, "No IP address provided. Try specifying --ssh-ip-address, or see https://minikube.sigs.k8s.io/docs/drivers/ssh/")
+		}
+
+		if net.ParseIP(sshIPAddress) == nil {
+			_, err := net.LookupIP(sshIPAddress)
+			if err != nil {
+				exit.Error(reason.Usage, "Could not resolve IP address", err)
 			}
 		}
 	}

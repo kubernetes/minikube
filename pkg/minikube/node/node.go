@@ -38,6 +38,24 @@ const (
 
 // Add adds a new node config to an existing cluster.
 func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
+	profiles, err := config.ListValidProfiles()
+	if err != nil {
+		return err
+	}
+
+	machineName := config.MachineName(*cc, n)
+	for _, p := range profiles {
+		if p.Config.Name == cc.Name {
+			continue
+		}
+
+		for _, existNode := range p.Config.Nodes {
+			if machineName == config.MachineName(*p.Config, existNode) {
+				return errors.Errorf("Node %s already exists in %s profile", machineName, p.Name)
+			}
+		}
+	}
+
 	if err := config.SaveNode(cc, &n); err != nil {
 		return errors.Wrap(err, "save node")
 	}

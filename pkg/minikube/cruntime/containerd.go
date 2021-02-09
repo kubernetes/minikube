@@ -98,6 +98,10 @@ oom_score = 0
       [plugins.cri.registry.mirrors]
         [plugins.cri.registry.mirrors."docker.io"]
           endpoint = ["https://registry-1.docker.io"]
+        {{ range .InsecureRegistry -}}
+        [plugins.cri.registry.mirrors."{{. -}}"]
+          endpoint = ["http://{{. -}}"]
+        {{ end -}}
   [plugins.diff-service]
     default = ["walking"]
   [plugins.linux]
@@ -122,6 +126,7 @@ type Containerd struct {
 	ImageRepository   string
 	KubernetesVersion semver.Version
 	Init              sysinit.Manager
+	InsecureRegistry  []string
 }
 
 // Name is a human readable name for containerd
@@ -172,7 +177,7 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string) error {
 	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
@@ -182,9 +187,11 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	opts := struct {
 		PodInfraContainerImage string
 		SystemdCgroup          bool
+		InsecureRegistry       []string
 	}{
 		PodInfraContainerImage: pauseImage,
 		SystemdCgroup:          forceSystemd,
+		InsecureRegistry:       insecureRegistry,
 	}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -207,7 +214,7 @@ func (r *Containerd) Enable(disOthers, forceSystemd bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd, r.InsecureRegistry); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {

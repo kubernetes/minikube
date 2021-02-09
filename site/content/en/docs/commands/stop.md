@@ -24,6 +24,7 @@ minikube stop [flags]
       --cancel-scheduled      cancel any existing scheduled stop requests
       --keep-context-active   keep the kube-context active after cluster is stopped. Defaults to false.
   -o, --output string         Format to print stdout in. Options include: [text,json] (default "text")
+      --schedule duration     Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)
 ```
 
 ### Options inherited from parent commands
@@ -43,6 +44,7 @@ minikube stop [flags]
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+      --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```

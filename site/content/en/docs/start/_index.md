@@ -90,9 +90,18 @@ brew link minikube
 
 Otherwise, download minikube directly:
 
+### x86
+
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
 sudo install minikube-darwin-amd64 /usr/local/bin/minikube
+```
+
+### ARM
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-arm64
+sudo install minikube-darwin-arm64 /usr/local/bin/minikube
 ```
 
 {{% /mactab %}}

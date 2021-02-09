@@ -45,6 +45,7 @@ type Options struct {
 	Spinner bool
 }
 
+// SpinnerCharacter is which of the spinner.CharSets to use
 const SpinnerCharacter = 9
 
 // Config is a map of style name to style struct
@@ -126,6 +127,7 @@ var Config = map[Enum]Options{
 	Resetting:        {Prefix: "🔄  "},
 	Shutdown:         {Prefix: "🛑  "},
 	StartingNone:     {Prefix: "🤹  "},
+	StartingSSH:      {Prefix: "🔗  "},
 	StartingVM:       {Prefix: "🔥  ", OmitNewline: true, Spinner: true},
 	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndent, OmitNewline: true, Spinner: true}, // Indented bullet
 	Tip:              {Prefix: "💡  "},

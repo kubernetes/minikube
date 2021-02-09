@@ -106,8 +106,8 @@ spec:
       serviceAccountName: glusterfile-provisioner
       containers:
       - name: glusterfile-provisioner
-        image: {{default "gluster" .ImageRepository}}/glusterfile-provisioner:latest
-        imagePullPolicy: Always
+        image: {{.CustomRegistries.GlusterfileProvisioner  | default .ImageRepository | default .Registries.GlusterfileProvisioner }}{{.Images.GlusterfileProvisioner}}
+        imagePullPolicy: IfNotPresent
         env:
         - name: PROVISIONER_NAME
           value: gluster.org/glusterfile

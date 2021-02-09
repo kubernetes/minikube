@@ -33,11 +33,11 @@ ExecStart={{.KubeletPath}}{{if .ExtraOptions}} {{.ExtraOptions}}{{end}}
 var KubeletServiceTemplate = template.Must(template.New("kubeletServiceTemplate").Parse(`[Unit]
 Description=kubelet: The Kubernetes Node Agent
 Documentation=http://kubernetes.io/docs/
+StartLimitIntervalSec=0
 
 [Service]
 ExecStart={{.KubeletPath}}
 Restart=always
-StartLimitInterval=0
 # Tuned for local dev: faster than upstream default (10s), but slower than systemd default (100ms)
 RestartSec=600ms
 

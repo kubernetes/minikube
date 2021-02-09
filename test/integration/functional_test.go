@@ -90,6 +90,7 @@ func TestFunctional(t *testing.T) {
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
+			{"ComponentHealth", validateComponentHealth},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -108,7 +109,6 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"ComponentHealth", validateComponentHealth},
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DryRun", validateDryRun},
@@ -127,6 +127,7 @@ func TestFunctional(t *testing.T) {
 			{"UpdateContextCmd", validateUpdateContextCmd},
 			{"DockerEnv", validateDockerEnv},
 			{"NodeLabels", validateNodeLabels},
+			{"LoadImage", validateLoadImage},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -158,8 +159,54 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateLoadImage makes sure that `minikube load image` works as expected
+func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	defer PostMortemLogs(t, profile)
+	// pull busybox
+	busybox := "busybox:latest"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busybox))
+	if err != nil {
+		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
+	}
+
+	// tag busybox
+	newImage := fmt.Sprintf("busybox:%s", profile)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busybox, newImage))
+	if err != nil {
+		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
+	}
+
+	// try to load the new image into minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", newImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// make sure the image was correctly loaded
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images", "--format", "{{.Repository}}:{{.Tag}}")
+	} else {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "ctr", "-n=k8s.io", "image", "ls")
+	}
+	rr, err = Run(t, cmd)
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), newImage) {
+		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
+	}
+}
+
 // check functionality of minikube after evaling docker-env
+// TODO: Add validatePodmanEnv for crio runtime: #10231
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
+	if cr := ContainerRuntime(); cr != "docker" {
+		t.Skipf("only validate docker env with docker container runtime, currently testing %s", cr)
+	}
 	defer PostMortemLogs(t, profile)
 	mctx, cancel := context.WithTimeout(ctx, Seconds(120))
 	defer cancel()
@@ -239,6 +286,16 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Stderr.String(), want) {
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
+
+	t.Run("Audit", func(t *testing.T) {
+		got, err := auditContains(profile)
+		if err != nil {
+			t.Fatalf("failed to check audit log: %v", err)
+		}
+		if !got {
+			t.Errorf("audit.json does not contain the profile %q", profile)
+		}
+	})
 }
 
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
@@ -272,6 +329,15 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortTest, afterCfg.Config.KubernetesConfig.NodePort)
 	}
 
+	t.Run("Audit", func(t *testing.T) {
+		got, err := auditContains(profile)
+		if err != nil {
+			t.Fatalf("failed to check audit log: %v", err)
+		}
+		if !got {
+			t.Errorf("audit.json does not contain the profile %q", profile)
+		}
+	})
 }
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
@@ -617,7 +683,16 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "k8s.gcr.io/pause:latest"
 			// deleting image inside minikube node manually
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img))
+
+			var binary string
+			switch ContainerRuntime() {
+			case "docker":
+				binary = "docker"
+			case "containerd", "crio":
+				binary = "crictl"
+			}
+
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", binary, "rmi", img))
 
 			if err != nil {
 				t.Errorf("failed to manually delete image %q : %v", rr.Command(), err)
@@ -690,9 +765,19 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
-	for _, word := range []string{"Docker", "apiserver", "Linux", "kubelet"} {
+	expectedWords := []string{"apiserver", "Linux", "kubelet"}
+	switch ContainerRuntime() {
+	case "docker":
+		expectedWords = append(expectedWords, "Docker")
+	case "containerd":
+		expectedWords = append(expectedWords, "containerd")
+	case "crio":
+		expectedWords = append(expectedWords, "crio")
+	}
+
+	for _, word := range expectedWords {
 		if !strings.Contains(rr.Stdout.String(), word) {
-			t.Errorf("excpeted minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
+			t.Errorf("expected minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
 		}
 	}
 }

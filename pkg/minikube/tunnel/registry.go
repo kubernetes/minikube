@@ -75,7 +75,7 @@ func (r *persistentRegistry) IsAlreadyDefinedAndRunning(tunnel *ID) (*ID, error)
 }
 
 func (r *persistentRegistry) Register(tunnel *ID) (rerr error) {
-	klog.V(3).Infof("registering tunnel: %s", tunnel)
+	klog.V(3).InfoS("registering tunnel", "tunnel", tunnel)
 	if tunnel.Route == nil {
 		return errors.New("tunnel.Route should not be nil")
 	}
@@ -109,7 +109,7 @@ func (r *persistentRegistry) Register(tunnel *ID) (rerr error) {
 		return fmt.Errorf("error marshalling json %s", err)
 	}
 
-	klog.V(5).Infof("json marshalled: %v, %s\n", tunnels, bytes)
+	klog.V(5).InfoS("json marshalled", "tunnels", tunnels, "bytes", bytes)
 
 	f, err := os.OpenFile(r.path, os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
@@ -138,7 +138,7 @@ func (r *persistentRegistry) Register(tunnel *ID) (rerr error) {
 }
 
 func (r *persistentRegistry) Remove(route *Route) (rerr error) {
-	klog.V(3).Infof("removing tunnel from registry: %s", route)
+	klog.V(3).InfoS("removing tunnel from registry", "route", route)
 	tunnels, err := r.List()
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func (r *persistentRegistry) Remove(route *Route) (rerr error) {
 		return fmt.Errorf("can't remove route: %s not found in tunnel registry", route)
 	}
 	tunnels = append(tunnels[:idx], tunnels[idx+1:]...)
-	klog.V(4).Infof("tunnels after remove: %s", tunnels)
+	klog.V(4).InfoS("tunnels after remove", "tunnels", tunnels)
 	f, err := os.OpenFile(r.path, os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("error removing tunnel %s", err)

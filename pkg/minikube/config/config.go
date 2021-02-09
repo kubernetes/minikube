@@ -48,6 +48,12 @@ const (
 	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
 	// ShowBootstrapperDeprecationNotification is the key for ShowBootstrapperDeprecationNotification
 	ShowBootstrapperDeprecationNotification = "ShowBootstrapperDeprecationNotification"
+	// UserFlag is the key for the global user flag (ex. --user=user1)
+	UserFlag = "user"
+	// AddonImages stores custom addon images config
+	AddonImages = "addon-images"
+	// AddonRegistries stores custom addon images config
+	AddonRegistries = "addon-registries"
 )
 
 var (

@@ -93,6 +93,7 @@ func New(cc config.ClusterConfig) (Manager, error) {
 	}
 }
 
+// IsDisabled checks if CNI is disabled
 func IsDisabled(cc config.ClusterConfig) bool {
 	if cc.KubernetesConfig.NetworkPlugin != "" && cc.KubernetesConfig.NetworkPlugin != "cni" {
 		return true
