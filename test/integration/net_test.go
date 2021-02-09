@@ -108,8 +108,11 @@ func TestNetworkPlugins(t *testing.T) {
 						out := rr.Stdout.String()
 
 						if tc.kubeletPlugin == "" {
-							if strings.Contains(out, "--network-plugin") {
+							if strings.Contains(out, "--network-plugin") && ContainerRuntime() == "docker" {
 								t.Errorf("expected no network plug-in, got %s", out)
+							}
+							if !strings.Contains(out, "--network-plugin=cni") && ContainerRuntime() != "docker" {
+								t.Errorf("expected cni network plugin with conatinerd/crio, got %s", out)
 							}
 						} else {
 							if !strings.Contains(out, fmt.Sprintf("--network-plugin=%s", tc.kubeletPlugin)) {
