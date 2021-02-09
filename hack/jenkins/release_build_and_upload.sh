@@ -55,6 +55,11 @@ env BUILD_IN_DOCKER=y \
   "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
   "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
 
+# Don't upload temporary copies, avoid unused duplicate files in the release storage
+rm -f out/minikube-linux-x86_64
+rm -f out/minikube-linux-aarch64
+rm -f out/minikube-windows-amd64
+
 make checksum
 
 # unversioned names to avoid updating upstream Kubernetes documentation each release
