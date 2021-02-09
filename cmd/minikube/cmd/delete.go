@@ -96,7 +96,7 @@ func init() {
 }
 
 // shotgun cleanup to delete orphaned docker container data
-func deleteContainersAndVolumes(ociBin string) {
+func deleteContainersAndVolumes(ctx context.Context, ociBin string) {
 	if _, err := exec.LookPath(ociBin); err != nil {
 		klog.Infof("skipping deleteContainersAndVolumes for %s: %v", ociBin, err)
 		return
@@ -110,7 +110,6 @@ func deleteContainersAndVolumes(ociBin string) {
 		klog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	ctx := context.Background()
 	errs = oci.DeleteAllVolumesByLabel(ctx, ociBin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		klog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
@@ -149,10 +148,12 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 		exit.Message(reason.Usage, "Usage: minikube delete --all --purge")
 	}
+	delCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 
 	if deleteAll {
-		deleteContainersAndVolumes(oci.Docker)
-		deleteContainersAndVolumes(oci.Podman)
+		deleteContainersAndVolumes(delCtx, oci.Docker)
+		deleteContainersAndVolumes(delCtx, oci.Podman)
 
 		errs := DeleteProfiles(profilesToDelete)
 		register.Reg.SetStep(register.Done)
@@ -166,8 +167,6 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
 			exit.Message(reason.Usage, "usage: minikube delete")
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
 
 		cname := ClusterFlagValue()
 		profile, err := config.LoadProfile(cname)
@@ -187,8 +186,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 		if orphan {
 			// TODO: generalize for non-KIC drivers: #8040
-			deletePossibleKicLeftOver(ctx, cname, driver.Docker)
-			deletePossibleKicLeftOver(ctx, cname, driver.Podman)
+			deletePossibleKicLeftOver(delCtx, cname, driver.Docker)
+			deletePossibleKicLeftOver(delCtx, cname, driver.Podman)
 		}
 	}
 
