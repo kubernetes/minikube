@@ -46,6 +46,17 @@ var (
 	}
 )
 
+func GetBaseImage(containerRuntime string) string {
+	switch containerRuntime {
+	case "containerd":
+		return "gcr.io/k8s-minikube/containerd-test@sha256:1e7f2a0917d6bb1197a6f81230b015993bc2617db4a12f2fafcc63950bf4092d"
+	case "crio", "cri-o":
+		return "gcr.io/k8s-minikube/crio-test@sha256:86830d5fcaf9d462e271966bfe063d90951b652c738906d24da8599d3d845c05"
+	default:
+		return "gcr.io/k8s-minikube/docker-test@sha256:"
+	}
+}
+
 // Config is configuration for the kic driver used by registry
 type Config struct {
 	ClusterName       string            // The cluster the container belongs to
