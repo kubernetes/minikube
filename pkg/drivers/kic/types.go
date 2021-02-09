@@ -53,7 +53,7 @@ func GetBaseImage(containerRuntime string) string {
 	case "crio", "cri-o":
 		return "gcr.io/k8s-minikube/crio-test@sha256:86830d5fcaf9d462e271966bfe063d90951b652c738906d24da8599d3d845c05"
 	default:
-		return "gcr.io/k8s-minikube/docker-test@sha256:"
+		return "gcr.io/k8s-minikube/docker-test@sha256:5ee2cb29d0b6f242718956a4bc88a3db9cfdc667fe33bb9269f2d031b0b611d4"
 	}
 }
 
