@@ -18,43 +18,32 @@ spec:
         app: auto-pause
     spec:
       volumes:
-      - name: hacfg
+      - name: ha-cfg
         hostPath:
-          path: /var/lib/minikube/ha.cfg
+          path: /var/lib/minikube/haproxy.cfg
+          type: File
+      - name: lua-script
+        hostPath:
+          path: /var/lib/minikube/hello_world.lua
+          type: File
+      - name: mini-status
+        hostPath:
+          path: /var/lib/minikube/pstatus.txt
           type: File
       containers:
         - name: auto-pause
           image: "haproxy"
           ports:
             - name: https
-              containerPort: 38443
+              containerPort: 6443
+              hostPort: 32443
               protocol: TCP
           volumeMounts:
-          - name: hacfg
+          - name: ha-cfg
             mountPath: /usr/local/etc/haproxy/haproxy.cfg
             readOnly: true
-          resources:
-            limits:
-              cpu: 250m
-              memory: 256Mi
-            requests:
-              cpu: 250m
-              memory: 256Mi
+          - name: lua-script
+            mountPath: /etc/haproxy/hello_world.lua
+          - name: mini-status
+            mountPath: /var/lib/minikube/pstatus.txt
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: auto-pause
-  namespace: kube-system
-  labels:
-    app: auto-pause
-spec:
-  ports:
-  - name: https-38443
-    port: 38443
-    protocol: TCP
-    targetPort: 38443
-    nodePort: 32443
-  selector:
-    app: auto-pause
-  type: NodePort
