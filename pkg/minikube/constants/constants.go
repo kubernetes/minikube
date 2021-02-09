@@ -42,7 +42,7 @@ const (
 	// APIServerPort is the default API server port
 	APIServerPort = 8443
 	// AutoPauseProxyPort is the port to be used as a reverse proxy for apiserver port
-	AutoPauseProxyPort = 38443
+	AutoPauseProxyPort = 32443
 
 	// SSHPort is the SSH serviceport on the node vm and container
 	SSHPort = 22

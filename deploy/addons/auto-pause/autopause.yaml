@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auto-pause
+  namespace: kube-system
+  labels:
+    app: auto-pause
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auto-pause
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: auto-pause
+    spec:
+      volumes:
+      - name: hacfg
+        hostPath:
+          path: /var/lib/minikube/ha.cfg
+          type: File
+      containers:
+        - name: auto-pause
+          image: "haproxy"
+          ports:
+            - name: https
+              containerPort: 38443
+              protocol: TCP
+          volumeMounts:
+          - name: hacfg
+            mountPath: /usr/local/etc/haproxy/haproxy.cfg
+            readOnly: true
+          resources:
+            limits:
+              cpu: 250m
+              memory: 256Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auto-pause
+  namespace: kube-system
+  labels:
+    app: auto-pause
+spec:
+  ports:
+  - name: https-38443
+    port: 38443
+    protocol: TCP
+    targetPort: 38443
+    nodePort: 32443
+  selector:
+    app: auto-pause
+  type: NodePort
