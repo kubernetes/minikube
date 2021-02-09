@@ -26,16 +26,17 @@
 set -e
 
 OS_ARCH="linux-amd64"
-VM_DRIVER="docker"
-JOB_NAME="Docker_Linux_containerd"
-CONTAINER_RUNTIME="containerd"
+VM_DRIVER="kvm2"
+JOB_NAME="KVM_Linux_crio"
+CONTAINER_RUNTIME="crio"
 
 
 
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
-# removing possible left over docker containers from previous runs
-docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
+sudo apt-get update
+sudo apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
+sudo adduser jenkins libvirt || true
 
 source ./common.sh

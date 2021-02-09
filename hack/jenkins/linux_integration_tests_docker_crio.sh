@@ -27,8 +27,8 @@ set -e
 
 OS_ARCH="linux-amd64"
 VM_DRIVER="docker"
-JOB_NAME="Docker_Linux_containerd"
-CONTAINER_RUNTIME="containerd"
+JOB_NAME="Docker_Linux_crio"
+CONTAINER_RUNTIME="crio"
 
 
 

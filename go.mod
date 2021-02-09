@@ -24,7 +24,7 @@ require (
 	github.com/docker/cli v0.0.0-20200303162255-7d407207c304 // indirect
 	github.com/docker/docker v17.12.0-ce-rc1.0.20181225093023-5ddb1d410a8b+incompatible
 	github.com/docker/go-units v0.4.0
-	github.com/docker/machine v0.16.2 // v0.16.2^
+	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
@@ -39,6 +39,7 @@ require (
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/hashicorp/go-getter v1.5.1
 	github.com/hashicorp/go-retryablehttp v0.6.6
+	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8
 	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
@@ -104,8 +105,8 @@ require (
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
-	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.1
-	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200810185219-7d42fed1b770
+	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.6
+	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200824110434-7da9b61f0a42
 	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.1.2-0.20210101161202-de47504a564f
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/api => k8s.io/api v0.17.3

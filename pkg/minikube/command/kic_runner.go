@@ -186,17 +186,13 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		}
 	}
 	klog.Infof("%s (temp): %s --> %s (%d bytes)", k.ociBin, src, dst, f.GetLength())
-	tmpFolder := ""
 
-	// Snap only allows an application to see its own files in /tmp, making Docker unable to copy memory assets
-	// https://github.com/kubernetes/minikube/issues/10020
-	if isSnapBinary() {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return errors.Wrap(err, "detecting home dir")
-		}
-		tmpFolder = home
+	isSnap := isSnapBinary()
+	tmpFolder, err := tempDirectory(isSnap)
+	if err != nil {
+		return errors.Wrap(err, "determining temp directory")
 	}
+
 	tf, err := ioutil.TempFile(tmpFolder, "tmpf-memory-asset")
 	if err != nil {
 		return errors.Wrap(err, "creating temporary file")
@@ -209,6 +205,24 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	return k.copy(tf.Name(), dst)
 }
 
+// tempDirectory returns the directory to use as the temp directory
+// or an empty string if it should use the os default temp directory.
+func tempDirectory(isSnap bool) (string, error) {
+	if !isSnap {
+		return "", nil
+	}
+
+	// Snap only allows an application to see its own files in /tmp, making Docker unable to copy memory assets
+	// https://github.com/kubernetes/minikube/issues/10020
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", errors.Wrap(err, "detecting home dir")
+	}
+	return home, nil
+}
+
+// isSnapBinary returns true if the binary path includes "snap".
 func isSnapBinary() bool {
 	ex, err := os.Executable()
 	if err != nil {

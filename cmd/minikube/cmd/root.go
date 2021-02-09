@@ -217,6 +217,7 @@ func init() {
 				dockerEnvCmd,
 				podmanEnvCmd,
 				cacheCmd,
+				imageCmd,
 			},
 		},
 		{
