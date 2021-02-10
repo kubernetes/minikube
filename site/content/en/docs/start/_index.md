@@ -81,10 +81,10 @@ If the [Brew Package Manager](https://brew.sh/) installed:
 brew install minikube
 ```
 
-If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
+If `which minikube` fails after installation via brew, you may have to remove the old minikube links and link the newly installed binary:
 
 ```shell
-brew cask remove minikube
+brew unlink minikube
 brew link minikube
 ```
 
