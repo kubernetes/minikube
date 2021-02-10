@@ -260,9 +260,25 @@ func deletePossibleKicLeftOver(ctx context.Context, cname string, driverName str
 		}
 	}
 
+	if bin == oci.Podman {
+		// podman volume does not support --filter
+		err := oci.RemoveVolume(bin, cname)
+		if err != nil {
+			klog.Warningf("error deleting volume %s (might be okay).'\n:%v", cname, err)
+		}
+	}
+
 	errs := oci.DeleteAllVolumesByLabel(ctx, bin, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
 		klog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+	}
+
+	if bin == oci.Podman {
+		// podman network does not support --filter
+		err := oci.RemoveNetwork(bin, cname)
+		if err != nil {
+			klog.Warningf("error deleting network %s (might be okay).'\n:%v", cname, err)
+		}
 	}
 
 	errs = oci.DeleteKICNetworks(bin)
