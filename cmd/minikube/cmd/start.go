@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -130,7 +131,7 @@ func platform() string {
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
-
+	ctx := context.Background()
 	out.SetJSON(outputFormat == "json")
 	if err := pkgtrace.Initialize(viper.GetString(trace)); err != nil {
 		exit.Message(reason.Usage, "error initializing tracing: {{.Error}}", out.V{"Error": err.Error()})
@@ -219,7 +220,7 @@ func runStart(cmd *cobra.Command, args []string) {
 					klog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
 				}
 
-				err = deleteProfile(profile)
+				err = deleteProfile(ctx, profile)
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
@@ -482,7 +483,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
 		}
 
-		err = deleteProfile(profile)
+		err = deleteProfile(context.Background(), profile)
 		if err != nil {
 			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": existing.Name})
 		}
@@ -697,7 +698,7 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
 		}
 
-		err = deleteProfile(profile)
+		err = deleteProfile(context.Background(), profile)
 		if err != nil {
 			out.WarningT("Failed to delete cluster {{.name}}.", out.V{"name": existing.Name})
 		}
