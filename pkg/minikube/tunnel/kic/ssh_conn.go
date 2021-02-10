@@ -79,6 +79,11 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		command = "sudo"
 		sshArgs = append([]string{"ssh"}, sshArgs...)
 	}
+
+	if askForSudo && runtime.GOOS == "windows" {
+		out.WarningT("Access to ports below 1024 may fail on Windows with OpenSSH clients older than v8.1. For more information, see: https://minikube.sigs.k8s.io/docs/handbook/accessing/#access-to-ports-1024-on-windows-requires-root-permission")
+	}
+
 	cmd := exec.Command(command, sshArgs...)
 
 	return &sshConn{

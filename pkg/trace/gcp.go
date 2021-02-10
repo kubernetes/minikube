@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/otel/api/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/pkg/errors"

@@ -75,6 +75,8 @@ var (
 	Usage       = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
 	Interrupted = Kind{ID: "MK_INTERRUPTED", ExitCode: ExProgramConflict}
 
+	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
+
 	NewAPIClient             = Kind{ID: "MK_NEW_APICLIENT", ExitCode: ExProgramError}
 	InternalAddonEnable      = Kind{ID: "MK_ADDON_ENABLE", ExitCode: ExProgramError}
 	InternalAddConfig        = Kind{ID: "MK_ADD_CONFIG", ExitCode: ExProgramError}
@@ -170,21 +172,21 @@ var (
 	RsrcInsufficientDockerStorage = Kind{
 		ID:       "RSRC_DOCKER_STORAGE",
 		ExitCode: ExInsufficientStorage,
-		Advice: `Try at least one of the following to free up space on the device:
+		Advice: `Try one or more of the following to free up space on the device:
 	
-			1. Run "docker system prune" to remove unused docker data
-			2. Increase the amount of memory allocated to Docker for Desktop via 
+			1. Run "docker system prune" to remove unused Docker data (optionally with "-a")
+			2. Increase the storage allocated to Docker for Desktop by clicking on:
 				Docker icon > Preferences > Resources > Disk Image Size
-			3. Run "minikube ssh -- docker system prune" if using the docker container runtime`,
+			3. Run "minikube ssh -- docker system prune" if using the Docker container runtime`,
 		Issues: []int{9024},
 	}
 	RsrcInsufficientPodmanStorage = Kind{
 		ID:       "RSRC_PODMAN_STORAGE",
 		ExitCode: ExInsufficientStorage,
-		Advice: `Try at least one of the following to free up space on the device:
+		Advice: `Try one or more of the following to free up space on the device:
 	
 			1. Run "sudo podman system prune" to remove unused podman data
-			2. Run "minikube ssh -- docker system prune" if using the docker container runtime`,
+			2. Run "minikube ssh -- docker system prune" if using the Docker container runtime`,
 		Issues: []int{9024},
 	}
 
@@ -238,6 +240,7 @@ var (
 	GuestCert             = Kind{ID: "GUEST_CERT", ExitCode: ExGuestError}
 	GuestCpConfig         = Kind{ID: "GUEST_CP_CONFIG", ExitCode: ExGuestConfig}
 	GuestDeletion         = Kind{ID: "GUEST_DELETION", ExitCode: ExGuestError}
+	GuestImageLoad        = Kind{ID: "GUEST_IMAGE_LOAD", ExitCode: ExGuestError}
 	GuestLoadHost         = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
 	GuestMount            = Kind{ID: "GUEST_MOUNT", ExitCode: ExGuestError}
 	GuestMountConflict    = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}

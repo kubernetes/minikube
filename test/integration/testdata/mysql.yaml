@@ -24,8 +24,15 @@ spec:
         app: mysql
     spec:
       containers:
-      - image: mysql:5.6
+      - image: mysql:5.7
         name: mysql
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "600m"           
+          limits:
+            memory: "700Mi"
+            cpu: "700m"
         env:
           # Use secret in real usage
         - name: MYSQL_ROOT_PASSWORD

@@ -82,7 +82,7 @@ spec:
           - $(OPERATOR_NAMESPACE)
           - -writeStatusName
           - ""
-          image: quay.io/operator-framework/olm@sha256:0d15ffb5d10a176ef6e831d7865f98d51255ea5b0d16403618c94a004d049373
+          image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -143,7 +143,7 @@ spec:
           - '-namespace'
           - olm
           - -configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
-          image: quay.io/operator-framework/olm@sha256:0d15ffb5d10a176ef6e831d7865f98d51255ea5b0d16403618c94a004d049373
+          image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -307,8 +307,8 @@ spec:
                 - "5443"
                 - --global-namespace
                 - olm
-                image: quay.io/operator-framework/olm@sha256:0d15ffb5d10a176ef6e831d7865f98d51255ea5b0d16403618c94a004d049373
-                imagePullPolicy: Always
+                image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
+                imagePullPolicy: IfNotPresent
                 ports:
                 - containerPort: 5443
                 livenessProbe:
@@ -346,6 +346,6 @@ metadata:
   namespace: olm
 spec:
   sourceType: grpc
-  image: quay.io/operator-framework/upstream-community-operators:latest
+  image: {{.CustomRegistries.UpstreamCommunityOperators  | default .ImageRepository | default .Registries.UpstreamCommunityOperators }}{{.Images.UpstreamCommunityOperators}}
   displayName: Community Operators
   publisher: OperatorHub.io

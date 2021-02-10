@@ -58,9 +58,12 @@ func TestAddons(t *testing.T) {
 		t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 	}
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
-	if !(runtime.GOOS == "darwin" && KicDriver()) { // docker driver on macos doesn't support ingress
+	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
+	if !(runtime.GOOS == "darwin" && KicDriver()) { // macos docker driver does not support ingress
 		args = append(args, "--addons=ingress")
+	}
+	if !arm64Platform() {
+		args = append(args, "--addons=helm-tiller")
 	}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -314,6 +317,7 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 }
 
 func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) {
+
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)

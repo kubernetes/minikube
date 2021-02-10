@@ -218,11 +218,11 @@ spec:
       serviceAccountName: istio-operator
       containers:
         - name: istio-operator
-          image: docker.io/istio/operator:1.5.0
+          image: {{.CustomRegistries.IstioOperator  | default .ImageRepository | default .Registries.IstioOperator }}{{.Images.IstioOperator}}
           command:
           - operator
           - server
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           resources:
             limits:
               cpu: 200m

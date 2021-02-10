@@ -25,11 +25,13 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
 	"google.golang.org/api/option"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Binary holds a minikube binary
@@ -109,9 +111,11 @@ func newBinaryFromPR(pr string) (*Binary, error) {
 		path: localMinikubePath(i),
 		pr:   i,
 	}
-	if err := b.download(); err != nil {
+
+	if err := retry.Expo(b.download, 1*time.Minute, 10*time.Minute); err != nil {
 		return nil, errors.Wrapf(err, "downloading binary")
 	}
+
 	return b, nil
 }
 

@@ -26,37 +26,34 @@ import (
 	"testing"
 )
 
-// TestOffline makes sure minikube works without internet, once it the user has already cached the images, This test has to run after TestDownloadOnly!
+// TestOffline makes sure minikube works without internet, once it the user has already cached the images, This test has to run after TestDownloadOnly
 func TestOffline(t *testing.T) {
-	t.Run("group", func(t *testing.T) {
-		for _, runtime := range []string{"docker", "crio", "containerd"} {
-			runtime := runtime
-			t.Run(runtime, func(t *testing.T) {
-				MaybeParallel(t)
+	MaybeParallel(t)
+	rt := ContainerRuntime()
+	if rt != "docker" && arm64Platform() {
+		t.Skipf("skipping %s - only docker runtime supported on arm64. See https://github.com/kubernetes/minikube/issues/10144", t.Name())
+	}
 
-				if runtime != "docker" && NoneDriver() {
-					t.Skipf("skipping %s - incompatible with none driver", t.Name())
-				}
+	if rt != "docker" && NoneDriver() {
+		t.Skipf("skipping %s - incompatible with none driver", t.Name())
+	}
 
-				profile := UniqueProfileName(fmt.Sprintf("offline-%s", runtime))
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
-				defer CleanupWithLogs(t, profile, cancel)
+	profile := UniqueProfileName(fmt.Sprintf("offline-%s", rt))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
+	defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--memory=2000", "--wait=true", "--container-runtime", runtime}
-				startArgs = append(startArgs, StartArgs()...)
-				c := exec.CommandContext(ctx, Target(), startArgs...)
-				env := os.Environ()
-				// RFC1918 address that unlikely to host working a proxy server
-				env = append(env, "HTTP_PROXY=172.16.1.1:1")
-				env = append(env, "HTTP_PROXYS=172.16.1.1:1")
+	startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--memory=2000", "--wait=true"}
+	startArgs = append(startArgs, StartArgs()...)
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+	env := os.Environ()
+	// RFC1918 address that unlikely to host working a proxy server
+	env = append(env, "HTTP_PROXY=172.16.1.1:1")
+	env = append(env, "HTTP_PROXYS=172.16.1.1:1")
 
-				c.Env = env
-				rr, err := Run(t, c)
-				if err != nil {
-					// Fatal so that we may collect logs before stop/delete steps
-					t.Fatalf("%s failed: %v", rr.Command(), err)
-				}
-			})
-		}
-	})
+	c.Env = env
+	rr, err := Run(t, c)
+	if err != nil {
+		// Fatal so that we may collect logs before stop/delete steps
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
 }

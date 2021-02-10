@@ -19,8 +19,8 @@ spec:
     spec:
       containers:
       - name: metrics-server
-        image: {{default "k8s.gcr.io" .ImageRepository}}/metrics-server-{{.Arch}}:v0.2.1
-        imagePullPolicy: Always
+        image: {{.CustomRegistries.MetricsServer  | default .ImageRepository | default .Registries.MetricsServer }}{{.Images.MetricsServer}}
+        imagePullPolicy: IfNotPresent
         command:
         - /metrics-server
         - --source=kubernetes.summary_api:https://kubernetes.default?kubeletHttps=true&kubeletPort=10250&insecure=true

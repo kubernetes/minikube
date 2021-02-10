@@ -73,7 +73,7 @@ func TestNetworkPlugins(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=25m"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {
@@ -92,31 +92,16 @@ func TestNetworkPlugins(t *testing.T) {
 				}
 				if !t.Failed() {
 					t.Run("KubeletFlags", func(t *testing.T) {
-						var rr *RunResult
-						var err error
-
 						// none does not support 'minikube ssh'
+						rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
 						if NoneDriver() {
 							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
-						} else {
-							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
 						}
-
 						if err != nil {
 							t.Fatalf("ssh failed: %v", err)
 						}
 						out := rr.Stdout.String()
-
-						if tc.kubeletPlugin == "" {
-							if strings.Contains(out, "--network-plugin") {
-								t.Errorf("expected no network plug-in, got %s", out)
-							}
-						} else {
-							if !strings.Contains(out, fmt.Sprintf("--network-plugin=%s", tc.kubeletPlugin)) {
-								t.Errorf("expected --network-plugin=%s, got %s", tc.kubeletPlugin, out)
-							}
-						}
-
+						verifyKubeletFlagsOutput(t, tc.kubeletPlugin, out)
 					})
 				}
 
@@ -205,4 +190,17 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
+}
+
+func verifyKubeletFlagsOutput(t *testing.T, kubeletPlugin, out string) {
+	if kubeletPlugin == "" {
+		if strings.Contains(out, "--network-plugin") && ContainerRuntime() == "docker" {
+			t.Errorf("expected no network plug-in, got %s", out)
+		}
+		if !strings.Contains(out, "--network-plugin=cni") && ContainerRuntime() != "docker" {
+			t.Errorf("expected cni network plugin with conatinerd/crio, got %s", out)
+		}
+	} else if !strings.Contains(out, fmt.Sprintf("--network-plugin=%s", kubeletPlugin)) {
+		t.Errorf("expected --network-plugin=%s, got %s", kubeletPlugin, out)
+	}
 }

@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -47,7 +47,7 @@ var nodeListCmd = &cobra.Command{
 		}
 
 		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(*cc, n)
+			machineName := config.MachineName(*cc, n)
 			fmt.Printf("%s\t%s\n", machineName, n.IP)
 		}
 		os.Exit(0)

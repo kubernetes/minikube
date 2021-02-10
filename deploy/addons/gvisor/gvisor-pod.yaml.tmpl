@@ -25,7 +25,7 @@ spec:
   hostPID: true
   containers:
     - name: gvisor
-      image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/gvisor-addon:3
+      image: {{.CustomRegistries.GvisorAddon  | default .ImageRepository | default .Registries.GvisorAddon }}{{.Images.GvisorAddon}}
       securityContext:
         privileged: true
       volumeMounts:

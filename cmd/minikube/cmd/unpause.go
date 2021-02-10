@@ -24,9 +24,9 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -71,7 +71,7 @@ var unpauseCmd = &cobra.Command{
 
 			out.Step(style.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
 
-			machineName := driver.MachineName(*co.Config, n)
+			machineName := config.MachineName(*co.Config, n)
 			host, err := machine.LoadHost(co.API, machineName)
 			if err != nil {
 				exit.Error(reason.GuestLoadHost, "Error getting host", err)

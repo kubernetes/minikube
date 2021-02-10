@@ -120,7 +120,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -205,7 +205,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -350,7 +350,7 @@ jobs:
         continue-on-error: true
         shell: powershell
         run: |
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           choco install -y caffeine
@@ -487,7 +487,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           choco install -y caffeine
@@ -592,7 +592,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -651,6 +651,313 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 26 ];then echo "*** Failed to pass at least 26 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+  scheduled_stop_docker_windows:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "scheduled_stop_docker_windows"
+      GOPOGH_RESULT: ""
+      STAT: ""
+    runs-on: [self-hosted, windows-10-ent, 8CPUs]
+    steps:
+      - name: Clean up
+        continue-on-error: true
+        shell: powershell
+        run: |
+          echo $env:computerName
+          ls 
+          $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          .\minikube-windows-amd64.exe delete --all --purge
+          Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
+            .\minikube-windows-amd64.exe delete -p $_.Name
+            Suspend-VM $_.Name
+            Stop-VM $_.Name -Force
+            Remove-VM $_.Name -Force
+          }
+          cd ..
+          Remove-Item minikube_binaries -Force -Recurse
+          ls
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+      - name: Start Docker Desktop
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          if (!$docker_running) {
+          Write-Output "Starting Docker as an administrator"
+          Start-Process 'C:/Program Files/Docker/Docker/Docker Desktop.exe' -Verb runAs
+          }
+          while (!$docker_running) {
+          Start-Sleep 5
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          }
+          Write-Output "Docker is running"
+          docker system prune -f 
+      - name: Info
+        shell: powershell
+        run: |
+          echo $env:computername
+          echo "------------------------"
+          docker info
+          echo "------------------------"
+          docker volume ls
+          echo "------------------------"
+          docker system info --format '{{json .}}'
+          echo "------------------------"
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+      - name: Install tools
+        continue-on-error: true
+        shell: powershell
+        run: |
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          choco install -y kubernetes-cli
+          choco install -y jq
+          choco install -y caffeine
+          if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
+      - name: Run Integration Test in powershell
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          New-Item -Force -Path "report" -ItemType Directory
+          New-Item -Force -Path "testhome" -ItemType Directory
+          $START_TIME=(GET-DATE)
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          $ErrorActionPreference = "SilentlyContinue"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=docker" --test.timeout=15m --timeout-multiplier=1 --test.v --test.run=TestScheduledStopWindows --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          $END_TIME=(GET-DATE)
+          echo $END_TIME
+          $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+          echo $DURATION
+          $SECS=($DURATION.TotalSeconds)
+          $MINS=($DURATION.TotalMinutes)
+          $T_ELAPSED="$MINS m $SECS s"
+          echo "----"
+          echo $T_ELAPSED
+          echo "----"
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+  scheduled_stop_hyperv_windows:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "scheduled_stop_hyperv_windows"
+      GOPOGH_RESULT: ""
+    runs-on: [self-hosted, windows-10-ent, Standard_D16s_v3, hyperv]
+    steps:
+      - name: Clean up
+        continue-on-error: true
+        shell: powershell
+        run: |
+          echo $env:computerName
+          ls
+          $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          .\minikube-windows-amd64.exe delete --all --purge
+          Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
+            Stop-VM -Name $_.Name -Force
+            Remove-VM $_.Name -Force
+          }
+          cd ..
+          Remove-Item minikube_binaries -Force -Recurse
+          ls
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+      - name: Start Docker Desktop
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          if (!$docker_running) {
+          Write-Output "Starting Docker as an administrator"
+          Start-Process 'C:/Program Files/Docker/Docker/Docker Desktop.exe' -Verb runAs
+          }
+          while (!$docker_running) {
+          Start-Sleep 5
+          docker ps 2>&1 | Out-Null
+          $docker_running = $?
+          }
+          Write-Output "Docker is running"
+          docker system prune -f
+      - name: Info
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          cd minikube_binaries
+          ls
+          echo $env:computername
+          Get-WmiObject -class Win32_ComputerSystem
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+      - name: Install tools
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "SilentlyContinue"
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          choco install -y kubernetes-cli
+          choco install -y jq
+          choco install -y caffeine
+          if (Test-Path 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe') { Remove-Item 'C:\Program Files\Docker\Docker\resources\bin\kubectl.exe' };
+      - name: Run Integration Test in powershell
+        shell: powershell
+        run: |
+          cd minikube_binaries
+          New-Item -Force -Path "report" -ItemType Directory
+          New-Item -Force -Path "testhome" -ItemType Directory
+          $START_TIME=(GET-DATE)
+          $env:KUBECONFIG="${pwd}\testhome\kubeconfig"
+          $env:MINIKUBE_HOME="${pwd}\testhome"
+          $ErrorActionPreference = "SilentlyContinue"
+          .\e2e-windows-amd64.exe --minikube-start-args="--driver=hyperv" --test.timeout=20m --timeout-multiplier=1.5 --test.v --test.run=TestScheduledStopWindows --binary=./minikube-windows-amd64.exe | Tee-Object -FilePath ".\report\testout.txt"
+          $END_TIME=(GET-DATE)
+          echo $END_TIME
+          $DURATION=(NEW-TIMESPAN -Start $START_TIME -End $END_TIME)
+          echo $DURATION
+          $SECS=($DURATION.TotalSeconds)
+          $MINS=($DURATION.TotalMinutes)
+          $T_ELAPSED="$MINS m $SECS s"
+          echo "----"
+          echo $T_ELAPSED
+          echo "----"
+          echo "TIME_ELAPSED=$T_ELAPSED" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+  functional_docker_ubuntu_arm64:
+    needs: [ build_minikube ]
+    runs-on: [ self-hosted, arm64 ]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "functional_docker_ubuntu_arm64"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+    steps:
+      - name: Install kubectl
+        shell: bash
+        run: |
+          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/arm64/kubectl
+          sudo install kubectl /usr/local/bin/kubectl
+          kubectl version --client=true
+
+      - name: Install gopogh
+        shell: bash
+        run: |
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-arm64
+          sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
+      
+      - name: Install tools
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y jq docker
+
+      - name: Docker Info
+        shell: bash
+        run: |
+          echo "--------------------------"
+          docker version || true
+          echo "--------------------------"
+          docker info || true
+          echo "--------------------------"
+          docker system df || true
+          echo "--------------------------"
+          docker system info --format='{{json .}}'|| true
+          echo "--------------------------"
+          docker ps || true
+          echo "--------------------------"
+          whoami || true
+          echo "--------------------------"
+          hostname || true
+          echo "--------------------------"
+      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.2'
+          stable: true
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+
+      - name: Run Integration Test
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-arm64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-arm64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: functional_docker_ubuntu_arm64
+          path: minikube_binaries/report
+
+      - name: The End Result - functional_docker_ubuntu_arm64
+        shell: bash
+        run: |
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 20 ];then echo "*** Failed to pass at least 20 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+
+
   addons_certs_docker_ubuntu:
     runs-on: ubuntu-18.04
     env:
@@ -689,7 +996,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -771,7 +1078,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -883,7 +1190,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -967,7 +1274,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1074,7 +1381,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1156,7 +1463,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1235,6 +1542,7 @@ jobs:
         functional_docker_windows,
         functional_hyperv_windows,
         functional_baremetal_ubuntu18_04,
+        functional_docker_ubuntu_arm64,
         addons_certs_docker_ubuntu,
         addons_certs_virtualbox_macos,
         multinode_docker_ubuntu,
@@ -1257,12 +1565,14 @@ jobs:
           cp -r ./functional_docker_windows ./all_reports/
           cp -r ./functional_hyperv_windows ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
+          cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
           cp -r ./addons_certs_docker_ubuntu ./all_reports/
           cp -r ./addons_certs_virtualbox_macos ./all_reports/
           cp -r ./multinode_docker_ubuntu ./all_reports/
           cp -r ./multinode_virtualbox_macos ./all_reports/
           cp -r ./preload_dockerflags_docker_ubuntu ./all_reports/
           cp -r ./pause_preload_dockerflags_virtualbox_macos ./all_reports/
+
       - uses: actions/upload-artifact@v1
         with:
           name: all_reports

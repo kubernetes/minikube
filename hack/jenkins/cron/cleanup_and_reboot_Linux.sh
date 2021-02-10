@@ -36,85 +36,87 @@ logger "cleanup_and_reboot is happening!"
 # kill jenkins to avoid an incoming request
 killall java
 
-# clean minikube left overs
-echo -e "\ncleanup minikube..."
-for user in "jenkins" "root"; do
-	minikube="$(sudo su - ${user} -c 'command -v minikube')"
-	if [ ! -x "${minikube}" ]; then
-		minikube="/tmp/minikube"
-		curl -sfL https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 -o "${minikube}" && chmod +x "${minikube}" || true
-	fi
-	if [ -x "${minikube}" ]; then
-		if sudo su - "${user}" -c "${minikube} delete --all --purge" >/dev/null 2>&1; then
-			echo "successfully cleaned up minikube for ${user} user using ${minikube}"
+function cleanup() {
+	# clean minikube left overs
+	echo -e "\ncleanup minikube..."
+	for user in "jenkins" "root"; do
+		minikube="$(sudo su - ${user} -c 'command -v minikube')"
+		if [ ! -x "${minikube}" ]; then
+			minikube="/tmp/minikube"
+			curl -sfL https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 -o "${minikube}" && chmod +x "${minikube}" || true
 		fi
-	fi
-	sudo killall --user "${user}" minikube >/dev/null 2>&1 || true
-done
-
-# clean docker left overs
-echo -e "\ncleanup docker..."
-docker kill $(docker ps -aq) >/dev/null 2>&1 || true
-docker system prune --volumes --force || true
-
-# clean KVM left overs
-echo -e "\ncleanup kvm..."
-overview() {
-	echo -e "\n - KVM domains:"
-	sudo virsh list --all || true
-	echo " - KVM pools:"
-	sudo virsh pool-list --all || true
-	echo " - KVM networks:"
-	sudo virsh net-list --all || true
-	echo " - host networks:"
-	sudo ip link show || true
-}
-echo -e "\nbefore the cleanup:"
-overview
-for DOM in $( sudo virsh list --all --name ); do
-	if sudo virsh destroy "${DOM}"; then
-		if sudo virsh undefine "${DOM}"; then
-			echo "successfully deleted KVM domain:" "${DOM}"
-			continue
-		fi
-		echo "unable to delete KVM domain:" "${DOM}"
-	fi
-done
-#for POOL in $( sudo virsh pool-list --all --name ); do  # better, but flag '--name' is not supported for 'virsh pool-list' command on older libvirt versions
-for POOL in $( sudo virsh pool-list --all | awk 'NR>2 {print $1}' ); do
-	for VOL in $( sudo virsh vol-list "${POOL}" ); do
-		if sudo virsh vol-delete --pool "${POOL}" "${VOLUME}"; then  # flag '--delete-snapshots': "delete snapshots associated with volume (must be supported by storage driver)"
-			echo "successfully deleted KVM pool/volume:" "${POOL}"/"${VOL}"
-			continue
-		fi
-		echo "unable to delete KVM pool/volume:" "${POOL}"/"${VOL}"
-	done
-done
-for NET in $( sudo virsh net-list --all --name ); do
-	if [ "${NET}" != "default" ]; then
-		if sudo virsh net-destroy "${NET}"; then
-			if sudo virsh net-undefine "${NET}"; then
-				echo "successfully deleted KVM network" "${NET}"
-				continue
+		if [ -x "${minikube}" ]; then
+			if sudo su - "${user}" -c "${minikube} delete --all --purge" >/dev/null 2>&1; then
+				echo "successfully cleaned up minikube for ${user} user using ${minikube}"
 			fi
 		fi
-		echo "unable to delete KVM network" "${NET}"
-	fi
-done
-# DEFAULT_BRIDGE is a bridge connected to the 'default' KVM network
-DEFAULT_BRIDGE=$( sudo virsh net-info default | awk '{ if ($1 == "Bridge:") print $2 }' )
-echo "bridge connected to the 'default' KVM network to leave alone:" "${DEFAULT_BRIDGE}"
-for VIF in $( sudo ip link show | awk -v defvbr="${DEFAULT_BRIDGE}.*" -F': ' '$2 !~ defvbr { if ($2 ~ /virbr.*/ || $2 ~ /vnet.*/) print $2 }' ); do
-	if sudo ip link delete "${VIF}"; then
-		echo "successfully deleted KVM interface" "${VIF}"
-		continue
-	fi
-	echo "unable to delete KVM interface" "${VIF}"
-done
-echo -e "\nafter the cleanup:"
-overview
+		sudo killall --user "${user}" minikube >/dev/null 2>&1 || true
+	done
+	# clean docker left overs
+	echo -e "\ncleanup docker..."
+	docker kill $(docker ps -aq) >/dev/null 2>&1 || true
+	docker system prune --volumes --force || true
 
-# Linux-specific cleanup
+	# clean KVM left overs
+	echo -e "\ncleanup kvm..."
+	overview() {
+		echo -e "\n - KVM domains:"
+		sudo virsh list --all || true
+		echo " - KVM pools:"
+		sudo virsh pool-list --all || true
+		echo " - KVM networks:"
+		sudo virsh net-list --all || true
+		echo " - host networks:"
+		sudo ip link show || true
+	}
+	echo -e "\nbefore the cleanup:"
+	overview
+	for DOM in $( sudo virsh list --all --name ); do
+		if sudo virsh destroy "${DOM}"; then
+			if sudo virsh undefine "${DOM}"; then
+				echo "successfully deleted KVM domain:" "${DOM}"
+				continue
+			fi
+			echo "unable to delete KVM domain:" "${DOM}"
+		fi
+	done
+	#for POOL in $( sudo virsh pool-list --all --name ); do  # better, but flag '--name' is not supported for 'virsh pool-list' command on older libvirt versions
+	for POOL in $( sudo virsh pool-list --all | awk 'NR>2 {print $1}' ); do
+		for VOL in $( sudo virsh vol-list "${POOL}" ); do
+			if sudo virsh vol-delete --pool "${POOL}" "${VOLUME}"; then  # flag '--delete-snapshots': "delete snapshots associated with volume (must be supported by storage driver)"
+				echo "successfully deleted KVM pool/volume:" "${POOL}"/"${VOL}"
+				continue
+			fi
+			echo "unable to delete KVM pool/volume:" "${POOL}"/"${VOL}"
+		done
+	done
+	for NET in $( sudo virsh net-list --all --name ); do
+		if [ "${NET}" != "default" ]; then
+			if sudo virsh net-destroy "${NET}"; then
+				if sudo virsh net-undefine "${NET}"; then
+					echo "successfully deleted KVM network" "${NET}"
+					continue
+				fi
+			fi
+			echo "unable to delete KVM network" "${NET}"
+		fi
+	done
+	# DEFAULT_BRIDGE is a bridge connected to the 'default' KVM network
+	DEFAULT_BRIDGE=$( sudo virsh net-info default | awk '{ if ($1 == "Bridge:") print $2 }' )
+	echo "bridge connected to the 'default' KVM network to leave alone:" "${DEFAULT_BRIDGE}"
+	for VIF in $( sudo ip link show | awk -v defvbr="${DEFAULT_BRIDGE}.*" -F': ' '$2 !~ defvbr { if ($2 ~ /virbr.*/ || $2 ~ /vnet.*/) print $2 }' ); do
+		if sudo ip link delete "${VIF}"; then
+			echo "successfully deleted KVM interface" "${VIF}"
+			continue
+		fi
+		echo "unable to delete KVM interface" "${VIF}"
+	done
+	echo -e "\nafter the cleanup:"
+	overview
+}
+
+# Give 15m for Linux-specific cleanup
+timeout 15m cleanup
 
 # disable localkube, kubelet
 systemctl list-unit-files --state=enabled \

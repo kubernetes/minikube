@@ -1,5 +1,6 @@
 /* Tabs JS implementation. Borrowed from Skaffold */
 function initTabs() {
+  try{
     $('.tab-content').find('.tab-pane').each(function(idx, item) {
       var navTabs = $(this).closest('.code-tabs').find('.nav-tabs'),
           title = $(this).attr('title'),
@@ -27,7 +28,17 @@ function initTabs() {
       tab.addClass('active');
       tabPane.addClass('active');
     });
+  } catch(e) {
+    const elements = document.getElementsByClassName("tab-pane");
+    for (let element of elements) {
+      element.style.display = "block";
+      const title = document.createElement("h3");
+      title.innerText = element.title;
+      title.classList.add("backup-tab-title");
+      element.prepend(title);
+    }
   }
+}
 
 const getTabSelector = currElement => {
     let osSelector = '.'+getUserOS();

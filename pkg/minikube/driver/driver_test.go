@@ -65,6 +65,7 @@ func TestMachineType(t *testing.T) {
 		Docker:       "container",
 		Mock:         "bare metal machine",
 		None:         "bare metal machine",
+		SSH:          "bare metal machine",
 		KVM2:         "VM",
 		VirtualBox:   "VM",
 		HyperKit:     "VM",
@@ -203,60 +204,6 @@ func TestSuggest(t *testing.T) {
 	}
 }
 
-func TestMachineName(t *testing.T) {
-	testsCases := []struct {
-		ClusterConfig config.ClusterConfig
-		Want          string
-	}{
-		{
-			ClusterConfig: config.ClusterConfig{Name: "minikube",
-				Nodes: []config.Node{
-					{
-						Name:              "",
-						IP:                "172.17.0.3",
-						Port:              8443,
-						KubernetesVersion: "v1.19.2",
-						ControlPlane:      true,
-						Worker:            true,
-					},
-				},
-			},
-			Want: "minikube",
-		},
-
-		{
-			ClusterConfig: config.ClusterConfig{Name: "p2",
-				Nodes: []config.Node{
-					{
-						Name:              "",
-						IP:                "172.17.0.3",
-						Port:              8443,
-						KubernetesVersion: "v1.19.2",
-						ControlPlane:      true,
-						Worker:            true,
-					},
-					{
-						Name:              "m2",
-						IP:                "172.17.0.4",
-						Port:              0,
-						KubernetesVersion: "v1.19.2",
-						ControlPlane:      false,
-						Worker:            true,
-					},
-				},
-			},
-			Want: "p2-m2",
-		},
-	}
-
-	for _, tc := range testsCases {
-		got := MachineName(tc.ClusterConfig, tc.ClusterConfig.Nodes[len(tc.ClusterConfig.Nodes)-1])
-		if got != tc.Want {
-			t.Errorf("Expected MachineName to be %q but got %q", tc.Want, got)
-		}
-	}
-}
-
 func TestIndexFromMachineName(t *testing.T) {
 	testCases := []struct {
 		Name        string
@@ -352,7 +299,7 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 	}
 
 	for _, tc := range testsCases {
-		got := IndexFromMachineName(MachineName(tc.ClusterConfig, tc.ClusterConfig.Nodes[len(tc.ClusterConfig.Nodes)-1]))
+		got := IndexFromMachineName(config.MachineName(tc.ClusterConfig, tc.ClusterConfig.Nodes[len(tc.ClusterConfig.Nodes)-1]))
 		if got != tc.Want {
 			t.Errorf("expected IndexFromMachineName to be %d but got %d", tc.Want, got)
 		}

@@ -194,6 +194,11 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		"Port-10250", // For "none" users who already have a kubelet online
 		"Swap",       // For "none" users who have swap configured
 	}
+	if version.GE(semver.MustParse("1.20.0")) {
+		ignore = append(ignore,
+			"Mem", // For "none" users who have too little memory
+		)
+	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
 
 	skipSystemVerification := false
@@ -323,6 +328,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
+	register.Reg.SetStep(register.ConfiguringCNI)
 	out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
 
 	if err := cnm.Apply(k.c); err != nil {
@@ -571,14 +577,14 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		klog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
-	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	k8sVersion, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	phase := "alpha"
 	controlPlane := "controlplane"
-	if version.GTE(semver.MustParse("1.13.0")) {
+	if k8sVersion.GTE(semver.MustParse("1.13.0")) {
 		phase = "init"
 		controlPlane = "control-plane"
 	}
@@ -598,7 +604,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	// Save the costly tax of reinstalling Kubernetes if the only issue is a missing kube context
-	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv())
+	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv(), kubeconfig.NewExtension())
 	if err != nil {
 		klog.Warningf("unable to update kubeconfig (cluster will likely require a reset): %v", err)
 	}
@@ -704,7 +710,7 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	}()
 
 	// Join the master by specifying its token
-	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, driver.MachineName(cc, n))
+	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, config.MachineName(cc, n))
 
 	join := func() error {
 		// reset first to clear any possibly existing state

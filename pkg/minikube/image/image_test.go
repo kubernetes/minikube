@@ -46,3 +46,48 @@ func TestTag(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeImageName(t *testing.T) {
+	cases := []struct {
+		image    string
+		expected string
+	}{
+		{
+			image:    "nginx",
+			expected: "nginx:latest",
+		},
+		{
+			image:    "localhost:5000/nginx",
+			expected: "localhost:5000/nginx:latest",
+		},
+		{
+			image:    "localhost:5000/nginx:3.0",
+			expected: "localhost:5000/nginx:3.0",
+		},
+		{
+			image:    "localhost:5000/nginx:latest",
+			expected: "localhost:5000/nginx:latest",
+		},
+		{
+			image:    "docker.io/nginx",
+			expected: "docker.io/nginx:latest",
+		},
+		{
+			image:    "nginx:3.0",
+			expected: "nginx:3.0",
+		},
+		{
+			image:    "docker.io/dotnet/core/sdk",
+			expected: "docker.io/dotnet/core/sdk:latest",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.image, func(t *testing.T) {
+			got := normalizeTagName(c.image)
+			if got != c.expected {
+				t.Errorf("Normalize error: expected: %v, got: %v", c.expected, got)
+			}
+		})
+	}
+}
