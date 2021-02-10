@@ -25,7 +25,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 For Linux users, we provide 3 easy download options (for each architecture):
 
-### x86
+### amd64 / x86_64
 
 #### Binary download
 
@@ -49,7 +49,7 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest
 sudo rpm -ivh minikube-latest.x86_64.rpm
 ```
 
-### ARM
+### arm64 / aarch64
 
 #### Binary download
 
