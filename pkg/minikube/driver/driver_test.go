@@ -119,7 +119,7 @@ func TestSuggest(t *testing.T) {
 		{
 			def: registry.DriverDef{
 				Name:     "unhealthy",
-				Priority: registry.Default,
+				Priority: registry.Deprecated,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: false} },
 			},
 			choices: []string{"unhealthy"},
@@ -144,7 +144,7 @@ func TestSuggest(t *testing.T) {
 				Priority: registry.Default,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
-			choices: []string{"unhealthy", "default", "discouraged"},
+			choices: []string{"default", "unhealthy", "discouraged"},
 			pick:    "default",
 			alts:    []string{"discouraged"},
 			rejects: []string{"unhealthy"},
@@ -155,7 +155,7 @@ func TestSuggest(t *testing.T) {
 				Priority: registry.Preferred,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
-			choices: []string{"preferred", "unhealthy", "default", "discouraged"},
+			choices: []string{"preferred", "default", "unhealthy", "discouraged"},
 			pick:    "preferred",
 			alts:    []string{"default", "discouraged"},
 			rejects: []string{"unhealthy"},

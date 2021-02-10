@@ -280,7 +280,7 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 			}
 
 			if pick.Name == "" {
-				ds.Rejection = "Rejected due to low priority"
+				ds.Rejection = fmt.Sprintf("Not selected: %s must be specified explicitly using --driver", ds.Name)
 			} else {
 				ds.Rejection = fmt.Sprintf("%s is preferred", pick.Name)
 			}
