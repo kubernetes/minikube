@@ -17,11 +17,17 @@ limitations under the License.
 package cni
 
 import (
+	"bytes"
+	"text/template"
+
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
 // calicoTmpl is from https://docs.projectcalico.org/manifests/calico.yaml
-var calicoTmpl = `---
+var calicoTmpl = template.Must(template.New("calico").Parse(`---
 # Source: calico/templates/calico-config.yaml
 # This ConfigMap is used to configure a self-hosted Calico installation.
 kind: ConfigMap
@@ -649,7 +655,7 @@ spec:
         # container programs network policy and routes on each
         # host.
         - name: calico-node
-          image: calico/node:v3.14.1
+          image: {{ .DaemonSetImageName }}
           env:
             # Use Kubernetes API as the backing datastore.
             - name: DATASTORE_TYPE
@@ -834,7 +840,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: calico-kube-controllers
-          image: calico/kube-controllers:v3.14.1
+          image: {{ .DeploymentImageName }}
           env:
             # Choose which controllers to run.
             - name: ENABLED_CONTROLLERS
@@ -864,11 +870,16 @@ metadata:
 ---
 # Source: calico/templates/configure-canal.yaml
 
-`
+`))
 
 // Calico is the Calico CNI manager
 type Calico struct {
 	cc config.ClusterConfig
+}
+
+type calicoTmplStruct struct {
+	DeploymentImageName string
+	DaemonSetImageName  string
 }
 
 // String returns a string representation of this CNI
@@ -876,9 +887,27 @@ func (c Calico) String() string {
 	return "Calico"
 }
 
+// manifest returns a Kubernetes manifest for a CNI
+func (c Calico) manifest() (assets.CopyableFile, error) {
+	input := &calicoTmplStruct{
+		DeploymentImageName: images.CalicoDeployment(c.cc.KubernetesConfig.ImageRepository),
+		DaemonSetImageName:  images.CalicoDaemonSet(c.cc.KubernetesConfig.ImageRepository),
+	}
+
+	b := bytes.Buffer{}
+	if err := calicoTmpl.Execute(&b, input); err != nil {
+		return nil, err
+	}
+	return manifestAsset(b.Bytes()), nil
+}
+
 // Apply enables the CNI
 func (c Calico) Apply(r Runner) error {
-	return applyManifest(c.cc, r, manifestAsset([]byte(calicoTmpl)))
+	m, err := c.manifest()
+	if err != nil {
+		return errors.Wrap(err, "manifest")
+	}
+	return applyManifest(c.cc, r, m)
 }
 
 // CIDR returns the default CIDR used by this CNI
