@@ -157,6 +157,7 @@ Alternatively to use this addon you can use a vm-based driver:
 To track the update on this work in progress feature please check:
 https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
 			}
+		}
 	}
 
 	if strings.HasPrefix(name, "istio") && enable {
