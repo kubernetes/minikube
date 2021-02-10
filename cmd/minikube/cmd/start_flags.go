@@ -311,11 +311,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			out.WarningT("--network flag is only valid with the docker/podman drivers, it will be ignored")
 		}
 
-		kbi := viper.GetString(kicBaseImage)
-		if kicBaseImage == "" {
-			kbi = kic.GetBaseImage(viper.GetString(containerRuntime))
-		}
-
+		kbi := kic.GetBaseImage(viper.GetString(containerRuntime))
 		cc = config.ClusterConfig{
 			Name:                    ClusterFlagValue(),
 			KeepContext:             viper.GetBool(keepContext),
