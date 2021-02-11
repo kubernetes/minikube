@@ -54,7 +54,7 @@ var nodeDeleteCmd = &cobra.Command{
 			machineName := config.MachineName(*co.Config, *n)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 			defer cancel()
-			deletePossibleKicLeftOver(ctx, machineName, co.Config.Driver)
+			pkgProfile.DeletePossibleLeftOvers(ctx, machineName, co.Config.Driver)
 		}
 
 		out.Step(style.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})

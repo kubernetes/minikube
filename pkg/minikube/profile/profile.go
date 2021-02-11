@@ -17,6 +17,7 @@ limitations under the License.
 package profile
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
@@ -28,7 +29,7 @@ import (
 )
 
 //DeletePossibleLeftOvers ...
-func DeletePossibleLeftOvers(cname string, driverName string) {
+func DeletePossibleLeftOvers(ctx context.Context, cname string, driverName string) {
 	bin := ""
 	switch driverName {
 	case driver.Docker:
@@ -40,18 +41,17 @@ func DeletePossibleLeftOvers(cname string, driverName string) {
 	}
 
 	if _, err := exec.LookPath(bin); err != nil {
-		klog.Infof("skipping delete.PossibleKicLeftOver for %s: %v", bin, err)
+		klog.Infof("skipping deletePossibleLeftOvers for %s: %v", bin, err)
 		return
 	}
 
-	klog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
-
+	klog.Infof("deleting possible leftovers for %s (driver=%s) ...", cname, driverName)
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
-	cs, err := oci.ListContainersByLabel(bin, delLabel)
+	cs, err := oci.ListContainersByLabel(ctx, bin, delLabel)
 	if err == nil && len(cs) > 0 {
 		for _, c := range cs {
 			out.Step(style.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
-			err := oci.DeleteContainer(bin, c)
+			err := oci.DeleteContainer(ctx, bin, c)
 			if err != nil { // it will error if there is no container to delete
 				klog.Errorf("error deleting container %q. You may want to delete it manually :\n%v", cname, err)
 			}
@@ -59,7 +59,7 @@ func DeletePossibleLeftOvers(cname string, driverName string) {
 		}
 	}
 
-	errs := oci.DeleteAllVolumesByLabel(bin, delLabel)
+	errs := oci.DeleteAllVolumesByLabel(ctx, bin, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
 		klog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
 	}
@@ -74,7 +74,7 @@ func DeletePossibleLeftOvers(cname string, driverName string) {
 		return
 	}
 
-	errs = oci.PruneAllVolumesByLabel(bin, delLabel)
+	errs = oci.PruneAllVolumesByLabel(ctx, bin, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		klog.Warningf("error pruning volume (might be okay):\n%v", errs)
 	}

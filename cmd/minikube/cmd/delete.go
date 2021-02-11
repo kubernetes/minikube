@@ -186,9 +186,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 
 		if orphan {
-			// TODO: generalize for non-KIC drivers: #8040
-			deletePossibleKicLeftOver(delCtx, cname, driver.Docker)
-			deletePossibleKicLeftOver(delCtx, cname, driver.Podman)
+			pkgProfile.DeletePossibleLeftOvers(delCtx, cname, driver.Docker)
+			pkgProfile.DeletePossibleLeftOvers(delCtx, cname, driver.Podman)
 		}
 	}
 
@@ -230,74 +229,6 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-// TODO: remove and/or move to delete package: #8040
-func deletePossibleKicLeftOver(ctx context.Context, cname string, driverName string) {
-	bin := ""
-	switch driverName {
-	case driver.Docker:
-		bin = oci.Docker
-	case driver.Podman:
-		bin = oci.Podman
-	default:
-		return
-	}
-
-	if _, err := exec.LookPath(bin); err != nil {
-		klog.Infof("skipping deletePossibleKicLeftOver for %s: %v", bin, err)
-		return
-	}
-
-	klog.Infof("deleting possible KIC leftovers for %s (driver=%s) ...", cname, driverName)
-	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
-	cs, err := oci.ListContainersByLabel(ctx, bin, delLabel)
-	if err == nil && len(cs) > 0 {
-		for _, c := range cs {
-			out.Step(style.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
-			err := oci.DeleteContainer(ctx, bin, c)
-			if err != nil { // it will error if there is no container to delete
-				klog.Errorf("error deleting container %q. You may want to delete it manually :\n%v", cname, err)
-			}
-
-		}
-	}
-
-	if bin == oci.Podman {
-		// podman volume does not support --filter
-		err := oci.RemoveVolume(bin, cname)
-		if err != nil {
-			klog.Warningf("error deleting volume %s (might be okay).'\n:%v", cname, err)
-		}
-	}
-
-	errs := oci.DeleteAllVolumesByLabel(ctx, bin, delLabel)
-	if errs != nil { // it will not error if there is nothing to delete
-		klog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
-	}
-
-	if bin == oci.Podman {
-		// podman network does not support --filter
-		err := oci.RemoveNetwork(bin, cname)
-		if err != nil {
-			klog.Warningf("error deleting network %s (might be okay).'\n:%v", cname, err)
-		}
-	}
-
-	errs = oci.DeleteKICNetworks(bin)
-	if errs != nil {
-		klog.Warningf("error deleting leftover networks (might be okay).\nTo see the list of networks: 'docker network ls'\n:%v", errs)
-	}
-
-	if bin == oci.Podman {
-		// podman prune does not support --filter
-		return
-	}
-
-	errs = oci.PruneAllVolumesByLabel(ctx, bin, delLabel)
-	if len(errs) > 0 { // it will not error if there is nothing to delete
-		klog.Warningf("error pruning volume (might be okay):\n%v", errs)
-	}
-}
-
 func deleteProfile(ctx context.Context, profile *config.Profile) error {
 	klog.Infof("Deleting %s", profile.Name)
 	register.Reg.SetStep(register.Deleting)
@@ -311,7 +242,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
 			for _, n := range profile.Config.Nodes {
 				machineName := config.MachineName(*profile.Config, n)
-				deletePossibleKicLeftOver(ctx, machineName, profile.Config.Driver)
+				pkgProfile.DeletePossibleLeftOvers(ctx, machineName, profile.Config.Driver)
 			}
 		}
 	} else {
