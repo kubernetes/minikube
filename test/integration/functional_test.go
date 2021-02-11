@@ -811,50 +811,98 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 	})
 
 	t.Run("profile_list", func(t *testing.T) {
+		// helper function to run command then, return target profile line from table output.
+		extractrofileListFunc := func(rr *RunResult) string {
+			listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
+			for i := 3; i < (len(listLines) - 1); i++ {
+				profileLine := listLines[i]
+				if strings.Contains(profileLine, profile) {
+					return profileLine
+				}
+			}
+			return ""
+		}
+
 		// List profiles
+		start := time.Now()
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
+		elapsed := time.Since(start)
 		if err != nil {
 			t.Errorf("failed to list profiles: args %q : %v", rr.Command(), err)
 		}
+		t.Logf("Took %q to run %q", elapsed, rr.Command())
 
-		// Table output
-		listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-		profileExists := false
-		for i := 3; i < (len(listLines) - 1); i++ {
-			profileLine := listLines[i]
-			if strings.Contains(profileLine, profile) {
-				profileExists = true
-				break
-			}
-		}
-		if !profileExists {
+		profileLine := extractrofileListFunc(rr)
+		if profileLine == "" {
 			t.Errorf("expected 'profile list' output to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
+		}
+
+		// List profiles with light option.
+		start = time.Now()
+		lrr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "-l"))
+		lightElapsed := time.Since(start)
+		if err != nil {
+			t.Errorf("failed to list profiles: args %q : %v", lrr.Command(), err)
+		}
+		t.Logf("Took %q to run %q", lightElapsed, lrr.Command())
+
+		profileLine = extractrofileListFunc(lrr)
+		if profileLine == "" || !strings.Contains(profileLine, "Skipped") {
+			t.Errorf("expected 'profile list' output to include %q with 'Skipped' status but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
+		}
+
+		if lightElapsed > 3*time.Second {
+			t.Errorf("expected running time of '%q' is less than 3 seconds. Took %q ", lrr.Command(), lightElapsed)
 		}
 	})
 
 	t.Run("profile_json_output", func(t *testing.T) {
-		// Json output
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+		// helper function to run command then, return target profile object from json output.
+		extractProfileObjFunc := func(rr *RunResult) *config.Profile {
+			var jsonObject map[string][]config.Profile
+			err := json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+			if err != nil {
+				t.Errorf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
+				return nil
+			}
+
+			for _, profileObject := range jsonObject["valid"] {
+				if profileObject.Name == profile {
+					return &profileObject
+				}
+			}
+			return nil
+		}
+
+		start := time.Now()
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "-o", "json"))
+		elapsed := time.Since(start)
 		if err != nil {
 			t.Errorf("failed to list profiles with json format. args %q: %v", rr.Command(), err)
 		}
-		var jsonObject map[string][]map[string]interface{}
-		err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
-		if err != nil {
-			t.Errorf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
-		}
-		validProfiles := jsonObject["valid"]
-		profileExists := false
-		for _, profileObject := range validProfiles {
-			if profileObject["Name"] == profile {
-				profileExists = true
-				break
-			}
-		}
-		if !profileExists {
+		t.Logf("Took %q to run %q", elapsed, rr.Command())
+
+		pr := extractProfileObjFunc(rr)
+		if pr == nil {
 			t.Errorf("expected the json of 'profile list' to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
 		}
 
+		start = time.Now()
+		lrr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "-o", "json", "--light"))
+		lightElapsed := time.Since(start)
+		if err != nil {
+			t.Errorf("failed to list profiles with json format. args %q: %v", lrr.Command(), err)
+		}
+		t.Logf("Took %q to run %q", lightElapsed, lrr.Command())
+
+		pr = extractProfileObjFunc(lrr)
+		if pr == nil || pr.Status != "Skipped" {
+			t.Errorf("expected the json of 'profile list' to include 'Skipped' status for %q but got *%q*. args: %q", profile, lrr.Stdout.String(), lrr.Command())
+		}
+
+		if lightElapsed > 3*time.Second {
+			t.Errorf("expected running time of '%q' is less than 3 seconds. Took %q ", lrr.Command(), lightElapsed)
+		}
 	})
 }
 
