@@ -24,66 +24,98 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/viper"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// entry represents the execution of a command.
-type entry struct {
-	Data map[string]string `json:"data"`
+// singleEntry is the log entry of a single command.
+type singleEntry struct {
+	args      string
+	command   string
+	endTime   string
+	profile   string
+	startTime string
+	user      string
+	version   string
+	Data      map[string]string `json:"data"`
 }
 
 // Type returns the cloud events compatible type of this struct.
-func (e *entry) Type() string {
+func (e *singleEntry) Type() string {
 	return "io.k8s.sigs.minikube.audit"
 }
 
+// assignFields converts the map values to their proper fields
+func (e *singleEntry) assignFields() {
+	e.args = e.Data["args"]
+	e.command = e.Data["command"]
+	e.endTime = e.Data["endTime"]
+	e.profile = e.Data["profile"]
+	e.startTime = e.Data["startTime"]
+	e.user = e.Data["user"]
+	e.version = e.Data["version"]
+}
+
+// toMap combines fields into a string map
+func (e *singleEntry) toMap() map[string]string {
+	return map[string]string{
+		"args":      e.args,
+		"command":   e.command,
+		"endTime":   e.endTime,
+		"profile":   e.profile,
+		"startTime": e.startTime,
+		"user":      e.user,
+		"version":   e.version,
+	}
+}
+
 // newEntry returns a new audit type.
-func newEntry(command string, args string, user string, startTime time.Time, endTime time.Time) *entry {
-	return &entry{
-		map[string]string{
-			"args":      args,
-			"command":   command,
-			"endTime":   endTime.Format(constants.TimeFormat),
-			"profile":   viper.GetString(config.ProfileName),
-			"startTime": startTime.Format(constants.TimeFormat),
-			"user":      user,
-		},
+func newEntry(command string, args string, user string, version string, startTime time.Time, endTime time.Time) *singleEntry {
+	return &singleEntry{
+		args:      args,
+		command:   command,
+		endTime:   endTime.Format(constants.TimeFormat),
+		profile:   viper.GetString(config.ProfileName),
+		startTime: startTime.Format(constants.TimeFormat),
+		user:      user,
+		version:   version,
 	}
 }
 
 // toFields converts an entry to an array of fields.
-func (e *entry) toFields() []string {
-	d := e.Data
-	return []string{d["command"], d["args"], d["profile"], d["user"], d["startTime"], d["endTime"]}
+func (e *singleEntry) toFields() []string {
+	return []string{e.command, e.args, e.profile, e.user, e.version, e.startTime, e.endTime}
 }
 
-// logsToFields converts audit logs into arrays of fields.
-func logsToFields(logs []string) ([][]string, error) {
-	c := [][]string{}
+// logsToEntries converts audit logs into arrays of entries.
+func logsToEntries(logs []string) ([]singleEntry, error) {
+	c := []singleEntry{}
 	for _, l := range logs {
-		e := &entry{}
-		if err := json.Unmarshal([]byte(l), e); err != nil {
+		e := singleEntry{}
+		if err := json.Unmarshal([]byte(l), &e); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal %q: %v", l, err)
 		}
-		c = append(c, e.toFields())
+		e.assignFields()
+		c = append(c, e)
 	}
 	return c, nil
 }
 
-// logsToTable converts audit lines into a formatted table.
-func logsToTable(logs []string, headers []string) (string, error) {
-	f, err := logsToFields(logs)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert logs to fields: %v", err)
+// entriesToTable converts audit lines into a formatted table.
+func entriesToTable(entries []singleEntry, headers []string) (string, error) {
+	c := [][]string{}
+	for _, e := range entries {
+		c = append(c, e.toFields())
 	}
+	klog.Info(c)
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
 	t.SetHeader(headers)
 	t.SetAutoFormatHeaders(false)
 	t.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	t.SetCenterSeparator("|")
-	t.AppendBulk(f)
+	t.AppendBulk(c)
 	t.Render()
 	return b.String(), nil
 }

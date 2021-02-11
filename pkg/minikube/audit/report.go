@@ -23,7 +23,7 @@ import (
 
 type Data struct {
 	headers []string
-	logs    []string
+	entries []singleEntry
 }
 
 // Report is created from the log file.
@@ -36,28 +36,32 @@ func Report(lines int) (*Data, error) {
 			return nil, fmt.Errorf("failed to set the log file: %v", err)
 		}
 	}
-	var l []string
+	var logs []string
 	s := bufio.NewScanner(currentLogFile)
 	for s.Scan() {
 		// pop off the earliest line if already at desired log length
-		if len(l) == lines {
-			l = l[1:]
+		if len(logs) == lines {
+			logs = logs[1:]
 		}
-		l = append(l, s.Text())
+		logs = append(logs, s.Text())
 	}
 	if err := s.Err(); err != nil {
 		return nil, fmt.Errorf("failed to read from audit file: %v", err)
 	}
+	e, err := logsToEntries(logs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert logs to entries: %v", err)
+	}
 	r := &Data{
-		[]string{"Command", "Args", "Profile", "User", "Start Time", "End Time"},
-		l,
+		[]string{"Command", "Args", "Profile", "User", "Version", "Start Time", "End Time"},
+		e,
 	}
 	return r, nil
 }
 
-// Table creates a formatted table using last n logs from the report.
+// Table creates a formatted table using entries from the report.
 func (r *Data) Table() (string, error) {
-	t, err := logsToTable(r.logs, r.headers)
+	t, err := entriesToTable(r.entries, r.headers)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert logs to table: %v", err)
 	}

@@ -39,13 +39,13 @@ func setLogFile() error {
 }
 
 // appendToLog appends the audit entry to the log file.
-func appendToLog(entry *entry) error {
+func appendToLog(entry *singleEntry) error {
 	if currentLogFile == nil {
 		if err := setLogFile(); err != nil {
 			return err
 		}
 	}
-	e := register.CloudEvent(entry, entry.Data)
+	e := register.CloudEvent(entry, entry.toMap())
 	bs, err := e.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("error marshalling event: %v", err)
