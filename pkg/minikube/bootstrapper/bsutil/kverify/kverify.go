@@ -46,7 +46,7 @@ var (
 	// NoWaitComponents is map of componets to wait for if specified 'none' or 'false'
 	NoComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false, AppsRunningKey: false, NodeReadyKey: false, KubeletKey: false}
 	// AllComponents is map for waiting for all components.
-	AllComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true, AppsRunningKey: true, KubeletKey: true}
+	AllComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true, AppsRunningKey: true, NodeReadyKey: true, KubeletKey: true}
 	// DefaultWaitList is list of all default components to wait for. only names to be used for start flags.
 	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey}
 	// AllComponentsList list of all valid components keys to wait for. only names to be used used for start flags.
