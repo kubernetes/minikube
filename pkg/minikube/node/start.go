@@ -346,7 +346,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 
 	if err := bs.UpdateCluster(cfg); err != nil {
 		if errors.Is(err, cruntime.ErrContainerRuntimeNotRunning) {
-			exit.Message(reason.EnvDockerUnavailable, "Container runtime is not running.")
+			exit.Error(reason.KubernetesInstallFailedRuntimeNotRunning, "Failed to update cluster", err)
 		}
 		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 	}

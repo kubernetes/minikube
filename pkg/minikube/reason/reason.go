@@ -293,9 +293,10 @@ var (
 	AddonUnsupported = Kind{ID: "SVC_ADDON_UNSUPPORTED", ExitCode: ExSvcUnsupported}
 	AddonNotEnabled  = Kind{ID: "SVC_ADDON_NOT_ENABLED", ExitCode: ExProgramConflict}
 
-	KubernetesInstallFailed = Kind{ID: "K8S_INSTALL_FAILED", ExitCode: ExControlPlaneError}
-	KubernetesTooOld        = Kind{ID: "K8S_OLD_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
-	KubernetesDowngrade     = Kind{
+	KubernetesInstallFailed                  = Kind{ID: "K8S_INSTALL_FAILED", ExitCode: ExControlPlaneError}
+	KubernetesInstallFailedRuntimeNotRunning = Kind{ID: "K8S_INSTALL_FAILED_CONTAINER_RUNTIME_NOT_RUNNING", ExitCode: ExRuntimeNotRunning}
+	KubernetesTooOld                         = Kind{ID: "K8S_OLD_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
+	KubernetesDowngrade                      = Kind{
 		ID:       "K8S_DOWNGRADE_UNSUPPORTED",
 		ExitCode: ExControlPlaneUnsupported,
 		Advice: `1) Recreate the cluster with Kubernetes {{.new}}, by running:
