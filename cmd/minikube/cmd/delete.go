@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -47,7 +48,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
-	pkgProfile "k8s.io/minikube/pkg/minikube/profile"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -186,8 +186,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 
 		if orphan {
-			pkgProfile.DeletePossibleLeftOvers(delCtx, cname, driver.Docker)
-			pkgProfile.DeletePossibleLeftOvers(delCtx, cname, driver.Podman)
+			delete.PossibleLeftOvers(delCtx, cname, driver.Docker)
+			delete.PossibleLeftOvers(delCtx, cname, driver.Podman)
 		}
 	}
 
@@ -242,7 +242,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
 			for _, n := range profile.Config.Nodes {
 				machineName := config.MachineName(*profile.Config, n)
-				pkgProfile.DeletePossibleLeftOvers(ctx, machineName, profile.Config.Driver)
+				delete.PossibleLeftOvers(ctx, machineName, profile.Config.Driver)
 			}
 		}
 	} else {

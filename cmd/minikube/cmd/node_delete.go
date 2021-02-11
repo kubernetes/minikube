@@ -22,12 +22,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgProfile "k8s.io/minikube/pkg/minikube/profile"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -54,7 +54,7 @@ var nodeDeleteCmd = &cobra.Command{
 			machineName := config.MachineName(*co.Config, *n)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 			defer cancel()
-			pkgProfile.DeletePossibleLeftOvers(ctx, machineName, co.Config.Driver)
+			delete.PossibleLeftOvers(ctx, machineName, co.Config.Driver)
 		}
 
 		out.Step(style.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})

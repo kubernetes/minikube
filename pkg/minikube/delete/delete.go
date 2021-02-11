@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package profile
+package delete
 
 import (
 	"context"
@@ -28,8 +28,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
-//DeletePossibleLeftOvers ...
-func DeletePossibleLeftOvers(ctx context.Context, cname string, driverName string) {
+//PossibleLeftOvers deletes KIC & non-KIC drivers left
+func PossibleLeftOvers(ctx context.Context, cname string, driverName string) {
 	bin := ""
 	switch driverName {
 	case driver.Docker:
