@@ -507,7 +507,7 @@
 	"The cri socket path to be used.": "",
 	"The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/": "",
 	"The docker-env command is only compatible with the \"docker\" runtime, but this cluster was configured to use the \"{{.runtime}}\" runtime.": "",
-	"The driver '{{.driver}}' is not supported on {{.os}}": "ドライバ「{{.driver}}」は、{{.os}} ではサポートされていません",
+	"The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}": "ドライバ「{{.driver}}」は、{{.os}}/{{.arch}} ではサポートされていません",
 	"The existing \"{{.name}}\" cluster was created using the \"{{.old}}\" driver, which is incompatible with requested \"{{.new}}\" driver.": "",
 	"The existing node configuration appears to be corrupt. Run 'minikube delete'": "",
 	"The heapster addon is depreciated. please try to disable metrics-server instead": "",
