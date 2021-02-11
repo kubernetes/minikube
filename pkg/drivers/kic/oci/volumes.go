@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -29,6 +30,47 @@ import (
 
 	"k8s.io/klog/v2"
 )
+
+// RemoveVolume removes a volume
+func RemoveVolume(ociBin string, name string) error {
+	if !volumeExists(ociBin, name) {
+		return nil
+	}
+	rr, err := runCmd(exec.Command(ociBin, "volume", "rm", name))
+	if err != nil {
+		if strings.Contains(rr.Output(), "No such volume") ||
+			strings.Contains(rr.Output(), "no such volume") {
+			return ErrVolumeNotFound
+		}
+	}
+
+	return err
+}
+
+func volumeExists(ociBin string, name string) bool {
+	_, err := containerVolumeInspect(ociBin, name)
+	if err != nil && !errors.Is(err, ErrVolumeNotFound) { // log unexpected error
+		klog.Warningf("Error inspecting docker volume %s: %v", name, err)
+	}
+	return err == nil
+}
+
+func containerVolumeInspect(ociBin string, name string) (interface{}, error) {
+	var info interface{}
+	cmd := exec.Command(ociBin, "volume", "inspect", name)
+	rr, err := runCmd(cmd)
+	if err != nil {
+		if strings.Contains(rr.Output(), "No such volume") ||
+			strings.Contains(rr.Output(), "no such volume") {
+			return info, ErrVolumeNotFound
+		}
+		return info, err
+	}
+
+	err = json.Unmarshal(rr.Stdout.Bytes(), &info)
+
+	return info, err
+}
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
