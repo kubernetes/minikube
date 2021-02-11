@@ -164,6 +164,9 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skip("load image not available on none driver")
 	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
 	defer PostMortemLogs(t, profile)
 	// pull busybox
 	busybox := "busybox:latest"
