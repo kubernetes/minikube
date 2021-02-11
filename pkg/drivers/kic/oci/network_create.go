@@ -75,6 +75,28 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
 	for attempts < 20 {
+		// check if subnetAddr overlaps with *any* existing local networks
+		free := true
+		ips, err := net.InterfaceAddrs()
+		if err != nil {
+			klog.Errorf("failed to get list of local network addresses: %v", err)
+		} else {
+			for _, ip := range ips {
+				_, lan, err := net.ParseCIDR(ip.String())
+				if err != nil {
+					klog.Errorf("failed to parse local network address %q: %v", ip, err)
+					continue
+				}
+				if lan.Contains(net.ParseIP(subnetAddr)) {
+					free = false
+					break
+				}
+			}
+		}
+		if !free {
+			continue
+		}
+
 		info.gateway, err = tryCreateDockerNetwork(ociBin, subnetAddr, defaultSubnetMask, info.mtu, networkName)
 		if err == nil {
 			return info.gateway, nil
