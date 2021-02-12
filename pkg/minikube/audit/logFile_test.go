@@ -42,7 +42,7 @@ func TestLogFile(t *testing.T) {
 		defer func() { currentLogFile = &oldLogFile }()
 		currentLogFile = f
 
-		e := newEntry("start", "-v", "user1", time.Now(), time.Now())
+		e := newEntry("start", "-v", "user1", "v0.17.1", time.Now(), time.Now())
 		if err := appendToLog(e); err != nil {
 			t.Fatalf("Error appendingToLog: %v", err)
 		}

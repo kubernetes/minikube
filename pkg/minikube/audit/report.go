@@ -60,10 +60,6 @@ func Report(lines int) (*Data, error) {
 }
 
 // Table creates a formatted table using entries from the report.
-func (r *Data) Table() (string, error) {
-	t, err := entriesToTable(r.entries, r.headers)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert logs to table: %v", err)
-	}
-	return t, nil
+func (r *Data) Table() string {
+	return entriesToTable(r.entries, r.headers)
 }

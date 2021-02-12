@@ -71,12 +71,16 @@ func (e *singleEntry) toMap() map[string]string {
 }
 
 // newEntry returns a new audit type.
-func newEntry(command string, args string, user string, version string, startTime time.Time, endTime time.Time) *singleEntry {
+func newEntry(command string, args string, user string, version string, startTime time.Time, endTime time.Time, profile ...string) *singleEntry {
+	p := viper.GetString(config.ProfileName)
+	if len(profile) > 0 {
+		p = profile[0]
+	}
 	return &singleEntry{
 		args:      args,
 		command:   command,
 		endTime:   endTime.Format(constants.TimeFormat),
-		profile:   viper.GetString(config.ProfileName),
+		profile:   p,
 		startTime: startTime.Format(constants.TimeFormat),
 		user:      user,
 		version:   version,
@@ -103,7 +107,7 @@ func logsToEntries(logs []string) ([]singleEntry, error) {
 }
 
 // entriesToTable converts audit lines into a formatted table.
-func entriesToTable(entries []singleEntry, headers []string) (string, error) {
+func entriesToTable(entries []singleEntry, headers []string) string {
 	c := [][]string{}
 	for _, e := range entries {
 		c = append(c, e.toFields())
@@ -117,5 +121,5 @@ func entriesToTable(entries []singleEntry, headers []string) (string, error) {
 	t.SetCenterSeparator("|")
 	t.AppendBulk(c)
 	t.Render()
-	return b.String(), nil
+	return b.String()
 }

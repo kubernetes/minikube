@@ -50,13 +50,7 @@ func TestAuditReport(t *testing.T) {
 		t.Fatalf("failed to create report: %v", err)
 	}
 
-	if len(r.logs) != wantedLines {
-		t.Fatalf("report has %d lines of logs, want %d", len(r.logs), wantedLines)
+	if len(r.entries) != wantedLines {
+		t.Fatalf("report has %d lines of logs, want %d", len(r.entries), wantedLines)
 	}
-
-	t.Run("TestTable", func(t *testing.T) {
-		if _, err := r.Table(); err != nil {
-			t.Errorf("failed to create table from report: %v", err)
-		}
-	})
 }
