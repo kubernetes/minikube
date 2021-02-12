@@ -38,13 +38,19 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
+var docURL = "https://minikube.sigs.k8s.io/docs/drivers/podman/"
+
 // minReqPodmanVer is required the minimum version of podman to be installed for podman driver.
-var minReqPodmanVer = semver.Version{Major: 1, Minor: 7, Patch: 0}
+var minReqPodmanVer = semver.Version{Major: 2, Minor: 1, Patch: 0}
 
 func init() {
-	priority := registry.Experimental
+	priority := registry.Default
+	if runtime.GOOS != "linux" {
+		// requires external VM set up
+		priority = registry.Experimental
+	}
 	// Staged rollout for default:
-	// - Linux
+	// - Linux (sudo podman)
 	// - macOS (podman-remote)
 	// - Windows (podman-remote)
 
@@ -92,11 +98,6 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	docURL := "https://minikube.sigs.k8s.io/docs/drivers/podman/"
-	if runtime.GOARCH != "amd64" {
-		return registry.State{Error: fmt.Errorf("podman driver is not supported on %q systems yet", runtime.GOARCH), Installed: false, Healthy: false, Fix: "Try other drivers", Doc: docURL}
-	}
-
 	podman, err := exec.LookPath(oci.Podman)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Podman", Doc: docURL}
