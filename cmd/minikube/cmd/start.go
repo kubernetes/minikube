@@ -563,7 +563,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		}
 		ds := driver.Status(d)
 		if ds.Name == "" {
-			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
 		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
@@ -573,7 +573,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	if d := viper.GetString("vm-driver"); d != "" {
 		ds := driver.Status(viper.GetString("vm-driver"))
 		if ds.Name == "" {
-			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
 		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
@@ -712,7 +712,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
 	klog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": runtime.GOOS, "arch": runtime.GOARCH})
 	}
 
 	// if we are only downloading artifacts for a driver, we can stop validation here
