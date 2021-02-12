@@ -689,7 +689,6 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 			opts.Registries[name] = "" // Avoid nil access when rendering
 		}
 
-		// Send messages to stderr due to some tests rely on stdout
 		if override, ok := opts.CustomRegistries[name]; ok {
 			out.Step(style.Option, "Using image {{.registry}}{{.image}}", out.V{
 				"registry": override,
