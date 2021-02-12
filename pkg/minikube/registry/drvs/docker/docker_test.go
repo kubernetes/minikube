@@ -86,8 +86,10 @@ func TestCheckDockerVersion(t *testing.T) {
 	for _, c := range tc {
 		t.Run("checkDockerVersion test", func(t *testing.T) {
 			s := checkDockerVersion(c.version)
-			if c.expect != s.Reason {
-				t.Errorf("Error %v expected. but got %q. (version string : %s)", c.expect, s.Reason, c.version)
+			if s.Error != nil {
+				if c.expect != s.Reason {
+					t.Errorf("Error %v expected. but got %q. (version string : %s)", c.expect, s.Reason, c.version)
+				}
 			}
 		})
 	}
