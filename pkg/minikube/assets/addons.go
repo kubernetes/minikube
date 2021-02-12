@@ -691,17 +691,17 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 
 		// Send messages to stderr due to some tests rely on stdout
 		if override, ok := opts.CustomRegistries[name]; ok {
-			out.ErrT(style.Option, "Using image {{.registry}}{{.image}}", out.V{
+			out.Step(style.Option, "Using image {{.registry}}{{.image}}", out.V{
 				"registry": override,
 				"image":    image,
 			})
 		} else if opts.ImageRepository != "" {
-			out.ErrT(style.Option, "Using image {{.registry}}{{.image}} (global image repository)", out.V{
+			out.Step(style.Option, "Using image {{.registry}}{{.image}} (global image repository)", out.V{
 				"registry": opts.ImageRepository,
 				"image":    image,
 			})
 		} else {
-			out.ErrT(style.Option, "Using image {{.registry}}{{.image}}", out.V{
+			out.Step(style.Option, "Using image {{.registry}}{{.image}}", out.V{
 				"registry": opts.Registries[name],
 				"image":    image,
 			})
