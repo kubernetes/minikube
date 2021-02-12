@@ -477,8 +477,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 
 	if n.ControlPlane {
 		if cfg.VerifyComponents[kverify.APIServerWaitKey] {
-			if err := kverify.WaitForPodReadyByLabel(client, "component: kube-apiserver", "kube-system", timeout); err != nil {
-				return errors.Wrapf(err, "waiting for API server pod to be Ready")
+			if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
+				return errors.Wrap(err, "wait for apiserver proc")
+			}
+
+			if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
+				return errors.Wrap(err, "wait for healthy API server")
 			}
 		}
 
@@ -497,6 +501,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		if cfg.VerifyComponents[kverify.AppsRunningKey] {
 			if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
 				return errors.Wrap(err, "waiting for apps_running")
+			}
+		}
+
+		if cfg.VerifyComponents[kverify.OperationalKey] {
+			if err := kverify.WaitOperational(client, kverify.CorePodsList, timeout); err != nil {
+				return errors.Wrap(err, "waiting for operational status")
 			}
 		}
 	}

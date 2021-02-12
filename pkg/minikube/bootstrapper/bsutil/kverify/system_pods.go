@@ -36,25 +36,40 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// WaitForSystemPods verifies essential pods for running kurnetes are Ready
+// WaitForSystemPods verifies essential pods for running kurnetes is running
 func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
-	klog.Info("waiting for kube-system pods to be Ready ...")
+	klog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
-	defer func() {
-		klog.Infof("duration metric: took %s for waiting for kube-system pods to be Ready ...", time.Since(pStart))
-	}()
 
-	if time.Since(start) > minLogCheckTime {
-		announceProblems(r, bs, cfg, cr)
-		time.Sleep(kconst.APICallRetryInterval * 5)
-	}
+	podList := func() error {
+		if time.Since(start) > minLogCheckTime {
+			announceProblems(r, bs, cfg, cr)
+			time.Sleep(kconst.APICallRetryInterval * 5)
+		}
 
-	for _, label := range SystemPodsList {
-		if err := WaitForPodReadyByLabel(client, label, "kube-system", timeout); err != nil {
+		// Wait for any system pod, as waiting for apiserver may block until etcd
+		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+		if err != nil {
+			klog.Warningf("pod list returned error: %v", err)
 			return err
 		}
+
+		klog.Infof("%d kube-system pods found", len(pods.Items))
+		for _, pod := range pods.Items {
+			klog.Infof(podStatusMsg(pod))
+		}
+
+		if len(pods.Items) < 2 {
+			return fmt.Errorf("only %d pod(s) have shown up", len(pods.Items))
+		}
+
+		return nil
 	}
 
+	if err := retry.Local(podList, timeout); err != nil {
+		return fmt.Errorf("apiserver never returned a pod list")
+	}
+	klog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
 	return nil
 }
 

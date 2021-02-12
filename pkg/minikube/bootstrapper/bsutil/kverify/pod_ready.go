@@ -31,6 +31,27 @@ import (
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
+// WaitOperational calls WaitForPodReadyByLabel for each pod in labels list and returns any errors occurred.
+func WaitOperational(cs *kubernetes.Clientset, labels []string, timeout time.Duration) error {
+	klog.Info("waiting for kube-system core pods %s to be Ready ...", labels)
+	pStart := time.Now()
+	defer func() {
+		klog.Infof("duration metric: took %s for waiting for kube-system core pods to be Ready ...", time.Since(pStart))
+	}()
+
+	var errs []string
+	for _, label := range labels {
+		if err := WaitForPodReadyByLabel(cs, label, "kube-system", timeout); err != nil {
+			errs = append(errs, fmt.Sprintf("%q: %q", label, err.Error()))
+		}
+	}
+	if errs != nil {
+		return fmt.Errorf(strings.Join(errs, ", "))
+	}
+
+	return nil
+}
+
 // WaitForPodReadyByLabel waits for pod with label ([key:]val) in a namespace to be in Ready condition.
 // If namespace is not provided, it defaults to "kube-system".
 // If label key is not provided, it will try with "component" and "k8s-app".
