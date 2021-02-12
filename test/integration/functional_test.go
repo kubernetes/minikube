@@ -256,7 +256,6 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Output(), expectedImgInside) {
 		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
 	}
-
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
@@ -269,7 +268,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -401,7 +400,6 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	if err != nil {
 		t.Fatalf("failed to run kubectl directly. args %q: %v", rr.Command(), err)
 	}
-
 }
 
 func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
@@ -409,7 +407,7 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 	start := time.Now()
 	// The tests before this already created a profile, starting minikube with different --extra-config cmdline option.
-	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision"}
+	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision", "--wait=all"}
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
@@ -427,7 +425,6 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(afterCfg.Config.KubernetesConfig.ExtraOptions.String(), expectedExtraOptions) {
 		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
 	}
-
 }
 
 // imageID returns a docker image id for image `image` and current architecture
