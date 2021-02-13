@@ -65,6 +65,7 @@ const (
 	kvmQemuURI              = "kvm-qemu-uri"
 	kvmGPU                  = "kvm-gpu"
 	kvmHidden               = "kvm-hidden"
+	kvmNUMACount            = "kvm-numa-count"
 	minikubeEnvPrefix       = "MINIKUBE"
 	installAddons           = "install-addons"
 	defaultDiskSize         = "20000mb"
@@ -193,6 +194,7 @@ func initDriverFlags() {
 	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (kvm2 driver only)")
 	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
 	startCmd.Flags().Bool(kvmHidden, false, "Hide the hypervisor signature from the guest in minikube (kvm2 driver only)")
+	startCmd.Flags().Int(kvmNUMACount, 1, "Simulate numa node count in minikube. (kvm2 driver only)")
 
 	// virtualbox
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (virtualbox driver only)")
@@ -338,6 +340,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			KVMQemuURI:              viper.GetString(kvmQemuURI),
 			KVMGPU:                  viper.GetBool(kvmGPU),
 			KVMHidden:               viper.GetBool(kvmHidden),
+			KVMNUMACount:            viper.GetInt(kvmNUMACount),
 			DisableDriverMounts:     viper.GetBool(disableDriverMounts),
 			UUID:                    viper.GetString(uuid),
 			NoVTXCheck:              viper.GetBool(noVTXCheck),
@@ -543,6 +546,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(kvmHidden) {
 		cc.KVMHidden = viper.GetBool(kvmHidden)
+	}
+
+	if cmd.Flags().Changed(kvmNUMACount) {
+		cc.KVMNUMACount = viper.GetInt(kvmNUMACount)
 	}
 
 	if cmd.Flags().Changed(disableDriverMounts) {

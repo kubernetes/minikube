@@ -81,6 +81,12 @@ type Driver struct {
 
 	// QEMU Connection URI
 	ConnectionURI string
+
+	// NUMA node count default value is 1
+	NUMANodeCount int
+
+	// NUMA XML
+	NUMANodeXML string
 }
 
 const (
@@ -301,7 +307,6 @@ func (d *Driver) Start() (err error) {
 func (d *Driver) Create() (err error) {
 	log.Info("Creating KVM machine...")
 	defer log.Infof("KVM machine creation complete!")
-
 	err = d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
@@ -312,6 +317,14 @@ func (d *Driver) Create() (err error) {
 		if err != nil {
 			return errors.Wrap(err, "creating devices")
 		}
+	}
+
+	if d.NUMANodeCount > 1 {
+		NUMAXML, err := GetNUMAXml(d.CPU, d.Memory, d.NUMANodeCount)
+		if err != nil {
+			return errors.Wrap(err, "creating NUMA XML")
+		}
+		d.NUMANodeXML = NUMAXML
 	}
 
 	store := d.ResolveStorePath(".")
