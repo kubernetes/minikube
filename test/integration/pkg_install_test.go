@@ -58,7 +58,6 @@ var distros = []string{
 
 var timeout = Minutes(10)
 
-
 // TestPackageInstall tests installation of .deb packages with minikube itself and with kvm2 driver
 //   on debian/ubuntu docker images enumerated in "distros"
 func TestDebPackageInstall(t *testing.T) {
@@ -106,14 +105,12 @@ func TestDebPackageInstall(t *testing.T) {
 	}
 }
 
-
 func dpkgInstall(ctx context.Context, t *testing.T, image, deb string) (*RunResult, error) {
 	return Run(t, exec.CommandContext(ctx,
 		"docker", "run", "--rm", fmt.Sprintf("-v%s:/var/tmp", filepath.Dir(deb)),
 		image,
 		"sh", "-c", fmt.Sprintf("apt-get update; dpkg -i /var/tmp/%s", filepath.Base(deb))))
 }
-
 
 func dpkgInstallDriver(ctx context.Context, t *testing.T, image, deb string) (*RunResult, error) {
 	return Run(t, exec.CommandContext(ctx,
