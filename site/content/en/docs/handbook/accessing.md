@@ -25,7 +25,7 @@ A NodePort service is the most basic way to get external traffic directly to you
 We also have a shortcut for fetching the minikube IP and a service's `NodePort`:
 
 ```shell
-minikube service --url $SERVICE
+minikube service --url <service-name>
 ```
 
 ## Getting the NodePort using kubectl
@@ -35,7 +35,7 @@ The minikube VM is exposed to the host system via a host-only IP address, that c
 To determine the NodePort for your service, you can use a `kubectl` command like this (note that `nodePort` begins with lowercase `n` in JSON output):
 
 ```shell
-kubectl get service $SERVICE --output='jsonpath="{.spec.ports[0].nodePort}"'
+kubectl get service <service-name> --output='jsonpath="{.spec.ports[0].nodePort}"'
 ```
 
 ### Increasing the NodePort range
