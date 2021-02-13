@@ -69,7 +69,7 @@ func TestDebPackageInstall(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to get minikube path: %e", err)
 	}
-	mkDebs, err := filepath.Glob(fmt.Sprintf("%s/minikube_*_%s.deb", pkgDir, "amd64"))
+	mkDebs, err := filepath.Glob(fmt.Sprintf("%s/minikube_*_%s.deb", pkgDir, runtime.GOARCH))
 	if err != nil {
 		t.Errorf("failed to find minikube deb in %q: %e", pkgDir, err)
 	}
