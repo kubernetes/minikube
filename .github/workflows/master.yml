@@ -1548,6 +1548,18 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
 
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+
+      - name: Install tools
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y jq
+
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -1626,11 +1638,17 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-arm64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
 
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+
       - name: Install tools
         shell: bash
         run: |
           sudo apt update
-          sudo apt install -y jq docker.io
+          sudo apt install -y jq
 
       - name: Download Binaries
         uses: actions/download-artifact@v1
