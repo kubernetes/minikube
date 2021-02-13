@@ -27,6 +27,7 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
+          sudo apt-get install -y libvirt-dev
           make cross e2e-cross debs
           cp -r test/integration/testdata ./out
           whoami
