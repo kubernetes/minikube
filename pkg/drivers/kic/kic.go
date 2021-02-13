@@ -72,6 +72,7 @@ func NewDriver(c Config) *Driver {
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
+	ctx := context.Background()
 	params := oci.CreateParams{
 		Mounts:        d.NodeConfig.Mounts,
 		Name:          d.NodeConfig.MachineName,
@@ -136,7 +137,7 @@ func (d *Driver) Create() error {
 		// if container was created by minikube it is safe to delete and recreate it.
 		if oci.IsCreatedByMinikube(d.OCIBinary, params.Name) {
 			klog.Info("Found already existing abandoned minikube container, will try to delete.")
-			if err := oci.DeleteContainer(d.OCIBinary, params.Name); err != nil {
+			if err := oci.DeleteContainer(ctx, d.OCIBinary, params.Name); err != nil {
 				klog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again: %v", params.Name, params.OCIBinary, err)
 			}
 		} else {
@@ -338,7 +339,7 @@ func (d *Driver) Remove() error {
 		klog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
 	}
 
-	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
+	if err := oci.DeleteContainer(context.Background(), d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		if strings.Contains(err.Error(), "is already in progress") {
 			return errors.Wrap(err, "stuck delete")
 		}

@@ -56,7 +56,7 @@ COPY entrypoint /usr/local/bin/entrypoint
 RUN echo "Ensuring scripts are executable ..." \
     && chmod +x /usr/local/bin/clean-install /usr/local/bin/entrypoint \
  && echo "Installing Packages ..." \
-    && DEBIAN_FRONTEND=noninteractive clean-install \
+    && DEBIAN_FRONTEND=noninteractive /bin/bash clean-install \
       systemd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
       libseccomp2 pigz \

@@ -17,6 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
+	"time"
+
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -48,7 +51,9 @@ var nodeDeleteCmd = &cobra.Command{
 
 		if driver.IsKIC(co.Config.Driver) {
 			machineName := config.MachineName(*co.Config, *n)
-			deletePossibleKicLeftOver(machineName, co.Config.Driver)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			deletePossibleKicLeftOver(ctx, machineName, co.Config.Driver)
 		}
 
 		out.Step(style.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})

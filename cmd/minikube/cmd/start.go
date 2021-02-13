@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -130,7 +131,7 @@ func platform() string {
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
-
+	ctx := context.Background()
 	out.SetJSON(outputFormat == "json")
 	if err := pkgtrace.Initialize(viper.GetString(trace)); err != nil {
 		exit.Message(reason.Usage, "error initializing tracing: {{.Error}}", out.V{"Error": err.Error()})
@@ -219,7 +220,7 @@ func runStart(cmd *cobra.Command, args []string) {
 					klog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
 				}
 
-				err = deleteProfile(profile)
+				err = deleteProfile(ctx, profile)
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
@@ -250,17 +251,6 @@ func runStart(cmd *cobra.Command, args []string) {
 					"new":    mount,
 					"old":    old,
 				})
-			}
-		}
-
-		if existing.KubernetesConfig.ContainerRuntime == "crio" {
-			// Stop and start again if it's crio because it's broken above v1.17.3
-			out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
-			out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
-			stopProfile(existing.Name)
-			starter, err = provisionWithDriver(cmd, ds, existing)
-			if err != nil {
-				exitGuestProvision(err)
 			}
 		}
 	}
@@ -482,7 +472,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
 		}
 
-		err = deleteProfile(profile)
+		err = deleteProfile(context.Background(), profile)
 		if err != nil {
 			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": existing.Name})
 		}
@@ -573,7 +563,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		}
 		ds := driver.Status(d)
 		if ds.Name == "" {
-			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
 		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
@@ -583,7 +573,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	if d := viper.GetString("vm-driver"); d != "" {
 		ds := driver.Status(viper.GetString("vm-driver"))
 		if ds.Name == "" {
-			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
 		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
@@ -697,7 +687,7 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
 		}
 
-		err = deleteProfile(profile)
+		err = deleteProfile(context.Background(), profile)
 		if err != nil {
 			out.WarningT("Failed to delete cluster {{.name}}.", out.V{"name": existing.Name})
 		}
@@ -722,7 +712,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
 	klog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": runtime.GOOS, "arch": runtime.GOARCH})
 	}
 
 	// if we are only downloading artifacts for a driver, we can stop validation here
@@ -995,7 +985,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 	}
 }
 
-// validateCPUCount validates the cpu count matches the minimum recommended
+// validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
 func validateCPUCount(drvName string) {
 	var cpuCount int
 	if driver.BareMetal(drvName) {
@@ -1027,6 +1017,22 @@ func validateCPUCount(drvName string) {
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}
 
+	}
+
+	if si.CPUs < cpuCount {
+
+		if driver.IsDockerDesktop(drvName) {
+			out.Step(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
+			if runtime.GOOS == "darwin" {
+				out.Step(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`, out.V{"driver_name": drvName})
+			}
+			if runtime.GOOS == "windows" {
+				out.String("\n\t")
+				out.Step(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`, out.V{"driver_name": drvName})
+			}
+		}
+
+		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": si.CPUs})
 	}
 
 	// looks good

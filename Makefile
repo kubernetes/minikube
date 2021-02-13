@@ -631,14 +631,14 @@ storage-provisioner-image-%: out/storage-provisioner-%
 	docker build -t $(REGISTRY)/storage-provisioner-$*:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$* .
 
 
-X_DOCKER_BUILDER ?= minikube-builder
+X_DOCKER_BUILDER ?= kicbase-builder
 X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
 
 .PHONY: docker-multi-arch-builder
 docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 	env $(X_BUILD_ENV) docker buildx rm --builder $(X_DOCKER_BUILDER) || true
-	env $(X_BUILD_ENV) docker buildx create --name kicbase-builder --buildkitd-flags '--debug' --use || true
+	env $(X_BUILD_ENV) docker buildx create --name $(X_DOCKER_BUILDER) --buildkitd-flags '--debug' --use || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
 KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) $(REGISTRY_GH)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)

@@ -89,6 +89,7 @@ minikube profile list [flags]
 ### Options
 
 ```
+  -l, --light           If true, returns list of profiles faster by skipping validating the status of the cluster.
   -o, --output string   The output format. One of 'json', 'table' (default "table")
 ```
 
