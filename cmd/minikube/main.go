@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 
@@ -145,7 +144,7 @@ func setFlags() {
 		}
 	}
 	if os.Args[1] == "start" {
-		fp := filepath.Join(localpath.MiniPath(), "logs", "lastStart.txt")
+		fp := localpath.LastStartLog()
 		if err := os.Remove(fp); err != nil {
 			klog.Warningf("Unable to delete file %s: %v", err)
 		}

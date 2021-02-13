@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -34,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -190,8 +192,13 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	}
 
 	if err := outputAudit(lines); err != nil {
-		klog.Error(err)
+		klog.Errorf("failed to output audit logs: %v", err)
 		failed = append(failed, "audit")
+	}
+
+	if err := outputLastStart(); err != nil {
+		klog.Errorf("failed to output last start logs: %v", err)
+		failed = append(failed, "last start")
 	}
 
 	if len(failed) > 0 {
@@ -209,6 +216,19 @@ func outputAudit(lines int) error {
 		return fmt.Errorf("failed to create audit report: %v", err)
 	}
 	out.Step(style.Empty, r.ASCIITable())
+	return nil
+}
+
+// outputLastStart outputs the last start logs.
+func outputLastStart() error {
+	out.Step(style.Empty, "")
+	out.Step(style.Empty, "==> Last Start <==")
+	fp := localpath.LastStartLog()
+	l, err := ioutil.ReadFile(fp)
+	if err != nil {
+		return fmt.Errorf("failed to read file %s: %v", fp, err)
+	}
+	out.Step(style.Empty, string(l))
 	return nil
 }
 
