@@ -67,15 +67,15 @@ func TestDebPackageInstall(t *testing.T) {
 
 	pkgDir, err := filepath.Abs(filepath.Dir(Target()))
 	if err != nil {
-		t.Errorf("failed to get minikube path: %e", err)
+		t.Errorf("failed to get minikube path: %v", err)
 	}
 	mkDebs, err := filepath.Glob(fmt.Sprintf("%s/minikube_*_%s.deb", pkgDir, runtime.GOARCH))
 	if err != nil {
-		t.Errorf("failed to find minikube deb in %q: %e", pkgDir, err)
+		t.Errorf("failed to find minikube deb in %q: %v", pkgDir, err)
 	}
 	kvmDebs, err := filepath.Glob(fmt.Sprintf("%s/docker-machine-driver-kvm2_*_%s.deb", pkgDir, runtime.GOARCH))
 	if err != nil {
-		t.Errorf("failed to find minikube deb in %q: %e", pkgDir, err)
+		t.Errorf("failed to find minikube deb in %q: %v", pkgDir, err)
 	}
 
 	for _, distro := range distros {
@@ -86,7 +86,7 @@ func TestDebPackageInstall(t *testing.T) {
 				for _, mkDeb := range mkDebs {
 					rr, err := dpkgInstall(ctx, t, distro, mkDeb)
 					if err != nil || rr.ExitCode != 0 {
-						t.Errorf("failed to install %q on %q: err=%e, exit=%d",
+						t.Errorf("failed to install %q on %q: err=%v, exit=%d",
 							mkDeb, distroImg, err, rr.ExitCode)
 					}
 				}
@@ -96,7 +96,7 @@ func TestDebPackageInstall(t *testing.T) {
 				for _, kvmDeb := range kvmDebs {
 					rr, err := dpkgInstallDriver(ctx, t, distro, kvmDeb)
 					if err != nil || rr.ExitCode != 0 {
-						t.Errorf("failed to install %q on %q: err=%e, exit=%d",
+						t.Errorf("failed to install %q on %q: err=%v, exit=%d",
 							kvmDeb, distroImg, err, rr.ExitCode)
 					}
 				}
