@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 
@@ -29,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 
 	// Register drivers
+	"k8s.io/minikube/pkg/minikube/localpath"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
 
 	// Force exp dependency
@@ -140,6 +142,17 @@ func setFlags() {
 	if !pflag.CommandLine.Changed("alsologtostderr") {
 		if err := pflag.Set("alsologtostderr", "false"); err != nil {
 			klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
+		}
+	}
+	if os.Args[1] == "start" {
+		fp := filepath.Join(localpath.MiniPath(), "logs", "lastStart.txt")
+		if err := os.Remove(fp); err != nil {
+			klog.Warningf("Unable to delete file %s: %v", err)
+		}
+		if !pflag.CommandLine.Changed("log_file") {
+			if err := pflag.Set("log_file", fp); err != nil {
+				klog.Warningf("Unable to set default flag value for log_file: %v", err)
+			}
 		}
 	}
 
