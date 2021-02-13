@@ -23,7 +23,6 @@ FROM ubuntu:focal-20201106
 
 ARG BUILDKIT_VERSION="v0.8.1"
 
-
 # copy in static files (configs, scripts)
 COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
 COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
@@ -56,7 +55,7 @@ COPY entrypoint /usr/local/bin/entrypoint
 RUN echo "Ensuring scripts are executable ..." \
     && chmod +x /usr/local/bin/clean-install /usr/local/bin/entrypoint \
  && echo "Installing Packages ..." \
-    && DEBIAN_FRONTEND=noninteractive /bin/bash clean-install \
+    && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
       libseccomp2 pigz \
