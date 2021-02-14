@@ -230,7 +230,7 @@ func (d *Driver) deleteNetwork() error {
 		return network.Undefine()
 	}
 	if err := retry.Local(destroy, 10*time.Second); err != nil {
-		return errors.Wrap(err, "destroying network")
+		return errors.Wrap(err, "deleting network")
 	}
 	log.Debugf("Network %s deleted", d.PrivateNetwork)
 
