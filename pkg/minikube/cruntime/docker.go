@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -56,9 +57,12 @@ func (e *ErrISOFeature) Error() string {
 
 // Docker contains Docker runtime state
 type Docker struct {
-	Socket string
-	Runner CommandRunner
-	Init   sysinit.Manager
+	Socket            string
+	Runner            CommandRunner
+	ImageRepository   string
+	KubernetesVersion semver.Version
+	Init              sysinit.Manager
+	UseCRI            bool
 }
 
 // Name is a human readable name for Docker
@@ -181,6 +185,14 @@ func (r *Docker) CGroupDriver() (string, error) {
 
 // KubeletOptions returns kubelet options for a runtime.
 func (r *Docker) KubeletOptions() map[string]string {
+	if r.UseCRI {
+		return map[string]string{
+			"container-runtime":          "remote",
+			"container-runtime-endpoint": r.SocketPath(),
+			"image-service-endpoint":     r.SocketPath(),
+			"runtime-request-timeout":    "15m",
+		}
+	}
 	return map[string]string{
 		"container-runtime": "docker",
 	}
@@ -188,6 +200,9 @@ func (r *Docker) KubeletOptions() map[string]string {
 
 // ListContainers returns a list of containers
 func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
+	if r.UseCRI {
+		return listCRIContainers(r.Runner, "", o)
+	}
 	args := []string{"ps"}
 	switch o.State {
 	case All:
@@ -220,6 +235,9 @@ func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
 
 // KillContainers forcibly removes a running container based on ID
 func (r *Docker) KillContainers(ids []string) error {
+	if r.UseCRI {
+		return killCRIContainers(r.Runner, ids)
+	}
 	if len(ids) == 0 {
 		return nil
 	}
@@ -234,6 +252,9 @@ func (r *Docker) KillContainers(ids []string) error {
 
 // StopContainers stops a running container based on ID
 func (r *Docker) StopContainers(ids []string) error {
+	if r.UseCRI {
+		return stopCRIContainers(r.Runner, ids)
+	}
 	if len(ids) == 0 {
 		return nil
 	}
@@ -248,6 +269,9 @@ func (r *Docker) StopContainers(ids []string) error {
 
 // PauseContainers pauses a running container based on ID
 func (r *Docker) PauseContainers(ids []string) error {
+	if r.UseCRI {
+		return pauseCRIContainers(r.Runner, "", ids)
+	}
 	if len(ids) == 0 {
 		return nil
 	}
@@ -262,6 +286,9 @@ func (r *Docker) PauseContainers(ids []string) error {
 
 // UnpauseContainers unpauses a container based on ID
 func (r *Docker) UnpauseContainers(ids []string) error {
+	if r.UseCRI {
+		return unpauseCRIContainers(r.Runner, "", ids)
+	}
 	if len(ids) == 0 {
 		return nil
 	}
@@ -276,6 +303,9 @@ func (r *Docker) UnpauseContainers(ids []string) error {
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
 func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
+	if r.UseCRI {
+		return criContainerLogCmd(r.Runner, id, len, follow)
+	}
 	var cmd strings.Builder
 	cmd.WriteString("docker logs ")
 	if len > 0 {
