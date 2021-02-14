@@ -213,58 +213,26 @@ func (d *Driver) deleteNetwork() error {
 
 	// when we reach this point, it means it is safe to delete the network
 
-	// cannot destroy an inactive network - try to activate it first
-	log.Debugf("Trying to reactivate network %s first (if needed)...", d.PrivateNetwork)
-	activate := func() error {
+	log.Debugf("Trying to delete network %s...", d.PrivateNetwork)
+	destroy := func() error {
 		active, err := network.IsActive()
-		if err == nil && active {
-			return nil
-		}
 		if err != nil {
 			return err
 		}
-		// inactive, try to activate
-		if err := network.Create(); err != nil {
-			return err
+		if active {
+			log.Debugf("Destroying active network %s", d.PrivateNetwork)
+			err := network.Destroy()
+			if err != nil {
+				return err
+			}
 		}
-		return errors.Errorf("needs confirmation") // confirm in the next cycle
-	}
-	if err := retry.Local(activate, 10*time.Second); err != nil {
-		log.Debugf("Reactivating network %s failed, will continue anyway...", d.PrivateNetwork)
-	}
-
-	log.Debugf("Trying to destroy network %s...", d.PrivateNetwork)
-	destroy := func() error {
-		if err := network.Destroy(); err != nil {
-			return err
-		}
-		active, err := network.IsActive()
-		if err == nil && !active {
-			return nil
-		}
-		return errors.Errorf("retrying %v", err)
+		log.Debugf("Undefining inactive network %s", d.PrivateNetwork)
+		return network.Undefine()
 	}
 	if err := retry.Local(destroy, 10*time.Second); err != nil {
 		return errors.Wrap(err, "destroying network")
 	}
-
-	log.Debugf("Trying to undefine network %s...", d.PrivateNetwork)
-	undefine := func() error {
-		if err := network.Undefine(); err != nil {
-			return err
-		}
-		netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
-		if netp != nil {
-			_ = netp.Free()
-		}
-		if lvErr(err).Code == libvirt.ERR_NO_NETWORK {
-			return nil
-		}
-		return errors.Errorf("retrying %v", err)
-	}
-	if err := retry.Local(undefine, 10*time.Second); err != nil {
-		return errors.Wrap(err, "undefining network")
-	}
+	log.Debugf("Network %s deleted", d.PrivateNetwork)
 
 	return nil
 }
