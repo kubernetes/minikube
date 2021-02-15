@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/util"
 )
 
 // firstSubnetAddr subnet to be used on first kic cluster
@@ -74,28 +75,12 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	subnetAddr := firstSubnetAddr
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
-	for attempts < 20 {
-		// check if subnetAddr overlaps with *any* existing local networks
-		free := true
-		ips, err := net.InterfaceAddrs()
+	for attempts < 2 {
+		subnet, err := util.GetFreePrivateNetwork(subnetAddr, 10, 10)
 		if err != nil {
-			klog.Errorf("failed to get list of local network addresses: %v", err)
-		} else {
-			for _, ip := range ips {
-				_, lan, err := net.ParseCIDR(ip.String())
-				if err != nil {
-					klog.Errorf("failed to parse local network address %q: %v", ip, err)
-					continue
-				}
-				if lan.Contains(net.ParseIP(subnetAddr)) {
-					free = false
-					break
-				}
-			}
+			klog.Warningf("failed to find free private network subnet starting with %q, step %d, tries %d: %v", subnetAddr, 10, 10, err)
 		}
-		if !free {
-			continue
-		}
+		subnetAddr = subnet.IP
 
 		info.gateway, err = tryCreateDockerNetwork(ociBin, subnetAddr, defaultSubnetMask, info.mtu, networkName)
 		if err == nil {
@@ -108,14 +93,6 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 			return nil, errors.Wrap(err, "un-retryable")
 		}
 		attempts++
-		// Find an open subnet by incrementing the 3rd octet by 10 for each try
-		// 13 times adding 10 firstSubnetAddr "192.168.49.0/24"
-		// at most it will add up to 169 which is still less than max allowed 255
-		// this is large enough to try more and not too small to not try enough
-		// can be tuned in the next iterations
-		newSubnet := net.ParseIP(subnetAddr).To4()
-		newSubnet[2] += byte(9 + attempts)
-		subnetAddr = newSubnet.String()
 	}
 	return info.gateway, fmt.Errorf("failed to create network after 20 attempts")
 }

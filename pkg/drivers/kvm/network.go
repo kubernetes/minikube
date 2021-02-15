@@ -31,6 +31,7 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -38,15 +39,24 @@ import (
 // https://play.golang.org/p/m8TNTtygK0
 const networkTmpl = `
 <network>
-  <name>{{.PrivateNetwork}}</name>
+  <name>{{.Name}}</name>
   <dns enable='no'/>
-  <ip address='192.168.39.1' netmask='255.255.255.0'>
+  <ip address='{{.Network.Gateway}}' netmask='{{.Network.Netmask}}'>
     <dhcp>
-      <range start='192.168.39.2' end='192.168.39.254'/>
+      <range start='{{.Network.ClientMin}}' end='{{.Network.ClientMax}}'/>
     </dhcp>
   </ip>
 </network>
 `
+
+type kvmNetwork struct {
+	Name string
+	util.Network
+}
+
+// firstSubnetAddr is starting subnet to try for new KVM cluster,
+// avoiding possible conflict with other local networks by further incrementing it up to 20 times by 10.
+const firstSubnetAddr = "192.168.39.0"
 
 // setupNetwork ensures that the network with `name` is started (active)
 // and has the autostart feature set.
@@ -145,10 +155,19 @@ func (d *Driver) createNetwork() error {
 	// Only create the private network if it does not already exist
 	netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
 	if err != nil {
+		subnet, err := util.GetFreePrivateNetwork(firstSubnetAddr, 10, 20)
+		if err != nil {
+			return errors.Wrapf(err, "failed to find free private network subnet starting with %q, step: %d, tries:%d", firstSubnetAddr, 10, 20)
+		}
+		tryNet := kvmNetwork{
+			Name:    d.PrivateNetwork,
+			Network: *subnet,
+		}
+
 		// create the XML for the private network from our networkTmpl
 		tmpl := template.Must(template.New("network").Parse(networkTmpl))
 		var networkXML bytes.Buffer
-		if err := tmpl.Execute(&networkXML, d); err != nil {
+		if err := tmpl.Execute(&networkXML, tryNet); err != nil {
 			return errors.Wrap(err, "executing network template")
 		}
 
@@ -173,6 +192,7 @@ func (d *Driver) createNetwork() error {
 		if err := retry.Local(create, 10*time.Second); err != nil {
 			return errors.Wrapf(err, "creating network %s", d.PrivateNetwork)
 		}
+		log.Debugf("Network %s created", d.PrivateNetwork)
 	}
 	defer func() {
 		if netp != nil {

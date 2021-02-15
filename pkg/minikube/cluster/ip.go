@@ -47,7 +47,11 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		}
 		return net.ParseIP(ip), nil
 	case driver.KVM2:
-		return net.ParseIP("192.168.39.1"), nil
+		ip, err := host.Driver.GetIP()
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
+		}
+		return net.ParseIP(ip), nil
 	case driver.HyperV:
 		v := reflect.ValueOf(host.Driver).Elem()
 		var hypervVirtualSwitch string
