@@ -159,7 +159,8 @@ func (d *Driver) createNetwork() error {
 	if err != nil {
 		subnet, err := network.FreeSubnet(firstSubnetAddr, 10, 20)
 		if err != nil {
-			return errors.Wrapf(err, "failed to find free private network subnet starting with %q, step: %d, tries:%d", firstSubnetAddr, 10, 20)
+			log.Debugf("error while trying to create network: %v", err)
+			return errors.Wrap(err, "un-retryable")
 		}
 		tryNet := kvmNetwork{
 			Name:       d.PrivateNetwork,

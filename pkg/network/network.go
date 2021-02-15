@@ -206,5 +206,5 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 		}
 		startSubnet = nextSubnet.String()
 	}
-	return nil, fmt.Errorf("no free private network subnets found with given parameters")
+	return nil, fmt.Errorf("no free private network subnets found with given parameters (start: %q, step: %d, tries: %d)", startSubnet, step, tries)
 }

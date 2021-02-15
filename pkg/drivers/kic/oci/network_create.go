@@ -71,30 +71,18 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	if err != nil {
 		klog.Warningf("failed to get mtu information from the %s's default network %q: %v", ociBin, defaultBridgeName, err)
 	}
-	attempts := 0
-	subnetAddr := firstSubnetAddr
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
-	for attempts < 2 {
-		subnet, err := network.FreeSubnet(subnetAddr, 10, 10)
-		if err != nil {
-			klog.Warningf("failed to find free private network subnet starting with %q, step %d, tries %d: %v", subnetAddr, 10, 10, err)
-		}
-		subnetAddr = subnet.IP
-
-		info.gateway, err = tryCreateDockerNetwork(ociBin, subnetAddr, defaultSubnetMask, info.mtu, networkName)
-		if err == nil {
-			return info.gateway, nil
-		}
-
-		// don't retry if error is not adddress is taken
-		if !(errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken)) {
-			klog.Errorf("error while trying to create network %v", err)
-			return nil, errors.Wrap(err, "un-retryable")
-		}
-		attempts++
+	subnet, err := network.FreeSubnet(firstSubnetAddr, 10, 20)
+	if err != nil {
+		klog.Errorf("error while trying to create network: %v", err)
+		return nil, errors.Wrap(err, "un-retryable")
 	}
-	return info.gateway, fmt.Errorf("failed to create network after 20 attempts")
+	info.gateway, err = tryCreateDockerNetwork(ociBin, subnet.IP, defaultSubnetMask, info.mtu, networkName)
+	if err != nil {
+		return info.gateway, fmt.Errorf("failed to create network after 20 attempts")
+	}
+	return info.gateway, nil
 }
 
 func tryCreateDockerNetwork(ociBin string, subnetAddr string, subnetMask int, mtu int, name string) (net.IP, error) {
