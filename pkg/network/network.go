@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package network
 
 import (
 	"encoding/binary"
@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	// valid private networks (RFC1918)
-	privateNetworks = []net.IPNet{
+	// valid private network subnets (RFC1918)
+	privateSubnets = []net.IPNet{
 		// 10.0.0.0/8
 		{
 			IP:   []byte{10, 0, 0, 0},
@@ -46,8 +46,8 @@ var (
 	}
 )
 
-// Network contains main network parameters.
-type Network struct {
+// Parameters contains main network parameters.
+type Parameters struct {
 	IP        string // IP address of the network
 	Netmask   string // form: 4-byte ('a.b.c.d')
 	CIDR      string // form: CIDR
@@ -66,11 +66,11 @@ type Interface struct {
 	IfaceMAC  string
 }
 
-// GetNetworkFrom initialises IPv4 network struct from given address.
+// Inspect initialises IPv4 network parameters struct from given address.
 // address can be single address (like "192.168.17.42"), network address (like "192.168.17.0"), or in cidr form (like "192.168.17.42/24 or "192.168.17.0/24").
 // If addr is valid existsing interface address, network struct will also contain info about the respective interface.
-func GetNetworkFrom(addr string) (*Network, error) {
-	n := &Network{}
+func Inspect(addr string) (*Parameters, error) {
+	n := &Parameters{}
 
 	// extract ip from addr
 	ip, network, err := net.ParseCIDR(addr)
@@ -147,9 +147,9 @@ func GetNetworkFrom(addr string) (*Network, error) {
 	return n, nil
 }
 
-// IsNetworkTaken returns if local network subnet exists and any error occurred.
+// IsSubnetTaken returns if local network subnet exists and any error occurred.
 // If will return false in case of an error.
-func IsNetworkTaken(subnet string) (bool, error) {
+func IsSubnetTaken(subnet string) (bool, error) {
 	ips, err := net.InterfaceAddrs()
 	if err != nil {
 		return false, errors.Wrap(err, "listing local networks")
@@ -166,9 +166,9 @@ func IsNetworkTaken(subnet string) (bool, error) {
 	return false, nil
 }
 
-// IsNetworkPrivate returns if subnet is a private network.
-func IsNetworkPrivate(subnet string) bool {
-	for _, ipnet := range privateNetworks {
+// IsSubnetPrivate returns if subnet is a private network.
+func IsSubnetPrivate(subnet string) bool {
+	for _, ipnet := range privateSubnets {
 		if ipnet.Contains(net.ParseIP(subnet)) {
 			return true
 		}
@@ -176,16 +176,16 @@ func IsNetworkPrivate(subnet string) bool {
 	return false
 }
 
-// GetFreePrivateNetwork will try to find an free private network starting with subnet, incrementing it in steps up to number of tries.
-func GetFreePrivateNetwork(subnet string, step, tries int) (*Network, error) {
+// FreeSubnet will try to find free private network beginning with startSubnet, incrementing it in steps up to number of tries.
+func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 	for try := 0; try < tries; try++ {
-		n, err := GetNetworkFrom(subnet)
+		n, err := Inspect(startSubnet)
 		if err != nil {
 			return nil, err
 		}
-		subnet = n.IP
-		if IsNetworkPrivate(subnet) {
-			taken, err := IsNetworkTaken(subnet)
+		startSubnet = n.IP
+		if IsSubnetPrivate(startSubnet) {
+			taken, err := IsSubnetTaken(startSubnet)
 			if err != nil {
 				return nil, err
 			}
@@ -198,13 +198,13 @@ func GetFreePrivateNetwork(subnet string, step, tries int) (*Network, error) {
 			klog.Infof("skipping subnet %s that is not private", n.CIDR)
 		}
 		ones, _ := net.ParseIP(n.IP).DefaultMask().Size()
-		newSubnet := net.ParseIP(subnet).To4()
+		nextSubnet := net.ParseIP(startSubnet).To4()
 		if ones <= 16 {
-			newSubnet[1] += byte(step)
+			nextSubnet[1] += byte(step)
 		} else {
-			newSubnet[2] += byte(step)
+			nextSubnet[2] += byte(step)
 		}
-		subnet = newSubnet.String()
+		startSubnet = nextSubnet.String()
 	}
 	return nil, fmt.Errorf("no free private network subnets found with given parameters")
 }

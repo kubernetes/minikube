@@ -31,7 +31,7 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -41,17 +41,19 @@ const networkTmpl = `
 <network>
   <name>{{.Name}}</name>
   <dns enable='no'/>
-  <ip address='{{.Network.Gateway}}' netmask='{{.Network.Netmask}}'>
+  {{with .Parameters}}
+  <ip address='{{.Gateway}}' netmask='{{.Netmask}}'>
     <dhcp>
-      <range start='{{.Network.ClientMin}}' end='{{.Network.ClientMax}}'/>
+      <range start='{{.ClientMin}}' end='{{.ClientMax}}'/>
     </dhcp>
   </ip>
+  {{end}}
 </network>
 `
 
 type kvmNetwork struct {
 	Name string
-	util.Network
+	network.Parameters
 }
 
 // firstSubnetAddr is starting subnet to try for new KVM cluster,
@@ -155,13 +157,13 @@ func (d *Driver) createNetwork() error {
 	// Only create the private network if it does not already exist
 	netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
 	if err != nil {
-		subnet, err := util.GetFreePrivateNetwork(firstSubnetAddr, 10, 20)
+		subnet, err := network.FreeSubnet(firstSubnetAddr, 10, 20)
 		if err != nil {
 			return errors.Wrapf(err, "failed to find free private network subnet starting with %q, step: %d, tries:%d", firstSubnetAddr, 10, 20)
 		}
 		tryNet := kvmNetwork{
-			Name:    d.PrivateNetwork,
-			Network: *subnet,
+			Name:       d.PrivateNetwork,
+			Parameters: *subnet,
 		}
 
 		// create the XML for the private network from our networkTmpl

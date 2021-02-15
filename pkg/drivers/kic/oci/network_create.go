@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/network"
 )
 
 // firstSubnetAddr subnet to be used on first kic cluster
@@ -76,7 +76,7 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
 	for attempts < 2 {
-		subnet, err := util.GetFreePrivateNetwork(subnetAddr, 10, 10)
+		subnet, err := network.FreeSubnet(subnetAddr, 10, 10)
 		if err != nil {
 			klog.Warningf("failed to find free private network subnet starting with %q, step %d, tries %d: %v", subnetAddr, 10, 10, err)
 		}
