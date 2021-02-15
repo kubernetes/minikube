@@ -102,6 +102,17 @@ RUN clean-install \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0
 
+RUN apt-get update && apt-get install -y wget
+RUN wget -c https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
+RUN tar -C /usr/local -xvzf go1.15.2.linux-amd64.tar.gz
+RUN rm -rf go1.15.2.linux-amd64.tar.gz
+ENV PATH="/usr/local/go/bin:${PATH}"
+COPY ipchecker.go /tmp/ipchecker.go
+RUN go build -o /usr/local/bin/ipchecker /tmp/ipchecker.go
+COPY ipchecker.service /etc/systemd/system/ipchecker.service
+RUN chmod 644 /etc/systemd/system/ipchecker.service
+RUN systemctl enable ipchecker.service
+
 # install docker
 RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \

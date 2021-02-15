@@ -1,0 +1,9 @@
+Description=Example systemd service.
+
+[Service]
+Type=simple
+ExecStart=ipchecker
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

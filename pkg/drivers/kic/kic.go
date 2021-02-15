@@ -126,6 +126,10 @@ func (d *Driver) Create() error {
 			ListenAddress: listAddr,
 			ContainerPort: constants.RegistryAddonPort,
 		},
+		oci.PortMapping{
+			ListenAddress: listAddr,
+			ContainerPort: 6443,
+		},
 	)
 
 	exists, err := oci.ContainerExists(d.OCIBinary, params.Name, true)
