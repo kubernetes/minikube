@@ -201,7 +201,7 @@ func (d *Driver) deleteNetwork() error {
 			log.Warnf("Network %s does not exist. Skipping deletion", d.PrivateNetwork)
 			return nil
 		}
-		return errors.Wrapf(err, "failed looking for network %s", d.PrivateNetwork)
+		return errors.Wrapf(err, "failed looking up network %s", d.PrivateNetwork)
 	}
 	defer func() { _ = network.Free() }()
 	log.Debugf("Network %s exists", d.PrivateNetwork)
@@ -221,8 +221,7 @@ func (d *Driver) deleteNetwork() error {
 		}
 		if active {
 			log.Debugf("Destroying active network %s", d.PrivateNetwork)
-			err := network.Destroy()
-			if err != nil {
+			if err := network.Destroy(); err != nil {
 				return err
 			}
 		}
