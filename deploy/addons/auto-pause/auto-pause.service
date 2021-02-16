@@ -1,0 +1,9 @@
+Description=Auto Pause Service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/auto-pause
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

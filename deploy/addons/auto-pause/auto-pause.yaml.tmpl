@@ -24,15 +24,11 @@ spec:
           type: File
       - name: lua-script
         hostPath:
-          path: /var/lib/minikube/hello_world.lua
-          type: File
-      - name: mini-status
-        hostPath:
-          path: /var/lib/minikube/pstatus.txt
+          path: /var/lib/minikube/unpause.lua
           type: File
       containers:
         - name: auto-pause
-          image: "haproxy"
+          image: "haproxy:2.3.5"
           ports:
             - name: https
               containerPort: 6443
@@ -43,7 +39,5 @@ spec:
             mountPath: /usr/local/etc/haproxy/haproxy.cfg
             readOnly: true
           - name: lua-script
-            mountPath: /etc/haproxy/hello_world.lua
-          - name: mini-status
-            mountPath: /var/lib/minikube/pstatus.txt
+            mountPath: /etc/haproxy/unpause.lua
 ---
