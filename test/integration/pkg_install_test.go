@@ -65,6 +65,11 @@ func TestDebPackageInstall(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "version"))
+	if err != nil || rr.ExitCode != 0 {
+		t.Skip("docker is not installed")
+	}
+
 	pkgDir, err := filepath.Abs(filepath.Dir(Target()))
 	if err != nil {
 		t.Errorf("failed to get minikube path: %v", err)
