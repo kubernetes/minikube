@@ -85,7 +85,8 @@ func TestDebPackageInstall(t *testing.T) {
 
 	for _, distro := range distros {
 		distroImg := distro
-		t.Run("installMinikube_"+distroImg, func(t *testing.T) {
+		testName := fmt.Sprintf("install_%s_%s", runtime.GOARCH, distroImg)
+		t.Run(testName, func(t *testing.T) {
 			// apt-get update; dpkg -i minikube_${ver}_${arch}.deb
 			t.Run("minikube", func(t *testing.T) {
 				for _, mkDeb := range mkDebs {
