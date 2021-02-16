@@ -1,21 +1,26 @@
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auto-pause
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auto-pause
-  namespace: kube-system
+  name: auto-pause-proxy
+  namespace: auto-pause
   labels:
-    app: auto-pause
+    app: auto-pause-proxy
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: auto-pause
+      app: auto-pause-proxy
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: auto-pause
+        app: auto-pause-proxy
     spec:
       volumes:
       - name: ha-cfg
@@ -28,7 +33,7 @@ spec:
           type: File
       containers:
         - name: auto-pause
-          image: "haproxy:2.3.5"
+          image: "haproxy:2.3.5-alpine"
           ports:
             - name: https
               containerPort: 6443

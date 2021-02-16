@@ -35,28 +35,37 @@ import (
 var incomeCh = make(chan struct{})
 var done = make(chan struct{})
 var mu sync.Mutex
-var dockerPaused = false
+
+// TODO: intialize with current state (handle the case that user enables auto-pause after it is already paused)
+var runtimePaused = false
+var version = "0.0.1"
+
+// TODO: make this configurable to support containerd/cri-o
+var runtime = "docker"
 
 func main() {
-	const interval = time.Minute * 5
+	// TODO: make this configurable
+	const interval = time.Minute * 1
 	// channel for incoming messages
 	go func() {
 		for {
 			// On each iteration new timer is created
 			select {
 			case <-time.After(interval):
-				fmt.Printf("Time out\n")
 				runPause()
 			case <-incomeCh:
-				fmt.Printf("Get request\n")
-				runUnpause()
+				fmt.Printf("Got request\n")
+				if runtimePaused {
+					runUnpause()
+				}
+
 				done <- struct{}{}
 			}
 		}
 	}()
 
 	http.HandleFunc("/", handler) // each request calls handler
-	fmt.Printf("Starting server at port 8080\n")
+	fmt.Printf("Starting auto-pause server %s at port 8080 \n", version)
 	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
 }
 
@@ -70,7 +79,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func runPause() {
 	mu.Lock()
 	defer mu.Unlock()
-	if dockerPaused {
+	if runtimePaused {
 		return
 	}
 
@@ -78,35 +87,32 @@ func runPause() {
 
 	r := command.NewExecRunner(true)
 
-	cr, err := cruntime.New(cruntime.Config{Type: "docker", Runner: r})
+	cr, err := cruntime.New(cruntime.Config{Type: runtime, Runner: r})
 	if err != nil {
 		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 	}
 
-	uids, err := cluster.Pause(cr, r, nil)
+	uids, err := cluster.Pause(cr, r, []string{"kube-system"})
 	if err != nil {
 		exit.Error(reason.GuestPause, "Pause", err)
 	}
 
-	dockerPaused = true
+	runtimePaused = true
 	ids = append(ids, uids...)
 
 	out.Step(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
 }
 
 func runUnpause() {
+	fmt.Println("unpausing...")
 	mu.Lock()
 	defer mu.Unlock()
-
-	if !dockerPaused {
-		return
-	}
 
 	ids := []string{}
 
 	r := command.NewExecRunner(true)
 
-	cr, err := cruntime.New(cruntime.Config{Type: "docker", Runner: r})
+	cr, err := cruntime.New(cruntime.Config{Type: runtime, Runner: r})
 	if err != nil {
 		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 	}
@@ -116,7 +122,7 @@ func runUnpause() {
 		exit.Error(reason.GuestUnpause, "Unpause", err)
 	}
 	ids = append(ids, uids...)
-	dockerPaused = false
+	runtimePaused = false
 
 	out.Step(style.Unpause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
 }
