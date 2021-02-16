@@ -1546,7 +1546,7 @@ jobs:
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
-          sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
+          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
 
       - name: Install Go
         uses: actions/setup-go@v2
