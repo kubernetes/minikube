@@ -21,7 +21,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -224,11 +223,15 @@ func outputLastStart() error {
 	out.Step(style.Empty, "")
 	out.Step(style.Empty, "==> Last Start <==")
 	fp := localpath.LastStartLog()
-	l, err := ioutil.ReadFile(fp)
+	f, err := os.Open(fp)
 	if err != nil {
-		return fmt.Errorf("failed to read file %s: %v", fp, err)
+		return fmt.Errorf("failed to open file %s: %v", fp, err)
 	}
-	out.Step(style.Empty, string(l))
+	defer f.Close()
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		out.Step(style.Empty, s.Text())
+	}
 	return nil
 }
 
