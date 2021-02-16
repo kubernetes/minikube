@@ -79,6 +79,7 @@ func WaitForPodReadyByLabel(cs *kubernetes.Clientset, label, namespace string, t
 		return fmt.Errorf("pod label %q is malformed", label)
 	}
 
+	lap := time.Now()
 	checkReady := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("wait for pod with %q label in %q namespace to be Ready timed out", label, namespace)
@@ -92,7 +93,17 @@ func WaitForPodReadyByLabel(cs *kubernetes.Clientset, label, namespace string, t
 		for _, pod := range pods.Items {
 			for k, v := range pod.ObjectMeta.Labels {
 				if ((lkey == "" && (k == "component" || k == "k8s-app")) || lkey == k) && v == lval {
-					return checkPodStatus(&pod)
+					ready, reason := IsPodReady(&pod)
+					if ready {
+						klog.Info(reason)
+						return true, nil
+					}
+					// reduce log spam
+					if time.Since(lap) > (1 * time.Second) {
+						klog.Info(reason)
+						lap = time.Now()
+					}
+					return false, nil
 				}
 			}
 		}
@@ -120,6 +131,7 @@ func WaitForPodReadyByName(cs *kubernetes.Clientset, name, namespace string, tim
 		namespace = "kube-system"
 	}
 
+	lap := time.Now()
 	checkReady := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("wait for pod %q in %q namespace to be Ready timed out", name, namespace)
@@ -130,7 +142,17 @@ func WaitForPodReadyByName(cs *kubernetes.Clientset, name, namespace string, tim
 			klog.Infof("error getting pod %q in %q namespace, will retry: %v", name, namespace, err)
 			return false, nil
 		}
-		return checkPodStatus(pod)
+		ready, reason := IsPodReady(pod)
+		if ready {
+			klog.Info(reason)
+			return true, nil
+		}
+		// reduce log spam
+		if time.Since(lap) > (1 * time.Second) {
+			klog.Info(reason)
+			lap = time.Now()
+		}
+		return false, nil
 	}
 
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkReady); err != nil {
@@ -140,21 +162,18 @@ func WaitForPodReadyByName(cs *kubernetes.Clientset, name, namespace string, tim
 	return nil
 }
 
-// checkPodStatus returns if pod is Ready and any error occurred.
-func checkPodStatus(pod *core.Pod) (bool, error) {
+// IsPodReady returns if pod is Ready and verbose reason.
+func IsPodReady(pod *core.Pod) (ready bool, reason string) {
 	if pod.Status.Phase != core.PodRunning {
-		klog.Infof("pod %q in %q namespace is not Running, will retry: %+v", pod.Name, pod.Namespace, pod.Status)
-		return false, nil
+		return false, fmt.Sprintf("pod %q in %q namespace is not Running: %+v", pod.Name, pod.Namespace, pod.Status)
 	}
 	for _, c := range pod.Status.Conditions {
 		if c.Type == core.PodReady {
 			if c.Status != core.ConditionTrue {
-				klog.Infof("pod %q in %q namespace is not Ready, will retry: %+v", pod.Name, pod.Namespace, c)
-				return false, nil
+				return false, fmt.Sprintf("pod %q in %q namespace is not Ready: %+v", pod.Name, pod.Namespace, c)
 			}
-			klog.Infof("pod %q in %q namespace is Ready ...", pod.Name, pod.Namespace)
-			return true, nil
+			return true, fmt.Sprintf("pod %q in %q namespace is Ready: %+v", pod.Name, pod.Namespace, c)
 		}
 	}
-	return false, fmt.Errorf("pod %q in %q namespace does not have %q status: %+v", pod.Name, pod.Namespace, core.PodReady, pod.Status)
+	return false, fmt.Sprintf("pod %q in %q namespace does not have %q status: %+v", pod.Name, pod.Namespace, core.PodReady, pod.Status)
 }

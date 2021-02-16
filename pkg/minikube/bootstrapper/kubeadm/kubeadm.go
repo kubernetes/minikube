@@ -470,6 +470,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
+	if cfg.VerifyComponents[kverify.OperationalKey] {
+		if err := kverify.WaitOperational(client, kverify.CorePodsList, timeout); err != nil {
+			return errors.Wrap(err, "waiting for operational status")
+		}
+	}
+
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
@@ -503,18 +509,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 				return errors.Wrap(err, "waiting for apps_running")
 			}
 		}
-
-		if cfg.VerifyComponents[kverify.OperationalKey] {
-			if err := kverify.WaitOperational(client, kverify.CorePodsList, timeout); err != nil {
-				return errors.Wrap(err, "waiting for operational status")
-			}
-		}
 	}
+
 	if cfg.VerifyComponents[kverify.KubeletKey] {
 		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
 			return errors.Wrap(err, "waiting for kubelet")
 		}
-
 	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
@@ -664,6 +664,17 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		}
 	}
 
+	if cfg.VerifyComponents[kverify.OperationalKey] {
+		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
+		// it appears to be immediately Ready as are all kube-system pods
+		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts
+		// so we wait for kubelet to initialise itself...
+		time.Sleep(10 * time.Second)
+		if err := kverify.WaitOperational(client, kverify.CorePodsList, kconst.DefaultControlPlaneTimeout); err != nil {
+			return errors.Wrap(err, "operational status")
+		}
+	}
+
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -704,6 +715,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		klog.Warningf("unable to adjust resource limits: %v", err)
 	}
+
 	return nil
 }
 
