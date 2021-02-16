@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -470,9 +471,9 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
-	if cfg.VerifyComponents[kverify.OperationalKey] {
-		if err := kverify.WaitOperational(client, kverify.CorePodsList, timeout); err != nil {
-			return errors.Wrap(err, "waiting for operational status")
+	if cfg.VerifyComponents[kverify.ExtraKey] {
+		if err := kverify.WaitExtra(client, kverify.CorePodsList, timeout); err != nil {
+			return errors.Wrap(err, "extra waiting")
 		}
 	}
 
@@ -664,14 +665,32 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		}
 	}
 
-	if cfg.VerifyComponents[kverify.OperationalKey] {
+	if cfg.VerifyComponents[kverify.ExtraKey] {
 		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
-		// it appears to be immediately Ready as are all kube-system pods
-		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts
-		// so we wait for kubelet to initialise itself...
-		time.Sleep(10 * time.Second)
-		if err := kverify.WaitOperational(client, kverify.CorePodsList, kconst.DefaultControlPlaneTimeout); err != nil {
-			return errors.Wrap(err, "operational status")
+		// it appears as to be immediately Ready as well as all kube-system pods,
+		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts,
+		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
+		klog.Info("waiting for restarted kubelet to initialise ...")
+		start := time.Now()
+		wait := func() error {
+			pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+			if err != nil {
+				return err
+			}
+			for _, pod := range pods.Items {
+				if pod.Labels["tier"] == "control-plane" {
+					if ready, _ := kverify.IsPodReady(&pod); !ready {
+						return nil
+					}
+				}
+			}
+			return fmt.Errorf("kubelet not initialised")
+		}
+		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
+		klog.Infof("kubelet initialised")
+		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
+		if err := kverify.WaitExtra(client, kverify.CorePodsList, kconst.DefaultControlPlaneTimeout); err != nil {
+			return errors.Wrap(err, "extra")
 		}
 	}
 

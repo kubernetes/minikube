@@ -31,12 +31,12 @@ import (
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
-// WaitOperational calls WaitForPodReadyByLabel for each pod in labels list and returns any errors occurred.
-func WaitOperational(cs *kubernetes.Clientset, labels []string, timeout time.Duration) error {
-	klog.Info("waiting for kube-system core pods %s to be Ready ...", labels)
-	pStart := time.Now()
+// WaitExtra calls WaitForPodReadyByLabel for each pod in labels list and returns any errors occurred.
+func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration) error {
+	klog.Infof("extra waiting for kube-system core pods %s to be Ready ...", labels)
+	start := time.Now()
 	defer func() {
-		klog.Infof("duration metric: took %s for waiting for kube-system core pods to be Ready ...", time.Since(pStart))
+		klog.Infof("duration metric: took %s for extra waiting for kube-system core pods to be Ready ...", time.Since(start))
 	}()
 
 	var errs []string
@@ -84,7 +84,6 @@ func WaitForPodReadyByLabel(cs *kubernetes.Clientset, label, namespace string, t
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("wait for pod with %q label in %q namespace to be Ready timed out", label, namespace)
 		}
-
 		pods, err := cs.CoreV1().Pods(namespace).List(meta.ListOptions{})
 		if err != nil {
 			klog.Infof("error listing pods in %q namespace, will retry: %v", namespace, err)
@@ -110,7 +109,6 @@ func WaitForPodReadyByLabel(cs *kubernetes.Clientset, label, namespace string, t
 		klog.Infof("pod with %q label in %q namespace was not found, will retry", label, namespace)
 		return false, nil
 	}
-
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkReady); err != nil {
 		return errors.Wrapf(err, "wait pod Ready")
 	}
@@ -136,7 +134,6 @@ func WaitForPodReadyByName(cs *kubernetes.Clientset, name, namespace string, tim
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("wait for pod %q in %q namespace to be Ready timed out", name, namespace)
 		}
-
 		pod, err := cs.CoreV1().Pods(namespace).Get(name, meta.GetOptions{})
 		if err != nil {
 			klog.Infof("error getting pod %q in %q namespace, will retry: %v", name, namespace, err)
@@ -154,7 +151,6 @@ func WaitForPodReadyByName(cs *kubernetes.Clientset, name, namespace string, tim
 		}
 		return false, nil
 	}
-
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkReady); err != nil {
 		return errors.Wrapf(err, "wait pod Ready")
 	}

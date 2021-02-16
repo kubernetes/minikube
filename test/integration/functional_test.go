@@ -448,6 +448,7 @@ func imageID(image string) string {
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
+// note: it expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag (ie, with extra wait)
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
