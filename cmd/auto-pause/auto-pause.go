@@ -20,52 +20,103 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
-var ticker *time.Ticker
-var minutesToPause int
+var incomeCh = make(chan struct{})
+var done = make(chan struct{})
+var mu sync.Mutex
+var dockerPaused = false
 
-func init() {
-	ticker = time.NewTicker(1 * time.Second)
-	minutesToPause = 10
-	go schedulePause()
-
-}
 func main() {
+	const interval = time.Minute * 5
+	// channel for incoming messages
+	go func() {
+		for {
+			// On each iteration new timer is created
+			select {
+			case <-time.After(interval):
+				fmt.Printf("Time out\n")
+				runPause()
+			case <-incomeCh:
+				fmt.Printf("Get request\n")
+				runUnpause()
+				done <- struct{}{}
+			}
+		}
+	}()
+
 	http.HandleFunc("/", handler) // each request calls handler
-	fmt.Printf("Starting server at port 0.0.0.0:8000\n")
-	log.Fatal(http.ListenAndServe("0.0.0.0:8000", nil))
+	fmt.Printf("Starting server at port 8080\n")
+	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
 }
 
 // handler echoes the Path component of the requested URL.
 func handler(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Printf("Receive request uri %s at port 8000\n", r.RequestURI)
-	unPauseIfPaused()
-	// reset timer
-	fmt.Println("reseting pause counter to another 10")
-	minutesToPause = 5
-	go schedulePause()
+	incomeCh <- struct{}{}
+	<-done
 	fmt.Fprintf(w, "allow")
 }
 
-func schedulePause() {
-	fmt.Println("scheduling pausing ...")
-	for minutesToPause > 0 {
-		minutesToPause = minutesToPause - 1
-		t := <-ticker.C
-		fmt.Println("ticking ..", t)
+func runPause() {
+	mu.Lock()
+	defer mu.Unlock()
+	if dockerPaused {
+		return
 	}
-	fmt.Println("Doing Pause")
-	pause()
+
+	ids := []string{}
+
+	r := command.NewExecRunner(true)
+
+	cr, err := cruntime.New(cruntime.Config{Type: "docker", Runner: r})
+	if err != nil {
+		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
+	}
+
+	uids, err := cluster.Pause(cr, r, nil)
+	if err != nil {
+		exit.Error(reason.GuestPause, "Pause", err)
+	}
+
+	dockerPaused = true
+	ids = append(ids, uids...)
+
+	out.Step(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
 }
 
-func unPauseIfPaused() {
-	fmt.Println("unpausing...")
+func runUnpause() {
+	mu.Lock()
+	defer mu.Unlock()
 
-}
+	if !dockerPaused {
+		return
+	}
 
-func pause() {
-	fmt.Println("inside pause")
+	ids := []string{}
+
+	r := command.NewExecRunner(true)
+
+	cr, err := cruntime.New(cruntime.Config{Type: "docker", Runner: r})
+	if err != nil {
+		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
+	}
+
+	uids, err := cluster.Unpause(cr, r, nil)
+	if err != nil {
+		exit.Error(reason.GuestUnpause, "Unpause", err)
+	}
+	ids = append(ids, uids...)
+	dockerPaused = false
+
+	out.Step(style.Unpause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
 }
