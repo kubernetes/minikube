@@ -20,23 +20,52 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os/exec"
+	"time"
 )
 
+var ticker *time.Ticker
+var minutesToPause int
+
+func init() {
+	ticker = time.NewTicker(1 * time.Second)
+	minutesToPause = 10
+	go schedulePause()
+
+}
 func main() {
 	http.HandleFunc("/", handler) // each request calls handler
-	fmt.Printf("Starting server at port 8080\n")
-	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
+	fmt.Printf("Starting server at port 0.0.0.0:8000\n")
+	log.Fatal(http.ListenAndServe("0.0.0.0:8000", nil))
 }
 
 // handler echoes the Path component of the requested URL.
 func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Receive request uri %s at port 8080\n", r.RequestURI)
-	out, err := exec.Command("docker", "ps").Output()
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	fmt.Printf("docker ps output:\n%s\n", string(out))
+	fmt.Printf("Receive request uri %s at port 8000\n", r.RequestURI)
+	unPauseIfPaused()
+	// reset timer
+	fmt.Println("reseting pause counter to another 10")
+	minutesToPause = 5
+	go schedulePause()
 	fmt.Fprintf(w, "allow")
+}
+
+func schedulePause() {
+	fmt.Println("scheduling pausing ...")
+	for minutesToPause > 0 {
+		minutesToPause = minutesToPause - 1
+		t := <-ticker.C
+		fmt.Println("ticking ..", t)
+	}
+	fmt.Println("Doing Pause")
+	pause()
+}
+
+func unPauseIfPaused() {
+	fmt.Println("unpausing...")
+
+}
+
+func pause() {
+	fmt.Println("inside pause")
 }
