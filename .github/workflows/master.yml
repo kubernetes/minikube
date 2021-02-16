@@ -1535,7 +1535,7 @@ jobs:
 
   pkg_install_amd64:
     needs: [ build_minikube ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_docker_ubuntu_arm64"
