@@ -426,7 +426,7 @@
 	"The cri socket path to be used.": "",
 	"The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/": "",
 	"The docker-env command is only compatible with the \"docker\" runtime, but this cluster was configured to use the \"{{.runtime}}\" runtime.": "",
-	"The driver '{{.driver}}' is not supported on {{.os}}": "",
+	"The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}": "",
 	"The existing \"{{.name}}\" cluster was created using the \"{{.old}}\" driver, which is incompatible with requested \"{{.new}}\" driver.": "",
 	"The heapster addon is depreciated. please try to disable metrics-server instead": "",
 	"The hyperv virtual switch name. Defaults to first found. (hyperv driver only)": "",

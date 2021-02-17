@@ -57,7 +57,7 @@ spec:
       serviceAccountName: csi-resizer
       containers:
         - name: csi-resizer
-          image: {{default "quay.io/k8scsi" .ImageRepository}}/csi-resizer:v0.6.0-rc1
+          image: {{.CustomRegistries.Resizer  | default .ImageRepository | default .Registries.Resizer }}{{.Images.Resizer}}
           args:
             - -v=5
             - -csi-address=/csi/csi.sock

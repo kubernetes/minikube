@@ -158,7 +158,7 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 }
 
 // CacheAndLoadImages caches and loads images to all profiles
-func CacheAndLoadImages(images []string) error {
+func CacheAndLoadImages(images []string, profiles []*config.Profile) error {
 	if len(images) == 0 {
 		return nil
 	}
@@ -173,10 +173,6 @@ func CacheAndLoadImages(images []string) error {
 		return errors.Wrap(err, "api")
 	}
 	defer api.Close()
-	profiles, _, err := config.ListProfiles() // need to load image to all profiles
-	if err != nil {
-		return errors.Wrap(err, "list profiles")
-	}
 
 	succeeded := []string{}
 	failed := []string{}

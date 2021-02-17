@@ -25,7 +25,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 For Linux users, we provide 3 easy download options (for each architecture):
 
-### x86
+### amd64 / x86_64
 
 #### Binary download
 
@@ -49,7 +49,7 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest
 sudo rpm -ivh minikube-latest.x86_64.rpm
 ```
 
-### ARM
+### arm64 / aarch64
 
 #### Binary download
 
@@ -81,18 +81,27 @@ If the [Brew Package Manager](https://brew.sh/) installed:
 brew install minikube
 ```
 
-If `which minikube` fails after installation via brew, you may have to remove the minikube cask and link the binary:
+If `which minikube` fails after installation via brew, you may have to remove the old minikube links and link the newly installed binary:
 
 ```shell
-brew cask remove minikube
+brew unlink minikube
 brew link minikube
 ```
 
 Otherwise, download minikube directly:
 
+### x86
+
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
 sudo install minikube-darwin-amd64 /usr/local/bin/minikube
+```
+
+### ARM
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-arm64
+sudo install minikube-darwin-arm64 /usr/local/bin/minikube
 ```
 
 {{% /mactab %}}

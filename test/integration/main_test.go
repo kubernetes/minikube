@@ -152,10 +152,6 @@ func GithubActionRunner() bool {
 	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
-func ContainerdContainerRuntime() bool {
-	return strings.Contains(*startArgs, "--container-runtime=containerd")
-}
-
 // arm64Platform returns true if running on arm64/* platform
 func arm64Platform() bool {
 	return runtime.GOARCH == "arm64"

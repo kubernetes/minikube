@@ -147,3 +147,19 @@ func KindNet(repo string) string {
 	}
 	return path.Join(repo, "kindnetd:0.5.4")
 }
+
+// CalicoDaemonSet returns the image used for calicoDaemonSet
+func CalicoDaemonSet(repo string) string {
+	if repo == "" {
+		repo = "calico"
+	}
+	return path.Join(repo, "node:v3.14.1")
+}
+
+// CalicoDeployment returns the image used for calicoDeployment
+func CalicoDeployment(repo string) string {
+	if repo == "" {
+		repo = "calico"
+	}
+	return path.Join(repo, "kube-controllers:v3.14.1")
+}

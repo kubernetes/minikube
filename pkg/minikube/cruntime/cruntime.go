@@ -130,6 +130,8 @@ type Config struct {
 	ImageRepository string
 	// KubernetesVersion Kubernetes version
 	KubernetesVersion semver.Version
+	// InsecureRegistry list of insecure registries
+	InsecureRegistry []string
 }
 
 // ListOptions are the options to use for listing containers
@@ -149,9 +151,12 @@ func New(c Config) (Manager, error) {
 	switch c.Type {
 	case "", "docker":
 		return &Docker{
-			Socket: c.Socket,
-			Runner: c.Runner,
-			Init:   sm,
+			Socket:            c.Socket,
+			Runner:            c.Runner,
+			ImageRepository:   c.ImageRepository,
+			KubernetesVersion: c.KubernetesVersion,
+			Init:              sm,
+			UseCRI:            (c.Socket != ""), // !dockershim
 		}, nil
 	case "crio", "cri-o":
 		return &CRIO{
@@ -168,6 +173,7 @@ func New(c Config) (Manager, error) {
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
+			InsecureRegistry:  c.InsecureRegistry,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)

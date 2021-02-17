@@ -22,6 +22,7 @@ import (
 	"regexp"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -207,6 +208,11 @@ var addonsConfigureCmd = &cobra.Command{
 
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+			}
+
+			// Re-enable metallb addon in order to generate template manifest files with Load Balancer Start/End IP
+			if err := addons.EnableOrDisableAddon(cfg, "metallb", "true"); err != nil {
+				out.ErrT(style.Fatal, "Failed to configure metallb IP {{.profile}}", out.V{"profile": profile})
 			}
 		case "ingress":
 			profile := ClusterFlagValue()

@@ -18,12 +18,15 @@ package ssh
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/ssh"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
@@ -85,28 +88,43 @@ func (d *Driver) DriverName() string {
 	return "ssh"
 }
 
+// GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
 	return d.GetIP()
 }
 
+// GetSSHUsername returns username for use with ssh
 func (d *Driver) GetSSHUsername() string {
 	return d.SSHUser
 }
 
+// GetSSHKeyPath returns the key path for SSH
 func (d *Driver) GetSSHKeyPath() string {
 	return d.SSHKeyPath
 }
 
+// PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
 	if d.SSHKey != "" {
 		if _, err := os.Stat(d.SSHKey); os.IsNotExist(err) {
 			return fmt.Errorf("SSH key does not exist: %q", d.SSHKey)
+		}
+
+		key, err := ioutil.ReadFile(d.SSHKey)
+		if err != nil {
+			return err
+		}
+
+		_, err = ssh.ParsePrivateKey(key)
+		if err != nil {
+			return errors.Wrapf(err, "SSH key does not parse: %q", d.SSHKey)
 		}
 	}
 
 	return nil
 }
 
+// Create a host using the driver's config
 func (d *Driver) Create() error {
 	if d.SSHKey == "" {
 		log.Info("No SSH key specified. Assuming an existing key at the default location.")
@@ -134,6 +152,7 @@ func (d *Driver) Create() error {
 	return nil
 }
 
+// GetURL returns a Docker URL inside this host
 func (d *Driver) GetURL() (string, error) {
 	if err := drivers.MustBeRunning(d); err != nil {
 		return "", err
@@ -147,6 +166,7 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s", net.JoinHostPort(ip, strconv.Itoa(d.EnginePort))), nil
 }
 
+// GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	address := net.JoinHostPort(d.IPAddress, strconv.Itoa(d.SSHPort))
 
@@ -224,6 +244,7 @@ func (d *Driver) Kill() error {
 	return nil
 }
 
+// Remove a host, including any data which may have been written by it.
 func (d *Driver) Remove() error {
 	return nil
 }
