@@ -24,13 +24,12 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/viper"
-	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// singleEntry is the log entry of a single command.
-type singleEntry struct {
+// row is the log of a single command.
+type row struct {
 	args      string
 	command   string
 	endTime   string
@@ -42,12 +41,12 @@ type singleEntry struct {
 }
 
 // Type returns the cloud events compatible type of this struct.
-func (e *singleEntry) Type() string {
+func (e *row) Type() string {
 	return "io.k8s.sigs.minikube.audit"
 }
 
 // assignFields converts the map values to their proper fields
-func (e *singleEntry) assignFields() {
+func (e *row) assignFields() {
 	e.args = e.Data["args"]
 	e.command = e.Data["command"]
 	e.endTime = e.Data["endTime"]
@@ -58,7 +57,7 @@ func (e *singleEntry) assignFields() {
 }
 
 // toMap combines fields into a string map
-func (e *singleEntry) toMap() map[string]string {
+func (e *row) toMap() map[string]string {
 	return map[string]string{
 		"args":      e.args,
 		"command":   e.command,
@@ -70,13 +69,13 @@ func (e *singleEntry) toMap() map[string]string {
 	}
 }
 
-// newEntry returns a new audit type.
-func newEntry(command string, args string, user string, version string, startTime time.Time, endTime time.Time, profile ...string) *singleEntry {
+// newRow returns a new audit type.
+func newRow(command string, args string, user string, version string, startTime time.Time, endTime time.Time, profile ...string) *row {
 	p := viper.GetString(config.ProfileName)
 	if len(profile) > 0 {
 		p = profile[0]
 	}
-	return &singleEntry{
+	return &row{
 		args:      args,
 		command:   command,
 		endTime:   endTime.Format(constants.TimeFormat),
@@ -87,32 +86,31 @@ func newEntry(command string, args string, user string, version string, startTim
 	}
 }
 
-// toFields converts an entry to an array of fields.
-func (e *singleEntry) toFields() []string {
+// toFields converts a row to an array of fields.
+func (e *row) toFields() []string {
 	return []string{e.command, e.args, e.profile, e.user, e.version, e.startTime, e.endTime}
 }
 
-// logsToEntries converts audit logs into arrays of entries.
-func logsToEntries(logs []string) ([]singleEntry, error) {
-	c := []singleEntry{}
+// logsToRows converts audit logs into arrays of rows.
+func logsToRows(logs []string) ([]row, error) {
+	rows := []row{}
 	for _, l := range logs {
-		e := singleEntry{}
-		if err := json.Unmarshal([]byte(l), &e); err != nil {
+		r := row{}
+		if err := json.Unmarshal([]byte(l), &r); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal %q: %v", l, err)
 		}
-		e.assignFields()
-		c = append(c, e)
+		r.assignFields()
+		rows = append(rows, r)
 	}
-	return c, nil
+	return rows, nil
 }
 
-// entriesToTable converts audit lines into a formatted table.
-func entriesToTable(entries []singleEntry, headers []string) string {
+// rowsToTable converts audit rows into a formatted table.
+func rowsToTable(rows []row, headers []string) string {
 	c := [][]string{}
-	for _, e := range entries {
-		c = append(c, e.toFields())
+	for _, r := range rows {
+		c = append(c, r.toFields())
 	}
-	klog.Info(c)
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
 	t.SetHeader(headers)

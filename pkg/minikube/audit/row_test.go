@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func TestEntry(t *testing.T) {
+func TestRow(t *testing.T) {
 	c := "start"
 	a := "--alsologtostderr"
 	p := "profile1"
@@ -37,32 +37,32 @@ func TestEntry(t *testing.T) {
 	et := time.Now()
 	etFormatted := et.Format(constants.TimeFormat)
 
-	e := newEntry(c, a, u, v, st, et, p)
+	r := newRow(c, a, u, v, st, et, p)
 
-	t.Run("TestNewEntry", func(t *testing.T) {
+	t.Run("TestNewRow", func(t *testing.T) {
 		tests := []struct {
 			key  string
 			got  string
 			want string
 		}{
-			{"command", e.command, c},
-			{"args", e.args, a},
-			{"profile", e.profile, p},
-			{"user", e.user, u},
-			{"version", e.version, v},
-			{"startTime", e.startTime, stFormatted},
-			{"endTime", e.endTime, etFormatted},
+			{"command", r.command, c},
+			{"args", r.args, a},
+			{"profile", r.profile, p},
+			{"user", r.user, u},
+			{"version", r.version, v},
+			{"startTime", r.startTime, stFormatted},
+			{"endTime", r.endTime, etFormatted},
 		}
 
 		for _, tt := range tests {
 			if tt.got != tt.want {
-				t.Errorf("singleEntry.%s = %s; want %s", tt.key, tt.got, tt.want)
+				t.Errorf("row.%s = %s; want %s", tt.key, tt.got, tt.want)
 			}
 		}
 	})
 
 	t.Run("TestType", func(t *testing.T) {
-		got := e.Type()
+		got := r.Type()
 		want := "io.k8s.sigs.minikube.audit"
 
 		if got != want {
@@ -71,7 +71,7 @@ func TestEntry(t *testing.T) {
 	})
 
 	t.Run("TestToMap", func(t *testing.T) {
-		m := e.toMap()
+		m := r.toMap()
 
 		tests := []struct {
 			key  string
@@ -95,7 +95,7 @@ func TestEntry(t *testing.T) {
 	})
 
 	t.Run("TestToField", func(t *testing.T) {
-		got := e.toFields()
+		got := r.toFields()
 		gotString := strings.Join(got, ",")
 		want := []string{c, a, p, u, v, stFormatted, etFormatted}
 		wantString := strings.Join(want, ",")
@@ -108,25 +108,25 @@ func TestEntry(t *testing.T) {
 	t.Run("TestAssignFields", func(t *testing.T) {
 		l := fmt.Sprintf(`{"data":{"args":"%s","command":"%s","endTime":"%s","profile":"%s","startTime":"%s","user":"%s","version":"v0.17.1"},"datacontenttype":"application/json","id":"bc6ec9d4-0d08-4b57-ac3b-db8d67774768","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}`, a, c, etFormatted, p, stFormatted, u)
 
-		e := &singleEntry{}
-		if err := json.Unmarshal([]byte(l), e); err != nil {
-			t.Fatalf("failed to unmarshal log:: %v", err)
+		r := &row{}
+		if err := json.Unmarshal([]byte(l), r); err != nil {
+			t.Fatalf("failed to unmarshal log: %v", err)
 		}
 
-		e.assignFields()
+		r.assignFields()
 
 		tests := []struct {
 			key  string
 			got  string
 			want string
 		}{
-			{"command", e.command, c},
-			{"args", e.args, a},
-			{"profile", e.profile, p},
-			{"user", e.user, u},
-			{"version", e.version, v},
-			{"startTime", e.startTime, stFormatted},
-			{"endTime", e.endTime, etFormatted},
+			{"command", r.command, c},
+			{"args", r.args, a},
+			{"profile", r.profile, p},
+			{"user", r.user, u},
+			{"version", r.version, v},
+			{"startTime", r.startTime, stFormatted},
+			{"endTime", r.endTime, etFormatted},
 		}
 
 		for _, tt := range tests {

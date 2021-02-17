@@ -21,13 +21,13 @@ import (
 	"fmt"
 )
 
-type Data struct {
+type RawReport struct {
 	headers []string
-	entries []singleEntry
+	rows    []row
 }
 
 // Report is created from the log file.
-func Report(lines int) (*Data, error) {
+func Report(lines int) (*RawReport, error) {
 	if lines <= 0 {
 		return nil, fmt.Errorf("number of lines must be 1 or greater")
 	}
@@ -48,18 +48,18 @@ func Report(lines int) (*Data, error) {
 	if err := s.Err(); err != nil {
 		return nil, fmt.Errorf("failed to read from audit file: %v", err)
 	}
-	e, err := logsToEntries(logs)
+	rows, err := logsToRows(logs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert logs to entries: %v", err)
+		return nil, fmt.Errorf("failed to convert logs to rows: %v", err)
 	}
-	r := &Data{
+	r := &RawReport{
 		[]string{"Command", "Args", "Profile", "User", "Version", "Start Time", "End Time"},
-		e,
+		rows,
 	}
 	return r, nil
 }
 
-// Table creates a formatted table using entries from the report.
-func (r *Data) Table() string {
-	return entriesToTable(r.entries, r.headers)
+// ASCIITable creates a formatted table using the headers and rows from the report.
+func (rr *RawReport) ASCIITable() string {
+	return rowsToTable(rr.rows, rr.headers)
 }

@@ -208,7 +208,7 @@ func outputAudit(lines int) error {
 	if err != nil {
 		return fmt.Errorf("failed to create audit report with error: %v", err)
 	}
-	out.Step(style.Empty, r.Table())
+	out.Step(style.Empty, r.ASCIITable())
 	return nil
 }
 

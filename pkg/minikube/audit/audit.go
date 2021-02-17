@@ -55,8 +55,8 @@ func Log(startTime time.Time) {
 	if !shouldLog() {
 		return
 	}
-	e := newEntry(os.Args[1], args(), userName(), version.GetVersion(), startTime, time.Now())
-	if err := appendToLog(e); err != nil {
+	r := newRow(os.Args[1], args(), userName(), version.GetVersion(), startTime, time.Now())
+	if err := appendToLog(r); err != nil {
 		klog.Error(err)
 	}
 }
