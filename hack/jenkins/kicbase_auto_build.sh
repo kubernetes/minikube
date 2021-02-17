@@ -19,9 +19,23 @@ set -x
 ./hack/jenkins/installers/check_install_docker.sh
 yes|gcloud auth configure-docker
 now=$(date +%s)
-export KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
-export KIC_VERSION=$KV-$now-$ghprbPullId
-export KICBASE_IMAGE_REGISTRIES=gcr.io/k8s-minikube/kicbase-builds:$KIC_VERSION
+KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
+KIC_VERSION=$KV-$now-$ghprbPullId
+KICBASE_IMAGE_REGISTRIES=gcr.io/k8s-minikube/kicbase-builds:$KIC_VERSION
+
+curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
+HEAD_KIC_TIMESTAMP=$(egrep "Version =" types-head.go | cut -d \" -f 2 | cut -d "-" -f 2)
+CURRENT_KIC_TS=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 2)
+if [[ $HEAD_KIC_TIMESTAMP != v* ]] && [[ $CURRENT_KIC_TS != v* ]]; then
+	diff=$((CURRENT_KIC_TS-HEAD_KIC_TIMESTAMP))
+	if [ $diff -lt 0 ]; then
+		curl -s -H "Authorization: token ${access_token}" \
+		-H "Accept: application/vnd.github.v3+json" \
+		-X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, your kicbase info is out of date. Please rebase.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
+		exit 0
+	fi
+fi
+rm types-head.go
 yes|make push-kic-base-image
 
 docker pull $KICBASE_IMAGE_REGISTRIES
