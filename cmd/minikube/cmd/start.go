@@ -27,6 +27,7 @@ import (
 	"os/user"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
@@ -72,7 +73,7 @@ var (
 	insecureRegistry []string
 	apiServerNames   []string
 	apiServerIPs     []net.IP
-	hostRe           = regexp.MustCompile(`[\w\.-]+`)
+	hostRe           = regexp.MustCompile(`^[^-][\w\.-]+$`)
 )
 
 func init() {
@@ -1066,28 +1067,37 @@ func validateRegistryMirror() {
 }
 
 // This function validates that the --insecure-registry follows one of the following formats:
-// "<ip>:<port>" "<hostname>:<port>" "<network>/<netmask>"
+// "<ip>[:<port>]" "<hostname>[:<port>]" "<network>/<netmask>"
 func validateInsecureRegistry() {
 	if len(insecureRegistry) > 0 {
 		for _, addr := range insecureRegistry {
+			// Remove http or https from registryMirror
+			if strings.HasPrefix(strings.ToLower(addr), "http://") || strings.HasPrefix(strings.ToLower(addr), "https://") {
+				i := strings.Index(addr, "//")
+				addr = addr[i+2:]
+			} else if strings.Contains(addr, "://") || strings.HasSuffix(addr, ":") {
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
+			}
 			hostnameOrIP, port, err := net.SplitHostPort(addr)
 			if err != nil {
 				_, _, err := net.ParseCIDR(addr)
 				if err == nil {
 					continue
 				}
+				hostnameOrIP = addr
 			}
-			if port == "" {
-				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>:<port>, <hostname>:<port> or <network>/<netmask>", out.V{"addr": addr})
+			if !hostRe.MatchString(hostnameOrIP) && net.ParseIP(hostnameOrIP) == nil {
+				//		fmt.Printf("This is not hostname or ip %s", hostnameOrIP)
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
 			}
-			// checks both IPv4 and IPv6
-			ipAddr := net.ParseIP(hostnameOrIP)
-			if ipAddr != nil {
-				continue
-			}
-			isValidHost := hostRe.MatchString(hostnameOrIP)
-			if err != nil || !isValidHost {
-				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>:<port>, <hostname>:<port> or <network>/<netmask>", out.V{"addr": addr})
+			if port != "" {
+				v, err := strconv.Atoi(port)
+				if err != nil {
+					exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
+				}
+				if v < 0 || v > 65535 {
+					exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
+				}
 			}
 		}
 	}
