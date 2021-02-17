@@ -145,7 +145,7 @@ func setFlags() {
 	}
 	if os.Args[1] == "start" {
 		fp := localpath.LastStartLog()
-		if err := os.Remove(fp); err != nil {
+		if err := os.Remove(fp); err != nil && !os.IsNotExist(err) {
 			klog.Warningf("Unable to delete file %s: %v", err)
 		}
 		if !pflag.CommandLine.Changed("log_file") {
