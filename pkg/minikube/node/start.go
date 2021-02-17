@@ -245,6 +245,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, kv semver.Version) cruntime.Manager {
 	co := cruntime.Config{
 		Type:              cc.KubernetesConfig.ContainerRuntime,
+		Socket:            cc.KubernetesConfig.CRISocket,
 		Runner:            runner,
 		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
