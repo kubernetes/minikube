@@ -33,7 +33,7 @@ if [[ $HEAD_KIC_TIMESTAMP != v* ]] && [[ $CURRENT_KIC_TS != v* ]]; then
 		curl -s -H "Authorization: token ${access_token}" \
 		-H "Accept: application/vnd.github.v3+json" \
 		-X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, your kicbase info is out of date. Please rebase.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
-		exit 0
+		exit 1
 	fi
 fi
 rm types-head.go
