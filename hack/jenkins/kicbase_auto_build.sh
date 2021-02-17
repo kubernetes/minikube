@@ -20,8 +20,8 @@ set -x
 yes|gcloud auth configure-docker
 now=$(date +%s)
 KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
-KIC_VERSION=$KV-$now-$ghprbPullId
-KICBASE_IMAGE_REGISTRIES=gcr.io/k8s-minikube/kicbase-builds:$KIC_VERSION
+export KIC_VERSION=$KV-$now-$ghprbPullId
+export KICBASE_IMAGE_REGISTRIES=gcr.io/k8s-minikube/kicbase-builds:$KIC_VERSION
 
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
 HEAD_KIC_TIMESTAMP=$(egrep "Version =" types-head.go | cut -d \" -f 2 | cut -d "-" -f 2)
