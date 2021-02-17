@@ -24,10 +24,9 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.17"
+	Version = "v0.0.17-1613582775-10408"
 	// SHA of the kic base image
-	baseImageSHA = "1cd2e039ec9d418e6380b2fa0280503a72e5b282adea674ee67882f59f4f546e"
-)
+	baseImageSHA = "1537fe47d39640aa11d6c819fe39cbba6e250872c8fe2bd7701c5171a32fbc4e"
 
 var (
 	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
