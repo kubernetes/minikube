@@ -27,6 +27,7 @@ const (
 	Version = "v0.0.17-1613582775-10408"
 	// SHA of the kic base image
 	baseImageSHA = "1537fe47d39640aa11d6c819fe39cbba6e250872c8fe2bd7701c5171a32fbc4e"
+)
 
 var (
 	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
