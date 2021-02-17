@@ -16,14 +16,18 @@
 
 set -x
 
+# Make sure docker is installed and configured
 ./hack/jenkins/installers/check_install_docker.sh
 yes|gcloud auth configure-docker
+
+# Setup variables
 now=$(date +%s)
 KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
 KIC_REPO=gcr.io/k8s-minikube/kicbase-builds
 export KIC_VERSION=$KV-$now-$ghprbPullId
 export KICBASE_IMAGE_REGISTRIES=$KIC_REPO:$KIC_VERSION
 
+# Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
 HEAD_KIC_TIMESTAMP=$(egrep "Version =" types-head.go | cut -d \" -f 2 | cut -d "-" -f 2)
 CURRENT_KIC_TS=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 2)
@@ -37,6 +41,8 @@ if [[ $HEAD_KIC_TIMESTAMP != v* ]] && [[ $CURRENT_KIC_TS != v* ]]; then
 	fi
 fi
 rm types-head.go
+
+# Build a new kicbase image
 yes|make push-kic-base-image
 
 # Abort with error message if above command failed
@@ -47,10 +53,12 @@ if [ $? -gt 0 ]; then
 	exit $?
 fi
 
+# Retrieve the sha from the new imnage
 docker pull $KICBASE_IMAGE_REGISTRIES
 fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $KICBASE_IMAGE_REGISTRIES)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
 
+# Display the message to the user
 message="Hi ${ghprbPullAuthorLoginMention},\\n\\nA new kicbase image is available, please update your PR with the new tag and SHA.\\nIn pkg/drivers/kic/types.go:\\n\\n\\t// Version is the current version of kic\\n\\tVersion = \\\"${KIC_VERSION}\\\"\\n\\t// SHA of the kic base image\\n\\tbaseImageSHA = \\\"${sha}\\\"\\n\\t// The name of the GCR kicbase repository\\n\\tgcrRepo = \\\"${KIC_REPO}\\\"\\nThen run \`make generate-docs\` to update our documentation to reference the new image."
 
 curl -s -H "Authorization: token ${access_token}" \
