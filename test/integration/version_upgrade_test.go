@@ -196,6 +196,13 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	if err != nil {
 		t.Fatalf("upgrade from %s to HEAD failed: %s: %v", legacyVersion, rr.Command(), err)
 	}
+
+	t.Run("MinikubeLogs", func(t *testing.T) {
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "logs"))
+		if err != nil {
+			t.Fatalf("minikube logs after upgrade to HEAD failed: %v", err)
+		}
+	})
 }
 
 // TestKubernetesUpgrade upgrades Kubernetes from oldest to newest
