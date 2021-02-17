@@ -66,10 +66,10 @@ type Interface struct {
 	IfaceMAC  string
 }
 
-// Inspect initialises IPv4 network parameters struct from given address.
+// inspect initialises IPv4 network parameters struct from given address.
 // address can be single address (like "192.168.17.42"), network address (like "192.168.17.0"), or in cidr form (like "192.168.17.42/24 or "192.168.17.0/24").
 // If addr is valid existsing interface address, network struct will also contain info about the respective interface.
-func Inspect(addr string) (*Parameters, error) {
+func inspect(addr string) (*Parameters, error) {
 	n := &Parameters{}
 
 	// extract ip from addr
@@ -147,9 +147,9 @@ func Inspect(addr string) (*Parameters, error) {
 	return n, nil
 }
 
-// IsSubnetTaken returns if local network subnet exists and any error occurred.
+// isSubnetTaken returns if local network subnet exists and any error occurred.
 // If will return false in case of an error.
-func IsSubnetTaken(subnet string) (bool, error) {
+func isSubnetTaken(subnet string) (bool, error) {
 	ips, err := net.InterfaceAddrs()
 	if err != nil {
 		return false, errors.Wrap(err, "listing local networks")
@@ -166,8 +166,8 @@ func IsSubnetTaken(subnet string) (bool, error) {
 	return false, nil
 }
 
-// IsSubnetPrivate returns if subnet is a private network.
-func IsSubnetPrivate(subnet string) bool {
+// isSubnetPrivate returns if subnet is a private network.
+func isSubnetPrivate(subnet string) bool {
 	for _, ipnet := range privateSubnets {
 		if ipnet.Contains(net.ParseIP(subnet)) {
 			return true
@@ -179,13 +179,13 @@ func IsSubnetPrivate(subnet string) bool {
 // FreeSubnet will try to find free private network beginning with startSubnet, incrementing it in steps up to number of tries.
 func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 	for try := 0; try < tries; try++ {
-		n, err := Inspect(startSubnet)
+		n, err := inspect(startSubnet)
 		if err != nil {
 			return nil, err
 		}
 		startSubnet = n.IP
-		if IsSubnetPrivate(startSubnet) {
-			taken, err := IsSubnetTaken(startSubnet)
+		if isSubnetPrivate(startSubnet) {
+			taken, err := isSubnetTaken(startSubnet)
 			if err != nil {
 				return nil, err
 			}
