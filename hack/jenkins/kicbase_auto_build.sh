@@ -28,7 +28,7 @@ docker pull $KICBASE_IMAGE_REGISTRIES
 fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $KICBASE_IMAGE_REGISTRIES)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
 
-message="Hi ${ghprbPullAuthorLoginMention},\\n\\nA new kicbase image is available, please update your PR with the new tag and SHA.\\nIn pkg/drivers/kic/types.go:\\n\\n\\t// Version is the current version of kic\\n\\tVersion = \\\"${KICBASE_IMAGE_REGISTRIES}\\\"\\n\\t// SHA of the kic base image\\n\\tbaseImageSHA = \\\"${sha}\\\"\\n"
+message="Hi ${ghprbPullAuthorLoginMention},\\n\\nA new kicbase image is available, please update your PR with the new tag and SHA.\\nIn pkg/drivers/kic/types.go:\\n\\n\\t// Version is the current version of kic\\n\\tVersion = \\\"${KIC_VERSION}\\\"\\n\\t// SHA of the kic base image\\n\\tbaseImageSHA = \\\"${sha}\\\"\\n"
 
 curl -s -H "Authorization: token ${access_token}" \
 	 -H "Accept: application/vnd.github.v3+json" \
