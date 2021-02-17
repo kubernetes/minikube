@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-func TestAuditReport(t *testing.T) {
+func TestReport(t *testing.T) {
 	f, err := ioutil.TempFile("", "audit.json")
 	if err != nil {
 		t.Fatalf("failed creating temporary file: %v", err)

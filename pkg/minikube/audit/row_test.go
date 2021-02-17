@@ -39,7 +39,7 @@ func TestRow(t *testing.T) {
 
 	r := newRow(c, a, u, v, st, et, p)
 
-	t.Run("TestNewRow", func(t *testing.T) {
+	t.Run("NewRow", func(t *testing.T) {
 		tests := []struct {
 			key  string
 			got  string
@@ -61,7 +61,7 @@ func TestRow(t *testing.T) {
 		}
 	})
 
-	t.Run("TestType", func(t *testing.T) {
+	t.Run("Type", func(t *testing.T) {
 		got := r.Type()
 		want := "io.k8s.sigs.minikube.audit"
 
@@ -70,7 +70,7 @@ func TestRow(t *testing.T) {
 		}
 	})
 
-	t.Run("TestToMap", func(t *testing.T) {
+	t.Run("ToMap", func(t *testing.T) {
 		m := r.toMap()
 
 		tests := []struct {
@@ -94,7 +94,7 @@ func TestRow(t *testing.T) {
 		}
 	})
 
-	t.Run("TestToField", func(t *testing.T) {
+	t.Run("ToFields", func(t *testing.T) {
 		got := r.toFields()
 		gotString := strings.Join(got, ",")
 		want := []string{c, a, p, u, v, stFormatted, etFormatted}
@@ -105,7 +105,7 @@ func TestRow(t *testing.T) {
 		}
 	})
 
-	t.Run("TestAssignFields", func(t *testing.T) {
+	t.Run("AssignFields", func(t *testing.T) {
 		l := fmt.Sprintf(`{"data":{"args":"%s","command":"%s","endTime":"%s","profile":"%s","startTime":"%s","user":"%s","version":"v0.17.1"},"datacontenttype":"application/json","id":"bc6ec9d4-0d08-4b57-ac3b-db8d67774768","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}`, a, c, etFormatted, p, stFormatted, u)
 
 		r := &row{}
