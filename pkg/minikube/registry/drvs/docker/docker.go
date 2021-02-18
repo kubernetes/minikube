@@ -166,7 +166,7 @@ func suggestFix(stderr string, err error) registry.State {
 		return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
 	}
 
-	if strings.Contains(stderr, "/pipe/docker_engine: The system cannot find the file specified.") && runtime.GOOS == "windows" {
+	if strings.Contains(stderr, "pipe.*docker_engine.*: The system cannot find the file specified.") && runtime.GOOS == "windows" {
 		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Start the Docker service. If Docker is already running, you may need to reset Docker to factory settings with: Settings > Reset.", Doc: "https://github.com/docker/for-win/issues/1825#issuecomment-450501157"}
 	}
 
