@@ -181,8 +181,10 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
 
 		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		// Disable swap by setting the value to match
-		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+		if memcgSwap {
+			// Disable swap by setting the value to match
+			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+		}
 
 		virtualization = "docker" // VIRTUALIZATION_DOCKER
 	}
