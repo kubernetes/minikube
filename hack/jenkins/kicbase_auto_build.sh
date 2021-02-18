@@ -26,7 +26,7 @@ KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f
 GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
 DH_REPO=kicbase/build
 export KIC_VERSION=$KV-$now-$ghprbPullId
-export KICBASE_IMAGE_REGISTRIES="${KIC_REPO}:${KIC_VERSION} ${DH_REPO}:${KIC_VERSION}"
+export KICBASE_IMAGE_REGISTRIES="${GCR_REPO}:${KIC_VERSION} ${DH_REPO}:${KIC_VERSION}"
 
 # Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
@@ -62,7 +62,7 @@ fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $KICBASE_IMAGE_REGI
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
 
 # Display the message to the user
-message="Hi ${ghprbPullAuthorLoginMention},\\n\\nA new kicbase image is available, please update your PR with the new tag and SHA.\\nIn pkg/drivers/kic/types.go:\\n\\n\\t// Version is the current version of kic\\n\\tVersion = \\\"${KIC_VERSION}\\\"\\n\\t// SHA of the kic base image\\n\\tbaseImageSHA = \\\"${sha}\\\"\\n\\t// The name of the GCR kicbase repository\\n\\tgcrRepo = \\\"${KIC_REPO}\\\"\\n\\t// The name of the Dockerhub kicbase repository\\n\\tdockerhubRepo = \\\"${DH_REPO}\\\"\\nThen run \`make generate-docs\` to update our documentation to reference the new image.\n\nAlternatively, run the following command and commit the changes:\\n\`\`\`\\n sed 's|Version = .*|Version = \\\"${KIC_VERSION}\\\"|;s|baseImageSHA = .*|baseImageSHA = \\\"${sha}\\\"|;s|gcrRepo = .*|gcrRepo = \\\"${KIC_REPO}\\\"|;s|dockerhubRepo = .*|dockerhubRepo = ${DH_REPO}|' pkg/drivers/kic/types.go > new-types.go; mv new-types.go pkg/drivers/kic/types.go; make generate-docs\\n\`\`\`"
+message="Hi ${ghprbPullAuthorLoginMention},\\n\\nA new kicbase image is available, please update your PR with the new tag and SHA.\\nIn pkg/drivers/kic/types.go:\\n\\n\\t// Version is the current version of kic\\n\\tVersion = \\\"${KIC_VERSION}\\\"\\n\\t// SHA of the kic base image\\n\\tbaseImageSHA = \\\"${sha}\\\"\\n\\t// The name of the GCR kicbase repository\\n\\tgcrRepo = \\\"${GCR_REPO}\\\"\\n\\t// The name of the Dockerhub kicbase repository\\n\\tdockerhubRepo = \\\"${DH_REPO}\\\"\\nThen run \`make generate-docs\` to update our documentation to reference the new image.\n\nAlternatively, run the following command and commit the changes:\\n\`\`\`\\n sed 's|Version = .*|Version = \\\"${KIC_VERSION}\\\"|;s|baseImageSHA = .*|baseImageSHA = \\\"${sha}\\\"|;s|gcrRepo = .*|gcrRepo = \\\"${GCR_REPO}\\\"|;s|dockerhubRepo = .*|dockerhubRepo = ${DH_REPO}|' pkg/drivers/kic/types.go > new-types.go; mv new-types.go pkg/drivers/kic/types.go; make generate-docs\\n\`\`\`"
 
 curl -s -H "Authorization: token ${access_token}" \
 	 -H "Accept: application/vnd.github.v3+json" \
