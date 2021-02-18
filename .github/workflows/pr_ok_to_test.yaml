@@ -150,7 +150,6 @@ jobs:
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     steps:
-      -
       - name: Install gopogh
         shell: bash
         run: |
