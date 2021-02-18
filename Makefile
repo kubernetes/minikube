@@ -631,7 +631,7 @@ storage-provisioner-image-%: out/storage-provisioner-%
 	docker build -t $(REGISTRY)/storage-provisioner-$*:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$* .
 
 
-X_DOCKER_BUILDER ?= kicbase-builder
+X_DOCKER_BUILDER ?= minikube-builder
 X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
 
 .PHONY: docker-multi-arch-builder
