@@ -1,7 +1,7 @@
 /*
 Copyright 2019 The Kubernetes Authors All rights reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under theApache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -29,6 +29,8 @@ const (
 	baseImageSHA = "1537fe47d39640aa11d6c819fe39cbba6e250872c8fe2bd7701c5171a32fbc4e"
 	// The name of the GCR kicbase repository
 	gcrRepo = "gcr.io/k8s-minikube/kicbase-builds"
+	// The name of the Dockerhub kicbase repository
+	dockerhubRepo = "kicbase/stable"
 )
 
 var (
@@ -39,7 +41,7 @@ var (
 	FallbackImages = []string{
 		// the fallback of BaseImage in case gcr.io is not available. stored in docker hub
 		// same image is push to https://github.com/kicbase/stable
-		fmt.Sprintf("kicbase/stable:%s@sha256:%s", Version, baseImageSHA),
+		fmt.Sprintf("%s:%s@sha256:%s", dockerhubRepo, Version, baseImageSHA),
 
 		// the fallback of BaseImage in case gcr.io is not available. stored in github packages https://github.com/kubernetes/minikube/packages/206071
 		// github packages docker does _NOT_ support pulling by sha as mentioned in the docs:
