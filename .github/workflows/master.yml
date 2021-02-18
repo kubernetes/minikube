@@ -1538,7 +1538,7 @@ jobs:
     runs-on: ubuntu-18.04
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_docker_ubuntu_arm64"
+      JOB_NAME: "pkg_install_amd64"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     steps:
@@ -1627,7 +1627,7 @@ jobs:
     runs-on: [ self-hosted, arm64 ]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_docker_ubuntu_arm64"
+      JOB_NAME: "pkg_install_arm64"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     steps:

@@ -1,0 +1,256 @@
+name: PR
+on:
+  pull_request:
+    paths:
+      - "**.go"
+      - "**.yml"
+      - "**.yaml"
+      - "Makefile"
+      - "!deploy/kicbase/**"
+      - "!deploy/iso/**"
+    types:
+      - labeled
+      - opened
+      - synchronize
+env:
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  # Runs before all other jobs
+  # builds the minikube binaries
+  build_minikube:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: NathanielHill/check-pr-label-action@v4.0.0
+        with:
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
+          valid-labels: 'ok-to-test'
+
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+      - name: Download Dependencies
+        run: go mod download
+      - name: Build Binaries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvirt-dev
+          make cross e2e-cross debs
+          cp -r test/integration/testdata ./out
+          whoami
+          echo github ref $GITHUB_REF
+          echo workflow $GITHUB_WORKFLOW
+          echo home $HOME
+          echo event name $GITHUB_EVENT_NAME
+          echo workspace $GITHUB_WORKSPACE
+          echo "end of debug stuff"
+          echo $(which jq)
+      - uses: actions/upload-artifact@v1
+        with:
+          name: minikube_binaries
+          path: out
+
+  pkg_install_amd64:
+    needs: [ build_minikube ]
+    runs-on: ubuntu-18.04
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "pkg_install_amd64"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+    steps:
+      - name: Install gopogh
+        shell: bash
+        run: |
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
+          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+
+      - name: Install tools
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y jq
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+
+      - name: Run Integration Test
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64  -test.run TestDebPackageInstall -test.timeout=10m -test.v -timeout-multiplier=1.5  2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: pkg_install_amd64
+          path: minikube_binaries/report
+
+      - name: The End Result - pkg_install_amd64
+        shell: bash
+        run: |
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 0 ];then echo "*** Failed to pass at least 20! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+
+  pkg_install_arm64:
+    needs: [ build_minikube ]
+    runs-on: [ self-hosted, arm64 ]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "pkg_install_arm64"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+    steps:
+      -
+      - name: Install gopogh
+        shell: bash
+        run: |
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-arm64
+          sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+
+      - name: Install tools
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y jq
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+
+      - name: Run Integration Test
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-arm64  -test.run TestDebPackageInstall -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-arm64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: pkg_install_arm64
+          path: minikube_binaries/report
+
+      - name: The End Result - pkg_install_arm64
+        shell: bash
+        run: |
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 0 ];then echo "*** Failed to pass at least 20! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+
+  # After all integration tests finished
+  # collect all the reports and upload them
+  upload_all_reports:
+    needs:
+      [
+          pkg_install_amd64,
+          pkg_install_arm64,
+      ]
+    runs-on: ubuntu-18.04
+    steps:
+      - name: download all reports
+        uses: actions/download-artifact@v2-preview
+      - name: upload all reports
+        shell: bash {0}
+        continue-on-error: true
+        run: |
+          mkdir -p all_reports
+          cp -r ./pkg_install_amd64 ./all_reports/
+          cp -r ./pkg_install_arm64 ./all_reports/
+      - uses: actions/upload-artifact@v1
+        with:
+          name: all_reports
+          path: all_reports
