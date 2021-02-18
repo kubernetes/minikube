@@ -25,7 +25,7 @@ jobs:
         uses: shioyang/check-pr-labels-on-push-action@v1.0.3
         with:
           github-token: '${{ secrets.GITHUB_TOKEN }}'
-          valid-labels: '["ok-to-test"]'
+          labels: '["ok-to-test"]'
 
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
