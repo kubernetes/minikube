@@ -52,13 +52,14 @@ yes|make push-kic-base-image
 
 # Abort with error message if above command failed
 if [ $? -gt 0 ]; then
+	ec=$?
 	curl -s -H "Authorization: token ${access_token}" \
                 -H "Accept: application/vnd.github.v3+json" \
                 -X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, please try again.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
-	exit $?
+	exit $ec
 fi
 
-# Retrieve the sha from the new imnage
+# Retrieve the sha from the new image
 docker pull $GCR_IMG
 fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $KICBASE_IMAGE_REGISTRIES)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
