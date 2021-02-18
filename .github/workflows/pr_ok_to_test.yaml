@@ -12,6 +12,11 @@ on:
       - labeled
       - opened
       - synchronize
+  label:
+    types:
+      - created
+      - edited
+      - deleted
 env:
   GOPROXY: https://proxy.golang.org
 
