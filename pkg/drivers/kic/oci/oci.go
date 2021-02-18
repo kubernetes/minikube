@@ -107,6 +107,24 @@ func PrepareContainerNode(p CreateParams) error {
 	return nil
 }
 
+func hasMemorySwapCgroup() bool {
+	memcgSwap := true
+	if runtime.GOOS == "linux" {
+		var memoryswap string
+		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
+			memoryswap = "/sys/fs/cgroup/memory/memory.swap.max"
+		} else {
+			memoryswap = "/sys/fs/cgroup/memory/memsw.limit_in_bytes"
+		}
+		if _, err := os.Stat(memoryswap); os.IsNotExist(err) {
+			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
+			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
+			memcgSwap = false
+		}
+	}
+	return memcgSwap
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
@@ -152,14 +170,7 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
 
-	memcgSwap := true
-	if runtime.GOOS == "linux" {
-		if _, err := os.Stat("/sys/fs/cgroup/memory/memsw.limit_in_bytes"); os.IsNotExist(err) {
-			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
-			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			memcgSwap = false
-		}
-	}
+	memcgSwap := hasMemorySwapCgroup()
 
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	var virtualization string
