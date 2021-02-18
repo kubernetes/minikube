@@ -40,9 +40,9 @@ type NUMA struct {
 	CPUTopology string
 }
 
-// GetNUMAXml generate numa xml
+// NumaXml generate numa xml
 // evenly distributed cpu core & memory to each numa node
-func GetNUMAXml(cpu, memory, numaCount int) (string, error) {
+func NumaXml(cpu, memory, numaCount int) (string, error) {
 	if numaCount < 1 {
 		return "", fmt.Errorf("numa node count must >= 1")
 	}

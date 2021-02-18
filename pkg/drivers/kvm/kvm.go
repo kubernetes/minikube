@@ -320,7 +320,7 @@ func (d *Driver) Create() (err error) {
 	}
 
 	if d.NUMANodeCount > 1 {
-		NUMAXML, err := GetNUMAXml(d.CPU, d.Memory, d.NUMANodeCount)
+		NUMAXML, err := NumaXml(d.CPU, d.Memory, d.NUMANodeCount)
 		if err != nil {
 			return errors.Wrap(err, "creating NUMA XML")
 		}

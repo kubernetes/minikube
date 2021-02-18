@@ -22,12 +22,12 @@ import (
 )
 
 func TestGetNUMAXml(t *testing.T) {
-	_, err := GetNUMAXml(1, 1024, 0)
+	_, err := NumaXml(1, 1024, 0)
 	if err == nil {
 		t.Errorf("check invalid numa count failed: %s", err)
 	}
 
-	xml, err := GetNUMAXml(10, 10240, 8)
+	xml, err := NumaXml(10, 10240, 8)
 	expXML := `<numa>
   <cell id='0' cpus='0,1' memory='1280' unit='MiB'/>
   <cell id='1' cpus='2,3' memory='1280' unit='MiB'/>

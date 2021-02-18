@@ -194,7 +194,7 @@ func initDriverFlags() {
 	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (kvm2 driver only)")
 	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
 	startCmd.Flags().Bool(kvmHidden, false, "Hide the hypervisor signature from the guest in minikube (kvm2 driver only)")
-	startCmd.Flags().Int(kvmNUMACount, 1, "Simulate numa node count in minikube. (kvm2 driver only)")
+	startCmd.Flags().Int(kvmNUMACount, 1, "Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only)")
 
 	// virtualbox
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (virtualbox driver only)")
@@ -311,6 +311,19 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 
 		if !driver.IsKIC(drvName) && viper.GetString(network) != "" {
 			out.WarningT("--network flag is only valid with the docker/podman drivers, it will be ignored")
+		}
+
+		if viper.GetInt(kvmNUMACount) < 1 || viper.GetInt(kvmNUMACount) > 8 {
+			exit.Message(reason.Usage, "--kvm-numa-count range is 1-8")
+		}
+		if viper.GetInt(kvmNUMACount) > 1 {
+			v, err := pkgutil.ParseKubernetesVersion(k8sVersion)
+			if err != nil {
+				exit.Message(reason.Usage, "invalid kubernetes version")
+			}
+			if v.LT(semver.Version{Major: 1,Minor: 18}){
+				exit.Message(reason.Usage, "numa node is only supported on k8s v1.18 and later")
+			}
 		}
 
 		cc = config.ClusterConfig{
