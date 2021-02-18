@@ -26,7 +26,9 @@ KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f
 GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
 DH_REPO=kicbase/build
 export KIC_VERSION=$KV-$now-$ghprbPullId
-export KICBASE_IMAGE_REGISTRIES="${GCR_REPO}:${KIC_VERSION} ${DH_REPO}:${KIC_VERSION}"
+GCR_IMG=${GCR_REPO}:${KIC_VERSION}
+DH_IMG=${DH_REPO}:${KIC_VERSION}
+export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
 
 # Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
@@ -57,7 +59,7 @@ if [ $? -gt 0 ]; then
 fi
 
 # Retrieve the sha from the new imnage
-docker pull $KICBASE_IMAGE_REGISTRIES
+docker pull $GCR_IMG
 fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $KICBASE_IMAGE_REGISTRIES)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
 
