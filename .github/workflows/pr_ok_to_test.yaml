@@ -27,12 +27,6 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     runs-on: ubuntu-18.04
     steps:
-      - name: Check ok-to-test label
-        uses: shioyang/check-pr-labels-on-push-action@v1.0.3
-        with:
-          github-token: '${{ secrets.GITHUB_TOKEN }}'
-          labels: '["ok-to-test"]'
-
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
