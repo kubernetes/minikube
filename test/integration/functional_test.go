@@ -797,7 +797,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
-	expectedWords := []string{"apiserver", "Linux", "kubelet"}
+	expectedWords := []string{"apiserver", "Linux", "kubelet", "Audit"}
 	switch ContainerRuntime() {
 	case "docker":
 		expectedWords = append(expectedWords, "Docker")

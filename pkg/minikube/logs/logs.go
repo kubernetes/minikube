@@ -29,6 +29,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -188,9 +189,26 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		}
 	}
 
+	if err := outputAudit(lines); err != nil {
+		klog.Error(err)
+		failed = append(failed, "audit")
+	}
+
 	if len(failed) > 0 {
 		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
 	}
+	return nil
+}
+
+// outputAudit displays the audit logs.
+func outputAudit(lines int) error {
+	out.Step(style.Empty, "")
+	out.Step(style.Empty, "==> Audit <==")
+	r, err := audit.Report(lines)
+	if err != nil {
+		return fmt.Errorf("failed to create audit report: %v", err)
+	}
+	out.Step(style.Empty, r.ASCIITable())
 	return nil
 }
 

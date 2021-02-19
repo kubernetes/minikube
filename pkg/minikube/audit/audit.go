@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/version"
 )
 
 // userName pulls the user flag, if empty gets the os username.
@@ -54,8 +55,8 @@ func Log(startTime time.Time) {
 	if !shouldLog() {
 		return
 	}
-	e := newEntry(os.Args[1], args(), userName(), startTime, time.Now())
-	if err := appendToLog(e); err != nil {
+	r := newRow(os.Args[1], args(), userName(), version.GetVersion(), startTime, time.Now())
+	if err := appendToLog(r); err != nil {
 		klog.Error(err)
 	}
 }
