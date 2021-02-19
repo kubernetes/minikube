@@ -598,6 +598,9 @@ func dashboardURL(b *bufio.Reader) (string, error) {
 			return t, nil
 		}
 	}
+	if err := s.Err(); err != nil {
+		return "", fmt.Errorf("failed reading input: %v", err)
+	}
 	return "", fmt.Errorf("output didn't produce a URL")
 }
 
