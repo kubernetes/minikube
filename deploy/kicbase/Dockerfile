@@ -19,7 +19,7 @@
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20201106
+FROM ubuntu:focal-20210119
 
 ARG BUILDKIT_VERSION="v0.8.1"
 
@@ -46,7 +46,7 @@ COPY entrypoint /usr/local/bin/entrypoint
 # - disabling kmsg in journald (these log entries would be confusing)
 #
 # Next we ensure the /etc/kubernetes/manifests directory exists. Normally
-# a kubeadm debain / rpm package would ensure that this exists but we install
+# a kubeadm debian / rpm package would ensure that this exists but we install
 # freshly built binaries directly when we build the node image.
 #
 # Finally we adjust tempfiles cleanup to be 1 minute after "boot" instead of 15m
@@ -74,6 +74,8 @@ RUN echo "Ensuring scripts are executable ..." \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \
     && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
+ && echo "Disabling udev" \
+    && systemctl disable udev.service \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
@@ -87,7 +89,7 @@ STOPSIGNAL SIGRTMIN+3
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
 ARG COMMIT_SHA
-# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/2c0eee40/images/base/Dockerfile
+# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/1da0c5e6/images/base/Dockerfile
 # which is an ubuntu 20.04 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
 USER root
