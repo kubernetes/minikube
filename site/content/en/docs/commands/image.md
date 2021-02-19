@@ -1,21 +1,17 @@
 ---
-title: "profile"
+title: "image"
 description: >
-  Get or list the current profiles (clusters)
+  Load a local image into minikube
 ---
 
 
-## minikube profile
+## minikube image
 
-Get or list the current profiles (clusters)
+Load a local image into minikube
 
 ### Synopsis
 
-profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`
-
-```shell
-minikube profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikube profile by running `minikube profile default` [flags]
-```
+Load a local image into minikube
 
 ### Options inherited from parent commands
 
@@ -39,17 +35,17 @@ minikube profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikub
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube profile help
+## minikube image help
 
 Help about any command
 
 ### Synopsis
 
 Help provides help for any command in the application.
-Simply type profile help [path to command] for full details.
+Simply type image help [path to command] for full details.
 
 ```shell
-minikube profile help [command] [flags]
+minikube image help [command] [flags]
 ```
 
 ### Options inherited from parent commands
@@ -74,23 +70,16 @@ minikube profile help [command] [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube profile list
+## minikube image load
 
-Lists all minikube profiles.
+Load a local image into minikube
 
 ### Synopsis
 
-Lists all valid minikube profiles and detects all possible invalid profiles.
+Load a local image into minikube
 
 ```shell
-minikube profile list [flags]
-```
-
-### Options
-
-```
-  -l, --light           If true, returns list of profiles faster by skipping validating the status of the cluster.
-  -o, --output string   The output format. One of 'json', 'table' (default "table")
+minikube image load [flags]
 ```
 
 ### Options inherited from parent commands

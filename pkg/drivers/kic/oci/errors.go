@@ -54,6 +54,9 @@ var ErrDaemonInfo = errors.New("daemon info not responding")
 // ErrInsufficientDockerStorage is thrown when there is not more storage for docker
 var ErrInsufficientDockerStorage = &FailFastError{errors.New("insufficient docker storage, no space left on device")}
 
+// ErrVolumeNotFound is when given volume was not found
+var ErrVolumeNotFound = errors.New("kic volume not found")
+
 // ErrNetworkSubnetTaken is thrown when a subnet is taken by another network
 var ErrNetworkSubnetTaken = errors.New("subnet is taken")
 

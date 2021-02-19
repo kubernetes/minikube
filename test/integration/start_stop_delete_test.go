@@ -79,7 +79,7 @@ func TestStartStop(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 				defer Cleanup(t, profile, cancel)
 				type validateStartStopFunc func(context.Context, *testing.T, string, string, string, []string)
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
