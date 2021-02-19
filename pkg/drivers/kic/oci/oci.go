@@ -186,6 +186,10 @@ func CreateContainerNode(p CreateParams) error {
 	memcgSwap := hasMemorySwapCgroup()
 	memcg := hasMemoryCgroup()
 
+	if !memcgSwap || !memcg {
+		out.WarningT("Cgroup v2 does not allow setting memory, if you want to set memory, please modify your Grub as instructed in https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
+	}
+
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	var virtualization string
 	if p.OCIBinary == Podman { // enable execing in /var
