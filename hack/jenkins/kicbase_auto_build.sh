@@ -27,11 +27,11 @@ now=$(date +%s)
 KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
 GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
 DH_REPO=kicbase/build
-GH_REPO=docker.pkg.github.com/kubernetes/minikube/kicbase-build
+GH_REPO=kicbase-build
 export KIC_VERSION=$KV-$now-$ghprbPullId
 GCR_IMG=${GCR_REPO}:${KIC_VERSION}
 DH_IMG=${DH_REPO}:${KIC_VERSION}
-GH_IMG=${GH_REPO}:${KIC_VERSION}
+GH_IMG=docker.pkg.github.com/kubernetes/minikube/${GH_REPO}:${KIC_VERSION}
 export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG} ${GH_IMG}"
 
 # Let's make sure we have the newest kicbase reference
