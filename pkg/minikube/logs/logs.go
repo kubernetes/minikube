@@ -232,6 +232,9 @@ func outputLastStart() error {
 	for s.Scan() {
 		out.Step(style.Empty, s.Text())
 	}
+	if err := s.Err(); err != nil {
+		return fmt.Errorf("failed to read file %s: %v", fp, err)
+	}
 	return nil
 }
 
