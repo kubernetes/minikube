@@ -145,10 +145,14 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	wg.Add(1)
 	go func() {
-		if err := CacheAndLoadImagesInConfig(); err != nil {
+		defer wg.Done()
+		profile, err := config.LoadProfile(starter.Cfg.Name)
+		if err != nil {
+			out.FailureT("Unable to load profile: {{.error}}", out.V{"error": err})
+		}
+		if err := CacheAndLoadImagesInConfig([]*config.Profile{profile}); err != nil {
 			out.FailureT("Unable to push cached images: {{.error}}", out.V{"error": err})
 		}
-		wg.Done()
 	}()
 
 	// enable addons, both old and new!
@@ -210,7 +214,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 // Provision provisions the machine/container for the node
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
-	name := driver.MachineName(*cc, *n)
+	name := config.MachineName(*cc, *n)
 	if apiServer {
 		out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
@@ -241,9 +245,11 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, kv semver.Version) cruntime.Manager {
 	co := cruntime.Config{
 		Type:              cc.KubernetesConfig.ContainerRuntime,
+		Socket:            cc.KubernetesConfig.CRISocket,
 		Runner:            runner,
 		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
+		InsecureRegistry:  cc.InsecureRegistry,
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
@@ -277,11 +283,53 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}
 
+	// Wait for the CRI to be "live", before returning it
+	err = waitForCRISocket(runner, cr.SocketPath(), 60, 1)
+	if err != nil {
+		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
+	}
+
 	return cr
 }
 
 func forceSystemd() bool {
 	return viper.GetBool("force-systemd") || os.Getenv(constants.MinikubeForceSystemdEnv) == "true"
+}
+
+func pathExists(runner cruntime.CommandRunner, path string) (bool, error) {
+	_, err := runner.RunCmd(exec.Command("stat", path))
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
+
+	if socket == "" || socket == "/var/run/dockershim.sock" {
+		return nil
+	}
+
+	klog.Infof("Will wait %ds for socket path %s", wait, socket)
+
+	chkPath := func() error {
+		e, err := pathExists(runner, socket)
+		if err != nil {
+			return err
+		}
+		if !e {
+			return &retry.RetriableError{Err: err}
+		}
+		return nil
+	}
+	if err := retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
@@ -377,7 +425,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, del
 	klog.Warningf("error starting host: %v", err)
 	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
 	if !exists {
-		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
+		err := machine.DeleteHost(api, config.MachineName(*cc, *n))
 		if err != nil {
 			klog.Warningf("delete host: %v", err)
 		}
@@ -396,7 +444,7 @@ func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, del
 	if delOnFail {
 		klog.Info("Deleting existing host since delete-on-failure was set.")
 		// Delete the failed existing host
-		err := machine.DeleteHost(api, driver.MachineName(*cc, *n))
+		err := machine.DeleteHost(api, config.MachineName(*cc, *n))
 		if err != nil {
 			klog.Warningf("delete host: %v", err)
 		}

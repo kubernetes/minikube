@@ -16,18 +16,30 @@ limitations under the License.
 
 package driver
 
-import "os/exec"
+import (
+	"os/exec"
+	"runtime"
+)
 
 // supportedDrivers is a list of supported drivers on Darwin.
-var supportedDrivers = []string{
-	VirtualBox,
-	Parallels,
-	VMwareFusion,
-	HyperKit,
-	VMware,
-	Docker,
-	Podman,
-}
+var supportedDrivers []string = func() []string {
+	if runtime.GOARCH == "arm64" {
+		// on darwin/arm64 only docker and ssh are supported yet
+		return []string{
+			Docker,
+			SSH,
+		}
+	}
+	return []string{
+		VirtualBox,
+		Parallels,
+		VMwareFusion,
+		HyperKit,
+		VMware,
+		Docker,
+		SSH,
+	}
+}()
 
 func VBoxManagePath() string {
 	cmd := "VBoxManage"

@@ -95,7 +95,7 @@ const (
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
 	minUsableMem            = 1800 // Kubernetes (kubeadm) will not start with less
-	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
+	minRecommendedMem       = 1900 // Warn at no lower than existing configurations
 	minimumCPUS             = 2
 	minimumDiskSize         = 2000
 	autoUpdate              = "auto-update-drivers"
@@ -110,6 +110,12 @@ const (
 	network                 = "network"
 	startNamespace          = "namespace"
 	trace                   = "trace"
+	sshIPAddress            = "ssh-ip-address"
+	sshSSHUser              = "ssh-user"
+	sshSSHKey               = "ssh-key"
+	sshSSHPort              = "ssh-port"
+	defaultSSHUser          = "root"
+	defaultSSHPort          = 22
 )
 
 var (
@@ -136,7 +142,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(kicBaseImage, kic.BaseImage, "The base image to use for docker/podman drivers. Intended for local development.")
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
-	startCmd.Flags().String(containerRuntime, "docker", fmt.Sprintf("The container runtime to be used (%s).", strings.Join(cruntime.ValidRuntimes(), ", ")))
+	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used (%s).", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
 	startCmd.Flags().StringSliceVar(&config.AddonList, "addons", nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
@@ -152,7 +158,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
-	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.")
+	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Defaults to false.")
 	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Only available with the docker/podman drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
@@ -221,6 +227,12 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringArrayVar(&config.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&config.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+
+	// ssh
+	startCmd.Flags().String(sshIPAddress, "", "IP address (ssh driver only)")
+	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
+	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
+	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
@@ -335,6 +347,10 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			NatNicType:              viper.GetString(natNicType),
 			StartHostTimeout:        viper.GetDuration(waitTimeout),
 			ExposedPorts:            viper.GetStringSlice(ports),
+			SSHIPAddress:            viper.GetString(sshIPAddress),
+			SSHUser:                 viper.GetString(sshSSHUser),
+			SSHKey:                  viper.GetString(sshSSHKey),
+			SSHPort:                 viper.GetInt(sshSSHPort),
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),

@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bytes"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -304,5 +305,39 @@ MINIKUBE_ACTIVE_DOCKERD
 			}
 
 		})
+	}
+}
+
+func TestValidDockerProxy(t *testing.T) {
+	var tests = []struct {
+		proxy   string
+		isValid bool
+	}{
+		{
+			proxy:   "socks5://192.168.0.1:1080",
+			isValid: true,
+		},
+		{
+			proxy:   "",
+			isValid: true,
+		},
+		{
+			proxy:   "socks://192.168.0.1:1080",
+			isValid: false,
+		},
+		{
+			proxy:   "http://192.168.0.1:1080",
+			isValid: false,
+		},
+	}
+
+	for _, tc := range tests {
+		os.Setenv("ALL_PROXY", tc.proxy)
+		valid := isValidDockerProxy("ALL_PROXY")
+		if tc.isValid && valid != tc.isValid {
+			t.Errorf("Expect %#v to be valid docker proxy", tc.proxy)
+		} else if !tc.isValid && valid != tc.isValid {
+			t.Errorf("Expect %#v to be invalid docker proxy", tc.proxy)
+		}
 	}
 }

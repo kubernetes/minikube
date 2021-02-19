@@ -237,7 +237,7 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 			statuses = append(statuses, st)
 		} else {
 			for _, n := range cc.Nodes {
-				machineName := driver.MachineName(*cc, n)
+				machineName := config.MachineName(*cc, n)
 				klog.Infof("checking status of %s ...", machineName)
 				st, err := nodeStatus(api, *cc, n)
 				klog.Infof("%s status: %+v", machineName, st)
@@ -301,7 +301,7 @@ func exitCode(statuses []*Status) int {
 // nodeStatus looks up the status of a node
 func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 	controlPlane := n.ControlPlane
-	name := driver.MachineName(cc, n)
+	name := config.MachineName(cc, n)
 
 	st := &Status{
 		Name:       name,

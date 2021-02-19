@@ -20,12 +20,13 @@
 # The script expects the following env variables:
 # OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
 # VM_DRIVER: the driver to use for the test
+# CONTAINER_RUNTIME: the container runtime to use for the test
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
-readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
+readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${CONTAINER_RUNTIME}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
@@ -52,6 +53,7 @@ echo ""
 echo "arch:      ${OS_ARCH}"
 echo "build:     ${MINIKUBE_LOCATION}"
 echo "driver:    ${VM_DRIVER}"
+echo "runtime:   ${CONTAINER_RUNTIME}"
 echo "job:       ${JOB_NAME}"
 echo "test home: ${TEST_HOME}"
 echo "sudo:      ${SUDO_PREFIX}"
@@ -298,6 +300,12 @@ if test -f "${TEST_OUT}"; then
   rm "${TEST_OUT}" || true # clean up previous runs of same build
 fi
 touch "${TEST_OUT}"
+
+if [ ! -z "${CONTAINER_RUNTIME}" ]
+then
+    EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
+fi
+
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=${TIMEOUT} -test.v \
@@ -352,9 +360,9 @@ fi
 
 echo ">> Installing gopogh"
 if [ "$(uname)" != "Darwin" ]; then
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
 else
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.3.0/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
 fi
 
 echo ">> Running gopogh"
@@ -385,8 +393,8 @@ if grep -q html "$HTML_OUT"; then
 fi
 
 echo ">> Cleaning up after ourselves ..."
-${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
-${SUDO_PREFIX}${MINIKUBE_BIN} delete --all --purge >/dev/null 2>/dev/null || true
+timeout 3m ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
+timeout 5m ${SUDO_PREFIX}${MINIKUBE_BIN} delete --all --purge >/dev/null 2>/dev/null || true
 cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true

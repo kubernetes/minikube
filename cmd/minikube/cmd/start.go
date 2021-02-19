@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -35,8 +36,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/cpu"
-	gopshost "github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/cpu"
+	gopshost "github.com/shirou/gopsutil/v3/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -130,7 +131,7 @@ func platform() string {
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
-
+	ctx := context.Background()
 	out.SetJSON(outputFormat == "json")
 	if err := pkgtrace.Initialize(viper.GetString(trace)); err != nil {
 		exit.Message(reason.Usage, "error initializing tracing: {{.Error}}", out.V{"Error": err.Error()})
@@ -176,6 +177,8 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	if existing != nil {
 		upgradeExistingConfig(existing)
+	} else {
+		validateProfileName()
 	}
 
 	validateSpecifiedDriver(existing)
@@ -217,7 +220,7 @@ func runStart(cmd *cobra.Command, args []string) {
 					klog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
 				}
 
-				err = deleteProfile(profile)
+				err = deleteProfile(ctx, profile)
 				if err != nil {
 					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 				}
@@ -248,17 +251,6 @@ func runStart(cmd *cobra.Command, args []string) {
 					"new":    mount,
 					"old":    old,
 				})
-			}
-		}
-
-		if existing.KubernetesConfig.ContainerRuntime == "crio" {
-			// Stop and start again if it's crio because it's broken above v1.17.3
-			out.WarningT("Due to issues with CRI-O post v1.17.3, we need to restart your cluster.")
-			out.WarningT("See details at https://github.com/kubernetes/minikube/issues/8861")
-			stopProfile(existing.Name)
-			starter, err = provisionWithDriver(cmd, ds, existing)
-			if err != nil {
-				exitGuestProvision(err)
 			}
 		}
 	}
@@ -306,7 +298,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		os.Exit(0)
 	}
 
-	if driver.IsVM(driverName) {
+	if driver.IsVM(driverName) && !driver.IsSSH(driverName) {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
 			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
@@ -480,7 +472,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
 		}
 
-		err = deleteProfile(profile)
+		err = deleteProfile(context.Background(), profile)
 		if err != nil {
 			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": existing.Name})
 		}
@@ -571,7 +563,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		}
 		ds := driver.Status(d)
 		if ds.Name == "" {
-			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
 		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
@@ -581,7 +573,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	if d := viper.GetString("vm-driver"); d != "" {
 		ds := driver.Status(viper.GetString("vm-driver"))
 		if ds.Name == "" {
-			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
 		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds, nil, true
@@ -625,7 +617,7 @@ func hostDriver(existing *config.ClusterConfig) string {
 		klog.Warningf("Unable to get control plane from existing config: %v", err)
 		return existing.Driver
 	}
-	machineName := driver.MachineName(*existing, cp)
+	machineName := config.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
 		klog.Warningf("api.Load failed for %s: %v", machineName, err)
@@ -636,6 +628,25 @@ func hostDriver(existing *config.ClusterConfig) string {
 	}
 
 	return h.Driver.DriverName()
+}
+
+// validateProfileName makes sure that new profile name not duplicated with any of machine names in existing multi-node clusters.
+func validateProfileName() {
+	profiles, err := config.ListValidProfiles()
+	if err != nil {
+		exit.Message(reason.InternalListConfig, "Unable to list profiles: {{.error}}", out.V{"error": err})
+	}
+	for _, p := range profiles {
+		for _, n := range p.Config.Nodes {
+			machineName := config.MachineName(*p.Config, n)
+			if ClusterFlagValue() == machineName {
+				out.WarningT("Profile name '{{.name}}' is duplicated with machine name '{{.machine}}' in profile '{{.profile}}'", out.V{"name": ClusterFlagValue(),
+					"machine": machineName,
+					"profile": p.Name})
+				exit.Message(reason.Usage, "Profile name should be unique")
+			}
+		}
+	}
 }
 
 // validateSpecifiedDriver makes sure that if a user has passed in a driver
@@ -668,6 +679,20 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
+	out.WarningT("Deleting existing cluster {{.name}} with different driver {{.driver_name}} due to --delete-on-failure flag set by the user. ", out.V{"name": existing.Name, "driver_name": old})
+	if viper.GetBool(deleteOnFailure) {
+		// Start failed, delete the cluster
+		profile, err := config.LoadProfile(existing.Name)
+		if err != nil {
+			out.ErrT(style.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": existing.Name})
+		}
+
+		err = deleteProfile(context.Background(), profile)
+		if err != nil {
+			out.WarningT("Failed to delete cluster {{.name}}.", out.V{"name": existing.Name})
+		}
+	}
+
 	exit.Advice(
 		reason.GuestDrvMismatch,
 		`The existing "{{.name}}" cluster was created using the "{{.old}}" driver, which is incompatible with requested "{{.new}}" driver.`,
@@ -687,7 +712,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
 	klog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": runtime.GOOS, "arch": runtime.GOARCH})
 	}
 
 	// if we are only downloading artifacts for a driver, we can stop validation here
@@ -726,7 +751,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": name, "error": st.Error})
 	}
 
-	id := fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	id := st.Reason
+	if id == "" {
+		id = fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+	}
+
 	code := reason.ExProviderUnavailable
 
 	if !st.Running {
@@ -837,7 +866,7 @@ func validateUser(drvName string) {
 
 // memoryLimits returns the amount of memory allocated to the system and hypervisor, the return value is in MiB
 func memoryLimits(drvName string) (int, int, error) {
-	info, cpuErr, memErr, diskErr := machine.CachedHostInfo()
+	info, cpuErr, memErr, diskErr := machine.LocalHostInfo()
 	if cpuErr != nil {
 		klog.Warningf("could not get system cpu info while verifying memory limits, which might be okay: %v", cpuErr)
 	}
@@ -956,13 +985,13 @@ func validateRequestedMemorySize(req int, drvName string) {
 	}
 }
 
-// validateCPUCount validates the cpu count matches the minimum recommended
+// validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
 func validateCPUCount(drvName string) {
 	var cpuCount int
 	if driver.BareMetal(drvName) {
 
-		// Uses the gopsutil cpu package to count the number of physical cpu cores
-		ci, err := cpu.Counts(false)
+		// Uses the gopsutil cpu package to count the number of logical cpu cores
+		ci, err := cpu.Counts(true)
 		if err != nil {
 			klog.Warningf("Unable to get CPU info: %v", err)
 		} else {
@@ -988,6 +1017,22 @@ func validateCPUCount(drvName string) {
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}
 
+	}
+
+	if si.CPUs < cpuCount {
+
+		if driver.IsDockerDesktop(drvName) {
+			out.Step(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
+			if runtime.GOOS == "darwin" {
+				out.Step(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`, out.V{"driver_name": drvName})
+			}
+			if runtime.GOOS == "windows" {
+				out.String("\n\t")
+				out.Step(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`, out.V{"driver_name": drvName})
+			}
+		}
+
+		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": si.CPUs})
 	}
 
 	// looks good
@@ -1075,6 +1120,20 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 			if _, err := exec.LookPath("conntrack"); err != nil {
 				exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
+			}
+		}
+	}
+
+	if driver.IsSSH(drvName) {
+		sshIPAddress := viper.GetString(sshIPAddress)
+		if sshIPAddress == "" {
+			exit.Message(reason.Usage, "No IP address provided. Try specifying --ssh-ip-address, or see https://minikube.sigs.k8s.io/docs/drivers/ssh/")
+		}
+
+		if net.ParseIP(sshIPAddress) == nil {
+			_, err := net.LookupIP(sshIPAddress)
+			if err != nil {
+				exit.Error(reason.Usage, "Could not resolve IP address", err)
 			}
 		}
 	}

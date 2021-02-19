@@ -557,7 +557,7 @@ func TestDisable(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"docker", []string{"sudo", "systemctl", "stop", "-f", "docker"}},
+		{"docker", []string{"sudo", "systemctl", "stop", "-f", "docker.socket", "sudo", "systemctl", "stop", "-f", "docker"}},
 		{"crio", []string{"sudo", "systemctl", "stop", "-f", "crio"}},
 		{"containerd", []string{"sudo", "systemctl", "stop", "-f", "containerd"}},
 	}

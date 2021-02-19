@@ -43,8 +43,8 @@ import (
 // if there no containers found with the given 	label, it will return nil
 func DeleteContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
-
-	cs, err := ListContainersByLabel(ociBin, label)
+	ctx := context.Background()
+	cs, err := ListContainersByLabel(ctx, ociBin, label)
 	if err != nil {
 		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
@@ -75,7 +75,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 }
 
 // DeleteContainer deletes a container by ID or Name
-func DeleteContainer(ociBin string, name string) error {
+func DeleteContainer(ctx context.Context, ociBin string, name string) error {
 	_, err := ContainerStatus(ociBin, name)
 	if err == context.DeadlineExceeded {
 		out.WarningT("{{.ocibin}} is taking an unsually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
@@ -87,7 +87,7 @@ func DeleteContainer(ociBin string, name string) error {
 		klog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
 
-	if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", name)); err != nil {
+	if _, err := runCmd(exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)); err != nil {
 		return errors.Wrapf(err, "delete %s", name)
 	}
 	return nil
@@ -100,11 +100,43 @@ func PrepareContainerNode(p CreateParams) error {
 		return errors.Wrapf(err, "creating volume for %s container", p.Name)
 	}
 	klog.Infof("Successfully created a %s volume %s", p.OCIBinary, p.Name)
-	if err := prepareVolume(p.OCIBinary, p.Image, p.Name); err != nil {
+	if err := prepareVolumeSideCar(p.OCIBinary, p.Image, p.Name); err != nil {
 		return errors.Wrapf(err, "preparing volume for %s container", p.Name)
 	}
 	klog.Infof("Successfully prepared a %s volume %s", p.OCIBinary, p.Name)
 	return nil
+}
+
+func hasMemoryCgroup() bool {
+	memcg := true
+	if runtime.GOOS == "linux" {
+		var memory string
+		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
+			memory = "/sys/fs/cgroup/memory/memsw.limit_in_bytes"
+		}
+		if _, err := os.Stat(memory); os.IsNotExist(err) {
+			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
+			out.WarningT("Cgroup v2 does not allow setting memory, if you want to set memory, please modify your Grub as instructed in https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
+			memcg = false
+		}
+	}
+	return memcg
+}
+
+func hasMemorySwapCgroup() bool {
+	memcgSwap := true
+	if runtime.GOOS == "linux" {
+		var memoryswap string
+		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
+			memoryswap = "/sys/fs/cgroup/memory/memory.swap.max"
+		}
+		if _, err := os.Stat(memoryswap); os.IsNotExist(err) {
+			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
+			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
+			memcgSwap = false
+		}
+	}
+	return memcgSwap
 }
 
 // CreateContainerNode creates a new container node
@@ -152,14 +184,8 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
 
-	memcgSwap := true
-	if runtime.GOOS == "linux" {
-		if _, err := os.Stat("/sys/fs/cgroup/memory/memsw.limit_in_bytes"); os.IsNotExist(err) {
-			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
-			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			memcgSwap = false
-		}
-	}
+	memcgSwap := hasMemorySwapCgroup()
+	memcg := hasMemoryCgroup()
 
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	var virtualization string
@@ -168,9 +194,11 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 
 		if memcgSwap {
-			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-			// Disable swap by setting the value to match
 			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+		}
+
+		if memcg {
+			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 		}
 
 		virtualization = "podman" // VIRTUALIZATION_PODMAN
@@ -180,9 +208,13 @@ func CreateContainerNode(p CreateParams) error {
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
 
-		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		// Disable swap by setting the value to match
-		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+		if memcg {
+			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+		}
+		if memcgSwap {
+			// Disable swap by setting the value to match
+			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+		}
 
 		virtualization = "docker" // VIRTUALIZATION_DOCKER
 	}
@@ -373,7 +405,7 @@ func IsCreatedByMinikube(ociBin string, nameOrID string) bool {
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
 func ListOwnedContainers(ociBin string) ([]string, error) {
-	return ListContainersByLabel(ociBin, ProfileLabelKey)
+	return ListContainersByLabel(context.Background(), ociBin, ProfileLabelKey)
 }
 
 // inspect return low-level information on containers
@@ -503,8 +535,8 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 }
 
 // ListContainersByLabel returns all the container names with a specified label
-func ListContainersByLabel(ociBin string, label string, warnSlow ...bool) ([]string, error) {
-	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
+func ListContainersByLabel(ctx context.Context, ociBin string, label string, warnSlow ...bool) ([]string, error) {
+	rr, err := runCmd(exec.CommandContext(ctx, ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
 	if err != nil {
 		return nil, err
 	}

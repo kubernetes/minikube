@@ -24,25 +24,31 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.15-snapshot4"
+	Version = "v0.0.17-1613701030-10408"
 	// SHA of the kic base image
-	baseImageSHA = "ef1f485b5a1cfa4c989bc05e153f0a8525968ec999e242efff871cbb31649c16"
+	baseImageSHA = "d9d270eb0af8fd98fa3f4ca5363ad026dc7119d213df933434b7cd273554971e"
+	// The name of the GCR kicbase repository
+	gcrRepo = "gcr.io/k8s-minikube/kicbase-builds"
+	// The name of the Dockerhub kicbase repository
+	dockerhubRepo = "kicbase/build"
+	// The name of the Github Packages repository
+	ghRepo = "kicbase"
 )
 
 var (
 	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
-	BaseImage = fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s@sha256:%s", Version, baseImageSHA)
+	BaseImage = fmt.Sprintf("%s:%s@sha256:%s", gcrRepo, Version, baseImageSHA)
 
 	// FallbackImages are backup base images in case gcr isn't available
 	FallbackImages = []string{
 		// the fallback of BaseImage in case gcr.io is not available. stored in docker hub
 		// same image is push to https://github.com/kicbase/stable
-		fmt.Sprintf("kicbase/stable:%s@sha256:%s", Version, baseImageSHA),
+		fmt.Sprintf("%s:%s@sha256:%s", dockerhubRepo, Version, baseImageSHA),
 
 		// the fallback of BaseImage in case gcr.io is not available. stored in github packages https://github.com/kubernetes/minikube/packages/206071
 		// github packages docker does _NOT_ support pulling by sha as mentioned in the docs:
 		// https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages
-		fmt.Sprintf("docker.pkg.github.com/kubernetes/minikube/kicbase:%s", Version),
+		fmt.Sprintf("docker.pkg.github.com/kubernetes/minikube/%s:%s", ghRepo, Version),
 	}
 )
 

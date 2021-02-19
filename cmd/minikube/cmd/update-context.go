@@ -35,8 +35,9 @@ var updateContextCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
+		//	cluster extension metada for kubeconfig
 
-		updated, err := kubeconfig.UpdateEndpoint(cname, co.CP.Hostname, co.CP.Port, kubeconfig.PathFromEnv())
+		updated, err := kubeconfig.UpdateEndpoint(cname, co.CP.Hostname, co.CP.Port, kubeconfig.PathFromEnv(), kubeconfig.NewExtension())
 		if err != nil {
 			exit.Error(reason.HostKubeconfigUpdate, "update config", err)
 		}

@@ -54,7 +54,7 @@ func TestJSONOutput(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.command, func(t *testing.T) {
-			args := []string{test.command, "-p", profile, "--output=json"}
+			args := []string{test.command, "-p", profile, "--output=json", "--user=testUser"}
 			args = append(args, test.args...)
 
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
@@ -66,6 +66,16 @@ func TestJSONOutput(t *testing.T) {
 			if err != nil {
 				t.Fatalf("converting to cloud events: %v\n", err)
 			}
+
+			t.Run("Audit", func(t *testing.T) {
+				got, err := auditContains("testUser")
+				if err != nil {
+					t.Fatalf("failed to check audit log: %v", err)
+				}
+				if !got {
+					t.Errorf("audit.json does not contain the user testUser")
+				}
+			})
 
 			type validateJSONOutputFunc func(context.Context, *testing.T, []*cloudEvent)
 			t.Run("parallel", func(t *testing.T) {
@@ -122,7 +132,7 @@ func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cl
 	}
 }
 
-func TestJSONOutputError(t *testing.T) {
+func TestErrorJSONOutput(t *testing.T) {
 	profile := UniqueProfileName("json-output-error")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
 	defer Cleanup(t, profile, cancel)
@@ -145,7 +155,7 @@ func TestJSONOutputError(t *testing.T) {
 		t.Fatalf("last cloud event is not of type error: %v", last)
 	}
 	last.validateData(t, "exitcode", fmt.Sprintf("%v", reason.ExDriverUnsupported))
-	last.validateData(t, "message", fmt.Sprintf("The driver 'fail' is not supported on %s", runtime.GOOS))
+	last.validateData(t, "message", fmt.Sprintf("The driver 'fail' is not supported on %s/%s", runtime.GOOS, runtime.GOARCH))
 }
 
 type cloudEvent struct {

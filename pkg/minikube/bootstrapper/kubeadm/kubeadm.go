@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -328,6 +329,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
+	register.Reg.SetStep(register.ConfiguringCNI)
 	out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
 
 	if err := cnm.Apply(k.c); err != nil {
@@ -469,6 +471,12 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
+	if cfg.VerifyComponents[kverify.ExtraKey] {
+		if err := kverify.WaitExtra(client, kverify.CorePodsList, timeout); err != nil {
+			return errors.Wrap(err, "extra waiting")
+		}
+	}
+
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
@@ -503,11 +511,11 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			}
 		}
 	}
+
 	if cfg.VerifyComponents[kverify.KubeletKey] {
 		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
 			return errors.Wrap(err, "waiting for kubelet")
 		}
-
 	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
@@ -576,14 +584,14 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		klog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
-	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	k8sVersion, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 
 	phase := "alpha"
 	controlPlane := "controlplane"
-	if version.GTE(semver.MustParse("1.13.0")) {
+	if k8sVersion.GTE(semver.MustParse("1.13.0")) {
 		phase = "init"
 		controlPlane = "control-plane"
 	}
@@ -603,7 +611,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	// Save the costly tax of reinstalling Kubernetes if the only issue is a missing kube context
-	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv())
+	_, err = kubeconfig.UpdateEndpoint(cfg.Name, hostname, port, kubeconfig.PathFromEnv(), kubeconfig.NewExtension())
 	if err != nil {
 		klog.Warningf("unable to update kubeconfig (cluster will likely require a reset): %v", err)
 	}
@@ -657,6 +665,35 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		}
 	}
 
+	if cfg.VerifyComponents[kverify.ExtraKey] {
+		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
+		// it appears as to be immediately Ready as well as all kube-system pods,
+		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts,
+		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
+		klog.Info("waiting for restarted kubelet to initialise ...")
+		start := time.Now()
+		wait := func() error {
+			pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+			if err != nil {
+				return err
+			}
+			for _, pod := range pods.Items {
+				if pod.Labels["tier"] == "control-plane" {
+					if ready, _ := kverify.IsPodReady(&pod); !ready {
+						return nil
+					}
+				}
+			}
+			return fmt.Errorf("kubelet not initialised")
+		}
+		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
+		klog.Infof("kubelet initialised")
+		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
+		if err := kverify.WaitExtra(client, kverify.CorePodsList, kconst.DefaultControlPlaneTimeout); err != nil {
+			return errors.Wrap(err, "extra")
+		}
+	}
+
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -697,6 +734,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		klog.Warningf("unable to adjust resource limits: %v", err)
 	}
+
 	return nil
 }
 
@@ -709,7 +747,7 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	}()
 
 	// Join the master by specifying its token
-	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, driver.MachineName(cc, n))
+	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, config.MachineName(cc, n))
 
 	join := func() error {
 		// reset first to clear any possibly existing state

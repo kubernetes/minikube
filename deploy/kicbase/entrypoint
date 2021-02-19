@@ -283,5 +283,7 @@ fix_product_uuid
 select_iptables
 enable_network_magic
 
+echo "entrypoint completed: $(uname -a)"
+
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"

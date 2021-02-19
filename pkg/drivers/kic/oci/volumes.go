@@ -19,6 +19,8 @@ package oci
 import (
 	"bufio"
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -29,9 +31,50 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// RemoveVolume removes a volume
+func RemoveVolume(ociBin string, name string) error {
+	if !volumeExists(ociBin, name) {
+		return nil
+	}
+	rr, err := runCmd(exec.Command(ociBin, "volume", "rm", name))
+	if err != nil {
+		if strings.Contains(rr.Output(), "No such volume") ||
+			strings.Contains(rr.Output(), "no such volume") {
+			return ErrVolumeNotFound
+		}
+	}
+
+	return err
+}
+
+func volumeExists(ociBin string, name string) bool {
+	_, err := containerVolumeInspect(ociBin, name)
+	if err != nil && !errors.Is(err, ErrVolumeNotFound) { // log unexpected error
+		klog.Warningf("Error inspecting docker volume %s: %v", name, err)
+	}
+	return err == nil
+}
+
+func containerVolumeInspect(ociBin string, name string) (interface{}, error) {
+	var info interface{}
+	cmd := exec.Command(ociBin, "volume", "inspect", name)
+	rr, err := runCmd(cmd)
+	if err != nil {
+		if strings.Contains(rr.Output(), "No such volume") ||
+			strings.Contains(rr.Output(), "no such volume") {
+			return info, ErrVolumeNotFound
+		}
+		return info, err
+	}
+
+	err = json.Unmarshal(rr.Stdout.Bytes(), &info)
+
+	return info, err
+}
+
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
-func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
+func DeleteAllVolumesByLabel(ctx context.Context, ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
 	klog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
 
@@ -42,7 +85,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []er
 	}
 
 	for _, v := range vs {
-		if _, err := runCmd(exec.Command(ociBin, "volume", "rm", "--force", v), warnSlow...); err != nil {
+		if _, err := runCmd(exec.CommandContext(ctx, ociBin, "volume", "rm", "--force", v), warnSlow...); err != nil {
 			deleteErrs = append(deleteErrs, fmt.Errorf("deleting %q", v))
 		}
 	}
@@ -53,10 +96,10 @@ func DeleteAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []er
 // PruneAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
 // example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
-func PruneAllVolumesByLabel(ociBin string, label string, warnSlow ...bool) []error {
+func PruneAllVolumesByLabel(ctx context.Context, ociBin string, label string, warnSlow ...bool) []error {
 	var deleteErrs []error
 	klog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
-	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
+	cmd := exec.CommandContext(ctx, ociBin, "volume", "prune", "-f", "--filter", "label="+label)
 	if _, err := runCmd(cmd, warnSlow...); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s", label))
 	}
@@ -108,9 +151,9 @@ func createVolume(ociBin string, profile string, nodeName string) error {
 	return nil
 }
 
-// prepareVolume will copy the initial content of the mount point by starting a container to check the expected content
-func prepareVolume(ociBin string, imageName string, nodeName string) error {
-	cmdArgs := []string{"run", "--rm", "--entrypoint", "/usr/bin/test"}
+// prepareVolumeSideCar will copy the initial content of the mount point by starting a temporary container to check the expected content
+func prepareVolumeSideCar(ociBin string, imageName string, nodeName string) error {
+	cmdArgs := []string{"run", "--rm", "--name", fmt.Sprintf("%s-preload-sidecar", nodeName), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"), "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, nodeName), "--entrypoint", "/usr/bin/test"}
 	cmdArgs = append(cmdArgs, "-v", fmt.Sprintf("%s:/var", nodeName), imageName, "-d", "/var/lib")
 	cmd := exec.Command(ociBin, cmdArgs...)
 	if _, err := runCmd(cmd); err != nil {

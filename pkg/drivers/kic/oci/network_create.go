@@ -172,8 +172,12 @@ type networkInspect struct {
 }
 
 var dockerInsepctGetter = func(name string) (*RunResult, error) {
-	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}},{{$first := true}} "ContainerIPs": [{{range $k,$v := .Containers }}{{if $first}}{{$first = false}}{{else}}, {{end}}"{{$v.IPv4Address}}"{{end}}]}`)
+	// hack -- 'support ancient versions of docker again (template parsing issue) #10362' and resolve 'Template parsing error: template: :1: unexpected "=" in operand' / 'exit status 64'
+	// note: docker v18.09.7 and older use go v1.10.8 and older, whereas support for '=' operator in go templates came in go v1.11
+	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}}, "ContainerIPs": [{{range $k,$v := .Containers }}"{{$v.IPv4Address}}",{{end}}]}`)
 	rr, err := runCmd(cmd)
+	// remove extra ',' after the last element in the ContainerIPs slice
+	rr.Stdout = *bytes.NewBuffer(bytes.ReplaceAll(rr.Stdout.Bytes(), []byte(",]"), []byte("]")))
 	return rr, err
 }
 
@@ -221,8 +225,13 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 		return info, err
 	}
 
+	output := rr.Stdout.String()
+	if output == "" {
+		return info, fmt.Errorf("no bridge network found for %s", name)
+	}
+
 	// results looks like 172.17.0.0/16,172.17.0.1,1500
-	vals := strings.Split(strings.TrimSpace(rr.Stdout.String()), ",")
+	vals := strings.Split(strings.TrimSpace(output), ",")
 	if len(vals) == 0 {
 		return info, fmt.Errorf("empty list network inspect: %q", rr.Output())
 	}

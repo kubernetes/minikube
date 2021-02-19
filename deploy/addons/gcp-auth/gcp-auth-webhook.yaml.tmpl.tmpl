@@ -41,7 +41,7 @@ rules:
       - update
 
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: minikube-gcp-auth-certs
@@ -68,7 +68,7 @@ spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
         - name: create
-          image: {{default "jettech" .ImageRepository}}/kube-webhook-certgen:v1.3.0
+          image: {{.CustomRegistries.KubeWebhookCertgen  | default .ImageRepository | default .Registries.KubeWebhookCertgen }}{{.Images.KubeWebhookCertgen}}
           imagePullPolicy: IfNotPresent
           args:
             - create
@@ -94,7 +94,7 @@ spec:
     spec:
       containers:
         - name: gcp-auth
-          image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/gcp-auth-webhook:v0.0.3
+          image: {{.CustomRegistries.GCPAuthWebhook  | default .ImageRepository | default .Registries.GCPAuthWebhook }}{{.Images.GCPAuthWebhook}}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
@@ -127,7 +127,7 @@ spec:
       serviceAccountName: minikube-gcp-auth-certs
       containers:
         - name: patch
-          image: {{default "jettech" .ImageRepository}}/kube-webhook-certgen:v1.3.0
+          image: {{.CustomRegistries.KubeWebhookCertgen  | default .ImageRepository | default .Registries.KubeWebhookCertgen }}{{.Images.KubeWebhookCertgen}}
           imagePullPolicy: IfNotPresent
           args:
             - patch

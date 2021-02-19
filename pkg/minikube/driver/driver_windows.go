@@ -33,6 +33,7 @@ var supportedDrivers = []string{
 	HyperV,
 	VMware,
 	Docker,
+	SSH,
 }
 
 // TODO: medyagh add same check for kic docker

@@ -17,8 +17,12 @@ limitations under the License.
 package config
 
 import (
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 // TestListProfiles uses a different MINIKUBE_HOME with rest of tests since it relies on file list index
@@ -135,7 +139,7 @@ func TestProfileNameInReservedKeywords(t *testing.T) {
 }
 
 func TestProfileExists(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/.minikube")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -162,7 +166,7 @@ func TestProfileExists(t *testing.T) {
 }
 
 func TestCreateEmptyProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/.minikube")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -193,7 +197,7 @@ func TestCreateEmptyProfile(t *testing.T) {
 }
 
 func TestCreateProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/.minikube")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -229,7 +233,7 @@ func TestCreateProfile(t *testing.T) {
 }
 
 func TestDeleteProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/.minikube")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -256,7 +260,7 @@ func TestDeleteProfile(t *testing.T) {
 }
 
 func TestGetPrimaryControlPlane(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/.minikube")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -273,11 +277,35 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		// To save converted config file from old style config at ./testdata/.minikube,
+		//rather than at env(MINIKUBE_HOME) which depends on test environment
+		originalMinikubeHomeEnv := os.Getenv("MINIKUBE_HOME")
+		err = os.Setenv("MINIKUBE_HOME", miniDir)
+		if err != nil {
+			t.Fatalf("Failed to set ENV \"MINIKUBE_HOME\" for %s", miniDir)
+		}
+
 		cc, err := DefaultLoader.LoadConfigFromFile(tc.profile, miniDir)
 		if err != nil {
 			t.Fatalf("Failed to load config for %s", tc.description)
 		}
 
+		// temporarily copy the original profile config
+		originalFilePath := profileFilePath(tc.profile, miniDir)
+		tempFilePath := filepath.Join(miniDir, "profiles", tc.profile, "config_temp.json")
+
+		d, err := ioutil.ReadFile(originalFilePath)
+		if err != nil {
+			t.Fatalf("Failed to read config file : %s", originalFilePath)
+		}
+
+		err = ioutil.WriteFile(tempFilePath, d, 0644)
+		if err != nil {
+			t.Fatalf("Failed to write temporal config file : %s", tempFilePath)
+		}
+
+		// get primary control plane
+		viper.Set(ProfileName, tc.profile)
 		n, err := PrimaryControlPlane(cc)
 		if err != nil {
 			t.Fatalf("Unexpexted error getting primary control plane: %v", err)
@@ -295,6 +323,19 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 			t.Errorf("Unexpected name. expected: %d, got: %d", tc.expectedPort, n.Port)
 		}
 
-	}
+		defer func() {
+			// reset profile config
+			err = os.Rename(tempFilePath, originalFilePath)
+			if err != nil {
+				t.Fatalf("Failed to move temporal config file (%s) to original file path (%s)",
+					tempFilePath, originalFilePath)
+			}
 
+			// reset env(MINIKUBE_HOME)
+			err = os.Setenv("MINIKUBE_HOME", originalMinikubeHomeEnv)
+			if err != nil {
+				t.Fatalf("Failed to reset ENV \"MINIKUBE_HOME\" to original value (%s)", originalMinikubeHomeEnv)
+			}
+		}()
+	}
 }
