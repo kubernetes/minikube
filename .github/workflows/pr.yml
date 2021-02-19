@@ -1528,7 +1528,6 @@ jobs:
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 9 ];then echo "*** Failed to pass at least 9 ! ***";exit 2;fi
-
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
