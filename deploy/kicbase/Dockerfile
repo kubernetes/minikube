@@ -187,5 +187,5 @@ RUN mkdir -p /kind
 RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
-  /usr/share/local/* \
+  /usr/share/local/* 
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
