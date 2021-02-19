@@ -20,6 +20,7 @@ set -x
 ./hack/jenkins/installers/check_install_docker.sh
 yes|gcloud auth configure-docker
 docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASS}
+docker login https://docker.pkg.github.com -u minikube-bot -p ${access_token}
 
 # Setup variables
 now=$(date +%s)
@@ -39,9 +40,9 @@ curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.
 # if it doesn't exist, it will just return VERSION, which is covered in the if statement below
 HEAD_KIC_TIMESTAMP=$(egrep "Version =" types-head.go | cut -d \" -f 2 | cut -d "-" -f 2)
 CURRENT_KIC_TS=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 2)
-if [[ $HEAD_KIC_TIMESTAMP != v* ]] && [[ $CURRENT_KIC_TS != v* ]]; then
+if [[ $HEAD_KIC_TIMESTAMP != v* ]]; then
 	diff=$((CURRENT_KIC_TS-HEAD_KIC_TIMESTAMP))
-	if [ $diff -lt 0 ]; then
+	if [[ $CURRENT_KIC_TS == v* ]] || [ $diff -lt 0 ]; then
 		curl -s -H "Authorization: token ${access_token}" \
 		-H "Accept: application/vnd.github.v3+json" \
 		-X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, your kicbase info is out of date. Please rebase.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
@@ -54,8 +55,8 @@ rm types-head.go
 yes|make push-kic-base-image
 
 # Abort with error message if above command failed
-if [ $? -gt 0 ]; then
-	ec=$?
+ec=$?
+if [ $ec -gt 0 ]; then
 	curl -s -H "Authorization: token ${access_token}" \
                 -H "Accept: application/vnd.github.v3+json" \
                 -X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, please try again.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
