@@ -1,4 +1,4 @@
-name: PR
+name: PR_Verified
 on:
   pull_request:
     paths:
