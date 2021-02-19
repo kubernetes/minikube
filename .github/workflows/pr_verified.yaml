@@ -24,7 +24,7 @@ jobs:
   # Runs before all other jobs
   # builds the minikube binaries
   build_minikube:
-    if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
+    if: contains(github.event.pull_request.labels.*.name, 'pr_verified')
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
