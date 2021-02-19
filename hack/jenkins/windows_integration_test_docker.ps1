@@ -49,7 +49,7 @@ $elapsed=[math]::Round($elapsed, 2)
 
 Get-Content testout.txt -Encoding ASCII | go tool test2json -t | Out-File -FilePath testout.json -Encoding ASCII
 
-$gopogh_status=gopogh --in testout.json --out testout.html --name "Docker_Windows" -pr $env:MINIKUBE_LOCATION --repo github.com/kubernetes/minikube/ --details $env:COMMIT
+$gopogh_status=gopogh --in testout.json --out_html testout.html --out_summary testout_summary.json --name "Docker_Windows" -pr $env:MINIKUBE_LOCATION --repo github.com/kubernetes/minikube/ --details $env:COMMIT
 
 $failures=echo $gopogh_status | jq '.NumberOfFail'
 $tests=echo $gopogh_status | jq '.NumberOfTests'
@@ -69,6 +69,8 @@ $env:target_url="https://storage.googleapis.com/$gcs_bucket/Docker_Windows.html"
 gsutil -qm cp testout.txt gs://$gcs_bucket/Docker_Windowsout.txt
 gsutil -qm cp testout.json gs://$gcs_bucket/Docker_Windows.json
 gsutil -qm cp testout.html gs://$gcs_bucket/Docker_Windows.html
+gsutil -qm cp testout_summary.json gs://$gcs_bucket/Docker_Windows_summary.json
+
 
 # Update the PR with the new info
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"Docker_Windows`"}"

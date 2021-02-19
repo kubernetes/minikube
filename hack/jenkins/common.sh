@@ -290,6 +290,7 @@ fi
 readonly TEST_OUT="${TEST_HOME}/testout.txt"
 readonly JSON_OUT="${TEST_HOME}/test.json"
 readonly HTML_OUT="${TEST_HOME}/test.html"
+readonly SUMMARY_OUT="${TEST_HOME}/test_summary.json"
 
 e2e_start_time="$(date -u +%s)"
 echo ""
@@ -371,7 +372,8 @@ if test -f "${HTML_OUT}"; then
 fi
 
 touch "${HTML_OUT}"
-gopogh_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+touch "${SUMMARY_OUT}"
+gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
 test_num=$(echo $gopogh_status | jq '.NumberOfTests')       
 pessimistic_status="${fail_num} / ${test_num} failures"
@@ -385,6 +387,9 @@ echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
+echo ">> uploading ${SUMMARY_OUT}"
+gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
+
 
 
 public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
