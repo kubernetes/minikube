@@ -74,6 +74,7 @@ var KubeadmExtraArgsAllowed = map[int][]string{
 		"certificate-key",
 		"rootfs",
 		"skip-phases",
+		"v",
 	},
 	KubeadmConfigParam: {
 		"pod-network-cidr",
