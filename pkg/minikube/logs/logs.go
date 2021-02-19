@@ -206,7 +206,7 @@ func outputAudit(lines int) error {
 	out.Step(style.Empty, "==> Audit <==")
 	r, err := audit.Report(lines)
 	if err != nil {
-		return fmt.Errorf("failed to create audit report with error: %v", err)
+		return fmt.Errorf("failed to create audit report: %v", err)
 	}
 	out.Step(style.Empty, r.ASCIITable())
 	return nil

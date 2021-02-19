@@ -45,7 +45,8 @@ func (e *row) Type() string {
 	return "io.k8s.sigs.minikube.audit"
 }
 
-// assignFields converts the map values to their proper fields
+// assignFields converts the map values to their proper fields,
+// to be used when converting from JSON Cloud Event format.
 func (e *row) assignFields() {
 	e.args = e.Data["args"]
 	e.command = e.Data["command"]
@@ -56,7 +57,8 @@ func (e *row) assignFields() {
 	e.version = e.Data["version"]
 }
 
-// toMap combines fields into a string map
+// toMap combines fields into a string map,
+// to be used when converting to JSON Cloud Event format.
 func (e *row) toMap() map[string]string {
 	return map[string]string{
 		"args":      e.args,
@@ -69,7 +71,7 @@ func (e *row) toMap() map[string]string {
 	}
 }
 
-// newRow returns a new audit type.
+// newRow creates a new audit row.
 func newRow(command string, args string, user string, version string, startTime time.Time, endTime time.Time, profile ...string) *row {
 	p := viper.GetString(config.ProfileName)
 	if len(profile) > 0 {
@@ -86,7 +88,8 @@ func newRow(command string, args string, user string, version string, startTime 
 	}
 }
 
-// toFields converts a row to an array of fields.
+// toFields converts a row to an array of fields,
+// to be used when converting to a table.
 func (e *row) toFields() []string {
 	return []string{e.command, e.args, e.profile, e.user, e.version, e.startTime, e.endTime}
 }
@@ -105,8 +108,8 @@ func logsToRows(logs []string) ([]row, error) {
 	return rows, nil
 }
 
-// rowsToTable converts audit rows into a formatted table.
-func rowsToTable(rows []row, headers []string) string {
+// rowsToASCIITable converts rows into a formatted ASCII table.
+func rowsToASCIITable(rows []row, headers []string) string {
 	c := [][]string{}
 	for _, r := range rows {
 		c = append(c, r.toFields())

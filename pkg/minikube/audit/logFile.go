@@ -38,7 +38,7 @@ func setLogFile() error {
 	return nil
 }
 
-// appendToLog appends the audit entry to the log file.
+// appendToLog appends the row to the log file.
 func appendToLog(row *row) error {
 	if currentLogFile == nil {
 		if err := setLogFile(); err != nil {

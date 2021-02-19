@@ -51,6 +51,6 @@ func TestReport(t *testing.T) {
 	}
 
 	if len(r.rows) != wantedLines {
-		t.Fatalf("report has %d lines of logs, want %d", len(r.rows), wantedLines)
+		t.Errorf("report has %d lines of logs, want %d", len(r.rows), wantedLines)
 	}
 }

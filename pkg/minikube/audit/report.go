@@ -21,15 +21,16 @@ import (
 	"fmt"
 )
 
+// RawReport contains the information required to generate formatted reports.
 type RawReport struct {
 	headers []string
 	rows    []row
 }
 
-// Report is created from the log file.
-func Report(lines int) (*RawReport, error) {
-	if lines <= 0 {
-		return nil, fmt.Errorf("number of lines must be 1 or greater")
+// Report is created using the last n lines from the log file.
+func Report(lastNLines int) (*RawReport, error) {
+	if lastNLines <= 0 {
+		return nil, fmt.Errorf("last n lines must be 1 or greater")
 	}
 	if currentLogFile == nil {
 		if err := setLogFile(); err != nil {
@@ -40,7 +41,7 @@ func Report(lines int) (*RawReport, error) {
 	s := bufio.NewScanner(currentLogFile)
 	for s.Scan() {
 		// pop off the earliest line if already at desired log length
-		if len(logs) == lines {
+		if len(logs) == lastNLines {
 			logs = logs[1:]
 		}
 		logs = append(logs, s.Text())
@@ -61,5 +62,5 @@ func Report(lines int) (*RawReport, error) {
 
 // ASCIITable creates a formatted table using the headers and rows from the report.
 func (rr *RawReport) ASCIITable() string {
-	return rowsToTable(rr.rows, rr.headers)
+	return rowsToASCIITable(rr.rows, rr.headers)
 }
