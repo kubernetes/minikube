@@ -145,7 +145,7 @@ type ListOptions struct {
 	Namespaces []string
 }
 
-// ErrContainerRuntimeNotRunning is thrown when docker runtime is not running
+// ErrContainerRuntimeNotRunning is thrown when container runtime is not running
 var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running")
 
 // New returns an appropriately configured runtime
