@@ -52,8 +52,7 @@ var distros = []string{
 	"ubuntu:latest",
 	"ubuntu:20.10",
 	"ubuntu:20.04",
-	"ubuntu:19.10",
-	"ubuntu:19.04",
+	"ubuntu:18.04",
 }
 
 var timeout = Minutes(10)
