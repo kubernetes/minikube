@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -546,8 +547,11 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
+	mctx, cancel := context.WithTimeout(ctx, Seconds(300))
+	defer cancel()
+
 	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
-	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
+	ss, err := Start(t, exec.CommandContext(mctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to run minikube dashboard. args %q : %v", args, err)
 	}
@@ -555,13 +559,12 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 		ss.Stop(t)
 	}()
 
-	start := time.Now()
-	s, err := ReadLineWithTimeout(ss.Stdout, Seconds(300))
+	s, err := dashboardURL(ss.Stdout)
 	if err != nil {
 		if runtime.GOOS == "windows" {
-			t.Skipf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
+			t.Skip(err)
 		}
-		t.Fatalf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
+		t.Fatal(err)
 	}
 
 	u, err := url.Parse(strings.TrimSpace(s))
@@ -581,6 +584,24 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
 	}
+}
+
+// dashboardURL gets the dashboard URL from the command stdout.
+func dashboardURL(b *bufio.Reader) (string, error) {
+	// match http://127.0.0.1:XXXXX/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
+	dashURLRegexp := regexp.MustCompile(`^http:\/\/127\.0\.0\.1:[0-9]{5}\/api\/v1\/namespaces\/kubernetes-dashboard\/services\/http:kubernetes-dashboard:\/proxy\/$`)
+
+	s := bufio.NewScanner(b)
+	for s.Scan() {
+		t := s.Text()
+		if dashURLRegexp.MatchString(t) {
+			return t, nil
+		}
+	}
+	if err := s.Err(); err != nil {
+		return "", fmt.Errorf("failed reading input: %v", err)
+	}
+	return "", fmt.Errorf("output didn't produce a URL")
 }
 
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
