@@ -107,14 +107,28 @@ func PrepareContainerNode(p CreateParams) error {
 	return nil
 }
 
+func hasMemoryCgroup() bool {
+	memcg := true
+	if runtime.GOOS == "linux" {
+		var memory string
+		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
+			memory = "/sys/fs/cgroup/memory/memsw.limit_in_bytes"
+		}
+		if _, err := os.Stat(memory); os.IsNotExist(err) {
+			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
+			out.WarningT("Cgroup v2 does not allow setting memory, if you want to set memory, please modify your Grub as instructed in https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
+			memcg = false
+		}
+	}
+	return memcg
+}
+
 func hasMemorySwapCgroup() bool {
 	memcgSwap := true
 	if runtime.GOOS == "linux" {
 		var memoryswap string
 		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
 			memoryswap = "/sys/fs/cgroup/memory/memory.swap.max"
-		} else {
-			memoryswap = "/sys/fs/cgroup/memory/memsw.limit_in_bytes"
 		}
 		if _, err := os.Stat(memoryswap); os.IsNotExist(err) {
 			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
@@ -171,6 +185,7 @@ func CreateContainerNode(p CreateParams) error {
 	}
 
 	memcgSwap := hasMemorySwapCgroup()
+	memcg := hasMemoryCgroup()
 
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	var virtualization string
@@ -179,9 +194,11 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 
 		if memcgSwap {
-			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-			// Disable swap by setting the value to match
 			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+		}
+
+		if memcg {
+			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 		}
 
 		virtualization = "podman" // VIRTUALIZATION_PODMAN
@@ -191,7 +208,9 @@ func CreateContainerNode(p CreateParams) error {
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
 
-		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+		if memcg {
+			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+		}
 		if memcgSwap {
 			// Disable swap by setting the value to match
 			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
