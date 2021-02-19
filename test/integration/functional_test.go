@@ -559,7 +559,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 		ss.Stop(t)
 	}()
 
-	s, err := dashboardURL(t, ss.Stdout)
+	s, err := dashboardURL(ss.Stdout)
 	if err != nil {
 		if runtime.GOOS == "windows" {
 			t.Skip(err)
@@ -587,14 +587,11 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 }
 
 // dashboardURL gets the dashboard URL from the command stdout.
-func dashboardURL(t *testing.T, b *bufio.Reader) (string, error) {
+func dashboardURL(b *bufio.Reader) (string, error) {
 	scanner := bufio.NewScanner(b)
 
 	// match http://127.0.0.1:XXXXX/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
-	dashURLRegexp, err := regexp.Compile(`^http:\/\/127\.0\.0\.1:[0-9]{5}\/api\/v1\/namespaces\/kubernetes-dashboard\/services\/http:kubernetes-dashboard:\/proxy\/$`)
-	if err != nil {
-		t.Fatalf("dashboard URL regex is invalid: %v", err)
-	}
+	dashURLRegexp := regexp.MustCompile(`^http:\/\/127\.0\.0\.1:[0-9]{5}\/api\/v1\/namespaces\/kubernetes-dashboard\/services\/http:kubernetes-dashboard:\/proxy\/$`)
 
 	for scanner.Scan() {
 		s := scanner.Text()
