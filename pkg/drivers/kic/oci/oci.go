@@ -116,6 +116,7 @@ func hasMemoryCgroup() bool {
 		}
 		if _, err := os.Stat(memory); os.IsNotExist(err) {
 			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
+			out.WarningT("Cgroup v2 does not allow setting memory, if you want to set memory, please modify your Grub as instructed in https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
 			memcg = false
 		}
 	}
@@ -185,10 +186,6 @@ func CreateContainerNode(p CreateParams) error {
 
 	memcgSwap := hasMemorySwapCgroup()
 	memcg := hasMemoryCgroup()
-
-	if !memcgSwap || !memcg {
-		out.WarningT("Cgroup v2 does not allow setting memory, if you want to set memory, please modify your Grub as instructed in https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
-	}
 
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	var virtualization string
