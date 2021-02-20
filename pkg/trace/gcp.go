@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"os"
 
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"k8s.io/klog/v2"
 
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/api/global"
 )
 
 const (
@@ -90,7 +90,7 @@ func initGCPTracer() (*gcpTracer, error) {
 		return nil, errors.Wrap(err, "installing pipeline")
 	}
 
-	t := global.Tracer(parentSpanName)
+	t := otel.Tracer(parentSpanName)
 
 	ctx, span := t.Start(context.Background(), parentSpanName)
 	return &gcpTracer{

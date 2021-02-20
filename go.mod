@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.10.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
 	github.com/Azure/azure-sdk-for-go v42.3.0+incompatible
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.13.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
@@ -80,7 +80,8 @@ require (
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.22.6
 	go.opentelemetry.io/otel v0.17.0
-	go.opentelemetry.io/otel/sdk v0.13.0
+	go.opentelemetry.io/otel/sdk v0.16.0
+	go.opentelemetry.io/otel/trace v0.17.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6
