@@ -84,6 +84,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"CopySyncFile", setupFileSync},                 // Set file for the file sync test case
 			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
+			{"AuditLog", validateAuditAfterStart},           // check audit feature works
 			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didnt change.
 			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
@@ -290,15 +291,16 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
 
-	t.Run("Audit", func(t *testing.T) {
-		got, err := auditContains(profile)
-		if err != nil {
-			t.Fatalf("failed to check audit log: %v", err)
-		}
-		if !got {
-			t.Errorf("audit.json does not contain the profile %q", profile)
-		}
-	})
+}
+
+func validateAuditAfterStart(ctx context.Context, t *testing.T, profile string) {
+	got, err := auditContains(profile)
+	if err != nil {
+		t.Fatalf("failed to check audit log: %v", err)
+	}
+	if !got {
+		t.Errorf("audit.json does not contain the profile %q", profile)
+	}
 }
 
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
@@ -331,16 +333,6 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	if afterCfg.Config.KubernetesConfig.NodePort != apiPortTest {
 		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortTest, afterCfg.Config.KubernetesConfig.NodePort)
 	}
-
-	t.Run("Audit", func(t *testing.T) {
-		got, err := auditContains(profile)
-		if err != nil {
-			t.Fatalf("failed to check audit log: %v", err)
-		}
-		if !got {
-			t.Errorf("audit.json does not contain the profile %q", profile)
-		}
-	})
 }
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
