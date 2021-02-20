@@ -31,6 +31,7 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -38,15 +39,26 @@ import (
 // https://play.golang.org/p/m8TNTtygK0
 const networkTmpl = `
 <network>
-  <name>{{.PrivateNetwork}}</name>
+  <name>{{.Name}}</name>
   <dns enable='no'/>
-  <ip address='192.168.39.1' netmask='255.255.255.0'>
+  {{with .Parameters}}
+  <ip address='{{.Gateway}}' netmask='{{.Netmask}}'>
     <dhcp>
-      <range start='192.168.39.2' end='192.168.39.254'/>
+      <range start='{{.ClientMin}}' end='{{.ClientMax}}'/>
     </dhcp>
   </ip>
+  {{end}}
 </network>
 `
+
+type kvmNetwork struct {
+	Name string
+	network.Parameters
+}
+
+// firstSubnetAddr is starting subnet to try for new KVM cluster,
+// avoiding possible conflict with other local networks by further incrementing it up to 20 times by 10.
+const firstSubnetAddr = "192.168.39.0"
 
 // setupNetwork ensures that the network with `name` is started (active)
 // and has the autostart feature set.
@@ -145,10 +157,20 @@ func (d *Driver) createNetwork() error {
 	// Only create the private network if it does not already exist
 	netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
 	if err != nil {
+		subnet, err := network.FreeSubnet(firstSubnetAddr, 10, 20)
+		if err != nil {
+			log.Debugf("error while trying to create network: %v", err)
+			return errors.Wrap(err, "un-retryable")
+		}
+		tryNet := kvmNetwork{
+			Name:       d.PrivateNetwork,
+			Parameters: *subnet,
+		}
+
 		// create the XML for the private network from our networkTmpl
 		tmpl := template.Must(template.New("network").Parse(networkTmpl))
 		var networkXML bytes.Buffer
-		if err := tmpl.Execute(&networkXML, d); err != nil {
+		if err := tmpl.Execute(&networkXML, tryNet); err != nil {
 			return errors.Wrap(err, "executing network template")
 		}
 
@@ -173,6 +195,7 @@ func (d *Driver) createNetwork() error {
 		if err := retry.Local(create, 10*time.Second); err != nil {
 			return errors.Wrapf(err, "creating network %s", d.PrivateNetwork)
 		}
+		log.Debugf("Network %s created", d.PrivateNetwork)
 	}
 	defer func() {
 		if netp != nil {
@@ -201,7 +224,7 @@ func (d *Driver) deleteNetwork() error {
 			log.Warnf("Network %s does not exist. Skipping deletion", d.PrivateNetwork)
 			return nil
 		}
-		return errors.Wrapf(err, "failed looking for network %s", d.PrivateNetwork)
+		return errors.Wrapf(err, "failed looking up network %s", d.PrivateNetwork)
 	}
 	defer func() { _ = network.Free() }()
 	log.Debugf("Network %s exists", d.PrivateNetwork)
@@ -213,58 +236,25 @@ func (d *Driver) deleteNetwork() error {
 
 	// when we reach this point, it means it is safe to delete the network
 
-	// cannot destroy an inactive network - try to activate it first
-	log.Debugf("Trying to reactivate network %s first (if needed)...", d.PrivateNetwork)
-	activate := func() error {
+	log.Debugf("Trying to delete network %s...", d.PrivateNetwork)
+	delete := func() error {
 		active, err := network.IsActive()
-		if err == nil && active {
-			return nil
-		}
 		if err != nil {
 			return err
 		}
-		// inactive, try to activate
-		if err := network.Create(); err != nil {
-			return err
+		if active {
+			log.Debugf("Destroying active network %s", d.PrivateNetwork)
+			if err := network.Destroy(); err != nil {
+				return err
+			}
 		}
-		return errors.Errorf("needs confirmation") // confirm in the next cycle
+		log.Debugf("Undefining inactive network %s", d.PrivateNetwork)
+		return network.Undefine()
 	}
-	if err := retry.Local(activate, 10*time.Second); err != nil {
-		log.Debugf("Reactivating network %s failed, will continue anyway...", d.PrivateNetwork)
+	if err := retry.Local(delete, 10*time.Second); err != nil {
+		return errors.Wrap(err, "deleting network")
 	}
-
-	log.Debugf("Trying to destroy network %s...", d.PrivateNetwork)
-	destroy := func() error {
-		if err := network.Destroy(); err != nil {
-			return err
-		}
-		active, err := network.IsActive()
-		if err == nil && !active {
-			return nil
-		}
-		return errors.Errorf("retrying %v", err)
-	}
-	if err := retry.Local(destroy, 10*time.Second); err != nil {
-		return errors.Wrap(err, "destroying network")
-	}
-
-	log.Debugf("Trying to undefine network %s...", d.PrivateNetwork)
-	undefine := func() error {
-		if err := network.Undefine(); err != nil {
-			return err
-		}
-		netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
-		if netp != nil {
-			_ = netp.Free()
-		}
-		if lvErr(err).Code == libvirt.ERR_NO_NETWORK {
-			return nil
-		}
-		return errors.Errorf("retrying %v", err)
-	}
-	if err := retry.Local(undefine, 10*time.Second); err != nil {
-		return errors.Wrap(err, "undefining network")
-	}
+	log.Debugf("Network %s deleted", d.PrivateNetwork)
 
 	return nil
 }

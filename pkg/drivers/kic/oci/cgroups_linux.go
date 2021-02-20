@@ -1,7 +1,7 @@
-// +build darwin,!arm64
+// +build linux
 
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2021 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,22 +16,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package oci
 
 import (
-	"fmt"
-	"os"
+	"syscall"
 
-	"github.com/docker/machine/libmachine/drivers/plugin"
-	"k8s.io/minikube/pkg/drivers/hyperkit"
+	"golang.org/x/sys/unix"
 )
 
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "version" {
-		fmt.Println("version:", hyperkit.GetVersion())
-		fmt.Println("commit:", hyperkit.GetGitCommitID())
-		return
+// IsCgroup2UnifiedMode returns whether we are running in cgroup 2 cgroup2 mode.
+func IsCgroup2UnifiedMode() (bool, error) {
+	var st syscall.Statfs_t
+	if err := syscall.Statfs("/sys/fs/cgroup", &st); err != nil {
+		return false, err
 	}
-
-	plugin.RegisterDriver(hyperkit.NewDriver("", ""))
+	return st.Type == unix.CGROUP2_SUPER_MAGIC, nil
 }

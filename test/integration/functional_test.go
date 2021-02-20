@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -256,7 +257,6 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Output(), expectedImgInside) {
 		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
 	}
-
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
@@ -269,7 +269,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -401,7 +401,6 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	if err != nil {
 		t.Fatalf("failed to run kubectl directly. args %q: %v", rr.Command(), err)
 	}
-
 }
 
 func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
@@ -409,7 +408,7 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 	start := time.Now()
 	// The tests before this already created a profile, starting minikube with different --extra-config cmdline option.
-	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision"}
+	startArgs := []string{"start", "-p", profile, "--extra-config=apiserver.enable-admission-plugins=NamespaceAutoProvision", "--wait=all"}
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 	if err != nil {
@@ -427,7 +426,6 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(afterCfg.Config.KubernetesConfig.ExtraOptions.String(), expectedExtraOptions) {
 		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
 	}
-
 }
 
 // imageID returns a docker image id for image `image` and current architecture
@@ -451,6 +449,7 @@ func imageID(image string) string {
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
+// note: it expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag (ie, with extra wait)
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -474,12 +473,22 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 
 	for _, i := range cs.Items {
 		for _, l := range i.Labels {
-			t.Logf("%s phase: %s", l, i.Status.Phase)
-			_, ok := found[l]
-			if ok {
+			if _, ok := found[l]; ok { // skip irrelevant (eg, repeating/redundant '"tier": "control-plane"') labels
 				found[l] = true
-				if i.Status.Phase != "Running" {
+				t.Logf("%s phase: %s", l, i.Status.Phase)
+				if i.Status.Phase != api.PodRunning {
 					t.Errorf("%s is not Running: %+v", l, i.Status)
+					continue
+				}
+				for _, c := range i.Status.Conditions {
+					if c.Type == api.PodReady {
+						if c.Status != api.ConditionTrue {
+							t.Errorf("%s is not Ready: %+v", l, i.Status)
+						} else {
+							t.Logf("%s status: %s", l, c.Type)
+						}
+						break
+					}
 				}
 			}
 		}
@@ -538,8 +547,11 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
+	mctx, cancel := context.WithTimeout(ctx, Seconds(300))
+	defer cancel()
+
 	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
-	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
+	ss, err := Start(t, exec.CommandContext(mctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to run minikube dashboard. args %q : %v", args, err)
 	}
@@ -547,13 +559,12 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 		ss.Stop(t)
 	}()
 
-	start := time.Now()
-	s, err := ReadLineWithTimeout(ss.Stdout, Seconds(300))
+	s, err := dashboardURL(ss.Stdout)
 	if err != nil {
 		if runtime.GOOS == "windows" {
-			t.Skipf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
+			t.Skip(err)
 		}
-		t.Fatalf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
+		t.Fatal(err)
 	}
 
 	u, err := url.Parse(strings.TrimSpace(s))
@@ -573,6 +584,24 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
 	}
+}
+
+// dashboardURL gets the dashboard URL from the command stdout.
+func dashboardURL(b *bufio.Reader) (string, error) {
+	// match http://127.0.0.1:XXXXX/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
+	dashURLRegexp := regexp.MustCompile(`^http:\/\/127\.0\.0\.1:[0-9]{5}\/api\/v1\/namespaces\/kubernetes-dashboard\/services\/http:kubernetes-dashboard:\/proxy\/$`)
+
+	s := bufio.NewScanner(b)
+	for s.Scan() {
+		t := s.Text()
+		if dashURLRegexp.MatchString(t) {
+			return t, nil
+		}
+	}
+	if err := s.Err(); err != nil {
+		return "", fmt.Errorf("failed reading input: %v", err)
+	}
+	return "", fmt.Errorf("output didn't produce a URL")
 }
 
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
@@ -768,7 +797,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
-	expectedWords := []string{"apiserver", "Linux", "kubelet"}
+	expectedWords := []string{"apiserver", "Linux", "kubelet", "Audit"}
 	switch ContainerRuntime() {
 	case "docker":
 		expectedWords = append(expectedWords, "Docker")

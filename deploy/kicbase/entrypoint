@@ -19,6 +19,13 @@ set -o nounset
 set -o pipefail
 set -x
 
+configure_containerd() {
+  # we need to switch to the 'native' snapshotter on zfs
+  if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
+    sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
+  fi
+}
+
 configure_proxy() {
   # ensure all processes receive the proxy settings by default
   # https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html
@@ -78,8 +85,54 @@ fix_mount() {
   mount --make-rshared /
 }
 
-fix_cgroup_mounts() {
+# helper used by fix_cgroup
+mount_kubelet_cgroup_root() {
+  local cgroup_root=$1
+  local subsystem=$2
+  if [ -z "${cgroup_root}" ]; then
+    return 0
+  fi
+  mkdir -p "${subsystem}/${cgroup_root}"
+  if [ "${subsystem}" == "/sys/fs/cgroup/cpuset" ]; then
+    # This is needed. Otherwise, assigning process to the cgroup
+    # (or any nested cgroup) would result in ENOSPC.
+    cat "${subsystem}/cpuset.cpus" > "${subsystem}/${cgroup_root}/cpuset.cpus"
+    cat "${subsystem}/cpuset.mems" > "${subsystem}/${cgroup_root}/cpuset.mems"
+  fi
+  # We need to perform a self bind mount here because otherwise,
+  # systemd might delete the cgroup unintentionally before the
+  # kubelet starts.
+  mount --bind "${subsystem}/${cgroup_root}" "${subsystem}/${cgroup_root}"
+}
+
+fix_cgroup() {
+  if [[ -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
+    echo 'INFO: detected cgroup v2'
+    # Both Docker and Podman enable CgroupNS on cgroup v2 hosts by default.
+    #
+    # So mostly we do not need to mess around with the cgroup path stuff,
+    # however, we still need to create the "/kubelet" cgroup at least.
+    # (Otherwise kubelet fails with `cgroup-root ["kubelet"] doesn't exist` error, see #1969)
+    #
+    # The "/kubelet" cgroup is created in ExecStartPre of the kubeadm service.
+    #
+    # [FAQ: Why not create "/kubelet" cgroup here?]
+    # We can't create the cgroup with controllers here, because /sys/fs/cgroup/cgroup.subtree_control is empty.
+    # And yet we can't write controllers to /sys/fs/cgroup/cgroup.subtree_control by ourselves either, because
+    # /sys/fs/cgroup/cgroup.procs is not empty at this moment.
+    #
+    # After switching from this entrypoint script to systemd, systemd evacuates the processes in the root
+    # group to "/init.scope" group, so we can write the root subtree_control and create "/kubelet" cgroup.
+    return
+  fi
+  echo 'INFO: detected cgroup v1'
   echo 'INFO: fix cgroup mounts for all subsystems'
+  # see: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
+  # capture initial state before modifying
+  local current_cgroup
+  current_cgroup=$(grep systemd /proc/self/cgroup | cut -d: -f3)
+  local cgroup_subsystems
+  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep "${current_cgroup}" | awk '{print $2}')
   # For each cgroup subsystem, Docker does a bind mount from the current
   # cgroup to the root of the cgroup subsystem. For instance:
   #   /sys/fs/cgroup/memory/docker/<cid> -> /sys/fs/cgroup/memory
@@ -96,6 +149,7 @@ fix_cgroup_mounts() {
   # This regexp finds all /sys/fs/cgroup mounts that are cgroupfs and mounted somewhere other than / - extracting fields 4+
   # See https://man7.org/linux/man-pages/man5/proc.5.html for field names
 
+  # xref: https://github.com/kubernetes/minikube/pull/9508
   # Example inputs:
   #
   # Docker:               /docker/562a56986a84b3cd38d6a32ac43fdfcc8ad4d2473acf2839cbf549273f35c206 /sys/fs/cgroup/devices rw,nosuid,nodev,noexec,relatime shared:143 master:23 - cgroup devices rw,devices
@@ -120,11 +174,20 @@ fix_cgroup_mounts() {
       fi
     done
   fi
+  # kubelet will try to manage cgroups / pods that are not owned by it when
+  # "nesting" clusters, unless we instruct it to use a different cgroup root.
+  # We do this, and when doing so we must fixup this alternative root
+  # currently this is hardcoded to be /kubelet
+  mount --make-rprivate /sys/fs/cgroup
+  echo "${cgroup_subsystems}" |
+  while IFS= read -r subsystem; do
+    mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
+  done
 }
 
-retryable_fix_cgroup_mounts() {
+retryable_fix_cgroup() {
     for i in $(seq 0 10); do
-      fix_cgroup_mounts && return || echo "fix_cgroup failed with exit code $? (retry $i)"
+      fix_cgroup && return || echo "fix_cgroup failed with exit code $? (retry $i)"
       echo "fix_cgroup diagnostics information below:"
       mount
       sleep 1
@@ -273,10 +336,11 @@ enable_network_magic(){
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races
+configure_containerd
 configure_proxy
 fix_kmsg
 fix_mount
-retryable_fix_cgroup_mounts
+retryable_fix_cgroup
 fix_machine_id
 fix_product_name
 fix_product_uuid

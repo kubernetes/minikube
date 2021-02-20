@@ -25,7 +25,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/version"
 )
@@ -689,19 +688,18 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 			opts.Registries[name] = "" // Avoid nil access when rendering
 		}
 
-		// Send messages to stderr due to some tests rely on stdout
 		if override, ok := opts.CustomRegistries[name]; ok {
-			out.ErrT(style.Option, "Using image {{.registry}}{{.image}}", out.V{
+			out.Infof("Using image {{.registry}}{{.image}}", out.V{
 				"registry": override,
 				"image":    image,
 			})
 		} else if opts.ImageRepository != "" {
-			out.ErrT(style.Option, "Using image {{.registry}}{{.image}} (global image repository)", out.V{
+			out.Infof("Using image {{.registry}}{{.image}} (global image repository)", out.V{
 				"registry": opts.ImageRepository,
 				"image":    image,
 			})
 		} else {
-			out.ErrT(style.Option, "Using image {{.registry}}{{.image}}", out.V{
+			out.Infof("Using image {{.registry}}{{.image}}", out.V{
 				"registry": opts.Registries[name],
 				"image":    image,
 			})

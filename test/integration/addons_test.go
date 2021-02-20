@@ -59,7 +59,7 @@ func TestAddons(t *testing.T) {
 	}
 
 	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
-	if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none doesn't support ingress
+	if !(runtime.GOOS == "darwin" && KicDriver()) { // macos docker driver does not support ingress
 		args = append(args, "--addons=ingress")
 	}
 	if !arm64Platform() {
@@ -114,8 +114,8 @@ func TestAddons(t *testing.T) {
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	if NoneDriver() || (runtime.GOOS == "darwin" && KicDriver()) {
-		t.Skipf("skipping: ssh unsupported by none")
+	if runtime.GOOS == "darwin" && KicDriver() {
+		t.Skipf("skipping: ingress not supported on macOS docker driver")
 	}
 
 	client, err := kapi.Client(profile)
@@ -136,7 +136,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 			return err
 		}
 		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s (may be temproary)", rr.Command(), rr.Stderr)
+			t.Logf("%v: unexpected stderr: %s (may be temporary)", rr.Command(), rr.Stderr)
 		}
 		return nil
 	}
@@ -160,9 +160,18 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	want := "Welcome to nginx!"
 	addr := "http://127.0.0.1/"
 	checkIngress := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
-		if err != nil {
-			return err
+		var rr *RunResult
+		var err error
+		if NoneDriver() { // just run curl directly on the none driver
+			rr, err = Run(t, exec.CommandContext(ctx, "curl", "-s", addr, "-H", "'Host: nginx.example.com'"))
+			if err != nil {
+				return err
+			}
+		} else {
+			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
+			if err != nil {
+				return err
+			}
 		}
 
 		stderr := rr.Stderr.String()

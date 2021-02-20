@@ -118,7 +118,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -150,7 +150,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -203,7 +203,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -248,7 +248,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -348,7 +348,7 @@ jobs:
         continue-on-error: true
         shell: powershell
         run: |
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           choco install -y caffeine
@@ -485,7 +485,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           choco install -y caffeine
@@ -782,7 +782,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -812,7 +812,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -861,7 +861,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-arm64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-arm64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
 
       - name: Install tools
@@ -924,7 +924,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -993,7 +993,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1023,7 +1023,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -1075,7 +1075,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -1121,7 +1121,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -1187,7 +1187,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1219,7 +1219,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -1271,7 +1271,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1311,7 +1311,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -1378,7 +1378,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1408,7 +1408,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
@@ -1460,7 +1460,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.4.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -1500,7 +1500,7 @@ jobs:
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
