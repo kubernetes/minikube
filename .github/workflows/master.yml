@@ -293,7 +293,7 @@ jobs:
         shell: powershell
         run: |
           echo $env:computerName
-          ls
+          ls 
           $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
           ls
@@ -330,7 +330,7 @@ jobs:
           $docker_running = $?
           }
           Write-Output "Docker is running"
-          docker system prune -f
+          docker system prune -f 
       - name: Info
         shell: powershell
         run: |
@@ -665,7 +665,7 @@ jobs:
         shell: powershell
         run: |
           echo $env:computerName
-          ls
+          ls 
           $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
           ls
@@ -702,7 +702,7 @@ jobs:
           $docker_running = $?
           }
           Write-Output "Docker is running"
-          docker system prune -f
+          docker system prune -f 
       - name: Info
         shell: powershell
         run: |
@@ -864,7 +864,7 @@ jobs:
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-arm64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
-
+      
       - name: Install tools
         shell: bash
         run: |
