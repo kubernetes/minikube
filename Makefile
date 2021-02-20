@@ -815,6 +815,8 @@ out/mkcmp:
 .PHONY: out/auto-pause # auto pause binary to be used for auto-pause addon (only linux)
 out/auto-pause:
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
+	# work arround for not passing the whole repo as docker context
+	GOOS=linux GOARCH=$(GOARCH) go build -o deploy/kicbase/auto-pause cmd/auto-pause/auto-pause.go
 
 .PHONY: out/performance-bot
 out/performance-bot:
