@@ -648,7 +648,7 @@ KICBASE_ARCH = linux/arm64,linux/amd64
 KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
 
 .PHONY: push-kic-base-image 
-push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
+push-kic-base-image: out/auto-pause docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
 	docker login docker.pkg.github.com
