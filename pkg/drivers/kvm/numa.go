@@ -24,8 +24,8 @@ import (
 	"text/template"
 )
 
-// NUMATmpl NUMA XML Template
-const NUMATmpl = `
+// numaTmpl NUMA XML Template
+const numaTmpl = `
 <numa>
   {{- range $idx,$val :=. }}
   <cell id='{{$idx}}' cpus='{{$val.CPUTopology}}' memory='{{$val.Memory}}' unit='MiB'/>
@@ -33,16 +33,19 @@ const NUMATmpl = `
 </numa>
 `
 
-// NUMA this struct use for NUMATmpl
+// NUMA this struct use for numaTmpl
 type NUMA struct {
-	CPUCount    int
-	Memory      int
+	// cpu count on numa node
+	CPUCount int
+	// memory on numa node
+	Memory int
+	// cpu sequence on numa node eg: 0,1,2,3
 	CPUTopology string
 }
 
-// NumaXml generate numa xml
+// numaXML generate numa xml
 // evenly distributed cpu core & memory to each numa node
-func NumaXml(cpu, memory, numaCount int) (string, error) {
+func numaXML(cpu, memory, numaCount int) (string, error) {
 	if numaCount < 1 {
 		return "", fmt.Errorf("numa node count must >= 1")
 	}
@@ -81,10 +84,10 @@ func NumaXml(cpu, memory, numaCount int) (string, error) {
 		numaNodes[i].Memory++
 	}
 
-	tmpl := template.Must(template.New("numa").Parse(NUMATmpl))
-	var NUMAXML bytes.Buffer
-	if err := tmpl.Execute(&NUMAXML, numaNodes); err != nil {
+	tmpl := template.Must(template.New("numa").Parse(numaTmpl))
+	var numaXML bytes.Buffer
+	if err := tmpl.Execute(&numaXML, numaNodes); err != nil {
 		return "", fmt.Errorf("couldn't generate numa XML: %v", err)
 	}
-	return NUMAXML.String(), nil
+	return numaXML.String(), nil
 }

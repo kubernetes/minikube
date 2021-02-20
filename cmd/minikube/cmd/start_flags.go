@@ -313,18 +313,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			out.WarningT("--network flag is only valid with the docker/podman drivers, it will be ignored")
 		}
 
-		if viper.GetInt(kvmNUMACount) < 1 || viper.GetInt(kvmNUMACount) > 8 {
-			exit.Message(reason.Usage, "--kvm-numa-count range is 1-8")
-		}
-		if viper.GetInt(kvmNUMACount) > 1 {
-			v, err := pkgutil.ParseKubernetesVersion(k8sVersion)
-			if err != nil {
-				exit.Message(reason.Usage, "invalid kubernetes version")
-			}
-			if v.LT(semver.Version{Major: 1,Minor: 18}){
-				exit.Message(reason.Usage, "numa node is only supported on k8s v1.18 and later")
-			}
-		}
+		checkNumaCount(k8sVersion)
 
 		cc = config.ClusterConfig{
 			Name:                    ClusterFlagValue(),
@@ -421,6 +410,22 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		kubeNodeName = "m01"
 	}
 	return createNode(cc, kubeNodeName, existing)
+}
+
+func checkNumaCount(k8sVersion string) {
+	if viper.GetInt(kvmNUMACount) < 1 || viper.GetInt(kvmNUMACount) > 8 {
+		exit.Message(reason.Usage, "--kvm-numa-count range is 1-8")
+	}
+
+	if viper.GetInt(kvmNUMACount) > 1 {
+		v, err := pkgutil.ParseKubernetesVersion(k8sVersion)
+		if err != nil {
+			exit.Message(reason.Usage, "invalid kubernetes version")
+		}
+		if v.LT(semver.Version{Major: 1, Minor: 18}) {
+			exit.Message(reason.Usage, "numa node is only supported on k8s v1.18 and later")
+		}
+	}
 }
 
 // upgradeExistingConfig upgrades legacy configuration files
