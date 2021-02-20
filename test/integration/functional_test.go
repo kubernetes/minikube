@@ -174,14 +174,14 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	busybox := "busybox:latest"
 	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busybox))
 	if err != nil {
-		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
 	// tag busybox
 	newImage := fmt.Sprintf("busybox:%s", profile)
 	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busybox, newImage))
 	if err != nil {
-		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 	}
 
 	// try to load the new image into minikube
@@ -193,9 +193,10 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	// make sure the image was correctly loaded
 	var cmd *exec.Cmd
 	if ContainerRuntime() == "docker" {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images", "--format", "{{.Repository}}:{{.Tag}}")
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", newImage)
 	} else {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "ctr", "-n=k8s.io", "image", "ls")
+		// crictl inspecti localhost/busybox:test-example
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", "localhost/"+newImage)
 	}
 	rr, err = Run(t, cmd)
 	if err != nil {
