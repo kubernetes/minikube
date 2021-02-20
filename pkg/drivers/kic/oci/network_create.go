@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/network"
 )
 
 // firstSubnetAddr subnet to be used on first kic cluster
@@ -70,32 +71,18 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	if err != nil {
 		klog.Warningf("failed to get mtu information from the %s's default network %q: %v", ociBin, defaultBridgeName, err)
 	}
-	attempts := 0
-	subnetAddr := firstSubnetAddr
 	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
-	for attempts < 20 {
-		info.gateway, err = tryCreateDockerNetwork(ociBin, subnetAddr, defaultSubnetMask, info.mtu, networkName)
-		if err == nil {
-			return info.gateway, nil
-		}
-
-		// don't retry if error is not adddress is taken
-		if !(errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken)) {
-			klog.Errorf("error while trying to create network %v", err)
-			return nil, errors.Wrap(err, "un-retryable")
-		}
-		attempts++
-		// Find an open subnet by incrementing the 3rd octet by 10 for each try
-		// 13 times adding 10 firstSubnetAddr "192.168.49.0/24"
-		// at most it will add up to 169 which is still less than max allowed 255
-		// this is large enough to try more and not too small to not try enough
-		// can be tuned in the next iterations
-		newSubnet := net.ParseIP(subnetAddr).To4()
-		newSubnet[2] += byte(9 + attempts)
-		subnetAddr = newSubnet.String()
+	subnet, err := network.FreeSubnet(firstSubnetAddr, 10, 20)
+	if err != nil {
+		klog.Errorf("error while trying to create network: %v", err)
+		return nil, errors.Wrap(err, "un-retryable")
 	}
-	return info.gateway, fmt.Errorf("failed to create network after 20 attempts")
+	info.gateway, err = tryCreateDockerNetwork(ociBin, subnet.IP, defaultSubnetMask, info.mtu, networkName)
+	if err != nil {
+		return info.gateway, fmt.Errorf("failed to create network after 20 attempts")
+	}
+	return info.gateway, nil
 }
 
 func tryCreateDockerNetwork(ociBin string, subnetAddr string, subnetMask int, mtu int, name string) (net.IP, error) {
