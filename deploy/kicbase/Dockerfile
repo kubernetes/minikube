@@ -174,6 +174,7 @@ RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
 RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
 # metacopy breaks crio on certain OS and isn't necessary for minikube
+# https://github.com/kubernetes/minikube/issues/10520
 RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/containers/storage.conf
 
 EXPOSE 22
