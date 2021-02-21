@@ -37,7 +37,8 @@ func init() {
 		Config:   configure,
 		Init:     func() drivers.Driver { return none.NewDriver(none.Config{}) },
 		Status:   status,
-		Priority: registry.Discouraged, // requires root
+		Default:  false, // no isolation
+		Priority: registry.Discouraged,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

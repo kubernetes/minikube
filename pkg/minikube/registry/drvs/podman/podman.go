@@ -53,6 +53,7 @@ func init() {
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Podman}) },
 		Status:   status,
+		Default:  true,
 		Priority: priority,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
