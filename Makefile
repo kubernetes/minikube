@@ -800,7 +800,8 @@ site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docs
 out/hugo/hugo:
 	mkdir -p out
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
-	(cd out/hugo && go build --tags extended)
+	go get golang.org/dl/go1.16 && go1.16 download
+	(cd out/hugo && go1.16 build --tags extended)
 
 .PHONY: site
 site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serve the documentation site to localhost
