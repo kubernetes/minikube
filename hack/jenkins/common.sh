@@ -39,7 +39,7 @@ if [ "$(uname)" != "Darwin" ]; then
 fi
 
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.15.8" "/usr/local" || true
+sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ./installers/check_install_docker.sh
@@ -140,7 +140,7 @@ for entry in $(ls ${TEST_ROOT}); do
   for kconfig in $(find ${test_path} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
   done
-  
+
   ## ultimate shotgun clean up docker after we tried all
   docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 
@@ -375,7 +375,7 @@ touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
 gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
-test_num=$(echo $gopogh_status | jq '.NumberOfTests')       
+test_num=$(echo $gopogh_status | jq '.NumberOfTests')
 pessimistic_status="${fail_num} / ${test_num} failures"
 description="completed with ${status} in ${elapsed} minute(s)."
 if [ "$status" = "failure" ]; then
@@ -445,7 +445,7 @@ function retry_github_status() {
     echo "HTTP code ${code}! Retrying in ${timeout} .."
     sleep "${timeout}"
     attempt=$(( attempt + 1 ))
-    timeout=$(( timeout * 5 )) 
+    timeout=$(( timeout * 5 ))
   done
 }
 

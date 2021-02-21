@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Download Dependencies
         run: go mod download
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install libvirt
         run: |
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install libvirt
         run: |
@@ -112,7 +112,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install gopogh
 
@@ -197,7 +197,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install gopogh
 
@@ -215,7 +215,7 @@ jobs:
         run: |
           hostname
           VBoxManage --version
-          sysctl hw.physicalcpu hw.logicalcpu 
+          sysctl hw.physicalcpu hw.logicalcpu
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
@@ -291,7 +291,7 @@ jobs:
         shell: powershell
         run: |
           echo $env:computerName
-          ls 
+          ls
           $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
           ls
@@ -328,7 +328,7 @@ jobs:
           $docker_running = $?
           }
           Write-Output "Docker is running"
-          docker system prune -f 
+          docker system prune -f
       - name: Info
         shell: powershell
         run: |
@@ -342,7 +342,7 @@ jobs:
           echo "------------------------"
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -478,7 +478,7 @@ jobs:
           Get-WmiObject -class Win32_ComputerSystem
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -569,7 +569,7 @@ jobs:
         shell: powershell
         run: |
           echo $env:computerName
-          ls 
+          ls
           $ErrorActionPreference = "SilentlyContinue"
           cd minikube_binaries
           ls
@@ -606,7 +606,7 @@ jobs:
           $docker_running = $?
           }
           Write-Output "Docker is running"
-          docker system prune -f 
+          docker system prune -f
       - name: Info
         shell: powershell
         run: |
@@ -620,7 +620,7 @@ jobs:
           echo "------------------------"
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -713,7 +713,7 @@ jobs:
           Get-WmiObject -class Win32_ComputerSystem
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -776,7 +776,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install gopogh
 
@@ -988,7 +988,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install gopogh
         shell: bash
@@ -1069,7 +1069,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install gopogh
 
@@ -1181,7 +1181,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
 
       - name: Install gopogh
@@ -1265,7 +1265,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install gopogh
 
@@ -1372,7 +1372,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install gopogh
 
@@ -1454,7 +1454,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Install gopogh
 

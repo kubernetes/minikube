@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
       - name: Download Dependencies
         run: go mod download
@@ -71,7 +71,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
 
       - name: Install tools
@@ -160,7 +160,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: '1.16'
           stable: true
 
       - name: Install tools
