@@ -194,7 +194,11 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	var cmd *exec.Cmd
 	if ContainerRuntime() == "docker" {
 		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", newImage)
+	} else if ContainerRuntime() == "containerd" {
+		// crictl inspecti busybox:test-example
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", newImage)
 	} else {
+		// crio adds localhost prefix
 		// crictl inspecti localhost/busybox:test-example
 		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", "localhost/"+newImage)
 	}
