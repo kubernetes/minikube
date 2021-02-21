@@ -15,7 +15,7 @@ This document is written for system integrators who wish to run minikube within 
 
 ## Issues
 
-* [Full list of open 'ssh' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fssh-driver)
+* [Full list of open 'ssh' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fgeneric-driver)
 
 ## Troubleshooting
 
