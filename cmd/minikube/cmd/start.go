@@ -952,7 +952,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 	}
 
 	if sysLimit < minUsableMem {
-		exitIfNotForced(reason.RsrcInsufficientSysMemory, "System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": containerLimit, "driver": drvName, "req": minUsableMem})
+		exitIfNotForced(reason.RsrcInsufficientSysMemory, "System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": sysLimit, "req": minUsableMem})
 	}
 
 	if req < minUsableMem {
