@@ -36,7 +36,7 @@ var incomeCh = make(chan struct{})
 var done = make(chan struct{})
 var mu sync.Mutex
 
-// TODO: intialize with current state (handle the case that user enables auto-pause after it is already paused)
+// TODO: initialize with current state (handle the case that user enables auto-pause after it is already paused)
 var runtimePaused = false
 var version = "0.0.1"
 
