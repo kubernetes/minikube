@@ -506,7 +506,8 @@ out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
 	$(eval DEB_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(DEB_VERSION)-$*-deb"))
 	cp -r installers/linux/deb/minikube_deb_template/* $(DEB_PACKAGING_DIRECTORY_$*)/
 	chmod 0755 $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN
-	sed -E -i 's/--VERSION--/'$(DEB_VERSION)-$(DEB_REVISION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
+	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
+	sed -E -i 's/--REVISION--/'$(DEB_REVISION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	sed -E -i 's/--ARCH--/'$*'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
   
 	if [ "$*" = "amd64" ]; then \
@@ -530,7 +531,7 @@ out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
 	$(eval RPM_PACKAGING_DIRECTORY_$*=$(shell mktemp -d --suffix ".minikube_$(RPM_VERSION)-$*-rpm"))
 	cp -r installers/linux/rpm/minikube_rpm_template/* $(RPM_PACKAGING_DIRECTORY_$*)/
 	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
-	sed -E -i 's/--RELEASE--/'$(RPM_REVISION)'/g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
+	sed -E -i 's/--REVISION--/'$(RPM_REVISION)'/g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
 	sed -E -i 's|--OUT--|'$(PWD)/out'|g' $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec
 	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
 		 $(RPM_PACKAGING_DIRECTORY_$*)/minikube.spec

@@ -1,5 +1,5 @@
 Package: minikube
-Version: --VERSION--
+Version: --VERSION-----REVISION--
 Section: base
 Priority: optional
 Architecture: --ARCH--
