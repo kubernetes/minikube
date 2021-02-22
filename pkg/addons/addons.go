@@ -209,7 +209,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		return errors.Wrap(err, "command runner")
 	}
 
-	if name == "auto-pause" && !enable {
+	if name == "auto-pause" && !enable { // needs to be disabled before deleting the service file in the internal disable
 		cmd := exec.Command("sudo", "systemctl", "disable", "--now", "auto-pause")
 		if _, err := runner.RunCmd(cmd); err != nil {
 			klog.ErrorS(err, "failed to disable", "service", "auto-pause")
@@ -452,22 +452,24 @@ func enableAutoPause(cc *config.ClusterConfig, name string, val string) error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
-	if !enable {
-		return nil
-	}
 	co := mustload.Running(cc.Name)
 	r := co.CP.Runner
-	cmd := exec.Command("sudo", "systemctl", "enable", "--now", "auto-pause")
-	if _, err := r.RunCmd(cmd); err != nil {
-		klog.ErrorS(err, "failed to enable", "service", "auto-pause")
-		return err
+	if enable {
+		cmd := exec.Command("sudo", "systemctl", "enable", "--now", "auto-pause")
+		if _, err := r.RunCmd(cmd); err != nil {
+			klog.ErrorS(err, "failed to enable", "service", "auto-pause")
+			return err
+		}
 	}
 
-	port := constants.AutoPauseProxyPort
-	if driver.NeedsPortForward(cc.Driver) {
-		port, err = oci.ForwardedPort(cc.Driver, cc.Name, port)
-		if err != nil {
-			klog.ErrorS(err, "failed to get forwarded port for", "auto-pause port", port)
+	port := co.CP.Port // api server port
+	if enable {        // if enable then need to calculate the forwarded port
+		port = constants.AutoPauseProxyPort
+		if driver.NeedsPortForward(cc.Driver) {
+			port, err = oci.ForwardedPort(cc.Driver, cc.Name, port)
+			if err != nil {
+				klog.ErrorS(err, "failed to get forwarded port for", "auto-pause port", port)
+			}
 		}
 	}
 
