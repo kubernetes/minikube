@@ -446,8 +446,8 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	}
 }
 
-// enableAutoPause enables the service after the config was copied by generic enble
-func enableAutoPause(cc *config.ClusterConfig, name string, val string) error {
+// enableOrDisableAutoPause enables the service after the config was copied by generic enble
+func enableOrDisableAutoPause(cc *config.ClusterConfig, name string, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
