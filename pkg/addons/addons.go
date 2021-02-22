@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -454,12 +455,32 @@ func enableAutoPause(cc *config.ClusterConfig, name string, val string) error {
 	if !enable {
 		return nil
 	}
-	c := mustload.Running(cc.Name)
-	r := c.CP.Runner
+	co := mustload.Running(cc.Name)
+	r := co.CP.Runner
 	cmd := exec.Command("sudo", "systemctl", "enable", "--now", "auto-pause")
 	if _, err := r.RunCmd(cmd); err != nil {
 		klog.ErrorS(err, "failed to enable", "service", "auto-pause")
 		return err
 	}
+
+	port := constants.AutoPauseProxyPort
+	if driver.NeedsPortForward(cc.Driver) {
+		port, err = oci.ForwardedPort(cc.Driver, cc.Name, port)
+		if err != nil {
+			klog.ErrorS(err, "failed to get forwarded port for", "auto-pause port", port)
+		}
+	}
+
+	updated, err := kubeconfig.UpdateEndpoint(cc.Name, co.CP.Hostname, port, kubeconfig.PathFromEnv(), kubeconfig.NewExtension())
+	if err != nil {
+		klog.ErrorS(err, "failed to update kubeconfig", "auto-pause proxy endpoint")
+		return err
+	}
+	if updated {
+		klog.Infof("%s context has been updated to point to auto-pause proxy %s:%s", cc.Name, co.CP.Hostname, co.CP.Port)
+	} else {
+		klog.Info("no need to update kube-context for auto-pause proxy")
+	}
+
 	return nil
 }
