@@ -20,7 +20,7 @@ set -x
 ./hack/jenkins/installers/check_install_docker.sh
 yes|gcloud auth configure-docker
 docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASS}
-docker login https://docker.pkg.github.com -u minikube-pr-bot -p ${pr_access_token}
+docker login https://docker.pkg.github.com -u ${GH_PACKAGE_USER} -p ${GH_PACKAGE_TOKEN}
 
 # Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
