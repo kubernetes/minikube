@@ -228,9 +228,13 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest string,
 			// check if ver version is release (ie, 'v1.19.2') or pre-release (ie, 'v1.19.3-rc.0' or 'v1.19.0-beta.2')
 			prerls := semver.Prerelease(ver)
 			if prerls == "" {
-				stable = semver.Max(ver, stable)
+				if semver.Compare(ver, stable) == 1 {
+					stable = ver
+				}
 			} else if strings.HasPrefix(prerls, "-rc") || strings.HasPrefix(prerls, "-beta") {
-				latest = semver.Max(ver, latest)
+				if semver.Compare(ver, latest) == 1 {
+					latest = ver
+				}
 			}
 			// make sure that latest >= stable
 			if semver.Compare(latest, stable) == -1 {
