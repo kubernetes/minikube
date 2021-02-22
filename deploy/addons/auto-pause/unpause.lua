@@ -1,5 +1,4 @@
 local function unpause(txn, addr, port)
-    core.Info("hello_world\n")
     if not addr then addr = '127.0.0.1' end
     if not port then port = 5000 end
 

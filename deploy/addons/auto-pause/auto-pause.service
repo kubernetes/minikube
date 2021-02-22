@@ -1,3 +1,4 @@
+[Unit]
 Description=Auto Pause Service
 
 [Service]

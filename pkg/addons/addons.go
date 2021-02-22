@@ -18,6 +18,7 @@ package addons
 
 import (
 	"fmt"
+	"os/exec"
 	"path"
 	"runtime"
 	"sort"
@@ -39,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -201,13 +203,20 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		}
 	}
 
-	cmd, err := machine.CommandRunner(host)
+	runner, err := machine.CommandRunner(host)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
 	}
 
+	if name == "auto-pause" && !enable {
+		cmd := exec.Command("sudo", "systemctl", "disable", "--now", "auto-pause")
+		if _, err := runner.RunCmd(cmd); err != nil {
+			klog.ErrorS(err, "failed to disable", "service", "auto-pause")
+		}
+	}
+
 	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig)
-	return enableOrDisableAddonInternal(cc, addon, cmd, data, enable)
+	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 
 func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
@@ -223,7 +232,7 @@ func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable boo
 	return false
 }
 
-func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
+func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, runner command.Runner, data interface{}, enable bool) error {
 	deployFiles := []string{}
 
 	for _, addon := range addon.Assets {
@@ -242,13 +251,13 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 
 		if enable {
 			klog.Infof("installing %s", fPath)
-			if err := cmd.Copy(f); err != nil {
+			if err := runner.Copy(f); err != nil {
 				return err
 			}
 		} else {
 			klog.Infof("Removing %+v", fPath)
 			defer func() {
-				if err := cmd.Remove(f); err != nil {
+				if err := runner.Remove(f); err != nil {
 					klog.Warningf("error removing %s; addon should still be disabled as expected", fPath)
 				}
 			}()
@@ -260,7 +269,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 
 	// Retry, because sometimes we race against an apiserver restart
 	apply := func() error {
-		_, err := cmd.RunCmd(kubectlCommand(cc, deployFiles, enable))
+		_, err := runner.RunCmd(kubectlCommand(cc, deployFiles, enable))
 		if err != nil {
 			klog.Warningf("apply failed, will retry: %v", err)
 		}
@@ -434,4 +443,23 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 			klog.Errorf("store failed: %v", err)
 		}
 	}
+}
+
+// enableAutoPause enables the service after the config was copied by generic enble
+func enableAutoPause(cc *config.ClusterConfig, name string, val string) error {
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+	if !enable {
+		return nil
+	}
+	c := mustload.Running(cc.Name)
+	r := c.CP.Runner
+	cmd := exec.Command("sudo", "systemctl", "enable", "--now", "auto-pause")
+	if _, err := r.RunCmd(cmd); err != nil {
+		klog.ErrorS(err, "failed to enable", "service", "auto-pause")
+		return err
+	}
+	return nil
 }
