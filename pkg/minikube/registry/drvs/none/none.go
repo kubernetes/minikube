@@ -34,6 +34,7 @@ import (
 func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.None,
+		Alias:    []string{driver.AliasNative},
 		Config:   configure,
 		Init:     func() drivers.Driver { return none.NewDriver(none.Config{}) },
 		Status:   status,

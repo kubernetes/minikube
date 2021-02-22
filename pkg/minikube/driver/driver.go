@@ -59,6 +59,8 @@ const (
 	AliasKVM = "kvm"
 	// AliasSSH is driver name alias for ssh
 	AliasSSH = "generic"
+	// AliasNative is driver name alias for None driver
+	AliasNative = "native"
 )
 
 var (
