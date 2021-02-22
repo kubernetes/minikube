@@ -45,7 +45,7 @@ var Addons = []*Addon{
 	{
 		name:      "auto-pause",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon, enableAutoPause},
+		callbacks: []setFn{EnableOrDisableAddon, enableOrDisableAutoPause},
 	},
 
 	{
