@@ -286,7 +286,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		return errors.Wrapf(err, "sudo mkdir (%s)", h.DriverName)
 	}
 
-	if driver.BareMetal(mc.Driver) {
+	if driver.IsNative(mc.Driver) {
 		showLocalOsRelease()
 	}
 	if driver.IsVM(mc.Driver) || driver.IsKIC(mc.Driver) || driver.IsSSH(mc.Driver) {
@@ -322,7 +322,7 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 // showHostInfo shows host information
 func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 	machineType := driver.MachineType(cfg.Driver)
-	if driver.BareMetal(cfg.Driver) {
+	if driver.IsNative(cfg.Driver) {
 		info, cpuErr, memErr, DiskErr := LocalHostInfo()
 		if cpuErr == nil && memErr == nil && DiskErr == nil {
 			register.Reg.SetStep(register.RunningLocalhost)

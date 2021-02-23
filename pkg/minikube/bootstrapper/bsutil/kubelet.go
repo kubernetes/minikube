@@ -118,8 +118,8 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 
 // KubeNodeName returns the node name registered in Kubernetes
 func KubeNodeName(cc config.ClusterConfig, n config.Node) string {
-	if cc.Driver == driver.None {
-		// Always use hostname for "none" driver
+	if cc.Driver == driver.Native {
+		// Always use hostname for "native" driver
 		hostname, _ := os.Hostname()
 		return hostname
 	}

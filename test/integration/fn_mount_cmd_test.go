@@ -44,8 +44,8 @@ const (
 )
 
 func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // nolint
-	if NoneDriver() {
-		t.Skip("skipping: none driver does not support mount")
+	if NativeDriver() {
+		t.Skip("skipping: native driver does not support mount")
 	}
 	if HyperVDriver() {
 		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")

@@ -37,8 +37,9 @@ func (f *FailFastError) Error() string {
 	return f.Err.Error()
 }
 
-// ErrNoExecLinux is thrown on linux when the kubeadm binaries are mounted in a noexec volume on Linux as seen in https://github.com/kubernetes/minikube/issues/8327#issuecomment-651288459
-// this error could be seen on docker/podman or none driver.
+// ErrNoExecLinux is thrown on linux when the kubeadm binaries are mounted in a noexec volume on Linux as seen in
+// https://github.com/kubernetes/minikube/issues/8327#issuecomment-651288459
+// this error could be seen on docker/podman or native driver.
 var ErrNoExecLinux = &FailFastError{errors.New("mounted kubeadm binary is not executable")}
 
 // ErrInitTimedout is thrown if kubeadm init takes longer than max time allowed

@@ -561,7 +561,7 @@ var driverIssues = []match{
 		Kind: Kind{
 			ID:       "DRV_IMAGE_ARCH_UNSUPPORTED",
 			ExitCode: ExDriverUnsupported,
-			Advice:   "This driver does not yet work on your architecture. Maybe try --driver=none",
+			Advice:   "This driver does not yet work on your architecture. Maybe try --driver=native",
 			Issues:   []int{7071},
 		},
 		Regexp: re(`Error: incompatible image architecture`),
@@ -636,7 +636,7 @@ var driverIssues = []match{
 		Kind: Kind{
 			ID:       "DRV_NO_IP",
 			ExitCode: ExDriverTimeout,
-			Advice:   "Check your firewall rules for interference, and run 'virt-host-validate' to check for KVM configuration issues. If you are running minikube within a VM, consider using --driver=none",
+			Advice:   "Check your firewall rules for interference, and run 'virt-host-validate' to check for KVM configuration issues. If you are running minikube within a VM, consider using --driver=native",
 			URL:      "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
 			Issues:   []int{4249, 3566},
 		},

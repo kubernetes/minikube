@@ -163,8 +163,8 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 
 // validateLoadImage makes sure that `minikube load image` works as expected
 func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
-	if NoneDriver() {
-		t.Skip("load image not available on none driver")
+	if NativeDriver() {
+		t.Skip("load image not available on native driver")
 	}
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
@@ -631,8 +631,8 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	if NoneDriver() {
-		t.Skipf("skipping: cache unsupported by none")
+	if NativeDriver() {
+		t.Skipf("skipping: cache unsupported by native")
 	}
 
 	t.Run("cache", func(t *testing.T) {
@@ -1104,8 +1104,8 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 // validateSSHCmd asserts basic "ssh" command functionality
 func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-	if NoneDriver() {
-		t.Skipf("skipping: ssh unsupported by none")
+	if NativeDriver() {
+		t.Skipf("skipping: ssh unsupported by native")
 	}
 	mctx, cancel := context.WithTimeout(ctx, Minutes(1))
 	defer cancel()
@@ -1242,8 +1242,8 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	if NoneDriver() {
-		t.Skipf("skipping: ssh unsupported by none")
+	if NativeDriver() {
+		t.Skipf("skipping: ssh unsupported by native")
 	}
 
 	vp := vmSyncTestPath()
@@ -1270,8 +1270,8 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	if NoneDriver() {
-		t.Skipf("skipping: ssh unsupported by none")
+	if NativeDriver() {
+		t.Skipf("skipping: ssh unsupported by native")
 	}
 
 	testPem := filepath.Join(*testdataDir, "minikube_test.pem")

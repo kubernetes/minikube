@@ -32,8 +32,8 @@ const (
 	Docker = "docker"
 	// Mock driver
 	Mock = "mock"
-	// None driver
-	None = "none"
+	// native driver
+	Native = "native"
 )
 
 // IsKIC checks if the driver is a Kubernetes in container
@@ -48,15 +48,15 @@ func IsMock(name string) bool {
 
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
-	if IsKIC(name) || IsMock(name) || BareMetal(name) {
+	if IsKIC(name) || IsMock(name) || IsNative(name) {
 		return false
 	}
 	return true
 }
 
-// BareMetal returns if this driver is unisolated
-func BareMetal(name string) bool {
-	return name == None || name == Mock
+// IsNative returns if this driver is unisolated
+func IsNative(name string) bool {
+	return name == Native || name == Mock
 }
 
 var (

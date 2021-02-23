@@ -70,7 +70,7 @@ If the issue is specific to an operating system, hypervisor, container, addon, o
 - `co/hyperkit`
 - `co/hyperv`
 - `co/kvm2`
-- `co/none-driver`
+- `co/native-driver`
 - `co/docker-driver`
 - `co/podman-driver`
 - `co/virtualbox`

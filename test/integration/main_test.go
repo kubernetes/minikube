@@ -105,9 +105,12 @@ func Target() string {
 	return *binaryPath
 }
 
-// NoneDriver returns whether or not this test is using the none driver
-func NoneDriver() bool {
-	return strings.Contains(*startArgs, "--driver=none") || strings.Contains(*startArgs, "--vm-driver=none")
+// NativeDriver returns whether or not this test is using the native driver
+func NativeDriver() bool {
+	return strings.Contains(*startArgs, "--driver=none") ||
+		strings.Contains(*startArgs, "--vm-driver=none") ||
+		strings.Contains(*startArgs, "--driver=native") ||
+		strings.Contains(*startArgs, "--vm-driver=native")
 }
 
 // HyperVDriver returns whether or not this test is using the Hyper-V driver

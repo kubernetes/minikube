@@ -26,8 +26,8 @@ import (
 )
 
 func TestGvisorAddon(t *testing.T) {
-	if NoneDriver() {
-		t.Skip("Can't run containerd backend with none driver")
+	if NativeDriver() {
+		t.Skip("Can't run containerd backend with native driver")
 	}
 	if !*enableGvisor {
 		t.Skip("skipping test because --gvisor=false")

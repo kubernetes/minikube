@@ -169,8 +169,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	if apiServer {
 		// special ops for none , like change minikube directory.
-		// multinode super doesn't work on the none driver
-		if starter.Cfg.Driver == driver.None && len(starter.Cfg.Nodes) == 1 {
+		// multinode super doesn't work on the native driver
+		if starter.Cfg.Driver == driver.Native && len(starter.Cfg.Nodes) == 1 {
 			prepareNone()
 		}
 	} else {
@@ -225,7 +225,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 		beginDownloadKicBaseImage(&kicGroup, cc, viper.GetBool("download-only"))
 	}
 
-	if !driver.BareMetal(cc.Driver) {
+	if !driver.IsNative(cc.Driver) {
 		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
 	}
 
@@ -257,7 +257,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	}
 
 	disableOthers := true
-	if driver.BareMetal(cc.Driver) {
+	if driver.IsNative(cc.Driver) {
 		disableOthers = false
 	}
 
@@ -416,7 +416,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	return runner, preExists, m, host, err
 }
 
-// startHost starts a new minikube host using a VM or None
+// startHost starts a new minikube host using a VM or Native
 func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
@@ -487,7 +487,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
+	if !driver.IsNative(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
 		if err := trySSH(h, ip); err != nil {
 			return ip, err
 		}

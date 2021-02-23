@@ -35,8 +35,8 @@ import (
 )
 
 func TestSkaffold(t *testing.T) {
-	if NoneDriver() {
-		t.Skip("none driver doesn't support `minikube docker-env`; skaffold depends on this command")
+	if NativeDriver() {
+		t.Skip("native driver doesn't support `minikube docker-env`; skaffold depends on this command")
 	}
 	if cr := ContainerRuntime(); cr != "docker" {
 		t.Skipf("skaffold requires docker-env, currently testing %s container runtime", cr)

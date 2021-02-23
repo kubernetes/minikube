@@ -82,8 +82,8 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 				defer Cleanup(t, profile, cancel)
 				type validateStartStopFunc func(context.Context, *testing.T, string, string, string, []string)
-				if !strings.Contains(tc.name, "docker") && NoneDriver() {
-					t.Skipf("skipping %s - incompatible with none driver", t.Name())
+				if !strings.Contains(tc.name, "docker") && NativeDriver() {
+					t.Skipf("skipping %s - incompatible with native driver", t.Name())
 				}
 				if strings.Contains(tc.name, "disable-driver-mounts") && !VirtualboxDriver() {
 					t.Skipf("skipping %s - only runs on virtualbox", t.Name())
@@ -175,8 +175,8 @@ func validateStop(ctx context.Context, t *testing.T, profile string, tcName stri
 
 func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
-	// The none driver never really stops
-	if !NoneDriver() {
+	// The native driver never really stops
+	if !NativeDriver() {
 		got := Status(ctx, t, Target(), profile, "Host", profile)
 		if got != state.Stopped.String() {
 			t.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
@@ -228,7 +228,7 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 }
 
 func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
-	if !NoneDriver() {
+	if !NativeDriver() {
 		testPulledImages(ctx, t, profile, tcVersion)
 	}
 }

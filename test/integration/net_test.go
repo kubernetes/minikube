@@ -34,8 +34,8 @@ import (
 
 func TestNetworkPlugins(t *testing.T) {
 	MaybeParallel(t)
-	if NoneDriver() {
-		t.Skip("skipping since test for none driver")
+	if NativeDriver() {
+		t.Skip("skipping since test for native driver")
 	}
 
 	t.Run("group", func(t *testing.T) {
@@ -92,9 +92,9 @@ func TestNetworkPlugins(t *testing.T) {
 				}
 				if !t.Failed() {
 					t.Run("KubeletFlags", func(t *testing.T) {
-						// none does not support 'minikube ssh'
+						// native does not support 'minikube ssh'
 						rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
-						if NoneDriver() {
+						if NativeDriver() {
 							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
 						}
 						if err != nil {

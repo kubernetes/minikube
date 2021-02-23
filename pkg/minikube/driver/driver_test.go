@@ -51,10 +51,10 @@ func TestSupported(t *testing.T) {
 }
 
 func TestBareMetal(t *testing.T) {
-	if !BareMetal(None) {
-		t.Errorf("Supported(%s) is false", None)
+	if !IsNative(Native) {
+		t.Errorf("Supported(%s) is false", Native)
 	}
-	if BareMetal(VirtualBox) {
+	if IsNative(VirtualBox) {
 		t.Errorf("Supported(%s) is true", VirtualBox)
 	}
 }
@@ -64,7 +64,7 @@ func TestMachineType(t *testing.T) {
 		Podman:       "container",
 		Docker:       "container",
 		Mock:         "bare metal machine",
-		None:         "bare metal machine",
+		Native:       "bare metal machine",
 		SSH:          "bare metal machine",
 		KVM2:         "VM",
 		VirtualBox:   "VM",
@@ -102,7 +102,7 @@ func TestFlagDefaults(t *testing.T) {
 		ExtraOptions: []string{fmt.Sprintf("kubelet.resolv-conf=%s", tf.Name())},
 	}
 	systemdResolvConf = tf.Name()
-	if diff := cmp.Diff(FlagDefaults(None), expected); diff != "" {
+	if diff := cmp.Diff(FlagDefaults(Native), expected); diff != "" {
 		t.Errorf("defaults mismatch (-want +got):\n%s", diff)
 	}
 }

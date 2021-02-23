@@ -92,9 +92,9 @@ func TestDownloadOnly(t *testing.T) {
 
 			preloadExists := false
 			t.Run("preload-exists", func(t *testing.T) {
-				// skip for none, as none driver does not have preload feature.
-				if NoneDriver() {
-					t.Skip("None driver does not have preload")
+				// skip for native, as native driver does not have preload feature.
+				if NativeDriver() {
+					t.Skip("Native driver does not have preload")
 				}
 				if download.PreloadExists(v, containerRuntime, true) {
 					// Just make sure the tarball path exists
@@ -108,9 +108,9 @@ func TestDownloadOnly(t *testing.T) {
 			})
 
 			t.Run("cached-images", func(t *testing.T) {
-				// skip verify for cache images if --driver=none
-				if NoneDriver() {
-					t.Skip("None driver has no cache")
+				// skip verify for cache images if --driver=native
+				if NativeDriver() {
+					t.Skip("Native driver has no cache")
 				}
 				if preloadExists {
 					t.Skip("Preload exists, images won't be cached")

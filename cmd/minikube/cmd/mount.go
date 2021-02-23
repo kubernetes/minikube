@@ -103,7 +103,7 @@ var mountCmd = &cobra.Command{
 		}
 
 		co := mustload.Running(ClusterFlagValue())
-		if co.CP.Host.Driver.DriverName() == driver.None {
+		if co.CP.Host.Driver.DriverName() == driver.Native {
 			exit.Message(reason.Usage, `'none' driver does not support 'minikube mount' command`)
 		}
 

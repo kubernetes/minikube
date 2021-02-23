@@ -264,7 +264,7 @@ var dockerEnvCmd = &cobra.Command{
 		co := mustload.Running(cname)
 		driverName := co.CP.Host.DriverName
 
-		if driverName == driver.None {
+		if driverName == driver.Native {
 			exit.Message(reason.EnvDriverConflict, `'none' driver does not support 'minikube docker-env' command`)
 		}
 

@@ -162,7 +162,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	checkIngress := func() error {
 		var rr *RunResult
 		var err error
-		if NoneDriver() { // just run curl directly on the none driver
+		if NativeDriver() { // just run curl directly on the native driver
 			rr, err = Run(t, exec.CommandContext(ctx, "curl", "-s", addr, "-H", "'Host: nginx.example.com'"))
 			if err != nil {
 				return err
@@ -335,7 +335,7 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 		t.Fatalf("failed waiting for helm pod: %v", err)
 	}
 
-	if NoneDriver() {
+	if NativeDriver() {
 		_, err := exec.LookPath("socat")
 		if err != nil {
 			t.Skipf("socat is required by kubectl to complete this test")

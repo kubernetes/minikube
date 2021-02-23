@@ -192,12 +192,12 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
 		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
-		"Port-10250", // For "none" users who already have a kubelet online
-		"Swap",       // For "none" users who have swap configured
+		"Port-10250", // For "native" users who already have a kubelet online
+		"Swap",       // For "native" users who have swap configured
 	}
 	if version.GE(semver.MustParse("1.20.0")) {
 		ignore = append(ignore,
-			"Mem", // For "none" users who have too little memory
+			"Mem", // For "native" users who have too little memory
 		)
 	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
@@ -208,7 +208,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		klog.Infof("ignoring SystemVerification for kubeadm because of old Kubernetes version %v", version)
 		skipSystemVerification = true
 	}
-	if driver.BareMetal(cfg.Driver) && r.Name() == "Docker" {
+	if driver.IsNative(cfg.Driver) && r.Name() == "Docker" {
 		if v, err := r.Version(); err == nil && strings.Contains(v, "azure") {
 			klog.Infof("ignoring SystemVerification for kubeadm because of unknown docker version %s", v)
 			skipSystemVerification = true

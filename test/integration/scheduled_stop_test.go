@@ -41,8 +41,8 @@ func TestScheduledStopWindows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("test only runs on windows")
 	}
-	if NoneDriver() {
-		t.Skip("--schedule does not work with the none driver")
+	if NativeDriver() {
+		t.Skip("--schedule does not work with the native driver")
 	}
 	profile := UniqueProfileName("scheduled-stop")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
@@ -77,8 +77,8 @@ func TestScheduledStopUnix(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test only runs on unix")
 	}
-	if NoneDriver() {
-		t.Skip("--schedule does not work with the none driver")
+	if NativeDriver() {
+		t.Skip("--schedule does not work with the native driver")
 	}
 	profile := UniqueProfileName("scheduled-stop")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))

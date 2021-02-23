@@ -156,7 +156,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	if h.DriverName == driver.Mock {
 		return &command.FakeCommandRunner{}, nil
 	}
-	if driver.BareMetal(h.Driver.DriverName()) {
+	if driver.IsNative(h.Driver.DriverName()) {
 		return command.NewExecRunner(true), nil
 	}
 
@@ -220,7 +220,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"waiting",
 			func() error {
-				if driver.BareMetal(h.Driver.DriverName()) {
+				if driver.IsNative(h.Driver.DriverName()) {
 					return nil
 				}
 				return mcnutils.WaitFor(drivers.MachineInState(h.Driver, state.Running))
@@ -230,7 +230,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 			"provisioning",
 			func() error {
 				// Skippable because we don't reconfigure Docker?
-				if driver.BareMetal(h.Driver.DriverName()) {
+				if driver.IsNative(h.Driver.DriverName()) {
 					return nil
 				}
 				return provisionDockerMachine(h)

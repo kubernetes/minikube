@@ -34,7 +34,7 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 readonly TIMEOUT=${1:-70m}
 
 if [ "$(uname)" != "Darwin" ]; then
-  # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
+  # install lsof for finding native driver procs, psmisc to use pstree in cronjobs
   sudo apt-get -y install lsof psmisc
 fi
 
@@ -227,13 +227,13 @@ if [[ "${kprocs}" != "" ]]; then
 fi
 
 
-# clean up none drivers binding on 8443
+# clean up native drivers binding on 8443
 none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
 if [[ "${none_procs}" != "" ]]; then
   echo "Found stale api servers listening on 8443 processes to kill: "
   for p in $none_procs
   do
-    echo "Kiling stale none driver:  $p"
+    echo "Kiling stale native driver:  $p"
     sudo -E ps -f -p $p || true
     sudo -E kill $p || true
     sudo -E kill -9 $p || true

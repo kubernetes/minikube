@@ -30,8 +30,8 @@ import (
 )
 
 func TestMultiNode(t *testing.T) {
-	if NoneDriver() {
-		t.Skip("none driver does not support multinode")
+	if NativeDriver() {
+		t.Skip("native driver does not support multinode")
 	}
 
 	type validatorFunc func(context.Context, *testing.T, string)

@@ -41,7 +41,7 @@ var sshCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
-		if co.CP.Host.DriverName == driver.None {
+		if co.CP.Host.DriverName == driver.Native {
 			exit.Message(reason.Usage, "'none' driver does not support 'minikube ssh' command")
 		}
 

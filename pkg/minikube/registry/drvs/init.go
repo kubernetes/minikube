@@ -22,7 +22,7 @@ import (
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/hyperkit"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/hyperv"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/kvm2"
-	_ "k8s.io/minikube/pkg/minikube/registry/drvs/none"
+	_ "k8s.io/minikube/pkg/minikube/registry/drvs/native"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/parallels"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/podman"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/ssh"

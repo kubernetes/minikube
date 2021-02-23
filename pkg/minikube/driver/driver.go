@@ -36,8 +36,8 @@ const (
 	Docker = "docker"
 	// Mock driver
 	Mock = "mock"
-	// None driver
-	None = "none"
+	// Native driver
+	Native = "native"
 	// SSH driver
 	SSH = "ssh"
 	// KVM2 driver
@@ -59,8 +59,8 @@ const (
 	AliasKVM = "kvm"
 	// AliasSSH is driver name alias for ssh
 	AliasSSH = "generic"
-	// AliasNative is driver name alias for None driver
-	AliasNative = "native"
+	// AliasNone is driver name alias for Native driver
+	AliasNone = "none"
 )
 
 var (
@@ -142,15 +142,15 @@ func IsMock(name string) bool {
 
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
-	if IsKIC(name) || BareMetal(name) {
+	if IsKIC(name) || IsNative(name) {
 		return false
 	}
 	return true
 }
 
-// BareMetal returns if this driver is unisolated
-func BareMetal(name string) bool {
-	return name == None || name == Mock
+// IsNative returns if this driver is unisolated
+func IsNative(name string) bool {
+	return name == Native || name == Mock
 }
 
 // IsSSH checks if the driver is ssh
@@ -179,7 +179,7 @@ func IsMicrosoftWSL() bool {
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
 func HasResourceLimits(name string) bool {
-	return name != None
+	return name != Native
 }
 
 // NeedsShutdown returns true if driver needs manual shutdown command before stopping.
@@ -216,13 +216,13 @@ type FlagHints struct {
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
 	fh := FlagHints{}
-	if name != None {
+	if name != Native {
 		fh.CacheImages = true
 		return fh
 	}
 
 	fh.CacheImages = false
-	// if specifc linux add this option for systemd work on none driver
+	// if specifc linux add this option for systemd work on native driver
 	if _, err := os.Stat(systemdResolvConf); err == nil {
 		noneEO := fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
 		fh.ExtraOptions = append(fh.ExtraOptions, noneEO)

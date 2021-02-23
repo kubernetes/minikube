@@ -26,7 +26,7 @@ var supportedDrivers = []string{
 	VMwareFusion,
 	KVM2,
 	VMware,
-	None,
+	Native,
 	Docker,
 	Podman,
 	SSH,

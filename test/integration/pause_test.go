@@ -89,7 +89,7 @@ func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile strin
 		t.Fatalf("failed to second start a running minikube with args: %q : %v", rr.Command(), err)
 	}
 
-	if !NoneDriver() {
+	if !NativeDriver() {
 		softLog := "The running cluster does not require reconfiguration"
 		if !strings.Contains(rr.Output(), softLog) {
 			t.Errorf("expected the second start log output to include %q but got: %s", softLog, rr.Output())

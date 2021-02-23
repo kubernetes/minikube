@@ -72,8 +72,8 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		return h, err
 	}
 
-	// Avoid reprovisioning "none" driver because provision.Detect requires SSH
-	if !driver.BareMetal(h.Driver.DriverName()) {
+	// Avoid reprovisioning "native" driver because provision.Detect requires SSH
+	if !driver.IsNative(h.Driver.DriverName()) {
 		e := engineOptions(*cc)
 		h.HostOptions.EngineOptions.Env = e.Env
 		err = provisionDockerMachine(h)
@@ -90,7 +90,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if driver.BareMetal(h.Driver.DriverName()) {
+	if driver.IsNative(h.Driver.DriverName()) {
 		klog.Infof("%s is local, skipping auth/time setup (requires ssh)", driverName)
 		return h, nil
 	}
@@ -260,7 +260,7 @@ func machineExistsDocker(s state.State, err error) (bool, error) {
 		// if the kic image is not present on the host machine, when user cancel `minikube start`, state.Error will be return
 		return false, constants.ErrMachineMissing
 	} else if s == state.None {
-		// if the kic image is present on the host machine, when user cancel `minikube start`, state.None will be return
+		// if the kic image is present on the host machine, when user cancel `minikube start`, state.Native will be return
 		return false, constants.ErrMachineMissing
 	}
 	return true, err
@@ -279,7 +279,7 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 		return machineExistsState(s, err)
 	case driver.KVM2:
 		return machineExistsState(s, err)
-	case driver.None:
+	case driver.Native:
 		return machineExistsState(s, err)
 	case driver.Parallels:
 		return machineExistsMessage(s, err, "connection is shut down")

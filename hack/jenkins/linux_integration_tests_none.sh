@@ -51,7 +51,7 @@ sudo systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \
   && sudo systemctl stop -f kubelet
 
- # conntrack is required for kubernetes 1.18 and higher for none driver
+ # conntrack is required for kubernetes 1.18 and higher for native driver
 if ! conntrack --version &>/dev/null; then
   echo "WARNING: contrack is not installed. will try to install."
   sudo apt-get update -qq

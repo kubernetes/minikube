@@ -34,8 +34,8 @@ import (
 )
 
 func TestKVMDriverInstallOrUpdate(t *testing.T) {
-	if NoneDriver() {
-		t.Skip("Skip none driver.")
+	if NativeDriver() {
+		t.Skip("Skip native driver.")
 	}
 
 	if runtime.GOOS != "linux" {

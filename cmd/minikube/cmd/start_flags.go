@@ -401,7 +401,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	}
 
 	var kubeNodeName string
-	if driver.BareMetal(cc.Driver) {
+	if driver.IsNative(cc.Driver) {
 		kubeNodeName = "m01"
 	}
 	return createNode(cc, kubeNodeName, existing)

@@ -288,7 +288,7 @@ func TestBaseImageFlagDriverCombo(t *testing.T) {
 	}{
 		{driver.Docker, true},
 		{driver.Podman, true},
-		{driver.None, false},
+		{driver.Native, false},
 		{driver.KVM2, false},
 		{driver.VirtualBox, false},
 		{driver.HyperKit, false},

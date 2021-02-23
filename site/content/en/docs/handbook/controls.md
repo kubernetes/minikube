@@ -46,7 +46,7 @@ Upgrade your cluster:
 minikube start --kubernetes-version=latest
 ```
 
-Start a second local cluster (_note: This will not work if minikube is using the bare-metal/none driver_):
+Start a second local cluster (_note: This will not work if minikube is using the bare-metal/native driver_):
 
 ```shell
 minikube start -p cluster2

@@ -330,7 +330,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
 
-	if err == nil && (driver.BareMetal(cc.Driver) || driver.IsSSH(cc.Driver)) {
+	if err == nil && (driver.IsNative(cc.Driver) || driver.IsSSH(cc.Driver)) {
 		if err := uninstallKubernetes(api, *cc, cc.Nodes[0], viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {

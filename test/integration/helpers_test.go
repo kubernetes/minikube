@@ -468,7 +468,7 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 func MaybeParallel(t *testing.T) {
 	t.Helper()
 	// TODO: Allow paralellized tests on "none" that do not require independent clusters
-	if NoneDriver() {
+	if NativeDriver() {
 		return
 	}
 	t.Parallel()

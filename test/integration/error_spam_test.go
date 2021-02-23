@@ -47,8 +47,8 @@ var stderrAllowRe = regexp.MustCompile(strings.Join(stderrAllow, "|"))
 
 // TestErrorSpam asserts that there are no errors displayed
 func TestErrorSpam(t *testing.T) {
-	if NoneDriver() {
-		t.Skip("none driver always shows a warning")
+	if NativeDriver() {
+		t.Skip("native driver always shows a warning")
 	}
 	MaybeParallel(t)
 

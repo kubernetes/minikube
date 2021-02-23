@@ -120,7 +120,7 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error converting VM IP address to IPv4 address")
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
-	case driver.None:
+	case driver.Native:
 		return net.ParseIP("127.0.0.1"), nil
 	default:
 		return []byte{}, fmt.Errorf("HostIP not yet implemented for %q driver", host.DriverName)

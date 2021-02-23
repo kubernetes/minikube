@@ -27,8 +27,8 @@ import (
 )
 
 func TestPreload(t *testing.T) {
-	if NoneDriver() {
-		t.Skipf("skipping %s - incompatible with none driver", t.Name())
+	if NativeDriver() {
+		t.Skipf("skipping %s - incompatible with native driver", t.Name())
 	}
 
 	if arm64Platform() {

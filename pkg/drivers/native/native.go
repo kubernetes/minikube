@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package none
+package native
 
 import (
 	"fmt"
@@ -43,7 +43,7 @@ var cleanupPaths = []string{
 }
 
 // Driver is a driver designed to run kubeadm w/o VM management.
-// https://minikube.sigs.k8s.io/docs/reference/drivers/none/
+// https://minikube.sigs.k8s.io/docs/reference/drivers/native/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -52,14 +52,14 @@ type Driver struct {
 	exec    command.Runner
 }
 
-// Config is configuration for the None driver
+// Config is configuration for the Native driver
 type Config struct {
 	MachineName      string
 	StorePath        string
 	ContainerRuntime string
 }
 
-// NewDriver returns a fully configured None driver
+// NewDriver returns a fully configured Native driver
 func NewDriver(c Config) *Driver {
 	runner := command.NewExecRunner(true)
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
@@ -84,7 +84,7 @@ func (d *Driver) PreCreateCheck() error {
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
-	// creation for the none driver is handled by commands.go
+	// creation for the native driver is handled by commands.go
 	return nil
 }
 
@@ -229,7 +229,7 @@ func (d *Driver) Stop() error {
 			return errors.Wrap(err, "stop containers")
 		}
 	}
-	klog.Infof("none driver is stopped!")
+	klog.Infof("native driver is stopped!")
 	return nil
 }
 

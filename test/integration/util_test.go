@@ -31,7 +31,7 @@ func UniqueProfileName(prefix string) string {
 	if *forceProfile != "" {
 		return *forceProfile
 	}
-	if NoneDriver() {
+	if NativeDriver() {
 		return "minikube"
 	}
 	// example: prefix-20200413162239-3215

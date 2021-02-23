@@ -34,8 +34,8 @@ func TestOffline(t *testing.T) {
 		t.Skipf("skipping %s - only docker runtime supported on arm64. See https://github.com/kubernetes/minikube/issues/10144", t.Name())
 	}
 
-	if rt != "docker" && NoneDriver() {
-		t.Skipf("skipping %s - incompatible with none driver", t.Name())
+	if rt != "docker" && NativeDriver() {
+		t.Skipf("skipping %s - incompatible with native driver", t.Name())
 	}
 
 	profile := UniqueProfileName(fmt.Sprintf("offline-%s", rt))

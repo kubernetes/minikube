@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package none
+package native
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"os/user"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"k8s.io/minikube/pkg/drivers/none"
+	"k8s.io/minikube/pkg/drivers/native"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -33,10 +33,10 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.None,
-		Alias:    []string{driver.AliasNative},
+		Name:     driver.Native,
+		Alias:    []string{driver.AliasNone},
 		Config:   configure,
-		Init:     func() drivers.Driver { return none.NewDriver(none.Config{}) },
+		Init:     func() drivers.Driver { return native.NewDriver(native.Config{}) },
 		Status:   status,
 		Priority: registry.Discouraged, // requires root
 	}); err != nil {
@@ -45,7 +45,7 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	return none.NewDriver(none.Config{
+	return native.NewDriver(native.Config{
 		MachineName:      config.MachineName(cc, n),
 		StorePath:        localpath.MiniPath(),
 		ContainerRuntime: cc.KubernetesConfig.ContainerRuntime,

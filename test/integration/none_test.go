@@ -34,8 +34,8 @@ import (
 
 // None-driver specific test for CHANGE_MINIKUBE_NONE_USER
 func TestChangeNoneUser(t *testing.T) {
-	if !NoneDriver() {
-		t.Skip("Only test none driver.")
+	if !NativeDriver() {
+		t.Skip("Only test native driver.")
 	}
 	MaybeParallel(t)
 
