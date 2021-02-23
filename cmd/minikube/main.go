@@ -165,17 +165,12 @@ func setLastStartFlags() {
 		return
 	}
 	fp := localpath.LastStartLog()
-	if err := os.Remove(fp); err != nil && !os.IsNotExist(err) {
-		klog.Warningf("Unable to delete file %s: %v", err)
-	}
 	dp := filepath.Dir(fp)
-	if _, err := os.Stat(dp); err != nil {
-		if !os.IsNotExist(err) {
-			klog.Warningf("Unable to get log folder %s: %v", dp, err)
-		}
-		if err := os.MkdirAll(dp, 0755); err != nil {
-			klog.Warningf("Unable to make log folder %s: %v", dp, err)
-		}
+	if err := os.MkdirAll(dp, 0755); err != nil {
+		klog.Warningf("Unable to make log dir %s: %v", dp, err)
+	}
+	if _, err := os.Create(fp); err != nil {
+		klog.Warningf("Unable to create/truncate file %s: %v", fp, err)
 	}
 	if err := pflag.Set("log_file", fp); err != nil {
 		klog.Warningf("Unable to set default flag value for log_file: %v", err)
