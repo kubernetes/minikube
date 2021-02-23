@@ -177,9 +177,7 @@ func setLastStartFlags() {
 			klog.Warningf("Unable to make log folder %s: %v", dp, err)
 		}
 	}
-	if !pflag.CommandLine.Changed("log_file") && !pflag.CommandLine.Changed("log_dir") {
-		if err := pflag.Set("log_file", fp); err != nil {
-			klog.Warningf("Unable to set default flag value for log_file: %v", err)
-		}
+	if err := pflag.Set("log_file", fp); err != nil {
+		klog.Warningf("Unable to set default flag value for log_file: %v", err)
 	}
 }
