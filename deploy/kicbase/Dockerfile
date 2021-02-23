@@ -19,7 +19,7 @@
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20210119 
+FROM ubuntu:focal-20210119
 
 ARG BUILDKIT_VERSION="v0.8.1"
 
