@@ -37,7 +37,7 @@ GO_VERSION ?= 1.15.8
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2020.02.8
 REGISTRY?=gcr.io/k8s-minikube
-REGISTRY_GH?=docker.pkg.github.com/kubernetes/minikube
+REGISTRY_GH?=ghcr.io/kubernetes/kicbase
 
 # Get git commit id
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
