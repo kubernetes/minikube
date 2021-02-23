@@ -20,18 +20,15 @@ set -x
 ./hack/jenkins/installers/check_install_docker.sh
 yes|gcloud auth configure-docker
 docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASS}
-docker login https://docker.pkg.github.com -u minikube-bot -p ${access_token}
 
 # Setup variables
 now=$(date +%s)
 KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
 GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
 DH_REPO=kicbase/build
-GH_REPO=kicbase-build
 export KIC_VERSION=$KV-$now-$ghprbPullId
 GCR_IMG=${GCR_REPO}:${KIC_VERSION}
 DH_IMG=${DH_REPO}:${KIC_VERSION}
-GH_IMG=docker.pkg.github.com/kubernetes/minikube/${GH_REPO}:${KIC_VERSION}
 export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
 
 # Let's make sure we have the newest kicbase reference
