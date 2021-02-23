@@ -224,6 +224,11 @@ func outputLastStart() error {
 	out.Step(style.Empty, "==> Last Start <==")
 	fp := localpath.LastStartLog()
 	f, err := os.Open(fp)
+	if os.IsNotExist(err) {
+		msg := fmt.Sprintf("Last start log file not found at %s", fp)
+		out.Step(style.Empty, msg)
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %v", fp, err)
 	}
