@@ -29,8 +29,8 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
 
-	// Register drivers
 	"k8s.io/minikube/pkg/minikube/localpath"
+	// Register drivers
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
 
 	// Force exp dependency
