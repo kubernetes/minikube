@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 
@@ -143,17 +144,7 @@ func setFlags() {
 			klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
 		}
 	}
-	if os.Args[1] == "start" {
-		fp := localpath.LastStartLog()
-		if err := os.Remove(fp); err != nil && !os.IsNotExist(err) {
-			klog.Warningf("Unable to delete file %s: %v", err)
-		}
-		if !pflag.CommandLine.Changed("log_file") {
-			if err := pflag.Set("log_file", fp); err != nil {
-				klog.Warningf("Unable to set default flag value for log_file: %v", err)
-			}
-		}
-	}
+	setLastStartFlags()
 
 	// make sure log_dir exists if log_file is not also set - the log_dir is mutually exclusive with the log_file option
 	// ref: https://github.com/kubernetes/klog/blob/52c62e3b70a9a46101f33ebaf0b100ec55099975/klog.go#L491
@@ -161,6 +152,34 @@ func setFlags() {
 		pflag.Lookup("log_dir") != nil && pflag.Lookup("log_dir").Value.String() != "" {
 		if err := os.MkdirAll(pflag.Lookup("log_dir").Value.String(), 0755); err != nil {
 			klog.Warningf("unable to create log directory: %v", err)
+		}
+	}
+}
+
+// setLastStartFlags sets the log_file & log_dir flags if start command and no flags provided.
+func setLastStartFlags() {
+	if os.Args[1] != "start" {
+		return
+	}
+	if pflag.CommandLine.Changed("log_file") || pflag.CommandLine.Changed("log_dir") {
+		return
+	}
+	fp := localpath.LastStartLog()
+	if err := os.Remove(fp); err != nil && !os.IsNotExist(err) {
+		klog.Warningf("Unable to delete file %s: %v", err)
+	}
+	dp := filepath.Dir(fp)
+	if _, err := os.Stat(dp); err != nil {
+		if !os.IsNotExist(err) {
+			klog.Warningf("Unable to get log folder %s: %v", dp, err)
+		}
+		if err := os.MkdirAll(dp, 0755); err != nil {
+			klog.Warningf("Unable to make log folder %s: %v", dp, err)
+		}
+	}
+	if !pflag.CommandLine.Changed("log_file") && !pflag.CommandLine.Changed("log_dir") {
+		if err := pflag.Set("log_file", fp); err != nil {
+			klog.Warningf("Unable to set default flag value for log_file: %v", err)
 		}
 	}
 }
