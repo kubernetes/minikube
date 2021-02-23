@@ -1072,18 +1072,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateCPUCount(drvName)
 
 	if cmd.Flags().Changed(memory) {
-		if !oci.HasMemoryCgroup() {
-			out.WarningT("Your cgroup does not allow setting memory.")
-			out.Infof("More information: https://docs.doInfo.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
-		}
-		if !driver.HasResourceLimits(drvName) {
-			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
-		}
-		req, err := util.CalculateSizeInMB(viper.GetString(memory))
-		if err != nil {
-			exitIfNotForced(reason.Usage, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
-		}
-		validateRequestedMemorySize(req, drvName)
+		validateMemoryFlags(drvName)
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
@@ -1171,6 +1160,22 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateRegistryMirror()
 	validateInsecureRegistry()
 
+}
+
+// validateMemoryFlags validates memory related flags.
+func validateMemoryFlags(drvName string) {
+	if driver.IsKIC(drvName) && !oci.HasMemoryCgroup() {
+		out.WarningT("Your cgroup does not allow setting memory.")
+		out.Infof("More information: https://docs.doInfo.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
+	}
+	if !driver.HasResourceLimits(drvName) {
+		out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
+	}
+	req, err := util.CalculateSizeInMB(viper.GetString(memory))
+	if err != nil {
+		exitIfNotForced(reason.Usage, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+	}
+	validateRequestedMemorySize(req, drvName)
 }
 
 // This function validates if the --registry-mirror
