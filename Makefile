@@ -37,7 +37,6 @@ GO_VERSION ?= 1.15.8
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2020.02.10
 REGISTRY?=gcr.io/k8s-minikube
-REGISTRY_GH?=ghcr.io/kubernetes/kicbase
 
 # Get git commit id
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
@@ -57,7 +56,6 @@ ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 
 KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
-KIC_BASE_IMAGE_GH ?= $(REGISTRY_GH)/kicbase:$(KIC_VERSION)
 KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 
 ISO_BUCKET ?= minikube/iso
@@ -647,7 +645,7 @@ docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker buildx create --name $(X_DOCKER_BUILDER) --buildkitd-flags '--debug' || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
-KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) $(REGISTRY_GH)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
+KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
 
 .PHONY: push-kic-base-image 
 push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
