@@ -48,14 +48,14 @@ func IsMock(name string) bool {
 
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
-	if IsKIC(name) || IsMock(name) || IsNative(name) {
+	if IsKIC(name) || IsMock(name) || BareMetal(name) {
 		return false
 	}
 	return true
 }
 
-// IsNative returns if this driver is unisolated
-func IsNative(name string) bool {
+// BareMetal returns if this driver is unisolated
+func BareMetal(name string) bool {
 	return name == Native || name == Mock
 }
 

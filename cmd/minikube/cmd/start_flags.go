@@ -401,7 +401,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	}
 
 	var kubeNodeName string
-	if driver.IsNative(cc.Driver) {
+	if driver.BareMetal(cc.Driver) {
 		kubeNodeName = "m01"
 	}
 	return createNode(cc, kubeNodeName, existing)
@@ -427,6 +427,14 @@ func upgradeExistingConfig(cc *config.ClusterConfig) {
 		// defaults to kic.BaseImage
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
 		klog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
+	}
+
+	if cc.Driver == driver.AliasNone || cc.VMDriver == driver.AliasNone {
+		// If a cluster was created before or with minikube v1.17.1 the driver
+		// name is stored as `none` in the config. We need to change that to
+		// `native` for future processing.
+		cc.Driver = driver.Native
+		cc.VMDriver = driver.Native
 	}
 }
 

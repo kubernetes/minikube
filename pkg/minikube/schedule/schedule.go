@@ -36,7 +36,7 @@ func Daemonize(profiles []string, duration time.Duration) error {
 	var daemonizeProfiles []string
 	for _, p := range profiles {
 		_, cc := mustload.Partial(p)
-		if driver.IsNative(cc.Driver) {
+		if driver.BareMetal(cc.Driver) {
 			out.WarningT("scheduled stop is not supported on the native driver, skipping scheduling")
 			continue
 		}

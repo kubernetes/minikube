@@ -225,7 +225,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 		beginDownloadKicBaseImage(&kicGroup, cc, viper.GetBool("download-only"))
 	}
 
-	if !driver.IsNative(cc.Driver) {
+	if !driver.BareMetal(cc.Driver) {
 		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
 	}
 
@@ -257,7 +257,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	}
 
 	disableOthers := true
-	if driver.IsNative(cc.Driver) {
+	if driver.BareMetal(cc.Driver) {
 		disableOthers = false
 	}
 
@@ -487,7 +487,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 		}
 	}
 
-	if !driver.IsNative(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
 		if err := trySSH(h, ip); err != nil {
 			return ip, err
 		}

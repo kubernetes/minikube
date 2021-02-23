@@ -355,7 +355,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		numNodes = len(existing.Nodes)
 	}
 	if numNodes > 1 {
-		if driver.IsNative(starter.Cfg.Driver) {
+		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.Message(reason.DrvUnsupportedMulti, "The native driver is not compatible with multi-node clusters.")
 		} else {
 			if existing == nil {
@@ -989,7 +989,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 // validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
 func validateCPUCount(drvName string) {
 	var cpuCount int
-	if driver.IsNative(drvName) {
+	if driver.BareMetal(drvName) {
 
 		// Uses the gopsutil cpu package to count the number of logical cpu cores
 		ci, err := cpu.Counts(true)
@@ -1106,7 +1106,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
-	if driver.IsNative(drvName) {
+	if driver.BareMetal(drvName) {
 		if ClusterFlagValue() != constants.DefaultClusterName {
 			exit.Message(reason.DrvUnsupportedProfile, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}

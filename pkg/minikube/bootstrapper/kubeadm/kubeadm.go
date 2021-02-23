@@ -208,7 +208,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		klog.Infof("ignoring SystemVerification for kubeadm because of old Kubernetes version %v", version)
 		skipSystemVerification = true
 	}
-	if driver.IsNative(cfg.Driver) && r.Name() == "Docker" {
+	if driver.BareMetal(cfg.Driver) && r.Name() == "Docker" {
 		if v, err := r.Version(); err == nil && strings.Contains(v, "azure") {
 			klog.Infof("ignoring SystemVerification for kubeadm because of unknown docker version %s", v)
 			skipSystemVerification = true

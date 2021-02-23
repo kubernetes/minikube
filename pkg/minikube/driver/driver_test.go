@@ -51,10 +51,10 @@ func TestSupported(t *testing.T) {
 }
 
 func TestBareMetal(t *testing.T) {
-	if !IsNative(Native) {
+	if !BareMetal(Native) {
 		t.Errorf("Supported(%s) is false", Native)
 	}
-	if IsNative(VirtualBox) {
+	if BareMetal(VirtualBox) {
 		t.Errorf("Supported(%s) is true", VirtualBox)
 	}
 }

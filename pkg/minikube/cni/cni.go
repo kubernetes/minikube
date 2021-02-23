@@ -125,7 +125,7 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return Bridge{cc: cc}
 	}
 
-	if driver.IsNative(cc.Driver) {
+	if driver.BareMetal(cc.Driver) {
 		klog.Infof("Driver %s used, CNI unnecessary in this configuration, recommending no CNI", cc.Driver)
 		return Disabled{cc: cc}
 	}
