@@ -1072,7 +1072,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateCPUCount(drvName)
 
 	if cmd.Flags().Changed(memory) {
-		validateMemoryFlags(drvName)
+		validateChangedMemoryFlags(drvName)
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
@@ -1162,8 +1162,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 }
 
-// validateMemoryFlags validates memory related flags.
-func validateMemoryFlags(drvName string) {
+// validateChangedMemoryFlags validates memory related flags.
+func validateChangedMemoryFlags(drvName string) {
 	if driver.IsKIC(drvName) && !oci.HasMemoryCgroup() {
 		out.WarningT("Your cgroup does not allow setting memory.")
 		out.Infof("More information: https://docs.doInfo.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
