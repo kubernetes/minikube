@@ -40,17 +40,18 @@ var mu sync.Mutex
 var runtimePaused = false
 var version = "0.0.1"
 
-// TODO: make this configurable to support containerd/cri-o
+// TODO: #10597 make this configurable to support containerd/cri-o
 var runtime = "docker"
 
 func main() {
-	// TODO: make this configurable
+	// TODO: #10595 make this configurable
 	const interval = time.Minute * 1
 	// channel for incoming messages
 	go func() {
 		for {
 			// On each iteration new timer is created
 			select {
+			// TODO: #10596 make it memory-leak proof
 			case <-time.After(interval):
 				runPause()
 			case <-unpauseRequests:
