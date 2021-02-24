@@ -17,11 +17,11 @@
 set -eux -o pipefail
 
 echo "Installing latest version of gh"
-sudo apt update
-yes|sudo apt install software-properties-common
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-sudo apt-add-repository https://cli.github.com/packages
-yes|sudo apt install gh
+sudo apt update || true
+yes|sudo apt install software-properties-common || true
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 || true
+sudo apt-add-repository https://cli.github.com/packages || true
+yes|sudo apt install gh || true
 
 echo "Authorizing bot with gh"
 echo "${access_token}" | gh auth login --with-token
