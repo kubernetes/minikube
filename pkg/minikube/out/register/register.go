@@ -30,6 +30,7 @@ const (
 	SelectingDriver                   RegStep = "Selecting Driver"
 	DownloadingArtifacts              RegStep = "Downloading Artifacts"
 	StartingNode                      RegStep = "Starting Node"
+	UpdatingDriver                    RegStep = "Updating Driver"
 	PullingBaseImage                  RegStep = "Pulling Base Image"
 	RunningLocalhost                  RegStep = "Running on Localhost"
 	RunningRemotely                   RegStep = "Running Remotely"
@@ -76,6 +77,7 @@ func init() {
 				SelectingDriver,
 				DownloadingArtifacts,
 				StartingNode,
+				UpdatingDriver,
 				PullingBaseImage,
 				RunningLocalhost,
 				LocalOSRelease,

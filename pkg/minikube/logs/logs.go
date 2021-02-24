@@ -153,7 +153,7 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 			lines = lines[len(lines)-maxLines:]
 		}
 		for _, l := range lines {
-			out.Step(style.LogEntry, l)
+			out.ErrT(style.LogEntry, l)
 		}
 	}
 }
