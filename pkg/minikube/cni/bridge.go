@@ -90,3 +90,8 @@ func (c Bridge) Apply(r Runner) error {
 func (c Bridge) CIDR() string {
 	return DefaultPodCIDR
 }
+
+// Images returns the list of images used by this CNI
+func (c Bridge) Images() []string {
+	return []string{}
+}

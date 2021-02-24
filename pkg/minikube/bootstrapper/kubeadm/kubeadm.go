@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/spf13/viper"
 	"io"
 	"net"
 	"os/exec"
@@ -395,6 +396,21 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	conf := bsutil.KubeadmYamlPath
 	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
 		return errors.Wrap(err, "cp")
+	}
+
+	if k.needCNIImages(cfg) {
+		cnm, err := cni.New(cfg)
+		if err != nil {
+			return errors.Wrap(err, "cni config")
+		}
+		r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+		if err != nil {
+			return err
+		}
+		err = r.PullImages(cnm.Images())
+		if err != nil {
+			return err
+		}
 	}
 
 	err := k.init(cfg)
@@ -1042,6 +1058,11 @@ func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
 		}
 	}
 	return nil
+}
+
+func (k *Bootstrapper) needCNIImages(cfg config.ClusterConfig) bool {
+	// containerd && preload=false
+	return cfg.KubernetesConfig.ContainerRuntime == "containerd" && !viper.GetBool("preload")
 }
 
 // adviseNodePressure will advise the user what to do with difference pressure errors based on their environment

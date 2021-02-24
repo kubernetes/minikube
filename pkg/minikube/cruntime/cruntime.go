@@ -98,6 +98,9 @@ type Manager interface {
 	// ImageExists takes image name and image sha checks if an it exists
 	ImageExists(string, string) bool
 
+	// PullImages pulls images into the runtime
+	PullImages([]string) error
+
 	// ListContainers returns a list of managed by this container runtime
 	ListContainers(ListOptions) ([]string, error)
 	// KillContainers removes containers based on ID
@@ -116,6 +119,7 @@ type Manager interface {
 	Preload(config.KubernetesConfig) error
 	// ImagesPreloaded returns true if all images have been preloaded
 	ImagesPreloaded([]string) bool
+
 }
 
 // Config is runtime configuration

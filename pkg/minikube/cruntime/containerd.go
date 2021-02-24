@@ -430,3 +430,14 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 func (r *Containerd) ImagesPreloaded(images []string) bool {
 	return containerdImagesPreloaded(r.Runner, images)
 }
+
+// PullImages pulls images into the runtime
+func (r *Containerd) PullImages(images []string) error {
+	if len(images) < 1 {
+		return nil
+	}
+	imgs := strings.Join(images, " ")
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images pull %s", imgs))
+	_, err := r.Runner.RunCmd(c)
+	return err
+}

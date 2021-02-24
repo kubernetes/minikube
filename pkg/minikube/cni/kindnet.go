@@ -186,3 +186,9 @@ func (c KindNet) Apply(r Runner) error {
 func (c KindNet) CIDR() string {
 	return DefaultPodCIDR
 }
+
+
+// Images returns the list of images used by this CNI
+func (c KindNet) Images() []string {
+	return []string{}
+}

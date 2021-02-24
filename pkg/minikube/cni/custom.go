@@ -63,3 +63,8 @@ func (c Custom) Apply(r Runner) error {
 func (c Custom) CIDR() string {
 	return DefaultPodCIDR
 }
+
+// Images returns the list of images used by this CNI
+func (c Custom) Images() []string {
+	return []string{}
+}

@@ -459,3 +459,13 @@ func dockerBoundToContainerd(runner command.Runner) bool {
 func (r *Docker) ImagesPreloaded(images []string) bool {
 	return dockerImagesPreloaded(r.Runner, images)
 }
+
+// PullImages pulls images into the runtime
+func (r *Docker) PullImages(images []string) error {
+	if len(images) < 1 {
+		return nil
+	}
+	c := exec.Command("sudo", "docker", "image", "pull", strings.Join(images, " "))
+	_, err := r.Runner.RunCmd(c)
+	return err
+}

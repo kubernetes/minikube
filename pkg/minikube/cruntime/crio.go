@@ -377,3 +377,13 @@ func UpdateCRIONet(r CommandRunner, cidr string) error {
 
 	return sysinit.New(r).Restart("crio")
 }
+
+// PullImages pulls images into the runtime
+func (r *CRIO) PullImages(images []string) error {
+	if len(images) < 1 {
+		return nil
+	}
+	c := exec.Command("sudo", "podman", "image", "pull", strings.Join(images, " "))
+	_, err := r.Runner.RunCmd(c)
+	return err
+}

@@ -198,7 +198,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni
-        image: quay.io/coreos/flannel:v0.12.0-amd64
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - cp
         args:
@@ -212,7 +212,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: quay.io/coreos/flannel:v0.12.0-amd64
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - /opt/bin/flanneld
         args:
@@ -292,7 +292,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni
-        image: quay.io/coreos/flannel:v0.12.0-arm64
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - cp
         args:
@@ -306,7 +306,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: quay.io/coreos/flannel:v0.12.0-arm64
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - /opt/bin/flanneld
         args:
@@ -386,7 +386,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni
-        image: quay.io/coreos/flannel:v0.12.0-arm
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - cp
         args:
@@ -400,7 +400,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: quay.io/coreos/flannel:v0.12.0-arm
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - /opt/bin/flanneld
         args:
@@ -480,7 +480,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni
-        image: quay.io/coreos/flannel:v0.12.0-ppc64le
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - cp
         args:
@@ -494,7 +494,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: quay.io/coreos/flannel:v0.12.0-ppc64le
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - /opt/bin/flanneld
         args:
@@ -574,7 +574,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni
-        image: quay.io/coreos/flannel:v0.12.0-s390x
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - cp
         args:
@@ -588,7 +588,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: quay.io/coreos/flannel:v0.12.0-s390x
+        image: quay.io/coreos/flannel:v0.13.0
         command:
         - /opt/bin/flanneld
         args:
@@ -671,3 +671,11 @@ func (c Flannel) Apply(r Runner) error {
 func (c Flannel) CIDR() string {
 	return DefaultPodCIDR
 }
+
+// Images returns the list of images used by this CNI
+func (c Flannel) Images() []string {
+	return []string{
+		"quay.io/coreos/flannel:v0.13.0",
+	}
+}
+

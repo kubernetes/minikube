@@ -915,3 +915,15 @@ func (c Calico) CIDR() string {
 	// Calico docs specify 192.168.0.0/16 - but we do this for compatibility with other CNI's.
 	return DefaultPodCIDR
 }
+
+// Images returns the list of images used by this CNI
+func (c Calico) Images() []string {
+	return []string{
+		images.CalicoDeployment(c.cc.KubernetesConfig.ImageRepository),
+		images.CalicoDaemonSet(c.cc.KubernetesConfig.ImageRepository),
+		"calico/cni:v3.14.1",
+		"calico/kube-controllers:v3.14.1",
+		"calico/node:v3.14.1",
+		"calico/pod2daemon-flexvol:v3.14.1",
+	}
+}

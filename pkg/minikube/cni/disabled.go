@@ -50,3 +50,8 @@ func (c Disabled) CIDR() string {
 	// Even without any CNI we want our nodes to have spec.PodCIDR set.
 	return DefaultPodCIDR
 }
+
+// Images returns the list of images used by this CNI
+func (c Disabled) Images() []string {
+	return []string{}
+}

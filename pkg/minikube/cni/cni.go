@@ -55,6 +55,9 @@ type Manager interface {
 
 	// String representation
 	String() string
+
+	// Returns a list of images used by CNI manager instance
+	Images() []string
 }
 
 // tmplInputs are inputs to CNI templates

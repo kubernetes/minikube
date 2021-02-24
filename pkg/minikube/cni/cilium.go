@@ -693,3 +693,11 @@ func (c Cilium) Apply(r Runner) error {
 func (c Cilium) CIDR() string {
 	return DefaultPodCIDR
 }
+
+// Images returns the list of images used by this CNI
+func (c Cilium) Images() []string {
+	return []string{
+		"cilium/operator-generic:v1.8.0",
+		"cilium/cilium:v1.8.0",
+	}
+}
