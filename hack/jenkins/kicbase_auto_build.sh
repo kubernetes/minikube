@@ -79,12 +79,34 @@ sha=$(echo ${fullsha} | cut -d ":" -f 2)
 
 if [ "$release" = false ]; then
 	# Comment on the PR with the newly built kicbase
-	sed_cmd="\`\`\`\n sed 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go > new-types.go; mv new-types.go pkg/drivers/kic/types.go; make generate-docs;\n\`\`\`"
+	sed_cmd="
+	sed 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go > new-types.go; mv new-types.go pkg/drivers/kic/types.go; make generate-docs;
+	"
 
-	codeblock="\n\t// Version is the current version of kic\n\tVersion = \"${KIC_VERSION}\"\n\t// SHA of the kic base image\n\tbaseImageSHA = \"${sha}\"\n\t// The name of the GCR kicbase repository\n\tgcrRepo = \"${GCR_REPO}\"\n\t// The name of the Dockerhub kicbase repository\n\tdockerhubRepo = \"${DH_REPO}\""
+	codeblock="
+	// Version is the current version of kic
+	Version = \"${KIC_VERSION}\"
+	// SHA of the kic base image
+	baseImageSHA = \"${sha}\"
+	// The name of the GCR kicbase repository
+	gcrRepo = \"${GCR_REPO}\"
+	// The name of the Dockerhub kicbase repository
+	dockerhubRepo = \"${DH_REPO}\"
+	"
 
 	# Display the message to the user
-	message="Hi ${ghprbPullAuthorLoginMention},\n\nA new kicbase image is available, please update your PR with the new tag and SHA.\nIn pkg/drivers/kic/types.go:\n${codeblock}\nThen run \`make generate-docs\` to update our documentation to reference the new image.\n\nAlternatively, run the following command and commit the changes:${sed_cmd}\n"
+	message="Hi ${ghprbPullAuthorLoginMention},
+
+A new kicbase image is available, please update your PR with the new tag and SHA.
+In pkg/drivers/kic/types.go:
+	
+	${codeblock}
+Then run \`make generate-docs\` to update our documentation to reference the new image.
+	
+Alternatively, run the following command and commit the changes:
+	
+	${sed_cmd}
+"
 
 	gh pr comment ${ghprbPullId} --body "${message}"
 else
