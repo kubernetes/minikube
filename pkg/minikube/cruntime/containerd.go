@@ -437,7 +437,7 @@ func (r *Containerd) PullImages(images []string) error {
 		return nil
 	}
 	imgs := strings.Join(images, " ")
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images pull %s", imgs))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo crictl pull %s", imgs))
 	_, err := r.Runner.RunCmd(c)
 	return err
 }
