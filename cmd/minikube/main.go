@@ -22,12 +22,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
 
+	"k8s.io/minikube/pkg/minikube/localpath"
 	// Register drivers
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
 
@@ -142,6 +144,7 @@ func setFlags() {
 			klog.Warningf("Unable to set default flag value for alsologtostderr: %v", err)
 		}
 	}
+	setLastStartFlags()
 
 	// make sure log_dir exists if log_file is not also set - the log_dir is mutually exclusive with the log_file option
 	// ref: https://github.com/kubernetes/klog/blob/52c62e3b70a9a46101f33ebaf0b100ec55099975/klog.go#L491
@@ -150,5 +153,26 @@ func setFlags() {
 		if err := os.MkdirAll(pflag.Lookup("log_dir").Value.String(), 0755); err != nil {
 			klog.Warningf("unable to create log directory: %v", err)
 		}
+	}
+}
+
+// setLastStartFlags sets the log_file flag to lastStart.txt if start command and user doesn't specify log_file or log_dir flags.
+func setLastStartFlags() {
+	if os.Args[1] != "start" {
+		return
+	}
+	if pflag.CommandLine.Changed("log_file") || pflag.CommandLine.Changed("log_dir") {
+		return
+	}
+	fp := localpath.LastStartLog()
+	dp := filepath.Dir(fp)
+	if err := os.MkdirAll(dp, 0755); err != nil {
+		klog.Warningf("Unable to make log dir %s: %v", dp, err)
+	}
+	if _, err := os.Create(fp); err != nil {
+		klog.Warningf("Unable to create/truncate file %s: %v", fp, err)
+	}
+	if err := pflag.Set("log_file", fp); err != nil {
+		klog.Warningf("Unable to set default flag value for log_file: %v", err)
 	}
 }
