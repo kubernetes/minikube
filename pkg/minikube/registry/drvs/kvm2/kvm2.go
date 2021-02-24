@@ -46,6 +46,7 @@ func init() {
 		Alias:    []string{driver.AliasKVM},
 		Config:   configure,
 		Status:   status,
+		Default:  true,
 		Priority: registry.Preferred,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))

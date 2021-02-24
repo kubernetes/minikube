@@ -67,6 +67,7 @@ var (
 // DriverState is metadata relating to a driver and status
 type DriverState struct {
 	Name     string
+	Default  bool
 	Priority Priority
 	State    State
 	// Rejection is why we chose not to use this driver
@@ -107,7 +108,7 @@ func Available(vm bool) []DriverState {
 			continue
 		}
 		s := d.Status()
-		klog.Infof("%s priority: %d, state: %+v", d.Name, d.Priority, s)
+		klog.Infof("%s default: %v priority: %d, state: %+v", d.Name, d.Default, d.Priority, s)
 
 		priority := d.Priority
 		if !s.Healthy {
@@ -116,10 +117,10 @@ func Available(vm bool) []DriverState {
 
 		if vm {
 			if IsVM(d.Name) {
-				sts = append(sts, DriverState{Name: d.Name, Priority: priority, State: s})
+				sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Priority: priority, State: s})
 			}
 		} else {
-			sts = append(sts, DriverState{Name: d.Name, Priority: priority, State: s})
+			sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Priority: priority, State: s})
 		}
 	}
 

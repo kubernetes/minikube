@@ -119,6 +119,7 @@ func TestSuggest(t *testing.T) {
 		{
 			def: registry.DriverDef{
 				Name:     "unhealthy",
+				Default:  true,
 				Priority: registry.Default,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: false} },
 			},
@@ -130,6 +131,7 @@ func TestSuggest(t *testing.T) {
 		{
 			def: registry.DriverDef{
 				Name:     "discouraged",
+				Default:  false,
 				Priority: registry.Discouraged,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
@@ -141,6 +143,7 @@ func TestSuggest(t *testing.T) {
 		{
 			def: registry.DriverDef{
 				Name:     "default",
+				Default:  true,
 				Priority: registry.Default,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
@@ -152,6 +155,7 @@ func TestSuggest(t *testing.T) {
 		{
 			def: registry.DriverDef{
 				Name:     "preferred",
+				Default:  true,
 				Priority: registry.Preferred,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
