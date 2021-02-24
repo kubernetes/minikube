@@ -102,5 +102,5 @@ else
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
 
-	gh pr create --title "Update kicbase to ${KIC_VERSION}" --base kubernetes:master --head minikube-bot:${branch}
+	gh pr create --fill --base kubernetes:master --head minikube-bot:${branch}
 fi
