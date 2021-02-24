@@ -21,6 +21,9 @@ set -x
 yes|gcloud auth configure-docker
 docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASS}
 
+# Make sure gh is installed and configured
+./hack/jenkins/installers/check_install_gh.sh
+
 # Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
 # kicbase tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle
@@ -30,9 +33,7 @@ CURRENT_KIC_TS=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | c
 if [[ $HEAD_KIC_TIMESTAMP != v* ]]; then
 	diff=$((CURRENT_KIC_TS-HEAD_KIC_TIMESTAMP))
 	if [[ $CURRENT_KIC_TS == v* ]] || [ $diff -lt 0 ]; then
-		curl -s -H "Authorization: token ${access_token}" \
-		-H "Accept: application/vnd.github.v3+json" \
-		-X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, your kicbase info is out of date. Please rebase.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, your kicbase info is out of date. Please rebase."
 		exit 1
 	fi
 fi
@@ -66,9 +67,7 @@ yes|make push-kic-base-image
 ec=$?
 if [ $ec -gt 0 ]; then
 	if [ "$release" = false ]; then
-		curl -s -H "Authorization: token ${access_token}" \
-                	-H "Accept: application/vnd.github.v3+json" \
-                	-X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, please try again.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, please try again."
 	fi
 	exit $ec
 fi
@@ -87,22 +86,21 @@ if [ "$release" = false ]; then
 	# Display the message to the user
 	message="Hi ${ghprbPullAuthorLoginMention},\\n\\nA new kicbase image is available, please update your PR with the new tag and SHA.\\nIn pkg/drivers/kic/types.go:\\n${codeblock}\\nThen run \`make generate-docs\` to update our documentation to reference the new image.\n\nAlternatively, run the following command and commit the changes:${sed_cmd}\\n"
 
-	curl -s -H "Authorization: token ${access_token}" \
-		-H "Accept: application/vnd.github.v3+json" \
-	 	-X POST -d "{\"body\": \"${message}\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
+	gh pr comment ${ghprbPullId} --body "${message}"
 else
 	# We're releasing, so open a new PR with the newly released kicbase
 	git config user.name "minikube-bot"
 	git config user.email "minikube-bot@google.com"
 	
-	git checkout -b kicbase-release-${KIC_VERSION}
+	branch=kicbase-release-${KIC_VERSION}
+	git checkout -b ${branch}
 
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go
 
 	git add -A
 	git commit -m "Update kicbase to ${KIC_VERSION}"
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
-	git push -f minikube-bot kicbase-release-${KIC_VERSION}
+	git push -f minikube-bot ${branch}
 
-	curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update kicbase to ${KIC_VERSION}\",\"head\": \"minikube-bot:kicbase-release-${KIC_VERSION}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
+	gh pr create --title "Update kicbase to ${KIC_VERSION}" --base kubernetes:master --head minikube-bot:${branch}
 fi
