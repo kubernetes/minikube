@@ -190,5 +190,7 @@ func (c KindNet) CIDR() string {
 
 // Images returns the list of images used by this CNI
 func (c KindNet) Images() []string {
-	return []string{}
+	return []string{
+		images.KindNet(c.cc.KubernetesConfig.ImageRepository),
+	}
 }
