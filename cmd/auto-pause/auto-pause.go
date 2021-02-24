@@ -32,7 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
-var incomeCh = make(chan struct{})
+var unpauseRequests = make(chan struct{})
 var done = make(chan struct{})
 var mu sync.Mutex
 
@@ -53,7 +53,7 @@ func main() {
 			select {
 			case <-time.After(interval):
 				runPause()
-			case <-incomeCh:
+			case <-unpauseRequests:
 				fmt.Printf("Got request\n")
 				if runtimePaused {
 					runUnpause()
@@ -71,7 +71,7 @@ func main() {
 
 // handler echoes the Path component of the requested URL.
 func handler(w http.ResponseWriter, r *http.Request) {
-	incomeCh <- struct{}{}
+	unpauseRequests <- struct{}{}
 	<-done
 	fmt.Fprintf(w, "allow")
 }
@@ -82,8 +82,6 @@ func runPause() {
 	if runtimePaused {
 		return
 	}
-
-	ids := []string{}
 
 	r := command.NewExecRunner(true)
 
@@ -98,17 +96,14 @@ func runPause() {
 	}
 
 	runtimePaused = true
-	ids = append(ids, uids...)
 
-	out.Step(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(ids)})
+	out.Step(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(uids)})
 }
 
 func runUnpause() {
 	fmt.Println("unpausing...")
 	mu.Lock()
 	defer mu.Unlock()
-
-	ids := []string{}
 
 	r := command.NewExecRunner(true)
 
@@ -121,8 +116,7 @@ func runUnpause() {
 	if err != nil {
 		exit.Error(reason.GuestUnpause, "Unpause", err)
 	}
-	ids = append(ids, uids...)
 	runtimePaused = false
 
-	out.Step(style.Unpause, "Unpaused {{.count}} containers", out.V{"count": len(ids)})
+	out.Step(style.Unpause, "Unpaused {{.count}} containers", out.V{"count": len(uids)})
 }
