@@ -25,3 +25,4 @@ yes|sudo apt install gh
 
 echo "Authorizing bot with gh"
 echo "${access_token}" | gh auth login --with-token
+gh config set prompt disabled
