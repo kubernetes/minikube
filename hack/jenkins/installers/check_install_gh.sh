@@ -17,11 +17,10 @@
 set -eux -o pipefail
 
 echo "Installing latest version of gh"
-sudo apt update || true
-yes|sudo apt install software-properties-common || true
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 || true
-sudo apt-add-repository https://cli.github.com/packages || true
-yes|sudo apt install gh || true
+curl -qLO "https://github.com/cli/cli/releases/download/v1.6.2/gh_1.6.2_linux_amd64.tar.gz"  
+tar -xf gh_1.6.2_linux_amd64.tar.gz &&
+sudo mv gh_1.6.2_linux_amd64/bin/gh /usr/local/bin/gh
+rm gh_1.6.2_linux_amd64.tar.gz
 
 echo "Authorizing bot with gh"
 echo "${access_token}" | gh auth login --with-token
