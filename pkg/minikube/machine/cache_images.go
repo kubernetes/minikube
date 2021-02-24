@@ -54,6 +54,8 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 		return errors.Wrap(err, "cached images list")
 	}
 
+	images = append(images, "kindest/kindnetd:v20210220-5b7e6d01")
+
 	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
