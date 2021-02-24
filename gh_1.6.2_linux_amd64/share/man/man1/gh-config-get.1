@@ -1,0 +1,46 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-config\-get \- Print the value of a given configuration key
+
+
+.SH SYNOPSIS
+.PP
+\fBgh config get  [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Print the value of a given configuration key
+
+
+.SH OPTIONS
+.PP
+\fB\-h\fP, \fB\-\-host\fP=""
+	Get per\-host setting
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh config get git\_protocol
+https
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-config(1)\fP

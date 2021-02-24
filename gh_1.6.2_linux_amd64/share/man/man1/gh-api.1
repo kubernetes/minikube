@@ -1,0 +1,161 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-api \- Make an authenticated GitHub API request
+
+
+.SH SYNOPSIS
+.PP
+\fBgh api  [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Makes an authenticated HTTP request to the GitHub API and prints the response.
+
+.PP
+The endpoint argument should either be a path of a GitHub API v3 endpoint, or
+"graphql" to access the GitHub API v4.
+
+.PP
+Placeholder values ":owner", ":repo", and ":branch" in the endpoint argument will
+get replaced with values from the repository of the current directory.
+
+.PP
+The default HTTP request method is "GET" normally and "POST" if any parameters
+were added. Override the method with \fB\fC\-\-method\fR\&.
+
+.PP
+Pass one or more \fB\fC\-\-raw\-field\fR values in "key=value" format to add
+JSON\-encoded string parameters to the POST body.
+
+.PP
+The \fB\fC\-\-field\fR flag behaves like \fB\fC\-\-raw\-field\fR with magic type conversion based
+on the format of the value:
+
+.RS
+.IP \(bu 2
+literal values "true", "false", "null", and integer numbers get converted to
+appropriate JSON types;
+.IP \(bu 2
+placeholder values ":owner", ":repo", and ":branch" get populated with values
+from the repository of the current directory;
+.IP \(bu 2
+if the value starts with "@", the rest of the value is interpreted as a
+filename to read the value from. Pass "\-" to read from standard input.
+
+.RE
+
+.PP
+For GraphQL requests, all fields other than "query" and "operationName" are
+interpreted as GraphQL variables.
+
+.PP
+Raw request body may be passed from the outside via a file specified by \fB\fC\-\-input\fR\&.
+Pass "\-\&" to read from standard input. In this mode, parameters specified via
+\fB\fC\-\-field\fR flags are serialized into URL query parameters.
+
+.PP
+In \fB\fC\-\-paginate\fR mode, all pages of results will sequentially be requested until
+there are no more pages of results. For GraphQL requests, this requires that the
+original query accepts an \fB\fC$endCursor: String\fR variable and that it fetches the
+\fB\fCpageInfo{ hasNextPage, endCursor }\fR set of fields from a collection.
+
+
+.SH OPTIONS
+.PP
+\fB\-F\fP, \fB\-\-field\fP=[]
+	Add a typed parameter in \fB\fCkey=value\fR format
+
+.PP
+\fB\-H\fP, \fB\-\-header\fP=[]
+	Add a HTTP request header in \fB\fCkey:value\fR format
+
+.PP
+\fB\-\-hostname\fP=""
+	The GitHub hostname for the request (default "github.com")
+
+.PP
+\fB\-i\fP, \fB\-\-include\fP[=false]
+	Include HTTP response headers in the output
+
+.PP
+\fB\-\-input\fP=""
+	The \fB\fCfile\fR to use as body for the HTTP request
+
+.PP
+\fB\-X\fP, \fB\-\-method\fP="GET"
+	The HTTP method for the request
+
+.PP
+\fB\-\-paginate\fP[=false]
+	Make additional HTTP requests to fetch all pages of results
+
+.PP
+\fB\-f\fP, \fB\-\-raw\-field\fP=[]
+	Add a string parameter in \fB\fCkey=value\fR format
+
+.PP
+\fB\-\-silent\fP[=false]
+	Do not print the response body
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+# list releases in the current repository
+$ gh api repos/:owner/:repo/releases
+
+# post an issue comment
+$ gh api repos/:owner/:repo/issues/123/comments \-f body='Hi from CLI'
+
+# add parameters to a GET request
+$ gh api \-X GET search/issues \-f q='repo:cli/cli is:open remote'
+
+# set a custom HTTP header
+$ gh api \-H 'Accept: application/vnd.github.XYZ\-preview+json' ...
+
+# list releases with GraphQL
+$ gh api graphql \-F owner=':owner' \-F name=':repo' \-f query='
+  query($name: String!, $owner: String!) {
+    repository(owner: $owner, name: $name) {
+      releases(last: 3) {
+        nodes { tagName }
+      }
+    }
+  }
+'
+
+# list all repositories for a user
+$ gh api graphql \-\-paginate \-f query='
+  query($endCursor: String) {
+    viewer {
+      repositories(first: 100, after: $endCursor) {
+        nodes { nameWithOwner }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+'
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh(1)\fP

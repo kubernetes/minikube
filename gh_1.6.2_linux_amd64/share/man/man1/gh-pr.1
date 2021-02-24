@@ -1,0 +1,47 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-pr \- Manage pull requests
+
+
+.SH SYNOPSIS
+.PP
+\fBgh pr  [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Work with GitHub pull requests
+
+
+.SH OPTIONS
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh pr checkout 353
+$ gh pr create \-\-fill
+$ gh pr view \-\-web
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh(1)\fP, \fBgh\-pr\-checkout(1)\fP, \fBgh\-pr\-checks(1)\fP, \fBgh\-pr\-close(1)\fP, \fBgh\-pr\-comment(1)\fP, \fBgh\-pr\-create(1)\fP, \fBgh\-pr\-diff(1)\fP, \fBgh\-pr\-edit(1)\fP, \fBgh\-pr\-list(1)\fP, \fBgh\-pr\-merge(1)\fP, \fBgh\-pr\-ready(1)\fP, \fBgh\-pr\-reopen(1)\fP, \fBgh\-pr\-review(1)\fP, \fBgh\-pr\-status(1)\fP, \fBgh\-pr\-view(1)\fP

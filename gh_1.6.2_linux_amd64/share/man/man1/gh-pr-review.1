@@ -1,0 +1,74 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-pr\-review \- Add a review to a pull request
+
+
+.SH SYNOPSIS
+.PP
+\fBgh pr review [ |  | ] [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Add a review to a pull request.
+
+.PP
+Without an argument, the pull request that belongs to the current branch is reviewed.
+
+
+.SH OPTIONS
+.PP
+\fB\-a\fP, \fB\-\-approve\fP[=false]
+	Approve pull request
+
+.PP
+\fB\-b\fP, \fB\-\-body\fP=""
+	Specify the body of a review
+
+.PP
+\fB\-c\fP, \fB\-\-comment\fP[=false]
+	Comment on a pull request
+
+.PP
+\fB\-r\fP, \fB\-\-request\-changes\fP[=false]
+	Request changes on a pull request
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+# approve the pull request of the current branch
+$ gh pr review \-\-approve
+
+# leave a review comment for the current branch
+$ gh pr review \-\-comment \-b "interesting"
+
+# add a review for a specific pull request
+$ gh pr review 123
+
+# request changes on a specific pull request
+$ gh pr review 123 \-r \-b "needs more ASCII art"
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-pr(1)\fP

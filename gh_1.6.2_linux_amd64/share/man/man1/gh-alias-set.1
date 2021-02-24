@@ -1,0 +1,79 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-alias\-set \- Create a shortcut for a gh command
+
+
+.SH SYNOPSIS
+.PP
+\fBgh alias set   [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Declare a word as a command alias that will expand to the specified command(s).
+
+.PP
+The expansion may specify additional arguments and flags. If the expansion
+includes positional placeholders such as '$1', '$2', etc., any extra arguments
+that follow the invocation of an alias will be inserted appropriately.
+
+.PP
+If '\-\-shell' is specified, the alias will be run through a shell interpreter (sh). This allows you
+to compose commands with "|" or redirect with ">". Note that extra arguments following the alias
+will not be automatically passed to the expanded expression. To have a shell alias receive
+arguments, you must explicitly accept them using "$1", "$2", etc., or "$@" to accept all of them.
+
+.PP
+Platform note: on Windows, shell aliases are executed via "sh" as installed by Git For Windows. If
+you have installed git on Windows in some other way, shell aliases may not work for you.
+
+.PP
+Quotes must always be used when defining a command as in the examples.
+
+
+.SH OPTIONS
+.PP
+\fB\-s\fP, \fB\-\-shell\fP[=false]
+	Declare an alias to be passed through a shell interpreter
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh alias set pv 'pr view'
+$ gh pv \-w 123
+#=> gh pr view \-w 123
+
+$ gh alias set bugs 'issue list \-\-label="bugs"'
+$ gh bugs
+
+$ gh alias set homework 'issue list \-\-assigned @me'
+$ gh homework
+
+$ gh alias set epicsBy 'issue list \-\-author="$1" \-\-label="epic"'
+$ gh epicsBy vilmibm
+#=> gh issue list \-\-author="vilmibm" \-\-label="epic"
+
+$ gh alias set \-\-shell igrep 'gh issue list \-\-label="$1" | grep $2'
+$ gh igrep epic foo
+#=> gh issue list \-\-label="epic" | grep "foo"
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-alias(1)\fP

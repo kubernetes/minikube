@@ -1,0 +1,75 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-auth\-login \- Authenticate with a GitHub host
+
+
+.SH SYNOPSIS
+.PP
+\fBgh auth login [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Authenticate with a GitHub host.
+
+.PP
+The default authentication mode is a web\-based browser flow.
+
+.PP
+Alternatively, pass in a token on standard input by using \fB\fC\-\-with\-token\fR\&.
+The minimum required scopes for the token are: "repo", "read:org".
+
+.PP
+The \-\-scopes flag accepts a comma separated list of scopes you want your gh credentials to have. If
+absent, this command ensures that gh has access to a minimum set of scopes.
+
+
+.SH OPTIONS
+.PP
+\fB\-h\fP, \fB\-\-hostname\fP=""
+	The hostname of the GitHub instance to authenticate with
+
+.PP
+\fB\-s\fP, \fB\-\-scopes\fP=[]
+	Additional authentication scopes for gh to have
+
+.PP
+\fB\-w\fP, \fB\-\-web\fP[=false]
+	Open a browser to authenticate
+
+.PP
+\fB\-\-with\-token\fP[=false]
+	Read token from standard input
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+# start interactive setup
+$ gh auth login
+
+# authenticate against github.com by reading the token from a file
+$ gh auth login \-\-with\-token < mytoken.txt
+
+# authenticate with a specific GitHub Enterprise Server instance
+$ gh auth login \-\-hostname enterprise.internal
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-auth(1)\fP

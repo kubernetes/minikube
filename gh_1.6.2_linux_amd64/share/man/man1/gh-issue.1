@@ -1,0 +1,47 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-issue \- Manage issues
+
+
+.SH SYNOPSIS
+.PP
+\fBgh issue  [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Work with GitHub issues
+
+
+.SH OPTIONS
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh issue list
+$ gh issue create \-\-label bug
+$ gh issue view \-\-web
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh(1)\fP, \fBgh\-issue\-close(1)\fP, \fBgh\-issue\-comment(1)\fP, \fBgh\-issue\-create(1)\fP, \fBgh\-issue\-delete(1)\fP, \fBgh\-issue\-edit(1)\fP, \fBgh\-issue\-list(1)\fP, \fBgh\-issue\-reopen(1)\fP, \fBgh\-issue\-status(1)\fP, \fBgh\-issue\-view(1)\fP

@@ -1,0 +1,45 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-pr\-checkout \- Check out a pull request in git
+
+
+.SH SYNOPSIS
+.PP
+\fBgh pr checkout { |  | } [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Check out a pull request in git
+
+
+.SH OPTIONS
+.PP
+\fB\-\-detach\fP[=false]
+	Checkout PR with a detached HEAD
+
+.PP
+\fB\-f\fP, \fB\-\-force\fP[=false]
+	Reset the existing local branch to the latest state of the pull request
+
+.PP
+\fB\-\-recurse\-submodules\fP[=false]
+	Update all submodules after checkout
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-pr(1)\fP

@@ -1,0 +1,57 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-auth\-refresh \- Refresh stored authentication credentials
+
+
+.SH SYNOPSIS
+.PP
+\fBgh auth refresh [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Expand or fix the permission scopes for stored credentials
+
+.PP
+The \-\-scopes flag accepts a comma separated list of scopes you want your gh credentials to have. If
+absent, this command ensures that gh has access to a minimum set of scopes.
+
+
+.SH OPTIONS
+.PP
+\fB\-h\fP, \fB\-\-hostname\fP=""
+	The GitHub host to use for authentication
+
+.PP
+\fB\-s\fP, \fB\-\-scopes\fP=[]
+	Additional authentication scopes for gh to have
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh auth refresh \-\-scopes write:org,read:public\_key
+# => open a browser to add write:org and read:public\_key scopes for use with gh api
+
+$ gh auth refresh
+# => open a browser to ensure your authentication credentials have the correct minimum scopes
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-auth(1)\fP

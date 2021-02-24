@@ -1,0 +1,48 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-config\-set \- Update configuration with a value for the given key
+
+
+.SH SYNOPSIS
+.PP
+\fBgh config set   [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Update configuration with a value for the given key
+
+
+.SH OPTIONS
+.PP
+\fB\-h\fP, \fB\-\-host\fP=""
+	Set per\-host setting
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh config set editor vim
+$ gh config set editor "code \-\-wait"
+$ gh config set git\_protocol ssh \-\-host github.com
+$ gh config set prompt disabled
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-config(1)\fP

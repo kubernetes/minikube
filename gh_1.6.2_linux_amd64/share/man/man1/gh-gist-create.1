@@ -1,0 +1,77 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-gist\-create \- Create a new gist
+
+
+.SH SYNOPSIS
+.PP
+\fBgh gist create [\&... | \-\&] [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Create a new GitHub gist with given contents.
+
+.PP
+Gists can be created from one or multiple files. Alternatively, pass "\-" as
+file name to read from standard input.
+
+.PP
+By default, gists are private; use '\-\-public' to make publicly listed ones.
+
+
+.SH OPTIONS
+.PP
+\fB\-d\fP, \fB\-\-desc\fP=""
+	A description for this gist
+
+.PP
+\fB\-f\fP, \fB\-\-filename\fP=""
+	Provide a filename to be used when reading from STDIN
+
+.PP
+\fB\-p\fP, \fB\-\-public\fP[=false]
+	List the gist publicly (default: private)
+
+.PP
+\fB\-w\fP, \fB\-\-web\fP[=false]
+	Open the web browser with created gist
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+# publish file 'hello.py' as a public gist
+$ gh gist create \-\-public hello.py
+
+# create a gist with a description
+$ gh gist create hello.py \-d "my Hello\-World program in Python"
+
+# create a gist containing several files
+$ gh gist create hello.py world.py cool.txt
+
+# read from standard input to create a gist
+$ gh gist create \-
+
+# create a gist from output piped from another command
+$ cat cool.txt | gh gist create
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-gist(1)\fP

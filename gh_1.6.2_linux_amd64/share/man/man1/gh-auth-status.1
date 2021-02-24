@@ -1,0 +1,41 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-auth\-status \- View authentication status
+
+
+.SH SYNOPSIS
+.PP
+\fBgh auth status [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Verifies and displays information about your authentication state.
+
+.PP
+This command will test your authentication state for each GitHub host that gh knows about and
+report on any issues.
+
+
+.SH OPTIONS
+.PP
+\fB\-h\fP, \fB\-\-hostname\fP=""
+	Check a specific hostname's auth status
+
+.PP
+\fB\-t\fP, \fB\-\-show\-token\fP[=false]
+	Display the auth token
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-auth(1)\fP

@@ -1,0 +1,57 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-pr\-comment \- Create a new pr comment
+
+
+.SH SYNOPSIS
+.PP
+\fBgh pr comment [ |  | ] [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Create a new pr comment
+
+
+.SH OPTIONS
+.PP
+\fB\-b\fP, \fB\-\-body\fP=""
+	Supply a body. Will prompt for one otherwise.
+
+.PP
+\fB\-e\fP, \fB\-\-editor\fP[=false]
+	Add body using editor
+
+.PP
+\fB\-w\fP, \fB\-\-web\fP[=false]
+	Add body in browser
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh pr comment 22 \-\-body "This looks great, lets get it deployed."
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-pr(1)\fP

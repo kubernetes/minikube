@@ -1,0 +1,98 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-completion \- Generate shell completion scripts
+
+
+.SH SYNOPSIS
+.PP
+\fBgh completion \-s \fP
+
+
+.SH DESCRIPTION
+.PP
+Generate shell completion scripts for GitHub CLI commands.
+
+.PP
+When installing GitHub CLI through a package manager, it's possible that
+no additional shell configuration is necessary to gain completion support. For
+Homebrew, see https://docs.brew.sh/Shell\-Completion
+
+.PP
+If you need to set up completions manually, follow the instructions below. The exact
+config file locations might vary based on your system. Make sure to restart your
+shell before testing whether completions are working.
+
+.SS bash
+.PP
+Add this to your \fB\fC\~/.bash\_profile\fR:
+
+.PP
+.RS
+
+.nf
+eval "$(gh completion \-s bash)"
+
+.fi
+.RE
+
+.SS zsh
+.PP
+Generate a \fB\fC\_gh\fR completion script and put it somewhere in your \fB\fC$fpath\fR:
+
+.PP
+.RS
+
+.nf
+gh completion \-s zsh > /usr/local/share/zsh/site\-functions/\_gh
+
+.fi
+.RE
+
+.PP
+Ensure that the following is present in your \fB\fC\~/.zshrc\fR:
+
+.PP
+.RS
+
+.nf
+autoload \-U compinit
+compinit \-i
+
+.fi
+.RE
+
+.PP
+Zsh version 5.7 or later is recommended.
+
+.SS fish
+.PP
+Generate a \fB\fCgh.fish\fR completion script:
+
+.PP
+.RS
+
+.nf
+gh completion \-s fish > \~/.config/fish/completions/gh.fish
+
+.fi
+.RE
+
+
+.SH OPTIONS
+.PP
+\fB\-s\fP, \fB\-\-shell\fP=""
+	Shell type: {bash|zsh|fish|powershell}
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH SEE ALSO
+.PP
+\fBgh(1)\fP

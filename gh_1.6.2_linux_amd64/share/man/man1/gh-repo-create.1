@@ -1,0 +1,108 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-repo\-create \- Create a new repository
+
+
+.SH SYNOPSIS
+.PP
+\fBgh repo create [] [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Create a new GitHub repository.
+
+.PP
+When the current directory is a local git repository, the new repository will be added
+as the "origin" git remote. Otherwise, the command will prompt to clone the new
+repository into a sub\-directory.
+
+.PP
+To create a repository non\-interactively, supply the following:
+\- the name argument;
+\- the \fB\fC\-\-confirm\fR flag;
+\- one of \fB\fC\-\-public\fR, \fB\fC\-\-private\fR, or \fB\fC\-\-internal\fR\&.
+
+.PP
+To toggle off \fB\fC\-\-enable\-issues\fR or \fB\fC\-\-enable\-wiki\fR, which are enabled
+by default, use the \fB\fC\-\-enable\-issues=false\fR syntax.
+
+
+.SH OPTIONS
+.PP
+\fB\-y\fP, \fB\-\-confirm\fP[=false]
+	Skip the confirmation prompt
+
+.PP
+\fB\-d\fP, \fB\-\-description\fP=""
+	Description of the repository
+
+.PP
+\fB\-\-enable\-issues\fP[=true]
+	Enable issues in the new repository
+
+.PP
+\fB\-\-enable\-wiki\fP[=true]
+	Enable wiki in the new repository
+
+.PP
+\fB\-h\fP, \fB\-\-homepage\fP=""
+	Repository home page \fB\fCURL\fR
+
+.PP
+\fB\-\-internal\fP[=false]
+	Make the new repository internal
+
+.PP
+\fB\-\-private\fP[=false]
+	Make the new repository private
+
+.PP
+\fB\-\-public\fP[=false]
+	Make the new repository public
+
+.PP
+\fB\-t\fP, \fB\-\-team\fP=""
+	The \fB\fCname\fR of the organization team to be granted access
+
+.PP
+\fB\-p\fP, \fB\-\-template\fP=""
+	Make the new repository based on a template \fB\fCrepository\fR
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+# create a repository under your account using the current directory name
+$ git init my\-project
+$ cd my\-project
+$ gh repo create
+
+# create a repository with a specific name
+$ gh repo create my\-project
+
+# create a repository in an organization
+$ gh repo create cli/my\-project
+
+# disable issues and wiki
+$ gh repo create \-\-enable\-issues=false \-\-enable\-wiki=false
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-repo(1)\fP

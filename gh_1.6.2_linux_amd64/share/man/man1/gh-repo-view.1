@@ -1,0 +1,46 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-repo\-view \- View a repository
+
+
+.SH SYNOPSIS
+.PP
+\fBgh repo view [] [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Display the description and the README of a GitHub repository.
+
+.PP
+With no argument, the repository for the current directory is displayed.
+
+.PP
+With '\-\-web', open the repository in a web browser instead.
+
+.PP
+With '\-\-branch', view a specific branch of the repository.
+
+
+.SH OPTIONS
+.PP
+\fB\-b\fP, \fB\-\-branch\fP=""
+	View a specific branch of the repository
+
+.PP
+\fB\-w\fP, \fB\-\-web\fP[=false]
+	Open a repository in the browser
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-repo(1)\fP

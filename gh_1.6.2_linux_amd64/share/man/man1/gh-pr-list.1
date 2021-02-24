@@ -1,0 +1,72 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-pr\-list \- List and filter pull requests in this repository
+
+
+.SH SYNOPSIS
+.PP
+\fBgh pr list [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+List and filter pull requests in this repository
+
+
+.SH OPTIONS
+.PP
+\fB\-a\fP, \fB\-\-assignee\fP=""
+	Filter by assignee
+
+.PP
+\fB\-B\fP, \fB\-\-base\fP=""
+	Filter by base branch
+
+.PP
+\fB\-l\fP, \fB\-\-label\fP=[]
+	Filter by labels
+
+.PP
+\fB\-L\fP, \fB\-\-limit\fP=30
+	Maximum number of items to fetch
+
+.PP
+\fB\-s\fP, \fB\-\-state\fP="open"
+	Filter by state: {open|closed|merged|all}
+
+.PP
+\fB\-w\fP, \fB\-\-web\fP[=false]
+	Open the browser to list the pull requests
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh pr list \-\-limit 999
+$ gh pr list \-\-state closed
+$ gh pr list \-\-label "priority 1" \-\-label "bug"
+$ gh pr list \-\-web
+ 	
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-pr(1)\fP

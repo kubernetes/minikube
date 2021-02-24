@@ -1,0 +1,34 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-config \- Manage configuration for gh
+
+
+.SH SYNOPSIS
+.PP
+\fBgh config  [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Display or change configuration settings for gh.
+
+.PP
+Current respected settings:
+\- git\_protocol: the protocol to use for git clone and push operations (default: "https")
+\- editor: the text editor program to use for authoring text
+\- prompt: toggle interactive prompting in the terminal (default: "enabled")
+\- pager: the terminal pager program to send standard output to
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH SEE ALSO
+.PP
+\fBgh(1)\fP, \fBgh\-config\-get(1)\fP, \fBgh\-config\-set(1)\fP

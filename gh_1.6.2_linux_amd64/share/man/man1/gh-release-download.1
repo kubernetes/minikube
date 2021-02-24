@@ -1,0 +1,64 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-release\-download \- Download release assets
+
+
+.SH SYNOPSIS
+.PP
+\fBgh release download [] [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Download assets from a GitHub release.
+
+.PP
+Without an explicit tag name argument, assets are downloaded from the
+latest release in the project. In this case, '\-\-pattern' is required.
+
+
+.SH OPTIONS
+.PP
+\fB\-D\fP, \fB\-\-dir\fP="."
+	The directory to download files into
+
+.PP
+\fB\-p\fP, \fB\-\-pattern\fP=[]
+	Download only assets that match a glob pattern
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+# download all assets from a specific release
+$ gh release download v1.2.3
+
+# download only Debian packages for the latest release
+$ gh release download \-\-pattern '*.deb'
+
+# specify multiple file patterns
+$ gh release download \-p '*.deb' \-p '*.rpm'
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-release(1)\fP

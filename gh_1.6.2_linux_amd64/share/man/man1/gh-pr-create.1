@@ -1,0 +1,122 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-pr\-create \- Create a pull request
+
+
+.SH SYNOPSIS
+.PP
+\fBgh pr create [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Create a pull request on GitHub.
+
+.PP
+When the current branch isn't fully pushed to a git remote, a prompt will ask where
+to push the branch and offer an option to fork the base repository. Use \fB\fC\-\-head\fR to
+explicitly skip any forking or pushing behavior.
+
+.PP
+A prompt will also ask for the title and the body of the pull request. Use \fB\fC\-\-title\fR
+and \fB\fC\-\-body\fR to skip this, or use \fB\fC\-\-fill\fR to autofill these values from git commits.
+
+.PP
+Link an issue to the pull request by referencing the issue in the body of the pull
+request. If the body text mentions \fB\fCFixes #123\fR or \fB\fCCloses #123\fR, the referenced issue
+will automatically get closed when the pull request gets merged.
+
+.PP
+By default, users with write access to the base respository can push new commits to the
+head branch of the pull request. Disable this with \fB\fC\-\-no\-maintainer\-edit\fR\&.
+
+
+.SH OPTIONS
+.PP
+\fB\-a\fP, \fB\-\-assignee\fP=[]
+	Assign people by their \fB\fClogin\fR\&. Use "@me" to self\-\&assign.
+
+.PP
+\fB\-B\fP, \fB\-\-base\fP=""
+	The \fB\fCbranch\fR into which you want your code merged
+
+.PP
+\fB\-b\fP, \fB\-\-body\fP=""
+	Body for the pull request
+
+.PP
+\fB\-d\fP, \fB\-\-draft\fP[=false]
+	Mark pull request as a draft
+
+.PP
+\fB\-f\fP, \fB\-\-fill\fP[=false]
+	Do not prompt for title/body and just use commit info
+
+.PP
+\fB\-H\fP, \fB\-\-head\fP=""
+	The \fB\fCbranch\fR that contains commits for your pull request (default: current branch)
+
+.PP
+\fB\-l\fP, \fB\-\-label\fP=[]
+	Add labels by \fB\fCname\fR
+
+.PP
+\fB\-m\fP, \fB\-\-milestone\fP=""
+	Add the pull request to a milestone by \fB\fCname\fR
+
+.PP
+\fB\-\-no\-maintainer\-edit\fP[=false]
+	Disable maintainer's ability to modify pull request
+
+.PP
+\fB\-p\fP, \fB\-\-project\fP=[]
+	Add the pull request to projects by \fB\fCname\fR
+
+.PP
+\fB\-\-recover\fP=""
+	Recover input from a failed run of create
+
+.PP
+\fB\-r\fP, \fB\-\-reviewer\fP=[]
+	Request reviews from people or teams by their \fB\fChandle\fR
+
+.PP
+\fB\-t\fP, \fB\-\-title\fP=""
+	Title for the pull request
+
+.PP
+\fB\-w\fP, \fB\-\-web\fP[=false]
+	Open the web browser to create a pull request
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh pr create \-\-title "The bug is fixed" \-\-body "Everything works again"
+$ gh pr create \-\-reviewer monalisa,hubot  \-\-reviewer myorg/team\-name
+$ gh pr create \-\-project "Roadmap"
+$ gh pr create \-\-base develop \-\-head monalisa:feature
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-pr(1)\fP

@@ -1,0 +1,35 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-gist\-clone \- Clone a gist locally
+
+
+.SH SYNOPSIS
+.PP
+\fBgh gist clone  [] [\-\- \&...]\fP
+
+
+.SH DESCRIPTION
+.PP
+Clone a GitHub gist locally.
+
+.PP
+A gist can be supplied as argument in either of the following formats:
+\- by ID, e.g. 5b0e0062eb8e9654adad7bb1d81cc75f
+\- by URL, e.g. "https://gist.github.com/OWNER/5b0e0062eb8e9654adad7bb1d81cc75f"
+
+.PP
+Pass additional 'git clone' flags by listing them after '\-\-'.
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-gist(1)\fP

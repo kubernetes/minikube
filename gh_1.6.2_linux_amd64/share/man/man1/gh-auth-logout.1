@@ -1,0 +1,53 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-auth\-logout \- Log out of a GitHub host
+
+
+.SH SYNOPSIS
+.PP
+\fBgh auth logout [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Remove authentication for a GitHub host.
+
+.PP
+This command removes the authentication configuration for a host either specified
+interactively or via \-\-hostname.
+
+
+.SH OPTIONS
+.PP
+\fB\-h\fP, \fB\-\-hostname\fP=""
+	The hostname of the GitHub instance to log out of
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh auth logout
+# => select what host to log out of via a prompt
+
+$ gh auth logout \-\-hostname enterprise.internal
+# => log out of specified host
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-auth(1)\fP

@@ -1,0 +1,61 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-pr\-merge \- Merge a pull request
+
+
+.SH SYNOPSIS
+.PP
+\fBgh pr merge [ |  | ] [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Merge a pull request on GitHub.
+
+
+.SH OPTIONS
+.PP
+\fB\-\-auto\fP[=false]
+	Automatically merge only after necessary requirements are met
+
+.PP
+\fB\-b\fP, \fB\-\-body\fP=""
+	Body \fB\fCtext\fR for the merge commit
+
+.PP
+\fB\-d\fP, \fB\-\-delete\-branch\fP[=false]
+	Delete the local and remote branch after merge
+
+.PP
+\fB\-\-disable\-auto\fP[=false]
+	Disable auto\-merge for this pull request
+
+.PP
+\fB\-m\fP, \fB\-\-merge\fP[=false]
+	Merge the commits with the base branch
+
+.PP
+\fB\-r\fP, \fB\-\-rebase\fP[=false]
+	Rebase the commits onto the base branch
+
+.PP
+\fB\-s\fP, \fB\-\-squash\fP[=false]
+	Squash the commits into one commit and merge it into the base branch
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-pr(1)\fP

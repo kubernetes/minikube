@@ -1,0 +1,34 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-repo\-clone \- Clone a repository locally
+
+
+.SH SYNOPSIS
+.PP
+\fBgh repo clone  [] [\-\- \&...]\fP
+
+
+.SH DESCRIPTION
+.PP
+Clone a GitHub repository locally.
+
+.PP
+If the "OWNER/" portion of the "OWNER/REPO" repository argument is omitted, it
+defaults to the name of the authenticating user.
+
+.PP
+Pass additional 'git clone' flags by listing them after '\-\-'.
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-repo(1)\fP

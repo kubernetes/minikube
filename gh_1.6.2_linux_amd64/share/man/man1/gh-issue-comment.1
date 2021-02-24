@@ -1,0 +1,57 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-issue\-comment \- Create a new issue comment
+
+
+.SH SYNOPSIS
+.PP
+\fBgh issue comment { | } [flags]\fP
+
+
+.SH DESCRIPTION
+.PP
+Create a new issue comment
+
+
+.SH OPTIONS
+.PP
+\fB\-b\fP, \fB\-\-body\fP=""
+	Supply a body. Will prompt for one otherwise.
+
+.PP
+\fB\-e\fP, \fB\-\-editor\fP[=false]
+	Add body using editor
+
+.PP
+\fB\-w\fP, \fB\-\-web\fP[=false]
+	Add body in browser
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+$ gh issue comment 22 \-\-body "I was able to reproduce this issue, lets fix it."
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-issue(1)\fP

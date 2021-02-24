@@ -1,0 +1,89 @@
+.nh
+.TH "gh" "1" "Feb 2021" "" ""
+
+.SH NAME
+.PP
+gh\-release\-create \- Create a new release
+
+
+.SH SYNOPSIS
+.PP
+\fBgh release create  [\&...]\fP
+
+
+.SH DESCRIPTION
+.PP
+Create a new GitHub Release for a repository.
+
+.PP
+A list of asset files may be given to upload to the new release. To define a
+display label for an asset, append text starting with \fB\fC#\fR after the file name.
+
+.PP
+If a matching git tag does not yet exist, one will automatically get created
+from the latest state of the default branch. Use \fB\fC\-\-target\fR to override this.
+To fetch the new tag locally after the release, do \fB\fCgit fetch \-\-tags origin\fR\&.
+
+.PP
+To create a release from an annotated git tag, first create one locally with
+git, push the tag to GitHub, then run this command.
+
+
+.SH OPTIONS
+.PP
+\fB\-d\fP, \fB\-\-draft\fP[=false]
+	Save the release as a draft instead of publishing it
+
+.PP
+\fB\-n\fP, \fB\-\-notes\fP=""
+	Release notes
+
+.PP
+\fB\-F\fP, \fB\-\-notes\-file\fP=""
+	Read release notes from \fB\fCfile\fR
+
+.PP
+\fB\-p\fP, \fB\-\-prerelease\fP[=false]
+	Mark the release as a prerelease
+
+.PP
+\fB\-\-target\fP=""
+	Target \fB\fCbranch\fR or full commit SHA (default: main branch)
+
+.PP
+\fB\-t\fP, \fB\-\-title\fP=""
+	Release title
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-help\fP[=false]
+	Show help for command
+
+.PP
+\fB\-R\fP, \fB\-\-repo\fP=""
+	Select another repository using the \fB\fC[HOST/]OWNER/REPO\fR format
+
+
+.SH EXAMPLE
+.PP
+.RS
+
+.nf
+# use release notes from a file
+$ gh release create v1.2.3 \-F changelog.md
+
+# upload all tarballs in a directory as release assets
+$ gh release create v1.2.3 ./dist/*.tgz
+
+# upload a release asset with a display label
+$ gh release create v1.2.3 '/path/to/asset.zip#My display label'
+
+
+.fi
+.RE
+
+
+.SH SEE ALSO
+.PP
+\fBgh\-release(1)\fP
