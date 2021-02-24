@@ -18,7 +18,6 @@ package addons
 
 import (
 	"fmt"
-	"os/exec"
 	"path"
 	"runtime"
 	"sort"
@@ -47,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -210,8 +210,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	}
 
 	if name == "auto-pause" && !enable { // needs to be disabled before deleting the service file in the internal disable
-		cmd := exec.Command("sudo", "systemctl", "disable", "--now", "auto-pause")
-		if _, err := runner.RunCmd(cmd); err != nil {
+		if err := sysinit.New(runner).DisableNow("auto-pause"); err != nil {
 			klog.ErrorS(err, "failed to disable", "service", "auto-pause")
 		}
 	}
@@ -453,12 +452,9 @@ func enableOrDisableAutoPause(cc *config.ClusterConfig, name string, val string)
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 	co := mustload.Running(cc.Name)
-	r := co.CP.Runner
 	if enable {
-		cmd := exec.Command("sudo", "systemctl", "enable", "--now", "auto-pause")
-		if _, err := r.RunCmd(cmd); err != nil {
+		if err := sysinit.New(co.CP.Runner).EnableNow("auto-pause"); err != nil {
 			klog.ErrorS(err, "failed to enable", "service", "auto-pause")
-			return err
 		}
 	}
 

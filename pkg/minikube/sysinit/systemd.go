@@ -52,12 +52,27 @@ func (s *Systemd) Disable(svc string) error {
 	return err
 }
 
+// DisableNow disables a service and stops it too (not waiting for next restart)
+func (s *Systemd) DisableNow(svc string) error {
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "disable", "--now", svc))
+	return err
+}
+
 // Enable enables a service
 func (s *Systemd) Enable(svc string) error {
 	if svc == "kubelet" {
 		return errors.New("please don't enable kubelet as it creates a race condition; if it starts on systemd boot it will pick up /etc/hosts before we have time to configure /etc/hosts")
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "enable", svc))
+	return err
+}
+
+// Enable enables a service and then activates it too (not waiting for next start)
+func (s *Systemd) EnableNow(svc string) error {
+	if svc == "kubelet" {
+		return errors.New("please don't enable kubelet as it creates a race condition; if it starts on systemd boot it will pick up /etc/hosts before we have time to configure /etc/hosts")
+	}
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "enable", "--now", svc))
 	return err
 }
 
