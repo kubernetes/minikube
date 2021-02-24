@@ -26,7 +26,7 @@ import (
 )
 
 func TestAudit(t *testing.T) {
-	t.Run("Username", func(t *testing.T) {
+	t.Run("username", func(t *testing.T) {
 		u, err := user.Current()
 		if err != nil {
 			t.Fatal(err)
@@ -57,7 +57,7 @@ func TestAudit(t *testing.T) {
 		}
 	})
 
-	t.Run("Args", func(t *testing.T) {
+	t.Run("args", func(t *testing.T) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 
@@ -86,7 +86,7 @@ func TestAudit(t *testing.T) {
 		}
 	})
 
-	t.Run("ShouldLog", func(t *testing.T) {
+	t.Run("shouldLog", func(t *testing.T) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 
@@ -114,6 +114,10 @@ func TestAudit(t *testing.T) {
 				[]string{"minikube"},
 				false,
 			},
+			{
+				[]string{"minikube", "delete", "--purge"},
+				false,
+			},
 		}
 
 		for _, test := range tests {
@@ -123,6 +127,43 @@ func TestAudit(t *testing.T) {
 
 			if got != test.want {
 				t.Errorf("os.Args = %q; shouldLog() = %t; want %t", os.Args, got, test.want)
+			}
+		}
+	})
+
+	t.Run("isDeletePurge", func(t *testing.T) {
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+
+		tests := []struct {
+			args []string
+			want bool
+		}{
+			{
+				[]string{"minikube", "delete", "--purge"},
+				true,
+			},
+			{
+				[]string{"minikube", "delete"},
+				false,
+			},
+			{
+				[]string{"minikube", "start", "--purge"},
+				false,
+			},
+			{
+				[]string{"minikube"},
+				false,
+			},
+		}
+
+		for _, test := range tests {
+			os.Args = test.args
+
+			got := isDeletePurge()
+
+			if got != test.want {
+				t.Errorf("os.Args = %q; isDeletePurge() = %t; want %t", os.Args, got, test.want)
 			}
 		}
 	})

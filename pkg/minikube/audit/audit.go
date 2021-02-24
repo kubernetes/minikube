@@ -57,18 +57,23 @@ func Log(startTime time.Time) {
 	}
 	r := newRow(os.Args[1], args(), userName(), version.GetVersion(), startTime, time.Now())
 	if err := appendToLog(r); err != nil {
-		klog.Error(err)
+		klog.Warning(err)
 	}
 }
 
 // shouldLog returns if the command should be logged.
 func shouldLog() bool {
-	// commands that should not be logged.
-	no := []string{"status", "version"}
 	// in rare chance we get here without a command, don't log
 	if len(os.Args) < 2 {
 		return false
 	}
+
+	if isDeletePurge() {
+		return false
+	}
+
+	// commands that should not be logged.
+	no := []string{"status", "version"}
 	a := os.Args[1]
 	for _, c := range no {
 		if a == c {
@@ -76,4 +81,21 @@ func shouldLog() bool {
 		}
 	}
 	return true
+}
+
+// isDeletePurge return true if command is delete with purge flag.
+func isDeletePurge() bool {
+	args := os.Args
+	if len(args) < 2 {
+		return false
+	}
+	if args[1] != "delete" {
+		return false
+	}
+	for _, a := range args {
+		if a == "--purge" {
+			return true
+		}
+	}
+	return false
 }
