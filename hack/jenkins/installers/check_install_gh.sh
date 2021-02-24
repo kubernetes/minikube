@@ -21,6 +21,7 @@ curl -qLO "https://github.com/cli/cli/releases/download/v1.6.2/gh_1.6.2_linux_am
 tar -xf gh_1.6.2_linux_amd64.tar.gz &&
 sudo mv gh_1.6.2_linux_amd64/bin/gh /usr/local/bin/gh
 rm gh_1.6.2_linux_amd64.tar.gz
+rm -rf gh_1.6.2_linux_amd64
 
 echo "Authorizing bot with gh"
 echo "${access_token}" | gh auth login --with-token
