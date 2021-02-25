@@ -81,35 +81,7 @@ git config user.email "minikube-bot@google.com"
 
 
 if [ "$release" = false ]; then
-	# Comment on the PR with the newly built kicbase
-	sed_cmd="
-	sed 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go > new-types.go; mv new-types.go pkg/drivers/kic/types.go; make generate-docs;
-	"
-
-	codeblock="
-	// Version is the current version of kic
-	Version = \"${KIC_VERSION}\"
-	// SHA of the kic base image
-	baseImageSHA = \"${sha}\"
-	// The name of the GCR kicbase repository
-	gcrRepo = \"${GCR_REPO}\"
-	// The name of the Dockerhub kicbase repository
-	dockerhubRepo = \"${DH_REPO}\"
-	"
-
-	# Display the message to the user
-	message="Hi ${ghprbPullAuthorLoginMention},
-
-A new kicbase image is available, please update your PR with the new tag and SHA.
-In pkg/drivers/kic/types.go:
-	
-	${codeblock}
-Then run \`make generate-docs\` to update our documentation to reference the new image.
-	
-Alternatively, run the following command and commit the changes:
-	
-	${sed_cmd}
-"
+	# Update the user's PR with the newly built kicbase image.
 
 	git remote add ${ghprbPullAuthorLogin} git@github.com:${ghprbPullAuthorLogin}/minikube.git
 	git fetch ${ghprbPullAuthorLogin}
