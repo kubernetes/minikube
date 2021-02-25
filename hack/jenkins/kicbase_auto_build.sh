@@ -21,15 +21,8 @@ set -x
 yes|gcloud auth configure-docker
 docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASS}
 
-# Setup variables
-now=$(date +%s)
-KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
-GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
-DH_REPO=kicbase/build
-export KIC_VERSION=$KV-$now-$ghprbPullId
-GCR_IMG=${GCR_REPO}:${KIC_VERSION}
-DH_IMG=${DH_REPO}:${KIC_VERSION}
-export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
+# Make sure gh is installed and configured
+./hack/jenkins/installers/check_install_gh.sh
 
 # Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
@@ -40,13 +33,32 @@ CURRENT_KIC_TS=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | c
 if [[ $HEAD_KIC_TIMESTAMP != v* ]]; then
 	diff=$((CURRENT_KIC_TS-HEAD_KIC_TIMESTAMP))
 	if [[ $CURRENT_KIC_TS == v* ]] || [ $diff -lt 0 ]; then
-		curl -s -H "Authorization: token ${access_token}" \
-		-H "Accept: application/vnd.github.v3+json" \
-		-X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, your kicbase info is out of date. Please rebase.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, your kicbase info is out of date. Please rebase."
 		exit 1
 	fi
 fi
 rm types-head.go
+
+# Setup variables
+if [[ -z $KIC_VERSION ]]; then
+	# Testing PRs here
+	release=false
+	now=$(date +%s)
+	KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
+	GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
+	DH_REPO=kicbase/build
+	export KIC_VERSION=$KV-$now-$ghprbPullId
+else
+	# Actual kicbase release here
+	release=true
+	GCR_REPO=${GCR_REPO:-gcr.io/k8s-minikube/kicbase}
+	DH_REPO=${DH_REPO:-kicbase/stable}
+	export KIC_VERSION
+fi
+GCR_IMG=${GCR_REPO}:${KIC_VERSION}
+DH_IMG=${DH_REPO}:${KIC_VERSION}
+export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
+
 
 # Build a new kicbase image
 yes|make push-kic-base-image
@@ -54,9 +66,9 @@ yes|make push-kic-base-image
 # Abort with error message if above command failed
 ec=$?
 if [ $ec -gt 0 ]; then
-	curl -s -H "Authorization: token ${access_token}" \
-                -H "Accept: application/vnd.github.v3+json" \
-                -X POST -d "{\"body\": \"Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, please try again.\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
+	if [ "$release" = false ]; then
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, please try again."
+	fi
 	exit $ec
 fi
 
@@ -65,9 +77,52 @@ docker pull $GCR_IMG
 fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $KICBASE_IMAGE_REGISTRIES)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
 
-# Display the message to the user
-message="Hi ${ghprbPullAuthorLoginMention},\\n\\nA new kicbase image is available, please update your PR with the new tag and SHA.\\nIn pkg/drivers/kic/types.go:\\n\\n\\t// Version is the current version of kic\\n\\tVersion = \\\"${KIC_VERSION}\\\"\\n\\t// SHA of the kic base image\\n\\tbaseImageSHA = \\\"${sha}\\\"\\n\\t// The name of the GCR kicbase repository\\n\\tgcrRepo = \\\"${GCR_REPO}\\\"\\n\\t// The name of the Dockerhub kicbase repository\\n\\tdockerhubRepo = \\\"${DH_REPO}\\\"\\nThen run \`make generate-docs\` to update our documentation to reference the new image.\n\nAlternatively, run the following command and commit the changes:\\n\`\`\`\\n sed 's|Version = .*|Version = \\\"${KIC_VERSION}\\\"|;s|baseImageSHA = .*|baseImageSHA = \\\"${sha}\\\"|;s|gcrRepo = .*|gcrRepo = \\\"${GCR_REPO}\\\"|;s|dockerhubRepo = .*|dockerhubRepo = \\\"${DH_REPO}\\\"|' pkg/drivers/kic/types.go > new-types.go; mv new-types.go pkg/drivers/kic/types.go; make generate-docs;\\n\`\`\`"
+if [ "$release" = false ]; then
+	# Comment on the PR with the newly built kicbase
+	sed_cmd="
+	sed 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go > new-types.go; mv new-types.go pkg/drivers/kic/types.go; make generate-docs;
+	"
 
-curl -s -H "Authorization: token ${access_token}" \
-	 -H "Accept: application/vnd.github.v3+json" \
-	 -X POST -d "{\"body\": \"${message}\"}" "https://api.github.com/repos/kubernetes/minikube/issues/$ghprbPullId/comments"
+	codeblock="
+	// Version is the current version of kic
+	Version = \"${KIC_VERSION}\"
+	// SHA of the kic base image
+	baseImageSHA = \"${sha}\"
+	// The name of the GCR kicbase repository
+	gcrRepo = \"${GCR_REPO}\"
+	// The name of the Dockerhub kicbase repository
+	dockerhubRepo = \"${DH_REPO}\"
+	"
+
+	# Display the message to the user
+	message="Hi ${ghprbPullAuthorLoginMention},
+
+A new kicbase image is available, please update your PR with the new tag and SHA.
+In pkg/drivers/kic/types.go:
+	
+	${codeblock}
+Then run \`make generate-docs\` to update our documentation to reference the new image.
+	
+Alternatively, run the following command and commit the changes:
+	
+	${sed_cmd}
+"
+
+	gh pr comment ${ghprbPullId} --body "${message}"
+else
+	# We're releasing, so open a new PR with the newly released kicbase
+	git config user.name "minikube-bot"
+	git config user.email "minikube-bot@google.com"
+	
+	branch=kicbase-release-${KIC_VERSION}
+	git checkout -b ${branch}
+
+	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go
+
+	git add -A
+	git commit -m "Update kicbase to ${KIC_VERSION}"
+	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
+	git push -f minikube-bot ${branch}
+
+	gh pr create --fill --base master --head minikube-bot:${branch}
+fi
