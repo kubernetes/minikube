@@ -145,7 +145,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if purge && len(profilesToDelete) > 1 && !deleteAll {
 		out.ErrT(style.Notice, "Multiple minikube profiles were found - ")
 		for _, p := range profilesToDelete {
-			out.Step(style.Notice, "    - {{.profile}}", out.V{"profile": p.Name})
+			out.Styled(style.Notice, "    - {{.profile}}", out.V{"profile": p.Name})
 		}
 		exit.Message(reason.Usage, "Usage: minikube delete --all --purge")
 	}
@@ -202,7 +202,7 @@ func purgeMinikubeDirectory() {
 	if err := os.RemoveAll(localpath.MiniPath()); err != nil {
 		exit.Error(reason.HostPurge, "unable to delete minikube config folder", err)
 	}
-	out.Step(style.Deleted, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
+	out.Styled(style.Deleted, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
 }
 
 // DeleteProfiles deletes one or more profiles
@@ -239,7 +239,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 
 		// if driver is oci driver, delete containers and volumes
 		if driver.IsKIC(profile.Config.Driver) {
-			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+			out.Styled(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
 			for _, n := range profile.Config.Nodes {
 				machineName := config.MachineName(*profile.Config, n)
 				delete.PossibleLeftOvers(ctx, machineName, profile.Config.Driver)
@@ -307,7 +307,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 					klog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
 				default:
 					out.FailureT("Failed to delete cluster: {{.error}}", out.V{"error": err})
-					out.Step(style.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
+					out.Styled(style.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
 				}
 			}
 		}
@@ -338,7 +338,7 @@ func deleteContext(machineName string) error {
 }
 
 func deleteInvalidProfile(profile *config.Profile) []error {
-	out.Step(style.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
+	out.Styled(style.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
 	pathToProfile := config.ProfileFolderPath(profile.Name, localpath.MiniPath())
@@ -364,7 +364,7 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 }
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
-	out.Step(style.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
+	out.Styled(style.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
 	host, err := machine.LoadHost(api, config.MachineName(cc, n))
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to load host: %v", err), Errtype: MissingCluster}
@@ -442,7 +442,7 @@ func handleMultipleDeletionErrors(errors []error) {
 func deleteProfileDirectory(profile string) {
 	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
 	if _, err := os.Stat(machineDir); err == nil {
-		out.Step(style.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
+		out.Styled(style.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
 		err := os.RemoveAll(machineDir)
 		if err != nil {
 			exit.Error(reason.GuestProfileDeletion, "Unable to remove machine directory", err)

@@ -172,9 +172,9 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			out.Step(style.Empty, "")
+			out.Styled(style.Empty, "")
 		}
-		out.Step(style.Empty, "==> {{.name}} <==", out.V{"name": name})
+		out.Styled(style.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 		c := exec.Command("/bin/bash", "-c", cmds[name])
 		c.Stdout = &b
@@ -186,7 +186,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		}
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			out.Step(style.Empty, scanner.Text())
+			out.Styled(style.Empty, scanner.Text())
 		}
 	}
 
@@ -208,25 +208,25 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 
 // outputAudit displays the audit logs.
 func outputAudit(lines int) error {
-	out.Step(style.Empty, "")
-	out.Step(style.Empty, "==> Audit <==")
+	out.Styled(style.Empty, "")
+	out.Styled(style.Empty, "==> Audit <==")
 	r, err := audit.Report(lines)
 	if err != nil {
 		return fmt.Errorf("failed to create audit report: %v", err)
 	}
-	out.Step(style.Empty, r.ASCIITable())
+	out.Styled(style.Empty, r.ASCIITable())
 	return nil
 }
 
 // outputLastStart outputs the last start logs.
 func outputLastStart() error {
-	out.Step(style.Empty, "")
-	out.Step(style.Empty, "==> Last Start <==")
+	out.Styled(style.Empty, "")
+	out.Styled(style.Empty, "==> Last Start <==")
 	fp := localpath.LastStartLog()
 	f, err := os.Open(fp)
 	if os.IsNotExist(err) {
 		msg := fmt.Sprintf("Last start log file not found at %s", fp)
-		out.Step(style.Empty, msg)
+		out.Styled(style.Empty, msg)
 		return nil
 	}
 	if err != nil {
@@ -235,7 +235,7 @@ func outputLastStart() error {
 	defer f.Close()
 	s := bufio.NewScanner(f)
 	for s.Scan() {
-		out.Step(style.Empty, s.Text())
+		out.Styled(style.Empty, s.Text())
 	}
 	if err := s.Err(); err != nil {
 		return fmt.Errorf("failed to read file %s: %v", fp, err)

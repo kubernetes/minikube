@@ -1055,16 +1055,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		klog.Warning(diskErr)
 		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
 		// generic advice for all drivers
-		out.Step(style.Tip, "Please free up disk or prune images.")
+		out.Styled(style.Tip, "Please free up disk or prune images.")
 		if driver.IsVM(drv) {
-			out.Step(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
+			out.Styled(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Step(style.Stopped, "Please increse Desktop's disk size.")
+			out.Styled(style.Stopped, "Please increse Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")
@@ -1075,16 +1075,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		klog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
-		out.Step(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
+		out.Styled(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
 		if driver.IsVM(drv) {
-			out.Step(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
+			out.Styled(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Step(style.Stopped, "Consider increasing Docker Desktop's memory size.")
+			out.Styled(style.Stopped, "Consider increasing Docker Desktop's memory size.")
 			if runtime.GOOS == "darwin" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")
