@@ -1,5 +1,94 @@
 # Release Notes
 
+## Version 1.18.0-beta.0 - 2020-02-25
+
+Features:
+
+* Auto-pause addon: automatically pause Kubernetes when not in use [#10427](https://github.com/kubernetes/minikube/pull/10427)
+* GCP Auth addon: bump to v0.0.4 for multiarch [#10361](https://github.com/kubernetes/minikube/pull/10361)
+* Add new command: image load [#10366](https://github.com/kubernetes/minikube/pull/10366)
+* Add faster `profile list` command with -l or --light option. [#10380](https://github.com/kubernetes/minikube/pull/10380)
+* Add last start logs to 'minikube logs' output [#10465](https://github.com/kubernetes/minikube/pull/10465)
+* Introduce alias 'native' for 'none' driver [#10540](https://github.com/kubernetes/minikube/pull/10540)
+* Add audit logs to 'minikube logs' output [#10350](https://github.com/kubernetes/minikube/pull/10350)
+* Allow setting custom images for addons [#10111](https://github.com/kubernetes/minikube/pull/10111)
+
+Minor Improvements:
+
+* Deb package: make sure to update the package metadata [#10420](https://github.com/kubernetes/minikube/pull/10420)
+* Improve the error message of setting cgroup memory limit. [#10575](https://github.com/kubernetes/minikube/pull/10575)
+* SSH driver: Don't select Discouraged or Obsolete by default [#10554](https://github.com/kubernetes/minikube/pull/10554)
+* drop support for github packages for kicbase [#10582](https://github.com/kubernetes/minikube/pull/10582)
+* disable minikube-scheduled-stop.service until a user schedules a stop [#10548](https://github.com/kubernetes/minikube/pull/10548)
+* docker/podman: add crun for running on cgroups v2 [#10426](https://github.com/kubernetes/minikube/pull/10426)
+* Specify mount point for cri-o config [#10528](https://github.com/kubernetes/minikube/pull/10528)
+* Esnure addon integrity by adding Image SHA [#10527](https://github.com/kubernetes/minikube/pull/10527)
+* improve kvm network delete/cleanup [#10479](https://github.com/kubernetes/minikube/pull/10479)
+* docker/podman: avoid creating overlapping networks with other tools (KVM,...) [#10439](https://github.com/kubernetes/minikube/pull/10439)
+* Improve insecure registry validation [#10493](https://github.com/kubernetes/minikube/pull/10493)
+* Stop using --memory-swap if it is not available [#10507](https://github.com/kubernetes/minikube/pull/10507)
+* UI: do not send image repo info to stderr [#10462](https://github.com/kubernetes/minikube/pull/10462)
+* add new extra component to --wait=all to validate a healthy cluster [#10424](https://github.com/kubernetes/minikube/pull/10424)
+* Add condition to check --cpus count with available cpu count [#10388](https://github.com/kubernetes/minikube/pull/10388)
+* Disable all drivers except "docker" and "ssh" on darwin/arm64 [#10452](https://github.com/kubernetes/minikube/pull/10452)
+* Podman: explicitly remove podman volume and network [#10435](https://github.com/kubernetes/minikube/pull/10435)
+* Disallow running windows binary (.exe) inside WSL [#10354](https://github.com/kubernetes/minikube/pull/10354)
+* adding insecure registry support to containerd runtime [#10385](https://github.com/kubernetes/minikube/pull/10385)
+* Docker driver: support ancient versions of docker [#10369](https://github.com/kubernetes/minikube/pull/10369)
+
+Bug Fixes:
+
+* cgroup v2: skip setting --memory limits when not configurable. [#10512](https://github.com/kubernetes/minikube/pull/10512)
+* metallb addon: fix configuration  empty load balancing IP range [#10395](https://github.com/kubernetes/minikube/pull/10395)
+* Fixed bug where tmp dir incorrectly set for Snap package manager [#10372](https://github.com/kubernetes/minikube/pull/10372)
+* Fixed audit.json error when `delete --purge` ran [#10586](https://github.com/kubernetes/minikube/pull/10586)
+* Fix exit message for insufficient memory [#10553](https://github.com/kubernetes/minikube/pull/10553)
+* Fix minikube kubectl context switching [#10535](https://github.com/kubernetes/minikube/pull/10535)
+* SSH driver: Make sure that ssh driver gets an ip address [#10309](https://github.com/kubernetes/minikube/pull/10309)
+* Fix profile list when there are multi node clusters  [#9996](https://github.com/kubernetes/minikube/pull/9996)
+* Don't allow profile names that conflict with a multi-node name [#10119](https://github.com/kubernetes/minikube/pull/10119)
+
+Version changes:
+
+* Buildroot 2020.02.10 [#10348](https://github.com/kubernetes/minikube/pull/10348)
+* Change from crio-1.19 to crio-1.20 in kicbase [#10477](https://github.com/kubernetes/minikube/pull/10477)
+* bump oldest kubernetes version to v1.14.0, bump default kubernetes version [#10531](https://github.com/kubernetes/minikube/pull/10531)
+* Upgrade crio to 1.20.0 [#10476](https://github.com/kubernetes/minikube/pull/10476)
+* Upgrade Docker, from 20.10.2 to 20.10.3 [#10417](https://github.com/kubernetes/minikube/pull/10417)
+
+---
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- BLasan
+- Daehyeok Mun
+- Federico Gallo
+- Hari Udhayakumar
+- Ilya Zuyev
+- Jiefeng He
+- John Losito
+- Kent Iso
+- Ling Samuel
+- Maikel
+- Medya Ghazizadeh
+- Michael Henkel
+- Moshi Binyamini
+- Pablo Caderno
+- Predrag Rogic
+- Priya Wadhwa
+- Sadlil
+- Sebastian Madejski
+- Sharif Elgamal
+- Steven Powell
+- Thomas Strömberg
+- Yanshu Zhao
+- alonyb
+- ashwanth1109
+- hetong07
+- liuwei10
+- vlad doster
+
 ## Version 1.17.1 - 2020-01-28
 
 Features:
