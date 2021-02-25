@@ -36,12 +36,12 @@ func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 		// equivalent to manual check of 'kubectl --context profile get serviceaccount default'
 		sas, err := cs.CoreV1().ServiceAccounts("default").List(meta.ListOptions{})
 		if err != nil {
-			klog.Infof("temproary error waiting for default SA: %v", err)
+			klog.InfoS("temproary error waiting for default SA", "error", err)
 			return false, nil
 		}
 		for _, sa := range sas.Items {
 			if sa.Name == "default" {
-				klog.Infof("found service account: %q", sa.Name)
+				klog.InfoS("found service account", "name", sa.Name)
 				return true, nil
 			}
 		}
@@ -51,6 +51,6 @@ func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 		return errors.Wrapf(err, "waited %s for SA", time.Since(start))
 	}
 
-	klog.Infof("duration metric: took %s for default service account to be created ...", time.Since(start))
+	klog.InfoS("duration metric: took for default service account to be created ...", "time", time.Since(start))
 	return nil
 }
