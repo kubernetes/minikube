@@ -65,6 +65,14 @@ Presentations about the minikube project, mostly from the Kubernetes blog and th
 
 * _No results found for minikube_
 
+### KubeCon CN 2019 (Shanghai, China)
+
+<https://kccncosschn19eng.sched.com/?searchstring=minikube>
+
+* <https://www.youtube.com/watch?v=ahb-_NBtOL0> (33:21)
+  * "Minikube: Bringing Kubernetes to the Next Billion Users"
+  * Thomas Strömberg, Google
+
 ### KubeCon NA 2019 (San Diego, California)
 
 <https://kccncna19.sched.com/?searchstring=minikube>
