@@ -95,6 +95,9 @@ func Step(st style.Enum, format string, a ...V) {
 
 // Styled writes a stylized and templated message to stdout
 func Styled(st style.Enum, format string, a ...V) {
+	if JSON {
+		return
+	}
 	if st == style.Option {
 		Infof(format, a...)
 		return
