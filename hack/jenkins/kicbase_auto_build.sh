@@ -87,10 +87,7 @@ if [ "$release" = false ]; then
 	git fetch ${ghprbPullAuthorLogin}
 	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
 
-	sedcmd="
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go; make generate-docs;
-	"
-	${sedcmd}
 
 	git commit -am "Updating kicbase image to ${KIC_VERSION}"
 	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
@@ -99,7 +96,8 @@ if [ "$release" = false ]; then
 	if [ $? -gt 0 ]; then
 		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the kicbase to your PR. Please run the following command and push manually.
 
-		${sedcmd}
+		sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go; make generate-docs;
+		
 		"
 	fi
 
