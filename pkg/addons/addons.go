@@ -443,6 +443,21 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 			klog.Errorf("store failed: %v", err)
 		}
 	}
+
+	loadAddonsListToClusterConfig(cc)
+
+}
+
+// load addons list with status in to cluster configs on start
+func loadAddonsListToClusterConfig(cc *config.ClusterConfig) {
+	addonsList := make(map[string]bool)
+	for addonName := range assets.Addons {
+		addonBundle := assets.Addons[addonName]
+		enabled := addonBundle.IsEnabled(cc)
+		addonsList[addonName] = enabled
+	}
+
+	cc.Addons = addonsList
 }
 
 // enableOrDisableAutoPause enables the service after the config was copied by generic enble
