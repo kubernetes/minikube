@@ -55,7 +55,7 @@ func runPause(cmd *cobra.Command, args []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Pausing)
 
-	klog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+	klog.InfoS("namespaces", namespaces, "keys", viper.AllSettings())
 	if allNamespaces {
 		namespaces = nil // all
 	} else if len(namespaces) == 0 {
