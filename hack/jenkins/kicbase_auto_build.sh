@@ -87,12 +87,23 @@ if [ "$release" = false ]; then
 	git fetch ${ghprbPullAuthorLogin}
 	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
 
+	sedcmd="
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go; make generate-docs;
+	"
+	${sedcmd}
 
 	git commit -am "Updating kicbase image to ${KIC_VERSION}"
 	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
 
-	gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, kicbase has been updated to the newly built image. Please pull the commits locally if you want to test."
+	message="Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built kicbase image. Pull the changes locally if you want to test with them or updateyour PR further."
+	if [ $? -gt 0 ]; then
+		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the kicbase to your PR. Please run the following command and push manually.
+
+		${sedcmd}
+		"
+	fi
+
+	gh pr comment ${ghprbPullId} --body "${message}"
 else
 	# We're releasing, so open a new PR with the newly released kicbase
 	
