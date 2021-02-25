@@ -185,7 +185,7 @@ var ConfigCmd = &cobra.Command{
 Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := cmd.Help(); err != nil {
-			klog.Errorf("help: %v", err)
+			klog.ErrorS(err, "help")
 		}
 	},
 }
