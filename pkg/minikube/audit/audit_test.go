@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/user"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -166,5 +167,14 @@ func TestAudit(t *testing.T) {
 				t.Errorf("os.Args = %q; isDeletePurge() = %t; want %t", os.Args, got, test.want)
 			}
 		}
+	})
+
+	// Check if logging with limited args causes a panic
+	t.Run("Log", func(t *testing.T) {
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = []string{"minikube"}
+
+		Log(time.Now())
 	})
 }

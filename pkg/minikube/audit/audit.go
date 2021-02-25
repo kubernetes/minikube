@@ -52,7 +52,7 @@ func args() string {
 
 // Log details about the executed command.
 func Log(startTime time.Time) {
-	if !shouldLog() {
+	if len(os.Args) < 2 || !shouldLog() {
 		return
 	}
 	r := newRow(os.Args[1], args(), userName(), version.GetVersion(), startTime, time.Now())

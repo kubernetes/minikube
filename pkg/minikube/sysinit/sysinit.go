@@ -41,8 +41,14 @@ type Manager interface {
 	// Disable disables a service
 	Disable(string) error
 
+	// Disable disables a service and stops it right after.
+	DisableNow(string) error
+
 	// Enable enables a service
 	Enable(string) error
+
+	// EnableNow enables a service and starts it right after.
+	EnableNow(string) error
 
 	// Start starts a service idempotently
 	Start(string) error

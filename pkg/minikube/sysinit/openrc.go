@@ -117,9 +117,19 @@ func (s *OpenRC) Disable(svc string) error {
 	return nil
 }
 
+// DisableNow not implemented for openRC
+func (s *OpenRC) DisableNow(svc string) error {
+	return fmt.Errorf("disable now is not implemented for OpenRC! PRs to fix are welcomed")
+}
+
 // Enable does nothing
 func (s *OpenRC) Enable(svc string) error {
 	return nil
+}
+
+// EnableNow  not implemented for openRC
+func (s *OpenRC) EnableNow(svc string) error {
+	return fmt.Errorf("enable now is not implemented for OpenRC! PRs to fix are welcomed")
 }
 
 // Restart restarts a service

@@ -648,7 +648,7 @@ KICBASE_ARCH = linux/arm64,linux/amd64
 KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
 
 .PHONY: push-kic-base-image 
-push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
+push-kic-base-image: deploy/kicbase/auto-pause docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
 	docker login docker.pkg.github.com
@@ -811,6 +811,10 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serv
 .PHONY: out/mkcmp
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
+
+.PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work arround for not passing the whole repo as docker context
+deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
+	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
 .PHONY: out/performance-bot
 out/performance-bot:
