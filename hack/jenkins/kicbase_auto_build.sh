@@ -76,6 +76,9 @@ fi
 docker pull $GCR_IMG
 fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $KICBASE_IMAGE_REGISTRIES)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
+git config user.name "minikube-bot"
+git config user.email "minikube-bot@google.com"
+
 
 if [ "$release" = false ]; then
 	# Comment on the PR with the newly built kicbase
@@ -108,16 +111,23 @@ Alternatively, run the following command and commit the changes:
 	${sed_cmd}
 "
 
-	gh pr comment ${ghprbPullId} --body "${message}"
+	git remote add ${ghprbPullAuthorLogin} ${ghprbAuthorRepoGitUrl}
+	git fetch ${ghprbPullAuthorLogin}
+	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
+
+	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go; make generate-docs;
+
+	git commit -am "Updating kicbase image to ${KIC_VERSION}"
+	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
+
+	gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, kicbase has been updated to the newly built image. Please pull the commits locally if you want to test."
 else
 	# We're releasing, so open a new PR with the newly released kicbase
-	git config user.name "minikube-bot"
-	git config user.email "minikube-bot@google.com"
 	
 	branch=kicbase-release-${KIC_VERSION}
 	git checkout -b ${branch}
 
-	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go
+	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go; make generate-docs;
 
 	git add -A
 	git commit -m "Update kicbase to ${KIC_VERSION}"
