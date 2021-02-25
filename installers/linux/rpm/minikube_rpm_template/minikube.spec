@@ -1,6 +1,6 @@
 Name: minikube
 Version: --VERSION--
-Release: 0
+Release: --REVISION--
 Summary: Run Kubernetes locally
 License: ASL 2.0
 Group: Development/Tools
