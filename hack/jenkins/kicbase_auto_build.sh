@@ -111,7 +111,7 @@ Alternatively, run the following command and commit the changes:
 	${sed_cmd}
 "
 
-	git remote add ${ghprbPullAuthorLogin} ${ghprbAuthorRepoGitUrl}
+	git remote add ${ghprbPullAuthorLogin} git@github.com:${ghprbPullAuthorLogin}/minikube.git
 	git fetch ${ghprbPullAuthorLogin}
 	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
 
