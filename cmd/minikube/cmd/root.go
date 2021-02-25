@@ -243,6 +243,7 @@ func init() {
 				sshCmd,
 				kubectlCmd,
 				nodeCmd,
+				cpCmd,
 			},
 		},
 		{
