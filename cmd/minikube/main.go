@@ -158,7 +158,7 @@ func setFlags() {
 
 // setLastStartFlags sets the log_file flag to lastStart.txt if start command and user doesn't specify log_file or log_dir flags.
 func setLastStartFlags() {
-	if os.Args[1] != "start" {
+	if len(os.Args) < 2 || os.Args[1] != "start" {
 		return
 	}
 	if pflag.CommandLine.Changed("log_file") || pflag.CommandLine.Changed("log_dir") {
