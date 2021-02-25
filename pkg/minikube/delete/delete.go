@@ -50,7 +50,7 @@ func PossibleLeftOvers(ctx context.Context, cname string, driverName string) {
 	cs, err := oci.ListContainersByLabel(ctx, bin, delLabel)
 	if err == nil && len(cs) > 0 {
 		for _, c := range cs {
-			out.Styled(style.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
+			out.Step(style.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
 			err := oci.DeleteContainer(ctx, bin, c)
 			if err != nil { // it will error if there is no container to delete
 				klog.Errorf("error deleting container %q. You may want to delete it manually :\n%v", cname, err)

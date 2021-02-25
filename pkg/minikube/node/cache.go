@@ -86,7 +86,7 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.Error(reason.InetCacheTar, "Failed to cache images to tar", err)
 	}
-	out.Styled(style.Check, "Download complete!")
+	out.Step(style.Check, "Download complete!")
 	os.Exit(0)
 }
 

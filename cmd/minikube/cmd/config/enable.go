@@ -64,7 +64,7 @@ var addonsEnableCmd = &cobra.Command{
 
 		}
 
-		out.Styled(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
+		out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
 	},
 }
 

@@ -135,7 +135,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 }
 
 func (c *sshConn) startAndWait() error {
-	out.Styled(style.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
+	out.Step(style.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
 
 	err := c.cmd.Start()
 	if err != nil {
@@ -149,7 +149,7 @@ func (c *sshConn) startAndWait() error {
 }
 
 func (c *sshConn) stop() error {
-	out.Styled(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
+	out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
 
 	return c.cmd.Process.Kill()
 }

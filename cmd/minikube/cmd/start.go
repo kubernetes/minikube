@@ -299,7 +299,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
-		out.Styled(style.DryRun, `dry-run validation complete!`)
+		out.Step(style.DryRun, `dry-run validation complete!`)
 		os.Exit(0)
 	}
 

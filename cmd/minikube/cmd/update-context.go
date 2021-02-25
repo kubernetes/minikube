@@ -42,7 +42,7 @@ var updateContextCmd = &cobra.Command{
 			exit.Error(reason.HostKubeconfigUpdate, "update config", err)
 		}
 		if updated {
-			out.Styled(style.Celebrate, `"{{.context}}" context has been updated to point to {{.hostname}}:{{.port}}`, out.V{"context": cname, "hostname": co.CP.Hostname, "port": co.CP.Port})
+			out.Step(style.Celebrate, `"{{.context}}" context has been updated to point to {{.hostname}}:{{.port}}`, out.V{"context": cname, "hostname": co.CP.Hostname, "port": co.CP.Port})
 		} else {
 			out.Styled(style.Meh, `No changes required for the "{{.context}}" context`, out.V{"context": cname})
 		}

@@ -357,7 +357,7 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 
 	label, ok := addonPodLabels[name]
 	if ok && enable {
-		out.Styled(style.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
+		out.Step(style.HealthCheck, "Verifying {{.addon_name}} addon...", out.V{"addon_name": name})
 		client, err := kapi.Client(viper.GetString(config.ProfileName))
 		if err != nil {
 			return errors.Wrapf(err, "get kube-client to validate %s addon: %v", name, err)

@@ -114,7 +114,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 		}
 
 		if !me || err == constants.ErrMachineMissing {
-			out.Styled(style.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+			out.Step(style.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 			demolish(api, *cc, *n, h)
 
 			klog.Infof("Sleeping 1 second for extra luck!")
@@ -143,7 +143,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 	}
 
 	if !recreated {
-		out.Styled(style.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+		out.Step(style.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 	}
 	if err := h.Driver.Start(); err != nil {
 		MaybeDisplayAdvice(err, h.DriverName)

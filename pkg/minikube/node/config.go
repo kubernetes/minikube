@@ -59,7 +59,7 @@ func configureMounts(wg *sync.WaitGroup) {
 		return
 	}
 
-	out.Styled(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
+	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
 	path := os.Args[0]
 	mountDebugVal := 0
 	if klog.V(8).Enabled() {
