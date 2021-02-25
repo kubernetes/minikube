@@ -118,6 +118,7 @@ else
 	git checkout -b ${branch}
 
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go
+	make generate-docs
 
 	git add -A
 	git commit -m "Update kicbase to ${KIC_VERSION}"
