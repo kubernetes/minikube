@@ -92,7 +92,7 @@ if [ "$release" = false ]; then
 	git commit -am "Updating kicbase image to ${KIC_VERSION}"
 	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
 
-	message="Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built kicbase image. Pull the changes locally if you want to test with them or updateyour PR further."
+	message="Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built kicbase image. Pull the changes locally if you want to test with them or update your PR further."
 	if [ $? -gt 0 ]; then
 		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the kicbase to your PR. Please run the following command and push manually.
 
