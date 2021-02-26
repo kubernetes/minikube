@@ -120,7 +120,8 @@ else
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go
 	make generate-docs
 
-	git commit -am "Update kicbase to ${KIC_VERSION}"
+	git add pkg/drivers/kic/types.go site/content/en/docs/commands/start.md
+	git commit -m "Update kicbase to ${KIC_VERSION}"
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
 
