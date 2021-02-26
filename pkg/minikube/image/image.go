@@ -190,13 +190,12 @@ func retrieveRemote(ref name.Reference, platform v1.Platform) (v1.Image, error) 
 	}
 
 	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
-	img, err = remote.Image(ref)
-	return img, err
+	return remote.Image(ref)
 }
 
 func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, error) {
 	cfg, err := img.ConfigFile()
-	if err != nil {} else {
+	if err != nil {
 		klog.Warningf("failed to get config for %s: %v", ref, err)
 		return img, err
 	}
