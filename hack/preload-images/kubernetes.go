@@ -36,6 +36,6 @@ func RecentK8sVersions() ([]string, error) {
 	for _, r := range list {
 		releases = append(releases, r.GetTagName())
 	}
-	klog.Infof("Got releases: %v", releases)
+	klog.InfoS("Got releases", "releases", releases)
 	return releases, nil
 }
