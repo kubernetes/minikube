@@ -182,14 +182,14 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	return fixPlatform(ref, img, defaultPlatform)
 }
 
-func retrieveRemote(ref name.Reference, platform v1.Platform) (v1.Image, error) {
-	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
+func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(p))
 	if err == nil {
 		return img, nil
 	}
 
 	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
-	return remote.Image(ref)
+	return remote.Image(ref, remote.WithPlatform(p))
 }
 
 func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, error) {
