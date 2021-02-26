@@ -19,7 +19,6 @@ package image
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/pkg/platform"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"io/ioutil"
 	"os"
@@ -200,13 +199,13 @@ func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, err
 		return img, err
 	}
 
-	if cfg.Architecture == platform.Architecture {
+	if cfg.Architecture == p.Architecture {
 		return img, nil
 	}
 	klog.Warningf("image %s arch mismatch: want %s got %s. fixing",
-		ref, platform.Architecture, cfg.Architecture)
+		ref, p.Architecture, cfg.Architecture)
 
-	cfg.Architecture = platform.Architecture
+	cfg.Architecture = p.Architecture
 	img, err = mutate.ConfigFile(img, cfg)
 	if err != nil {
 		klog.Warningf("failed to change config for %s: %v", ref, err)
