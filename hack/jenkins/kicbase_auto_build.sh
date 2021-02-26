@@ -74,7 +74,7 @@ fi
 
 # Retrieve the sha from the new image
 docker pull $GCR_IMG
-fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $KICBASE_IMAGE_REGISTRIES)
+fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $GCR_IMG)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
 
 if [ "$release" = false ]; then
@@ -120,8 +120,7 @@ else
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go
 	make generate-docs
 
-	git add -A
-	git commit -m "Update kicbase to ${KIC_VERSION}"
+	git commit -am "Update kicbase to ${KIC_VERSION}"
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
 
