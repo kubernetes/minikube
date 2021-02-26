@@ -19,6 +19,8 @@ package image
 import (
 	"context"
 	"fmt"
+	"github.com/docker/docker/pkg/platform"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -172,12 +174,17 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 		return img, nil
 	}
 	// reference does not exist in the local daemon
-	if err != nil {
-		klog.Infof("daemon lookup for %+v: %v", ref, err)
-	}
+	klog.Infof("daemon lookup for %+v: %v", ref, err)
 
-	platform := defaultPlatform
-	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
+	img, err = retrieveRemote(ref, defaultPlatform)
+	if err != nil {
+		return nil, err
+	}
+	return fixPlatform(ref, img, defaultPlatform)
+}
+
+func retrieveRemote(ref name.Reference, platform v1.Platform) (v1.Image, error) {
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
 	if err == nil {
 		return img, nil
 	}
@@ -185,6 +192,28 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
 	img, err = remote.Image(ref)
 	return img, err
+}
+
+func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, error) {
+	cfg, err := img.ConfigFile()
+	if err != nil {} else {
+		klog.Warningf("failed to get config for %s: %v", ref, err)
+		return img, err
+	}
+
+	if cfg.Architecture == platform.Architecture {
+		return img, nil
+	}
+	klog.Warningf("image %s arch mismatch: want %s got %s. fixing",
+		ref, platform.Architecture, cfg.Architecture)
+
+	cfg.Architecture = platform.Architecture
+	img, err = mutate.ConfigFile(img, cfg)
+	if err != nil {
+		klog.Warningf("failed to change config for %s: %v", ref, err)
+		return img, errors.Wrap(err, "failed to change image config")
+	}
+	return img, nil
 }
 
 func cleanImageCacheDir() error {
