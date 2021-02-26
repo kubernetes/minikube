@@ -338,7 +338,7 @@ func deleteContext(machineName string) error {
 }
 
 func deleteInvalidProfile(profile *config.Profile) []error {
-	out.Styled(style.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
+	out.Step(style.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
 	pathToProfile := config.ProfileFolderPath(profile.Name, localpath.MiniPath())
