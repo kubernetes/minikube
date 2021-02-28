@@ -116,6 +116,7 @@ const (
 	sshSSHPort              = "ssh-port"
 	defaultSSHUser          = "root"
 	defaultSSHPort          = 22
+	listenAddress           = "listen-address"
 )
 
 var (
@@ -215,6 +216,7 @@ func initDriverFlags() {
 	startCmd.Flags().String(hypervExternalAdapter, "", "External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)")
 
 	// docker & podman
+	startCmd.Flags().String(listenAddress, "", fmt.Sprintf("IP Address to use to expose ports (docker driver only)"))
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
 }
 
@@ -322,6 +324,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			CPUs:                    viper.GetInt(cpus),
 			DiskSize:                diskSize,
 			Driver:                  drvName,
+			ListenAddress:           viper.GetString(listenAddress),
 			HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
 			HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
 			NFSShare:                viper.GetStringSlice(nfsShare),

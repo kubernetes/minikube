@@ -102,8 +102,13 @@ func (d *Driver) Create() error {
 		params.IP = ip.String()
 	}
 	drv := d.DriverName()
+
 	listAddr := oci.DefaultBindIPV4
-	if oci.IsExternalDaemonHost(drv) {
+	if d.NodeConfig.ListenAddress != "" {
+		out.WarningT("Listening to {{.listenAddr}}. Please be advised",
+			out.V{"listenAddr": d.NodeConfig.ListenAddress})
+		listAddr = d.NodeConfig.ListenAddress
+	} else if oci.IsExternalDaemonHost(drv) {
 		out.WarningT("Listening to 0.0.0.0 on external docker host {{.host}}. Please be advised",
 			out.V{"host": oci.DaemonHost(drv)})
 		listAddr = "0.0.0.0"
