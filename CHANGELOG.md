@@ -1,6 +1,20 @@
 # Release Notes
 
-## Version 1.18.0-beta.0 - 2020-02-25
+## Version 1.18.0 - 2021-03-01
+
+Bug Fixes:
+
+* fix: metric server serve on all ipv4 interfaces [#10613](https://github.com/kubernetes/minikube/pull/10613)
+
+Thank you to our contributors for this release!
+
+- Medya Ghazizadeh
+- Predrag Rogic
+- Priya Wadhwa
+- Sharif Elgamal
+- liuwei10
+
+## Version 1.18.0-beta.0 - 2021-02-26
 
 Features:
 
