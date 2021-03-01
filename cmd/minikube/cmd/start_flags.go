@@ -215,8 +215,10 @@ func initDriverFlags() {
 	startCmd.Flags().Bool(hypervUseExternalSwitch, false, "Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)")
 	startCmd.Flags().String(hypervExternalAdapter, "", "External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)")
 
-	// docker & podman
+	// docker
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker driver only)")
+
+	// docker & podman
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
 }
 
