@@ -6,7 +6,6 @@ reviewers:
   - sharifelgamal
   - RA489
   - medyagh
-  - josedonizetti
   - blueelvis
   - prasadkatti
   - ilya-zuyev
@@ -16,7 +15,6 @@ approvers:
   - afbjorklund
   - sharifelgamal
   - medyagh
-  - josedonizetti
   - ilya-zuyev
 emeritus_approvers:
   - dlorenc
@@ -25,3 +23,4 @@ emeritus_approvers:
   - r2d4
   - aaron-prindle
   - priyawadhwa
+  - josedonizetti
