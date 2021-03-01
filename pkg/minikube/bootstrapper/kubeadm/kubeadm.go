@@ -258,7 +258,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	kw.Close()
 	wg.Wait()
-	if err := k.applyCNI(cfg); err != nil {
+	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
 
@@ -323,7 +323,7 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 }
 
 // applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.
-func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, isInit bool) error {
 	cnm, err := cni.New(cfg)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
@@ -333,8 +333,13 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	register.Reg.SetStep(register.ConfiguringCNI)
-	out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	// when not on init, can run in parallel and break step output order
+	if isInit {
+		register.Reg.SetStep(register.ConfiguringCNI)
+		out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	} else {
+		out.Styled(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	}
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
@@ -713,7 +718,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	// because reboots clear /etc/cni
-	if err := k.applyCNI(cfg); err != nil {
+	if err := k.applyCNI(cfg, false); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
 
