@@ -104,7 +104,7 @@ func (d *Driver) Create() error {
 	drv := d.DriverName()
 
 	listAddr := oci.DefaultBindIPV4
-	if d.NodeConfig.ListenAddress != "" {
+	if d.NodeConfig.ListenAddress != "" && d.NodeConfig.ListenAddress != listAddr {
 		out.WarningT("Listening to {{.listenAddr}}. Please be advised",
 			out.V{"listenAddr": d.NodeConfig.ListenAddress})
 		listAddr = d.NodeConfig.ListenAddress
