@@ -1079,6 +1079,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		validateChangedMemoryFlags(drvName)
 	}
 
+	if cmd.Flags().Changed(listenAddress) {
+		validateListenAddress(viper.GetString(listenAddress))
+	}
+
 	if cmd.Flags().Changed(containerRuntime) {
 		runtime := strings.ToLower(viper.GetString(containerRuntime))
 
@@ -1196,6 +1200,14 @@ func validateRegistryMirror() {
 			}
 
 		}
+	}
+}
+
+// This function validates if the --listen-address
+// match the format 0.0.0.0
+func validateListenAddress(listenAddr string) {
+	if len(listenAddr) > 0 && net.ParseIP(listenAddr) == nil {
+		exit.Message(reason.Usage, "Sorry, the IP provided with the --listen-address flag is invalid: {{.listenAddr}}.", out.V{"listenAddr": listenAddr})
 	}
 }
 
