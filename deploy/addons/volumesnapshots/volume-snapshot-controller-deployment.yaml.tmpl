@@ -1,29 +1,33 @@
-# This YAML file shows how to deploy the volume snapshot controller 
+# This YAML file shows how to deploy the snapshot controller
+
+# The snapshot controller implements the control loop for CSI snapshot functionality.
+# It should be installed as part of the base Kubernetes distribution in an appropriate
+# namespace for components implementing base system functionality. For installing with
+# Vanilla Kubernetes, kube-system makes sense for the namespace.
 
 ---
-kind: StatefulSet
+kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: volume-snapshot-controller
+  name: snapshot-controller
   namespace: kube-system
   labels:
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
-  serviceName: "volume-snapshot-controller"
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: volume-snapshot-controller
+      app: snapshot-controller
   template:
     metadata:
       labels:
-        app: volume-snapshot-controller
+        app: snapshot-controller
     spec:
-      serviceAccount: volume-snapshot-controller
+      serviceAccount: snapshot-controller
       containers:
         - name: volume-snapshot-controller
-          # TODO(xyang): Replace with an official image when it is released
           image: {{.CustomRegistries.SnapshotController  | default .ImageRepository | default .Registries.SnapshotController }}{{.Images.SnapshotController}}
           args:
             - "--v=5"
+            - "--leader-election=true"
           imagePullPolicy: IfNotPresent
