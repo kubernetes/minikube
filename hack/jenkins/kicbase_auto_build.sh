@@ -76,43 +76,34 @@ fi
 docker pull $GCR_IMG
 fullsha=$(docker inspect --format='{{index .RepoDigests 0}}' $GCR_IMG)
 sha=$(echo ${fullsha} | cut -d ":" -f 2)
+git config user.name "minikube-bot"
+git config user.email "minikube-bot@google.com"
+
 
 if [ "$release" = false ]; then
-	# Comment on the PR with the newly built kicbase
-	sed_cmd="
-	sed 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go > new-types.go; mv new-types.go pkg/drivers/kic/types.go; make generate-docs;
-	"
+	# Update the user's PR with the newly built kicbase image.
 
-	codeblock="
-	// Version is the current version of kic
-	Version = \"${KIC_VERSION}\"
-	// SHA of the kic base image
-	baseImageSHA = \"${sha}\"
-	// The name of the GCR kicbase repository
-	gcrRepo = \"${GCR_REPO}\"
-	// The name of the Dockerhub kicbase repository
-	dockerhubRepo = \"${DH_REPO}\"
-	"
+	git remote add ${ghprbPullAuthorLogin} git@github.com:${ghprbPullAuthorLogin}/minikube.git
+	git fetch ${ghprbPullAuthorLogin}
+	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
 
-	# Display the message to the user
-	message="Hi ${ghprbPullAuthorLoginMention},
+	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go; make generate-docs;
 
-A new kicbase image is available, please update your PR with the new tag and SHA.
-In pkg/drivers/kic/types.go:
-	
-	${codeblock}
-Then run \`make generate-docs\` to update our documentation to reference the new image.
-	
-Alternatively, run the following command and commit the changes:
-	
-	${sed_cmd}
-"
+	git commit -am "Updating kicbase image to ${KIC_VERSION}"
+	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
+
+	message="Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built kicbase image. Pull the changes locally if you want to test with them or update your PR further."
+	if [ $? -gt 0 ]; then
+		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the kicbase to your PR. Please run the following command and push manually.
+
+		sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go; make generate-docs;
+		
+		"
+	fi
 
 	gh pr comment ${ghprbPullId} --body "${message}"
 else
 	# We're releasing, so open a new PR with the newly released kicbase
-	git config user.name "minikube-bot"
-	git config user.email "minikube-bot@google.com"
 	
 	branch=kicbase-release-${KIC_VERSION}
 	git checkout -b ${branch}
