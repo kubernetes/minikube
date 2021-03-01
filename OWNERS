@@ -8,7 +8,6 @@ reviewers:
   - medyagh
   - josedonizetti
   - blueelvis
-  - priyawadhwa
   - prasadkatti
   - ilya-zuyev
   - prezha	
@@ -18,10 +17,11 @@ approvers:
   - sharifelgamal
   - medyagh
   - josedonizetti
-  - priyawadhwa
   - ilya-zuyev
 emeritus_approvers:
   - dlorenc
   - luxas
   - jimmidyson
   - r2d4
+  - aaron-prindle
+  - priyawadhwa
