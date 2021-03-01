@@ -19,5 +19,68 @@
 # 	ISO_BUCKET = the bucket location to upload the ISO (e.g. minikube-builds/PR_NUMBER)
 # 	ISO_VERSION = the suffix for the iso (i.e. minikube-$(ISO_VERSION).iso)
 
-set -e
-${ARGS} make release-iso
+set -x
+
+# Make sure gh is installed and configured
+./hack/jenkins/installers/check_install_gh.sh
+
+if [[ -z $ISO_VERSION ]]; then
+	release=false
+	IV=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3)
+	now=$(date +%s)
+	export ISO_VERSION=$IV-$now-$ghprbPullId
+	export ISO_BUCKET=minikube-builds/$ghprbPullId
+else
+	release=true
+	export ISO_VERSION
+	export ISO_BUCKET
+fi
+
+make release-iso
+# Abort with error message if above command failed
+ec=$?
+if [ $ec -gt 0 ]; then
+	if [ "$release" = false ]; then
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed, please try again."
+	fi
+	exit $ec
+fi
+
+if [ "$release" = false ]; then
+	# Update the user's PR with newly build ISO
+
+	git remote add ${ghprbPullAuthorLogin} git@github.com:${ghprbPullAuthorLogin}/minikube.git
+	git fetch ${ghprbPullAuthorLogin}
+	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
+
+	sed -i "s/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/" Makefile
+	make generate-docs
+
+	git add Makefile site/content/en/docs/commands/start.md
+	git commit -m "Updating ISO to ${ISO_VERSION}"
+	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
+
+	message="Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built kicbase image. Pull the changes locally if you want to test with them or update your PR further."
+	if [ $? -gt 0 ]; then
+		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the kicbase to your PR. Please run the following command and push manually.
+
+		sed -i 's/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/' Makefile; make generate-docs;
+		"
+	fi
+	
+	gh pr comment ${ghprbPullId} --body "${message}"
+else
+	# Release!
+	branch=iso-release-${KIC_VERSION}
+	git checkout -b ${branch}
+
+	sed -i "s/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/" Makefile
+	make generate-docs
+
+	git add Makefile site/content/en/docs/commands/start.md
+	git commit -m "Update ISO to ${ISO_VERSION}"
+	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
+	git push -f minikube-bot ${branch}
+
+	gh pr create --fill --base master --head minikube-bot:${branch}
+fi	
