@@ -15,7 +15,7 @@ jobs:
   # builds the minikube binaries
   build_minikube:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
-    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
+    runs-on: [self-hosted, debian9, baremetal, equinix]
     steps:
       - name: Install tools
         shell: bash
@@ -50,7 +50,7 @@ jobs:
           path: out
   setup_docker:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
-    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
+    runs-on: [self-hosted, debian9, baremetal, equinix]
     steps:
       - name: Setup Docker
         shell: bash
@@ -80,7 +80,7 @@ jobs:
       JOB_NAME: "integration_baremetal_debian9"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
+    runs-on: [self-hosted, debian9, baremetal, equinix]
     steps:
       - name: Install kubectl
         shell: bash
@@ -174,7 +174,7 @@ jobs:
       JOB_NAME: "integration_docker_debian9"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
+    runs-on: [self-hosted, debian9, baremetal, equinix]
     steps:
       - name: Install kubectl
         shell: bash
@@ -275,7 +275,7 @@ jobs:
         integration_docker_debian9,
         integration_baremetal_debian9
       ]
-    runs-on: [self-hosted, debian9, baremetal, equinix, experimental]
+    runs-on: [self-hosted, debian9, baremetal, equinix]
     steps:
       - name: download all reports
         uses: actions/download-artifact@v2-preview
