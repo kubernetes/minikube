@@ -1,5 +1,13 @@
 [
   {
+      "name": "v1.18.0",
+      "checksums": {
+          "darwin": "a8c78a01fb129a7c66bad25bace89dc59e912b7fc0a8456de3321f9adce7a01e",
+          "linux": "7a330bcd45c96633c14aabcae74b3308eacf6e552a5f6ccd565a03e2f293785f",
+          "windows": "264b8bd9062d73b7570a26455f646fbfbce9b7bfaf375cf5642ae17937e1f79a"
+      }
+  },
+  {
       "name": "v1.17.1",
       "checksums": {
           "darwin": "c9361152a0a4aaed23d212b792f1907454f5fdd950f0cf9ac65c789744acf5ac",
