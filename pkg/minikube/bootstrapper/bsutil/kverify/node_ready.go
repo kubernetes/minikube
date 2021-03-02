@@ -18,6 +18,7 @@ limitations under the License.
 package kverify
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -68,7 +69,7 @@ func WaitNodeCondition(cs *kubernetes.Clientset, name string, condition core.Nod
 
 // nodeConditionStatus returns if node is in specified condition and verbose reason.
 func nodeConditionStatus(cs *kubernetes.Clientset, name string, condition core.NodeConditionType) (status core.ConditionStatus, reason string) {
-	node, err := cs.CoreV1().Nodes().Get(name, meta.GetOptions{})
+	node, err := cs.CoreV1().Nodes().Get(context.Background(), name, meta.GetOptions{})
 	if err != nil {
 		return core.ConditionUnknown, fmt.Sprintf("error getting node %q: %v", name, err)
 	}

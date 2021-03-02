@@ -17,20 +17,21 @@ limitations under the License.
 package storage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
 
 	"github.com/pkg/errors"
+
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/sig-storage-lib-external-provisioner/v5/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/v6/controller"
 )
 
 const provisionerName = "k8s.io/minikube-hostpath"
@@ -55,16 +56,16 @@ func NewHostPathProvisioner(pvDir string) controller.Provisioner {
 var _ controller.Provisioner = &hostPathProvisioner{}
 
 // Provision creates a storage asset and returns a PV object representing it.
-func (p *hostPathProvisioner) Provision(options controller.ProvisionOptions) (*core.PersistentVolume, error) {
+func (p *hostPathProvisioner) Provision(ctx context.Context, options controller.ProvisionOptions) (*core.PersistentVolume, controller.ProvisioningState, error) {
 	path := path.Join(p.pvDir, options.PVC.Namespace, options.PVC.Name)
 	klog.Infof("Provisioning volume %v to %s", options, path)
 	if err := os.MkdirAll(path, 0777); err != nil {
-		return nil, err
+		return nil, controller.ProvisioningFinished, err
 	}
 
 	// Explicitly chmod created dir, so we know mode is set to 0777 regardless of umask
 	if err := os.Chmod(path, 0777); err != nil {
-		return nil, err
+		return nil, controller.ProvisioningFinished, err
 	}
 
 	pv := &core.PersistentVolume{
@@ -88,12 +89,12 @@ func (p *hostPathProvisioner) Provision(options controller.ProvisionOptions) (*c
 		},
 	}
 
-	return pv, nil
+	return pv, controller.ProvisioningFinished, nil
 }
 
 // Delete removes the storage asset that was created by Provision represented
 // by the given PV.
-func (p *hostPathProvisioner) Delete(volume *core.PersistentVolume) error {
+func (p *hostPathProvisioner) Delete(ctx context.Context, volume *core.PersistentVolume) error {
 	klog.Infof("Deleting volume %v", volume)
 	ann, ok := volume.Annotations["hostPathProvisionerIdentity"]
 	if !ok {
@@ -138,6 +139,6 @@ func StartStorageProvisioner(pvDir string) error {
 	pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
 
 	klog.Info("Storage provisioner initialized, now starting service!")
-	pc.Run(wait.NeverStop)
+	pc.Run(context.Background())
 	return nil
 }

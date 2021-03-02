@@ -689,7 +689,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		klog.Info("waiting for restarted kubelet to initialise ...")
 		start := time.Now()
 		wait := func() error {
-			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(meta.ListOptions{LabelSelector: "tier=control-plane"})
+			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{LabelSelector: "tier=control-plane"})
 			if err != nil {
 				return err
 			}
