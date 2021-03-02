@@ -107,6 +107,7 @@ func (d *Driver) Create() error {
 	if d.NodeConfig.ListenAddress != "" && d.NodeConfig.ListenAddress != listAddr {
 		out.WarningT("Listening to {{.listenAddr}}. This is not recommended and can cause a security vulnerability. Use at your own risk",
 			out.V{"listenAddr": d.NodeConfig.ListenAddress})
+		out.Infof("minikube is not meant for production use. you are opening non-local traffic")
 		listAddr = d.NodeConfig.ListenAddress
 	} else if oci.IsExternalDaemonHost(drv) {
 		out.WarningT("Listening to 0.0.0.0 on external docker host {{.host}}. Please be advised",
