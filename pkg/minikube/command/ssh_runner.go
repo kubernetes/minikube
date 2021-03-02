@@ -282,6 +282,10 @@ func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 
 	sc.wg.Wait()
 
+	if err := s.s.Close(); err != io.EOF {
+		klog.Errorf("session close: %v", err)
+	}
+
 	s.s = nil
 
 	if err == nil {
