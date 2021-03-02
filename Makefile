@@ -44,6 +44,9 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 
+# NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
+# https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
+#
 BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
