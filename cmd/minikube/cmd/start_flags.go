@@ -65,6 +65,7 @@ const (
 	kvmQemuURI              = "kvm-qemu-uri"
 	kvmGPU                  = "kvm-gpu"
 	kvmHidden               = "kvm-hidden"
+	kvmNUMACount            = "kvm-numa-count"
 	minikubeEnvPrefix       = "MINIKUBE"
 	installAddons           = "install-addons"
 	defaultDiskSize         = "20000mb"
@@ -193,6 +194,7 @@ func initDriverFlags() {
 	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (kvm2 driver only)")
 	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
 	startCmd.Flags().Bool(kvmHidden, false, "Hide the hypervisor signature from the guest in minikube (kvm2 driver only)")
+	startCmd.Flags().Int(kvmNUMACount, 1, "Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only)")
 
 	// virtualbox
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (virtualbox driver only)")
@@ -311,6 +313,8 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			out.WarningT("--network flag is only valid with the docker/podman drivers, it will be ignored")
 		}
 
+		checkNumaCount(k8sVersion)
+
 		cc = config.ClusterConfig{
 			Name:                    ClusterFlagValue(),
 			KeepContext:             viper.GetBool(keepContext),
@@ -338,6 +342,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			KVMQemuURI:              viper.GetString(kvmQemuURI),
 			KVMGPU:                  viper.GetBool(kvmGPU),
 			KVMHidden:               viper.GetBool(kvmHidden),
+			KVMNUMACount:            viper.GetInt(kvmNUMACount),
 			DisableDriverMounts:     viper.GetBool(disableDriverMounts),
 			UUID:                    viper.GetString(uuid),
 			NoVTXCheck:              viper.GetBool(noVTXCheck),
@@ -405,6 +410,22 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		kubeNodeName = "m01"
 	}
 	return createNode(cc, kubeNodeName, existing)
+}
+
+func checkNumaCount(k8sVersion string) {
+	if viper.GetInt(kvmNUMACount) < 1 || viper.GetInt(kvmNUMACount) > 8 {
+		exit.Message(reason.Usage, "--kvm-numa-count range is 1-8")
+	}
+
+	if viper.GetInt(kvmNUMACount) > 1 {
+		v, err := pkgutil.ParseKubernetesVersion(k8sVersion)
+		if err != nil {
+			exit.Message(reason.Usage, "invalid kubernetes version")
+		}
+		if v.LT(semver.Version{Major: 1, Minor: 18}) {
+			exit.Message(reason.Usage, "numa node is only supported on k8s v1.18 and later")
+		}
+	}
 }
 
 // upgradeExistingConfig upgrades legacy configuration files
@@ -543,6 +564,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(kvmHidden) {
 		cc.KVMHidden = viper.GetBool(kvmHidden)
+	}
+
+	if cmd.Flags().Changed(kvmNUMACount) {
+		cc.KVMNUMACount = viper.GetInt(kvmNUMACount)
 	}
 
 	if cmd.Flags().Changed(disableDriverMounts) {

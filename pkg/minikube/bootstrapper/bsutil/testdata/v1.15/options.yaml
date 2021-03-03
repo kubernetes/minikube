@@ -68,5 +68,5 @@ staticPodPath: /etc/kubernetes/manifests
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 clusterCIDR: "10.244.0.0/16"
-metricsBindAddress: 1.1.1.1:10249
+metricsBindAddress: 0.0.0.0:10249
 mode: "iptables"
