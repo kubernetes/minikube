@@ -24,6 +24,10 @@ set -x
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
+# Make sure gcc is installed
+sudo apt-get update
+sudo apt-get install build-essential
+
 if [[ -z $ISO_VERSION ]]; then
 	release=false
 	IV=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3)
