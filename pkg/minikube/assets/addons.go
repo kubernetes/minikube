@@ -290,11 +290,13 @@ var Addons = map[string]*Addon{
 			"olm.yaml",
 			"0640"),
 	}, false, "olm", map[string]string{
-		"OLM":                        "operator-framework/olm:0.14.1@sha256:0d15ffb5d10a176ef6e831d7865f98d51255ea5b0d16403618c94a004d049373",
-		"UpstreamCommunityOperators": "operator-framework/upstream-community-operators:07bbc13@sha256:cc7b3fdaa1ccdea5866fcd171669dc0ed88d3477779d8ed32e3712c827e38cc0",
+		"OLM":                        "operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607",
+		"UpstreamCommunityOperators": "operatorhubio/catalog:latest",
+		"ConfigMapServer":            "operator-framework/configmap-operator-registry:latest",
 	}, map[string]string{
 		"OLM":                        "quay.io",
 		"UpstreamCommunityOperators": "quay.io",
+		"ConfigMapServer":            "quay.io",
 	}),
 	"registry": NewAddon([]*BinAsset{
 		MustBinAsset(
