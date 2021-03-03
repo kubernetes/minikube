@@ -84,12 +84,22 @@ func Step(st style.Enum, format string, a ...V) {
 		Infof(format, a...)
 		return
 	}
-	outStyled, spinner := stylized(st, useColor, format, a...)
+	outStyled, _ := stylized(st, useColor, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
 		return
 	}
 	register.RecordStep(outStyled)
+	Styled(st, format, a...)
+}
+
+// Styled writes a stylized and templated message to stdout
+func Styled(st style.Enum, format string, a ...V) {
+	if JSON || st == style.Option {
+		Infof(format, a...)
+		return
+	}
+	outStyled, spinner := stylized(st, useColor, format, a...)
 	if spinner {
 		spinnerString(outStyled)
 	} else {

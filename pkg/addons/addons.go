@@ -150,7 +150,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	if strings.HasPrefix(name, "ingress") && enable {
 		if driver.IsKIC(cc.Driver) {
 			if runtime.GOOS == "windows" {
-				out.Step(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
+				out.Styled(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
 			} else if runtime.GOOS != "linux" {
 				exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
 Alternatively to use this addon you can use a vm-based driver:
@@ -199,8 +199,8 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 			if err != nil {
 				return errors.Wrap(err, "registry port")
 			}
-			out.Step(style.Tip, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, out.V{"driver": cc.Driver, "port": port})
-			out.Step(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
+			out.Styled(style.Tip, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, out.V{"driver": cc.Driver, "port": port})
+			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
 		}
 	}
 
@@ -341,8 +341,8 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
 
 	if enable && err == nil {
-		out.Step(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
-		out.Step(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
+		out.Styled(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
+		out.Styled(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
 	}
 
 	return err

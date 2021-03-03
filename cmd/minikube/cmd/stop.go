@@ -166,7 +166,7 @@ func stop(api libmachine.API, machineName string) bool {
 
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.Step(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
+			out.Styled(style.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
 			nonexistent = true
 			return nil
 		default:

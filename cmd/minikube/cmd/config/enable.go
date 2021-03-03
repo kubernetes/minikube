@@ -42,7 +42,7 @@ var addonsEnableCmd = &cobra.Command{
 		addon := args[0]
 		// replace heapster as metrics-server because heapster is deprecated
 		if addon == "heapster" {
-			out.Step(style.Waiting, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
+			out.Styled(style.Waiting, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
 			addon = "metrics-server"
 		}
 		viper.Set(config.AddonImages, images)
@@ -56,7 +56,7 @@ var addonsEnableCmd = &cobra.Command{
 			if ClusterFlagValue() != constants.DefaultClusterName {
 				tipProfileArg = fmt.Sprintf(" -p %s", ClusterFlagValue())
 			}
-			out.Step(style.Tip, `Some dashboard features require the metrics-server addon. To enable all features please run:
+			out.Styled(style.Tip, `Some dashboard features require the metrics-server addon. To enable all features please run:
 
 	minikube{{.profileArg}} addons enable metrics-server	
 

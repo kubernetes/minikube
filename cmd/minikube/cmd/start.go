@@ -441,7 +441,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		out.Step(style.Tip, "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'")
+		out.Styled(style.Tip, "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'")
 		return nil
 	}
 
@@ -729,7 +729,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	klog.Infof("status for %s: %+v", name, st)
 
 	if st.NeedsImprovement {
-		out.Step(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
+		out.Styled(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
 	}
 
 	if ds.Priority == registry.Obsolete {
@@ -1016,7 +1016,7 @@ func validateCPUCount(drvName string) {
 
 	si, err := oci.CachedDaemonInfo(drvName)
 	if err != nil {
-		out.Step(style.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
+		out.Styled(style.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
 		si, err = oci.DaemonInfo(drvName)
 		if err != nil {
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
@@ -1027,13 +1027,13 @@ func validateCPUCount(drvName string) {
 	if si.CPUs < cpuCount {
 
 		if driver.IsDockerDesktop(drvName) {
-			out.Step(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
+			out.Styled(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
 			if runtime.GOOS == "darwin" {
-				out.Step(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`, out.V{"driver_name": drvName})
+				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`, out.V{"driver_name": drvName})
 			}
 			if runtime.GOOS == "windows" {
 				out.String("\n\t")
-				out.Step(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`, out.V{"driver_name": drvName})
+				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`, out.V{"driver_name": drvName})
 			}
 		}
 
@@ -1346,7 +1346,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 
 	}
 	if defaultVersion.GT(nvs) {
-		out.Step(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
+		out.Styled(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
 	}
 }
 

@@ -68,13 +68,13 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 
 	command := "ssh"
 	if askForSudo && runtime.GOOS != "windows" {
-		out.Step(
+		out.Styled(
 			style.Warning,
 			"The service {{.service}} requires privileged ports to be exposed: {{.ports}}",
 			out.V{"service": svc.Name, "ports": fmt.Sprintf("%v", privilegedPorts)},
 		)
 
-		out.Step(style.Permissions, "sudo permission will be asked for it.")
+		out.Styled(style.Permissions, "sudo permission will be asked for it.")
 
 		command = "sudo"
 		sshArgs = append([]string{"ssh"}, sshArgs...)

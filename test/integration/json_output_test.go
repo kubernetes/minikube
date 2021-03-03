@@ -103,7 +103,7 @@ func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*clou
 	steps := map[string]string{}
 	for _, ce := range ces {
 		currentStep, exists := ce.data["currentstep"]
-		if !exists {
+		if !exists || ce.Type() != "io.k8s.sigs.minikube.step" {
 			continue
 		}
 		if msg, alreadySeen := steps[currentStep]; alreadySeen {
@@ -118,7 +118,7 @@ func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cl
 	step := -1
 	for _, ce := range ces {
 		currentStep, exists := ce.data["currentstep"]
-		if !exists {
+		if !exists || ce.Type() != "io.k8s.sigs.minikube.step" {
 			continue
 		}
 		cs, err := strconv.Atoi(currentStep)
