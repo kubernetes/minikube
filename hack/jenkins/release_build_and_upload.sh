@@ -55,6 +55,16 @@ env BUILD_IN_DOCKER=y \
   "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
   "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
 
+# check if 'commit: <commit-id>' line contains '-dirty' commit suffix
+BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
+echo ${BUILT_VERSION}
+
+COMMIT=$(echo ${BUILT_VERSION} | grep 'commit:' | awk '{print $2}')
+if (echo ${COMMIT} | grep -q dirty); then
+  echo "'minikube version' reports dirty commit: ${COMMIT}"
+  exit 1
+fi
+
 # Don't upload temporary copies, avoid unused duplicate files in the release storage
 rm -f out/minikube-linux-x86_64
 rm -f out/minikube-linux-aarch64
