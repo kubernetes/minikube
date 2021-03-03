@@ -168,7 +168,7 @@ var mountCmd = &cobra.Command{
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func() {
-				out.Step(style.Fileserver, "Userspace file server: ")
+				out.Styled(style.Fileserver, "Userspace file server: ")
 				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
 				out.Step(style.Stopped, "Userspace file server is shutdown")
 				wg.Done()
@@ -195,7 +195,7 @@ var mountCmd = &cobra.Command{
 		}
 		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Ln("")
-		out.Step(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
+		out.Styled(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
 		wg.Wait()
 	},
 }

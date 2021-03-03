@@ -55,6 +55,7 @@ type RunResult struct {
 type StartedCmd struct {
 	cmd *exec.Cmd
 	rr  *RunResult
+	wg  *sync.WaitGroup
 }
 
 // Runner represents an interface to run commands.

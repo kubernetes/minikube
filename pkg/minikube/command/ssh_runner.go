@@ -196,7 +196,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 }
 
 // teeSSHStart starts a non-blocking SSH command, streaming stdout, stderr to logs
-func teeSSHStart(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
+func teeSSHStart(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer, wg *sync.WaitGroup) error {
 	outPipe, err := s.StdoutPipe()
 	if err != nil {
 		return errors.Wrap(err, "stdout")
@@ -211,11 +211,13 @@ func teeSSHStart(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) err
 		if err := teePrefix(ErrPrefix, errPipe, errB, klog.V(8).Infof); err != nil {
 			klog.Errorf("tee stderr: %v", err)
 		}
+		wg.Done()
 	}()
 	go func() {
 		if err := teePrefix(OutPrefix, outPipe, outB, klog.V(8).Infof); err != nil {
 			klog.Errorf("tee stdout: %v", err)
 		}
+		wg.Done()
 	}()
 
 	return s.Start(cmd)
@@ -231,8 +233,10 @@ func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 		return nil, fmt.Errorf("another SSH command has been started and is currently running")
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(2)
 	rr := &RunResult{Args: cmd.Args}
-	sc := &StartedCmd{cmd: cmd, rr: rr}
+	sc := &StartedCmd{cmd: cmd, rr: rr, wg: &wg}
 	klog.Infof("Start: %v", rr.Command())
 
 	var outb, errb io.Writer
@@ -258,7 +262,7 @@ func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 
 	s.s = sess
 
-	err = teeSSHStart(s.s, shellquote.Join(cmd.Args...), outb, errb)
+	err = teeSSHStart(s.s, shellquote.Join(cmd.Args...), outb, errb, &wg)
 
 	return sc, err
 }
@@ -275,6 +279,8 @@ func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	if exitError, ok := err.(*exec.ExitError); ok {
 		rr.ExitCode = exitError.ExitCode()
 	}
+
+	sc.wg.Wait()
 
 	if err := s.s.Close(); err != io.EOF {
 		klog.Errorf("session close: %v", err)

@@ -145,7 +145,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if purge && len(profilesToDelete) > 1 && !deleteAll {
 		out.ErrT(style.Notice, "Multiple minikube profiles were found - ")
 		for _, p := range profilesToDelete {
-			out.Step(style.Notice, "    - {{.profile}}", out.V{"profile": p.Name})
+			out.Styled(style.Notice, "    - {{.profile}}", out.V{"profile": p.Name})
 		}
 		exit.Message(reason.Usage, "Usage: minikube delete --all --purge")
 	}
@@ -307,7 +307,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 					klog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
 				default:
 					out.FailureT("Failed to delete cluster: {{.error}}", out.V{"error": err})
-					out.Step(style.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
+					out.Styled(style.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
 				}
 			}
 		}
