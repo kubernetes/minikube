@@ -133,6 +133,7 @@ func TestMirrorCountry(t *testing.T) {
 			cmd := &cobra.Command{}
 			viper.SetDefault(imageRepository, test.imageRepository)
 			viper.SetDefault(imageMirrorCountry, test.mirrorCountry)
+			viper.SetDefault(kvmNUMACount, 1)
 			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)

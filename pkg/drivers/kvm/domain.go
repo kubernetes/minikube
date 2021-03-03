@@ -44,7 +44,11 @@ const domainTmpl = `
     </kvm>
     {{end}}
   </features>
-  <cpu mode='host-passthrough'/>
+  <cpu mode='host-passthrough'>
+  {{if gt .NUMANodeCount 1}}
+  {{.NUMANodeXML}}
+  {{end}}
+  </cpu>
   <os>
     <type>hvm</type>
     <boot dev='cdrom'/>
@@ -158,14 +162,12 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 		}
 		d.PrivateMAC = mac.String()
 	}
-
 	// create the XML for the domain using our domainTmpl template
 	tmpl := template.Must(template.New("domain").Parse(domainTmpl))
 	var domainXML bytes.Buffer
 	if err := tmpl.Execute(&domainXML, d); err != nil {
 		return nil, errors.Wrap(err, "executing domain xml")
 	}
-
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting libvirt connection")

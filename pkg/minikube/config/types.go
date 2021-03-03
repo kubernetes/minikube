@@ -56,6 +56,7 @@ type ClusterConfig struct {
 	KVMQemuURI              string   // Only used by kvm2
 	KVMGPU                  bool     // Only used by kvm2
 	KVMHidden               bool     // Only used by kvm2
+	KVMNUMACount            int      // Only used by kvm2
 	DockerOpt               []string // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts     bool     // Only used by virtualbox
 	NFSShare                []string
