@@ -46,13 +46,19 @@ var runtime = "docker"
 func main() {
 	// TODO: #10595 make this configurable
 	const interval = time.Minute * 1
+	// interval must > 0 or the ticker will panic
+	if interval <= 0 {
+		exit.Message(reason.Usage, "Sorry, the auto-pause interval must be greater than 0, got {{.interval}}", out.V{"interval": interval.String()})
+	}
+	idleTimeout := time.NewTicker(interval)
+	defer idleTimeout.Stop()
+
 	// channel for incoming messages
 	go func() {
 		for {
 			// On each iteration new timer is created
 			select {
-			// TODO: #10596 make it memory-leak proof
-			case <-time.After(interval):
+			case <-idleTimeout.C:
 				runPause()
 			case <-unpauseRequests:
 				fmt.Printf("Got request\n")
