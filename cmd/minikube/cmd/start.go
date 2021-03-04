@@ -746,6 +746,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		return
 	}
 
+	r := reason.MatchKnownIssue(reason.Kind{}, st.Error, runtime.GOOS)
+	if r.ID != "" {
+		exitIfNotForced(*r, st.Error.Error())
+	}
+
 	if !st.Installed {
 		exit.Message(reason.Kind{
 			ID:       fmt.Sprintf("PROVIDER_%s_NOT_FOUND", strings.ToUpper(name)),

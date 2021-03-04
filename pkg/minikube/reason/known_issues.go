@@ -365,6 +365,18 @@ var providerIssues = []match{
 	// KVM hypervisor
 	{
 		Kind: Kind{
+			ID:       "PR_KVM_USER_PERMISSION",
+			ExitCode: ExProviderPermission,
+			Style:    style.NotAllowed,
+			Advice:   "Ensure that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+			URL:      "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
+			Issues:   []int{5617, 10070},
+		},
+		Regexp: re(`libvirt group membership check failed`),
+		GOOS:   []string{"linux"},
+	},
+	{
+		Kind: Kind{
 			ID:       "PR_KVM_CAPABILITIES",
 			ExitCode: ExProviderUnavailable,
 			Advice:   "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
