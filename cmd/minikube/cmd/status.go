@@ -379,7 +379,14 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		return st, nil
 	}
 
-	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
+	var hostname string
+	var port int
+	if cc.Addons["auto-pause"] {
+		hostname, _, port, err = driver.AutoPauseProxyEndpoint(&cc, &n, host.DriverName)
+	} else {
+		hostname, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
+	}
+
 	if err != nil {
 		klog.Errorf("forwarded endpoint: %v", err)
 		st.Kubeconfig = Misconfigured

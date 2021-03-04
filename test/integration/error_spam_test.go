@@ -40,12 +40,14 @@ var stderrAllow = []string{
 	`docker.*issue.*performance`,
 	// "* Suggestion: enable overlayfs kernel module on your Linux"
 	`Suggestion.*overlayfs`,
+	// jenkins VMs (debian 9) cgoups don't allow setting memory
+	`Your cgroup does not allow setting memory.`,
 }
 
 // stderrAllowRe combines rootCauses into a single regex
 var stderrAllowRe = regexp.MustCompile(strings.Join(stderrAllow, "|"))
 
-// TestErrorSpam asserts that there are no errors displayed
+// TestErrorSpam asserts that there are no errors displayed in UI.
 func TestErrorSpam(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver always shows a warning")

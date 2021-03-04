@@ -30,6 +30,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.VMwareFusion,
 		Status:   status,
+		Default:  false, // see driver.VMware instead
 		Priority: registry.Obsolete,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))

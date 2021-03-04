@@ -43,6 +43,7 @@ func init() {
 		Name:     driver.VirtualBox,
 		Config:   configure,
 		Status:   status,
+		Default:  true,
 		Priority: registry.Fallback,
 		Init:     func() drivers.Driver { return virtualbox.NewDriver("", "") },
 	})

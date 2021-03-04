@@ -28,6 +28,8 @@ COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
 COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
 COPY clean-install /usr/local/bin/clean-install
 COPY entrypoint /usr/local/bin/entrypoint
+# must first run make out/auto-pause
+COPY auto-pause /usr/local/bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.

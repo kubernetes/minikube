@@ -102,6 +102,9 @@ type DriverDef struct {
 	// Status returns the installation status of the driver
 	Status StatusChecker
 
+	// Default is whether this driver is selected by default or not (opt-in).
+	Default bool
+
 	// Priority returns the prioritization for selecting a driver by default.
 	Priority Priority
 }

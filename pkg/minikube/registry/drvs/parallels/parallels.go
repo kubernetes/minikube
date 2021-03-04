@@ -36,6 +36,7 @@ func init() {
 		Name:     driver.Parallels,
 		Config:   configure,
 		Status:   status,
+		Default:  true,
 		Priority: registry.Default,
 		Init:     func() drivers.Driver { return parallels.NewDriver("", "") },
 	})

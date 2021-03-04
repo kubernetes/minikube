@@ -43,6 +43,12 @@ var addonPodLabels = map[string]string{
 // Addons is a list of all addons
 var Addons = []*Addon{
 	{
+		name:      "auto-pause",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon, enableOrDisableAutoPause},
+	},
+
+	{
 		name:      "dashboard",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},

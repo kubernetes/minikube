@@ -239,11 +239,13 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	c.Stdout = kw
 	c.Stderr = kw
+	var wg sync.WaitGroup
+	wg.Add(1)
 	sc, err := k.c.StartCmd(c)
 	if err != nil {
 		return errors.Wrap(err, "start")
 	}
-	go outputKubeadmInitSteps(kr)
+	go outputKubeadmInitSteps(kr, &wg)
 	if _, err := k.c.WaitCmd(sc); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return ErrInitTimedout
@@ -254,11 +256,12 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		}
 		return errors.Wrap(err, "wait")
 	}
+	kw.Close()
+	wg.Wait()
 	if err := k.applyCNI(cfg); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
 
-	var wg sync.WaitGroup
 	wg.Add(3)
 
 	go func() {
@@ -288,7 +291,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 }
 
 // outputKubeadmInitSteps streams the pipe and outputs the current step
-func outputKubeadmInitSteps(logs io.Reader) {
+func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 	type step struct {
 		logTag       string
 		registerStep register.RegStep
@@ -316,6 +319,7 @@ func outputKubeadmInitSteps(logs io.Reader) {
 		out.Step(style.SubStep, nextStep.stepMessage)
 		nextStepIndex++
 	}
+	wg.Done()
 }
 
 // applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.

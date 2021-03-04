@@ -35,7 +35,8 @@ func init() {
 		Alias:    []string{driver.AliasSSH},
 		Config:   configure,
 		Status:   status,
-		Priority: registry.Discouraged, // requires external VM
+		Default:  false, // requires external VM
+		Priority: registry.Discouraged,
 		Init:     func() drivers.Driver { return ssh.NewDriver(ssh.Config{}) },
 	})
 	if err != nil {

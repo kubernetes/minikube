@@ -52,6 +52,7 @@ func init() {
 		Name:     driver.HyperKit,
 		Config:   configure,
 		Status:   status,
+		Default:  true,
 		Priority: registry.Preferred,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))

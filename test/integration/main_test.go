@@ -17,10 +17,12 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
@@ -60,6 +62,13 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	fmt.Printf("Tests completed in %s (result code %d)\n", time.Since(start), code)
 	os.Exit(code)
+}
+
+func TestMainNoArgs(t *testing.T) {
+	rr, err := Run(t, exec.CommandContext(context.Background(), Target()))
+	if err != nil {
+		t.Fatalf("failed running minikube with no args %q: %v", rr.Command(), err)
+	}
 }
 
 // setMaxParallelism caps the max parallelism. Go assumes 1 core per test, whereas minikube needs 2 cores per test.

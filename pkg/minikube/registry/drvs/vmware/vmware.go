@@ -32,6 +32,7 @@ func init() {
 	err := registry.Register(registry.DriverDef{
 		Name:     driver.VMware,
 		Config:   configure,
+		Default:  true,
 		Priority: registry.Default,
 		Status:   status,
 	})

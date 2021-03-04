@@ -46,6 +46,7 @@ func init() {
 		Alias:    []string{driver.AliasKVM},
 		Config:   configure,
 		Status:   status,
+		Default:  true,
 		Priority: registry.Preferred,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
@@ -67,6 +68,7 @@ type kvmDriver struct {
 	GPU            bool
 	Hidden         bool
 	ConnectionURI  string
+	NUMANodeCount  int
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
@@ -88,6 +90,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		GPU:            cc.KVMGPU,
 		Hidden:         cc.KVMHidden,
 		ConnectionURI:  cc.KVMQemuURI,
+		NUMANodeCount:  cc.KVMNUMACount,
 	}, nil
 }
 

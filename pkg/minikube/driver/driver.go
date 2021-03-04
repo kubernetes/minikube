@@ -255,6 +255,11 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 			continue
 		}
 
+		if !ds.Default {
+			klog.Infof("not recommending %q due to default: %v", ds.Name, ds.Default)
+			continue
+		}
+
 		if ds.Priority <= registry.Discouraged {
 			klog.Infof("not recommending %q due to priority: %d", ds.Name, ds.Priority)
 			continue
@@ -296,6 +301,7 @@ func Status(name string) registry.DriverState {
 	d := registry.Driver(name)
 	return registry.DriverState{
 		Name:     d.Name,
+		Default:  d.Default,
 		Priority: d.Priority,
 		State:    registry.Status(name),
 	}

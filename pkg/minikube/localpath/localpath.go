@@ -74,6 +74,11 @@ func AuditLog() string {
 	return filepath.Join(MiniPath(), "logs", "audit.json")
 }
 
+// LastStartLog returns the path to the last start log.
+func LastStartLog() string {
+	return filepath.Join(MiniPath(), "logs", "lastStart.txt")
+}
+
 // ClientCert returns client certificate path, used by kubeconfig
 func ClientCert(name string) string {
 	new := filepath.Join(Profile(name), "client.crt")

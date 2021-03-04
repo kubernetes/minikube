@@ -71,6 +71,34 @@ func (a *Addon) IsEnabled(cc *config.ClusterConfig) bool {
 // Addons is the list of addons
 // TODO: Make dynamically loadable: move this data to a .yaml file within each addon directory
 var Addons = map[string]*Addon{
+	"auto-pause": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/auto-pause/auto-pause.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"auto-pause.yaml",
+			"0640"),
+		MustBinAsset(
+			"deploy/addons/auto-pause/haproxy.cfg",
+			"/var/lib/minikube/",
+			"haproxy.cfg",
+			"0640"),
+		MustBinAsset(
+			"deploy/addons/auto-pause/unpause.lua",
+			"/var/lib/minikube/",
+			"unpause.lua",
+			"0640"),
+		MustBinAsset(
+			"deploy/addons/auto-pause/auto-pause.service",
+			"/etc/systemd/system/",
+			"auto-pause.service",
+			"0640"),
+
+		//GuestPersistentDir
+	}, false, "auto-pause", map[string]string{
+		"haproxy": "haproxy:2.3.5",
+	}, map[string]string{
+		"haproxy": "gcr.io",
+	}),
 	"dashboard": NewAddon([]*BinAsset{
 		// We want to create the kubernetes-dashboard ns first so that every subsequent object can be created
 		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", vmpath.GuestAddonsDir, "dashboard-ns.yaml", "0640"),

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -29,6 +30,9 @@ import (
 func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName string) (string, net.IP, int, error) {
 	if NeedsPortForward(driverName) {
 		port, err := oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
+		if err != nil {
+			klog.Warningf("failed to get forwarded control plane port %v", err)
+		}
 		hostname := oci.DaemonHost(driverName)
 
 		ip := net.ParseIP(hostname)
@@ -53,4 +57,10 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 		return hostname, ip, cp.Port, fmt.Errorf("failed to parse ip for %q", cp.IP)
 	}
 	return hostname, ip, cp.Port, nil
+}
+
+// AutoPauseProxyEndpoint returns the endpoint for the auto-pause (reverse proxy to api-sever)
+func AutoPauseProxyEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName string) (string, net.IP, int, error) {
+	cp.Port = constants.AutoPauseProxyPort
+	return ControlPlaneEndpoint(cc, cp, driverName)
 }

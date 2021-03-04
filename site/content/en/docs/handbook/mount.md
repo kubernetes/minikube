@@ -72,7 +72,7 @@ Some hypervisors, have built-in host folder sharing. Driver mounts are reliable 
 | VirtualBox | Linux | /home | /hosthome |
 | VirtualBox | macOS | /Users | /Users |
 | VirtualBox | Windows | C://Users | /c/Users |
-| VMware Fusion | macOS | /Users | /Users |
+| VMware Fusion | macOS | /Users | /mnt/hgfs/Users |
 | KVM | Linux | Unsupported | |
 | HyperKit | Linux | Unsupported (see NFS mounts) | |
 
