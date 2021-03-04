@@ -30,7 +30,7 @@ sudo apt-get -y install build-essential unzip rsync bc python2 p7zip-full
 
 if [[ -z $ISO_VERSION ]]; then
 	release=false
-	IV=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3)
+	IV=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3 | cut -d "-" -f 1)
 	now=$(date +%s)
 	export ISO_VERSION=$IV-$now-$ghprbPullId
 	export ISO_BUCKET=minikube-builds/$ghprbPullId
