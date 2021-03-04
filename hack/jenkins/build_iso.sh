@@ -58,17 +58,18 @@ if [ "$release" = false ]; then
 	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
 
 	sed -i "s/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/" Makefile
+	sed -i "s|isoBucket := .*|isoBucket := \"${ISO_BUCKET}\"|" pkg/minikube/download/iso.go
 	make generate-docs
 
-	git add Makefile site/content/en/docs/commands/start.md
+	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md 
 	git commit -m "Updating ISO to ${ISO_VERSION}"
 	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
 
-	message="Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built kicbase image. Pull the changes locally if you want to test with them or update your PR further."
+	message="Hi ${ghprbPullAuthorLoginMention}, we have updated your PR with the reference to newly built ISO. Pull the changes locally if you want to test with them or update your PR further."
 	if [ $? -gt 0 ]; then
-		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the kicbase to your PR. Please run the following command and push manually.
+		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the ISO to your PR. Please run the following command and push manually.
 
-		sed -i 's/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/' Makefile; make generate-docs;
+		sed -i 's/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/' Makefile; sed -i 's|isoBucket := .*|isoBucket := "${ISO_BUCKET}"|' pkg/minikube/download/iso.go; make generate-docs;
 		"
 	fi
 	
@@ -79,9 +80,10 @@ else
 	git checkout -b ${branch}
 
 	sed -i "s/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/" Makefile
+	sed -i "s|isoBucket := .*|isoBucket := \"${ISO_BUCKET}\"|" pkg/minikube/download/iso.go
 	make generate-docs
 
-	git add Makefile site/content/en/docs/commands/start.md
+	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md 
 	git commit -m "Update ISO to ${ISO_VERSION}"
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
