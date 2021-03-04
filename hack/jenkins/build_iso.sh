@@ -79,7 +79,7 @@ if [ "$release" = false ]; then
 	gh pr comment ${ghprbPullId} --body "${message}"
 else
 	# Release!
-	branch=iso-release-${KIC_VERSION}
+	branch=iso-release-${ISO_VERSION}
 	git checkout -b ${branch}
 
 	sed -i "s/ISO_VERSION ?= .*/ISO_VERSION ?= ${ISO_VERSION}/" Makefile
