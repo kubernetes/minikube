@@ -258,7 +258,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	kw.Close()
 	wg.Wait()
-	if err := k.applyCNI(cfg); err != nil {
+	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
 
@@ -323,7 +323,12 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 }
 
 // applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.
-func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) error {
+	regStep := false
+	if len(registerStep) > 0 {
+		regStep = registerStep[0]
+	}
+
 	cnm, err := cni.New(cfg)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
@@ -333,8 +338,13 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	register.Reg.SetStep(register.ConfiguringCNI)
-	out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	// when not on init, can run in parallel and break step output order
+	if regStep {
+		register.Reg.SetStep(register.ConfiguringCNI)
+		out.Step(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	} else {
+		out.Styled(style.CNI, "Configuring {{.name}} (Container Networking Interface) ...", out.V{"name": cnm.String()})
+	}
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
@@ -1055,16 +1065,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		klog.Warning(diskErr)
 		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
 		// generic advice for all drivers
-		out.Step(style.Tip, "Please free up disk or prune images.")
+		out.Styled(style.Tip, "Please free up disk or prune images.")
 		if driver.IsVM(drv) {
-			out.Step(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
+			out.Styled(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Step(style.Stopped, "Please increse Desktop's disk size.")
+			out.Styled(style.Stopped, "Please increse Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")
@@ -1075,16 +1085,16 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		klog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
-		out.Step(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
+		out.Styled(style.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
 		if driver.IsVM(drv) {
-			out.Step(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
+			out.Styled(style.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Step(style.Stopped, "Consider increasing Docker Desktop's memory size.")
+			out.Styled(style.Stopped, "Consider increasing Docker Desktop's memory size.")
 			if runtime.GOOS == "darwin" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
-				out.Step(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
 		out.ErrLn("")

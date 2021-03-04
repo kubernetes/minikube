@@ -51,7 +51,7 @@ var nodeStartCmd = &cobra.Command{
 
 		machineName := config.MachineName(*cc, *n)
 		if machine.IsRunning(api, machineName) {
-			out.Step(style.Check, "{{.name}} is already running", out.V{"name": name})
+			out.Styled(style.Check, "{{.name}} is already running", out.V{"name": name})
 			os.Exit(0)
 		}
 

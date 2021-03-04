@@ -117,7 +117,7 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 		klog.Errorf("list profiles returned error: %v", err)
 	}
 	if len(v) > 1 {
-		out.Step(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
+		out.Styled(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
 	}
 }
 
