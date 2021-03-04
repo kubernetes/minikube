@@ -26,7 +26,7 @@ set -x
 
 # Make sure all required packages are installed
 sudo apt-get update
-sudo apt-get -y install build-essential unzip rsync bc python2
+sudo apt-get -y install build-essential unzip rsync bc python2 p7zip-full
 
 if [[ -z $ISO_VERSION ]]; then
 	release=false
