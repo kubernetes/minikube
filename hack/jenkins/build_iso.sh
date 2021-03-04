@@ -61,7 +61,7 @@ if [ "$release" = false ]; then
 	sed -i "s|isoBucket := .*|isoBucket := \"${ISO_BUCKET}\"|" pkg/minikube/download/iso.go
 	make generate-docs
 
-	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md 
+	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md
 	git commit -m "Updating ISO to ${ISO_VERSION}"
 	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
 
@@ -83,7 +83,7 @@ else
 	sed -i "s|isoBucket := .*|isoBucket := \"${ISO_BUCKET}\"|" pkg/minikube/download/iso.go
 	make generate-docs
 
-	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md 
+	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md
 	git commit -m "Update ISO to ${ISO_VERSION}"
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
