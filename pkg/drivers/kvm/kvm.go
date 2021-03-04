@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
 	libvirt "github.com/libvirt/libvirt-go"
@@ -301,8 +302,7 @@ func (d *Driver) Start() (err error) {
 func (d *Driver) Create() (err error) {
 	log.Info("Creating KVM machine...")
 	defer log.Infof("KVM machine creation complete!")
-
-	err = d.createNetwork()
+	err = oci.CreateKvmNetwork(d.DriverName, d.defaultNetworkName)
 	if err != nil {
 		return errors.Wrap(err, "creating network")
 	}
@@ -422,12 +422,10 @@ func (d *Driver) Remove() error {
 
 	// Tear down network if it exists and is not in use by another minikube instance
 	log.Debug("Trying to delete the networks (if possible)")
-	if err := d.deleteNetwork(); err != nil {
-		log.Warnf("Deleting of networks failed: %v", err)
-	} else {
-		log.Info("Successfully deleted networks")
+	err = oci.RemovesNetwork(d.DriverName, d.defaultNetworkName)
+	if err != nil {
+		return errors.Wrap(err, "removing network")
 	}
-
 	// Tear down the domain now
 	log.Debug("Checking if the domain needs to be deleted")
 	dom, err := conn.LookupDomainByName(d.MachineName)
