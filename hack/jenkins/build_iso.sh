@@ -33,7 +33,7 @@ if [[ -z $ISO_VERSION ]]; then
 	IV=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3 | cut -d "-" -f 1)
 	now=$(date +%s)
 	export ISO_VERSION=$IV-$now-$ghprbPullId
-	export ISO_BUCKET=minikube-builds/$ghprbPullId
+	export ISO_BUCKET=minikube-builds/iso/$ghprbPullId
 else
 	release=true
 	export ISO_VERSION
