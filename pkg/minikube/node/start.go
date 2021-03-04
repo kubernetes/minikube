@@ -289,6 +289,12 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
 
+	// Wait for the CRI to actually work, before returning
+	err = waitForCRIVersion(runner, cr.SocketPath(), 60, 10)
+	if err != nil {
+		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
+	}
+
 	return cr
 }
 
@@ -326,6 +332,31 @@ func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, in
 		return nil
 	}
 	if err := retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
+
+	if socket == "" || socket == "/var/run/dockershim.sock" {
+		return nil
+	}
+
+	klog.Infof("Will wait %ds for crictl version", wait)
+
+	chkInfo := func() error {
+		args := []string{"crictl", "version"}
+		cmd := exec.Command("sudo", args...)
+		rr, err := runner.RunCmd(cmd)
+		if err != nil && !os.IsNotExist(err) {
+			return &retry.RetriableError{Err: err}
+		}
+		klog.Info(rr.Stdout.String())
+		return nil
+	}
+	if err := retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
 		return err
 	}
 
