@@ -19,6 +19,7 @@ on:
       - deleted
 env:
   GOPROXY: https://proxy.golang.org
+  GO_VERSION: 1.16.0
 
 jobs:
   # Runs before all other jobs
@@ -30,7 +31,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Download Dependencies
         run: go mod download
@@ -71,7 +72,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
 
       - name: Install tools
@@ -160,7 +161,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
 
       - name: Install tools
