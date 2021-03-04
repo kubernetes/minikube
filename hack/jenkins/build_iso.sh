@@ -24,9 +24,9 @@ set -x
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
-# Make sure gcc is installed
+# Make sure all required packages are installed
 sudo apt-get update
-sudo apt-get -y install build-essential unzip rsync bc
+sudo apt-get -y install build-essential unzip rsync bc python2
 
 if [[ -z $ISO_VERSION ]]; then
 	release=false
