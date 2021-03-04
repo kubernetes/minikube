@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -250,7 +251,7 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 		sh := shell.EnvConfig{
-			Shell: shl,
+			Shell: strings.TrimSuffix(shl, filepath.Ext(shl)),
 		}
 
 		if dockerUnset {
