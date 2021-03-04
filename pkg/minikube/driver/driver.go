@@ -174,7 +174,7 @@ func NeedsPortForward(name string) bool {
 // checking for WSL env var based on this https://github.com/microsoft/WSL/issues/423#issuecomment-608237689
 // also based on https://github.com/microsoft/vscode/blob/90a39ba0d49d75e9a4d7e62a6121ad946ecebc58/resources/win32/bin/code.sh#L24
 func IsMicrosoftWSL() bool {
-	return os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSLPATH") != "" || os.Getenv("WSLENV") != ""
+	return os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSLPATH") != ""
 }
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
