@@ -50,6 +50,9 @@ if [ $ec -gt 0 ]; then
 	exit $ec
 fi
 
+git config user.name "minikube-bot"
+git config user.email "minikube-bot@google.com"
+
 if [ "$release" = false ]; then
 	# Update the user's PR with newly build ISO
 
