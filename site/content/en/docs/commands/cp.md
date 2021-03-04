@@ -11,12 +11,12 @@ Copy the specified file into minikube
 
 ### Synopsis
 
-Copy the specified file into minikube, it will be saved at path "/home/docker/<target file path>" in your minikube.
-Example Command : "minikube cp a.txt b.txt"
+Copy the specified file into minikube, it will be saved at path <target file absolute path> in your minikube.
+Example Command : "minikube cp a.txt /home/docker/b.txt"
 
 
 ```shell
-minikube cp <source file path> <target file path followed by '/home/docker/'> [flags]
+minikube cp <source file path> <target file absolute path> [flags]
 ```
 
 ### Options inherited from parent commands

@@ -1151,7 +1151,7 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	cpPath := filepath.Join(*testdataDir, "cp-test.txt")
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", cpPath, "hello_cp.txt"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", cpPath, "/home/docker/hello_cp.txt"))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
@@ -1160,7 +1160,7 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	expected := "Test file for checking file cp process"
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat hello_cp.txt"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /home/docker/hello_cp.txt"))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
