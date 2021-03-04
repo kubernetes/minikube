@@ -12,6 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
+  GO_VERSION: 1.16.0
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
@@ -21,7 +22,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Download Dependencies
         run: go mod download
@@ -48,7 +49,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install libvirt
         run: |
@@ -67,7 +68,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install libvirt
         run: |
@@ -114,7 +115,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
@@ -199,7 +200,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
@@ -344,7 +345,7 @@ jobs:
           echo "------------------------"
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -480,7 +481,7 @@ jobs:
           Get-WmiObject -class Win32_ComputerSystem
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -586,7 +587,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
@@ -716,7 +717,7 @@ jobs:
           echo "------------------------"
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -809,7 +810,7 @@ jobs:
           Get-WmiObject -class Win32_ComputerSystem
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install tools
         continue-on-error: true
@@ -892,7 +893,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.2'
+          go-version: ${{env.GO_VERSION}}
           stable: true
 
       - name: Download Binaries
@@ -990,7 +991,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
@@ -1072,7 +1073,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
@@ -1184,7 +1185,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
@@ -1268,7 +1269,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
@@ -1375,7 +1376,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
@@ -1457,7 +1458,7 @@ jobs:
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.15.8'
+          go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
 
