@@ -1,5 +1,38 @@
 # Release Notes
 
+
+## Version 1.18.1 - 2021-03-04
+
+Features:
+
+* kvm2 driver: Add flag --kvm-numa-count" support topology-manager simulate numa  [#10471](https://github.com/kubernetes/minikube/pull/10471)
+
+Minor Improvements:
+
+* Spanish translations [#10687](https://github.com/kubernetes/minikube/pull/10687)
+* Change podman priority to default on Linux [#10458](https://github.com/kubernetes/minikube/pull/10458)
+
+Bug Fixes:
+
+* Remove WSLENV empty check from IsMicrosoftWSL [#10711](https://github.com/kubernetes/minikube/pull/10711)
+* Added WaitGroups to prevent stderr/stdout from being empty in error logs [#10694](https://github.com/kubernetes/minikube/pull/10694)
+
+Version changes:
+
+* Restore kube-cross build image and bump go to version 1.16 [#10691](https://github.com/kubernetes/minikube/pull/10691)
+* Bump github.com/spf13/viper from 1.7.0 to 1.7.1 [#10658](https://github.com/kubernetes/minikube/pull/10658)
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Emanuel
+- Ilya Zuyev
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+- phantooom
+
+
 ## Version 1.18.0 - 2021-03-01
 
 Bug Fixes:
