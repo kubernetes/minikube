@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	cloud.google.com/go/storage v1.13.0
-	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.5
 	github.com/Azure/azure-sdk-for-go v42.3.0+incompatible
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
