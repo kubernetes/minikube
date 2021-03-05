@@ -106,7 +106,7 @@ func (d *Driver) Create() error {
 
 	listAddr := oci.DefaultBindIPV4
 	if d.NodeConfig.ListenAddress != "" && d.NodeConfig.ListenAddress != listAddr {
-		out.Step(style.Tip, "Minikube is not meant for production use. You are opening non-local traffic")
+		out.Step(style.Tip, "minikube is not meant for production use. You are opening non-local traffic")
 		out.WarningT("Listening to {{.listenAddr}}. This is not recommended and can cause a security vulnerability. Use at your own risk",
 			out.V{"listenAddr": d.NodeConfig.ListenAddress})
 		listAddr = d.NodeConfig.ListenAddress
