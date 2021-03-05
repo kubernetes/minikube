@@ -391,7 +391,7 @@ func validatNameConflict(ctx context.Context, t *testing.T, profile string) {
 
 func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile string) {
 	// Create a deployment for app
-	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/multinodes/multinode-test-deployment.yaml"))
+	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/multinodes/multinode-pod-dns-test.yaml"))
 	if err != nil {
 		t.Errorf("failed to create hello deployment to multinode cluster")
 	}
@@ -428,6 +428,14 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 			t.Errorf("Pod %s could not resolve 'kubernetes.io': %v", name, err)
 		}
 	}
+	// verify both pods could resolve to a local service.
+	for _, name := range podNames {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "nslookup", "kubernetes.default.svc.cluster.local"))
+		if err != nil {
+			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
+		}
+	}
+
 	// clean up, delete all pods
 	for _, name := range podNames {
 		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "delete", "pod", name))
