@@ -19,10 +19,9 @@ package gcpauth
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -54,6 +53,10 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 }
 
 func enableAddon(cfg *config.ClusterConfig) error {
+	if isGCE() {
+		exit.Message(reason.InternalCredsNotFound, "It seems like you are on GCE, which means authentication should work without the GCP Auth addon.")
+	}
+
 	// Grab command runner from running cluster
 	cc := mustload.Running(cfg.Name)
 	r := cc.CP.Runner
@@ -65,20 +68,9 @@ func enableAddon(cfg *config.ClusterConfig) error {
 		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
+	// Don't mount in empty credentials file
 	if creds.JSON == nil {
-		// Cloud Shell sends credential files to an unusual location, let's check that location
-		// For example, CLOUDSDK_CONFIG=/tmp/tmp.cflmvysoQE
-		if e := os.Getenv("CLOUDSDK_CONFIG"); e != "" {
-			credFile := path.Join(e, "application_default_credentials.json")
-			b, err := ioutil.ReadFile(credFile)
-			if err != nil {
-				exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
-			}
-			creds.JSON = b
-		} else {
-			// We don't currently support authentication through the metadata server
-			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
-		}
+		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
@@ -133,4 +125,17 @@ func disableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	return nil
+}
+
+func isGCE() bool {
+	resp, err := http.Get("metadata.google.internal")
+	if err != nil {
+		return false
+	}
+
+	if resp.Header.Get("Metadata-Flavor") == "Google" {
+		return true
+	}
+
+	return false
 }
