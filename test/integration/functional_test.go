@@ -431,8 +431,8 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 func imageID(image string) string {
 	ids := map[string]map[string]string{
 		"pause": {
-			"amd64": "0184c1613d92",
-			"arm64": "3d18732f8686",
+			"amd64": "0184c1613d929",
+			"arm64": "3d18732f8686c",
 		},
 	}
 

@@ -356,10 +356,10 @@ var Addons = map[string]*Addon{
 	}, false, "registry-aliases", map[string]string{
 		"CoreDNSPatcher": "rhdevelopers/core-dns-patcher@sha256:9220ff32f690c3d889a52afb59ca6fcbbdbd99e5370550cc6fd249adea8ed0a9",
 		"Alpine":         "alpine:3.11@sha256:0bd0e9e03a022c3b0226667621da84fc9bf562a9056130424b5bfbd8bcb0397f",
-		"Pause":          "pause:3.4.1@sha256:6c3835cab3980f11b83277305d0d736051c32b17606f5ec59f1dda67c9ba3810",
+		"Pause":          "google_containers/pause:3.1@sha256:f78411e19d84a252e53bff71a4407a5686c46983a2c2eeed83929b888179acea",
 	}, map[string]string{
 		"CoreDNSPatcher": "quay.io",
-		"Pause":          "k8s.gcr.io",
+		"Pause":          "gcr.io",
 	}),
 	"freshpod": NewAddon([]*BinAsset{
 		MustBinAsset(
