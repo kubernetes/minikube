@@ -83,6 +83,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 		ExtraArgs:         extraArgs,
 		Network:           cc.Network,
+		ListenAddress:     cc.ListenAddress,
 	}), nil
 }
 

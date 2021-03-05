@@ -72,6 +72,7 @@ minikube start [flags]
       --kvm-network string                The KVM network name. (kvm2 driver only) (default "default")
       --kvm-numa-count int                Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only) (default 1)
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
+      --listen-address string             IP Address to use to expose ports (docker and podman driver only)
       --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).
       --mount                             This will start the mount daemon and automatically mount files into minikube.
       --mount-string string               The argument to pass the minikube mount command on start.
