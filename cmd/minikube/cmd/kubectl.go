@@ -40,9 +40,9 @@ Examples:
 minikube kubectl -- --help
 minikube kubectl -- get pods --namespace kube-system`,
 	Run: func(cmd *cobra.Command, args []string) {
-		co := mustload.Healthy(ClusterFlagValue())
+		_, cc := mustload.Partial(ClusterFlagValue())
 
-		version := co.Config.KubernetesConfig.KubernetesVersion
+		version := cc.KubernetesConfig.KubernetesVersion
 
 		cluster := []string{"--cluster", ClusterFlagValue()}
 		args = append(args, cluster...)
