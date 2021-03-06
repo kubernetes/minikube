@@ -114,43 +114,27 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "Install libvirt", Doc: docURL}
 	}
 
-	// check if the current user is a member of "libvirt*" group
-	lvMember := false
-	var lvError error
-	var usr *user.User
-	usr, lvError = user.Current()
-	if lvError == nil {
-		var gids []string
-		gids, lvError = usr.GroupIds()
-		if lvError == nil {
-			for _, gid := range gids {
-				var grp *user.Group
-				grp, lvError = user.LookupGroupId(gid)
-				if lvError == nil && strings.HasPrefix(grp.Name, "libvirt") {
-					lvMember = true
-					break
-				}
-			}
-		}
-	}
-	if lvError != nil {
+	member, err := isCurrentUserLibvirtGroupMember()
+	if err != nil {
 		return registry.State{
 			Installed: true,
 			Running:   true,
-			Error:     fmt.Errorf("libvirt group membership check failed:\n%v", lvError.Error()), // keep error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-			Reason:    "PR_KVM_USER_PERMISSION",
-			Fix:       "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-			Doc:       docURL,
+			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+			Error:  fmt.Errorf("libvirt group membership check failed:\n%v", err.Error()),
+			Reason: "PR_KVM_USER_PERMISSION",
+			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+			Doc:    docURL,
 		}
 	}
-	if !lvMember {
+	if !member {
 		return registry.State{
 			Installed: true,
 			Running:   true,
-			Error:     fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"), // keep error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-			Reason:    "PR_KVM_USER_PERMISSION",
-			Fix:       "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-			Doc:       docURL,
+			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+			Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
+			Reason: "PR_KVM_USER_PERMISSION",
+			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+			Doc:    docURL,
 		}
 	}
 
@@ -182,4 +166,26 @@ func status() registry.State {
 	}
 
 	return registry.State{Installed: true, Healthy: true, Running: true}
+}
+
+// isCurrentUserLibvirtGroupMember returns if the current user is a member of "libvirt*" group.
+func isCurrentUserLibvirtGroupMember() (bool, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return false, fmt.Errorf("error getting current user: %w", err)
+	}
+	gids, err := usr.GroupIds()
+	if err != nil {
+		return false, fmt.Errorf("error getting current user's GIDs: %w", err)
+	}
+	for _, gid := range gids {
+		grp, err := user.LookupGroupId(gid)
+		if err != nil {
+			return false, fmt.Errorf("error getting current user's group with GID %q: %w", gid, err)
+		}
+		if strings.HasPrefix(grp.Name, "libvirt") {
+			return true, nil
+		}
+	}
+	return false, nil
 }
