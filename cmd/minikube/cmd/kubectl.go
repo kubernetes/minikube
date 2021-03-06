@@ -50,6 +50,7 @@ minikube kubectl -- get pods --namespace kube-system`,
 		c, err := KubectlCommand(version, args...)
 		if err != nil {
 			out.ErrLn("Error caching kubectl: %v", err)
+			os.Exit(1)
 		}
 
 		klog.Infof("Running %s %v", c.Path, args)
