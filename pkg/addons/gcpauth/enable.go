@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"golang.org/x/oauth2/google"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -53,8 +54,8 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 }
 
 func enableAddon(cfg *config.ClusterConfig) error {
-	if isGCE() {
-		exit.Message(reason.InternalCredsNotFound, "It seems like you are on GCE, which means authentication should work without the GCP Auth addon.")
+	if isGCE() && !viper.GetBool("force") {
+		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to use this addon, use the --force flag.")
 	}
 
 	// Grab command runner from running cluster
