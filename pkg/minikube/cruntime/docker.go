@@ -172,6 +172,16 @@ func (r *Docker) LoadImage(path string) error {
 	return nil
 }
 
+// BuildImage builds an image into this runtime
+func (r *Docker) BuildImage(path string, tag string) error {
+	klog.Infof("Building image: %s", path)
+	c := exec.Command("docker", "build", "-t", tag, path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "buildimage docker.")
+	}
+	return nil
+}
+
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
 func (r *Docker) CGroupDriver() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully

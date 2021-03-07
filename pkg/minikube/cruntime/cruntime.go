@@ -94,6 +94,8 @@ type Manager interface {
 
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
+	// Build an image idempotently into the runtime on a host
+	BuildImage(string, string) error
 
 	// ImageExists takes image name and image sha checks if an it exists
 	ImageExists(string, string) bool

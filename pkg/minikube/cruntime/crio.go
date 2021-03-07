@@ -177,6 +177,16 @@ func (r *CRIO) LoadImage(path string) error {
 	return nil
 }
 
+// BuildImage builds an image into this runtime
+func (r *CRIO) BuildImage(path string, tag string) error {
+	klog.Infof("Building image: %s", path)
+	c := exec.Command("sudo", "podman", "build", "-t", tag, path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio build image")
+	}
+	return nil
+}
+
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
 func (r *CRIO) CGroupDriver() (string, error) {
 	c := exec.Command("crio", "config")
