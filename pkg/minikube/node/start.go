@@ -37,6 +37,7 @@ import (
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/addons/gcpauth"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -164,6 +165,9 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// enable addons, both old and new!
 	if starter.ExistingAddons != nil {
+		if viper.GetBool("force") {
+			gcpauth.Force = true
+		}
 		wg.Add(1)
 		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 	}
