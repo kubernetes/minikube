@@ -41,7 +41,7 @@ const (
 )
 
 // Force is used to override our GCE check for the addon
-var Force bool
+var Force bool = false
 
 // EnableOrDisable enables or disables the metadata addon depending on the val parameter
 func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
