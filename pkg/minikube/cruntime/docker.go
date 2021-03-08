@@ -220,7 +220,11 @@ func (r *Docker) RemoveImage(name string) error {
 // BuildImage builds an image into this runtime
 func (r *Docker) BuildImage(path string, tag string) error {
 	klog.Infof("Building image: %s", path)
-	c := exec.Command("docker", "build", "-t", tag, path)
+	args := []string{"build"}
+	if tag != "" {
+		args = append(args, "-t", tag)
+	}
+	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "buildimage docker.")
 	}

@@ -25,6 +25,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 )
 
+var (
+	tag string
+)
+
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
 	Use:   "build",
@@ -42,11 +46,12 @@ minikube build .`,
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 		img := args[0]
-		if err := machine.BuildImage(img, "test:latest", []*config.Profile{profile}); err != nil {
+		if err := machine.BuildImage(img, tag, []*config.Profile{profile}); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
 		}
 	},
 }
 
 func init() {
+	buildCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
 }

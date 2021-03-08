@@ -280,11 +280,19 @@ func (r *Containerd) RemoveImage(name string) error {
 // BuildImage builds an image into this runtime
 func (r *Containerd) BuildImage(path string, tag string) error {
 	klog.Infof("Building image: %s", path)
+	opt := ""
+	if tag != "" {
+		// add default tag if missing
+		if !strings.Contains(tag, ":") {
+			tag += ":latest"
+		}
+		opt = fmt.Sprintf(",name=%s", tag)
+	}
 	c := exec.Command("sudo", "buildctl", "build",
 		"--frontend", "dockerfile.v0",
 		"--local", fmt.Sprintf("context=%s", path),
 		"--local", fmt.Sprintf("dockerfile=%s", path),
-		"--output", fmt.Sprintf("type=image,name=%s", tag))
+		"--output", fmt.Sprintf("type=image%s", opt))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "buildctl build.")
 	}

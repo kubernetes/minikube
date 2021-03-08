@@ -200,7 +200,11 @@ func (r *CRIO) RemoveImage(name string) error {
 // BuildImage builds an image into this runtime
 func (r *CRIO) BuildImage(path string, tag string) error {
 	klog.Infof("Building image: %s", path)
-	c := exec.Command("sudo", "podman", "build", "-t", tag, path)
+	args := []string{"podman", "build"}
+	if tag != "" {
+		args = append(args, "-t", tag)
+	}
+	c := exec.Command("sudo", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crio build image")
 	}
