@@ -17,17 +17,44 @@ limitations under the License.
 package cmd
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/reason"
+	docker "k8s.io/minikube/third_party/go-dockerclient"
 )
 
 var (
-	tag string
+	tag        string
+	dockerFile string
 )
+
+func createTar(dir string) (string, error) {
+	tmp, err := ioutil.TempFile("", "build.*.tar")
+	if err != nil {
+		return "", err
+	}
+	tar, err := docker.CreateTarStream(dir, dockerFile)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(tmp, tar)
+	if err != nil {
+		return "", err
+	}
+	err = tmp.Close()
+	if err != nil {
+		return "", err
+	}
+
+	return tmp.Name(), nil
+}
 
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
@@ -46,12 +73,25 @@ minikube build .`,
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 		img := args[0]
+		var tmp string
+		info, err := os.Stat(img)
+		if err == nil && info.IsDir() {
+			tmp, err := createTar(img)
+			if err != nil {
+				exit.Error(reason.GuestImageBuild, "Failed to build image", err)
+			}
+			img = tmp
+		}
 		if err := machine.BuildImage(img, tag, []*config.Profile{profile}); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
+		}
+		if tmp != "" {
+			os.Remove(tmp)
 		}
 	},
 }
 
 func init() {
 	buildCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
+	buildCmd.Flags().StringVarP(&dockerFile, "file", "f", "Dockerfile", "Path to the Dockerfile to use")
 }
