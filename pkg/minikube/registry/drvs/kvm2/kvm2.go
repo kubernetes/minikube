@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -113,16 +114,39 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "Install libvirt", Doc: docURL}
 	}
 
+	member, err := isCurrentUserLibvirtGroupMember()
+	if err != nil {
+		return registry.State{
+			Installed: true,
+			Running:   true,
+			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+			Error:  fmt.Errorf("libvirt group membership check failed:\n%v", err.Error()),
+			Reason: "PR_KVM_USER_PERMISSION",
+			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+			Doc:    docURL,
+		}
+	}
+	if !member {
+		return registry.State{
+			Installed: true,
+			Running:   true,
+			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+			Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
+			Reason: "PR_KVM_USER_PERMISSION",
+			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+			Doc:    docURL,
+		}
+	}
+
 	// On Ubuntu 19.10 (libvirt 5.4), this fails if LIBVIRT_DEFAULT_URI is unset
 	cmd := exec.CommandContext(ctx, path, "domcapabilities", "--virttype", "kvm")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("LIBVIRT_DEFAULT_URI=%s", defaultURI()))
-
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return registry.State{
 			Installed: true,
 			Running:   true,
-			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out))),
+			Error:     fmt.Errorf("%s failed:\n%s\n%v", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out)), err),
 			Fix:       "Follow your Linux distribution instructions for configuring KVM",
 			Doc:       docURL,
 		}
@@ -136,9 +160,32 @@ func status() registry.State {
 			Installed: true,
 			Running:   true,
 			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out))),
-			Fix:       "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group",
+			Fix:       "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
 			Doc:       docURL,
 		}
 	}
-	return registry.State{Installed: true, Healthy: true}
+
+	return registry.State{Installed: true, Healthy: true, Running: true}
+}
+
+// isCurrentUserLibvirtGroupMember returns if the current user is a member of "libvirt*" group.
+func isCurrentUserLibvirtGroupMember() (bool, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return false, fmt.Errorf("error getting current user: %w", err)
+	}
+	gids, err := usr.GroupIds()
+	if err != nil {
+		return false, fmt.Errorf("error getting current user's GIDs: %w", err)
+	}
+	for _, gid := range gids {
+		grp, err := user.LookupGroupId(gid)
+		if err != nil {
+			return false, fmt.Errorf("error getting current user's group with GID %q: %w", gid, err)
+		}
+		if strings.HasPrefix(grp.Name, "libvirt") {
+			return true, nil
+		}
+	}
+	return false, nil
 }

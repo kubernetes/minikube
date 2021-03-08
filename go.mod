@@ -57,8 +57,8 @@ require (
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
 	github.com/mattn/go-isatty v0.0.12
-	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
-	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
+	github.com/mitchellh/go-ps v1.0.0
+	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/otiai10/copy v1.0.2

@@ -14,6 +14,7 @@ This tutorial explains how to set up the CSI Hostpath Driver in minikube and cre
 ## Prerequisites
 
 - latest version of minikube
+- kubernetes v1.20 or later
 
 ## What you’ll need
 
@@ -71,7 +72,7 @@ Here is an example `VolumeSnapshotClass` config to register:
 
 ```yaml
 # snapshotclass.yaml
-apiVersion: snapshot.storage.k8s.io/v1beta1
+apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
   name: csi-hostpath-snapclass
@@ -120,7 +121,7 @@ You can take a volume snapshot for persistent volume claim:
 
 ```yaml
 # example-csi-snapshot.yaml
-apiVersion: snapshot.storage.k8s.io/v1beta1
+apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshot
 metadata:
   name: snapshot-demo
@@ -137,9 +138,8 @@ kubectl apply -f example-csi-snapshot.yaml
 You could get volume snapshot. You can confirm your volume snapshot by the following command:
 
 ```shell
-kubectl get volumesnapshot
-NAME                AGE
-snapshot-demo       2m19s
+NAME            READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS            SNAPSHOTCONTENT                                    CREATIONTIME   AGE
+snapshot-demo   true         csi-pvc                             1Gi           csi-hostpath-snapclass   snapcontent-19730fcb-c34a-4f1a-abf2-6c5a9808076b   5s             5s
 ```
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">6</strong></span>Restore from volume snapshot</h2>

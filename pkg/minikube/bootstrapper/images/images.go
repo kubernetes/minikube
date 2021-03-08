@@ -29,8 +29,8 @@ import (
 // Pause returns the image name to pull for a given Kubernetes version
 func Pause(v semver.Version, mirror string) string {
 	// Should match `PauseVersion` in:
-	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	pv := "3.4.1"
+	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
+	pv := "3.2"
 	if semver.MustParseRange("<1.18.0-alpha.0")(v) {
 		pv = "3.1"
 	}
