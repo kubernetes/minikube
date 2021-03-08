@@ -71,10 +71,12 @@ var addonsEnableCmd = &cobra.Command{
 var (
 	images     string
 	registries string
+	force      bool
 )
 
 func init() {
 	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Images used by this addon. Separated by commas.")
 	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Separated by commas.")
+	addonsEnableCmd.Flags().BoolVar(&force, "force", false, "If true, will force gcp-auth addon to be enabled on GCE.")
 	AddonsCmd.AddCommand(addonsEnableCmd)
 }
