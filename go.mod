@@ -22,7 +22,7 @@ require (
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
 	github.com/docker/cli v0.0.0-20200303162255-7d407207c304 // indirect
-	github.com/docker/docker v17.12.0-ce-rc1.0.20181225093023-5ddb1d410a8b+incompatible
+	github.com/docker/docker v17.12.0-ce-rc1.0.20210128214336-420b1d36250f+incompatible
 	github.com/docker/go-units v0.4.0
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
@@ -107,6 +107,7 @@ require (
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.6
+	github.com/docker/docker => github.com/afbjorklund/moby v0.0.0-20210308214533-2fa72faf0e8b
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200824110434-7da9b61f0a42
 	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.1.2-0.20210101161202-de47504a564f
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
