@@ -25,7 +25,6 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2/google"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -41,6 +40,8 @@ const (
 	projectPath     = "/var/lib/minikube/google_cloud_project"
 )
 
+var Force bool
+
 // EnableOrDisable enables or disables the metadata addon depending on the val parameter
 func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 	enable, err := strconv.ParseBool(val)
@@ -54,7 +55,7 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 }
 
 func enableAddon(cfg *config.ClusterConfig) error {
-	if isGCE() && !viper.GetBool("force") {
+	if !Force && isGCE() {
 		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to use this addon, use the --force flag.")
 	}
 
@@ -129,7 +130,7 @@ func disableAddon(cfg *config.ClusterConfig) error {
 }
 
 func isGCE() bool {
-	resp, err := http.Get("metadata.google.internal")
+	resp, err := http.Get("http://metadata.google.internal")
 	if err != nil {
 		return false
 	}

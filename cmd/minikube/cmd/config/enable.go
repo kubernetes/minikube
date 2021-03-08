@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/addons/gcpauth"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -42,7 +43,7 @@ var addonsEnableCmd = &cobra.Command{
 		addon := args[0]
 		// replace heapster as metrics-server because heapster is deprecated
 		if addon == "heapster" {
-			out.Styled(style.Waiting, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
+			out.Styled(style.Waiting, "using metrics-server addon, heapster is deprecated")
 			addon = "metrics-server"
 		}
 		viper.Set(config.AddonImages, images)
@@ -71,12 +72,11 @@ var addonsEnableCmd = &cobra.Command{
 var (
 	images     string
 	registries string
-	force      bool
 )
 
 func init() {
 	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Images used by this addon. Separated by commas.")
 	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Separated by commas.")
-	addonsEnableCmd.Flags().BoolVar(&force, "force", false, "If true, will force gcp-auth addon to be enabled on GCE.")
+	addonsEnableCmd.Flags().BoolVar(&gcpauth.Force, "force", false, "If true, will force gcp-auth addon to be enabled on GCE.")
 	AddonsCmd.AddCommand(addonsEnableCmd)
 }
