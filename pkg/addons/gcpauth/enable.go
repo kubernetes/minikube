@@ -40,6 +40,7 @@ const (
 	projectPath     = "/var/lib/minikube/google_cloud_project"
 )
 
+// Force is used to override our GCE check for the addon
 var Force bool
 
 // EnableOrDisable enables or disables the metadata addon depending on the val parameter
