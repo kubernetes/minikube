@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -59,6 +60,7 @@ func (t *SSHTunnel) Start() error {
 	for {
 		select {
 		case <-t.ctx.Done():
+			defer t.stopAll()
 			_, err := t.LoadBalancerEmulator.Cleanup()
 			if err != nil {
 				klog.Errorf("error cleaning up: %v", err)
@@ -128,6 +130,12 @@ func (t *SSHTunnel) stopMarkedConnections() {
 		}
 		delete(t.conns, sshConn.name)
 		delete(t.connsToStop, sshConn.name)
+	}
+}
+
+func (t *SSHTunnel) stopAll() {
+	for _, conn := range t.conns {
+		conn.stop()
 	}
 }
 
