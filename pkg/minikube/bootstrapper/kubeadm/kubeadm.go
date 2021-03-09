@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -485,8 +486,18 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
+	if cfg.VerifyComponents[kverify.NodeReadyKey] {
+		name := cfg.Name
+		if n.Name != "" {
+			name = fmt.Sprintf("%s-%s", cfg.Name, n.Name)
+		}
+		if err := kverify.WaitNodeCondition(client, name, core.NodeReady, timeout); err != nil {
+			return errors.Wrap(err, "waiting for node to be ready")
+		}
+	}
+
 	if cfg.VerifyComponents[kverify.ExtraKey] {
-		if err := kverify.WaitExtra(client, kverify.CorePodsList, timeout); err != nil {
+		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, timeout); err != nil {
 			return errors.Wrap(err, "extra waiting")
 		}
 	}
@@ -529,12 +540,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	if cfg.VerifyComponents[kverify.KubeletKey] {
 		if err := kverify.WaitForService(k.c, "kubelet", timeout); err != nil {
 			return errors.Wrap(err, "waiting for kubelet")
-		}
-	}
-
-	if cfg.VerifyComponents[kverify.NodeReadyKey] {
-		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
-			return errors.Wrap(err, "waiting for node to be ready")
 		}
 	}
 
@@ -681,21 +686,19 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 
 	if cfg.VerifyComponents[kverify.ExtraKey] {
 		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
-		// it appears as to be immediately Ready as well as all kube-system pods,
+		// it appears as to be immediately Ready as well as all kube-system pods (last observed state),
 		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts,
 		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
 		klog.Info("waiting for restarted kubelet to initialise ...")
 		start := time.Now()
 		wait := func() error {
-			pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(meta.ListOptions{LabelSelector: "tier=control-plane"})
 			if err != nil {
 				return err
 			}
 			for _, pod := range pods.Items {
-				if pod.Labels["tier"] == "control-plane" {
-					if ready, _ := kverify.IsPodReady(&pod); !ready {
-						return nil
-					}
+				if ready, _ := kverify.IsPodReady(&pod); !ready {
+					return nil
 				}
 			}
 			return fmt.Errorf("kubelet not initialised")
@@ -703,7 +706,8 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
 		klog.Infof("kubelet initialised")
 		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
-		if err := kverify.WaitExtra(client, kverify.CorePodsList, kconst.DefaultControlPlaneTimeout); err != nil {
+
+		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
 			return errors.Wrap(err, "extra")
 		}
 	}
@@ -752,36 +756,13 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	return nil
 }
 
-// JoinCluster adds a node to an existing cluster
+// JoinCluster adds new node to an existing cluster.
 func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
-	start := time.Now()
-	klog.Infof("JoinCluster: %+v", cc)
-	defer func() {
-		klog.Infof("JoinCluster complete in %s", time.Since(start))
-	}()
-
 	// Join the master by specifying its token
 	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, config.MachineName(cc, n))
 
-	join := func() error {
-		// reset first to clear any possibly existing state
-		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))))
-		if err != nil {
-			klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
-		}
-
-		_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
-		if err != nil {
-			if strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
-				klog.Info("still waiting for the worker node to register with the api server")
-			}
-			return errors.Wrapf(err, "kubeadm join")
-		}
-		return nil
-	}
-
-	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
-		return errors.Wrap(err, "joining cp")
+	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd)); err != nil {
+		return errors.Wrapf(err, "kubeadm join")
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
