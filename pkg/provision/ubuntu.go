@@ -84,7 +84,7 @@ StartLimitIntervalSec=60
 
 [Service]
 Type=notify
-Restart=always
+Restart=on-failure
 `
 	if noPivot {
 		klog.Warning("Using fundamentally insecure --no-pivot option")
