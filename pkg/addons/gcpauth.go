@@ -27,12 +27,12 @@ import (
 	"golang.org/x/oauth2/google"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
-	"k8s.io/minikube/pkg/util"
 )
 
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
@@ -48,7 +48,7 @@ func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) 
 }
 
 func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
-	if !Force && util.IsOnGCE() {
+	if !Force && detect.IsOnGCE() {
 		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
 	}
 

@@ -36,7 +36,7 @@ import (
 
 	"github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -66,7 +66,7 @@ func TestAddons(t *testing.T) {
 	if !arm64Platform() {
 		args = append(args, "--addons=helm-tiller")
 	}
-	if !util.IsOnGCE() {
+	if !detect.IsOnGCE() {
 		args = append(args, "--addons=gcp-auth")
 	}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
@@ -76,7 +76,7 @@ func TestAddons(t *testing.T) {
 
 	// If we're running the integration tests on GCE, which is frequently the case, first check to make sure we exit out properly,
 	// then use force to actually test using creds.
-	if util.IsOnGCE() {
+	if detect.IsOnGCE() {
 		args = append([]string{"addons", "enable", "gcp-auth"}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err == nil {
