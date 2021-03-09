@@ -17,7 +17,12 @@ limitations under the License.
 package addons
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"sort"
@@ -28,6 +33,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"golang.org/x/oauth2/google"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -50,8 +56,14 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// defaultStorageClassProvisioner is the name of the default storage class provisioner
-const defaultStorageClassProvisioner = "standard"
+const (
+	credentialsPath                = "/var/lib/minikube/google_application_credentials.json"
+	projectPath                    = "/var/lib/minikube/google_cloud_project"
+	defaultStorageClassProvisioner = "standard"
+)
+
+// Force is used to override checks for addons
+var Force bool = false
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
@@ -487,4 +499,104 @@ func enableOrDisableAutoPause(cc *config.ClusterConfig, name string, val string)
 	}
 
 	return nil
+}
+
+// enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
+func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) error {
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+	if enable {
+		return enableAddonGCPAuth(cfg)
+	}
+	return disableAddonGCPAuth(cfg)
+}
+
+func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
+	if !Force && isGCE() {
+		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+	}
+
+	// Grab command runner from running cluster
+	cc := mustload.Running(cfg.Name)
+	r := cc.CP.Runner
+
+	// Grab credentials from where GCP would normally look
+	ctx := context.Background()
+	creds, err := google.FindDefaultCredentials(ctx)
+	if err != nil {
+		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+	}
+
+	// Don't mount in empty credentials file
+	if creds.JSON == nil {
+		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+	}
+
+	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
+
+	err = r.Copy(f)
+	if err != nil {
+		return err
+	}
+
+	// First check if the project env var is explicitly set
+	projectEnv := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if projectEnv != "" {
+		f := assets.NewMemoryAssetTarget([]byte(projectEnv), projectPath, "0444")
+		return r.Copy(f)
+	}
+
+	// We're currently assuming gcloud is installed and in the user's path
+	project, err := exec.Command("gcloud", "config", "get-value", "project").Output()
+	if err == nil && len(project) > 0 {
+		f := assets.NewMemoryAssetTarget(bytes.TrimSpace(project), projectPath, "0444")
+		return r.Copy(f)
+	}
+
+	out.WarningT("Could not determine a Google Cloud project, which might be ok.")
+	out.Styled(style.Tip, `To set your Google Cloud project,  run: 
+
+		gcloud config set project <project name>
+
+or set the GOOGLE_CLOUD_PROJECT environment variable.`)
+
+	// Copy an empty file in to avoid errors about missing files
+	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
+	return r.Copy(emptyFile)
+}
+
+func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
+	// Grab command runner from running cluster
+	cc := mustload.Running(cfg.Name)
+	r := cc.CP.Runner
+
+	// Clean up the files generated when enabling the addon
+	creds := assets.NewMemoryAssetTarget([]byte{}, credentialsPath, "0444")
+	err := r.Remove(creds)
+	if err != nil {
+		return err
+	}
+
+	project := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
+	err = r.Remove(project)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isGCE() bool {
+	resp, err := http.Get("http://metadata.google.internal")
+	if err != nil {
+		return false
+	}
+
+	if resp.Header.Get("Metadata-Flavor") == "Google" {
+		return true
+	}
+
+	return false
 }
