@@ -18,6 +18,7 @@ package util
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -108,4 +109,18 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 // ParseKubernetesVersion parses the Kubernetes version
 func ParseKubernetesVersion(version string) (semver.Version, error) {
 	return semver.Make(version[1:])
+}
+
+// IsOnGCE determines whether minikube is currently running on GCE.
+func IsOnGCE() bool {
+	resp, err := http.Get("http://metadata.google.internal")
+	if err != nil {
+		return false
+	}
+
+	if resp.Header.Get("Metadata-Flavor") == "Google" {
+		return true
+	}
+
+	return false
 }

@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -53,6 +52,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/storageclass"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -514,7 +514,7 @@ func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) 
 }
 
 func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
-	if !Force && isGCE() {
+	if !Force && util.IsOnGCE() {
 		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
 	}
 
@@ -586,17 +586,4 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	}
 
 	return nil
-}
-
-func isGCE() bool {
-	resp, err := http.Get("http://metadata.google.internal")
-	if err != nil {
-		return false
-	}
-
-	if resp.Header.Get("Metadata-Flavor") == "Google" {
-		return true
-	}
-
-	return false
 }
