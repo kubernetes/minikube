@@ -35,6 +35,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
+const (
+	credentialsPath = "/var/lib/minikube/google_application_credentials.json"
+	projectPath     = "/var/lib/minikube/google_cloud_project"
+)
+
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
 func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) error {
 	enable, err := strconv.ParseBool(val)

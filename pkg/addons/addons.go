@@ -47,12 +47,6 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-const (
-	credentialsPath                = "/var/lib/minikube/google_application_credentials.json"
-	projectPath                    = "/var/lib/minikube/google_cloud_project"
-	defaultStorageClassProvisioner = "standard"
-)
-
 // Force is used to override checks for addons
 var Force bool = false
 

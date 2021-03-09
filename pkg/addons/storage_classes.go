@@ -26,6 +26,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/storageclass"
 )
 
+const defaultStorageClassProvisioner = "standard"
+
 // enableOrDisableStorageClasses enables or disables storage classes
 func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val string) error {
 	klog.Infof("enableOrDisableStorageClasses %s=%v on %q", name, val, cc.Name)
