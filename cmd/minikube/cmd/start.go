@@ -1088,6 +1088,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		validateListenAddress(viper.GetString(listenAddress))
 	}
 
+	if cmd.Flags().Changed(imageRepository) {
+		validateImageRepository(viper.GetString(imageRepository))
+	}
+
 	if cmd.Flags().Changed(containerRuntime) {
 		runtime := strings.ToLower(viper.GetString(containerRuntime))
 
@@ -1205,6 +1209,18 @@ func validateRegistryMirror() {
 			}
 
 		}
+	}
+}
+
+// This function validates if the --image-repository
+// args match the format of registry.cn-hangzhou.aliyuncs.com/google_containers
+func validateImageRepository(imagRepo string) {
+	URL, err := url.Parse(imagRepo)
+	if err != nil {
+		klog.Errorln("Error Parsing URL: ", err)
+	}
+	if URL.Scheme != "" || strings.HasSuffix(URL.Path, "/") {
+		exit.Message(reason.Usage, "Sorry, the url provided with the --image-repository flag is invalid: {{.url}}", out.V{"url": imagRepo})
 	}
 }
 
