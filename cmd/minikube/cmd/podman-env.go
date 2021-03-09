@@ -153,6 +153,11 @@ var podmanEnvCmd = &cobra.Command{
 			return
 		}
 
+		if !out.IsTerminal(os.Stdout) {
+			out.SetSilent(true)
+			exit.SetShell(true)
+		}
+
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
 		driverName := co.CP.Host.DriverName

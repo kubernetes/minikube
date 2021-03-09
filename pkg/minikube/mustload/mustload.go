@@ -20,7 +20,6 @@ package mustload
 import (
 	"fmt"
 	"net"
-	"os"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -175,5 +174,5 @@ func ExampleCmd(cname string, action string) string {
 func exitTip(action string, profile string, code int) {
 	command := ExampleCmd(profile, action)
 	out.Styled(style.Workaround, `To start a cluster, run: "{{.command}}"`, out.V{"command": command})
-	os.Exit(code)
+	exit.Code(code)
 }

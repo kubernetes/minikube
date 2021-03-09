@@ -50,6 +50,8 @@ import (
 // NOTE: If you do not want colorized output, set MINIKUBE_IN_STYLE=false in your environment.
 
 var (
+	// silent will disable all output, if called from a script. Set using SetSilent()
+	silent bool
 	// outFile is where Out* functions send output to. Set using SetOutFile()
 	outFile fdWriter
 	// errFile is where Err* functions send output to. Set using SetErrFile()
@@ -122,6 +124,11 @@ func String(format string, a ...interface{}) {
 	// Flush log buffer so that output order makes sense
 	klog.Flush()
 
+	if silent {
+		klog.Infof(format, a...)
+		return
+	}
+
 	if outFile == nil {
 		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
@@ -131,7 +138,13 @@ func String(format string, a ...interface{}) {
 	if spin.Active() {
 		spin.Stop()
 	}
-	_, err := fmt.Fprintf(outFile, format, a...)
+
+	Output(outFile, format, a...)
+}
+
+// Output writes a basic formatted string
+func Output(file fdWriter, format string, a ...interface{}) {
+	_, err := fmt.Fprintf(file, format, a...)
 	if err != nil {
 		klog.Errorf("Fprintf failed: %v", err)
 	}
@@ -152,10 +165,7 @@ func spinnerString(format string, a ...interface{}) {
 	if spin.Active() {
 		spin.Stop()
 	}
-	_, err := fmt.Fprintf(outFile, format, a...)
-	if err != nil {
-		klog.Errorf("Fprintf failed: %v", err)
-	}
+	Output(outFile, format, a...)
 	// Start spinning at the end of the printed line
 	spin.Start()
 }
@@ -194,10 +204,7 @@ func Err(format string, a ...interface{}) {
 	if spin.Active() {
 		spin.Stop()
 	}
-	_, err := fmt.Fprintf(errFile, format, a...)
-	if err != nil {
-		klog.Errorf("Fprint failed: %v", err)
-	}
+	Output(errFile, format, a...)
 }
 
 // ErrLn writes a basic formatted string with a newline to stderr
@@ -232,6 +239,20 @@ func WarningT(format string, a ...V) {
 // FailureT is a shortcut for writing a templated failure message to stderr
 func FailureT(format string, a ...V) {
 	ErrT(style.Failure, format, a...)
+}
+
+// IsTerminal returns whether we have a terminal or not
+func IsTerminal(w fdWriter) bool {
+	fd := w.Fd()
+	isT := isatty.IsTerminal(fd)
+	klog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
+	return isT
+}
+
+// SetSilent configures whether output is disabled or not
+func SetSilent(q bool) {
+	klog.Infof("Setting silent to %v", q)
+	silent = q
 }
 
 // SetOutFile configures which writer standard output goes to.
