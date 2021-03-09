@@ -57,7 +57,7 @@ func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
 
 func enableAddon(cfg *config.ClusterConfig) error {
 	if !Force && isGCE() {
-		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to use this addon, use the --force flag.")
+		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
 	}
 
 	// Grab command runner from running cluster
