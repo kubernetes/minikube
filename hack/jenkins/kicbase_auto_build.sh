@@ -61,13 +61,17 @@ export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
 
 
 # Build a new kicbase image
-yes|make push-kic-base-image
+yes | make push-kic-base-image | tee kic-logs.txt
 
 # Abort with error message if above command failed
 ec=$?
 if [ $ec -gt 0 ]; then
 	if [ "$release" = false ]; then
-		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, please try again."
+		err=$(tail -50 kic-logs.txt)
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, with the error below:
+		
+		${err}
+		"
 	fi
 	exit $ec
 fi
