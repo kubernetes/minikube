@@ -17,9 +17,9 @@ Get-Process "*Docker Desktop*" | Stop-Process
 $attempt = 1
 while($attempt -le 10) {
   Write-Host "Attempt ", $attempt
-  Write-Host "Wait for 2 minutes"
+  Write-Host "Wait for 5 minutes"
   & "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-  Start-Sleep 120
+  Start-Sleep 300
   $dockerInfo = docker info
   Write-Host "Docker Info ", $dockerInfo
   $serverVersion = $dockerInfo | Where-Object {$_ -Match "Server Version"}
