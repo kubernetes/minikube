@@ -181,13 +181,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "generating join token")
-		}
-
-		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
-			return nil, errors.Wrap(err, "joining cluster")
+		if err := joinCluster(starter, cpBs, bs); err != nil {
+			return nil, errors.Wrap(err, "joining cp")
 		}
 
 		cnm, err := cni.New(*starter.Cfg)
@@ -199,8 +194,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "cni apply")
 		}
 	}
-
-	klog.Infof("Will wait %s for node up to ", viper.GetDuration(waitTimeout))
+	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}
@@ -210,6 +204,44 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// joinCluster adds new or prepares and then adds existing node to the cluster.
+func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrapper.Bootstrapper) error {
+	start := time.Now()
+	klog.Infof("JoinCluster: %+v", starter.Cfg)
+	defer func() {
+		klog.Infof("JoinCluster complete in %s", time.Since(start))
+	}()
+
+	joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
+	if err != nil {
+		return fmt.Errorf("error generating join token: %w", err)
+	}
+
+	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
+	// You must delete the existing Node or change the name of this new joining Node"
+	if starter.PreExists {
+		klog.Infof("removing existing worker node %q before attempting to rejoin cluster: %+v", starter.Node.Name, starter.Node)
+		if _, err := drainNode(*starter.Cfg, starter.Node.Name); err != nil {
+			klog.Errorf("error removing existing worker node before rejoining cluster, will continue anyway: %v", err)
+		}
+		klog.Infof("successfully removed existing worker node %q from cluster: %+v", starter.Node.Name, starter.Node)
+	}
+
+	join := func() error {
+		klog.Infof("trying to join worker node %q to cluster: %+v", starter.Node.Name, starter.Node)
+		if err := bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
+			klog.Errorf("worker node failed to join cluster, will retry: %v", err)
+			return err
+		}
+		return nil
+	}
+	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
+		return fmt.Errorf("error joining worker node to cluster: %w", err)
+	}
+
+	return nil
 }
 
 // Provision provisions the machine/container for the node
