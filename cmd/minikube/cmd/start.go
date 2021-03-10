@@ -1089,7 +1089,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if cmd.Flags().Changed(imageRepository) {
-		validateImageRepository(viper.GetString(imageRepository))
+		viper.Set(imageRepository, validateImageRepository(viper.GetString(imageRepository)))
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
@@ -1214,14 +1214,26 @@ func validateRegistryMirror() {
 
 // This function validates if the --image-repository
 // args match the format of registry.cn-hangzhou.aliyuncs.com/google_containers
-func validateImageRepository(imagRepo string) {
+func validateImageRepository(imagRepo string) (vaildImageRepo string) {
+
+	if strings.ToLower(imagRepo) == "auto" {
+		vaildImageRepo = "auto"
+	}
 	URL, err := url.Parse(imagRepo)
 	if err != nil {
 		klog.Errorln("Error Parsing URL: ", err)
 	}
-	if URL.Scheme != "" || strings.HasSuffix(URL.Path, "/") {
-		exit.Message(reason.Usage, "Sorry, the url provided with the --image-repository flag is invalid: {{.url}}", out.V{"url": imagRepo})
+	// tips when imagRepo ended with a trailing /.
+	if strings.HasSuffix(imagRepo, "/") {
+		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
 	}
+	// tips when imageRepo started with scheme.
+	if URL.Scheme != "" {
+		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, it will be as a domian, removed automatically", out.V{"scheme": URL.Scheme})
+	}
+
+	vaildImageRepo = URL.Hostname() + strings.TrimSuffix(URL.Path, "/")
+	return
 }
 
 // This function validates if the --listen-address
