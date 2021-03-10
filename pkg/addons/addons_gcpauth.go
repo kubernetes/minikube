@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors All rights reserved.
+Copyright 2021 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcpauth
+package addons
 
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"strconv"
 
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -41,19 +40,23 @@ const (
 	projectPath     = "/var/lib/minikube/google_cloud_project"
 )
 
-// EnableOrDisable enables or disables the metadata addon depending on the val parameter
-func EnableOrDisable(cfg *config.ClusterConfig, name string, val string) error {
+// enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
+func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 	if enable {
-		return enableAddon(cfg)
+		return enableAddonGCPAuth(cfg)
 	}
-	return disableAddon(cfg)
+	return disableAddonGCPAuth(cfg)
 }
 
-func enableAddon(cfg *config.ClusterConfig) error {
+func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
+	if !Force && detect.IsOnGCE() {
+		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+	}
+
 	// Grab command runner from running cluster
 	cc := mustload.Running(cfg.Name)
 	r := cc.CP.Runner
@@ -65,20 +68,9 @@ func enableAddon(cfg *config.ClusterConfig) error {
 		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
+	// Don't mount in empty credentials file
 	if creds.JSON == nil {
-		// Cloud Shell sends credential files to an unusual location, let's check that location
-		// For example, CLOUDSDK_CONFIG=/tmp/tmp.cflmvysoQE
-		if e := os.Getenv("CLOUDSDK_CONFIG"); e != "" {
-			credFile := path.Join(e, "application_default_credentials.json")
-			b, err := ioutil.ReadFile(credFile)
-			if err != nil {
-				exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
-			}
-			creds.JSON = b
-		} else {
-			// We don't currently support authentication through the metadata server
-			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
-		}
+		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
@@ -114,7 +106,7 @@ or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 	return r.Copy(emptyFile)
 }
 
-func disableAddon(cfg *config.ClusterConfig) error {
+func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Grab command runner from running cluster
 	cc := mustload.Running(cfg.Name)
 	r := cc.CP.Runner
@@ -133,4 +125,19 @@ func disableAddon(cfg *config.ClusterConfig) error {
 	}
 
 	return nil
+}
+
+func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrapf(err, "parsing bool: %s", name)
+	}
+	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
+
+	if enable && err == nil {
+		out.Styled(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
+		out.Styled(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
+	}
+
+	return err
 }

@@ -26,6 +26,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -167,14 +168,7 @@ func NeedsPortForward(name string) bool {
 		return true
 	}
 	// Docker for Desktop
-	return runtime.GOOS == "darwin" || runtime.GOOS == "windows" || IsMicrosoftWSL()
-}
-
-// IsMicrosoftWSL will return true if process is running in WSL in windows
-// checking for WSL env var based on this https://github.com/microsoft/WSL/issues/423#issuecomment-608237689
-// also based on https://github.com/microsoft/vscode/blob/90a39ba0d49d75e9a4d7e62a6121ad946ecebc58/resources/win32/bin/code.sh#L24
-func IsMicrosoftWSL() bool {
-	return os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSLPATH") != ""
+	return runtime.GOOS == "darwin" || runtime.GOOS == "windows" || detect.IsMicrosoftWSL()
 }
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
