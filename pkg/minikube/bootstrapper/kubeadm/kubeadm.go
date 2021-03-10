@@ -487,10 +487,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
-		name := cfg.Name
-		if n.Name != "" {
-			name = fmt.Sprintf("%s-%s", cfg.Name, n.Name)
-		}
+		name := config.MachineName(cfg, n)
 		if err := kverify.WaitNodeCondition(client, name, core.NodeReady, timeout); err != nil {
 			return errors.Wrap(err, "waiting for node to be ready")
 		}
