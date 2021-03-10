@@ -135,7 +135,7 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 		return err
 	}
 
-	if !path.IsAbs(file) {
+	if file != "" && !path.IsAbs(file) {
 		file = path.Join(context, file)
 	}
 	err = r.BuildImage(context, file, tag)
