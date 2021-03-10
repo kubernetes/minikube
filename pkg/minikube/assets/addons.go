@@ -850,9 +850,17 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 				"image": strings.Split(image, "@")[0],
 			})
 		} else if opts.ImageRepository != "" {
+			tmp := strings.Split(image, "/")
+			var realImage string
+			if len(tmp) > 2 {
+				realImage = tmp[1]
+			} else {
+				realImage = image
+			}
+			opts.Images[name] = realImage
 			out.Infof("Using image {{.registry}}{{.image}} (global image repository)", out.V{
 				"registry": opts.ImageRepository,
-				"image":    image,
+				"image":    realImage,
 			})
 		} else {
 			out.Infof("Using image {{.registry}}{{.image}}", out.V{
