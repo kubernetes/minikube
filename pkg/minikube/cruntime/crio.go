@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -206,6 +207,8 @@ func (r *CRIO) BuildImage(path string, tag string) error {
 	}
 	args = append(args, path)
 	c := exec.Command("sudo", args...)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crio build image")
 	}
