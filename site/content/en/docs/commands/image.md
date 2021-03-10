@@ -56,7 +56,7 @@ minikube image build .
 ### Options
 
 ```
-  -f, --file string   Path to the Dockerfile to use (default "Dockerfile")
+  -f, --file string   Path to the Dockerfile to use (optional)
   -t, --tag string    Tag to apply to the new image (optional)
 ```
 

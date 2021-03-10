@@ -279,8 +279,19 @@ func (r *Containerd) RemoveImage(name string) error {
 }
 
 // BuildImage builds an image into this runtime
-func (r *Containerd) BuildImage(path string, tag string) error {
-	klog.Infof("Building image: %s", path)
+func (r *Containerd) BuildImage(dir string, file string, tag string) error {
+	if file != "" {
+		if !path.IsAbs(file) {
+			file = path.Join(dir, file)
+		}
+		// copy to standard path for Dockerfile
+		df := path.Join(dir, "Dockerfile")
+		cmd := exec.Command("sudo", "cp", "-f", file, df)
+		if _, err := r.Runner.RunCmd(cmd); err != nil {
+			return err
+		}
+	}
+	klog.Infof("Building image: %s", dir)
 	opt := ""
 	if tag != "" {
 		// add default tag if missing
@@ -291,8 +302,8 @@ func (r *Containerd) BuildImage(path string, tag string) error {
 	}
 	c := exec.Command("sudo", "buildctl", "build",
 		"--frontend", "dockerfile.v0",
-		"--local", fmt.Sprintf("context=%s", path),
-		"--local", fmt.Sprintf("dockerfile=%s", path),
+		"--local", fmt.Sprintf("context=%s", dir),
+		"--local", fmt.Sprintf("dockerfile=%s", dir),
 		"--output", fmt.Sprintf("type=image%s", opt))
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr

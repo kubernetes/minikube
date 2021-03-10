@@ -199,13 +199,19 @@ func (r *CRIO) RemoveImage(name string) error {
 }
 
 // BuildImage builds an image into this runtime
-func (r *CRIO) BuildImage(path string, tag string) error {
-	klog.Infof("Building image: %s", path)
+func (r *CRIO) BuildImage(dir string, file string, tag string) error {
+	klog.Infof("Building image: %s", dir)
 	args := []string{"podman", "build"}
+	if file != "" {
+                if !path.IsAbs(file) {
+                        file = path.Join(dir, file)
+                }
+		args = append(args, "-f", file)
+	}
 	if tag != "" {
 		args = append(args, "-t", tag)
 	}
-	args = append(args, path)
+	args = append(args, dir)
 	c := exec.Command("sudo", args...)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr

@@ -38,7 +38,7 @@ import (
 var buildRoot = path.Join(vmpath.GuestPersistentDir, "build")
 
 // BuildImage builds image to all profiles
-func BuildImage(path string, tag string, profiles []*config.Profile) error {
+func BuildImage(path string, file string, tag string, profiles []*config.Profile) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "api")
@@ -80,7 +80,7 @@ func BuildImage(path string, tag string, profiles []*config.Profile) error {
 				if err != nil {
 					return err
 				}
-				err = transferAndBuildImage(cr, c.KubernetesConfig, path, tag)
+				err = transferAndBuildImage(cr, c.KubernetesConfig, path, file, tag)
 				if err != nil {
 					failed = append(failed, m)
 					klog.Warningf("Failed to build image for profile %s. make sure the profile is running. %v", pName, err)
@@ -97,7 +97,7 @@ func BuildImage(path string, tag string, profiles []*config.Profile) error {
 }
 
 // transferAndBuildImage transfers and builds a single image
-func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src string, tag string) error {
+func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -135,7 +135,7 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 		return err
 	}
 
-	err = r.BuildImage(context, tag)
+	err = r.BuildImage(context, file, tag)
 	if err != nil {
 		return errors.Wrapf(err, "%s build %s", r.Name(), dst)
 	}
