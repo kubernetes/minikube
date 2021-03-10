@@ -255,9 +255,11 @@ func (r *Containerd) BuildImage(dir string, file string, tag string) error {
 	if file != "" {
 		// copy to standard path for Dockerfile
 		df := path.Join(dir, "Dockerfile")
-		cmd := exec.Command("sudo", "cp", "-f", file, df)
-		if _, err := r.Runner.RunCmd(cmd); err != nil {
-			return err
+		if file != df {
+			cmd := exec.Command("sudo", "cp", "-f", file, df)
+			if _, err := r.Runner.RunCmd(cmd); err != nil {
+				return err
+			}
 		}
 	}
 	klog.Infof("Building image: %s", dir)
