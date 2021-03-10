@@ -17,7 +17,6 @@ limitations under the License.
 package addons
 
 import (
-	"k8s.io/minikube/pkg/addons/gcpauth"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -175,7 +174,7 @@ var Addons = []*Addon{
 	{
 		name:      "gcp-auth",
 		set:       SetBool,
-		callbacks: []setFn{gcpauth.EnableOrDisable, EnableOrDisableAddon, verifyGCPAuthAddon},
+		callbacks: []setFn{enableOrDisableGCPAuth, EnableOrDisableAddon, verifyGCPAuthAddon},
 	},
 	{
 		name:      "volumesnapshots",

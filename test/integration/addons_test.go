@@ -36,6 +36,7 @@ import (
 
 	"github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -58,16 +59,41 @@ func TestAddons(t *testing.T) {
 		t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 	}
 
-	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
 	if !(runtime.GOOS == "darwin" && KicDriver()) { // macos docker driver does not support ingress
 		args = append(args, "--addons=ingress")
 	}
 	if !arm64Platform() {
 		args = append(args, "--addons=helm-tiller")
 	}
+	if !detect.IsOnGCE() {
+		args = append(args, "--addons=gcp-auth")
+	}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	// If we're running the integration tests on GCE, which is frequently the case, first check to make sure we exit out properly,
+	// then use force to actually test using creds.
+	if detect.IsOnGCE() {
+		args = []string{"-p", profile, "addons", "enable", "gcp-auth"}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err == nil {
+			t.Errorf("Expected error but didn't get one. command %v, output %v", rr.Command(), rr.Output())
+		} else {
+			if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+				t.Errorf("Unexpected error message: %v", rr.Output())
+			} else {
+				// ok, use force here since we are in GCE
+				// do not use --force unless absolutely necessary
+				args = append(args, "--force")
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Command(), err)
+				}
+			}
+		}
 	}
 
 	// Parallelized tests

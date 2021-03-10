@@ -42,7 +42,7 @@ var addonsEnableCmd = &cobra.Command{
 		addon := args[0]
 		// replace heapster as metrics-server because heapster is deprecated
 		if addon == "heapster" {
-			out.Styled(style.Waiting, "enable metrics-server addon instead of heapster addon because heapster is deprecated")
+			out.Styled(style.Waiting, "using metrics-server addon, heapster is deprecated")
 			addon = "metrics-server"
 		}
 		viper.Set(config.AddonImages, images)
@@ -76,5 +76,6 @@ var (
 func init() {
 	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Images used by this addon. Separated by commas.")
 	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Separated by commas.")
+	addonsEnableCmd.Flags().BoolVar(&addons.Force, "force", false, "If true, will perform potentially dangerous operations. Use with discretion.")
 	AddonsCmd.AddCommand(addonsEnableCmd)
 }

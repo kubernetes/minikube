@@ -128,6 +128,7 @@ minikube addons enable dashboard
 ### Options
 
 ```
+      --force               If true, will perform potentially dangerous operations. Use with discretion.
       --images string       Images used by this addon. Separated by commas.
       --registries string   Registries used by this addon. Separated by commas.
 ```
