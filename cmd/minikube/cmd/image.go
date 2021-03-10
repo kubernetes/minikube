@@ -86,14 +86,13 @@ func createTar(dir string) (string, error) {
 
 // buildImageCmd represents the image build command
 var buildImageCmd = &cobra.Command{
-	Use:   "build",
-	Short: "Build a container image in minikube",
-	Long: `Build a container image, using the container runtime.
-Examples:
-minikube build .`,
+	Use:     "build",
+	Short:   "Build a container image in minikube",
+	Long:    "Build a container image, using the container runtime.",
+	Example: `minikube image build .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
-			exit.Message(reason.Usage, "minikube build -- [OPTIONS] PATH | URL | -")
+			exit.Message(reason.Usage, "Please provide a path to build")
 		}
 		// Cache and load images into docker daemon
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))

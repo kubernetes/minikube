@@ -42,11 +42,15 @@ Build a container image in minikube
 ### Synopsis
 
 Build a container image, using the container runtime.
-Examples:
-minikube build .
 
 ```shell
 minikube image build [flags]
+```
+
+### Examples
+
+```
+minikube image build .
 ```
 
 ### Options
