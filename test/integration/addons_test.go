@@ -77,7 +77,7 @@ func TestAddons(t *testing.T) {
 	// If we're running the integration tests on GCE, which is frequently the case, first check to make sure we exit out properly,
 	// then use force to actually test using creds.
 	if detect.IsOnGCE() {
-		args = append([]string{"addons", "enable", "gcp-auth"}, StartArgs()...)
+		args = append([]string{"addons", "enable", "gcp-auth", "-p", profile}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err == nil {
 			t.Errorf("Expected error but didn't get one. command %v, output %v", rr.Command(), rr.Output())
