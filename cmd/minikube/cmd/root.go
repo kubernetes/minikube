@@ -250,7 +250,6 @@ func init() {
 				mountCmd,
 				sshCmd,
 				kubectlCmd,
-				buildCmd,
 				nodeCmd,
 				cpCmd,
 			},

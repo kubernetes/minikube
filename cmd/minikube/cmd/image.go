@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/reason"
+	docker "k8s.io/minikube/third_party/go-dockerclient"
 )
 
 // imageCmd represents the image command
@@ -58,6 +59,11 @@ func saveFile(r io.Reader) (string, error) {
 	}
 	return tmp.Name(), nil
 }
+
+var (
+	tag        string
+	dockerFile string
+)
 
 // loadImageCmd represents the image load command
 var loadImageCmd = &cobra.Command{
@@ -173,6 +179,61 @@ $ minikube image list
 	},
 }
 
+func createTar(dir string) (string, error) {
+	tmp, err := ioutil.TempFile("", "build.*.tar")
+	if err != nil {
+		return "", err
+	}
+	tar, err := docker.CreateTarStream(dir, dockerFile)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(tmp, tar)
+	if err != nil {
+		return "", err
+	}
+	err = tmp.Close()
+	if err != nil {
+		return "", err
+	}
+
+	return tmp.Name(), nil
+}
+
+// buildImageCmd represents the image build command
+var buildImageCmd = &cobra.Command{
+	Use:     "build",
+	Short:   "Build a container image in minikube",
+	Long:    "Build a container image, using the container runtime.",
+	Example: `minikube image build .`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 {
+			exit.Message(reason.Usage, "Please provide a path to build")
+		}
+		// Cache and load images into docker daemon
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+		img := args[0]
+		var tmp string
+		info, err := os.Stat(img)
+		if err == nil && info.IsDir() {
+			tmp, err := createTar(img)
+			if err != nil {
+				exit.Error(reason.GuestImageBuild, "Failed to build image", err)
+			}
+			img = tmp
+		}
+		if err := machine.BuildImage(img, tag, []*config.Profile{profile}); err != nil {
+			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
+		}
+		if tmp != "" {
+			os.Remove(tmp)
+		}
+	},
+}
+
 func init() {
 	imageCmd.AddCommand(loadImageCmd)
 	imageCmd.AddCommand(removeImageCmd)
@@ -180,4 +241,7 @@ func init() {
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
 	imageCmd.AddCommand(listImageCmd)
+	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
+	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "Dockerfile", "Path to the Dockerfile to use")
+	imageCmd.AddCommand(buildImageCmd)
 }

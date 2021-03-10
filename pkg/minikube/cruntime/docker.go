@@ -224,6 +224,7 @@ func (r *Docker) BuildImage(path string, tag string) error {
 	if tag != "" {
 		args = append(args, "-t", tag)
 	}
+	args = append(args, path)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "buildimage docker.")
