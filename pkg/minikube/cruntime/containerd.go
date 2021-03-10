@@ -253,9 +253,6 @@ func (r *Containerd) LoadImage(path string) error {
 // BuildImage builds an image into this runtime
 func (r *Containerd) BuildImage(dir string, file string, tag string) error {
 	if file != "" {
-		if !path.IsAbs(file) {
-			file = path.Join(dir, file)
-		}
 		// copy to standard path for Dockerfile
 		df := path.Join(dir, "Dockerfile")
 		cmd := exec.Command("sudo", "cp", "-f", file, df)
