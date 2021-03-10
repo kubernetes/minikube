@@ -194,7 +194,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "cni apply")
 		}
 	}
-	klog.Infof("Will wait %s for node %s", viper.GetDuration(waitTimeout), starter.Node)
+	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}

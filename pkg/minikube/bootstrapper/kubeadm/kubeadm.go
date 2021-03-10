@@ -487,7 +487,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.NodeReadyKey] {
-		name := config.MachineName(cfg, n)
+		name := bsutil.KubeNodeName(cfg, n)
 		if err := kverify.WaitNodeCondition(client, name, core.NodeReady, timeout); err != nil {
 			return errors.Wrap(err, "waiting for node to be ready")
 		}
