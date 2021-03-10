@@ -2,7 +2,7 @@
 title: "Pushing images"
 weight: 5
 description: >
- comparing 5 ways to push your image into a minikube cluster.
+ comparing 6 ways to push your image into a minikube cluster.
 aliases:
  - /docs/tasks/building
  - /docs/tasks/caching
@@ -20,6 +20,7 @@ Here is a comparison table to help you choose:
 |--- |--- |--- |--- |--- |
 |  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  |
 |  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  |
+|  [buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  |
 |  [cache add command]({{< ref "/docs/commands/cache.md#minikube-cache-add" >}})  |  all  |  ok  |
 |  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  |
 |  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  |
@@ -251,3 +252,51 @@ to exit minikube ssh and come back to your terminal type:
 ```shell
 exit
 ```
+
+## 6. Pushing directly to in-cluster containerd (buildkitd)
+
+This is similar to docker-env and podman-env but only for Containerd runtime.
+
+Currently it requires starting the daemon and setting up the tunnels manually.
+
+**Instructions:**
+
+Start the BuildKit daemon, using the containerd backend.
+
+```bash
+minikube ssh -- sudo -b buildkitd --oci-worker=false --containerd-worker=true --containerd-worker-namespace=k8s.io
+```
+
+Note the flags that are needed for the `ssh` command.
+
+```bash
+minikube --alsologtostderr ssh --native-ssh=false
+```
+
+Make the BuildKit socket accessible to the regular user.
+
+```console
+docker@minikube:~$ sudo groupadd buildkit
+docker@minikube:~$ sudo chgrp -R buildkit /run/buildkit
+docker@minikube:~$ sudo usermod -aG buildkit $USER
+docker@minikube:~$ exit
+```
+
+Tunnel the BuildKit socket to the host, from the machine.
+(_Use above ssh flags (most notably the -p port and user@host)_)
+
+```bash
+ssh -nNT -L ./buildkitd.sock:/run/buildkit/buildkitd.sock ... &
+```
+
+After that, it should now be possible to use `buildctl`:
+
+```bash
+buildctl --addr unix://buildkitd.sock build \
+    --frontend=dockerfile.v0 \
+    --local context=. \
+    --local dockerfile=. \
+    --output type=image,name=k8s.gcr.io/username/imagename:latest
+```
+
+now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
