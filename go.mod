@@ -109,6 +109,8 @@ replace (
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.6
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200824110434-7da9b61f0a42
 	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321165649-761f6f9626b1
+	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20210306082426-fcb2ad5bcb17
+	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.1.2-0.20210306075852-e67a8ff8ae6f
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/api => k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.3
