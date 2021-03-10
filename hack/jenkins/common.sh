@@ -333,10 +333,6 @@ min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
-SHORT_COMMIT=${COMMIT:0:7}
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
-echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
-gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
 
 echo ">> Attmpting to convert test logs to json"
@@ -360,11 +356,8 @@ echo ">> Installing jq"
 fi
 
 echo ">> Installing gopogh"
-if [ "$(uname)" != "Darwin" ]; then
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
-else
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
-fi
+curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-${OS_ARCH}"
+sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
 
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
@@ -383,13 +376,27 @@ if [ "$status" = "failure" ]; then
 fi
 echo $description
 
+
+echo "{TEST_OUT}" > out/test.out
+echo "{JSON_OUT}" > out/json.out
+echo "{HTML_OUT}" > out/html.out
+echo "{SUMMARY_OUT}" > out/summary.out
+
+# upload results to GCS
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}"
+
+echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
+gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt" || true
+
 echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
+
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
+
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-
+#
 
 
 public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
@@ -448,7 +455,6 @@ function retry_github_status() {
     timeout=$(( timeout * 5 )) 
   done
 }
-
 
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
 exit $result
