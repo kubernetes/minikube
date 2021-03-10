@@ -251,7 +251,7 @@ func (r *Containerd) LoadImage(path string) error {
 }
 
 // BuildImage builds an image into this runtime
-func (r *Containerd) BuildImage(dir string, file string, tag string) error {
+func (r *Containerd) BuildImage(dir string, file string, tag string, push bool) error {
 	if file != "" {
 		// copy to standard path for Dockerfile
 		df := path.Join(dir, "Dockerfile")
@@ -270,6 +270,9 @@ func (r *Containerd) BuildImage(dir string, file string, tag string) error {
 			tag += ":latest"
 		}
 		opt = fmt.Sprintf(",name=%s", tag)
+		if push {
+			opt += ",push=true"
+		}
 	}
 	c := exec.Command("sudo", "buildctl", "build",
 		"--frontend", "dockerfile.v0",
