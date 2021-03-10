@@ -223,9 +223,6 @@ func (r *Docker) BuildImage(dir string, file string, tag string) error {
 	klog.Infof("Building image: %s", dir)
 	args := []string{"build"}
 	if file != "" {
-                if !path.IsAbs(file) {
-                        file = path.Join(dir, file)
-                }
 		args = append(args, "-f", file)
 	}
 	if tag != "" {
