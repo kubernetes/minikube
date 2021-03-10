@@ -243,10 +243,7 @@ func FailureT(format string, a ...V) {
 
 // IsTerminal returns whether we have a terminal or not
 func IsTerminal(w fdWriter) bool {
-	fd := w.Fd()
-	isT := isatty.IsTerminal(fd)
-	klog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
-	return isT
+	return isatty.IsTerminal(w.Fd())
 }
 
 // SetSilent configures whether output is disabled or not
@@ -259,7 +256,7 @@ func SetSilent(q bool) {
 func SetOutFile(w fdWriter) {
 	klog.Infof("Setting OutFile to fd %d ...", w.Fd())
 	outFile = w
-	useColor = wantsColor(w.Fd())
+	useColor = wantsColor(w)
 }
 
 // SetJSON configures printing to STDOUT in JSON
@@ -272,11 +269,11 @@ func SetJSON(j bool) {
 func SetErrFile(w fdWriter) {
 	klog.Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
-	useColor = wantsColor(w.Fd())
+	useColor = wantsColor(w)
 }
 
 // wantsColor determines if the user might want colorized output.
-func wantsColor(fd uintptr) bool {
+func wantsColor(w fdWriter) bool {
 	// First process the environment: we allow users to force colors on or off.
 	//
 	// MINIKUBE_IN_STYLE=[1, T, true, TRUE]
@@ -308,8 +305,8 @@ func wantsColor(fd uintptr) bool {
 		return false
 	}
 
-	isT := isatty.IsTerminal(fd)
-	klog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
+	isT := IsTerminal(w)
+	klog.Infof("isatty.IsTerminal(%d) = %v\n", w.Fd(), isT)
 	return isT
 }
 
