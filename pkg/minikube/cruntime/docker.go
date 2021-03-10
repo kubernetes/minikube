@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -181,6 +182,8 @@ func (r *Docker) BuildImage(path string, tag string) error {
 	}
 	args = append(args, path)
 	c := exec.Command("docker", args...)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "buildimage docker.")
 	}

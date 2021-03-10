@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -265,6 +266,8 @@ func (r *Containerd) BuildImage(path string, tag string) error {
 		"--local", fmt.Sprintf("context=%s", path),
 		"--local", fmt.Sprintf("dockerfile=%s", path),
 		"--output", fmt.Sprintf("type=image%s", opt))
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "buildctl build.")
 	}
