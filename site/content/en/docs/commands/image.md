@@ -57,6 +57,7 @@ minikube image build .
 
 ```
   -f, --file string   Path to the Dockerfile to use (optional)
+      --push          Push the new image (requires tag)
   -t, --tag string    Tag to apply to the new image (optional)
 ```
 

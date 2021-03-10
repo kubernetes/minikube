@@ -62,6 +62,7 @@ func saveFile(r io.Reader) (string, error) {
 
 var (
 	tag        string
+	push       bool
 	dockerFile string
 )
 
@@ -225,7 +226,7 @@ var buildImageCmd = &cobra.Command{
 			}
 			img = tmp
 		}
-		if err := machine.BuildImage(img, dockerFile, tag, []*config.Profile{profile}); err != nil {
+		if err := machine.BuildImage(img, dockerFile, tag, push, []*config.Profile{profile}); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
 		}
 		if tmp != "" {
@@ -242,6 +243,7 @@ func init() {
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
 	imageCmd.AddCommand(listImageCmd)
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
+	buildImageCmd.Flags().BoolVarP(&push, "push", "", false, "Push the new image (requires tag)")
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
 	imageCmd.AddCommand(buildImageCmd)
 }

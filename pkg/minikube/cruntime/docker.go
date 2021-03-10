@@ -219,7 +219,7 @@ func (r *Docker) RemoveImage(name string) error {
 }
 
 // BuildImage builds an image into this runtime
-func (r *Docker) BuildImage(dir string, file string, tag string) error {
+func (r *Docker) BuildImage(dir string, file string, tag string, push bool) error {
 	klog.Infof("Building image: %s", dir)
 	args := []string{"build"}
 	if file != "" {
@@ -234,6 +234,14 @@ func (r *Docker) BuildImage(dir string, file string, tag string) error {
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "buildimage docker.")
+	}
+	if tag != "" && push {
+		c := exec.Command("docker", "push", tag)
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		if _, err := r.Runner.RunCmd(c); err != nil {
+			return errors.Wrap(err, "pushimage docker.")
+		}
 	}
 	return nil
 }
