@@ -78,8 +78,8 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 	return err
 }
 
-// remove drains and deletes the given node in the given cluster.
-func remove(cc config.ClusterConfig, name string) (*config.Node, error) {
+// drainNode drains then deletes (removes) node from cluster.
+func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 	n, index, err := Retrieve(cc, name)
 	if err != nil {
 		return n, errors.Wrap(err, "retrieve")
@@ -128,9 +128,9 @@ func remove(cc config.ClusterConfig, name string) (*config.Node, error) {
 	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
 
-// Delete calls remove to remove node from cluster and deletes the host.
+// Delete calls drainNode to remove node from cluster and deletes the host.
 func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, err := remove(cc, name)
+	n, err := drainNode(cc, name)
 	if err != nil {
 		return n, err
 	}
