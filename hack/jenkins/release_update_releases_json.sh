@@ -46,6 +46,10 @@ git status
 #Prepends the new version to the release.json file
 sed -i "0,/{/s/{/{\n      \"name\": \"${TAGNAME}\",\n      \"checksums\": {\n          \"darwin\": \"${DARWIN_SHA256}\",\n          \"linux\": \"${LINUX_SHA256}\",\n          \"windows\": \"${WINDOWS_SHA256}\"\n      }\n  },\n  {"/ deploy/minikube/releases.json
 
+#Update the front page of our documentation
+now=$(date +"%b %d, %Y")
+sed -i "s/Latest Release: .* (/Latest Release: ${TAGNAME} - ${now} (/" site/content/en/docs/_index.md
+
 git add -A
 git commit -m "Update releases.json to include ${TAGNAME}"
 git remote add minikube-bot git@github.com:minikube-bot/minikube.git
