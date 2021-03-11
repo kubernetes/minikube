@@ -214,6 +214,10 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 // check functionality of minikube after evaling docker-env
 // TODO: Add validatePodmanEnv for crio runtime: #10231
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("none driver does not support docker-env")
+	}
+
 	if cr := ContainerRuntime(); cr != "docker" {
 		t.Skipf("only validate docker env with docker container runtime, currently testing %s", cr)
 	}
