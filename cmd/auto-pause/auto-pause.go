@@ -64,6 +64,15 @@ func main() {
 				fmt.Printf("Got request\n")
 				if runtimePaused {
 					runUnpause()
+					idleTimeout.Reset(interval)
+					// Drain the timeout channel in case of racing condition.
+					for {
+						select {
+						case <-idleTimeout.C:
+						default:
+							break
+						}
+					}
 				}
 
 				done <- struct{}{}
