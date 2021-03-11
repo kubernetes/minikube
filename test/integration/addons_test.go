@@ -60,7 +60,7 @@ func TestAddons(t *testing.T) {
 	}
 
 	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
-	if !(runtime.GOOS == "darwin" && KicDriver()) { // macos docker driver does not support ingress
+	if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none driver and macos docker driver does not support ingress
 		args = append(args, "--addons=ingress")
 	}
 	if !arm64Platform() {
