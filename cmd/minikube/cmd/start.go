@@ -1183,7 +1183,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 func validateChangedMemoryFlags(drvName string) {
 	if driver.IsKIC(drvName) && !oci.HasMemoryCgroup() {
 		out.WarningT("Your cgroup does not allow setting memory.")
-		out.Infof("More information: https://docs.doInfo.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
+		out.Infof("More information: https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
 	}
 	if !driver.HasResourceLimits(drvName) {
 		out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
