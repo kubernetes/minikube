@@ -59,6 +59,7 @@ func (t *SSHTunnel) Start() error {
 	for {
 		select {
 		case <-t.ctx.Done():
+			defer t.stopAllConnections()
 			_, err := t.LoadBalancerEmulator.Cleanup()
 			if err != nil {
 				klog.Errorf("error cleaning up: %v", err)
@@ -128,6 +129,15 @@ func (t *SSHTunnel) stopMarkedConnections() {
 		}
 		delete(t.conns, sshConn.name)
 		delete(t.connsToStop, sshConn.name)
+	}
+}
+
+func (t *SSHTunnel) stopAllConnections() {
+	for _, conn := range t.conns {
+		err := conn.stop()
+		if err != nil {
+			klog.Errorf("error stopping ssh tunnel: %v", err)
+		}
 	}
 }
 

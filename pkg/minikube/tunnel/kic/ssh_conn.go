@@ -33,6 +33,7 @@ type sshConn struct {
 	service string
 	cmd     *exec.Cmd
 	ports   []int
+	active  bool
 }
 
 func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
@@ -90,6 +91,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		name:    name,
 		service: svc.Name,
 		cmd:     cmd,
+		active:  false,
 	}
 }
 
@@ -131,6 +133,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 		service: svc.Name,
 		cmd:     cmd,
 		ports:   usedPorts,
+		active:  false,
 	}, nil
 }
 
@@ -141,15 +144,21 @@ func (c *sshConn) startAndWait() error {
 	if err != nil {
 		return err
 	}
+	c.active = true
 
 	// we ignore wait error because the process will be killed
 	_ = c.cmd.Wait()
 
+	c.active = false
 	return nil
 }
 
 func (c *sshConn) stop() error {
-	out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
+	if c.active {
+		out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
+		return c.cmd.Process.Kill()
+	}
 
-	return c.cmd.Process.Kill()
+	out.Step(style.Stopping, "Tunnel for service {{.service}} stopped.", out.V{"service": c.service})
+	return nil
 }
