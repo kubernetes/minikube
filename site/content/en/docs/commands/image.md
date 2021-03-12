@@ -56,9 +56,11 @@ minikube image build .
 ### Options
 
 ```
-  -f, --file string   Path to the Dockerfile to use (optional)
-      --push          Push the new image (requires tag)
-  -t, --tag string    Tag to apply to the new image (optional)
+      --build-env stringArray   Environment variables to pass to the build. (format: key=value)
+      --build-opt stringArray   Specify arbitrary flags to pass to the build. (format: key=value)
+  -f, --file string             Path to the Dockerfile to use (optional)
+      --push                    Push the new image (requires tag)
+  -t, --tag string              Tag to apply to the new image (optional)
 ```
 
 ### Options inherited from parent commands

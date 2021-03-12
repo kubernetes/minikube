@@ -65,6 +65,8 @@ var (
 	tag        string
 	push       bool
 	dockerFile string
+	buildEnv   []string
+	buildOpt   []string
 )
 
 // loadImageCmd represents the image load command
@@ -244,7 +246,7 @@ var buildImageCmd = &cobra.Command{
 				// Otherwise, assume it's a tar
 			}
 		}
-		if err := machine.BuildImage(img, dockerFile, tag, push, []*config.Profile{profile}); err != nil {
+		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
 		}
 		if tmp != "" {
@@ -263,5 +265,7 @@ func init() {
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
 	buildImageCmd.Flags().BoolVarP(&push, "push", "", false, "Push the new image (requires tag)")
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
+	buildImageCmd.Flags().StringArrayVar(&buildEnv, "build-env", nil, "Environment variables to pass to the build. (format: key=value)")
+	buildImageCmd.Flags().StringArrayVar(&buildOpt, "build-opt", nil, "Specify arbitrary flags to pass to the build. (format: key=value)")
 	imageCmd.AddCommand(buildImageCmd)
 }

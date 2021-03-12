@@ -98,7 +98,7 @@ type Manager interface {
 	// Pull an image to the runtime from the container registry
 	PullImage(string) error
 	// Build an image idempotently into the runtime on a host
-	BuildImage(string, string, string, bool) error
+	BuildImage(string, string, string, bool, []string, []string) error
 
 	// ImageExists takes image name and image sha checks if an it exists
 	ImageExists(string, string) bool
