@@ -235,7 +235,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	// for runtimes that need cni
 	if cfg.KubernetesConfig.ContainerRuntime != oci.Docker {
 		if err := k.removeCommonCNIConfigs(); err != nil {
-			errors.Wrap(err, "clear common CNI")
+			return errors.Wrap(err, "clear common CNI")
 		}
 	}
 
@@ -266,12 +266,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	kw.Close()
 	wg.Wait()
-	// for runtimes that need cni
-	if cfg.KubernetesConfig.ContainerRuntime != oci.Docker {
-		if err := k.removeCommonCNIConfigs(); err != nil {
-			errors.Wrap(err, "clear common CNI")
-		}
-	}
 
 	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
@@ -305,7 +299,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	// for runtimes that need cni
 	if cfg.KubernetesConfig.ContainerRuntime != oci.Docker {
 		if err := k.restoreCommonCNIConfigs(); err != nil {
-			errors.Wrap(err, "restore common CNI")
+			return errors.Wrap(err, "restore common CNI")
 		}
 	}
 	return nil
