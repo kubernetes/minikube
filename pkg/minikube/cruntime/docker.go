@@ -174,7 +174,7 @@ func (r *Docker) LoadImage(path string) error {
 }
 
 // BuildImage builds an image into this runtime
-func (r *Docker) BuildImage(src string, file string, tag string, push bool) error {
+func (r *Docker) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
 	klog.Infof("Building image: %s", src)
 	args := []string{"build"}
 	if file != "" {
@@ -184,7 +184,12 @@ func (r *Docker) BuildImage(src string, file string, tag string, push bool) erro
 		args = append(args, "-t", tag)
 	}
 	args = append(args, src)
+	for _, opt := range opts {
+		args = append(args, "--"+opt)
+	}
 	c := exec.Command("docker", args...)
+	e := os.Environ()
+	c.Env = append(e, env...)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {

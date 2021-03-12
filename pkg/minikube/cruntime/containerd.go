@@ -289,7 +289,7 @@ func downloadRemote(cr CommandRunner, src string) (string, error) {
 }
 
 // BuildImage builds an image into this runtime
-func (r *Containerd) BuildImage(src string, file string, tag string, push bool) error {
+func (r *Containerd) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
 	// download url if not already present
 	dir, err := downloadRemote(r.Runner, src)
 	if err != nil {
@@ -309,22 +309,28 @@ func (r *Containerd) BuildImage(src string, file string, tag string, push bool) 
 		}
 	}
 	klog.Infof("Building image: %s", dir)
-	opt := ""
+	extra := ""
 	if tag != "" {
 		// add default tag if missing
 		if !strings.Contains(tag, ":") {
 			tag += ":latest"
 		}
-		opt = fmt.Sprintf(",name=%s", tag)
+		extra = fmt.Sprintf(",name=%s", tag)
 		if push {
-			opt += ",push=true"
+			extra += ",push=true"
 		}
 	}
-	c := exec.Command("sudo", "buildctl", "build",
+	args := []string{"buildctl", "build",
 		"--frontend", "dockerfile.v0",
 		"--local", fmt.Sprintf("context=%s", dir),
 		"--local", fmt.Sprintf("dockerfile=%s", dir),
-		"--output", fmt.Sprintf("type=image%s", opt))
+		"--output", fmt.Sprintf("type=image%s", extra)}
+	for _, opt := range opts {
+		args = append(args, "--"+opt)
+	}
+	c := exec.Command("sudo", args...)
+	e := os.Environ()
+	c.Env = append(e, env...)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {

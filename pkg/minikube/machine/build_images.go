@@ -39,7 +39,7 @@ import (
 var buildRoot = path.Join(vmpath.GuestPersistentDir, "build")
 
 // BuildImage builds image to all profiles
-func BuildImage(path string, file string, tag string, push bool, profiles []*config.Profile) error {
+func BuildImage(path string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "api")
@@ -85,9 +85,9 @@ func BuildImage(path string, file string, tag string, push bool, profiles []*con
 					return err
 				}
 				if remote {
-					err = buildImage(cr, c.KubernetesConfig, path, file, tag, push)
+					err = buildImage(cr, c.KubernetesConfig, path, file, tag, push, env, opt)
 				} else {
-					err = transferAndBuildImage(cr, c.KubernetesConfig, path, file, tag, push)
+					err = transferAndBuildImage(cr, c.KubernetesConfig, path, file, tag, push, env, opt)
 				}
 				if err != nil {
 					failed = append(failed, m)
@@ -105,14 +105,14 @@ func BuildImage(path string, file string, tag string, push bool, profiles []*con
 }
 
 // buildImage builds a single image
-func buildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool) error {
+func buildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool, env []string, opt []string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
 	klog.Infof("Building image from url: %s", src)
 
-	err = r.BuildImage(src, file, tag, push)
+	err = r.BuildImage(src, file, tag, push, env, opt)
 	if err != nil {
 		return errors.Wrapf(err, "%s build %s", r.Name(), src)
 	}
@@ -122,7 +122,7 @@ func buildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file
 }
 
 // transferAndBuildImage transfers and builds a single image
-func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool) error {
+func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool, env []string, opt []string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -163,7 +163,7 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 	if file != "" && !path.IsAbs(file) {
 		file = path.Join(context, file)
 	}
-	err = r.BuildImage(context, file, tag, push)
+	err = r.BuildImage(context, file, tag, push, env, opt)
 	if err != nil {
 		return errors.Wrapf(err, "%s build %s", r.Name(), dst)
 	}
