@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -47,6 +48,9 @@ func BuildImage(path string, file string, tag string, push bool, profiles []*con
 
 	succeeded := []string{}
 	failed := []string{}
+
+	u, err := url.Parse(path)
+	remote := err == nil && u.Scheme != ""
 
 	for _, p := range profiles { // building images to all running profiles
 		pName := p.Name // capture the loop variable
@@ -80,7 +84,11 @@ func BuildImage(path string, file string, tag string, push bool, profiles []*con
 				if err != nil {
 					return err
 				}
-				err = transferAndBuildImage(cr, c.KubernetesConfig, path, file, tag, push)
+				if remote {
+					err = buildImage(cr, c.KubernetesConfig, path, file, tag, push)
+				} else {
+					err = transferAndBuildImage(cr, c.KubernetesConfig, path, file, tag, push)
+				}
 				if err != nil {
 					failed = append(failed, m)
 					klog.Warningf("Failed to build image for profile %s. make sure the profile is running. %v", pName, err)
@@ -93,6 +101,23 @@ func BuildImage(path string, file string, tag string, push bool, profiles []*con
 
 	klog.Infof("succeeded building to: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed building to: %s", strings.Join(failed, " "))
+	return nil
+}
+
+// buildImage builds a single image
+func buildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool) error {
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+	klog.Infof("Building image from url: %s", src)
+
+	err = r.BuildImage(src, file, tag, push)
+	if err != nil {
+		return errors.Wrapf(err, "%s build %s", r.Name(), src)
+	}
+
+	klog.Infof("Built %s from %s", tag, src)
 	return nil
 }
 

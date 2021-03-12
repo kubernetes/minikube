@@ -19,6 +19,7 @@ package cmd
 import (
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -93,7 +94,7 @@ var buildImageCmd = &cobra.Command{
 	Example: `minikube image build .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
-			exit.Message(reason.Usage, "Please provide a path to build")
+			exit.Message(reason.Usage, "Please provide a path or url to build")
 		}
 		// Build images into container runtime
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
@@ -102,13 +103,19 @@ var buildImageCmd = &cobra.Command{
 		}
 		img := args[0]
 		var tmp string
-		info, err := os.Stat(img)
-		if err == nil && info.IsDir() {
-			tmp, err := createTar(img)
-			if err != nil {
-				exit.Error(reason.GuestImageBuild, "Failed to build image", err)
+		// If it is an URL, pass it as-is
+		u, err := url.Parse(img)
+		if err == nil && u.Scheme == "" && u.Host == "" {
+			// If it's a directory, tar it
+			info, err := os.Stat(img)
+			if err == nil && info.IsDir() {
+				tmp, err := createTar(img)
+				if err != nil {
+					exit.Error(reason.GuestImageBuild, "Failed to build image", err)
+				}
+				img = tmp
 			}
-			img = tmp
+			// Otherwise, assume it's a tar
 		}
 		if err := machine.BuildImage(img, dockerFile, tag, push, []*config.Profile{profile}); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)

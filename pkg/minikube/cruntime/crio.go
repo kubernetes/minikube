@@ -179,8 +179,8 @@ func (r *CRIO) LoadImage(path string) error {
 }
 
 // BuildImage builds an image into this runtime
-func (r *CRIO) BuildImage(dir string, file string, tag string, push bool) error {
-	klog.Infof("Building image: %s", dir)
+func (r *CRIO) BuildImage(src string, file string, tag string, push bool) error {
+	klog.Infof("Building image: %s", src)
 	args := []string{"podman", "build"}
 	if file != "" {
 		args = append(args, "-f", file)
@@ -188,7 +188,7 @@ func (r *CRIO) BuildImage(dir string, file string, tag string, push bool) error 
 	if tag != "" {
 		args = append(args, "-t", tag)
 	}
-	args = append(args, dir)
+	args = append(args, src)
 	c := exec.Command("sudo", args...)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
