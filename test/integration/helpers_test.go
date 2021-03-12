@@ -86,7 +86,7 @@ func (rr RunResult) Output() string {
 	return sb.String()
 }
 
-// Run is a test helper to log a command being executed \_(ツ)_/¯
+// Run is a test helper to log a command being executed ¯\_(ツ)_/¯
 func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 	t.Helper()
 	rr := &RunResult{Args: cmd.Args}

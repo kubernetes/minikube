@@ -78,8 +78,8 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 	return err
 }
 
-// Delete stops and deletes the given node from the given cluster
-func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
+// drainNode drains then deletes (removes) node from cluster.
+func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 	n, index, err := Retrieve(cc, name)
 	if err != nil {
 		return n, errors.Wrap(err, "retrieve")
@@ -102,13 +102,15 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, err
 	}
 
-	// kubectl drain
+	// kubectl drain with extra options to prevent ending up stuck in the process
+	// ref: https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#drain
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
-	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "drain", m)
+	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "drain", m,
+		"--force", "--grace-period=1", "--disable-eviction", "--ignore-daemonsets", "--delete-emptydir-data")
 	if _, err := runner.RunCmd(cmd); err != nil {
-		klog.Warningf("unable to scale coredns replicas to 1: %v", err)
+		klog.Warningf("unable to drain node %q: %v", name, err)
 	} else {
-		klog.Infof("successfully scaled coredns replicas to 1")
+		klog.Infof("successfully drained node %q", name)
 	}
 
 	// kubectl delete
@@ -122,13 +124,29 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, err
 	}
 
+	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
+	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+}
+
+// Delete calls drainNode to remove node from cluster and deletes the host.
+func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
+	n, err := drainNode(cc, name)
+	if err != nil {
+		return n, err
+	}
+
+	m := config.MachineName(cc, *n)
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return n, err
+	}
+
 	err = machine.DeleteHost(api, m)
 	if err != nil {
 		return n, err
 	}
 
-	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return n, nil
 }
 
 // Retrieve finds the node by name in the given cluster

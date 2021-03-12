@@ -1088,6 +1088,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		validateListenAddress(viper.GetString(listenAddress))
 	}
 
+	if cmd.Flags().Changed(imageRepository) {
+		viper.Set(imageRepository, validateImageRepository(viper.GetString(imageRepository)))
+	}
+
 	if cmd.Flags().Changed(containerRuntime) {
 		runtime := strings.ToLower(viper.GetString(containerRuntime))
 
@@ -1179,7 +1183,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 func validateChangedMemoryFlags(drvName string) {
 	if driver.IsKIC(drvName) && !oci.HasMemoryCgroup() {
 		out.WarningT("Your cgroup does not allow setting memory.")
-		out.Infof("More information: https://docs.doInfo.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
+		out.Infof("More information: https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
 	}
 	if !driver.HasResourceLimits(drvName) {
 		out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
@@ -1206,6 +1210,30 @@ func validateRegistryMirror() {
 
 		}
 	}
+}
+
+// This function validates if the --image-repository
+// args match the format of registry.cn-hangzhou.aliyuncs.com/google_containers
+func validateImageRepository(imagRepo string) (vaildImageRepo string) {
+
+	if strings.ToLower(imagRepo) == "auto" {
+		vaildImageRepo = "auto"
+	}
+	URL, err := url.Parse(imagRepo)
+	if err != nil {
+		klog.Errorln("Error Parsing URL: ", err)
+	}
+	// tips when imagRepo ended with a trailing /.
+	if strings.HasSuffix(imagRepo, "/") {
+		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
+	}
+	// tips when imageRepo started with scheme.
+	if URL.Scheme != "" {
+		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, it will be as a domian, removed automatically", out.V{"scheme": URL.Scheme})
+	}
+
+	vaildImageRepo = URL.Hostname() + strings.TrimSuffix(URL.Path, "/")
+	return
 }
 
 // This function validates if the --listen-address
