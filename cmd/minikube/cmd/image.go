@@ -65,16 +65,12 @@ var loadImageCmd = &cobra.Command{
 	},
 }
 
-func createTar(dir string) (string, error) {
+func saveFile(r io.Reader) (string, error) {
 	tmp, err := ioutil.TempFile("", "build.*.tar")
 	if err != nil {
 		return "", err
 	}
-	tar, err := docker.CreateTarStream(dir, dockerFile)
-	if err != nil {
-		return "", err
-	}
-	_, err = io.Copy(tmp, tar)
+	_, err = io.Copy(tmp, r)
 	if err != nil {
 		return "", err
 	}
@@ -82,8 +78,15 @@ func createTar(dir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	return tmp.Name(), nil
+}
+
+func createTar(dir string) (string, error) {
+	tar, err := docker.CreateTarStream(dir, dockerFile)
+	if err != nil {
+		return "", err
+	}
+	return saveFile(tar)
 }
 
 // buildImageCmd represents the image build command
@@ -103,19 +106,27 @@ var buildImageCmd = &cobra.Command{
 		}
 		img := args[0]
 		var tmp string
-		// If it is an URL, pass it as-is
-		u, err := url.Parse(img)
-		if err == nil && u.Scheme == "" && u.Host == "" {
-			// If it's a directory, tar it
-			info, err := os.Stat(img)
-			if err == nil && info.IsDir() {
-				tmp, err := createTar(img)
-				if err != nil {
-					exit.Error(reason.GuestImageBuild, "Failed to build image", err)
-				}
-				img = tmp
+		if img == "-" {
+			tmp, err = saveFile(os.Stdin)
+			if err != nil {
+				exit.Error(reason.GuestImageBuild, "Failed to save stdin", err)
 			}
-			// Otherwise, assume it's a tar
+			img = tmp
+		} else {
+			// If it is an URL, pass it as-is
+			u, err := url.Parse(img)
+			if err == nil && u.Scheme == "" && u.Host == "" {
+				// If it's a directory, tar it
+				info, err := os.Stat(img)
+				if err == nil && info.IsDir() {
+					tmp, err := createTar(img)
+					if err != nil {
+						exit.Error(reason.GuestImageBuild, "Failed to save dir", err)
+					}
+					img = tmp
+				}
+				// Otherwise, assume it's a tar
+			}
 		}
 		if err := machine.BuildImage(img, dockerFile, tag, push, []*config.Profile{profile}); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
