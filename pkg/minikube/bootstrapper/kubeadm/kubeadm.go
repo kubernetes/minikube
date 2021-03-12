@@ -232,6 +232,13 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "clearing stale configs")
 	}
 
+	// for runtimes that need cni
+	if cfg.KubernetesConfig.ContainerRuntime != oci.Docker {
+		if err := k.removeCommonCNIConfigs(); err != nil {
+			errors.Wrap(err, "clear common CNI")
+		}
+	}
+
 	conf := bsutil.KubeadmYamlPath
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
@@ -259,6 +266,13 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	kw.Close()
 	wg.Wait()
+	// for runtimes that need cni
+	if cfg.KubernetesConfig.ContainerRuntime != oci.Docker {
+		if err := k.removeCommonCNIConfigs(); err != nil {
+			errors.Wrap(err, "clear common CNI")
+		}
+	}
+
 	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
@@ -288,7 +302,32 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}()
 
 	wg.Wait()
+	// for runtimes that need cni
+	if cfg.KubernetesConfig.ContainerRuntime != oci.Docker {
+		if err := k.restoreCommonCNIConfigs(); err != nil {
+			errors.Wrap(err, "restore common CNI")
+		}
+	}
 	return nil
+}
+
+// hack based on https://github.com/kubernetes/minikube/issues/10788#issuecomment-797289498
+// Currently If there are multiple CNI configuration files in the directory,
+// the kubelet uses the configuration file that comes first by name in lexicographic order.
+// in this hack we will move the cni files out of reach of kubelet and bring it back afterwards
+func (k *Bootstrapper) removeCommonCNIConfigs() error {
+	c := exec.Command("sudo", "mv", "/etc/cni/net.d/", "/tmp/net.d")
+	rr, err := k.c.RunCmd(c)
+	klog.Infof("Clearing common CNI configs before kubeadm init:", rr.Command())
+	return err
+}
+
+// hack based on https://github.com/kubernetes/minikube/issues/10788#issuecomment-797289498
+func (k *Bootstrapper) restoreCommonCNIConfigs() error {
+	c := exec.Command("sudo", "mv", "/tmp/net.d", "/etc/cni/net.d/")
+	rr, err := k.c.RunCmd(c)
+	klog.InfoS("Restoring common CNI configs after kubeadm init", rr.Command())
+	return err
 }
 
 // outputKubeadmInitSteps streams the pipe and outputs the current step
