@@ -173,8 +173,9 @@ var (
 		ID:       "RSRC_DOCKER_STORAGE",
 		ExitCode: ExInsufficientStorage,
 		Advice: `Try one or more of the following to free up space on the device:
-	
-			1. Run "docker system prune" to remove unused Docker data (optionally with "-a")
+			1. Remove unused Docker data (optionally with "-a") 
+			Run:
+				$ docker system prune --filter="label!=created_by.minikube.sigs.k8s.io=true"
 			2. Increase the storage allocated to Docker for Desktop by clicking on:
 				Docker icon > Preferences > Resources > Disk Image Size
 			3. Run "minikube ssh -- docker system prune" if using the Docker container runtime`,

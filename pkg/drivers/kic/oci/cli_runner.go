@@ -145,11 +145,17 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 			warnLock.Unlock()
 
 			if !ok {
-				out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
+				out.WarningT(`Executing this command "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
 				// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
 				if cmd.Args[0] != "sudo" {
-					out.ErrT(style.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+					out.ErrT(style.Tip, `Restarting or pruning the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+					out.Infof(`To prune run: $ docker system prune --filter="label!=created_by.minikube.sigs.k8s.io=true"`)
+					if runtime.GOOS != "linux" {
+						out.Infof(`To restart: Click Docker 🐳 in the system tray and then click "Restart Docker"`, out.V{"icon": style.Docker})
+					}
+
 				}
+
 			}
 		}
 

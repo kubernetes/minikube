@@ -15,7 +15,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 - Cross platform (linux, macOS, Windows)
 - No hypervisor required when run on Linux
-- Experimental support for [WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install) on Windows 10
+- Support for [WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install) on Windows 10
 
 ## Known Issues
 
@@ -34,6 +34,14 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 ## Troubleshooting
 
 [comment]: <> (this title is used in the docs links, don't change)
+
+### Prune docker to avoid performance downgrade in minikube
+ the following command will prune all on unused/stopped containers, volumes on your docker.
+ ```shell
+ docker system prune --filter="label!=created_by.minikube.sigs.k8s.io=true"
+   ```
+After pruning on MacOS or Windows consider restaring docker (Click Docker 🐳 in the system tray and then click "Restart Docker")
+
 
 ### Verify Docker container type is Linux
 
