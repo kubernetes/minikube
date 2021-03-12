@@ -76,7 +76,7 @@ var loadImageCmd = &cobra.Command{
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Please provide an image in your local daemon to load into minikube via <minikube image load IMAGE_NAME>")
 		}
-		// Cache and load images into docker daemon
+		// Cache and load images into container runtime
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
@@ -211,7 +211,7 @@ var buildImageCmd = &cobra.Command{
 		if len(args) < 1 {
 			exit.Message(reason.Usage, "Please provide a path to build")
 		}
-		// Cache and load images into docker daemon
+		// Build images into container runtime
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
