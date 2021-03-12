@@ -291,8 +291,8 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "olm", map[string]string{
 		"OLM":                        "operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607",
-		"UpstreamCommunityOperators": "operatorhubio/catalog:latest",
-		"ConfigMapServer":            "operator-framework/configmap-operator-registry:latest",
+		"UpstreamCommunityOperators": "operatorhubio/catalog@sha256:2bc080c7c53208144b40204240309067bf7f9ff7e6846181a90fd1d42b946489",
+		"ConfigMapServer":            "operator-framework/configmap-operator-registry:v1.16.1@sha256:1560e24ee7c45c8979caacd5d006c9572035bcc1804c7fb59b29cbc0f958157e",
 	}, map[string]string{
 		"OLM":                        "quay.io",
 		"UpstreamCommunityOperators": "quay.io",
