@@ -746,6 +746,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		return
 	}
 
+	r := reason.MatchKnownIssue(reason.Kind{}, st.Error, runtime.GOOS)
+	if r.ID != "" {
+		exitIfNotForced(*r, st.Error.Error())
+	}
+
 	if !st.Installed {
 		exit.Message(reason.Kind{
 			ID:       fmt.Sprintf("PROVIDER_%s_NOT_FOUND", strings.ToUpper(name)),
@@ -1079,6 +1084,14 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		validateChangedMemoryFlags(drvName)
 	}
 
+	if cmd.Flags().Changed(listenAddress) {
+		validateListenAddress(viper.GetString(listenAddress))
+	}
+
+	if cmd.Flags().Changed(imageRepository) {
+		viper.Set(imageRepository, validateImageRepository(viper.GetString(imageRepository)))
+	}
+
 	if cmd.Flags().Changed(containerRuntime) {
 		runtime := strings.ToLower(viper.GetString(containerRuntime))
 
@@ -1170,7 +1183,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 func validateChangedMemoryFlags(drvName string) {
 	if driver.IsKIC(drvName) && !oci.HasMemoryCgroup() {
 		out.WarningT("Your cgroup does not allow setting memory.")
-		out.Infof("More information: https://docs.doInfo.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
+		out.Infof("More information: https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities")
 	}
 	if !driver.HasResourceLimits(drvName) {
 		out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
@@ -1199,6 +1212,38 @@ func validateRegistryMirror() {
 	}
 }
 
+// This function validates if the --image-repository
+// args match the format of registry.cn-hangzhou.aliyuncs.com/google_containers
+func validateImageRepository(imagRepo string) (vaildImageRepo string) {
+
+	if strings.ToLower(imagRepo) == "auto" {
+		vaildImageRepo = "auto"
+	}
+	URL, err := url.Parse(imagRepo)
+	if err != nil {
+		klog.Errorln("Error Parsing URL: ", err)
+	}
+	// tips when imagRepo ended with a trailing /.
+	if strings.HasSuffix(imagRepo, "/") {
+		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
+	}
+	// tips when imageRepo started with scheme.
+	if URL.Scheme != "" {
+		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, it will be as a domian, removed automatically", out.V{"scheme": URL.Scheme})
+	}
+
+	vaildImageRepo = URL.Hostname() + strings.TrimSuffix(URL.Path, "/")
+	return
+}
+
+// This function validates if the --listen-address
+// match the format 0.0.0.0
+func validateListenAddress(listenAddr string) {
+	if len(listenAddr) > 0 && net.ParseIP(listenAddr) == nil {
+		exit.Message(reason.Usage, "Sorry, the IP provided with the --listen-address flag is invalid: {{.listenAddr}}.", out.V{"listenAddr": listenAddr})
+	}
+}
+
 // This function validates that the --insecure-registry follows one of the following formats:
 // "<ip>[:<port>]" "<hostname>[:<port>]" "<network>/<netmask>"
 func validateInsecureRegistry() {
@@ -1209,7 +1254,7 @@ func validateInsecureRegistry() {
 				i := strings.Index(addr, "//")
 				addr = addr[i+2:]
 			} else if strings.Contains(addr, "://") || strings.HasSuffix(addr, ":") {
-				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
 			}
 			hostnameOrIP, port, err := net.SplitHostPort(addr)
 			if err != nil {
@@ -1221,15 +1266,15 @@ func validateInsecureRegistry() {
 			}
 			if !hostRe.MatchString(hostnameOrIP) && net.ParseIP(hostnameOrIP) == nil {
 				//		fmt.Printf("This is not hostname or ip %s", hostnameOrIP)
-				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
+				exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
 			}
 			if port != "" {
 				v, err := strconv.Atoi(port)
 				if err != nil {
-					exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
+					exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
 				}
 				if v < 0 || v > 65535 {
-					exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
+					exit.Message(reason.Usage, "Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: <ip>[:<port>], <hostname>[:<port>] or <network>/<netmask>", out.V{"addr": addr})
 				}
 			}
 		}

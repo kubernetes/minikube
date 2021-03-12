@@ -38,20 +38,17 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/minikube/storageclass"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// defaultStorageClassProvisioner is the name of the default storage class provisioner
-const defaultStorageClassProvisioner = "standard"
+// Force is used to override checks for addons
+var Force bool = false
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
@@ -159,6 +156,9 @@ Alternatively to use this addon you can use a vm-based driver:
 
 To track the update on this work in progress feature please check:
 https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
+			} else if driver.BareMetal(cc.Driver) {
+				out.WarningT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.`,
+					out.V{"driver_name": cc.Driver, "addon_name": name})
 			}
 		}
 	}
@@ -174,7 +174,6 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		}
 	}
 
-	// TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "machine client")
@@ -279,73 +278,8 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	return retry.Expo(apply, 250*time.Millisecond, 2*time.Minute)
 }
 
-// enableOrDisableStorageClasses enables or disables storage classes
-func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val string) error {
-	klog.Infof("enableOrDisableStorageClasses %s=%v on %q", name, val, cc.Name)
-	enable, err := strconv.ParseBool(val)
-	if err != nil {
-		return errors.Wrap(err, "Error parsing boolean")
-	}
-
-	class := defaultStorageClassProvisioner
-	if name == "storage-provisioner-gluster" {
-		class = "glusterfile"
-	}
-
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		return errors.Wrap(err, "machine client")
-	}
-	defer api.Close()
-
-	cp, err := config.PrimaryControlPlane(cc)
-	if err != nil {
-		return errors.Wrap(err, "getting control plane")
-	}
-	if !machine.IsRunning(api, config.MachineName(*cc, cp)) {
-		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", config.MachineName(*cc, cp), name, val)
-		return EnableOrDisableAddon(cc, name, val)
-	}
-
-	storagev1, err := storageclass.GetStoragev1(cc.Name)
-	if err != nil {
-		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
-	}
-
-	if enable {
-		// Only StorageClass for 'name' should be marked as default
-		err = storageclass.SetDefaultStorageClass(storagev1, class)
-		if err != nil {
-			return errors.Wrapf(err, "Error making %s the default storage class", class)
-		}
-	} else {
-		// Unset the StorageClass as default
-		err := storageclass.DisableDefaultStorageClass(storagev1, class)
-		if err != nil {
-			return errors.Wrapf(err, "Error disabling %s as the default storage class", class)
-		}
-	}
-
-	return EnableOrDisableAddon(cc, name, val)
-}
-
 func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
 	return verifyAddonStatusInternal(cc, name, val, "kube-system")
-}
-
-func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
-	enable, err := strconv.ParseBool(val)
-	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
-	}
-	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
-
-	if enable && err == nil {
-		out.Styled(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
-		out.Styled(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
-	}
-
-	return err
 }
 
 func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string) error {
@@ -443,48 +377,4 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 			klog.Errorf("store failed: %v", err)
 		}
 	}
-}
-
-// enableOrDisableAutoPause enables the service after the config was copied by generic enble
-func enableOrDisableAutoPause(cc *config.ClusterConfig, name string, val string) error {
-	enable, err := strconv.ParseBool(val)
-	if err != nil {
-		return errors.Wrapf(err, "parsing bool: %s", name)
-	}
-	out.Infof("auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.")
-	out.Infof("https://github.com/kubernetes/minikube/labels/co%2Fauto-pause")
-
-	if !driver.IsKIC(cc.Driver) || runtime.GOARCH != "amd64" {
-		exit.Message(reason.Usage, `auto-pause currently is only supported on docker driver/docker runtime/amd64. Track progress of others here: https://github.com/kubernetes/minikube/issues/10601`)
-	}
-	co := mustload.Running(cc.Name)
-	if enable {
-		if err := sysinit.New(co.CP.Runner).EnableNow("auto-pause"); err != nil {
-			klog.ErrorS(err, "failed to enable", "service", "auto-pause")
-		}
-	}
-
-	port := co.CP.Port // api server port
-	if enable {        // if enable then need to calculate the forwarded port
-		port = constants.AutoPauseProxyPort
-		if driver.NeedsPortForward(cc.Driver) {
-			port, err = oci.ForwardedPort(cc.Driver, cc.Name, port)
-			if err != nil {
-				klog.ErrorS(err, "failed to get forwarded port for", "auto-pause port", port)
-			}
-		}
-	}
-
-	updated, err := kubeconfig.UpdateEndpoint(cc.Name, co.CP.Hostname, port, kubeconfig.PathFromEnv(), kubeconfig.NewExtension())
-	if err != nil {
-		klog.ErrorS(err, "failed to update kubeconfig", "auto-pause proxy endpoint")
-		return err
-	}
-	if updated {
-		klog.Infof("%s context has been updated to point to auto-pause proxy %s:%s", cc.Name, co.CP.Hostname, co.CP.Port)
-	} else {
-		klog.Info("no need to update kube-context for auto-pause proxy")
-	}
-
-	return nil
 }

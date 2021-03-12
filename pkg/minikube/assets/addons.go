@@ -546,9 +546,9 @@ var Addons = map[string]*Addon{
 			"volume-snapshot-controller-deployment.yaml",
 			"0640"),
 	}, false, "volumesnapshots", map[string]string{
-		"SnapshotController": "k8s-staging-csi/snapshot-controller:v2.0.0-rc2@sha256:9a44a869d23e42f5d7954c9a5c9ec1a76a0a5d6f23fce5e68e1232a017d3d38c",
+		"SnapshotController": "sig-storage/snapshot-controller:v4.0.0",
 	}, map[string]string{
-		"SnapshotController": "gcr.io",
+		"SnapshotController": "k8s.gcr.io",
 	}),
 	"csi-hostpath-driver": NewAddon([]*BinAsset{
 		MustBinAsset(

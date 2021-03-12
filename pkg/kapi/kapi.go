@@ -211,3 +211,26 @@ func IsRetryableAPIError(err error) bool {
 func KubectlBinaryPath(version string) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }
+
+// ScaleDeployment sets the number of replicas of deployment in namespace and context
+func ScaleDeployment(context, namespace, deploymentName string, replicas int) error {
+	client, err := Client(context)
+	if err != nil {
+		return fmt.Errorf("client: %v", err)
+	}
+
+	scale, err := client.AppsV1().Deployments(namespace).GetScale(deploymentName, meta.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("deployment scale: %v", err)
+	}
+	if scale.Spec.Replicas != int32(replicas) {
+		scale.Spec.Replicas = int32(replicas)
+		_, err = client.AppsV1().Deployments(namespace).UpdateScale(deploymentName, scale)
+		if err != nil {
+			return fmt.Errorf("deployment rescale: %v", err)
+		}
+	}
+	klog.Infof("deployment %q in namespace %q and context %q rescaled to %d", deploymentName, namespace, context, replicas)
+
+	return nil
+}

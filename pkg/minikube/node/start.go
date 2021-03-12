@@ -32,7 +32,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -123,6 +125,11 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err := kubeconfig.Update(kcs); err != nil {
 			return nil, errors.Wrap(err, "Failed kubeconfig update")
 		}
+
+		// scale down CoreDNS from default 2 to 1 replica
+		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
+			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+		}
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
@@ -157,15 +164,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// enable addons, both old and new!
 	if starter.ExistingAddons != nil {
+		if viper.GetBool("force") {
+			addons.Force = true
+		}
 		wg.Add(1)
 		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 	}
-
-	wg.Add(1)
-	go func() {
-		rescaleCoreDNS(starter.Cfg, starter.Runner)
-		wg.Done()
-	}()
 
 	if apiServer {
 		// special ops for none , like change minikube directory.
@@ -180,13 +184,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "generating join token")
-		}
-
-		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
-			return nil, errors.Wrap(err, "joining cluster")
+		if err := joinCluster(starter, cpBs, bs); err != nil {
+			return nil, errors.Wrap(err, "joining cp")
 		}
 
 		cnm, err := cni.New(*starter.Cfg)
@@ -198,8 +197,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "cni apply")
 		}
 	}
-
-	klog.Infof("Will wait %s for node up to ", viper.GetDuration(waitTimeout))
+	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}
@@ -209,6 +207,44 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// joinCluster adds new or prepares and then adds existing node to the cluster.
+func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrapper.Bootstrapper) error {
+	start := time.Now()
+	klog.Infof("JoinCluster: %+v", starter.Cfg)
+	defer func() {
+		klog.Infof("JoinCluster complete in %s", time.Since(start))
+	}()
+
+	joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
+	if err != nil {
+		return fmt.Errorf("error generating join token: %w", err)
+	}
+
+	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
+	// You must delete the existing Node or change the name of this new joining Node"
+	if starter.PreExists {
+		klog.Infof("removing existing worker node %q before attempting to rejoin cluster: %+v", starter.Node.Name, starter.Node)
+		if _, err := drainNode(*starter.Cfg, starter.Node.Name); err != nil {
+			klog.Errorf("error removing existing worker node before rejoining cluster, will continue anyway: %v", err)
+		}
+		klog.Infof("successfully removed existing worker node %q from cluster: %+v", starter.Node.Name, starter.Node)
+	}
+
+	join := func() error {
+		klog.Infof("trying to join worker node %q to cluster: %+v", starter.Node.Name, starter.Node)
+		if err := bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
+			klog.Errorf("worker node failed to join cluster, will retry: %v", err)
+			return err
+		}
+		return nil
+	}
+	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
+		return fmt.Errorf("error joining worker node to cluster: %w", err)
+	}
+
+	return nil
 }
 
 // Provision provisions the machine/container for the node
@@ -289,6 +325,12 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
 
+	// Wait for the CRI to actually work, before returning
+	err = waitForCRIVersion(runner, cr.SocketPath(), 60, 10)
+	if err != nil {
+		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
+	}
+
 	return cr
 }
 
@@ -326,6 +368,31 @@ func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, in
 		return nil
 	}
 	if err := retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
+
+	if socket == "" || socket == "/var/run/dockershim.sock" {
+		return nil
+	}
+
+	klog.Infof("Will wait %ds for crictl version", wait)
+
+	chkInfo := func() error {
+		args := []string{"crictl", "version"}
+		cmd := exec.Command("sudo", args...)
+		rr, err := runner.RunCmd(cmd)
+		if err != nil && !os.IsNotExist(err) {
+			return &retry.RetriableError{Err: err}
+		}
+		klog.Info(rr.Stdout.String())
+		return nil
+	}
+	if err := retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
 		return err
 	}
 
@@ -587,17 +654,5 @@ func prepareNone() {
 
 	if err := util.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
 		exit.Message(reason.HostHomeChown, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": localpath.MiniPath(), "error": err})
-	}
-}
-
-// rescaleCoreDNS attempts to reduce coredns replicas from 2 to 1 to improve CPU overhead
-// no worries if this doesn't work
-func rescaleCoreDNS(cc *config.ClusterConfig, runner command.Runner) {
-	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
-	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "scale", "deployment", "--replicas=1", "coredns", "-n=kube-system")
-	if _, err := runner.RunCmd(cmd); err != nil {
-		klog.Warningf("unable to scale coredns replicas to 1: %v", err)
-	} else {
-		klog.Infof("successfully scaled coredns replicas to 1")
 	}
 }

@@ -105,6 +105,8 @@ func TestFunctional(t *testing.T) {
 		}
 	})
 
+	defer cleanupUnwantedImages(ctx, t, profile)
+
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
 		tests := []struct {
@@ -143,6 +145,31 @@ func TestFunctional(t *testing.T) {
 			})
 		}
 	})
+
+}
+
+func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
+	_, err := exec.LookPath(oci.Docker)
+	if err != nil {
+		t.Skipf("docker is not installed, cannot delete docker images")
+	} else {
+		t.Run("delete busybox image", func(t *testing.T) {
+			newImage := fmt.Sprintf("busybox:%s", profile)
+			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
+			if err != nil {
+				t.Logf("failed to remove image busybox from docker images. args %q: %v", rr.Command(), err)
+			}
+		})
+
+		t.Run("delete minikube cached images", func(t *testing.T) {
+			img := "minikube-local-cache-test:" + profile
+			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", img))
+			if err != nil {
+				t.Logf("failed to remove image minikube local cache test images from docker. args %q: %v", rr.Command(), err)
+			}
+		})
+	}
+
 }
 
 // validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
@@ -209,11 +236,16 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Output(), newImage) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
+
 }
 
 // check functionality of minikube after evaling docker-env
 // TODO: Add validatePodmanEnv for crio runtime: #10231
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("none driver does not support docker-env")
+	}
+
 	if cr := ContainerRuntime(); cr != "docker" {
 		t.Skipf("only validate docker env with docker container runtime, currently testing %s", cr)
 	}
@@ -667,6 +699,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 
 			img := "minikube-local-cache-test:" + profile
+
 			_, err = Run(t, exec.CommandContext(ctx, "docker", "build", "-t", img, dname))
 			if err != nil {
 				t.Skipf("failed to build docker image, skipping local test: %v", err)

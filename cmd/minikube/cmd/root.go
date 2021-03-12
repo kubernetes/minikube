@@ -35,7 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -80,7 +80,7 @@ func Execute() {
 	defer audit.Log(time.Now())
 
 	// Check whether this is a windows binary (.exe) running inisde WSL.
-	if runtime.GOOS == "windows" && driver.IsMicrosoftWSL() {
+	if runtime.GOOS == "windows" && detect.IsMicrosoftWSL() {
 		var found = false
 		for _, a := range os.Args {
 			if a == "--force" {

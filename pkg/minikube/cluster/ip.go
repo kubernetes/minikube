@@ -47,11 +47,17 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		}
 		return net.ParseIP(ip), nil
 	case driver.KVM2:
-		ip, err := host.Driver.GetIP()
+		// `host.Driver.GetIP` returns dhcp lease info for a given network(=`virsh net-dhcp-leases minikube-net`)
+		vmIPString, err := host.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
-		return net.ParseIP(ip), nil
+		vmIP := net.ParseIP(vmIPString).To4()
+		if vmIP == nil {
+			// We need the network ip address for minikube-net. It's the start address of the returned subnet.
+			return []byte{}, errors.Wrap(err, "Error converting VM/Host IP address to IPv4 address")
+		}
+		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	case driver.HyperV:
 		v := reflect.ValueOf(host.Driver).Elem()
 		var hypervVirtualSwitch string

@@ -42,6 +42,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -102,8 +103,14 @@ func (d *Driver) Create() error {
 		params.IP = ip.String()
 	}
 	drv := d.DriverName()
+
 	listAddr := oci.DefaultBindIPV4
-	if oci.IsExternalDaemonHost(drv) {
+	if d.NodeConfig.ListenAddress != "" && d.NodeConfig.ListenAddress != listAddr {
+		out.Step(style.Tip, "minikube is not meant for production use. You are opening non-local traffic")
+		out.WarningT("Listening to {{.listenAddr}}. This is not recommended and can cause a security vulnerability. Use at your own risk",
+			out.V{"listenAddr": d.NodeConfig.ListenAddress})
+		listAddr = d.NodeConfig.ListenAddress
+	} else if oci.IsExternalDaemonHost(drv) {
 		out.WarningT("Listening to 0.0.0.0 on external docker host {{.host}}. Please be advised",
 			out.V{"host": oci.DaemonHost(drv)})
 		listAddr = "0.0.0.0"

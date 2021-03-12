@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 18
-VERSION_BUILD ?= 0
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.18.0
+ISO_VERSION ?= v1.18.0-1615350772-10704
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -32,7 +32,11 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.15.8
+GO_VERSION ?= 1.16.0
+
+# replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
+KVM_GO_VERSION ?= $(GO_VERSION:.0=)
+
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2020.02.10
@@ -47,13 +51,10 @@ HYPERKIT_BUILD_IMAGE 	?= neilotoole/xcgo:go1.15
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
 #
-# TODO: See https://github.com/kubernetes/minikube/issues/10276
-#BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
-BUILD_IMAGE 	?= golang:1.16.0-buster
-#
+BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
-KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
+KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(KVM_GO_VERSION)
 
 KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
@@ -774,7 +775,7 @@ out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.%.rpm: out/docker-machine-driver
 
 .PHONY: kvm-image
 kvm-image: installers/linux/kvm/Dockerfile  ## Convenient alias to build the docker container
-	docker build --build-arg "GO_VERSION=$(GO_VERSION)" -t $(KVM_BUILD_IMAGE) -f $< $(dir $<)
+	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 

@@ -370,7 +370,7 @@
 	"Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path": "",
 	"Sorry, completion support is not yet implemented for {{.name}}": "",
 	"Sorry, please set the --output flag to one of the following valid options: [text,json]": "",
-	"Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formtas are: \u003cip\u003e:\u003cport\u003e, \u003chostname\u003e:\u003cport\u003e or \u003cnetwork\u003e/\u003cnetmask\u003e": "",
+	"Sorry, the address provided with the --insecure-registry flag is invalid: {{.addr}}. Expected formats are: \u003cip\u003e:\u003cport\u003e, \u003chostname\u003e:\u003cport\u003e or \u003cnetwork\u003e/\u003cnetmask\u003e": "",
 	"Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config": "",
 	"Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}": "",
 	"Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'": "",
