@@ -307,7 +307,7 @@ then
     EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
 fi
 
-${SUDO_PREFIX}${E2E_BIN} \
+timeout 2m ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=${TIMEOUT} -test.v \
   ${EXTRA_TEST_ARGS} \
@@ -358,6 +358,11 @@ fi
 echo ">> Installing gopogh"
 curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-${OS_ARCH}"
 sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
+
+#temp
+echo $PATH
+ls /usr/local/bin
+
 
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
