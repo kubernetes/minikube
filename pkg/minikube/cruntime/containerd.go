@@ -344,7 +344,8 @@ func (r *Containerd) BuildImage(src string, file string, tag string, push bool, 
 	}
 	c := exec.Command("sudo", args...)
 	e := os.Environ()
-	c.Env = append(e, env...)
+	e = append(e, env...)
+	c.Env = e
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {

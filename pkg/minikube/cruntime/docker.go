@@ -189,7 +189,8 @@ func (r *Docker) BuildImage(src string, file string, tag string, push bool, env 
 	}
 	c := exec.Command("docker", args...)
 	e := os.Environ()
-	c.Env = append(e, env...)
+	e = append(e, env...)
+	c.Env = e
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
