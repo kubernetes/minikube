@@ -279,6 +279,20 @@ func (r *Containerd) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)
 }
 
+func gitClone(cr CommandRunner, src string) (string, error) {
+	// clone to a temporary directory
+	rr, err := cr.RunCmd(exec.Command("mktemp", "-d"))
+	if err != nil {
+		return "", err
+	}
+	tmp := strings.TrimSpace(rr.Stdout.String())
+	cmd := exec.Command("git", "clone", src, tmp)
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return "", err
+	}
+	return tmp, nil
+}
+
 func downloadRemote(cr CommandRunner, src string) (string, error) {
 	u, err := url.Parse(src)
 	if err != nil {
@@ -288,7 +302,7 @@ func downloadRemote(cr CommandRunner, src string) (string, error) {
 		return src, nil
 	}
 	if u.Scheme == "git" {
-		return "", fmt.Errorf("%s url not supported yet", u)
+		return gitClone(cr, src)
 	}
 
 	// download to a temporary file
