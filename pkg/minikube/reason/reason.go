@@ -72,7 +72,12 @@ func (k *Kind) IssueURLs() []string {
 
 // Sections are ordered roughly by stack dependencies
 var (
-	Usage       = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
+	Usage                 = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
+	UsageNoProfileRunning = Kind{ID: "MK_USAGE_NO_PROFILE", ExitCode: ExProgramUsage,
+		Advice: `You can create one using 'minikube start'.
+		`,
+		Style: style.Caching,
+	}
 	Interrupted = Kind{ID: "MK_INTERRUPTED", ExitCode: ExProgramConflict}
 
 	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
