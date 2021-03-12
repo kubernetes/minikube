@@ -62,6 +62,7 @@ const (
 	hypervUseExternalSwitch = "hyperv-use-external-switch"
 	hypervExternalAdapter   = "hyperv-external-adapter"
 	kvmNetwork              = "kvm-network"
+	kvmPrivateNetwork       = "kvm-private-network"
 	kvmQemuURI              = "kvm-qemu-uri"
 	kvmGPU                  = "kvm-gpu"
 	kvmHidden               = "kvm-hidden"
@@ -191,7 +192,8 @@ func initDriverFlags() {
 	startCmd.Flags().Bool("vm", false, "Filter to use only VM Drivers")
 
 	// kvm2
-	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (kvm2 driver only)")
+	startCmd.Flags().String(kvmNetwork, "default", "The KVM default network name. (kvm2 driver only)")
+	startCmd.Flags().String(kvmPrivateNetwork, "", "The KVM private network name. (kvm2 driver only) (default: 'mk-<cluster_name>')")
 	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (kvm2 driver only)")
 	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
 	startCmd.Flags().Bool(kvmHidden, false, "Hide the hypervisor signature from the guest in minikube (kvm2 driver only)")
@@ -342,6 +344,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			HypervUseExternalSwitch: viper.GetBool(hypervUseExternalSwitch),
 			HypervExternalAdapter:   viper.GetString(hypervExternalAdapter),
 			KVMNetwork:              viper.GetString(kvmNetwork),
+			KVMPrivateNetwork:       viper.GetString(kvmPrivateNetwork),
 			KVMQemuURI:              viper.GetString(kvmQemuURI),
 			KVMGPU:                  viper.GetBool(kvmGPU),
 			KVMHidden:               viper.GetBool(kvmHidden),
@@ -379,6 +382,10 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 				NodePort:               viper.GetInt(apiServerPort),
 			},
 			MultiNodeRequested: viper.GetInt(nodes) > 1,
+		}
+		// if KVMPrivateNetwork is not user-defined, defaults to "mk-<cluster_name>"
+		if cc.KVMPrivateNetwork == "" {
+			cc.KVMPrivateNetwork = fmt.Sprintf("mk-%s", cc.KubernetesConfig.ClusterName)
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 		if viper.GetBool(createMount) && driver.IsKIC(drvName) {
@@ -554,7 +561,15 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	if cmd.Flags().Changed(kvmNetwork) {
-		cc.KVMNetwork = viper.GetString(kvmNetwork)
+		if cc.KVMNetwork != viper.GetString(kvmNetwork) {
+			out.WarningT("You cannot change the KVM Default Network name for an exiting minikube cluster. Please first delete the cluster.")
+		}
+	}
+
+	if cmd.Flags().Changed(kvmPrivateNetwork) {
+		if cc.KVMPrivateNetwork != viper.GetString(kvmPrivateNetwork) {
+			out.WarningT("You cannot change the KVM Private Network name for an exiting minikube cluster. Please first delete the cluster.")
+		}
 	}
 
 	if cmd.Flags().Changed(kvmQemuURI) {
