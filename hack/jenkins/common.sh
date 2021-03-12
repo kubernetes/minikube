@@ -399,10 +399,7 @@ gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
 #
 
 
-public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
-if grep -q html "$HTML_OUT"; then
-  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
-fi
+
 
 echo ">> Cleaning up after ourselves ..."
 timeout 3m ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
@@ -411,14 +408,19 @@ cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
-${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
-${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
-${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
+#${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
+#${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
+#${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
 rmdir "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   exit $result
+fi
+
+public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
+if grep -q html "$HTML_OUT"; then
+  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
 fi
 
 # retry_github_status provides reliable github status updates
