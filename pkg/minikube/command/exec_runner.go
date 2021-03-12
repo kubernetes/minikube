@@ -140,8 +140,17 @@ func (*execRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (e *execRunner) Copy(f assets.CopyableFile) error {
+	return e.CopyCheck(f, false)
+}
+
+// CopyCheck copies a file and its permissions, after first checking if file exists.
+func (e *execRunner) CopyCheck(f assets.CopyableFile, check bool) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(dst); err == nil {
+		if check {
+			klog.Infof("copy: skipping %s (exists)", dst)
+                        return nil
+		}
 		klog.Infof("found %s, removing ...", dst)
 		if err := e.Remove(f); err != nil {
 			return errors.Wrapf(err, "error removing file %s", dst)

@@ -142,6 +142,17 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	return nil
 }
 
+// Copy adds the filename, file contents key value pair to the stored map.
+func (f *FakeCommandRunner) CopyCheck(file assets.CopyableFile, check bool) error {
+	if check {
+		_, ok := f.fileMap.Load(file.GetSourcePath())
+		if ok {
+			return nil
+		}
+	}
+	return f.Copy(file)
+}
+
 // Remove removes the filename, file contents key value pair from the stored map
 func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
 	f.fileMap.Delete(file.GetSourcePath())

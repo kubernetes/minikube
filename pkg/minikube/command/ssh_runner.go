@@ -297,10 +297,16 @@ func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
+	// For small files, don't bother risking being wrong for no performance benefit
+	return s.CopyCheck(f, f.GetLength() > 2048)
+}
+
+// CopyCheck copies a file to the remote over SSH, after first checking if file exists.
+func (s *SSHRunner) CopyCheck(f assets.CopyableFile, check bool) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 
 	// For small files, don't bother risking being wrong for no performance benefit
-	if f.GetLength() > 2048 {
+	if check {
 		exists, err := fileExists(s, f, dst)
 		if err != nil {
 			klog.Infof("existence check for %s: %v", dst, err)
