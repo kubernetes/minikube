@@ -55,34 +55,39 @@ var loadImageCmd = &cobra.Command{
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
-		img := args[0]
 
 		var local bool
 		if imgRemote || imgDaemon {
 			local = false
-		} else if strings.HasPrefix(img, "/") || strings.HasPrefix(img, ".") {
-			local = true
-			imgDaemon = false
-			imgRemote = false
-		} else if _, err := os.Stat(img); err == nil {
-			local = true
-			imgDaemon = false
-			imgRemote = false
 		} else {
-			imgDaemon = true
-			imgRemote = true
+			for _, img := range args {
+				if strings.HasPrefix(img, "/") || strings.HasPrefix(img, ".") {
+					local = true
+					imgDaemon = false
+					imgRemote = false
+				} else if _, err := os.Stat(img); err == nil {
+					local = true
+					imgDaemon = false
+					imgRemote = false
+				}
+			}
+
+			if !local {
+				imgDaemon = true
+				imgRemote = true
+			}
 		}
 
 		// Currently "image.retrieveImage" always tries to load both from daemon and from remote
 		// There is no way to skip daemon.Image or remote.Image, for the vague "ref" string given.
 		if imgDaemon || imgRemote {
-			if err := machine.CacheAndLoadImages([]string{img}, []*config.Profile{profile}); err != nil {
+			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 			// Load images from local files, without doing any caching or checks in container runtime
 			// This is similar to tarball.Image but it is done by the container runtime in the cluster.
 		} else if local {
-			if err := machine.DoLoadImages([]string{img}, []*config.Profile{profile}, ""); err != nil {
+			if err := machine.DoLoadImages(args, []*config.Profile{profile}, ""); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 		}
