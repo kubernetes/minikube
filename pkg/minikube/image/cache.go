@@ -60,7 +60,11 @@ func SaveToDir(images []string, cacheDir string) error {
 			dst := filepath.Join(cacheDir, image)
 			dst = localpath.SanitizeCacheDir(dst)
 			if err := saveToTarFile(image, dst); err != nil {
-				klog.Errorf("save image to file %q -> %q failed: %v", image, dst, err)
+				klog.Errorf("save image to file %q -> %q failed: \n" +
+									"The image you're trying to add to the cache doesn't exist" +
+									"locally on your machine: try to build or to pull it first",
+									image, dst)
+
 				return errors.Wrapf(err, "caching image %q", dst)
 			}
 			klog.Infof("save to tar file %s -> %s succeeded", image, dst)
