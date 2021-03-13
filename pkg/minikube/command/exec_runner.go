@@ -149,7 +149,7 @@ func (e *execRunner) CopyCheck(f assets.CopyableFile, check bool) error {
 	if _, err := os.Stat(dst); err == nil {
 		if check {
 			klog.Infof("copy: skipping %s (exists)", dst)
-                        return nil
+			return nil
 		}
 		klog.Infof("found %s, removing ...", dst)
 		if err := e.Remove(f); err != nil {
