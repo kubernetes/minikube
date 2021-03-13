@@ -17,6 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -32,11 +35,17 @@ var imageCmd = &cobra.Command{
 	Long:  "Load a local image into minikube",
 }
 
+var (
+	imgDaemon bool
+	imgRemote bool
+)
+
 // loadImageCmd represents the image load command
 var loadImageCmd = &cobra.Command{
-	Use:   "load",
-	Short: "Load a local image into minikube",
-	Long:  "Load a local image into minikube",
+	Use:     "load",
+	Short:   "Load a image into minikube",
+	Long:    "Load a image into minikube",
+	Example: "minikube image load image\nminikube image load image.tar",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Please provide an image in your local daemon to load into minikube via <minikube image load IMAGE_NAME>")
@@ -47,12 +56,41 @@ var loadImageCmd = &cobra.Command{
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 		img := args[0]
-		if err := machine.CacheAndLoadImages([]string{img}, []*config.Profile{profile}); err != nil {
-			exit.Error(reason.GuestImageLoad, "Failed to load image", err)
+
+		var local bool
+		if imgRemote || imgDaemon {
+			local = false
+		} else if strings.HasPrefix(img, "/") || strings.HasPrefix(img, ".") {
+			local = true
+			imgDaemon = false
+			imgRemote = false
+		} else if _, err := os.Stat(img); err == nil {
+			local = true
+			imgDaemon = false
+			imgRemote = false
+		} else {
+			imgDaemon = true
+			imgRemote = true
+		}
+
+		// Currently "image.retrieveImage" always tries to load both from daemon and from remote
+		// There is no way to skip daemon.Image or remote.Image, for the vague "ref" string given.
+		if imgDaemon || imgRemote {
+			if err := machine.CacheAndLoadImages([]string{img}, []*config.Profile{profile}); err != nil {
+				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
+			}
+			// Load images from local files, without doing any caching or checks in container runtime
+			// This is similar to tarball.Image but it is done by the container runtime in the cluster.
+		} else if local {
+			if err := machine.DoLoadImages([]string{img}, []*config.Profile{profile}, ""); err != nil {
+				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
+			}
 		}
 	},
 }
 
 func init() {
 	imageCmd.AddCommand(loadImageCmd)
+	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
+	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
 }

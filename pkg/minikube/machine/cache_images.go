@@ -61,8 +61,8 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 	return nil
 }
 
-// LoadImages loads previously cached images into the container runtime
-func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
+// LoadCachedImages loads previously cached images into the container runtime
+func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -73,6 +73,7 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 		klog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
+
 	klog.Infof("LoadImages start: %s", images)
 	start := time.Now()
 
@@ -102,7 +103,7 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 				return nil
 			}
 			klog.Infof("%q needs transfer: %v", image, err)
-			return transferAndLoadImage(runner, cc.KubernetesConfig, image, cacheDir)
+			return transferAndLoadCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -157,6 +158,22 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 	return nil
 }
 
+// LoadLocalImages loads images into the container runtime
+func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string) error {
+	var g errgroup.Group
+	for _, image := range images {
+		image := image
+		g.Go(func() error {
+			return transferAndLoadImage(runner, cc.KubernetesConfig, image)
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "loading images")
+	}
+	klog.Infoln("Successfully loaded all images")
+	return nil
+}
+
 // CacheAndLoadImages caches and loads images to all profiles
 func CacheAndLoadImages(images []string, profiles []*config.Profile) error {
 	if len(images) == 0 {
@@ -168,6 +185,11 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile) error {
 		return errors.Wrap(err, "save to dir")
 	}
 
+	return DoLoadImages(images, profiles, constants.ImageCacheDir)
+}
+
+// DoLoadImages loads images to all profiles
+func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "api")
@@ -209,7 +231,13 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile) error {
 				if err != nil {
 					return err
 				}
-				err = LoadImages(c, cr, images, constants.ImageCacheDir)
+				if cacheDir != "" {
+					// loading image names, from cache
+					err = LoadCachedImages(c, cr, images, cacheDir)
+				} else {
+					// loading image files
+					err = LoadLocalImages(c, cr, images)
+				}
 				if err != nil {
 					failed = append(failed, m)
 					klog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
@@ -226,15 +254,20 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile) error {
 	return nil
 }
 
-// transferAndLoadImage transfers and loads a single image from the cache
-func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
+// transferAndLoadCachedImage transfers and loads a single image from the cache
+func transferAndLoadCachedImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
+	src := filepath.Join(cacheDir, imgName)
+	src = localpath.SanitizeCacheDir(src)
+	return transferAndLoadImage(cr, k8s, src)
+}
+
+// transferAndLoadImage transfers and loads a single image
+func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
-	src := filepath.Join(cacheDir, imgName)
-	src = localpath.SanitizeCacheDir(src)
-	klog.Infof("Loading image from cache: %s", src)
+	klog.Infof("Loading image from: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
 		return err
