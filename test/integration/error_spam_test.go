@@ -115,8 +115,9 @@ func TestErrorSpam(t *testing.T) {
 		expectedLogFiles int // number of logfiles expected after running command runCount times
 	}{
 		{
-			command:          "logs",
-			runCount:         15, // calling this 15 times should create 2 files with 1 greater than 1M
+			command:          "start",
+			args:             []string{"--dry-run", "--log_dir", os.TempDir()},
+			runCount:         120, // calling this 15 times should create 2 files with 1 greater than 1M
 			expectedLogFiles: 2,
 		},
 		{
@@ -142,6 +143,12 @@ func TestErrorSpam(t *testing.T) {
 		t.Run(test.command, func(t *testing.T) {
 			args := []string{test.command, "-p", profile}
 			args = append(args, test.args...)
+			// before starting the test, ensure no other logs from the current command are written
+			logFiles, err := getLogFiles(test.command)
+			if err != nil {
+				t.Errorf("failed to find tmp log files: command %s : %v", test.command, err)
+			}
+			cleanupLogFiles(t, logFiles)
 			// run command runCount times
 			for i := 0; i < test.runCount; i++ {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
@@ -150,7 +157,7 @@ func TestErrorSpam(t *testing.T) {
 				}
 			}
 			// get log files generated above
-			logFiles, err := getLogFiles(test.command)
+			logFiles, err = getLogFiles(test.command)
 			if err != nil {
 				t.Errorf("failed to find tmp log files: command %s : %v", test.command, err)
 			}
