@@ -300,6 +300,70 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 			},
 			Want: 2,
 		},
+
+		{
+			ClusterConfig: config.ClusterConfig{Name: "p3",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+					{
+						Name:              "m02",
+						IP:                "172.17.0.4",
+						Port:              0,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      false,
+						Worker:            true,
+					},
+					{
+						Name:              "m03",
+						IP:                "172.17.0.5",
+						Port:              0,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      false,
+						Worker:            true,
+					},
+				},
+			},
+			Want: 3,
+		},
+
+		{
+			ClusterConfig: config.ClusterConfig{Name: "offline-docker-20210314040449-6654",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+				},
+			},
+			Want: 1,
+		},
+
+		{
+			ClusterConfig: config.ClusterConfig{Name: "offline-docker-20210314040449-6655",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+				},
+			},
+			Want: 1,
+		},
 	}
 
 	for _, tc := range testsCases {
