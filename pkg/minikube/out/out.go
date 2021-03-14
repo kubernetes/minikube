@@ -109,6 +109,12 @@ func Styled(st style.Enum, format string, a ...V) {
 	}
 }
 
+// Sprintf is used for returning the string (doesn't write anything)
+func Sprintf(st style.Enum, format string, a ...V) string {
+	outStyled, _ := stylized(st, useColor, format, a...)
+	return outStyled
+}
+
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
 	outStyled, _ := stylized(style.Option, useColor, format, a...)

@@ -51,6 +51,7 @@ const (
 	Happy
 	HealthCheck
 	Improvement
+	Indent
 	Internet
 	ISODownload
 	Issue
