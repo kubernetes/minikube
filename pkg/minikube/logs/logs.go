@@ -243,6 +243,16 @@ func outputLastStart() error {
 	return nil
 }
 
+// OutputMinikubeLogs outputs the audit and last start logs only
+func OutputMinikubeLogs(lines int) {
+	if err := outputAudit(lines); err != nil {
+		klog.Errorf("failed to output audit logs: %v", err)
+	}
+	if err := outputLastStart(); err != nil {
+		klog.Errorf("failed to output last start logs: %v", err)
+	}
+}
+
 // logCommands returns a list of commands that would be run to receive the anticipated logs
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
