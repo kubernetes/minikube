@@ -243,8 +243,8 @@ func outputLastStart() error {
 	return nil
 }
 
-// OutputMinikubeLogs outputs the audit and last start logs only
-func OutputMinikubeLogs(lines int) {
+// OutputOffline outputs logs that don't need a running cluster.
+func OutputOffline(lines int) {
 	if err := outputAudit(lines); err != nil {
 		klog.Errorf("failed to output audit logs: %v", err)
 	}

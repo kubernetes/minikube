@@ -54,7 +54,7 @@ var logsCmd = &cobra.Command{
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if !isClusterRunning() {
-			logs.OutputMinikubeLogs(numberOfLines)
+			logs.OutputOffline(numberOfLines)
 			return
 		}
 
