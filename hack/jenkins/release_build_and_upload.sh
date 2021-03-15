@@ -52,10 +52,12 @@ env BUILD_IN_DOCKER=y \
   out/minikube-installer.exe \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_arm64.deb" \
+  "out/minikube_${DEB_VERSION}-${DEB_REVISION}_armhf.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_ppc64el.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_s390x.deb" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.x86_64.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.aarch64.rpm" \
+  "out/minikube-${RPM_VERSION}-${RPM_REVISION}.armv7hl.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.ppc64le.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.s390x.rpm" \
   "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
@@ -74,6 +76,8 @@ fi
 # Don't upload temporary copies, avoid unused duplicate files in the release storage
 rm -f out/minikube-linux-x86_64
 rm -f out/minikube-linux-aarch64
+rm -f out/minikube-linux-armhf
+rm -f out/minikube-linux-armv7hl
 rm -f out/minikube-linux-ppc64el
 rm -f out/minikube-windows-amd64
 
