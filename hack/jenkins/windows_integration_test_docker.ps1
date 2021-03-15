@@ -28,16 +28,16 @@ $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT"
 If ($lastexitcode -gt 0) {
 	echo "Docker failed to start, exiting."
 
-	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"$env:target_url`", `"context`": `"Docker_Windows`"}"
+	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"context`": `"Docker_Windows`"}"
 
 	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
-	docker system prune --all
+	docker system prune --all --force
 	Exit $lastexitcode
 }
 
 # Remove unused images and containers
-docker system prune --all
+docker system prune --all --force
 
 
 ./out/minikube-windows-amd64.exe delete --all
@@ -90,7 +90,7 @@ $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`"
 Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
 # Remove unused images and containers
-docker system prune --all
+docker system prune --all --force
 
 # Just shutdown Docker, it's safer than anything else
 Get-Process "*Docker Desktop*" | Stop-Process
