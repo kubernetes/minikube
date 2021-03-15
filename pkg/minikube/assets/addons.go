@@ -78,6 +78,11 @@ var Addons = map[string]*Addon{
 			"auto-pause.yaml",
 			"0640"),
 		MustBinAsset(
+			"deploy/addons/auto-pause/auto-pause-hook.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"auto-pause-hook.yaml",
+			"0640"),
+		MustBinAsset(
 			"deploy/addons/auto-pause/haproxy.cfg",
 			"/var/lib/minikube/",
 			"haproxy.cfg",
@@ -95,9 +100,11 @@ var Addons = map[string]*Addon{
 
 		//GuestPersistentDir
 	}, false, "auto-pause", map[string]string{
-		"haproxy": "haproxy:2.3.5",
+		"haproxy":       "haproxy:2.3.5",
+		"AutoPauseHook": "azhao155/auto-pause-hook:1.3",
 	}, map[string]string{
-		"haproxy": "gcr.io",
+		"haproxy":       "gcr.io",
+		"AutoPauseHook": "docker.io",
 	}),
 	"dashboard": NewAddon([]*BinAsset{
 		// We want to create the kubernetes-dashboard ns first so that every subsequent object can be created

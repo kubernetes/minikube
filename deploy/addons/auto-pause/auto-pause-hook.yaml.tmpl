@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: webhook
-          image: docker.io/azhao155/auto-pause-hook:1.3
+          image: {{.CustomRegistries.AutoPauseHook  | default .ImageRepository | default .Registries.AutoPauseHook }}{{.Images.AutoPauseHook}}
           ports:
             - containerPort: 8080
 ---
