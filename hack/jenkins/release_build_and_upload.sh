@@ -27,7 +27,9 @@
 set -eux -o pipefail
 readonly VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}"
 readonly DEB_VERSION="${VERSION/-/\~}"
+readonly DEB_REVISION="0"
 readonly RPM_VERSION="${DEB_VERSION}"
+readonly RPM_REVISION="0"
 readonly TAGNAME="v${VERSION}"
 
 # Make sure the tag matches the Makefile
@@ -48,16 +50,16 @@ env BUILD_IN_DOCKER=y \
   all \
   out/minikube-darwin-arm64 \
   out/minikube-installer.exe \
-  "out/minikube_${DEB_VERSION}-0_amd64.deb" \
-  "out/minikube_${DEB_VERSION}-0_arm64.deb" \
-  "out/minikube_${DEB_VERSION}-0_ppc64el.deb" \
-  "out/minikube_${DEB_VERSION}-0_s390x.deb" \
-  "out/minikube-${RPM_VERSION}-0.x86_64.rpm" \
-  "out/minikube-${RPM_VERSION}-0.aarch64.rpm" \
-  "out/minikube-${RPM_VERSION}-0.ppc64le.rpm" \
-  "out/minikube-${RPM_VERSION}-0.s390x.rpm" \
-  "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
-  "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
+  "out/minikube_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
+  "out/minikube_${DEB_VERSION}-${DEB_REVISION}_arm64.deb" \
+  "out/minikube_${DEB_VERSION}-${DEB_REVISION}_ppc64el.deb" \
+  "out/minikube_${DEB_VERSION}-${DEB_REVISION}_s390x.deb" \
+  "out/minikube-${RPM_VERSION}-${RPM_REVISION}.x86_64.rpm" \
+  "out/minikube-${RPM_VERSION}-${RPM_REVISION}.aarch64.rpm" \
+  "out/minikube-${RPM_VERSION}-${RPM_REVISION}.ppc64le.rpm" \
+  "out/minikube-${RPM_VERSION}-${RPM_REVISION}.s390x.rpm" \
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
+  "out/docker-machine-driver-kvm2-${RPM_VERSION}-${RPM_REVISION}.x86_64.rpm"
 
 # check if 'commit: <commit-id>' line contains '-dirty' commit suffix
 BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
