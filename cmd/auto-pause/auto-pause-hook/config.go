@@ -1,10 +1,5 @@
 /*
-This file is a modified version of
-https://github.com/caesarxuchao/example-webhook-admission-controller/blob/master/config.go
-*/
-
-/*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2021 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
