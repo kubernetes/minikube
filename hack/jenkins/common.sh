@@ -307,7 +307,7 @@ then
     EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
 fi
 
-timeout 2m ${SUDO_PREFIX}${E2E_BIN} \
+${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=${TIMEOUT} -test.v \
   ${EXTRA_TEST_ARGS} \
@@ -382,10 +382,12 @@ fi
 echo $description
 
 
-echo "{TEST_OUT}" > out/test.out
-echo "{JSON_OUT}" > out/json.out
-echo "{HTML_OUT}" > out/html.out
-echo "{SUMMARY_OUT}" > out/summary.out
+REPORTS_PATH=test_reports
+mkdir -p "$REPORTS_PATH"
+cp "${TEST_OUT}" "$REPORTS_PATH/test.out"
+cp "${JSON_OUT}" "$REPORTS_PATH/json.out"
+cp "${HTML_OUT}" "$REPORTS_PATH/html.out"
+cp "${SUMMARY_OUT}" "$REPORTS_PATH/summary.out"
 
 # upload results to GCS
 JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}"

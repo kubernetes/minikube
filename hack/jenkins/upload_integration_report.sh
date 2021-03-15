@@ -27,9 +27,9 @@
 
 
 # upload results to GCS
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}"
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${UPSTREAM_JOB}"
 
-ARTIFACTS=reports/out
+ARTIFACTS=artifacts/test_reports
 
 TEST_OUT="$ARTIFACTS/out.txt"
 echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
