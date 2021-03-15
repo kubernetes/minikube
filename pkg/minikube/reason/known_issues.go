@@ -852,6 +852,16 @@ var internetIssues = []match{
 var guestIssues = []match{
 	{
 		Kind: Kind{
+			ID:       "GUEST_KIC_CP_PUBKEY",
+			ExitCode: ExGuestError,
+			Advice:   "Ensure the tmp directory path is writable to the current user.",
+			Issues:   []int{10772},
+		},
+		// copying pub key: docker copy /var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169 into minikube:/home/docker/.ssh/authorized_keys, output: lstat /private/var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169: no such file or directory
+		Regexp: re(`copying pub key:*.* no such file or directory`),
+	},
+	{
+		Kind: Kind{
 			ID:       "GUEST_KVM2_NO_DOMAIN",
 			ExitCode: ExGuestNotFound,
 			Advice:   "The VM that minikube is configured for no longer exists. Run 'minikube delete'",
