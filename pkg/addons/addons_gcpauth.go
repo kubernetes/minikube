@@ -25,6 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -32,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -64,20 +67,68 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Grab credentials from where GCP would normally look
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
-	if err != nil {
+	if err != nil || creds.JSON == nil {
 		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
-	// Don't mount in empty credentials file
-	if creds.JSON == nil {
-		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
-	}
-
+	// Actually copy the creds over
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
 
 	err = r.Copy(f)
 	if err != nil {
 		return err
+	}
+
+	// Create a registry secret in every namespace we can find
+	client, err := service.K8s.GetCoreClient(cfg.Name)
+	if err != nil {
+		exit.Message(reason.InternalCredsNotFound, err.Error())
+		return err
+	}
+
+	namespaces, err := client.Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		exit.Message(reason.InternalCredsNotFound, err.Error())
+		return err
+	}
+
+	for _, n := range namespaces.Items {
+		err = service.CreateSecret(
+			cfg.Name,
+			n.Name,
+			"gcp-auth",
+			map[string]string{
+				"application_default_credentials.json": string(creds.JSON),
+				"gcrurl":                               "https://gcr.io",
+			},
+			map[string]string{
+				"app":                           "gcp-auth",
+				"kubernetes.io/minikube-addons": "gcp-auth",
+			},
+		)
+		if err != nil {
+			exit.Message(reason.InternalCredsNotFound, err.Error())
+			return err
+		}
+
+		// Now patch the secret into all the service accounts we can find
+		serviceaccounts := client.ServiceAccounts(n.Name)
+		salist, err := serviceaccounts.List(metav1.ListOptions{})
+		if err != nil {
+			exit.Message(reason.InternalCredsNotFound, err.Error())
+			return err
+		}
+
+		ips := corev1.LocalObjectReference{Name: "gcp-auth"}
+		for _, sa := range salist.Items {
+			sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
+			_, err := serviceaccounts.Update(&sa)
+			if err != nil {
+				exit.Message(reason.InternalCredsNotFound, err.Error())
+				return err
+			}
+		}
+
 	}
 
 	// First check if the project env var is explicitly set

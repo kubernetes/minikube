@@ -34,7 +34,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-retryablehttp"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
