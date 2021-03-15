@@ -45,7 +45,7 @@ fi
 sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
 
 # install docker and kubectl if not present
-sudo ./installers/check_install_docker.sh
+sudo ARCH="$ARCH" ./installers/check_install_docker.sh
 
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
