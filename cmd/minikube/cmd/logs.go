@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
@@ -53,10 +52,7 @@ var logsCmd = &cobra.Command{
 	Short: "Returns logs to debug a local Kubernetes cluster",
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if !isClusterRunning() {
-			logs.OutputOffline(numberOfLines)
-			return
-		}
+		logs.OutputOffline(numberOfLines)
 
 		co := mustload.Running(ClusterFlagValue())
 
@@ -89,16 +85,6 @@ var logsCmd = &cobra.Command{
 			os.Exit(reason.ExSvcError)
 		}
 	},
-}
-
-func isClusterRunning() bool {
-	if _, err := config.Load(ClusterFlagValue()); err != nil {
-		if config.IsNotExist(err) {
-			return false
-		}
-		exit.Error(reason.HostConfigLoad, "Error getting cluster config", err)
-	}
-	return true
 }
 
 func init() {

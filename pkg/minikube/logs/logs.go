@@ -190,16 +190,6 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		}
 	}
 
-	if err := outputAudit(lines); err != nil {
-		klog.Errorf("failed to output audit logs: %v", err)
-		failed = append(failed, "audit")
-	}
-
-	if err := outputLastStart(); err != nil {
-		klog.Errorf("failed to output last start logs: %v", err)
-		failed = append(failed, "last start")
-	}
-
 	if len(failed) > 0 {
 		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
 	}
@@ -251,6 +241,7 @@ func OutputOffline(lines int) {
 	if err := outputLastStart(); err != nil {
 		klog.Errorf("failed to output last start logs: %v", err)
 	}
+	out.Styled(style.Empty, "")
 }
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs
