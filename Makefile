@@ -819,6 +819,20 @@ out/mkcmp:
 deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
+.PHONY: out/auto-pause-hook
+out/auto-pause-hook: $(SOURCE_GENERATED) ## Build auto-pause hook addon
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOOS=linux CGO_ENABLED=0 go build -a --ldflags '-extldflags "-static"' -tags netgo -installsuffix netgo -o $@ cmd/auto-pause/auto-pause-hook/main.go cmd/auto-pause/auto-pause-hook/config.go cmd/auto-pause/auto-pause-hook/certs.go
+
+.PHONY: auto-pause-hook-image
+auto-pause-hook-image: out/auto-pause-hook  ## Build docker image for auto-pause hook
+	docker build -t docker.io/azhao155/auto-pause-hook:1.3 -f deploy/addons/auto-pause/Dockerfile .
+
+.PHONY: push-auto-pause-hook-image
+push-auto-pause-hook-image: auto-pause-hook-image
+	docker login docker.io/azhao155
+	$(MAKE) push-docker IMAGE=docker.io/azhao155/auto-pause-hook:1.3
+
 .PHONY: out/performance-bot
 out/performance-bot:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/pr-bot/bot.go
