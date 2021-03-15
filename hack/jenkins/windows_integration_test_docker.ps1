@@ -28,7 +28,7 @@ $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT"
 If ($lastexitcode -gt 0) {
 	echo "Docker failed to start, exiting."
 
-	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"context`": `"Docker_Windows`"}"
+	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Docker_Windows.txt`", `"context`": `"Docker_Windows`"}"
 
 	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
