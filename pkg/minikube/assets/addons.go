@@ -518,6 +518,13 @@ var Addons = map[string]*Addon{
 		"GCPAuthWebhook": "gcr.io",
 	}),
 	"volumesnapshots": NewAddon([]*BinAsset{
+		// make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
+		// if user disable volumesnapshots addon and delete `csi-hostpath-snapshotclass` after `snapshot.storage.k8s.io_volumesnapshotclasses`, kubernetes will return the error
+		MustBinAsset(
+			"deploy/addons/volumesnapshots/csi-hostpath-snapshotclass.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-snapshotclass.yaml",
+			"0640"),
 		MustBinAsset(
 			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotclasses.yaml.tmpl",
 			vmpath.GuestAddonsDir,
@@ -532,11 +539,6 @@ var Addons = map[string]*Addon{
 			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshots.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"snapshot.storage.k8s.io_volumesnapshots.yaml",
-			"0640"),
-		MustBinAsset(
-			"deploy/addons/volumesnapshots/csi-hostpath-snapshotclass.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"csi-hostpath-snapshotclass.yaml",
 			"0640"),
 		MustBinAsset(
 			"deploy/addons/volumesnapshots/rbac-volume-snapshot-controller.yaml.tmpl",
