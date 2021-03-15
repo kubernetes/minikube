@@ -18,13 +18,15 @@
 # This script downloads the test files from the build bucket and makes some executable.
 
 # The script expects the following env variables:
-# OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
+# OS: The operating system
+# ARCH: The architecture
 # VM_DRIVER: the driver to use for the test
 # CONTAINER_RUNTIME: the container runtime to use for the test
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
 
+readonly OS_ARCH="${OS}-${ARCH}"
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${CONTAINER_RUNTIME}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
 
