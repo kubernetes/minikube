@@ -854,7 +854,7 @@ var guestIssues = []match{
 		Kind: Kind{
 			ID:       "GUEST_PROVISION_NOSPACE",
 			ExitCode: ExGuestError,
-			Advice:   "Ensure your disk space is not full",
+			Advice:   "Ensure you have at least 20GB of free disk space.",
 		},
 		// https://github.com/kubernetes/minikube/issues/10482
 		Regexp: re(`no space left on device`),
