@@ -852,6 +852,15 @@ var internetIssues = []match{
 var guestIssues = []match{
 	{
 		Kind: Kind{
+			ID:       "GUEST_PROVISION_NOSPACE",
+			ExitCode: ExGuestError,
+			Advice:   "Ensure your disk space is not full",
+		},
+		// https://github.com/kubernetes/minikube/issues/10482
+		Regexp: re(`no space left on device`),
+	},
+	{
+		Kind: Kind{
 			ID:       "GUEST_KIC_CP_PUBKEY",
 			ExitCode: ExGuestError,
 			Advice:   "Ensure the tmp directory path is writable to the current user.",
