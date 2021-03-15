@@ -853,7 +853,7 @@ var guestIssues = []match{
 	{
 		Kind: Kind{
 			ID:       "GUEST_PROVISION_NOSPACE",
-			ExitCode: ExGuestError,
+			ExitCode: ExInsufficientStorage,
 			Advice:   "Ensure you have at least 20GB of free disk space.",
 		},
 		// https://github.com/kubernetes/minikube/issues/10482
