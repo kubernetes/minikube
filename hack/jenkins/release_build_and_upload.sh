@@ -50,8 +50,12 @@ env BUILD_IN_DOCKER=y \
   out/minikube-installer.exe \
   "out/minikube_${DEB_VERSION}-0_amd64.deb" \
   "out/minikube_${DEB_VERSION}-0_arm64.deb" \
+  "out/minikube_${DEB_VERSION}-0_ppc64el.deb" \
+  "out/minikube_${DEB_VERSION}-0_s390x.deb" \
   "out/minikube-${RPM_VERSION}-0.x86_64.rpm" \
   "out/minikube-${RPM_VERSION}-0.aarch64.rpm" \
+  "out/minikube-${RPM_VERSION}-0.ppc64le.rpm" \
+  "out/minikube-${RPM_VERSION}-0.s390x.rpm" \
   "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
   "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
 
@@ -68,6 +72,7 @@ fi
 # Don't upload temporary copies, avoid unused duplicate files in the release storage
 rm -f out/minikube-linux-x86_64
 rm -f out/minikube-linux-aarch64
+rm -f out/minikube-linux-ppc64el
 rm -f out/minikube-windows-amd64
 
 make checksum

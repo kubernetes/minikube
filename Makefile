@@ -209,9 +209,13 @@ out/minikube-linux-aarch64: out/minikube-linux-arm64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
+out/minikube-linux-ppc64el: out/minikube-linux-ppc64le
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
 .PHONY: minikube-linux-amd64 minikube-linux-arm64
-minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux 64bit
-minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for arm 64bit
+minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux x86 64bit
+minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for Linux ARM 64bit
 
 .PHONY: minikube-darwin-amd64 minikube-darwin-arm64
 minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin x86 64bit
