@@ -375,13 +375,13 @@ var providerIssues = []match{
 	// KVM hypervisor
 	{
 		Kind: Kind{
-			ID:       "PR_KVM_CAPABILITIES",
-			ExitCode: ExProviderUnavailable,
-			Advice:   "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
-			URL:      "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
-			Issues:   []int{2991},
+			ID:       "PR_KVM_MISSING_NETWORK",
+			ExitCode: ExProviderError,
+			Advice:   "Validate your KVM networks. Run: virt-host-validate and Run:",
+			Issues:   []int{9009},
+			URL:      "https://minikube.sigs.k8s.io/docs/drivers/kvm2/",
 		},
-		Regexp: re(`invalid argument: could not find capabilities for domaintype=kvm`),
+		Regexp: re(`virError(Code=43, Domain=19, Message='Network not found: no network with matching name`),
 		GOOS:   []string{"linux"},
 	},
 	{
