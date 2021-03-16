@@ -377,7 +377,7 @@ var providerIssues = []match{
 		Kind: Kind{
 			ID:       "PR_KVM_MISSING_NETWORK",
 			ExitCode: ExProviderError,
-			Advice:   "Validate your KVM networks. Run: virt-host-validate and Run:",
+			Advice:   "Validate your KVM networks. Run: virt-host-validate and then virsh net-list --all",
 			Issues:   []int{9009},
 			URL:      "https://minikube.sigs.k8s.io/docs/drivers/kvm2/",
 		},
