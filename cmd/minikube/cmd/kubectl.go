@@ -20,14 +20,22 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"syscall"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/vmpath"
+)
+
+var (
+	useSSH bool
 )
 
 // kubectlCmd represents the kubectl command
@@ -47,7 +55,28 @@ minikube kubectl -- get pods --namespace kube-system`,
 			version = cc.KubernetesConfig.KubernetesVersion
 		}
 
-		cluster := []string{"--cluster", ClusterFlagValue()}
+		cname := ClusterFlagValue()
+
+		if useSSH {
+			co := mustload.Running(cname)
+			n := co.CP.Node
+
+			kc := []string{"sudo"}
+			kc = append(kc, kubectlPath(*co.Config))
+			kc = append(kc, "--kubeconfig")
+			kc = append(kc, kubeconfigPath(*co.Config))
+			args = append(kc, args...)
+
+			klog.Infof("Running SSH %v", args)
+			err := machine.CreateSSHShell(co.API, *co.Config, *n, args, false)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error running kubectl: %v", err)
+				os.Exit(1)
+			}
+			return
+		}
+
+		cluster := []string{"--cluster", cname}
 		args = append(cluster, args...)
 
 		c, err := KubectlCommand(version, args...)
@@ -74,6 +103,16 @@ minikube kubectl -- get pods --namespace kube-system`,
 	},
 }
 
+// kubectlPath returns the path to kubectl
+func kubectlPath(cfg config.ClusterConfig) string {
+	return path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
+}
+
+// kubeconfigPath returns the path to kubeconfig
+func kubeconfigPath(cfg config.ClusterConfig) string {
+	return "/etc/kubernetes/admin.conf"
+}
+
 // KubectlCommand will return kubectl command with a version matching the cluster
 func KubectlCommand(version string, args ...string) (*exec.Cmd, error) {
 	if version == "" {
@@ -86,4 +125,8 @@ func KubectlCommand(version string, args ...string) (*exec.Cmd, error) {
 	}
 
 	return exec.Command(path, args...), nil
+}
+
+func init() {
+	kubectlCmd.Flags().BoolVar(&useSSH, "ssh", false, "Use SSH for running kubernetes client")
 }

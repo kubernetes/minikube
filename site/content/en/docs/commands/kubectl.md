@@ -21,6 +21,12 @@ minikube kubectl -- get pods --namespace kube-system
 minikube kubectl [flags]
 ```
 
+### Options
+
+```
+      --ssh   Use SSH for running kubernetes client
+```
+
 ### Options inherited from parent commands
 
 ```
