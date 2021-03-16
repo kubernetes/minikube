@@ -381,7 +381,7 @@ var providerIssues = []match{
 			Issues:   []int{9009},
 			URL:      "https://minikube.sigs.k8s.io/docs/drivers/kvm2/",
 		},
-		Regexp: re(`virError(Code=43, Domain=19, Message='Network not found: no network with matching name`),
+		Regexp: re(`Message='Network not found: no network with matching name`),
 		GOOS:   []string{"linux"},
 	},
 	{
