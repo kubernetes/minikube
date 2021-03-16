@@ -192,6 +192,8 @@ func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 	return remote.Image(ref, remote.WithPlatform(p))
 }
 
+// See https://github.com/kubernetes/minikube/issues/10402
+// check if downloaded image Architecture field matches the requested and fix it otherwise
 func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, error) {
 	cfg, err := img.ConfigFile()
 	if err != nil {
