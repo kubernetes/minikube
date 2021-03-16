@@ -66,7 +66,7 @@ minikube kubectl -- get pods --namespace kube-system`,
 				waitStatus := exitError.Sys().(syscall.WaitStatus)
 				rc = waitStatus.ExitStatus()
 			} else {
-				fmt.Fprintf(os.Stderr, "Error running %s: %v\n", path, err)
+				fmt.Fprintf(os.Stderr, "Error running %s: %v\n", c.Path, err)
 				rc = 1
 			}
 			os.Exit(rc)
