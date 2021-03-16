@@ -75,7 +75,8 @@ type Runner interface {
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
 
-	// CopyCheck is a convenience method that runs a command to copy a file
+	// CopyCheck is a convenience method that runs a command to copy a file,
+	// optionally after first checking if the file already exists.
 	CopyCheck(assets.CopyableFile, bool) error
 
 	// Remove is a convenience method that runs a command to remove a file
