@@ -45,6 +45,7 @@ func TestMultiNode(t *testing.T) {
 			validator validatorFunc
 		}{
 			{"FreshStart2Nodes", validateMultiNodeStart},
+			{"DeployApp2Nodes", validateDeployAppToMultiNode},
 			{"AddNode", validateAddNodeToMultiNode},
 			{"ProfileList", validateProfileListWithMultiNode},
 			{"StopNode", validateStopRunningNode},
@@ -385,5 +386,61 @@ func validatNameConflict(ctx context.Context, t *testing.T, profile string) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profileName))
 	if err != nil {
 		t.Logf("failed to clean temporary profile. args %q : %v", rr.Command(), err)
+	}
+}
+
+func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile string) {
+	// Create a deployment for app
+	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/multinodes/multinode-pod-dns-test.yaml"))
+	if err != nil {
+		t.Errorf("failed to create hello deployment to multinode cluster")
+	}
+
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/hello"))
+	if err != nil {
+		t.Errorf("failed to delploy hello to multinode cluster")
+	}
+
+	// resolve Pod IPs
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].status.podIP}'"))
+	if err != nil {
+		t.Errorf("failed retrieve Pod IPs")
+	}
+	podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
+	if len(podIPs) != 2 {
+		t.Errorf("expected 2 Pod IPs but got %d", len(podIPs))
+	}
+	if podIPs[0] == podIPs[1] {
+		t.Errorf("expected 2 different pod IPs but got %s and %s", podIPs[0], podIPs[0])
+	}
+
+	// get Pod names
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
+	if err != nil {
+		t.Errorf("failed get Pod names")
+	}
+	podNames := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
+
+	// verify both Pods could resolve a public DNS
+	for _, name := range podNames {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "nslookup", "kubernetes.io"))
+		if err != nil {
+			t.Errorf("Pod %s could not resolve 'kubernetes.io': %v", name, err)
+		}
+	}
+	// verify both pods could resolve to a local service.
+	for _, name := range podNames {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "nslookup", "kubernetes.default.svc.cluster.local"))
+		if err != nil {
+			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
+		}
+	}
+
+	// clean up, delete all pods
+	for _, name := range podNames {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "delete", "pod", name))
+		if err != nil {
+			t.Errorf("fail to delete pod %s: %v", name, err)
+		}
 	}
 }
