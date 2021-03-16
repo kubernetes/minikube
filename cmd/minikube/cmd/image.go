@@ -209,7 +209,7 @@ func createTar(dir string) (string, error) {
 
 // buildImageCmd represents the image build command
 var buildImageCmd = &cobra.Command{
-	Use:     "build",
+	Use:     "build PATH | URL | -",
 	Short:   "Build a container image in minikube",
 	Long:    "Build a container image, using the container runtime.",
 	Example: `minikube image build .`,
