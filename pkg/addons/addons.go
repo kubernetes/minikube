@@ -29,8 +29,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
-	"github.com/Delta456/box-cli-maker/v2"
-
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
@@ -201,13 +199,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 				return errors.Wrap(err, "registry port")
 			}
 			if enable {
-				str := out.Sprintf(style.None, `Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
-				box := box.New(box.Config{Px: 0, Py: 0, Type: "Round", Color: "Red"})
-				txt := strings.Split(box.String("", str), "\n")
-				out.Styled(style.Indent, txt[0])
-				out.Styled(style.Tip, txt[1])
-				out.Styled(style.Indent, txt[2])
-				out.Styled(style.Indent, txt[3])
+				out.Boxed(style.Tip, `Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
 			}
 			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
 		}
