@@ -223,6 +223,16 @@ var providerIssues = []match{
 	// Docker environment
 	{
 		Kind: Kind{
+			ID:       "PR_DOCKER_IP_CONFLICT",
+			ExitCode: ExProviderError,
+			Advice:   "Run: 'minikube delete --all' to clean up all the abandoned networks.",
+			Issues:   []int{9605},
+		},
+		Regexp: re(`cannot find cgroup mount destination: unknown`),
+		GOOS:   []string{"linux"},
+	},
+	{
+		Kind: Kind{
 			ID:       "PR_DOCKER_CGROUP_MOUNT",
 			ExitCode: ExProviderError,
 			Advice:   "Run: 'sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd'",
@@ -364,6 +374,18 @@ var providerIssues = []match{
 
 	// KVM hypervisor
 	{
+		Kind: Kind{
+			ID:       "PR_KVM_CAPABILITIES",
+			ExitCode: ExProviderUnavailable,
+			Advice:   "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
+			URL:      "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
+			Issues:   []int{2991},
+		},
+		Regexp: re(`invalid argument: could not find capabilities for domaintype=kvm`),
+		GOOS:   []string{"linux"},
+	},
+	{
+
 		Kind: Kind{
 			ID:       "PR_KVM_USER_PERMISSION",
 			ExitCode: ExProviderPermission,
