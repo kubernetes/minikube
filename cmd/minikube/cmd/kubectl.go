@@ -48,7 +48,7 @@ minikube kubectl -- get pods --namespace kube-system`,
 		}
 
 		cluster := []string{"--cluster", ClusterFlagValue()}
-		args = append(args, cluster...)
+		args = append(cluster, args...)
 
 		c, err := KubectlCommand(version, args...)
 		if err != nil {

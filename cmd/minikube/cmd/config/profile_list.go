@@ -77,7 +77,7 @@ func printProfilesTable() {
 	}
 
 	if len(validProfiles) == 0 {
-		exit.Message(reason.Usage, "No minikube profile was found. You can create one using `minikube start`.")
+		exit.Message(reason.UsageNoProfileRunning, "No minikube profile was found. ")
 	}
 
 	updateProfilesStatus(validProfiles)
