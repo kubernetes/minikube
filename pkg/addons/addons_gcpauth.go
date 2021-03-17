@@ -42,6 +42,7 @@ import (
 const (
 	credentialsPath = "/var/lib/minikube/google_application_credentials.json"
 	projectPath     = "/var/lib/minikube/google_cloud_project"
+	secretName      = "gcp-auth"
 )
 
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
@@ -107,7 +108,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 		secretObj := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "gcp-auth",
+				Name: secretName,
 			},
 			Data: data,
 			Type: "kubernetes.io/dockercfg",
@@ -177,6 +178,24 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	err = r.Remove(project)
 	if err != nil {
 		return err
+	}
+
+	client, err := service.K8s.GetCoreClient(cfg.Name)
+	if err != nil {
+		exit.Message(reason.InternalCredsNotFound, err.Error())
+		return err
+	}
+
+	namespaces, err := client.Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		exit.Message(reason.InternalCredsNotFound, err.Error())
+		return err
+	}
+
+	// No need to check for an error here, if the secret doesn't exist, no harm done.
+	for _, n := range namespaces.Items {
+		secrets := client.Secrets(n.Name)
+		secrets.Delete(secretName, &metav1.DeleteOptions{})
 	}
 
 	return nil
