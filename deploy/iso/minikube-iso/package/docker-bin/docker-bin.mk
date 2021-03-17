@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-DOCKER_BIN_VERSION = 20.10.4
+DOCKER_BIN_VERSION = 20.10.5
 DOCKER_BIN_SITE = https://download.docker.com/linux/static/stable/x86_64
 DOCKER_BIN_SOURCE = docker-$(DOCKER_BIN_VERSION).tgz
 
