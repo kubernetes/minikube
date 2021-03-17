@@ -26,6 +26,8 @@ spec:
           image: {{.CustomRegistries.AutoPauseHook  | default .ImageRepository | default .Registries.AutoPauseHook }}{{.Images.AutoPauseHook}}
           ports:
             - containerPort: 8080
+          command: ["/auto-pause-hook"]
+          args: ["-targetIP={{.NetworkInfo.CPNodeIP}}"]            
 ---
 apiVersion: v1
 kind: Service

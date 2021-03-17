@@ -216,7 +216,14 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		}
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig)
+	var networkInfo assets.NetworkInfo
+	if len(cc.Nodes) >= 1 {
+		networkInfo.CPNodeIP = cc.Nodes[0].IP
+	} else {
+		out.WarningT("At least needs control plane nodes to enable addon")
+	}
+
+	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 

@@ -826,12 +826,12 @@ out/auto-pause-hook: $(SOURCE_GENERATED) ## Build auto-pause hook addon
 
 .PHONY: auto-pause-hook-image
 auto-pause-hook-image: out/auto-pause-hook  ## Build docker image for auto-pause hook
-	docker build -t docker.io/azhao155/auto-pause-hook:1.5 -f deploy/addons/auto-pause/Dockerfile .
+	docker build -t docker.io/azhao155/auto-pause-hook:1.7 -f deploy/addons/auto-pause/Dockerfile .
 
 .PHONY: push-auto-pause-hook-image
 push-auto-pause-hook-image: auto-pause-hook-image
 	docker login docker.io/azhao155
-	$(MAKE) push-docker IMAGE=docker.io/azhao155/auto-pause-hook:1.5
+	$(MAKE) push-docker IMAGE=docker.io/azhao155/auto-pause-hook:1.7
 
 .PHONY: out/performance-bot
 out/performance-bot:

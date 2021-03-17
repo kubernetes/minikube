@@ -42,6 +42,8 @@ var (
 	deserializer  = codecs.UniversalDeserializer()
 )
 
+var targetIP *string
+
 var minikubeSystemNamespaces = []string{
 	metav1.NamespaceSystem,
 	metav1.NamespacePublic,
@@ -133,7 +135,7 @@ func patchConfig(pod *corev1.Pod) ([]byte, error) {
 	var patch []jsonpatch.JsonPatchOperation
 
 	configEnv := []corev1.EnvVar{
-		{Name: "KUBERNETES_SERVICE_HOST", Value: "192.168.49.2"},
+		{Name: "KUBERNETES_SERVICE_HOST", Value: *targetIP},
 		{Name: "KUBERNETES_SERVICE_PORT", Value: strconv.Itoa(constants.AutoPauseProxyPort)}}
 	for idx, container := range pod.Spec.Containers {
 		patch = append(patch, addEnv(container.Env, configEnv, fmt.Sprintf("/spec/containers/%d/env", idx))...)
@@ -179,15 +181,13 @@ func shouldInject(metadata *metav1.ObjectMeta) bool {
 
 func main() {
 	addr := flag.String("addr", ":8080", "address to serve on")
+	targetIP = flag.String("targetIP", "192.168.49.2", "The reverse proxy IP")
 
 	http.HandleFunc("/", handler)
 
-	err := flag.CommandLine.Parse([]string{}) // hack fix for https://github.com/kubernetes/kubernetes/issues/17162
-	if err != nil {
-		glog.Fatalf("Parse command line flag failed with %s", err)
-	}
+	flag.Parse()
 
-	log.Printf("Starting HTTPS webhook server on %+v", *addr)
+	log.Printf("Starting HTTPS webhook server on %+v and target ip is %v", *addr, *targetIP)
 	cacert, serverCert, serverKey := gencerts()
 	clientset := getClient()
 	server := &http.Server{
@@ -195,7 +195,7 @@ func main() {
 		TLSConfig: configTLS(clientset, serverCert, serverKey),
 	}
 	go selfRegistration(clientset, cacert)
-	err = server.ListenAndServeTLS("", "")
+	err := server.ListenAndServeTLS("", "")
 	if err != nil {
 		glog.Fatalf("Start https server failed with %s", err)
 	}
