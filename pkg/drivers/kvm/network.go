@@ -169,8 +169,8 @@ func (d *Driver) createNetwork() error {
 		subnetAddr := firstSubnetAddr
 		for attempts < 5 {
 			// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
-			// will be like 192.168.39.0/24,..., 192.168.229.0/24 (in increment steps of 10)
-			subnet, err := network.FreeSubnet(subnetAddr, 10, 20)
+			// will be like 192.168.39.0/24,..., 192.168.248.0/24 (in increment steps of 11)
+			subnet, err := network.FreeSubnet(subnetAddr, 11, 20)
 			if err != nil {
 				log.Debugf("failed to find free subnet for KVM network %s after %d attempts: %v", d.PrivateNetwork, 20, err)
 				return fmt.Errorf("un-retryable: %w", err)
