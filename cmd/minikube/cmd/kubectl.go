@@ -80,8 +80,10 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 			return
 		}
 
-		cluster := []string{"--cluster", cname}
-		args = append(cluster, args...)
+		if len(args) > 1 && args[0] != "--help" {
+			cluster := []string{"--cluster", cname}
+			args = append(cluster, args...)
+		}
 
 		c, err := KubectlCommand(version, args...)
 		if err != nil {
