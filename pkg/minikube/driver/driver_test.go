@@ -240,6 +240,22 @@ func TestIndexFromMachineName(t *testing.T) {
 			Name:        "michivious-user",
 			MachineName: "michivious-user-m02-m03",
 			Want:        3},
+		{
+			Name:        "third-node",
+			MachineName: "minikube-m3",
+			Want:        3},
+		{
+			Name:        "agent-node",
+			MachineName: "minikube-m007",
+			Want:        7},
+		{
+			Name:        "byte-0",
+			MachineName: "offline-docker-20210314040449-6655",
+			Want:        1},
+		{
+			Name:        "byte-255",
+			MachineName: "offline-docker-20210314040449-6654",
+			Want:        1},
 	}
 
 	for _, tc := range testCases {
