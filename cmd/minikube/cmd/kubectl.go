@@ -44,9 +44,13 @@ var kubectlCmd = &cobra.Command{
 	Short: "Run a kubectl binary matching the cluster version",
 	Long: `Run the Kubernetes client, download it if necessary. Remember -- after kubectl!
 
-Examples:
-minikube kubectl -- --help
-minikube kubectl -- get pods --namespace kube-system`,
+This will run the Kubernetes client (kubectl) with the same version as the cluster
+
+Normally it will download a binary matching the host operating system and architecture,
+but optionally you can also run it directly on the control plane over the ssh connection.
+This can be useful if you cannot run kubectl locally for some reason, like unsupported
+host. Please be aware that when using --ssh all paths will apply to the remote machine.`,
+	Example: "minikube kubectl -- --help\nminikube kubectl -- get pods --namespace kube-system",
 	Run: func(cmd *cobra.Command, args []string) {
 		cc, err := config.Load(ClusterFlagValue())
 
@@ -128,5 +132,5 @@ func KubectlCommand(version string, args ...string) (*exec.Cmd, error) {
 }
 
 func init() {
-	kubectlCmd.Flags().BoolVar(&useSSH, "ssh", false, "Use SSH for running kubernetes client")
+	kubectlCmd.Flags().BoolVar(&useSSH, "ssh", false, "Use SSH for running kubernetes client on the node")
 }
