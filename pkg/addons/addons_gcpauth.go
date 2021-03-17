@@ -19,6 +19,7 @@ package addons
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -86,6 +87,15 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		return err
 	}
 
+	token, err := creds.TokenSource.Token()
+	if err != nil {
+		exit.Message(reason.InternalCredsNotFound, err.Error())
+		return err
+	}
+	data := map[string][]byte{
+		".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken)),
+	}
+
 	namespaces, err := client.Namespaces().List(metav1.ListOptions{})
 	if err != nil {
 		exit.Message(reason.InternalCredsNotFound, err.Error())
@@ -93,23 +103,17 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	}
 
 	for _, n := range namespaces.Items {
-		err = service.CreateSecret(
-			cfg.Name,
-			n.Name,
-			"gcp-auth",
-			map[string]string{
-				"application_default_credentials.json": string(creds.JSON),
-				"gcrurl":                               "https://gcr.io",
+		secrets := client.Secrets(n.Name)
+
+		secretObj := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "gcp-auth",
 			},
-			map[string]string{
-				"app":                           "gcp-auth",
-				"kubernetes.io/minikube-addons": "gcp-auth",
-			},
-		)
-		if err != nil {
-			exit.Message(reason.InternalCredsNotFound, err.Error())
-			return err
+			Data: data,
+			Type: "kubernetes.io/dockercfg",
 		}
+
+		_, err = secrets.Create(secretObj)
 
 		// Now patch the secret into all the service accounts we can find
 		serviceaccounts := client.ServiceAccounts(n.Name)
