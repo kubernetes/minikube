@@ -117,7 +117,7 @@ func TestErrorSpam(t *testing.T) {
 		{
 			command:          "start",
 			args:             []string{"--dry-run", "--log_dir", os.TempDir()},
-			runCount:         120, // calling this 15 times should create 2 files with 1 greater than 1M
+			runCount:         120, // calling this 120 times should create 2 files with 1 greater than 1M
 			expectedLogFiles: 2,
 		},
 		{
@@ -176,7 +176,7 @@ func TestErrorSpam(t *testing.T) {
 					if isSmall && !foundSmall {
 						foundSmall = true
 					} else if isSmall && foundSmall {
-						t.Errorf("expected to find only one file less than 1M: cmd %s:", test.command)
+						t.Errorf("expected to find only one file less than 1MB: cmd %s:", test.command)
 					}
 				}
 			}
