@@ -23,8 +23,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 
+	"github.com/golang/glog"
 	"github.com/mattbaird/jsonpatch"
 
 	v1 "k8s.io/api/admission/v1"
@@ -38,19 +38,7 @@ var (
 	runtimeScheme = runtime.NewScheme()
 	codecs        = serializer.NewCodecFactory(runtimeScheme)
 	deserializer  = codecs.UniversalDeserializer()
-
-	// TODO(https://github.com/kubernetes/kubernetes/issues/57982)
-	defaulter = runtime.ObjectDefaulter(runtimeScheme)
 )
-
-// the Path of the JSON patch is a JSON pointer value
-// so we need to escape any "/"s in the key we add to the annotation
-// https://tools.ietf.org/html/rfc6901
-func escapeJSONPointer(s string) string {
-	esc := strings.Replace(s, "~", "~0", -1)
-	esc = strings.Replace(esc, "/", "~1", -1)
-	return esc
-}
 
 var minikubeSystemNamespaces = []string{
 	metav1.NamespaceSystem,
@@ -89,7 +77,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("error marshalling decision: %v", err)
 	}
-	log.Printf(string(resp))
+	log.Printf("%s", string(resp))
 	if _, err := w.Write(resp); err != nil {
 		log.Printf("error writing response %v", err)
 	}
@@ -163,7 +151,7 @@ func addEnv(target, envVars []corev1.EnvVar, basePath string) (patch []jsonpatch
 			first = false
 			value = []corev1.EnvVar{envVar}
 		} else {
-			path = path + "/-"
+			path += "/-"
 		}
 		patch = append(patch, jsonpatch.JsonPatchOperation{
 			Operation: "add",
@@ -192,7 +180,10 @@ func main() {
 
 	http.HandleFunc("/", handler)
 
-	flag.CommandLine.Parse([]string{}) // hack fix for https://github.com/kubernetes/kubernetes/issues/17162
+	err := flag.CommandLine.Parse([]string{}) // hack fix for https://github.com/kubernetes/kubernetes/issues/17162
+	if err != nil {
+		glog.Fatalf("Parse command line flag failed with %s", err)
+	}
 
 	log.Printf("Starting HTTPS webhook server on %+v", *addr)
 	cacert, serverCert, serverKey := gencerts()
@@ -202,5 +193,8 @@ func main() {
 		TLSConfig: configTLS(clientset, serverCert, serverKey),
 	}
 	go selfRegistration(clientset, cacert)
-	server.ListenAndServeTLS("", "")
+	err = server.ListenAndServeTLS("", "")
+	if err != nil {
+		glog.Fatalf("Start https server failed with %s", err)
+	}
 }
