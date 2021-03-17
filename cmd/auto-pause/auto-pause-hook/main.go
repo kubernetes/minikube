@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/mattbaird/jsonpatch"
@@ -32,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 var (
@@ -132,7 +134,7 @@ func patchConfig(pod *corev1.Pod) ([]byte, error) {
 
 	configEnv := []corev1.EnvVar{
 		{Name: "KUBERNETES_SERVICE_HOST", Value: "192.168.49.2"},
-		{Name: "KUBERNETES_SERVICE_PORT", Value: "32443"}}
+		{Name: "KUBERNETES_SERVICE_PORT", Value: strconv.Itoa(constants.AutoPauseProxyPort)}}
 	for idx, container := range pod.Spec.Containers {
 		patch = append(patch, addEnv(container.Env, configEnv, fmt.Sprintf("/spec/containers/%d/env", idx))...)
 	}

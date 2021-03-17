@@ -28,6 +28,7 @@ import (
 	"time"
 )
 
+// generate https certs for the webhook server
 func gencerts() (caCert []byte, serverCert []byte, serverKey []byte) {
 	var caPEM, serverCertPEM, serverPrivKeyPEM *bytes.Buffer
 	// CA config

@@ -31,6 +31,11 @@ import (
 	"github.com/golang/glog"
 )
 
+var (
+	webhookName       = "env-inject-webhook"
+	webhookConfigName = "env-inject.zyanshu.io"
+)
+
 // get a clientset with in-cluster config.
 func getClient() *kubernetes.Clientset {
 	config, err := rest.InClusterConfig()
@@ -81,9 +86,9 @@ func configTLS(clientset *kubernetes.Clientset, serverCert []byte, serverKey []b
 func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 	time.Sleep(10 * time.Second)
 	client := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations()
-	_, err := client.Get("env-inject-webhook", metav1.GetOptions{})
+	_, err := client.Get(webhookName, metav1.GetOptions{})
 	if err == nil {
-		if err2 := client.Delete("env-inject-webhook", &metav1.DeleteOptions{}); err2 != nil {
+		if err2 := client.Delete(webhookName, &metav1.DeleteOptions{}); err2 != nil {
 			glog.Fatal(err2)
 		}
 	}
@@ -92,11 +97,11 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 
 	webhookConfig := &v1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "env-inject-webhook",
+			Name: webhookName,
 		},
 		Webhooks: []v1.MutatingWebhook{
 			{
-				Name: "env-inject.zyanshu.io",
+				Name: webhookConfigName,
 				Rules: []v1.RuleWithOperations{
 					{
 						Operations: []v1.OperationType{v1.Create, v1.Update},

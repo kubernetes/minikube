@@ -101,7 +101,7 @@ var Addons = map[string]*Addon{
 		//GuestPersistentDir
 	}, false, "auto-pause", map[string]string{
 		"haproxy":       "haproxy:2.3.5",
-		"AutoPauseHook": "azhao155/auto-pause-hook:1.3",
+		"AutoPauseHook": "azhao155/auto-pause-hook:1.5",
 	}, map[string]string{
 		"haproxy":       "gcr.io",
 		"AutoPauseHook": "docker.io",
