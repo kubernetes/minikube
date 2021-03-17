@@ -20,12 +20,18 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
 
+const defaultReservationPeriod = 1 * time.Minute
+
 var (
+	reservedSubnets = sync.Map{}
+
 	// valid private network subnets (RFC1918)
 	privateSubnets = []net.IPNet{
 		// 10.0.0.0/8
@@ -45,6 +51,11 @@ var (
 		},
 	}
 )
+
+// reservation of free private subnet is held for defined reservation period from createdAt time.
+type reservation struct {
+	createdAt time.Time
+}
 
 // Parameters contains main network parameters.
 type Parameters struct {
@@ -190,10 +201,14 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 				return nil, err
 			}
 			if !taken {
-				klog.Infof("using free private subnet %s: %+v", n.CIDR, n)
-				return n, nil
+				if ok := reserveSubnet(startSubnet, defaultReservationPeriod); ok {
+					klog.Infof("using free private subnet %s: %+v", n.CIDR, n)
+					return n, nil
+				}
+				klog.Infof("skipping subnet %s that is reserved: %+v", n.CIDR, n)
+			} else {
+				klog.Infof("skipping subnet %s that is taken: %+v", n.CIDR, n)
 			}
-			klog.Infof("skipping subnet %s that is taken: %+v", n.CIDR, n)
 		} else {
 			klog.Infof("skipping subnet %s that is not private", n.CIDR)
 		}
@@ -207,4 +222,40 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 		startSubnet = nextSubnet.String()
 	}
 	return nil, fmt.Errorf("no free private network subnets found with given parameters (start: %q, step: %d, tries: %d)", startSubnet, step, tries)
+}
+
+// reserveSubnet returns if subnet was successfully reserved for given period:
+//  - false, if it already has unexpired reservation
+//  - true, if new reservation was created or expired one renewed
+// uses sync.Map to manage reservations thread-safe
+func reserveSubnet(subnet string, period time.Duration) bool {
+	// put 'zero' reservation{} Map value for subnet Map key
+	// to block other processes from concurently changing this subnet
+	zero := reservation{}
+	r, loaded := reservedSubnets.LoadOrStore(subnet, zero)
+	// check if there was previously issued reservation
+	if loaded {
+		// back off if previous reservation was already set to 'zero'
+		// as then other process is already managing this subnet concurently
+		if r == zero {
+			klog.Infof("backing off reserving subnet %s (other process is managing it!): %+v", subnet, &reservedSubnets)
+			return false
+		}
+		// check if previous reservation expired
+		createdAt := r.(reservation).createdAt
+		if time.Since(createdAt) < period {
+			// unexpired reservation: restore original createdAt value
+			reservedSubnets.Store(subnet, reservation{createdAt: createdAt})
+			klog.Infof("skipping subnet %s that has unexpired reservation: %+v", subnet, &reservedSubnets)
+			return false
+		}
+		// expired reservation: renew setting createdAt to now
+		reservedSubnets.Store(subnet, reservation{createdAt: time.Now()})
+		klog.Infof("reusing subnet %s that has expired reservation: %+v", subnet, &reservedSubnets)
+		return true
+	}
+	// new reservation
+	klog.Infof("reserving subnet %s for %v: %+v", subnet, period, &reservedSubnets)
+	reservedSubnets.Store(subnet, reservation{createdAt: time.Now()})
+	return true
 }

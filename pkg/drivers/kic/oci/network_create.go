@@ -35,9 +35,6 @@ import (
 // it is one octet more than the one used by KVM to avoid possible conflict
 const firstSubnetAddr = "192.168.49.0"
 
-// big enough for a cluster of 254 nodes
-const defaultSubnetMask = 24
-
 // name of the default bridge network, used to lookup the MTU (see #9528)
 const dockerDefaultBridge = "bridge"
 
@@ -71,30 +68,44 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	if err != nil {
 		klog.Warningf("failed to get mtu information from the %s's default network %q: %v", ociBin, defaultBridgeName, err)
 	}
-	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
-	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
-	subnet, err := network.FreeSubnet(firstSubnetAddr, 10, 20)
-	if err != nil {
-		klog.Errorf("error while trying to create network: %v", err)
-		return nil, errors.Wrap(err, "un-retryable")
+
+	// retry up to 5 times to create container network
+	attempts := 0
+	subnetAddr := firstSubnetAddr
+	for attempts < 5 {
+		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
+		// will be like 192.168.49.0/24,..., 192.168.220.0/24 (in increment steps of 9)
+		subnet, err := network.FreeSubnet(subnetAddr, 9, 20)
+		if err != nil {
+			klog.Errorf("failed to find free subnet for %s network %s after %d attempts: %v", ociBin, networkName, 20, err)
+			return nil, fmt.Errorf("un-retryable: %w", err)
+		}
+		info.gateway, err = tryCreateDockerNetwork(ociBin, subnet, info.mtu, networkName)
+		if err == nil {
+			klog.Infof("%s network %s %s created", ociBin, networkName, subnet.CIDR)
+			return info.gateway, nil
+		}
+		// don't retry if error is not adddress is taken
+		if !(errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken)) {
+			klog.Errorf("error while trying to create %s network %s %s: %v", ociBin, networkName, subnet.CIDR, err)
+			return nil, fmt.Errorf("un-retryable: %w", err)
+		}
+		klog.Warningf("failed to create %s network %s %s, will retry: %v", ociBin, networkName, subnet.CIDR, err)
+		subnetAddr = subnet.IP
+		attempts++
 	}
-	info.gateway, err = tryCreateDockerNetwork(ociBin, subnet.IP, defaultSubnetMask, info.mtu, networkName)
-	if err != nil {
-		return info.gateway, fmt.Errorf("failed to create network after 20 attempts")
-	}
-	return info.gateway, nil
+	return info.gateway, fmt.Errorf("failed to create %s network %s", ociBin, networkName)
 }
 
-func tryCreateDockerNetwork(ociBin string, subnetAddr string, subnetMask int, mtu int, name string) (net.IP, error) {
-	gateway := net.ParseIP(subnetAddr)
-	gateway.To4()[3]++ // first ip for gateway
-	klog.Infof("attempt to create network %s/%d with subnet: %s and gateway %s and MTU of %d ...", subnetAddr, subnetMask, name, gateway, mtu)
+func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, name string) (net.IP, error) {
+	gateway := net.ParseIP(subnet.Gateway)
+	klog.Infof("attempt to create %s network %s %s with gateway %s and MTU of %d ...", ociBin, name, subnet.CIDR, subnet.Gateway, mtu)
 	args := []string{
 		"network",
 		"create",
 		"--driver=bridge",
-		fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)),
-		fmt.Sprintf("--gateway=%s", gateway),
+		fmt.Sprintf("--subnet=%s", subnet.CIDR),
+		fmt.Sprintf("--gateway=%s", subnet.Gateway),
 	}
 	if ociBin == Docker {
 		// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
@@ -125,7 +136,7 @@ func tryCreateDockerNetwork(ociBin string, subnetAddr string, subnetMask int, mt
 		if strings.Contains(rr.Output(), "is being used by a network interface") {
 			return nil, ErrNetworkGatewayTaken
 		}
-		return nil, errors.Wrapf(err, "create network %s", fmt.Sprintf("%s %s/%d", name, subnetAddr, subnetMask))
+		return nil, fmt.Errorf("create %s network %s %s with gateway %s and MTU of %d: %w", ociBin, name, subnet.CIDR, subnet.Gateway, mtu, err)
 	}
 	return gateway, nil
 }
