@@ -149,8 +149,9 @@ func (d *Driver) createNetwork() error {
 	// It is assumed that the libvirt/kvm installation has already created this network
 	netd, err := conn.LookupNetworkByName(d.Network)
 	if err != nil {
-		return errors.Wrapf(err, "KVM network %s doesn't exist", d.Network)
+		return errors.Wrapf(err, "%s KVM network doesn't exist", d.Network)
 	}
+	log.Debugf("found existing %s KVM network", d.Network)
 	if netd != nil {
 		_ = netd.Free()
 	}
@@ -163,48 +164,47 @@ func (d *Driver) createNetwork() error {
 			_ = netp.Free()
 		}
 	}()
-	if err != nil {
-		// retry up to 5 times to create kvm network
-		attempts := 0
-		subnetAddr := firstSubnetAddr
-		for attempts < 5 {
-			// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
-			// will be like 192.168.39.0/24,..., 192.168.248.0/24 (in increment steps of 11)
-			subnet, err := network.FreeSubnet(subnetAddr, 11, 20)
-			if err != nil {
-				log.Debugf("failed to find free subnet for KVM network %s after %d attempts: %v", d.PrivateNetwork, 20, err)
-				return fmt.Errorf("un-retryable: %w", err)
-			}
-			// create the XML for the private network from our networkTmpl
-			tryNet := kvmNetwork{
-				Name:       d.PrivateNetwork,
-				Parameters: *subnet,
-			}
-			tmpl := template.Must(template.New("network").Parse(networkTmpl))
-			var networkXML bytes.Buffer
-			if err := tmpl.Execute(&networkXML, tryNet); err != nil {
-				return fmt.Errorf("executing KVM network template: %w", err)
-			}
-			// define the network using our template
-			network, err := conn.NetworkDefineXML(networkXML.String())
-			if err != nil {
-				return fmt.Errorf("defining KVM network %s %s from xml %s: %w", d.PrivateNetwork, subnet.CIDR, networkXML.String(), err)
-			}
-			// and finally create & start it
-			log.Debugf("Trying to create KVM network %s %s...", d.PrivateNetwork, subnet.CIDR)
-			if err := network.Create(); err != nil {
-				log.Debugf("Failed to create KVM network %s %s, will retry: %v", d.PrivateNetwork, subnet.CIDR, err)
-				subnetAddr = subnet.IP
-				attempts++
-				continue
-			}
-			log.Debugf("KVM network %s %s created", d.PrivateNetwork, subnet.CIDR)
-			return nil
-		}
-		return fmt.Errorf("failed to create KVM network %s: %w", d.PrivateNetwork, err)
+	if err == nil {
+		log.Debugf("found existing private KVM network %s", d.PrivateNetwork)
+		return nil
 	}
 
-	return nil
+	// retry up to 5 times to create kvm network
+	for attempts, subnetAddr := 0, firstSubnetAddr; attempts < 5; attempts++ {
+		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
+		// will be like 192.168.39.0/24,..., 192.168.248.0/24 (in increment steps of 11)
+		var subnet *network.Parameters
+		subnet, err = network.FreeSubnet(subnetAddr, 11, 20)
+		if err != nil {
+			log.Debugf("failed to find free subnet for private KVM network %s after %d attempts: %v", d.PrivateNetwork, 20, err)
+			return fmt.Errorf("un-retryable: %w", err)
+		}
+		// create the XML for the private network from our networkTmpl
+		tryNet := kvmNetwork{
+			Name:       d.PrivateNetwork,
+			Parameters: *subnet,
+		}
+		tmpl := template.Must(template.New("network").Parse(networkTmpl))
+		var networkXML bytes.Buffer
+		if err = tmpl.Execute(&networkXML, tryNet); err != nil {
+			return fmt.Errorf("executing private KVM network template: %w", err)
+		}
+		// define the network using our template
+		var network *libvirt.Network
+		network, err = conn.NetworkDefineXML(networkXML.String())
+		if err != nil {
+			return fmt.Errorf("defining private KVM network %s %s from xml %s: %w", d.PrivateNetwork, subnet.CIDR, networkXML.String(), err)
+		}
+		// and finally create & start it
+		log.Debugf("trying to create private KVM network %s %s...", d.PrivateNetwork, subnet.CIDR)
+		if err = network.Create(); err == nil {
+			log.Debugf("private KVM network %s %s created", d.PrivateNetwork, subnet.CIDR)
+			return nil
+		}
+		log.Debugf("failed to create private KVM network %s %s, will retry: %v", d.PrivateNetwork, subnet.CIDR, err)
+		subnetAddr = subnet.IP
+	}
+	return fmt.Errorf("failed to create private KVM network %s: %w", d.PrivateNetwork, err)
 }
 
 func (d *Driver) deleteNetwork() error {

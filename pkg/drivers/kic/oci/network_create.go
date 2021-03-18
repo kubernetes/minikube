@@ -70,12 +70,11 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	}
 
 	// retry up to 5 times to create container network
-	attempts := 0
-	subnetAddr := firstSubnetAddr
-	for attempts < 5 {
+	for attempts, subnetAddr := 0, firstSubnetAddr; attempts < 5; attempts++ {
 		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 		// will be like 192.168.49.0/24,..., 192.168.220.0/24 (in increment steps of 9)
-		subnet, err := network.FreeSubnet(subnetAddr, 9, 20)
+		var subnet *network.Parameters
+		subnet, err = network.FreeSubnet(subnetAddr, 9, 20)
 		if err != nil {
 			klog.Errorf("failed to find free subnet for %s network %s after %d attempts: %v", ociBin, networkName, 20, err)
 			return nil, fmt.Errorf("un-retryable: %w", err)
@@ -92,9 +91,8 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 		}
 		klog.Warningf("failed to create %s network %s %s, will retry: %v", ociBin, networkName, subnet.CIDR, err)
 		subnetAddr = subnet.IP
-		attempts++
 	}
-	return info.gateway, fmt.Errorf("failed to create %s network %s", ociBin, networkName)
+	return info.gateway, fmt.Errorf("failed to create %s network %s: %w", ociBin, networkName, err)
 }
 
 func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, name string) (net.IP, error) {
