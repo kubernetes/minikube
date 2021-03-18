@@ -95,7 +95,7 @@ spec:
       containers:
         - name: gcp-auth
           image: {{.CustomRegistries.GCPAuthWebhook  | default .ImageRepository | default .Registries.GCPAuthWebhook }}{{.Images.GCPAuthWebhook}}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           ports:
             - containerPort: 8443
           volumeMounts:
@@ -168,25 +168,6 @@ webhooks:
     apiGroups: ["*"]
     apiVersions: ["*"]
     resources: ["pods"]
-    scope: "*"
-- name: gcp-auth-mutate-ns.k8s.io
-  failurePolicy: Ignore
-  objectSelector:
-    matchExpressions:
-      - key: gcp-auth-skip-secret
-        operator: DoesNotExist
-  sideEffects: None
-  admissionReviewVersions: ["v1","v1beta1"]
-  clientConfig:
-    service:
-      name: gcp-auth
-      namespace: gcp-auth
-      path: "/mutate/ns"
-  rules:
-  - operations: ["CREATE"]
-    apiGroups: ["*"]
-    apiVersions: ["*"]
-    resources: ["namespaces"]
     scope: "*"
 - name: gcp-auth-mutate-sa.k8s.io
   failurePolicy: Ignore
