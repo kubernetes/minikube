@@ -31,19 +31,22 @@ JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${UPSTRE
 
 ARTIFACTS=artifacts/test_reports
 
-TEST_OUT="$ARTIFACTS/out.txt"
-echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
-gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt" || true
+ls -l artifacts
+ls -l artifacts/test_reports
 
-JSON_OUT="$ARTIFACTS/out.json"
+TEST_OUT="$ARTIFACTS/test.out"
+echo ">> uploading ${TEST_OUT} to gs://${JOB_GCS_BUCKET}.txt"
+gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}.txt" || true
+
+JSON_OUT="$ARTIFACTS/json.out"
 echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 
-HTML_OUT="$ARTIFACTS/out.txt"
+HTML_OUT="$ARTIFACTS/html.out"
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
-SUMMARY_OUT="$ARTIFACTS/out.txt"
+SUMMARY_OUT="$ARTIFACTS/summary.out"
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
 #
