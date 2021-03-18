@@ -19,7 +19,6 @@ package audit
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -31,9 +30,6 @@ var currentLogFile *os.File
 // setLogFile sets the logPath and creates the log file if it doesn't exist.
 func setLogFile() error {
 	lp := localpath.AuditLog()
-	if err := os.MkdirAll(filepath.Dir(lp), 0755); err != nil {
-		return fmt.Errorf("unable to create directory: %w", err)
-	}
 	f, err := os.OpenFile(lp, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return fmt.Errorf("unable to open %s: %v", lp, err)
