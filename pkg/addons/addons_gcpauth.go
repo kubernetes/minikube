@@ -28,6 +28,7 @@ import (
 	"golang.org/x/oauth2/google"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -84,13 +85,11 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Create a registry secret in every namespace we can find
 	client, err := service.K8s.GetCoreClient(cfg.Name)
 	if err != nil {
-		exit.Message(reason.InternalCredsNotFound, err.Error())
 		return err
 	}
 
 	token, err := creds.TokenSource.Token()
 	if err != nil {
-		exit.Message(reason.InternalCredsNotFound, err.Error())
 		return err
 	}
 	data := map[string][]byte{
@@ -99,7 +98,6 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	namespaces, err := client.Namespaces().List(metav1.ListOptions{})
 	if err != nil {
-		exit.Message(reason.InternalCredsNotFound, err.Error())
 		return err
 	}
 
@@ -115,12 +113,14 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		}
 
 		_, err = secrets.Create(secretObj)
+		if err != nil {
+			return err
+		}
 
 		// Now patch the secret into all the service accounts we can find
 		serviceaccounts := client.ServiceAccounts(n.Name)
 		salist, err := serviceaccounts.List(metav1.ListOptions{})
 		if err != nil {
-			exit.Message(reason.InternalCredsNotFound, err.Error())
 			return err
 		}
 
@@ -129,7 +129,6 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 			sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
 			_, err := serviceaccounts.Update(&sa)
 			if err != nil {
-				exit.Message(reason.InternalCredsNotFound, err.Error())
 				return err
 			}
 		}
@@ -195,7 +194,10 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// No need to check for an error here, if the secret doesn't exist, no harm done.
 	for _, n := range namespaces.Items {
 		secrets := client.Secrets(n.Name)
-		secrets.Delete(secretName, &metav1.DeleteOptions{})
+		err := secrets.Delete(secretName, &metav1.DeleteOptions{})
+		if err != nil {
+			klog.Infof("error deleting secret: %v", err)
+		}
 	}
 
 	return nil
