@@ -250,8 +250,14 @@ For more information on the `podman build` command, read the [Podman documentati
 For Containerd, use:
 
 ```shell
+sudo ctr images import
+```
+
+```shell
 sudo buildctl build
 ```
+
+For more information on the `ctr images` command, read the [containerd documentation](https://containerd.io/docs/getting-started/) (containerd.io)
 
 For more information on the `buildctl build` command, read the [Buildkit documentation](https://github.com/moby/buildkit#quick-start) (mobyproject.org).
 
@@ -267,18 +273,45 @@ This is similar to docker-env and podman-env but only for Containerd runtime.
 
 Currently it requires starting the daemon and setting up the tunnels manually.
 
-**Instructions:**
+### `ctr` instructions
 
-Start the BuildKit daemon, using the containerd backend.
+In order to access containerd, you need to log in as `root`.
+This requires adding the ssh key to `/root/authorized_keys`..
 
-```bash
-minikube ssh -- sudo -b buildkitd --oci-worker=false --containerd-worker=true --containerd-worker-namespace=k8s.io
+```console
+docker@minikube:~$ sudo mkdir /root/.ssh
+docker@minikube:~$ sudo chmod 700 /root/.ssh
+docker@minikube:~$ sudo cp .ssh/authorized_keys /root/.ssh/authorized_keys
+docker@minikube:~$ sudo chmod 600 /root/.ssh
 ```
 
 Note the flags that are needed for the `ssh` command.
 
 ```bash
 minikube --alsologtostderr ssh --native-ssh=false
+```
+
+Tunnel the containerd socket to the host, from the machine.
+(_Use above ssh flags (most notably the -p port and root@host)_)
+
+```bash
+ssh -nNT -L ./containerd.sock:/run/containerd/containerd.sock ... &
+```
+
+Now you can run command to this unix socket, tunneled over ssh.
+
+```bash
+ctr --address ./containerd.sock help
+```
+
+Images in "k8s.io" namespace are accessible to kubernetes cluster.
+
+### `buildctl` instructions
+
+Start the BuildKit daemon, using the containerd backend.
+
+```console
+docker@minikube:~$ sudo -b buildkitd --oci-worker=false --containerd-worker=true --containerd-worker-namespace=k8s.io
 ```
 
 Make the BuildKit socket accessible to the regular user.
@@ -288,6 +321,12 @@ docker@minikube:~$ sudo groupadd buildkit
 docker@minikube:~$ sudo chgrp -R buildkit /run/buildkit
 docker@minikube:~$ sudo usermod -aG buildkit $USER
 docker@minikube:~$ exit
+```
+
+Note the flags that are needed for the `ssh` command.
+
+```bash
+minikube --alsologtostderr ssh --native-ssh=false
 ```
 
 Tunnel the BuildKit socket to the host, from the machine.
