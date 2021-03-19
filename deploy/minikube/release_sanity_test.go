@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"runtime"
 	"testing"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
@@ -56,7 +57,7 @@ func TestReleasesJSON(t *testing.T) {
 		fmt.Printf("Checking release: %s\n", r.Name)
 		for platform, sha := range r.Checksums {
 			fmt.Printf("Checking SHA for %s.\n", platform)
-			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform))
+			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform, runtime.GOARCH))
 			if err != nil {
 				t.Errorf("Error calculating SHA for %s-%s. Error: %v", r.Name, platform, err)
 				continue
