@@ -10,6 +10,11 @@ aliases:
  - /docs/tasks/docker_daemon
 ---
 
+Glossary:
+
+**Load** takes an image that is available as an archive, and makes it available in the cluster.
+
+**Build** takes a "build context" (directory) and creates a new image in the cluster from it.
 
 ## Comparison table for different methods
 
