@@ -95,7 +95,7 @@ spec:
       containers:
         - name: gcp-auth
           image: {{.CustomRegistries.GCPAuthWebhook  | default .ImageRepository | default .Registries.GCPAuthWebhook }}{{.Images.GCPAuthWebhook}}
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
           volumeMounts:
