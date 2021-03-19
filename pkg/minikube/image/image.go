@@ -19,7 +19,6 @@ package image
 import (
 	"context"
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -33,8 +32,10 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
