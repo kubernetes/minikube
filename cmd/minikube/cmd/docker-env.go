@@ -252,7 +252,8 @@ var dockerEnvCmd = &cobra.Command{
 		sh := shell.EnvConfig{
 			Shell: shl,
 		}
-
+		cname := ClusterFlagValue()
+		co := mustload.Running(cname)
 		if dockerUnset {
 			if err := dockerUnsetScript(DockerEnvConfig{EnvConfig: sh}, os.Stdout); err != nil {
 				exit.Error(reason.InternalEnvScript, "Error generating unset output", err)
@@ -265,8 +266,6 @@ var dockerEnvCmd = &cobra.Command{
 			exit.SetShell(true)
 		}
 
-		cname := ClusterFlagValue()
-		co := mustload.Running(cname)
 		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {
