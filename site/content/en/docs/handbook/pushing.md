@@ -16,19 +16,20 @@ aliases:
 The best method to push your image to minikube depends on the container-runtime you built your cluster with (the default is docker).
 Here is a comparison table to help you choose:
 
-| Method    | Supported Runtimes    |  |  Performance  |
-|--- |--- |--- |--- |--- |
-|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  |
-|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  |
-|  [buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  |
-|  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  |
-|  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  |
-|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  |
-|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  |
-|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  |
+| Method | Supported Runtimes | Performance | Load | Build |
+|--- |--- |--- |--- |--- |--- |--- |
+|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  | yes | yes |
+|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  | yes | yes |
+|  [ctr/buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  | yes | yes |
+|  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  | yes | no |
+|  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  | no | yes |
+|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  | yes | no |
+|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  | yes | no |
+|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  | yes\* | yes\* |
 
 * note1 : the default container-runtime on minikube is 'docker'.
 * note2 : 'none' driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the kubernetes.
+* note3: when using ssh to run the commands, the files to load or build must already be available on the node (not only on the client host).
 
 ---
 
