@@ -199,14 +199,21 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 	apiServerIPs := append(k8s.APIServerIPs,
 		net.ParseIP(n.IP), serviceIP, net.ParseIP(oci.DefaultBindIPV4), net.ParseIP("10.0.0.1"))
 
-	if v := oci.DaemonHost(k8s.ContainerRuntime); v != oci.DefaultBindIPV4 {
-		apiServerIPs = append(apiServerIPs, net.ParseIP(v))
-	}
-
 	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName, constants.ControlPlaneAlias)
 	apiServerAlternateNames := append(
 		apiServerNames,
 		util.GetAlternateDNS(k8s.DNSDomain)...)
+
+	daemonHost := oci.DaemonHost(k8s.ContainerRuntime)
+	if daemonHost != oci.DefaultBindIPV4 {
+		daemonHostIP := net.ParseIP(daemonHost)
+		// if daemonHost is an IP we add it to the certificate's IPs, otherwise we assume it's an hostname and add it to the alternate names
+		if daemonHostIP != nil {
+			apiServerIPs = append(apiServerIPs, daemonHostIP)
+		} else {
+			apiServerAlternateNames = append(apiServerAlternateNames, daemonHost)
+		}
+	}
 
 	// Generate a hash input for certs that depend on ip/name combinations
 	hi := []string{}
