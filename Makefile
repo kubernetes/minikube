@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.18.0
+ISO_VERSION ?= v1.18.0-1615350772-10704
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -84,6 +84,7 @@ export GO111MODULE := on
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
+GOARM ?= 7 # the default is 5
 GOPATH ?= $(shell go env GOPATH)
 BUILD_DIR ?= ./out
 $(shell mkdir -p $(BUILD_DIR))
@@ -191,7 +192,7 @@ endif
 
 out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) go.mod
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) /usr/bin/make $@)
+	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) /usr/bin/make $@)
 else
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)go build $(MINIKUBE_GOFLAGS) -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
@@ -205,13 +206,25 @@ out/minikube-linux-x86_64: out/minikube-linux-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
+out/minikube-linux-armhf: out/minikube-linux-arm
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/minikube-linux-armv7hl: out/minikube-linux-arm
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
 out/minikube-linux-aarch64: out/minikube-linux-arm64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
+out/minikube-linux-ppc64el: out/minikube-linux-ppc64le
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
 .PHONY: minikube-linux-amd64 minikube-linux-arm64
-minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux 64bit
-minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for arm 64bit
+minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux x86 64bit
+minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for Linux ARM 64bit
 
 .PHONY: minikube-darwin-amd64 minikube-darwin-arm64
 minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin x86 64bit
@@ -220,12 +233,14 @@ minikube-darwin-arm64: out/minikube-darwin-arm64 ## Build Minikube for Darwin AR
 .PHONY: minikube-windows-amd64.exe
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for Windows 64bit
 
+eq = $(and $(findstring x$(1),x$(2)),$(findstring x$(2),x$(1)))
+
 out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" \
+	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" $(if $(call eq,$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*))),arm),GOARM=$(GOARM)) \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
