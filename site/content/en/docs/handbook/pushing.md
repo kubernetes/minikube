@@ -23,7 +23,7 @@ Here is a comparison table to help you choose:
 |  [buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  |
 |  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  |
 |  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  |
-|  [cache add command]({{< ref "/docs/commands/cache.md#minikube-cache-add" >}})  |  all  |  ok  |
+|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  |
 |  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  |
 |  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  |
 
