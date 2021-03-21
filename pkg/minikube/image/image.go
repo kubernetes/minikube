@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -86,6 +87,7 @@ func DigestByGoLib(imgName string) string {
 // ExistsImageInDaemon if img exist in local docker daemon
 func ExistsImageInDaemon(img string) bool {
 	// Check if image exists locally
+	klog.Infof("Checking for %s in local docker daemon", img)
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
 	if output, err := cmd.Output(); err == nil {
 		if strings.Contains(string(output), img) {
@@ -137,6 +139,9 @@ func Tag(img string) string {
 
 // WriteImageToDaemon write img to the local docker daemon
 func WriteImageToDaemon(img string) error {
+	// buffered channel
+	c := make(chan v1.Update, 200)
+
 	klog.Infof("Writing %s to local daemon", img)
 	ref, err := name.ParseReference(img)
 	if err != nil {
@@ -156,12 +161,38 @@ func WriteImageToDaemon(img string) error {
 		return errors.Wrap(err, "getting remote image")
 	}
 	klog.V(3).Infof("Writing image %v", ref)
-	_, err = daemon.Write(ref, i)
-	if err != nil {
-		return errors.Wrap(err, "writing daemon image")
+	errchan := make(chan error)
+	p := pb.Full.Start64(0)
+	fn := strings.Split(ref.Name(), "@")[0]
+	// abbreviate filename for progress
+	maxwidth := 30 - len("...")
+	if len(fn) > maxwidth {
+		fn = fn[0:maxwidth] + "..."
 	}
+	p.Set("prefix", "    > "+fn+": ")
+	p.Set(pb.Bytes, true)
 
-	return nil
+	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
+	p.SetWidth(79)
+
+	go func() {
+		_, err = daemon.Write(ref, i, tarball.WithProgress(c))
+		errchan <- err
+	}()
+	var update v1.Update
+	for {
+		select {
+		case update = <-c:
+			p.SetCurrent(update.Complete)
+			p.SetTotal(update.Total)
+		case err = <-errchan:
+			p.Finish()
+			if err != nil {
+				return errors.Wrap(err, "writing daemon image")
+			}
+			return nil
+		}
+	}
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {

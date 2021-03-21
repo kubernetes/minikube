@@ -94,6 +94,10 @@ github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21 h1:Pgxfz/g+Xy
 github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21/go.mod h1:Y8CJ3IwPIAkMhv/rRUWIlczaeqd9ty9yrl+nc2AbaL4=
 github.com/afbjorklund/go-containerregistry v0.1.2-0.20210306075852-e67a8ff8ae6f h1:TqV4eXL41kacdMcZz2wVkodIKMh4Ruc3rGLP5T/bRgQ=
 github.com/afbjorklund/go-containerregistry v0.1.2-0.20210306075852-e67a8ff8ae6f/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYVaIZs/MK/Jz5any1wFW0=
+github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321082428-ecd05871b469 h1:Idy/v8PWwrQimq2QOwDyW4KOLJ25hgn+smqsXjRKJHM=
+github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321082428-ecd05871b469/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYVaIZs/MK/Jz5any1wFW0=
+github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321165649-761f6f9626b1 h1:AI8EIk8occ3pruhaTpkaQxQGlC1dHx3J9hAtg7t+FLI=
+github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321165649-761f6f9626b1/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYVaIZs/MK/Jz5any1wFW0=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
