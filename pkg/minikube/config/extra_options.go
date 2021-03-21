@@ -65,6 +65,11 @@ func (es *ExtraOptionSlice) Exists(value string) bool {
 
 // Set parses the string value into a slice
 func (es *ExtraOptionSlice) Set(value string) error {
+	// Check doesn't start or end with a quotation.
+	if strings.HasPrefix(value, "”") || strings.HasSuffix(value, "”") {
+		return fmt.Errorf("invalid value: canot contain quotation: %q", value)
+	}
+
 	// The component is the value before the first dot.
 	componentSplit := strings.SplitN(value, ".", 2)
 	if len(componentSplit) < 2 {
