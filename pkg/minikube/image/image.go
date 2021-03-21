@@ -87,6 +87,7 @@ func DigestByGoLib(imgName string) string {
 // ExistsImageInDaemon if img exist in local docker daemon
 func ExistsImageInDaemon(img string) bool {
 	// Check if image exists locally
+	klog.Infof("Checking for %s in local docker daemon", img)
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
 	if output, err := cmd.Output(); err == nil {
 		if strings.Contains(string(output), img) {
