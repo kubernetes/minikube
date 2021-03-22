@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/reason"
 )
@@ -108,9 +109,9 @@ var loadImageCmd = &cobra.Command{
 			args = []string{tmp}
 		}
 
-		// Currently "image.retrieveImage" always tries to load both from daemon and from remote
-		// There is no way to skip daemon.Image or remote.Image, for the vague "ref" string given.
 		if imgDaemon || imgRemote {
+			image.UseDaemon = imgDaemon
+			image.UseRemote = imgRemote
 			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}

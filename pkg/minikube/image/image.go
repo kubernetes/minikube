@@ -46,6 +46,12 @@ var defaultPlatform = v1.Platform{
 	OS:           "linux",
 }
 
+// UseDaemon is if we should look in local daemon for image ref
+var UseDaemon = true
+
+// UseRemote is if we should look in remote registry for image ref
+var UseRemote = true
+
 // DigestByDockerLib uses client by docker lib to return image digest
 // img.ID in as same as image digest
 func DigestByDockerLib(imgClient *client.Client, imgName string) string {
@@ -165,25 +171,37 @@ func WriteImageToDaemon(img string) error {
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {
+	var err error
+	var img v1.Image
+
 	klog.Infof("retrieving image: %+v", ref)
-	img, err := daemon.Image(ref)
-	if err == nil {
-		klog.Infof("found %s locally: %+v", ref.Name(), img)
-		return img, nil
-	}
-	// reference does not exist in the local daemon
-	if err != nil {
-		klog.Infof("daemon lookup for %+v: %v", ref, err)
-	}
-
-	platform := defaultPlatform
-	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
-	if err == nil {
-		return img, nil
+	if UseDaemon {
+		img, err = daemon.Image(ref)
+		if err == nil {
+			klog.Infof("found %s locally: %+v", ref.Name(), img)
+			return img, nil
+		}
+		// reference does not exist in the local daemon
+		if err != nil {
+			klog.Infof("daemon lookup for %+v: %v", ref, err)
+		}
 	}
 
-	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
-	img, err = remote.Image(ref)
+	if UseRemote {
+		platform := defaultPlatform
+		img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
+		if err == nil {
+			return img, nil
+		}
+
+		klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
+		img, err = remote.Image(ref)
+		// reference does not exist in the remote registry
+		if err != nil {
+			klog.Infof("remote lookup for %+v: %v", ref, err)
+		}
+	}
+
 	return img, err
 }
 
