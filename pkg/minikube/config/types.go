@@ -53,7 +53,6 @@ type ClusterConfig struct {
 	HypervUseExternalSwitch bool
 	HypervExternalAdapter   string
 	KVMNetwork              string   // Only used by the KVM2 driver
-	KVMPrivateNetwork       string   // Only used by the KVM2 driver
 	KVMQemuURI              string   // Only used by the KVM2 driver
 	KVMGPU                  bool     // Only used by the KVM2 driver
 	KVMHidden               bool     // Only used by the KVM2 driver
