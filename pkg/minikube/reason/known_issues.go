@@ -223,6 +223,16 @@ var providerIssues = []match{
 	// Docker environment
 	{
 		Kind: Kind{
+			ID:       "PR_DOCKER_IP_CONFLICT",
+			ExitCode: ExProviderError,
+			Advice:   "Run: 'minikube delete --all' to clean up all the abandoned networks.",
+			Issues:   []int{9605},
+		},
+		Regexp: re(`cannot find cgroup mount destination: unknown`),
+		GOOS:   []string{"linux"},
+	},
+	{
+		Kind: Kind{
 			ID:       "PR_DOCKER_CGROUP_MOUNT",
 			ExitCode: ExProviderError,
 			Advice:   "Run: 'sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd'",
@@ -364,6 +374,18 @@ var providerIssues = []match{
 
 	// KVM hypervisor
 	{
+		Kind: Kind{
+			ID:       "PR_KVM_MISSING_NETWORK",
+			ExitCode: ExProviderError,
+			Advice:   "Validate your KVM networks. Run: virt-host-validate and then virsh net-list --all",
+			Issues:   []int{9009},
+			URL:      "https://minikube.sigs.k8s.io/docs/drivers/kvm2/",
+		},
+		Regexp: re(`Message='Network not found: no network with matching name`),
+		GOOS:   []string{"linux"},
+	},
+	{
+
 		Kind: Kind{
 			ID:       "PR_KVM_USER_PERMISSION",
 			ExitCode: ExProviderPermission,
@@ -850,6 +872,25 @@ var internetIssues = []match{
 }
 
 var guestIssues = []match{
+	{
+		Kind: Kind{
+			ID:       "GUEST_PROVISION_NOSPACE",
+			ExitCode: ExInsufficientStorage,
+			Advice:   "Ensure you have at least 20GB of free disk space.",
+		},
+		// https://github.com/kubernetes/minikube/issues/10482
+		Regexp: re(`no space left on device`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_KIC_CP_PUBKEY",
+			ExitCode: ExGuestError,
+			Advice:   "Ensure the tmp directory path is writable to the current user.",
+			Issues:   []int{10772},
+		},
+		// copying pub key: docker copy /var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169 into minikube:/home/docker/.ssh/authorized_keys, output: lstat /private/var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169: no such file or directory
+		Regexp: re(`copying pub key:*.* no such file or directory`),
+	},
 	{
 		Kind: Kind{
 			ID:       "GUEST_KVM2_NO_DOMAIN",

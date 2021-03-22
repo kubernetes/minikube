@@ -2,7 +2,7 @@
 title: "Pushing images"
 weight: 5
 description: >
- comparing 6 ways to push your image into a minikube cluster.
+ comparing 8 ways to push your image into a minikube cluster.
 aliases:
  - /docs/tasks/building
  - /docs/tasks/caching
@@ -21,7 +21,9 @@ Here is a comparison table to help you choose:
 |  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  |
 |  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  |
 |  [buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  |
-|  [cache add command]({{< ref "/docs/commands/cache.md#minikube-cache-add" >}})  |  all  |  ok  |
+|  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  |
+|  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  |
+|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  |
 |  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  |
 |  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  |
 
@@ -300,3 +302,33 @@ buildctl --addr unix://buildkitd.sock build \
 ```
 
 now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+
+---
+
+## 7. Loading directly to in-cluster container runtime
+
+The minikube client will talk directly to the container runtime in the
+cluster, and run the load commands there - against the same storage.
+
+```shell
+minikube image load my_image
+```
+
+For more information, see:
+
+* [Reference: image load command]({{< ref "/docs/commands/image.md#minikube-image-load" >}})
+
+---
+
+## 8. Building images to in-cluster container runtime
+
+The minikube client will talk directly to the container runtime in the
+cluster, and run the build commands there - against the same storage.
+
+```shell
+minikube image build -t my_image .
+```
+
+For more information, see:
+
+* [Reference: image build command]({{< ref "/docs/commands/image.md#minikube-image-build" >}})
