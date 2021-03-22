@@ -43,19 +43,19 @@ var (
 )
 
 func saveFile(r io.Reader) (string, error) {
-        tmp, err := ioutil.TempFile("", "build.*.tar")
-        if err != nil {
-                return "", err
-        }
-        _, err = io.Copy(tmp, r)
-        if err != nil {
-                return "", err
-        }
-        err = tmp.Close()
-        if err != nil {
-                return "", err
-        }
-        return tmp.Name(), nil
+	tmp, err := ioutil.TempFile("", "build.*.tar")
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(tmp, r)
+	if err != nil {
+		return "", err
+	}
+	err = tmp.Close()
+	if err != nil {
+		return "", err
+	}
+	return tmp.Name(), nil
 }
 
 // loadImageCmd represents the image load command
@@ -101,11 +101,11 @@ var loadImageCmd = &cobra.Command{
 		}
 
 		if args[0] == "-" {
-                        tmp, err := saveFile(os.Stdin)
-                        if err != nil {
-                                exit.Error(reason.GuestImageLoad, "Failed to save stdin", err)
-                        }
-                        args = []string{tmp}
+			tmp, err := saveFile(os.Stdin)
+			if err != nil {
+				exit.Error(reason.GuestImageLoad, "Failed to save stdin", err)
+			}
+			args = []string{tmp}
 		}
 
 		// Currently "image.retrieveImage" always tries to load both from daemon and from remote
