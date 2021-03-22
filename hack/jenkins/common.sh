@@ -333,6 +333,10 @@ min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
+SHORT_COMMIT=${COMMIT:0:7}
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
+echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
+gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
 
 echo ">> Attmpting to convert test logs to json"
@@ -356,13 +360,11 @@ echo ">> Installing jq"
 fi
 
 echo ">> Installing gopogh"
-curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-${OS_ARCH}"
-sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
-
-#temp
-echo $PATH
-ls /usr/local/bin
-
+if [ "$(uname)" != "Darwin" ]; then
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+else
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+fi
 
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
@@ -373,7 +375,7 @@ touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
 gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
-test_num=$(echo $gopogh_status | jq '.NumberOfTests')       
+test_num=$(echo $gopogh_status | jq '.NumberOfTests')
 pessimistic_status="${fail_num} / ${test_num} failures"
 description="completed with ${status} in ${elapsed} minute(s)."
 if [ "$status" = "failure" ]; then
@@ -381,32 +383,19 @@ if [ "$status" = "failure" ]; then
 fi
 echo $description
 
-
-REPORTS_PATH=test_reports
-mkdir -p "$REPORTS_PATH"
-cp "${TEST_OUT}" "$REPORTS_PATH/test.out"
-cp "${JSON_OUT}" "$REPORTS_PATH/json.out"
-cp "${HTML_OUT}" "$REPORTS_PATH/html.out"
-cp "${SUMMARY_OUT}" "$REPORTS_PATH/summary.out"
-
-# upload results to GCS
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}"
-
-echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
-gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt" || true
-
 echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
-
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
-
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-#
 
 
 
+public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
+if grep -q html "$HTML_OUT"; then
+  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
+fi
 
 echo ">> Cleaning up after ourselves ..."
 timeout 3m ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
@@ -415,19 +404,14 @@ cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
-#${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
-#${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
-#${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
+${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
+${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
+${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
 rmdir "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   exit $result
-fi
-
-public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
-if grep -q html "$HTML_OUT"; then
-  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
 fi
 
 # retry_github_status provides reliable github status updates
@@ -461,9 +445,10 @@ function retry_github_status() {
     echo "HTTP code ${code}! Retrying in ${timeout} .."
     sleep "${timeout}"
     attempt=$(( attempt + 1 ))
-    timeout=$(( timeout * 5 )) 
+    timeout=$(( timeout * 5 ))
   done
 }
+
 
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
 exit $result
