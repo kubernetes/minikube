@@ -148,7 +148,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 
 func renderProfilesTable(ps [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes"})
+	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
