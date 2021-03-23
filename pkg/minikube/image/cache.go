@@ -34,6 +34,17 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
+type cacheError struct {
+	Err error
+}
+
+func (f *cacheError) Error() string {
+	return f.Err.Error()
+}
+
+// errCacheImageDoesntExist is thrown when image that user is trying to add does not exist
+var errCacheImageDoesntExist = &cacheError{errors.New("the image you are trying to add does not exist")}
+
 // DeleteFromCacheDir deletes tar files stored in cache dir
 func DeleteFromCacheDir(images []string) error {
 	for _, image := range images {
@@ -116,7 +127,7 @@ func saveToTarFile(iname, rawDest string) error {
 
 	img, err := retrieveImage(ref)
 	if err != nil {
-		klog.Warningf("unable to retrieve image: %v", err)
+		return errCacheImageDoesntExist
 	}
 	if img == nil {
 		return errors.Wrapf(err, "nil image for %s", iname)
