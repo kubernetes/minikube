@@ -390,10 +390,6 @@ cp "${HTML_OUT}" "$REPORTS_PATH/out.html"
 cp "${SUMMARY_OUT}" "$REPORTS_PATH/summary.txt"
 
 
-# upload results to GCS
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}"
-
-
 echo ">> Cleaning up after ourselves ..."
 timeout 3m ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
 timeout 5m ${SUDO_PREFIX}${MINIKUBE_BIN} delete --all --purge >/dev/null 2>/dev/null || true
@@ -409,10 +405,7 @@ if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   exit "$result"
 fi
 
-public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
-if grep -q html "$HTML_OUT"; then
-  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
-fi
+public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}.html"
 
 # retry_github_status provides reliable github status updates
 function retry_github_status() {
@@ -427,6 +420,8 @@ function retry_github_status() {
   local attempt=0
   local timeout=2
   local code=-1
+
+  echo "set GitHub status $context to $desc"
 
   while [[ "${attempt}" -lt 8 ]]; do
     local out=$(mktemp)
@@ -451,4 +446,4 @@ function retry_github_status() {
 
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
 
-exit $result
+exit "$result"
