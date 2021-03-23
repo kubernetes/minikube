@@ -79,7 +79,7 @@ Load a image into minikube
 Load a image into minikube
 
 ```shell
-minikube image load [flags]
+minikube image load IMAGE | ARCHIVE | - [flags]
 ```
 
 ### Examples
