@@ -49,11 +49,20 @@ var defaultPlatform = v1.Platform{
 	OS:           "linux",
 }
 
+var (
+	useDaemon = true
+	useRemote = true
+)
+
 // UseDaemon is if we should look in local daemon for image ref
-var UseDaemon = true
+func UseDaemon(use bool) {
+	useDaemon = use
+}
 
 // UseRemote is if we should look in remote registry for image ref
-var UseRemote = true
+func UseRemote(use bool) {
+	useRemote = use
+}
 
 // DigestByDockerLib uses client by docker lib to return image digest
 // img.ID in as same as image digest
@@ -208,14 +217,14 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	var img v1.Image
 
 	klog.Infof("retrieving image: %+v", ref)
-	if UseDaemon {
+	if useDaemon {
 		img, err = retrieveDaemon(ref)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if UseRemote {
+	if useRemote {
 		img, err = retrieveRemote(ref, defaultPlatform)
 		if err != nil {
 			return nil, err
