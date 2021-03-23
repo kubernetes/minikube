@@ -34,7 +34,7 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-readonly TIMEOUT=${1:-70m}
+readonly TIMEOUT=${1:-120m}
 
 if [ "$(uname)" != "Darwin" ]; then
   # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
@@ -42,7 +42,7 @@ if [ "$(uname)" != "Darwin" ]; then
 fi
 
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
+sudo ARCH="$ARCH"./installers/check_install_golang.sh "1.16" "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh
@@ -384,10 +384,11 @@ echo "$description"
 
 REPORTS_PATH=test_reports
 mkdir -p "$REPORTS_PATH"
-cp "${TEST_OUT}" "$REPORTS_PATH/test.out"
-cp "${JSON_OUT}" "$REPORTS_PATH/json.out"
-cp "${HTML_OUT}" "$REPORTS_PATH/html.out"
-cp "${SUMMARY_OUT}" "$REPORTS_PATH/summary.out"
+cp "${TEST_OUT}" "$REPORTS_PATH/out.txt"
+cp "${JSON_OUT}" "$REPORTS_PATH/out.json"
+cp "${HTML_OUT}" "$REPORTS_PATH/out.html"
+cp "${SUMMARY_OUT}" "$REPORTS_PATH/summary.txt"
+
 
 # upload results to GCS
 JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}"

@@ -33,6 +33,6 @@ docker rm -f -v "$(docker ps -aq)" >/dev/null 2>&1 || true
 ARCH="arm64" \
 OS="linux" \
 VM_DRIVER="docker" \
-JOB_NAME="Docker_Linux_containerd_arm64" \
+JOB_NAME="$JOB_NAME" \
 CONTAINER_RUNTIME="containerd" \
 source ./run_tests.sh

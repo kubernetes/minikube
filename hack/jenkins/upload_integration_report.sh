@@ -34,19 +34,19 @@ ARTIFACTS=artifacts/test_reports
 ls -l artifacts
 ls -l artifacts/test_reports
 
-TEST_OUT="$ARTIFACTS/test.out"
+TEST_OUT="$ARTIFACTS/out.txt"
 echo ">> uploading ${TEST_OUT} to gs://${JOB_GCS_BUCKET}.txt"
 gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}.txt" || true
 
-JSON_OUT="$ARTIFACTS/json.out"
+JSON_OUT="$ARTIFACTS/out.json"
 echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 
-HTML_OUT="$ARTIFACTS/html.out"
+HTML_OUT="$ARTIFACTS/out.html"
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
-SUMMARY_OUT="$ARTIFACTS/summary.out"
+SUMMARY_OUT="$ARTIFACTS/summary.txt"
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
 #
