@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/briandowns/spinner"
 	isatty "github.com/mattn/go-isatty"
 
@@ -107,6 +108,26 @@ func Styled(st style.Enum, format string, a ...V) {
 	} else {
 		String(outStyled)
 	}
+}
+
+// Boxed writes a stylized and templated message in a box to stdout
+func Boxed(st style.Enum, format string, a ...V) {
+	str := Sprintf(style.None, format, a...)
+	str = strings.TrimSpace(str)
+	box := box.New(box.Config{Type: "Round"})
+	if useColor {
+		box.Config.Color = "Red"
+	}
+	txt := strings.Split(box.String("", str), "\n")
+	Styled(style.Indent, txt[0])
+	Styled(st, txt[1])
+	Styled(style.Indent, txt[2])
+}
+
+// Sprintf is used for returning the string (doesn't write anything)
+func Sprintf(st style.Enum, format string, a ...V) string {
+	outStyled, _ := stylized(st, useColor, format, a...)
+	return outStyled
 }
 
 // Infof is used for informational logs (options, env variables, etc)

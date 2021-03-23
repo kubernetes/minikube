@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.13.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
 	github.com/Azure/azure-sdk-for-go v42.3.0+incompatible
+	github.com/Delta456/box-cli-maker/v2 v2.2.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
