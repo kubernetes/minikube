@@ -491,12 +491,6 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 		t.Fatalf("failed waiting for pod task-pv-pod: %v", err)
 	}
 
-	// create sample snapshotclass
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "snapshotclass.yaml")))
-	if err != nil {
-		t.Logf("creating snapshostclass with %s failed: %v", rr.Command(), err)
-	}
-
 	// create volume snapshot
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "snapshot.yaml")))
 	if err != nil {
