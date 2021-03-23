@@ -44,12 +44,6 @@ var (
 
 var targetIP *string
 
-var minikubeSystemNamespaces = []string{
-	metav1.NamespaceSystem,
-	metav1.NamespacePublic,
-	"auto-pause",
-}
-
 func handler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling a request")
 
@@ -93,7 +87,7 @@ func admissionError(err error) *v1.AdmissionResponse {
 	}
 }
 
-// Create the admission descision for the request
+// Create the admission decision for the request
 func AdmissionDecision(admReq *v1.AdmissionReview) *v1.AdmissionResponse {
 	req := admReq.Request
 	var pod corev1.Pod
@@ -169,7 +163,7 @@ func main() {
 
 	log.Printf("Starting HTTPS webhook server on %+v and target ip is %v", *addr, *targetIP)
 	cacert, serverCert, serverKey := gencerts()
-	clientset := Client()
+	clientset := client()
 	server := &http.Server{
 		Addr:      *addr,
 		TLSConfig: configTLS(clientset, serverCert, serverKey),

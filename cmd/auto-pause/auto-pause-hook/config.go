@@ -33,10 +33,11 @@ import (
 var (
 	webhookName       = "env-inject-webhook"
 	webhookConfigName = "env-inject.zyanshu.io"
+	skipLabel         = "auto-pause-skip"
 )
 
 // Create a clientset with in-cluster config.
-func Client() *kubernetes.Clientset {
+func client() *kubernetes.Clientset {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		glog.Fatal(err)
@@ -50,7 +51,7 @@ func Client() *kubernetes.Clientset {
 
 // Retrieve the CA cert that will signed the cert used by the
 // "GenericAdmissionWebhook" plugin admission controller.
-func APIServerCert(clientset *kubernetes.Clientset) []byte {
+func apiServerCert(clientset *kubernetes.Clientset) []byte {
 	c, err := clientset.CoreV1().ConfigMaps("kube-system").Get("extension-apiserver-authentication", metav1.GetOptions{})
 	if err != nil {
 		glog.Fatal(err)
@@ -65,7 +66,7 @@ func APIServerCert(clientset *kubernetes.Clientset) []byte {
 }
 
 func configTLS(clientset *kubernetes.Clientset, serverCert []byte, serverKey []byte) *tls.Config {
-	cert := APIServerCert(clientset)
+	cert := apiServerCert(clientset)
 	apiserverCA := x509.NewCertPool()
 	apiserverCA.AppendCertsFromPEM(cert)
 
@@ -122,7 +123,7 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 				ObjectSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
 						{
-							Key:      "auto-pause-skip",
+							Key:      skipLabel,
 							Operator: metav1.LabelSelectorOpDoesNotExist,
 						},
 					},
