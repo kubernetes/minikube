@@ -39,6 +39,6 @@ $ minikube addons enable ingress
 ```
 - Verify if custom certificate was enabled
 ```
-$ kubectl -n kube-system get deployment ingress-nginx-controller -o yaml | grep "kube-system"
+$ kubectl -n ingress-nginx get deployment ingress-nginx-controller -o yaml | grep "kube-system"
 - --default-ssl-certificate=kube-system/mkcert
 ```

@@ -226,11 +226,11 @@ var Addons = map[string]*Addon{
 			"ingress-dp.yaml",
 			"0640"),
 	}, false, "ingress", map[string]string{
-		"IngressController":        "k8s-artifacts-prod/ingress-nginx/controller:v0.40.2@sha256:46ba23c3fbaafd9e5bd01ea85b2f921d9f2217be082580edc22e6c704a83f02f",
-		"KubeWebhookCertgenCreate": "jettech/kube-webhook-certgen:v1.2.2@sha256:da8122a78d7387909cf34a0f34db0cce672da1379ee4fd57c626a4afe9ac12b7",
-		"KubeWebhookCertgenPatch":  "jettech/kube-webhook-certgen:v1.3.0@sha256:ff01fba91131ed260df3f3793009efbf9686f5a5ce78a85f81c386a4403f7689",
+		"IngressController":        "ingress-nginx/controller:v0.44.0@sha256:3dd0fac48073beaca2d67a78c746c7593f9c575168a17139a9955a82c63c4b9a",
+		"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+		"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
 	}, map[string]string{
-		"IngressController": "us.gcr.io",
+		"IngressController": "k8s.gcr.io",
 	}),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(

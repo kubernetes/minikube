@@ -281,7 +281,11 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 }
 
 func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
-	return verifyAddonStatusInternal(cc, name, val, "kube-system")
+	ns := "kube-system"
+	if name == "ingress" {
+		ns = "ingress-nginx"
+	}
+	return verifyAddonStatusInternal(cc, name, val, ns)
 }
 
 func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string) error {
