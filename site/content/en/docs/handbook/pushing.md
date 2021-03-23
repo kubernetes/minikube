@@ -2,7 +2,7 @@
 title: "Pushing images"
 weight: 5
 description: >
- comparing 6 ways to push your image into a minikube cluster.
+ comparing 8 ways to push your image into a minikube cluster.
 aliases:
  - /docs/tasks/building
  - /docs/tasks/caching
@@ -10,23 +10,31 @@ aliases:
  - /docs/tasks/docker_daemon
 ---
 
+Glossary:
+
+**Load** takes an image that is available as an archive, and makes it available in the cluster.
+
+**Build** takes a "build context" (directory) and creates a new image in the cluster from it.
 
 ## Comparison table for different methods
 
 The best method to push your image to minikube depends on the container-runtime you built your cluster with (the default is docker).
 Here is a comparison table to help you choose:
 
-| Method    | Supported Runtimes    |  |  Performance  |
-|--- |--- |--- |--- |--- |
-|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  |
-|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  |
-|  [buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  |
-|  [cache add command]({{< ref "/docs/commands/cache.md#minikube-cache-add" >}})  |  all  |  ok  |
-|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  |
-|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  |
+| Method | Supported Runtimes | Performance | Load | Build |
+|--- |--- |--- |--- |--- |--- |--- |
+|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  | yes | yes |
+|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  | yes | yes |
+|  [ctr/buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  | yes | yes |
+|  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  | yes | no |
+|  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  | no | yes |
+|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  | yes | no |
+|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  | yes | no |
+|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  | yes\* | yes\* |
 
 * note1 : the default container-runtime on minikube is 'docker'.
 * note2 : 'none' driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the kubernetes.
+* note3: when using ssh to run the commands, the files to load or build must already be available on the node (not only on the client host).
 
 ---
 
@@ -300,3 +308,33 @@ buildctl --addr unix://buildkitd.sock build \
 ```
 
 now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+
+---
+
+## 7. Loading directly to in-cluster container runtime
+
+The minikube client will talk directly to the container runtime in the
+cluster, and run the load commands there - against the same storage.
+
+```shell
+minikube image load my_image
+```
+
+For more information, see:
+
+* [Reference: image load command]({{< ref "/docs/commands/image.md#minikube-image-load" >}})
+
+---
+
+## 8. Building images to in-cluster container runtime
+
+The minikube client will talk directly to the container runtime in the
+cluster, and run the build commands there - against the same storage.
+
+```shell
+minikube image build -t my_image .
+```
+
+For more information, see:
+
+* [Reference: image build command]({{< ref "/docs/commands/image.md#minikube-image-build" >}})

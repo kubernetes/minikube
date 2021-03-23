@@ -52,6 +52,8 @@ var logsCmd = &cobra.Command{
 	Short: "Returns logs to debug a local Kubernetes cluster",
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		logs.OutputOffline(numberOfLines)
+
 		co := mustload.Running(ClusterFlagValue())
 
 		bs, err := cluster.Bootstrapper(co.API, viper.GetString(cmdcfg.Bootstrapper), *co.Config, co.CP.Runner)
