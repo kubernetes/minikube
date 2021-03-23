@@ -31,6 +31,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -71,8 +72,11 @@ func SaveToDir(images []string, cacheDir string) error {
 			dst := filepath.Join(cacheDir, image)
 			dst = localpath.SanitizeCacheDir(dst)
 			if err := saveToTarFile(image, dst); err != nil {
-				klog.Errorf("save image to file %q -> %q failed: %v", image, dst, err)
-				return errors.Wrapf(err, "caching image %q", dst)
+				if err == errCacheImageDoesntExist {
+					out.WarningT("The image you are trying to add {{.imageName}} doesn't exist!", out.V{"imageName": image})
+				} else {
+					return errors.Wrapf(err, "caching image %q", dst)
+				}
 			}
 			klog.Infof("save to tar file %s -> %s succeeded", image, dst)
 			return nil
