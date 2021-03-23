@@ -125,6 +125,7 @@ func TestFunctional(t *testing.T) {
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
+			{"CpCmd", validateCpCmd},
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
 			{"CertSync", validateCertSync},
@@ -1173,6 +1174,34 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
 	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
+	}
+}
+
+// validateCpCmd asserts basic "cp" command functionality
+func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: cp is unsupported by none driver")
+	}
+
+	cpPath := filepath.Join(*testdataDir, "cp-test.txt")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", cpPath, "/home/docker/hello_cp.txt"))
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+	if err != nil {
+		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
+	}
+
+	expected := "Test file for checking file cp process"
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /home/docker/hello_cp.txt"))
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+	if err != nil {
+		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
+	}
+	if diff := cmp.Diff(expected, rr.Stdout.String()); diff != "" {
+		t.Errorf("/testdata/cp-test.txt content mismatch (-want +got):\n%s", diff)
 	}
 }
 
