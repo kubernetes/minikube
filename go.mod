@@ -8,6 +8,7 @@ require (
 	github.com/Azure/azure-sdk-for-go v43.0.0+incompatible
 	github.com/Delta456/box-cli-maker/v2 v2.2.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
+	github.com/Microsoft/hcsshim v0.8.15 // indirect
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21
 	github.com/blang/semver v3.5.1+incompatible
@@ -19,7 +20,6 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.3.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
-	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
 	github.com/docker/cli v0.0.0-20200303162255-7d407207c304 // indirect
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible
 	github.com/docker/go-units v0.4.0
@@ -70,8 +70,6 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
-	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.22.6
