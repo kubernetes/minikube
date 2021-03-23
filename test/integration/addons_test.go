@@ -345,6 +345,10 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 
 	defer PostMortemLogs(t, profile)
 
+	if arm64Platform() {
+		t.Skip("skip Helm test on arm64")
+	}
+
 	client, err := kapi.Client(profile)
 	if err != nil {
 		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
