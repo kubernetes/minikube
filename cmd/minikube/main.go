@@ -61,7 +61,10 @@ func main() {
 	bridgeLogMessages()
 	defer klog.Flush()
 
-	setFlags()
+	// Don't parse flags when running as kubectl
+	_, callingCmd := filepath.Split(os.Args[0])
+	parse := callingCmd != "kubectl"
+	setFlags(parse)
 
 	s := stacklog.MustStartFromEnv("STACKLOG_PATH")
 	defer s.Stop()
@@ -124,14 +127,16 @@ func (lb machineLogBridge) Write(b []byte) (n int, err error) {
 }
 
 // setFlags sets the flags
-func setFlags() {
+func setFlags(parse bool) {
 	// parse flags beyond subcommand - get aroung go flag 'limitations':
 	// "Flag parsing stops just before the first non-flag argument" (ref: https://pkg.go.dev/flag#hdr-Command_line_flag_syntax)
 	pflag.CommandLine.ParseErrorsWhitelist.UnknownFlags = true
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	// avoid 'pflag: help requested' error, as help will be defined later by cobra cmd.Execute()
 	pflag.BoolP("help", "h", false, "")
-	pflag.Parse()
+	if parse {
+		pflag.Parse()
+	}
 
 	// set default flag value for logtostderr and alsologtostderr but don't override user's preferences
 	if !pflag.CommandLine.Changed("logtostderr") {
