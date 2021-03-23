@@ -271,6 +271,9 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Output(), "Running") {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
+	if !strings.Contains(rr.Output(), "in-use") {
+		t.Fatalf("expected status output to include `in-use` after eval docker-env but got *%s*", rr.Output())
+	}
 
 	mctx, cancel = context.WithTimeout(ctx, Seconds(60))
 	defer cancel()
