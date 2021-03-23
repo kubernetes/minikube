@@ -18,6 +18,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -126,6 +128,39 @@ func (lb machineLogBridge) Write(b []byte) (n int, err error) {
 	return len(b), nil
 }
 
+// checkLogFileMaxSize checks if a file's size is greater than or equal to max size in KB
+func checkLogFileMaxSize(file string, maxSizeKB int64) bool {
+	f, err := os.Stat(file)
+	if err != nil {
+		return false
+	}
+	kb := (f.Size() / 1024)
+	return kb >= maxSizeKB
+}
+
+// logFileName generates a default logfile name in the form minikube_<argv[1]>_<hash>_<count>.log from args
+func logFileName(dir string, logIdx int64) string {
+	h := sha1.New()
+	for _, s := range os.Args {
+		if _, err := h.Write([]byte(s)); err != nil {
+			klog.Warningf("Unable to add arg %s to log filename hash: %v", s, err)
+		}
+	}
+	hs := hex.EncodeToString(h.Sum(nil))
+	var logfilePath string
+	// check if subcommand specified
+	if len(os.Args) < 2 {
+		logfilePath = filepath.Join(dir, fmt.Sprintf("minikube_%s_%d.log", hs, logIdx))
+	} else {
+		logfilePath = filepath.Join(dir, fmt.Sprintf("minikube_%s_%s_%d.log", os.Args[1], hs, logIdx))
+	}
+	// if log has reached max size 1M, generate new logfile name by incrementing count
+	if checkLogFileMaxSize(logfilePath, 1024) {
+		return logFileName(dir, logIdx+1)
+	}
+	return logfilePath
+}
+
 // setFlags sets the flags
 func setFlags(parse bool) {
 	// parse flags beyond subcommand - get aroung go flag 'limitations':
@@ -150,6 +185,20 @@ func setFlags(parse bool) {
 		}
 	}
 	setLastStartFlags()
+
+	// set default log_file name but don't override user's preferences
+	if !pflag.CommandLine.Changed("log_file") {
+		// default log_file dir to $TMP
+		dir := os.TempDir()
+		// set log_dir to user input if specified
+		if pflag.CommandLine.Changed("log_dir") && pflag.Lookup("log_dir").Value.String() != "" {
+			dir = pflag.Lookup("log_dir").Value.String()
+		}
+		l := logFileName(dir, 0)
+		if err := pflag.Set("log_file", l); err != nil {
+			klog.Warningf("Unable to set default flag value for log_file: %v", err)
+		}
+	}
 
 	// make sure log_dir exists if log_file is not also set - the log_dir is mutually exclusive with the log_file option
 	// ref: https://github.com/kubernetes/klog/blob/52c62e3b70a9a46101f33ebaf0b100ec55099975/klog.go#L491
