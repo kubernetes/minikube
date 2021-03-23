@@ -209,13 +209,10 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 
 	klog.Infof("retrieving image: %+v", ref)
 	if UseDaemon {
-		img, err := daemon.Image(ref)
-		if err == nil {
-			klog.Infof("found %s locally: %+v", ref.Name(), img)
-			return img, nil
+		img, err = retrieveDaemon(ref)
+		if err != nil {
+			return nil, err
 		}
-		// reference does not exist in the local daemon
-		klog.Infof("daemon lookup for %+v: %v", ref, err)
 	}
 
 	if UseRemote {
@@ -226,6 +223,17 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 		return fixPlatform(ref, img, defaultPlatform)
 	}
 
+	return img, err
+}
+
+func retrieveDaemon(ref name.Reference) (v1.Image, error) {
+	img, err := daemon.Image(ref)
+	if err == nil {
+		klog.Infof("found %s locally: %+v", ref.Name(), img)
+		return img, nil
+	}
+	// reference does not exist in the local daemon
+	klog.Infof("daemon lookup for %+v: %v", ref, err)
 	return img, err
 }
 
