@@ -27,7 +27,7 @@ spec:
           ports:
             - containerPort: 8080
           command: ["/auto-pause-hook"]
-          args: ["-targetIP={{.NetworkInfo.CPNodeIP}}"]            
+          args: ["-targetIP={{.NetworkInfo.ControlPlaneNodeIP}}"]            
 ---
 apiVersion: v1
 kind: Service

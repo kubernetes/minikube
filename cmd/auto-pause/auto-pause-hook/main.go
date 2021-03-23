@@ -72,7 +72,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Could not decode body: %v", err)
 		admResp.Response = admissionError(err)
 	} else {
-		admResp.Response = getAdmissionDecision(&admReq)
+		admResp.Response = AdmissionDecision(&admReq)
 	}
 
 	admResp.APIVersion = "admission.k8s.io/v1"
@@ -93,7 +93,8 @@ func admissionError(err error) *v1.AdmissionResponse {
 	}
 }
 
-func getAdmissionDecision(admReq *v1.AdmissionReview) *v1.AdmissionResponse {
+// Create the admission descision for the request
+func AdmissionDecision(admReq *v1.AdmissionReview) *v1.AdmissionResponse {
 	req := admReq.Request
 	var pod corev1.Pod
 
@@ -105,14 +106,6 @@ func getAdmissionDecision(admReq *v1.AdmissionReview) *v1.AdmissionResponse {
 
 	log.Printf("AdmissionReview for Kind=%v Namespace=%v Name=%v UID=%v Operation=%v UserInfo=%v",
 		req.Kind, req.Namespace, req.Name, req.UID, req.Operation, req.UserInfo)
-
-	if !shouldInject(&pod.ObjectMeta) {
-		log.Printf("Skipping inject for %s %s", pod.Namespace, pod.Name)
-		return &v1.AdmissionResponse{
-			Allowed: true,
-			UID:     req.UID,
-		}
-	}
 
 	patch, err := patchConfig(&pod)
 
@@ -166,19 +159,6 @@ func addEnv(target, envVars []corev1.EnvVar, basePath string) (patch []jsonpatch
 	return patch
 }
 
-func shouldInject(metadata *metav1.ObjectMeta) bool {
-	shouldInject := true
-
-	// don't attempt to inject pods in the Kubernetes system namespaces
-	for _, ns := range minikubeSystemNamespaces {
-		if metadata.Namespace == ns {
-			shouldInject = false
-		}
-	}
-
-	return shouldInject
-}
-
 func main() {
 	addr := flag.String("addr", ":8080", "address to serve on")
 	targetIP = flag.String("targetIP", "192.168.49.2", "The reverse proxy IP")
@@ -189,7 +169,7 @@ func main() {
 
 	log.Printf("Starting HTTPS webhook server on %+v and target ip is %v", *addr, *targetIP)
 	cacert, serverCert, serverKey := gencerts()
-	clientset := getClient()
+	clientset := Client()
 	server := &http.Server{
 		Addr:      *addr,
 		TLSConfig: configTLS(clientset, serverCert, serverKey),

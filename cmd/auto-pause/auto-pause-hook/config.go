@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log"
-	"time"
 
 	v1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,8 +35,8 @@ var (
 	webhookConfigName = "env-inject.zyanshu.io"
 )
 
-// get a clientset with in-cluster config.
-func getClient() *kubernetes.Clientset {
+// Create a clientset with in-cluster config.
+func Client() *kubernetes.Clientset {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		glog.Fatal(err)
@@ -49,9 +48,9 @@ func getClient() *kubernetes.Clientset {
 	return clientset
 }
 
-// retrieve the CA cert that will signed the cert used by the
+// Retrieve the CA cert that will signed the cert used by the
 // "GenericAdmissionWebhook" plugin admission controller.
-func getAPIServerCert(clientset *kubernetes.Clientset) []byte {
+func APIServerCert(clientset *kubernetes.Clientset) []byte {
 	c, err := clientset.CoreV1().ConfigMaps("kube-system").Get("extension-apiserver-authentication", metav1.GetOptions{})
 	if err != nil {
 		glog.Fatal(err)
@@ -66,7 +65,7 @@ func getAPIServerCert(clientset *kubernetes.Clientset) []byte {
 }
 
 func configTLS(clientset *kubernetes.Clientset, serverCert []byte, serverKey []byte) *tls.Config {
-	cert := getAPIServerCert(clientset)
+	cert := APIServerCert(clientset)
 	apiserverCA := x509.NewCertPool()
 	apiserverCA.AppendCertsFromPEM(cert)
 
@@ -84,7 +83,6 @@ func configTLS(clientset *kubernetes.Clientset, serverCert []byte, serverKey []b
 // register this example webhook admission controller with the kube-apiserver
 // by creating externalAdmissionHookConfigurations.
 func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
-	time.Sleep(10 * time.Second)
 	client := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations()
 	_, err := client.Get(webhookName, metav1.GetOptions{})
 	if err == nil {
@@ -121,6 +119,14 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 					},
 				},
 				FailurePolicy: &failurePolicy,
+				ObjectSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "auto-pause-skip",
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						},
+					},
+				},
 				ClientConfig: v1.WebhookClientConfig{
 					Service: &v1.ServiceReference{
 						Namespace: "auto-pause",

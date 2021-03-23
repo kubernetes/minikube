@@ -40,11 +40,9 @@ type Addon struct {
 	Registries map[string]string
 }
 
-// NetworkInfo is network relevant info
+// NetworkInfo contains control plane node IP address used for add on template
 type NetworkInfo struct {
-	CPNodeIP           string
-	CPNodePort         int
-	AutoPauseProxyPort int
+	ControlPlaneNodeIP string
 }
 
 // NewAddon creates a new Addon
@@ -107,10 +105,8 @@ var Addons = map[string]*Addon{
 
 		//GuestPersistentDir
 	}, false, "auto-pause", map[string]string{
-		"haproxy":       "haproxy:2.3.5",
-		"AutoPauseHook": "azhao155/auto-pause-hook:1.7",
+		"AutoPauseHook": "azhao155/auto-pause-hook:1.13",
 	}, map[string]string{
-		"haproxy":       "gcr.io",
 		"AutoPauseHook": "docker.io",
 	}),
 	"dashboard": NewAddon([]*BinAsset{
@@ -675,7 +671,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo
 	}
 
 	// Network info for generating template
-	opts.NetworkInfo["CPNodeIP"] = networkInfo.CPNodeIP
+	opts.NetworkInfo["ControlPlaneNodeIP"] = networkInfo.ControlPlaneNodeIP
 
 	if opts.Images == nil {
 		opts.Images = make(map[string]string) // Avoid nil access when rendering
