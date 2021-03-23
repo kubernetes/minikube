@@ -60,7 +60,7 @@ func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) 
 
 func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	if !Force && detect.IsOnGCE() {
-		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+		exit.Message(reason.InternalCredsNotNeeded, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
 	}
 
 	// Grab command runner from running cluster
@@ -88,51 +88,56 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		return err
 	}
 
+	// Force here will allow tests to pass with false credentials
 	token, err := creds.TokenSource.Token()
-	if err != nil {
-		return err
-	}
-	data := map[string][]byte{
-		".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken)),
-	}
-
-	namespaces, err := client.Namespaces().List(metav1.ListOptions{})
-	if err != nil {
+	if err != nil && !Force {
 		return err
 	}
 
-	for _, n := range namespaces.Items {
-		secrets := client.Secrets(n.Name)
-
-		secretObj := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: secretName,
-			},
-			Data: data,
-			Type: "kubernetes.io/dockercfg",
+	// Only try to add secret if Token was found
+	if err == nil {
+		data := map[string][]byte{
+			".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken)),
 		}
 
-		_, err = secrets.Create(secretObj)
+		namespaces, err := client.Namespaces().List(metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
 
-		// Now patch the secret into all the service accounts we can find
-		serviceaccounts := client.ServiceAccounts(n.Name)
-		salist, err := serviceaccounts.List(metav1.ListOptions{})
-		if err != nil {
-			return err
-		}
+		for _, n := range namespaces.Items {
+			secrets := client.Secrets(n.Name)
 
-		ips := corev1.LocalObjectReference{Name: "gcp-auth"}
-		for _, sa := range salist.Items {
-			sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
-			_, err := serviceaccounts.Update(&sa)
+			secretObj := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: secretName,
+				},
+				Data: data,
+				Type: "kubernetes.io/dockercfg",
+			}
+
+			_, err = secrets.Create(secretObj)
 			if err != nil {
 				return err
 			}
-		}
 
+			// Now patch the secret into all the service accounts we can find
+			serviceaccounts := client.ServiceAccounts(n.Name)
+			salist, err := serviceaccounts.List(metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+
+			ips := corev1.LocalObjectReference{Name: "gcp-auth"}
+			for _, sa := range salist.Items {
+				sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
+				_, err := serviceaccounts.Update(&sa)
+				if err != nil {
+					return err
+				}
+			}
+
+		}
 	}
 
 	// First check if the project env var is explicitly set
