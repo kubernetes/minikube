@@ -412,6 +412,9 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	// update cluster and set up certs
 
 	if err := bs.UpdateCluster(cfg); err != nil {
+		if errors.Is(err, cruntime.ErrContainerRuntimeNotRunning) {
+			exit.Error(reason.KubernetesInstallFailedRuntimeNotRunning, "Failed to update cluster", err)
+		}
 		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 	}
 
