@@ -22,6 +22,7 @@ import (
 	"os/exec"
 
 	"github.com/blang/semver"
+	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -143,6 +144,9 @@ type ListOptions struct {
 	// Namespaces is the namespaces to look into
 	Namespaces []string
 }
+
+// ErrContainerRuntimeNotRunning is thrown when container runtime is not running
+var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running")
 
 // New returns an appropriately configured runtime
 func New(c Config) (Manager, error) {

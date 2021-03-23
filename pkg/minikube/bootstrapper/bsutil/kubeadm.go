@@ -63,6 +63,9 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 
 	cgroupDriver, err := r.CGroupDriver()
 	if err != nil {
+		if !r.Active() {
+			return nil, cruntime.ErrContainerRuntimeNotRunning
+		}
 		return nil, errors.Wrap(err, "getting cgroup driver")
 	}
 

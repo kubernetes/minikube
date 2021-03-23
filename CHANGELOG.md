@@ -937,7 +937,7 @@ Bug fixes:
 
 Huge thank you for this release towards our contributors:
 
-- cprogrammer1994
+- Szabolcs Dombi
 - Medya Ghazizadeh
 - Sharif Elgamal
 - Thomas Strömberg

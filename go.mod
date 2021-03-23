@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.13.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
 	github.com/Azure/azure-sdk-for-go v42.3.0+incompatible
+	github.com/Delta456/box-cli-maker/v2 v2.2.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
@@ -28,7 +29,6 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
-	github.com/go-logr/logr v0.3.0 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-containerregistry v0.4.1
@@ -61,7 +61,7 @@ require (
 	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/go-digest v1.0.0
-	github.com/otiai10/copy v1.0.2
+	github.com/otiai10/copy v1.5.0
 	github.com/pborman/uuid v1.2.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
@@ -70,7 +70,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/russross/blackfriday v1.5.3-0.20200218234912-41c5fccfd6f6 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
-	github.com/shirou/gopsutil/v3 v3.21.1
+	github.com/shirou/gopsutil/v3 v3.21.2
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
@@ -88,7 +88,7 @@ require (
 	golang.org/x/mod v0.4.2
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c
+	golang.org/x/sys v0.0.0-20210217105451-b926d437f341
 	golang.org/x/text v0.3.4
 	google.golang.org/api v0.40.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
@@ -96,8 +96,8 @@ require (
 	gotest.tools/v3 v3.0.2 // indirect
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
-	k8s.io/client-go v0.18.8
-	k8s.io/klog/v2 v2.4.0
+	k8s.io/client-go v0.20.5
+	k8s.io/klog/v2 v2.8.0
 	k8s.io/kubectl v0.0.0
 	k8s.io/kubernetes v1.18.5
 	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible // indirect
@@ -107,8 +107,8 @@ require (
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.6
-	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200824110434-7da9b61f0a42
-	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.1.2-0.20210306075852-e67a8ff8ae6f
+	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20210306082426-fcb2ad5bcb17
+	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321165649-761f6f9626b1
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/api => k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.3

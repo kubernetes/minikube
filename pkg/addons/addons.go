@@ -199,7 +199,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 				return errors.Wrap(err, "registry port")
 			}
 			if enable {
-				out.Styled(style.Tip, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, out.V{"driver": cc.Driver, "port": port})
+				out.Boxed(style.Tip, `Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
 			}
 			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
 		}
@@ -281,7 +281,11 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 }
 
 func verifyAddonStatus(cc *config.ClusterConfig, name string, val string) error {
-	return verifyAddonStatusInternal(cc, name, val, "kube-system")
+	ns := "kube-system"
+	if name == "ingress" {
+		ns = "ingress-nginx"
+	}
+	return verifyAddonStatusInternal(cc, name, val, ns)
 }
 
 func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string, ns string) error {

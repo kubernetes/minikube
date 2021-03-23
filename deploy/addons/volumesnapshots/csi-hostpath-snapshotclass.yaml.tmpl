@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
+# Usage of the v1 API implies that the cluster must have
+# external-snapshotter v4.x installed.
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
 metadata:
-  name: csi-hostpath-sc
+  name: csi-hostpath-snapclass
   labels:
-    addonmanager.kubernetes.io/mode: Reconcile
-provisioner: hostpath.csi.k8s.io #csi-hostpath
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
+    addonmanager.kubernetes.io/mode: EnsureExists
+driver: hostpath.csi.k8s.io #csi-hostpath
+deletionPolicy: Delete

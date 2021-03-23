@@ -226,11 +226,11 @@ var Addons = map[string]*Addon{
 			"ingress-dp.yaml",
 			"0640"),
 	}, false, "ingress", map[string]string{
-		"IngressController":        "k8s-artifacts-prod/ingress-nginx/controller:v0.40.2@sha256:46ba23c3fbaafd9e5bd01ea85b2f921d9f2217be082580edc22e6c704a83f02f",
-		"KubeWebhookCertgenCreate": "jettech/kube-webhook-certgen:v1.2.2@sha256:da8122a78d7387909cf34a0f34db0cce672da1379ee4fd57c626a4afe9ac12b7",
-		"KubeWebhookCertgenPatch":  "jettech/kube-webhook-certgen:v1.3.0@sha256:ff01fba91131ed260df3f3793009efbf9686f5a5ce78a85f81c386a4403f7689",
+		"IngressController":        "ingress-nginx/controller:v0.44.0@sha256:3dd0fac48073beaca2d67a78c746c7593f9c575168a17139a9955a82c63c4b9a",
+		"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+		"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
 	}, map[string]string{
-		"IngressController": "us.gcr.io",
+		"IngressController": "k8s.gcr.io",
 	}),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -518,6 +518,13 @@ var Addons = map[string]*Addon{
 		"GCPAuthWebhook": "gcr.io",
 	}),
 	"volumesnapshots": NewAddon([]*BinAsset{
+		// make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
+		// if user disable volumesnapshots addon and delete `csi-hostpath-snapshotclass` after `snapshot.storage.k8s.io_volumesnapshotclasses`, kubernetes will return the error
+		MustBinAsset(
+			"deploy/addons/volumesnapshots/csi-hostpath-snapshotclass.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"csi-hostpath-snapshotclass.yaml",
+			"0640"),
 		MustBinAsset(
 			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotclasses.yaml.tmpl",
 			vmpath.GuestAddonsDir,
@@ -544,7 +551,7 @@ var Addons = map[string]*Addon{
 			"volume-snapshot-controller-deployment.yaml",
 			"0640"),
 	}, false, "volumesnapshots", map[string]string{
-		"SnapshotController": "sig-storage/snapshot-controller:v4.0.0",
+		"SnapshotController": "sig-storage/snapshot-controller:v4.0.0@sha256:00fcc441ea9f72899c25eed61d602272a2a58c5f0014332bdcb5ac24acef08e4",
 	}, map[string]string{
 		"SnapshotController": "k8s.gcr.io",
 	}),
@@ -553,6 +560,16 @@ var Addons = map[string]*Addon{
 			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-attacher.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-attacher.yaml",
+			"0640"),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-health-monitor-agent.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"rbac-external-health-monitor-agent.yaml",
+			"0640"),
+		MustBinAsset(
+			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-health-monitor-controller.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"rbac-external-health-monitor-controller.yaml",
 			"0640"),
 		MustBinAsset(
 			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-provisioner.yaml.tmpl",
@@ -605,21 +622,25 @@ var Addons = map[string]*Addon{
 			"csi-hostpath-storageclass.yaml",
 			"0640"),
 	}, false, "csi-hostpath-driver", map[string]string{
-		"Attacher":            "k8scsi/csi-attacher:v3.0.0-rc1@sha256:8fcb9472310dd424c4da8ee06ff200b5e6f091dff39a079e470599e4d0dcf328",
-		"NodeDriverRegistrar": "k8scsi/csi-node-driver-registrar:v1.3.0@sha256:9622c6a6dac7499a055a382930f4de82905a3c5735c0753f7094115c9c871309",
-		"HostPathPlugin":      "k8scsi/hostpathplugin:v1.4.0-rc2@sha256:aa223f9df8c1d477a9f2a4a2a7d104561e6d365e54671aacbc770dffcc0683ad",
-		"LivenessProbe":       "k8scsi/livenessprobe:v1.1.0@sha256:dde617756e0f602adc566ab71fd885f1dad451ad3fb063ac991c95a2ff47aea5",
-		"Resizer":             "k8scsi/csi-resizer:v0.6.0-rc1@sha256:75ad39004ac49267981c9cb3323a7f73f0b203e1c181117363bf215e10144e8a",
-		"Snapshotter":         "k8scsi/csi-snapshotter:v2.1.0@sha256:35ead85dd09aa8cc612fdb598d4e0e2f048bef816f1b74df5eeab67cd21b10aa",
-		"Provisioner":         "k8s-staging-sig-storage/csi-provisioner:v2.0.0-rc2@sha256:8f36191970a82677ffe222007b08395dd7af0a5bb5b93db0e82523b43de2bfb2",
+		"Attacher":              "sig-storage/csi-attacher:v3.1.0@sha256:50c3cfd458fc8e0bf3c8c521eac39172009382fc66dc5044a330d137c6ed0b09",
+		"HostMonitorAgent":      "sig-storage/csi-external-health-monitor-agent:v0.2.0@sha256:c20d4a4772599e68944452edfcecc944a1df28c19e94b942d526ca25a522ea02",
+		"HostMonitorController": "sig-storage/csi-external-health-monitor-controller:v0.2.0@sha256:14988b598a180cc0282f3f4bc982371baf9a9c9b80878fb385f8ae8bd04ecf16",
+		"NodeDriverRegistrar":   "sig-storage/csi-node-driver-registrar:v2.0.1@sha256:e07f914c32f0505e4c470a62a40ee43f84cbf8dc46ff861f31b14457ccbad108",
+		"HostPathPlugin":        "sig-storage/hostpathplugin:v1.6.0@sha256:b526bd29630261eceecf2d38c84d4f340a424d57e1e2661111e2649a4663b659",
+		"LivenessProbe":         "sig-storage/livenessprobe:v2.2.0@sha256:48da0e4ed7238ad461ea05f68c25921783c37b315f21a5c5a2780157a6460994",
+		"Resizer":               "sig-storage/csi-resizer:v1.1.0@sha256:7a5ba58a44e0d749e0767e4e37315bcf6a61f33ce3185c1991848af4db0fb70a",
+		"Snapshotter":           "sig-storage/csi-snapshotter:v4.0.0@sha256:51f2dfde5bccac7854b3704689506aeecfb793328427b91115ba253a93e60782",
+		"Provisioner":           "sig-storage/csi-provisioner:v2.1.0@sha256:20c828075d1e36f679d6a91e905b0927141eef5e15be0c9a1ca4a6a0ed9313d2",
 	}, map[string]string{
-		"Attacher":            "quay.io",
-		"NodeDriverRegistrar": "quay.io",
-		"HostPathPlugin":      "quay.io",
-		"LivenessProbe":       "quay.io",
-		"Resizer":             "quay.io",
-		"Snapshotter":         "quay.io",
-		"Provisioner":         "gcr.io",
+		"Attacher":              "k8s.gcr.io",
+		"HostMonitorAgent":      "k8s.gcr.io",
+		"HostMonitorController": "k8s.gcr.io",
+		"NodeDriverRegistrar":   "k8s.gcr.io",
+		"HostPathPlugin":        "k8s.gcr.io",
+		"LivenessProbe":         "k8s.gcr.io",
+		"Resizer":               "k8s.gcr.io",
+		"Snapshotter":           "k8s.gcr.io",
+		"Provisioner":           "k8s.gcr.io",
 	}),
 }
 
