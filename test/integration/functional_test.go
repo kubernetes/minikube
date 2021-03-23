@@ -276,7 +276,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
-		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ; docker images")
 		rr, err = Run(t, c)
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
