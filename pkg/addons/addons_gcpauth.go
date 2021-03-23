@@ -88,12 +88,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		return err
 	}
 
-	// Force here will allow tests to pass with false credentials
 	token, err := creds.TokenSource.Token()
-	if err != nil && !Force {
-		return err
-	}
-
 	// Only try to add secret if Token was found
 	if err == nil {
 		data := map[string][]byte{
