@@ -67,7 +67,7 @@ func (t *SSHTunnel) Start() error {
 		default:
 		}
 
-		services, err := t.v1Core.Services("").List(metav1.ListOptions{})
+		services, err := t.v1Core.Services("").List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			klog.Errorf("error listing services: %v", err)
 		}
