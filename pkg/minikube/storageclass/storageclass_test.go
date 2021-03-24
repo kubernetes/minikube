@@ -17,6 +17,7 @@ limitations under the License.
 package storageclass
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -74,7 +75,7 @@ func (mockStorageV1InterfaceWithBadItem) StorageClasses() storagev1.StorageClass
 	return mockStorageClassInterfaceWithBadItem{}
 }
 
-func (mockStorageClassInterfaceOk) Get(name string, options metav1.GetOptions) (*v1.StorageClass, error) {
+func (mockStorageClassInterfaceOk) Get(ctx context.Context, name string, options metav1.GetOptions) (*v1.StorageClass, error) {
 	if strings.HasPrefix(name, "bad-class") {
 		return nil, fmt.Errorf("mocked error. No such class")
 	}
@@ -82,31 +83,31 @@ func (mockStorageClassInterfaceOk) Get(name string, options metav1.GetOptions) (
 	return &sc, nil
 }
 
-func (m mockStorageClassInterfaceOk) List(opts metav1.ListOptions) (*v1.StorageClassList, error) {
+func (m mockStorageClassInterfaceOk) List(ctx context.Context, opts metav1.ListOptions) (*v1.StorageClassList, error) {
 	scl := v1.StorageClassList{}
 	sc := v1.StorageClass{Provisioner: "standard"}
 	scl.Items = append(scl.Items, sc)
 	return &scl, nil
 }
 
-func (m mockStorageClassInterfaceWithBadItem) List(opts metav1.ListOptions) (*v1.StorageClassList, error) {
+func (m mockStorageClassInterfaceWithBadItem) List(ctx context.Context, opts metav1.ListOptions) (*v1.StorageClassList, error) {
 	scl := v1.StorageClassList{}
 	sc := v1.StorageClass{Provisioner: "bad", ObjectMeta: metav1.ObjectMeta{Name: "standard"}}
 	scl.Items = append(scl.Items, sc)
 	return &scl, nil
 }
-func (mockStorageClassInterfaceListErr) List(opts metav1.ListOptions) (*v1.StorageClassList, error) {
+func (mockStorageClassInterfaceListErr) List(ctx context.Context, opts metav1.ListOptions) (*v1.StorageClassList, error) {
 	return nil, fmt.Errorf("mocked list error")
 }
 
-func (mockStorageClassInterfaceOk) Update(sc *v1.StorageClass) (*v1.StorageClass, error) {
+func (mockStorageClassInterfaceOk) Update(ctx context.Context, sc *v1.StorageClass, opts metav1.UpdateOptions) (*v1.StorageClass, error) {
 	if strings.HasPrefix(sc.Provisioner, "bad") {
 		return nil, fmt.Errorf("bad provisioner")
 	}
 	return &v1.StorageClass{}, nil
 }
 
-func (mockStorageClassInterfaceWithBadItem) Update(sc *v1.StorageClass) (*v1.StorageClass, error) {
+func (mockStorageClassInterfaceWithBadItem) Update(ctx context.Context, sc *v1.StorageClass, opts metav1.UpdateOptions) (*v1.StorageClass, error) {
 	if strings.HasPrefix(sc.Provisioner, "bad") {
 		return nil, fmt.Errorf("bad provisioner")
 	}

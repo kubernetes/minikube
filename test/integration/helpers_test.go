@@ -315,7 +315,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	start := time.Now()
 	t.Logf("(dbg) %s: waiting %s for pods matching %q in namespace %q ...", t.Name(), timeout, selector, ns)
 	f := func() (bool, error) {
-		pods, err := client.CoreV1().Pods(ns).List(listOpts)
+		pods, err := client.CoreV1().Pods(ns).List(ctx, listOpts)
 		if err != nil {
 			t.Logf("%s: WARNING: pod list for %q %q returned: %v", t.Name(), ns, selector, err)
 			// Don't return the error upwards so that this is retried, in case the apiserver is rescheduled

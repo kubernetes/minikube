@@ -18,6 +18,7 @@ limitations under the License.
 package kverify
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -37,7 +38,7 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 		klog.Infof("duration metric: took %s for extra waiting for all system-critical and pods with labels %v to be %q ...", time.Since(start), labels, core.PodReady)
 	}()
 
-	pods, err := cs.CoreV1().Pods(meta.NamespaceSystem).List(meta.ListOptions{})
+	pods, err := cs.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("error listing pods in %q namespace: %w", meta.NamespaceSystem, err)
 	}
@@ -111,7 +112,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 
 // podConditionStatus returns if pod is in specified condition and verbose reason.
 func podConditionStatus(cs *kubernetes.Clientset, name, namespace string, condition core.PodConditionType) (status core.ConditionStatus, reason string) {
-	pod, err := cs.CoreV1().Pods(namespace).Get(name, meta.GetOptions{})
+	pod, err := cs.CoreV1().Pods(namespace).Get(context.Background(), name, meta.GetOptions{})
 	if err != nil {
 		return core.ConditionUnknown, fmt.Sprintf("error getting pod %q in %q namespace: %v", name, namespace, err)
 	}
