@@ -105,7 +105,10 @@ func TestScheduledStopUnix(t *testing.T) {
 	// sleep 12 just to be safe
 	stopMinikube(ctx, t, profile, []string{"--cancel-scheduled"})
 	time.Sleep(12 * time.Second)
+	// make sure minikube status is "Running"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Running.String())
+	// make sure minikube timetoStop is not present
+	ensureTimeToStopNotPresent(ctx, t, profile)
 
 	// schedule another stop, make sure minikube status is "Stopped"
 	stopMinikube(ctx, t, profile, []string{"--schedule", "5s"})
