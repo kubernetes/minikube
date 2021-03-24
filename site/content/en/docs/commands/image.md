@@ -44,7 +44,7 @@ Build a container image in minikube
 Build a container image, using the container runtime.
 
 ```shell
-minikube image build [flags]
+minikube image build PATH | URL | - [flags]
 ```
 
 ### Examples
