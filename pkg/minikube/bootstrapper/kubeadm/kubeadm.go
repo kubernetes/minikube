@@ -821,7 +821,7 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig, controlPlane bool,
 			nodePort = constants.APIServerPort
 		}
 		lines := strings.Split(r.Stdout.String(), "\n")
-		joinCmd = fmt.Sprintf("%s --control-plane --certificate-key %s --apiserver-advertise-address %s --apiserver-bind-port %d", joinCmd, lines[len(lines)-1], ip, nodePort)
+		joinCmd = fmt.Sprintf("%s --control-plane --certificate-key %s --apiserver-advertise-address %s --apiserver-bind-port %d", joinCmd, lines[len(lines)-2], ip, nodePort)
 	}
 
 	if cc.KubernetesConfig.CRISocket != "" {
