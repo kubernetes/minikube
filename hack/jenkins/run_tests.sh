@@ -18,20 +18,23 @@
 # This script downloads the test files from the build bucket and makes some executable.
 
 # The script expects the following env variables:
-# OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
+# OS: The operating system
+# ARCH: The architecture
 # VM_DRIVER: the driver to use for the test
 # CONTAINER_RUNTIME: the container runtime to use for the test
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
 
+readonly OS_ARCH="${OS}-${ARCH}"
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${CONTAINER_RUNTIME}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
+
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-readonly TIMEOUT=${1:-70m}
+readonly TIMEOUT=${1:-120m}
 
 if [ "$(uname)" != "Darwin" ]; then
   # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
@@ -39,10 +42,10 @@ if [ "$(uname)" != "Darwin" ]; then
 fi
 
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
+sudo ARCH="$ARCH"./installers/check_install_golang.sh "1.16" "/usr/local" || true
 
 # install docker and kubectl if not present
-sudo ./installers/check_install_docker.sh
+sudo ARCH="$ARCH" ./installers/check_install_docker.sh
 
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
@@ -88,10 +91,10 @@ if ! type -P gsutil >/dev/null; then
 fi
 
 # Add the out/ directory to the PATH, for using new drivers.
-PATH="$(pwd)/out/":$PATH
-export PATH
+export PATH="$(pwd)/out/":$PATH
 
-echo ""
+
+echo
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
@@ -121,10 +124,9 @@ fi
 mkdir -p "${TEST_ROOT}"
 
 # Cleanup stale test outputs.
-echo ""
+echo
 echo ">> Cleaning up after previous test runs ..."
-for entry in $(ls ${TEST_ROOT}); do
-  test_path="${TEST_ROOT}/${entry}"
+for test_path in ${TEST_ROOT}; do
   ls -lad "${test_path}" || continue
 
   echo "* Cleaning stale test path: ${test_path}"
@@ -140,7 +142,7 @@ for entry in $(ls ${TEST_ROOT}); do
   for kconfig in $(find ${test_path} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
   done
-  
+
   ## ultimate shotgun clean up docker after we tried all
   docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 
@@ -152,93 +154,94 @@ for entry in $(ls ${TEST_ROOT}); do
   fi
 done
 
-# sometimes tests left over zombie procs that won't exit
-# for example:
-# jenkins  20041  0.0  0.0      0     0 ?        Z    Aug19   0:00 [minikube-linux-] <defunct>
-zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
-if [[ "${zombie_defuncts}" != "" ]]; then
-  echo "Found zombie defunct procs to kill..."
-  ps -f -p ${zombie_defuncts} || true
-  kill ${zombie_defuncts} || true
-fi
-
-if type -P virsh; then
-  virsh -c qemu:///system list --all --uuid \
-    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
-    || true
-  echo ">> virsh VM list after clean up (should be empty):"
-  virsh -c qemu:///system list --all || true
-fi
-
-if type -P vboxmanage; then
-  killall VBoxHeadless || true
-  sleep 1
-  killall -9 VBoxHeadless || true
-
-  for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
-    echo "- Removing stale VirtualBox VM: $guid"
-    vboxmanage startvm "${guid}" --type emergencystop || true
-    vboxmanage unregistervm "${guid}" || true
-  done
-
-  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ print $2 }')
-  for if in $ifaces; do
-    vboxmanage hostonlyif remove "${if}" || true
-  done
-
-  echo ">> VirtualBox VM list after clean up (should be empty):"
-  vboxmanage list vms || true
-  echo ">> VirtualBox interface list after clean up (should be empty):"
-  vboxmanage list hostonlyifs || true
-fi
-
-
-if type -P hdiutil; then
-  hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
-  hdiutil info \
-      | grep -E "/dev/disk[1-9][^s]" \
-      | awk '{print $1}' \
-      | xargs -I {} sh -c "hdiutil detach {}" \
-      || true
-fi
-
-# cleaning up stale hyperkits
-if type -P hyperkit; then
-  for pid in $(pgrep hyperkit); do
-    echo "Killing stale hyperkit $pid"
-    ps -f -p $pid || true
-    kill $pid || true
-    kill -9 $pid || true
-  done
-fi
-
-if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
-  if [[ -e out/docker-machine-driver-hyperkit ]]; then
-    sudo chown root:wheel out/docker-machine-driver-hyperkit || true
-    sudo chmod u+s out/docker-machine-driver-hyperkit || true
+function cleanup_procs() {
+  # sometimes tests left over zombie procs that won't exit
+  # for example:
+  # jenkins  20041  0.0  0.0      0     0 ?        Z    Aug19   0:00 [minikube-linux-] <defunct>
+  zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
+  if [[ "${zombie_defuncts}" != "" ]]; then
+    echo "Found zombie defunct procs to kill..."
+    ps -f -p ${zombie_defuncts} || true
+    kill ${zombie_defuncts} || true
   fi
-fi
 
-kprocs=$(pgrep kubectl || true)
-if [[ "${kprocs}" != "" ]]; then
-  echo "error: killing hung kubectl processes ..."
-  ps -f -p ${kprocs} || true
-  sudo -E kill ${kprocs} || true
-fi
+  if type -P virsh; then
+    virsh -c qemu:///system list --all --uuid \
+      | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+      || true
+    echo ">> virsh VM list after clean up (should be empty):"
+    virsh -c qemu:///system list --all || true
+  fi
+
+  if type -P vboxmanage; then
+    killall VBoxHeadless || true
+    sleep 1
+    killall -9 VBoxHeadless || true
+
+    for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
+      echo "- Removing stale VirtualBox VM: $guid"
+      vboxmanage startvm "${guid}" --type emergencystop || true
+      vboxmanage unregistervm "${guid}" || true
+    done
+
+    ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ print $2 }')
+    for if in $ifaces; do
+      vboxmanage hostonlyif remove "${if}" || true
+    done
+
+    echo ">> VirtualBox VM list after clean up (should be empty):"
+    vboxmanage list vms || true
+    echo ">> VirtualBox interface list after clean up (should be empty):"
+    vboxmanage list hostonlyifs || true
+  fi
+
+  if type -P hdiutil; then
+    hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
+    hdiutil info \
+        | grep -E "/dev/disk[1-9][^s]" \
+        | awk '{print $1}' \
+        | xargs -I {} sh -c "hdiutil detach {}" \
+        || true
+  fi
+
+  # cleaning up stale hyperkits
+  if type -P hyperkit; then
+    for pid in $(pgrep hyperkit); do
+      echo "Killing stale hyperkit $pid"
+      ps -f -p $pid || true
+      kill $pid || true
+      kill -9 $pid || true
+    done
+  fi
+
+  if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
+    if [[ -e out/docker-machine-driver-hyperkit ]]; then
+      sudo chown root:wheel out/docker-machine-driver-hyperkit || true
+      sudo chmod u+s out/docker-machine-driver-hyperkit || true
+    fi
+  fi
+
+  kprocs=$(pgrep kubectl || true)
+  if [[ "${kprocs}" != "" ]]; then
+    echo "error: killing hung kubectl processes ..."
+    ps -f -p ${kprocs} || true
+    sudo -E kill ${kprocs} || true
+  fi
 
 
-# clean up none drivers binding on 8443
-none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
-if [[ "${none_procs}" != "" ]]; then
-  echo "Found stale api servers listening on 8443 processes to kill: "
-  for p in $none_procs
-  do
-    echo "Kiling stale none driver:  $p"
-    sudo -E ps -f -p $p || true
-    sudo -E kill $p || true
-    sudo -E kill -9 $p || true
-  done
-fi
+  # clean up none drivers binding on 8443
+  none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
+  if [[ "${none_procs}" != "" ]]; then
+    echo "Found stale api servers listening on 8443 processes to kill: "
+    for p in $none_procs
+    do
+      echo "Kiling stale none driver:  $p"
+      sudo -E ps -f -p $p || true
+      sudo -E kill $p || true
+      sudo -E kill -9 $p || true
+    done
+  fi
+}
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
@@ -256,6 +259,7 @@ function cleanup_stale_routes() {
   done
 }
 
+cleanup_procs || true
 cleanup_stale_routes || true
 
 mkdir -p "${TEST_HOME}"
@@ -333,10 +337,6 @@ min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
-SHORT_COMMIT=${COMMIT:0:7}
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
-echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
-gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
 
 echo ">> Attmpting to convert test logs to json"
@@ -360,11 +360,9 @@ echo ">> Installing jq"
 fi
 
 echo ">> Installing gopogh"
-if [ "$(uname)" != "Darwin" ]; then
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
-else
-  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
-fi
+curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-${OS_ARCH}"
+sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
+
 
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
@@ -381,21 +379,16 @@ description="completed with ${status} in ${elapsed} minute(s)."
 if [ "$status" = "failure" ]; then
   description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
 fi
-echo $description
-
-echo ">> uploading ${JSON_OUT}"
-gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
-echo ">> uploading ${HTML_OUT}"
-gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
-echo ">> uploading ${SUMMARY_OUT}"
-gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
+echo "$description"
 
 
+REPORTS_PATH=test_reports
+mkdir -p "$REPORTS_PATH"
+cp "${TEST_OUT}" "$REPORTS_PATH/out.txt"
+cp "${JSON_OUT}" "$REPORTS_PATH/out.json"
+cp "${HTML_OUT}" "$REPORTS_PATH/out.html"
+cp "${SUMMARY_OUT}" "$REPORTS_PATH/summary.txt"
 
-public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
-if grep -q html "$HTML_OUT"; then
-  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
-fi
 
 echo ">> Cleaning up after ourselves ..."
 timeout 3m ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
@@ -404,15 +397,15 @@ cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
-${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
-${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
-${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
+
 rmdir "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
-  exit $result
+  exit "$result"
 fi
+
+public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}.html"
 
 # retry_github_status provides reliable github status updates
 function retry_github_status() {
@@ -427,6 +420,8 @@ function retry_github_status() {
   local attempt=0
   local timeout=2
   local code=-1
+
+  echo "set GitHub status $context to $desc"
 
   while [[ "${attempt}" -lt 8 ]]; do
     local out=$(mktemp)
@@ -449,6 +444,6 @@ function retry_github_status() {
   done
 }
 
-
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
-exit $result
+
+exit "$result"
