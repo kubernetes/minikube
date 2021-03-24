@@ -69,8 +69,6 @@ func TestScheduledStopWindows(t *testing.T) {
 	time.Sleep(5 * time.Second)
 	// make sure minikube status is "Stopped"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
-	// make sure minikube timtostop is "Nonexistent"
-	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "Nonexistent")
 }
 
 func TestScheduledStopUnix(t *testing.T) {
@@ -115,8 +113,6 @@ func TestScheduledStopUnix(t *testing.T) {
 
 	// make sure minikube status is "Stopped"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
-	// make sure minikube timtostop is "Nonexistent"
-	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "Nonexistent")
 }
 
 func startMinikube(ctx context.Context, t *testing.T, profile string) {
