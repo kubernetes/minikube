@@ -146,8 +146,8 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
-	if err := cr.CopyCheck(f, false); err != nil {
-		return errors.Wrap(err, "transferring build context")
+	if err := cr.Copy(f); err != nil {
+		return errors.Wrap(err, "transferring cached image")
 	}
 
 	context := path.Join(buildRoot, ".", strings.TrimSuffix(filename, filepath.Ext(filename)))

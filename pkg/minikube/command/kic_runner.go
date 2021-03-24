@@ -142,15 +142,10 @@ func (k *kicRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
-	// For tiny files, it's cheaper to overwrite than check
-	return k.CopyCheck(f, f.GetLength() > 4096)
-}
-
-// CopyCheck copies a file and its permissions, after first checking if file exists.
-func (k *kicRunner) CopyCheck(f assets.CopyableFile, check bool) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 
-	if check {
+	// For tiny files, it's cheaper to overwrite than check
+	if f.GetLength() > 4096 {
 		exists, err := fileExists(k, f, dst)
 		if err != nil {
 			klog.Infof("existence error for %s: %v", dst, err)
