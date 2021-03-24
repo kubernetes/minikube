@@ -328,7 +328,7 @@ func ProfileFolderPath(profile string, miniHome ...string) string {
 // MachineName returns the name of the machine, as seen by the hypervisor given the cluster and node names
 func MachineName(cc ClusterConfig, n Node) string {
 	// For single node cluster, default to back to old naming
-	if (len(cc.Nodes) == 1 && cc.Nodes[0].Name == n.Name) || n.ControlPlane {
+	if len(cc.Nodes) == 1 && cc.Nodes[0].Name == n.Name || n.ControlPlane && cc.Nodes[0].Name == n.Name {
 		return cc.Name
 	}
 	return fmt.Sprintf("%s-%s", cc.Name, n.Name)

@@ -236,7 +236,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
-	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
+	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --upload-certs --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	c.Stdout = kw
 	c.Stderr = kw
@@ -758,8 +758,31 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	// Join the master by specifying its token
 	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, config.MachineName(cc, n))
 
-	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd)); err != nil {
-		return errors.Wrapf(err, "kubeadm join")
+	join := func() error {
+		// reset first to clear any possibly existing state
+		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset -f", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion))))
+		if err != nil {
+			klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
+		}
+		if n.ControlPlane {
+			rmCertsCmd := exec.Command("/bin/bash", "-c", "sudo rm -rf /var/lib/minikube/certs/*")
+			_, err := k.c.RunCmd(rmCertsCmd)
+			if err != nil {
+				return errors.Wrap(err, "removing certs")
+			}
+		}
+		_, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
+		if err != nil {
+			if strings.Contains(err.Error(), "status \"Ready\" already exists in the cluster") {
+				klog.Info("still waiting for the worker node to register with the api server")
+			}
+			return errors.Wrapf(err, "kubeadm join")
+		}
+		return nil
+	}
+
+	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
+		return errors.Wrap(err, "joining cp")
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
@@ -770,7 +793,7 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 }
 
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run, or the already existing token
-func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
+func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig, controlPlane bool, ip string) (string, error) {
 	// Take that generated token and use it to get a kubeadm join command
 	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(tokenCmd)
@@ -781,6 +804,26 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
+
+	if controlPlane {
+		conf := bsutil.KubeadmYamlPath
+		certKeyCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init phase upload-certs --config %s --upload-certs", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), conf))
+		r, err = k.c.RunCmd(certKeyCmd)
+		if err != nil {
+			return "", errors.Wrap(err, "getting cert key")
+		}
+		cp, err := config.PrimaryControlPlane(&cc)
+		if err != nil {
+			return "", errors.Wrap(err, "getting control plane")
+		}
+		nodePort := cp.Port
+		if nodePort <= 0 {
+			nodePort = constants.APIServerPort
+		}
+		lines := strings.Split(r.Stdout.String(), "\n")
+		joinCmd = fmt.Sprintf("%s --control-plane --certificate-key %s --apiserver-advertise-address %s --apiserver-bind-port %d", joinCmd, lines[len(lines)-1], ip, nodePort)
+	}
+
 	if cc.KubernetesConfig.CRISocket != "" {
 		joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, cc.KubernetesConfig.CRISocket)
 	}

@@ -183,9 +183,17 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
+		ip, err := starter.Host.Driver.GetIP()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting ip")
+		}
+		joinCmd, err := cpBs.GenerateToken(*starter.Cfg, starter.Node.ControlPlane, ip)
+		if err != nil {
+			return nil, errors.Wrap(err, "generating join token")
+		}
 
-		if err := joinCluster(starter, cpBs, bs); err != nil {
-			return nil, errors.Wrap(err, "joining cp")
+		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
+			return nil, errors.Wrap(err, "joining cluster")
 		}
 
 		cnm, err := cni.New(*starter.Cfg)
@@ -217,7 +225,11 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 		klog.Infof("JoinCluster complete in %s", time.Since(start))
 	}()
 
-	joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
+	ip, err := starter.Host.Driver.GetIP()
+	if err != nil {
+		return fmt.Errorf("error getting ip: %w", err)
+	}
+	joinCmd, err := cpBs.GenerateToken(*starter.Cfg, starter.Node.ControlPlane, ip)
 	if err != nil {
 		return fmt.Errorf("error generating join token: %w", err)
 	}

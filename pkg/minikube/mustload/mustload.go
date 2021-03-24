@@ -110,7 +110,7 @@ func Running(name string) ClusterController {
 		exitTip("start", name, reason.ExSvcUnavailable)
 	}
 
-	host, err := machine.LoadHost(api, name)
+	host, err := machine.LoadHost(api, machineName)
 	if err != nil {
 		exit.Error(reason.GuestLoadHost, "Unable to load host", err)
 	}
