@@ -56,6 +56,9 @@ func DocForCommand(command *cobra.Command) (string, error) {
 	if err := generateTitle(command, buf); err != nil {
 		return "", errors.Wrap(err, "generating title")
 	}
+	if err := rewriteLogFile(); err != nil {
+		return "", errors.Wrap(err, "rewriting log_file")
+	}
 	if err := rewriteFlags(command); err != nil {
 		return "", errors.Wrap(err, "rewriting flags")
 	}
