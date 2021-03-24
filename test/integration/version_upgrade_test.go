@@ -80,6 +80,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	legacyVersion := "v1.6.2"
 	if KicDriver() {
 		if arm64Platform() {
+			// arm64 KIC driver is supported starting from v1.17.0
 			legacyVersion = "v1.17.0"
 		} else {
 			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
