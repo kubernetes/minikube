@@ -586,27 +586,29 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
 	}
 
-	// Make sure the file contents are correct
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
-	if err != nil {
-		t.Fatalf("cat creds: %v", err)
-	}
+	if !detect.IsOnGCE() {
+		// Make sure the file contents are correct
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
+		if err != nil {
+			t.Fatalf("cat creds: %v", err)
+		}
 
-	var gotJSON map[string]string
-	err = json.Unmarshal(bytes.TrimSpace(rr.Stdout.Bytes()), &gotJSON)
-	if err != nil {
-		t.Fatalf("unmarshal json: %v", err)
-	}
-	expectedJSON := map[string]string{
-		"client_id":        "haha",
-		"client_secret":    "nice_try",
-		"quota_project_id": "this_is_fake",
-		"refresh_token":    "maybe_next_time",
-		"type":             "authorized_user",
-	}
+		var gotJSON map[string]string
+		err = json.Unmarshal(bytes.TrimSpace(rr.Stdout.Bytes()), &gotJSON)
+		if err != nil {
+			t.Fatalf("unmarshal json: %v", err)
+		}
+		expectedJSON := map[string]string{
+			"client_id":        "haha",
+			"client_secret":    "nice_try",
+			"quota_project_id": "this_is_fake",
+			"refresh_token":    "maybe_next_time",
+			"type":             "authorized_user",
+		}
 
-	if !reflect.DeepEqual(gotJSON, expectedJSON) {
-		t.Fatalf("unexpected creds file: got %v, expected %v", gotJSON, expectedJSON)
+		if !reflect.DeepEqual(gotJSON, expectedJSON) {
+			t.Fatalf("unexpected creds file: got %v, expected %v", gotJSON, expectedJSON)
+		}
 	}
 
 	// Check the GOOGLE_CLOUD_PROJECT env var as well
@@ -617,8 +619,11 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	got = strings.TrimSpace(rr.Stdout.String())
 	expected = "this_is_fake"
+	if detect.IsOnGCE() {
+		expected = "k8s-minikube"
+	}
 	if got != expected {
-		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
+		t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
 	}
 
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
