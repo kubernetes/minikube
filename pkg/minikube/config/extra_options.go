@@ -67,8 +67,8 @@ func (es *ExtraOptionSlice) Exists(value string) bool {
 func (es *ExtraOptionSlice) Set(value string) error {
 
 	// Check we don't end with suffix quotation.
-	prefixExists := strings.HasPrefix(value, "”") || strings.HasPrefix(value, "”")
-	suffixExists := strings.HasSuffix(value, "”") || strings.HasSuffix(value, "”")
+	prefixExists := strings.HasPrefix(value, "”") || strings.HasPrefix(value, "“")
+	suffixExists := strings.HasSuffix(value, "”") || strings.HasSuffix(value, "“")
 	if !prefixExists && suffixExists {
 		return fmt.Errorf("invalid value: cannot contain end quotation: %q", value)
 	}
