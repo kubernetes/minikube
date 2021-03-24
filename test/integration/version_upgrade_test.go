@@ -152,6 +152,10 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	if KicDriver() {
 		// first release with non-experimental KIC
 		legacyVersion = "v1.8.0"
+		if arm64Platform() {
+			// first release with non-experimental arm64 KIC
+			legacyVersion = "v1.17.0"
+		}
 	}
 
 	tf, err := installRelease(legacyVersion)
