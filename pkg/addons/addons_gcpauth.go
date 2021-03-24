@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
@@ -95,7 +96,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 			".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken)),
 		}
 
-		namespaces, err := client.Namespaces().List(metav1.ListOptions{})
+		namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -103,30 +104,49 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		for _, n := range namespaces.Items {
 			secrets := client.Secrets(n.Name)
 
-			secretObj := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: secretName,
-				},
-				Data: data,
-				Type: "kubernetes.io/dockercfg",
+			exists := false
+			secList, err := secrets.List(context.TODO(), metav1.ListOptions{})
+			for _, s := range secList.Items {
+				if s.Name == secretName {
+					exists = true
+				}
 			}
 
-			_, err = secrets.Create(secretObj)
-			if err != nil {
-				return err
+			if !exists {
+				secretObj := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: secretName,
+					},
+					Data: data,
+					Type: "kubernetes.io/dockercfg",
+				}
+
+				_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
+				if err != nil {
+					return err
+				}
 			}
 
 			// Now patch the secret into all the service accounts we can find
 			serviceaccounts := client.ServiceAccounts(n.Name)
-			salist, err := serviceaccounts.List(metav1.ListOptions{})
+			salist, err := serviceaccounts.List(context.TODO(), metav1.ListOptions{})
 			if err != nil {
 				return err
+			}
+
+			// Let's make sure we at least find the default service account
+			for len(salist.Items) == 0 {
+				salist, err = serviceaccounts.List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					return err
+				}
+				time.Sleep(1 * time.Second)
 			}
 
 			ips := corev1.LocalObjectReference{Name: "gcp-auth"}
 			for _, sa := range salist.Items {
 				sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
-				_, err := serviceaccounts.Update(&sa)
+				_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -185,7 +205,7 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		return err
 	}
 
-	namespaces, err := client.Namespaces().List(metav1.ListOptions{})
+	namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		exit.Message(reason.InternalCredsNotFound, err.Error())
 		return err
@@ -194,7 +214,7 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// No need to check for an error here, if the secret doesn't exist, no harm done.
 	for _, n := range namespaces.Items {
 		secrets := client.Secrets(n.Name)
-		err := secrets.Delete(secretName, &metav1.DeleteOptions{})
+		err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 		if err != nil {
 			klog.Infof("error deleting secret: %v", err)
 		}
