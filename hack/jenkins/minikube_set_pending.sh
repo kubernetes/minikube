@@ -43,7 +43,7 @@ jobs=(
      'KVM_Linux_crio'
      'none_Linux'
      'Docker_Linux'
-     'Docker_Linux_arm64'
+     'Docker_Linux_docker_arm64'
      'Docker_Linux_containerd_arm64'
      'Docker_Linux_crio_arm64'
      'Docker_Linux_containerd'
