@@ -93,7 +93,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Only try to add secret if Token was found
 	if err == nil {
 		data := map[string][]byte{
-			".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken)),
+			".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}, "https://us-docker.pkg.dev":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken, token.AccessToken)),
 		}
 
 		namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
