@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: private-image
+  labels:
+    integration-test: private-image
+spec:
+  containers:
+    - image: 
+      imagePullPolicy: IfNotPresent
+      name: private-image
+  restartPolicy: Always

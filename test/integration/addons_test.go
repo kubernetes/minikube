@@ -46,17 +46,20 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	// Set an env var to point to our dummy credentials file
-	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
-	defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if err != nil {
-		t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
-	}
+	// We don't need a dummy file is we're on GCE
+	if !detect.IsOnGCE() {
+		// Set an env var to point to our dummy credentials file
+		err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
+		defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		if err != nil {
+			t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
+		}
 
-	err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
-	defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
-	if err != nil {
-		t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+		err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
+		defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		if err != nil {
+			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+		}
 	}
 
 	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
@@ -616,6 +619,21 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	expected = "this_is_fake"
 	if got != expected {
 		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
+	}
+
+	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
+	if detect.IsOnGCE() {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
+		if err != nil {
+			t.Fatalf("print env project: %v", err)
+		}
+
+		// Make sure the pod is up and running, which means we successfully pulled the private image down
+		// 8 minutes, because 4 is not enough for images to pull in all cases.
+		_, err := PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+		if err != nil {
+			t.Fatalf("wait for private image: %v", err)
+		}
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
