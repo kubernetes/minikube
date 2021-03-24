@@ -73,11 +73,18 @@ const (
 
 	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
 
-	Starting  = 100
-	Pausing   = 101
+	// Transient Codes:
+
+	// Starting means starting cluster, after initial setup
+	Starting = 100
+	// Pausing means pausing cluster
+	Pausing = 101
+	// Unpausing means unpausing cluster
 	Unpausing = 102
-	Stopping  = 110
-	Deleting  = 120
+	// Stopping means stopping cluster
+	Stopping = 110
+	// Deleting means deleting cluster
+	Deleting = 120
 
 	// 2xx signifies that the API Server is able to service requests
 
