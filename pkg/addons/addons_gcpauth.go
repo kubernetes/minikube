@@ -109,6 +109,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 			for _, s := range secList.Items {
 				if s.Name == secretName {
 					exists = true
+					break
 				}
 			}
 
