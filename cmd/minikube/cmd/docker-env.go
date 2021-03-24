@@ -267,6 +267,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
+
 		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {

@@ -1,26 +1,22 @@
 ---
-title: "tunnel"
+title: "cp"
 description: >
-  Connect to LoadBalancer services
+  Copy the specified file into minikube
 ---
 
 
-## minikube tunnel
+## minikube cp
 
-Connect to LoadBalancer services
+Copy the specified file into minikube
 
 ### Synopsis
 
-tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer
+Copy the specified file into minikube, it will be saved at path <target file absolute path> in your minikube.
+Example Command : "minikube cp a.txt /home/docker/b.txt"
+
 
 ```shell
-minikube tunnel [flags]
-```
-
-### Options
-
-```
-  -c, --cleanup   call with cleanup=true to remove old tunnels (default true)
+minikube cp <source file path> <target file absolute path> [flags]
 ```
 
 ### Options inherited from parent commands

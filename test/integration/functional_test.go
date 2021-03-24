@@ -125,6 +125,7 @@ func TestFunctional(t *testing.T) {
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
+			{"CpCmd", validateCpCmd},
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
 			{"CertSync", validateCertSync},
@@ -271,12 +272,15 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Output(), "Running") {
 		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
+	if !strings.Contains(rr.Output(), "in-use") {
+		t.Fatalf("expected status output to include `in-use` after eval docker-env but got *%s*", rr.Output())
+	}
 
 	mctx, cancel = context.WithTimeout(ctx, Seconds(60))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
-		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target(), "-p "+profile+" docker-env | Invoke-Expression ; docker images")
+		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ; docker images")
 		rr, err = Run(t, c)
 	} else {
 		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
@@ -1173,6 +1177,34 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
 	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
+	}
+}
+
+// validateCpCmd asserts basic "cp" command functionality
+func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: cp is unsupported by none driver")
+	}
+
+	cpPath := filepath.Join(*testdataDir, "cp-test.txt")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", cpPath, "/home/docker/hello_cp.txt"))
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+	if err != nil {
+		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
+	}
+
+	expected := "Test file for checking file cp process"
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /home/docker/hello_cp.txt"))
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+	if err != nil {
+		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
+	}
+	if diff := cmp.Diff(expected, rr.Stdout.String()); diff != "" {
+		t.Errorf("/testdata/cp-test.txt content mismatch (-want +got):\n%s", diff)
 	}
 }
 

@@ -17,6 +17,7 @@ limitations under the License.
 package storageclass
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -29,7 +30,7 @@ import (
 func annotateDefaultStorageClass(storage storagev1.StorageV1Interface, class *v1.StorageClass, enable bool) error {
 	isDefault := strconv.FormatBool(enable)
 	metav1.SetMetaDataAnnotation(&class.ObjectMeta, "storageclass.kubernetes.io/is-default-class", isDefault)
-	_, err := storage.StorageClasses().Update(class)
+	_, err := storage.StorageClasses().Update(context.Background(), class, metav1.UpdateOptions{})
 
 	return err
 }
@@ -37,7 +38,7 @@ func annotateDefaultStorageClass(storage storagev1.StorageV1Interface, class *v1
 // DisableDefaultStorageClass disables the default storage class provisioner
 // The addon-manager and kubectl apply cannot delete storageclasses
 func DisableDefaultStorageClass(storage storagev1.StorageV1Interface, class string) error {
-	sc, err := storage.StorageClasses().Get(class, metav1.GetOptions{})
+	sc, err := storage.StorageClasses().Get(context.Background(), class, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Error getting storage class %s", class)
 	}
@@ -52,7 +53,7 @@ func DisableDefaultStorageClass(storage storagev1.StorageV1Interface, class stri
 // SetDefaultStorageClass makes sure only the class with @name is marked as
 // default.
 func SetDefaultStorageClass(storage storagev1.StorageV1Interface, name string) error {
-	scList, err := storage.StorageClasses().List(metav1.ListOptions{})
+	scList, err := storage.StorageClasses().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "Error listing StorageClasses")
 	}

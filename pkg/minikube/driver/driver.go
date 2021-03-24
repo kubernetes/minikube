@@ -321,12 +321,16 @@ func SetLibvirtURI(v string) {
 
 // IndexFromMachineName returns the order of the container based on it is name
 func IndexFromMachineName(machineName string) int {
-	// minikube-m02
+	// minikube or offline-docker-20210314040449-6655 or minion-m02
 	sp := strings.Split(machineName, "-")
-	m := strings.Trim(sp[len(sp)-1], "m") // m02
-	i, err := strconv.Atoi(m)
-	if err != nil {
-		return 1
+	m := sp[len(sp)-1]             // minikube or 6655 or m02
+	if strings.HasPrefix(m, "m") { // likely minion node
+		m = strings.TrimPrefix(m, "m")
+		i, err := strconv.Atoi(m)
+		if err != nil {
+			return 1 // master node
+		}
+		return i // minion node
 	}
-	return i
+	return 1 // master node
 }

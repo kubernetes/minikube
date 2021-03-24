@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -136,6 +137,8 @@ type Status struct {
 	Kubeconfig string
 	Worker     bool
 	TimeToStop string
+	DockerEnv  string `json:",omitempty"`
+	PodManEnv  string `json:",omitempty"`
 }
 
 // ClusterState holds a cluster state representation
@@ -183,6 +186,12 @@ kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
 timeToStop: {{.TimeToStop}}
+{{- if .DockerEnv }}
+docker-env: {{.DockerEnv}}
+{{- end }}
+{{- if .PodManEnv }}
+podman-env: {{.PodManEnv}}
+{{- end }}
 
 `
 	workerStatusFormat = `{{.Name}}
@@ -373,6 +382,12 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	if cc.ScheduledStop != nil {
 		initiationTime := time.Unix(cc.ScheduledStop.InitiationTime, 0)
 		st.TimeToStop = time.Until(initiationTime.Add(cc.ScheduledStop.Duration)).String()
+	}
+	if os.Getenv(constants.MinikubeActiveDockerdEnv) != "" {
+		st.DockerEnv = "in-use"
+	}
+	if os.Getenv(constants.MinikubeActivePodmanEnv) != "" {
+		st.PodManEnv = "in-use"
 	}
 	// Early exit for worker nodes
 	if !controlPlane {

@@ -33,8 +33,10 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -203,19 +205,47 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 		return img, nil
 	}
 	// reference does not exist in the local daemon
-	if err != nil {
-		klog.Infof("daemon lookup for %+v: %v", ref, err)
-	}
+	klog.Infof("daemon lookup for %+v: %v", ref, err)
 
-	platform := defaultPlatform
-	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
+	img, err = retrieveRemote(ref, defaultPlatform)
+	if err != nil {
+		return nil, err
+	}
+	return fixPlatform(ref, img, defaultPlatform)
+}
+
+func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(p))
 	if err == nil {
 		return img, nil
 	}
 
 	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
-	img, err = remote.Image(ref)
-	return img, err
+	return remote.Image(ref, remote.WithPlatform(p))
+}
+
+// See https://github.com/kubernetes/minikube/issues/10402
+// check if downloaded image Architecture field matches the requested and fix it otherwise
+func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, error) {
+	cfg, err := img.ConfigFile()
+	if err != nil {
+		klog.Warningf("failed to get config for %s: %v", ref, err)
+		return img, err
+	}
+
+	if cfg.Architecture == p.Architecture {
+		return img, nil
+	}
+	klog.Warningf("image %s arch mismatch: want %s got %s. fixing",
+		ref, p.Architecture, cfg.Architecture)
+
+	cfg.Architecture = p.Architecture
+	img, err = mutate.ConfigFile(img, cfg)
+	if err != nil {
+		klog.Warningf("failed to change config for %s: %v", ref, err)
+		return img, errors.Wrap(err, "failed to change image config")
+	}
+	return img, nil
 }
 
 func cleanImageCacheDir() error {

@@ -747,7 +747,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	}
 
 	r := reason.MatchKnownIssue(reason.Kind{}, st.Error, runtime.GOOS)
-	if r.ID != "" {
+	if r != nil && r.ID != "" {
 		exitIfNotForced(*r, st.Error.Error())
 	}
 

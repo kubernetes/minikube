@@ -13,28 +13,46 @@
 # limitations under the License.
 
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+    addonmanager.kubernetes.io/mode: EnsureExists
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
 data:
   # see https://github.com/kubernetes/ingress-nginx/blob/master/docs/user-guide/nginx-configuration/configmap.md for all possible options and their description
   hsts: "false"
-kind: ConfigMap
-metadata:
-  name: nginx-load-balancer-conf
-  namespace: kube-system
-  labels:
-    addonmanager.kubernetes.io/mode: EnsureExists
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tcp-services
-  namespace: kube-system
+  namespace: ingress-nginx
   labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
     addonmanager.kubernetes.io/mode: EnsureExists
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: udp-services
-  namespace: kube-system
+  namespace: ingress-nginx
   labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
     addonmanager.kubernetes.io/mode: EnsureExists

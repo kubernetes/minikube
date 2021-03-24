@@ -148,11 +148,11 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get Kubernetes client: %v", client)
 	}
 
-	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "ingress-nginx-controller", Minutes(6)); err != nil {
+	if err := kapi.WaitForDeploymentToStabilize(client, "ingress-nginx", "ingress-nginx-controller", Minutes(6)); err != nil {
 		t.Errorf("failed waiting for ingress-controller deployment to stabilize: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=ingress-nginx", Minutes(12)); err != nil {
-		t.Fatalf("failed waititing for nginx-ingress-controller : %v", err)
+	if _, err := PodWait(ctx, t, profile, "ingress-nginx", "app.kubernetes.io/name=ingress-nginx", Minutes(12)); err != nil {
+		t.Fatalf("failed waititing for ingress-nginx-controller : %v", err)
 	}
 
 	createIngress := func() error {
@@ -489,12 +489,6 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 
 	if _, err := PodWait(ctx, t, profile, "default", "app=task-pv-pod", Minutes(6)); err != nil {
 		t.Fatalf("failed waiting for pod task-pv-pod: %v", err)
-	}
-
-	// create sample snapshotclass
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "csi-hostpath-driver", "snapshotclass.yaml")))
-	if err != nil {
-		t.Logf("creating snapshostclass with %s failed: %v", rr.Command(), err)
 	}
 
 	// create volume snapshot

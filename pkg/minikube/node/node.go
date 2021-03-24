@@ -17,12 +17,14 @@ limitations under the License.
 package node
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -119,7 +121,7 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, err
 	}
 
-	err = client.CoreV1().Nodes().Delete(m, nil)
+	err = client.CoreV1().Nodes().Delete(context.Background(), m, v1.DeleteOptions{})
 	if err != nil {
 		return n, err
 	}
