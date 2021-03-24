@@ -219,11 +219,7 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	klog.Infof("retrieving image: %+v", ref)
 	if useDaemon {
 		img, err = retrieveDaemon(ref)
-		if err != nil {
-			return nil, err
-		}
 	}
-
 	if useRemote {
 		img, err = retrieveRemote(ref, defaultPlatform)
 		if err != nil {
