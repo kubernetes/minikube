@@ -201,13 +201,11 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	client, err := service.K8s.GetCoreClient(cfg.Name)
 	if err != nil {
-		exit.Message(reason.InternalCredsNotFound, err.Error())
 		return err
 	}
 
 	namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		exit.Message(reason.InternalCredsNotFound, err.Error())
 		return err
 	}
 
