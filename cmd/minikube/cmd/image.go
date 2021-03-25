@@ -40,9 +40,14 @@ var imageCmd = &cobra.Command{
 }
 
 var (
-	pull      bool
-	imgDaemon bool
-	imgRemote bool
+	pull       bool
+	imgDaemon  bool
+	imgRemote  bool
+	tag        string
+	push       bool
+	dockerFile string
+	buildEnv   []string
+	buildOpt   []string
 )
 
 func saveFile(r io.Reader) (string, error) {
@@ -60,14 +65,6 @@ func saveFile(r io.Reader) (string, error) {
 	}
 	return tmp.Name(), nil
 }
-
-var (
-	tag        string
-	push       bool
-	dockerFile string
-	buildEnv   []string
-	buildOpt   []string
-)
 
 // loadImageCmd represents the image load command
 var loadImageCmd = &cobra.Command{
@@ -181,22 +178,6 @@ $ minikube image list
 			exit.Error(reason.GuestImageList, "Failed to list images", err)
 		}
 	},
-}
-
-func saveFile(r io.Reader) (string, error) {
-	tmp, err := ioutil.TempFile("", "build.*.tar")
-	if err != nil {
-		return "", err
-	}
-	_, err = io.Copy(tmp, r)
-	if err != nil {
-		return "", err
-	}
-	err = tmp.Close()
-	if err != nil {
-		return "", err
-	}
-	return tmp.Name(), nil
 }
 
 func createTar(dir string) (string, error) {
