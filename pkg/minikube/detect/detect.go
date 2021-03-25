@@ -35,9 +35,5 @@ func IsOnGCE() bool {
 		return false
 	}
 
-	if resp.Header.Get("Metadata-Flavor") == "Google" {
-		return true
-	}
-
-	return false
+	return resp.Header.Get("Metadata-Flavor") == "Google"
 }
