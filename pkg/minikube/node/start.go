@@ -217,48 +217,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 }
 
-// joinCluster adds new or prepares and then adds existing node to the cluster.
-func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrapper.Bootstrapper) error {
-	start := time.Now()
-	klog.Infof("JoinCluster: %+v", starter.Cfg)
-	defer func() {
-		klog.Infof("JoinCluster complete in %s", time.Since(start))
-	}()
-
-	ip, err := starter.Host.Driver.GetIP()
-	if err != nil {
-		return fmt.Errorf("error getting ip: %w", err)
-	}
-	joinCmd, err := cpBs.GenerateToken(*starter.Cfg, starter.Node.ControlPlane, ip)
-	if err != nil {
-		return fmt.Errorf("error generating join token: %w", err)
-	}
-
-	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
-	// You must delete the existing Node or change the name of this new joining Node"
-	if starter.PreExists {
-		klog.Infof("removing existing worker node %q before attempting to rejoin cluster: %+v", starter.Node.Name, starter.Node)
-		if _, err := drainNode(*starter.Cfg, starter.Node.Name); err != nil {
-			klog.Errorf("error removing existing worker node before rejoining cluster, will continue anyway: %v", err)
-		}
-		klog.Infof("successfully removed existing worker node %q from cluster: %+v", starter.Node.Name, starter.Node)
-	}
-
-	join := func() error {
-		klog.Infof("trying to join worker node %q to cluster: %+v", starter.Node.Name, starter.Node)
-		if err := bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
-			klog.Errorf("worker node failed to join cluster, will retry: %v", err)
-			return err
-		}
-		return nil
-	}
-	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
-		return fmt.Errorf("error joining worker node to cluster: %w", err)
-	}
-
-	return nil
-}
-
 // Provision provisions the machine/container for the node
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
