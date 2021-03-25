@@ -62,7 +62,7 @@ func runPause(cmd *cobra.Command, args []string) {
 		exit.Message(reason.Usage, "Use -A to specify all namespaces")
 	}
 
-	ids := []string{}
+	var ids []string
 
 	for _, n := range co.Config.Nodes {
 		// Use node-name if available, falling back to cluster name
