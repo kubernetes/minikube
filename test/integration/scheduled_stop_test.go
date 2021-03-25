@@ -67,10 +67,10 @@ func TestScheduledStopWindows(t *testing.T) {
 
 	// sleep for 5 seconds
 	time.Sleep(5 * time.Second)
+	// make sure minikube timetoStop is not present
+	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
-	// make sure minikube timtostop is "Nonexistent"
-	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "Nonexistent")
 }
 
 func TestScheduledStopUnix(t *testing.T) {
@@ -113,10 +113,10 @@ func TestScheduledStopUnix(t *testing.T) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
 
+	// make sure minikube timetoStop is not present
+	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
-	// make sure minikube timtostop is "Nonexistent"
-	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "Nonexistent")
 }
 
 func startMinikube(ctx context.Context, t *testing.T, profile string) {
@@ -193,5 +193,16 @@ func ensureMinikubeScheduledTime(ctx context.Context, t *testing.T, profile stri
 	}
 	if err := retry.Expo(checkTime, time.Second, time.Minute); err != nil {
 		t.Fatalf("error %v", err)
+	}
+}
+
+func ensureTimeToStopNotPresent(ctx context.Context, t *testing.T, profile string) {
+	args := []string{"status", "-p", profile}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("minikube status: %v\n%s", err, rr.Output())
+	}
+	if strings.Contains(rr.Output(), "TimeToStop") {
+		t.Fatalf("expected status output to not include `TimeToStop` but got *%s*", rr.Output())
 	}
 }
