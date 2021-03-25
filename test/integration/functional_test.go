@@ -133,6 +133,7 @@ func TestFunctional(t *testing.T) {
 			{"DockerEnv", validateDockerEnv},
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
+			{"RemoveImage", validateRemoveImage},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -219,18 +220,7 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// make sure the image was correctly loaded
-	var cmd *exec.Cmd
-	if ContainerRuntime() == "docker" {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", newImage)
-	} else if ContainerRuntime() == "containerd" {
-		// crictl inspecti busybox:test-example
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", newImage)
-	} else {
-		// crio adds localhost prefix
-		// crictl inspecti localhost/busybox:test-example
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", "localhost/"+newImage)
-	}
-	rr, err = Run(t, cmd)
+	rr, err = inspectImage(ctx, t, profile, newImage)
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
@@ -238,6 +228,70 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 
+}
+
+// validateRemoveImage makes sures that `minikube rm image` works as expected
+func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+
+	// pull busybox
+	busyboxImage := "busybox:latest"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+	}
+
+	// try to load the image into minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", busyboxImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// try to remove the image from minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", busyboxImage))
+	if err != nil {
+		t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
+	}
+	// make sure the image was removed
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images")
+	} else {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "images")
+	}
+	rr, err = Run(t, cmd)
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if strings.Contains(rr.Output(), busyboxImage) {
+		t.Fatalf("expected %s to be removed from minikube but the image is there", busyboxImage)
+	}
+
+}
+
+func inspectImage(ctx context.Context, t *testing.T, profile string, image string) (*RunResult, error) {
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", image)
+	} else if ContainerRuntime() == "containerd" {
+		// crictl inspecti busybox:test-example
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", image)
+	} else {
+		// crio adds localhost prefix
+		// crictl inspecti localhost/busybox:test-example
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", "localhost/"+image)
+	}
+	rr, err := Run(t, cmd)
+	if err != nil {
+		return rr, err
+	}
+	return rr, nil
 }
 
 // check functionality of minikube after evaling docker-env
