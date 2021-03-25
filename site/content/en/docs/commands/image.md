@@ -72,14 +72,28 @@ minikube image help [command] [flags]
 
 ## minikube image load
 
-Load a local image into minikube
+Load a image into minikube
 
 ### Synopsis
 
-Load a local image into minikube
+Load a image into minikube
 
 ```shell
-minikube image load [flags]
+minikube image load IMAGE | ARCHIVE | - [flags]
+```
+
+### Examples
+
+```
+minikube image load image
+minikube image load image.tar
+```
+
+### Options
+
+```
+      --daemon   Cache image from docker daemon
+      --remote   Cache image from remote registry
 ```
 
 ### Options inherited from parent commands
