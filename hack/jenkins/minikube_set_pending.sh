@@ -51,6 +51,7 @@ jobs=(
      # 'Docker_macOS'
      'Docker_Windows'
      # 'Podman_Linux'
+     'Cloud_Shell_Integration'
 )
 
 # retry_github_status provides reliable github status updates
