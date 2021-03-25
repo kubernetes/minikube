@@ -6,7 +6,7 @@ description: >
   How to add logs to facilitate JSON output
 ---
 
-This document is written for minikube contributors who need to add logs to the minikube log registry for sucessful JSON output.
+This document is written for minikube contributors who need to add logs to the minikube log registry for successful JSON output.
 You may need to add logs to the registry if the `TestJSONOutput` integration test is failing on your PR.
 
 ### Background
