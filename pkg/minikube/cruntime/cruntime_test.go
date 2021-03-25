@@ -63,14 +63,19 @@ func TestImageExists(t *testing.T) {
 		sha     string
 		want    bool
 	}{
-		{"docker", "missing", "0000000000000000000000000000000000000000000000000000000000000000", false},
-		{"docker", "image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
-		{"crio", "missing", "0000000000000000000000000000000000000000000000000000000000000000", false},
-		{"crio", "image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
+		{"docker", "missing-image", "0000000000000000000000000000000000000000000000000000000000000000", false},
+		{"docker", "available-image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
+		{"crio", "missing-image", "0000000000000000000000000000000000000000000000000000000000000000", false},
+		{"crio", "available-image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
 	}
 	for _, tc := range tests {
+		runner := NewFakeRunner(t)
+		runner.images = map[string]string{
+			"available-image": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+		}
 		t.Run(tc.runtime, func(t *testing.T) {
-			r, err := New(Config{Type: tc.runtime, Runner: NewFakeRunner(t)})
+
+			r, err := New(Config{Type: tc.runtime, Runner: runner})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
@@ -279,10 +284,11 @@ func (f *FakeRunner) dockerRm(args []string) (string, error) {
 
 func (f *FakeRunner) dockerInspect(args []string) (string, error) {
 	if args[1] == "--format" && args[2] == "{{.Id}}" {
-		if args[3] == "missing" {
+		image, ok := f.images[args[3]]
+		if !ok {
 			return "", &exec.ExitError{Stderr: []byte("Error: No such object: missing")}
 		}
-		return "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
+		return "sha256:" + image, nil
 	}
 	return "", nil
 }
@@ -685,7 +691,7 @@ func TestContainerFunctions(t *testing.T) {
 				"xyz2": prefix + "storage",
 			}
 			runner.images = map[string]string{
-				"image1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				"image1": "latest",
 			}
 			cr, err := New(Config{Type: tc.runtime, Runner: runner})
 			if err != nil {
@@ -741,7 +747,6 @@ func TestContainerFunctions(t *testing.T) {
 			if err := cr.RemoveImage("image1"); err != nil {
 				t.Fatalf("RemoveImage: %v", err)
 			}
-			// imageExists := cr.ImageExists("image1", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 			if len(runner.images) > 0 {
 				t.Errorf("RemoveImage = %v, want 0 items", len(runner.images))
 			}
