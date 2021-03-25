@@ -49,6 +49,21 @@ var defaultPlatform = v1.Platform{
 	OS:           "linux",
 }
 
+var (
+	useDaemon = true
+	useRemote = true
+)
+
+// UseDaemon is if we should look in local daemon for image ref
+func UseDaemon(use bool) {
+	useDaemon = use
+}
+
+// UseRemote is if we should look in remote registry for image ref
+func UseRemote(use bool) {
+	useRemote = use
+}
+
 // DigestByDockerLib uses client by docker lib to return image digest
 // img.ID in as same as image digest
 func DigestByDockerLib(imgClient *client.Client, imgName string) string {
@@ -198,7 +213,31 @@ func WriteImageToDaemon(img string) error {
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {
+	var err error
+	var img v1.Image
+
+	if !useDaemon && !useRemote {
+		return nil, fmt.Errorf("neither daemon nor remote")
+	}
+
 	klog.Infof("retrieving image: %+v", ref)
+	if useDaemon {
+		img, err = retrieveDaemon(ref)
+		if err == nil {
+			return img, nil
+		}
+	}
+	if useRemote {
+		img, err = retrieveRemote(ref, defaultPlatform)
+		if err == nil {
+			return fixPlatform(ref, img, defaultPlatform)
+		}
+	}
+
+	return nil, err
+}
+
+func retrieveDaemon(ref name.Reference) (v1.Image, error) {
 	img, err := daemon.Image(ref)
 	if err == nil {
 		klog.Infof("found %s locally: %+v", ref.Name(), img)
@@ -206,12 +245,7 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	}
 	// reference does not exist in the local daemon
 	klog.Infof("daemon lookup for %+v: %v", ref, err)
-
-	img, err = retrieveRemote(ref, defaultPlatform)
-	if err != nil {
-		return nil, err
-	}
-	return fixPlatform(ref, img, defaultPlatform)
+	return img, err
 }
 
 func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
@@ -221,7 +255,12 @@ func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 	}
 
 	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
-	return remote.Image(ref, remote.WithPlatform(p))
+	img, err = remote.Image(ref, remote.WithPlatform(p))
+	// reference does not exist in the remote registry
+	if err != nil {
+		klog.Infof("remote lookup for %+v: %v", ref, err)
+	}
+	return img, err
 }
 
 // See https://github.com/kubernetes/minikube/issues/10402

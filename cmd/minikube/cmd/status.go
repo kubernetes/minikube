@@ -136,7 +136,7 @@ type Status struct {
 	APIServer  string
 	Kubeconfig string
 	Worker     bool
-	TimeToStop string
+	TimeToStop string `json:",omitempty"`
 	DockerEnv  string `json:",omitempty"`
 	PodManEnv  string `json:",omitempty"`
 }
@@ -146,7 +146,7 @@ type ClusterState struct {
 	BaseState
 
 	BinaryVersion string
-	TimeToStop    string
+	TimeToStop    string `json:",omitempty"`
 	Components    map[string]BaseState
 	Nodes         []NodeState
 }
@@ -185,7 +185,9 @@ host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
+{{- if .TimeToStop }}
 timeToStop: {{.TimeToStop}}
+{{- end }}
 {{- if .DockerEnv }}
 docker-env: {{.DockerEnv}}
 {{- end }}
@@ -319,7 +321,6 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		Kubelet:    Nonexistent,
 		Kubeconfig: Nonexistent,
 		Worker:     !controlPlane,
-		TimeToStop: Nonexistent,
 	}
 
 	hs, err := machine.Status(api, name)

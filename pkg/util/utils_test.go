@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"runtime"
 	"syscall"
 	"testing"
 
@@ -38,7 +39,7 @@ func TestGetBinaryDownloadURL(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		url := GetBinaryDownloadURL(tt.version, tt.platform)
+		url := GetBinaryDownloadURL(tt.version, tt.platform, runtime.GOARCH)
 		if url != tt.expectedURL {
 			t.Fatalf("Expected '%s' but got '%s'", tt.expectedURL, url)
 		}
