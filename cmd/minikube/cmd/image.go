@@ -132,22 +132,6 @@ var loadImageCmd = &cobra.Command{
 	},
 }
 
-func saveFile(r io.Reader) (string, error) {
-	tmp, err := ioutil.TempFile("", "build.*.tar")
-	if err != nil {
-		return "", err
-	}
-	_, err = io.Copy(tmp, r)
-	if err != nil {
-		return "", err
-	}
-	err = tmp.Close()
-	if err != nil {
-		return "", err
-	}
-	return tmp.Name(), nil
-}
-
 func createTar(dir string) (string, error) {
 	tar, err := docker.CreateTarStream(dir, dockerFile)
 	if err != nil {
@@ -205,9 +189,9 @@ var buildImageCmd = &cobra.Command{
 }
 
 func init() {
-	imageCmd.AddCommand(loadImageCmd)
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
+	imageCmd.AddCommand(loadImageCmd)
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
 	buildImageCmd.Flags().BoolVarP(&push, "push", "", false, "Push the new image (requires tag)")
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
