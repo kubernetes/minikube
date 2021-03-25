@@ -162,24 +162,6 @@ $ minikube image unload image busybox
 	},
 }
 
-var listImageCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List images",
-	Example: `
-$ minikube image list
-`,
-	Aliases: []string{"ls"},
-	Run: func(cmd *cobra.Command, args []string) {
-		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
-		if err != nil {
-			exit.Error(reason.Usage, "loading profile", err)
-		}
-		if err := machine.ListImages(profile); err != nil {
-			exit.Error(reason.GuestImageList, "Failed to list images", err)
-		}
-	},
-}
-
 func createTar(dir string) (string, error) {
 	tar, err := docker.CreateTarStream(dir, dockerFile)
 	if err != nil {
@@ -203,6 +185,7 @@ var buildImageCmd = &cobra.Command{
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
+
 		img := args[0]
 		var tmp string
 		if img == "-" {
@@ -236,17 +219,36 @@ var buildImageCmd = &cobra.Command{
 	},
 }
 
+var listImageCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List images",
+	Example: `
+$ minikube image list
+`,
+	Aliases: []string{"ls"},
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if err := machine.ListImages(profile); err != nil {
+			exit.Error(reason.GuestImageList, "Failed to list images", err)
+		}
+	},
+}
+
 func init() {
-	imageCmd.AddCommand(loadImageCmd)
-	imageCmd.AddCommand(removeImageCmd)
 	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
-	imageCmd.AddCommand(listImageCmd)
+	imageCmd.AddCommand(loadImageCmd)
+	imageCmd.AddCommand(removeImageCmd)
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
 	buildImageCmd.Flags().BoolVarP(&push, "push", "", false, "Push the new image (requires tag)")
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
 	buildImageCmd.Flags().StringArrayVar(&buildEnv, "build-env", nil, "Environment variables to pass to the build. (format: key=value)")
 	buildImageCmd.Flags().StringArrayVar(&buildOpt, "build-opt", nil, "Specify arbitrary flags to pass to the build. (format: key=value)")
 	imageCmd.AddCommand(buildImageCmd)
+	imageCmd.AddCommand(listImageCmd)
 }
