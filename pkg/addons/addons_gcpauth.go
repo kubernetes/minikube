@@ -106,6 +106,9 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 			exists := false
 			secList, err := secrets.List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
 			for _, s := range secList.Items {
 				if s.Name == secretName {
 					exists = true

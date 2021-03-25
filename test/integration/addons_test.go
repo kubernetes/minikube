@@ -628,7 +628,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
 	if detect.IsOnGCE() {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
 		if err != nil {
 			t.Fatalf("print env project: %v", err)
 		}
