@@ -128,7 +128,7 @@ var loadImageCmd = &cobra.Command{
 var removeImageCmd = &cobra.Command{
 	Use:     "rm IMAGE [IMAGE...]",
 	Short:   "Remove one or more images",
-	Long:    "Load a image into minikube",
+	Long:    "Remove a image from minikube",
 	Example: "minikube image rm image busybox",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {

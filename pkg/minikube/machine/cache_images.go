@@ -367,7 +367,7 @@ func RemoveImages(images []string, profiles []*config.Profile) error {
 				err = removeImages(c, cr, images)
 				if err != nil {
 					failed = append(failed, m)
-					klog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+					klog.Warningf("Failed to remove images for profile %s. make sure the profile is running. %v", pName, err)
 					continue
 				}
 				succeeded = append(succeeded, m)
@@ -375,7 +375,7 @@ func RemoveImages(images []string, profiles []*config.Profile) error {
 		}
 	}
 
-	klog.Infof("succeeded removing to: %s", strings.Join(succeeded, " "))
-	klog.Infof("failed removing to: %s", strings.Join(failed, " "))
+	klog.Infof("succeeded removing from: %s", strings.Join(succeeded, " "))
+	klog.Infof("failed removing from: %s", strings.Join(failed, " "))
 	return nil
 }

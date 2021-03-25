@@ -175,6 +175,9 @@ func (r *Docker) LoadImage(path string) error {
 // RemoveImage removes a image
 func (r *Docker) RemoveImage(name string) error {
 	klog.Infof("Removing image: %s", name)
+	if r.UseCRI {
+		return removeCRIImage(r.Runner, name)
+	}
 	c := exec.Command("docker", "rmi", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "remove image docker.")

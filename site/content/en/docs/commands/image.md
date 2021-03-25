@@ -124,7 +124,7 @@ Remove one or more images
 
 ### Synopsis
 
-Load a image into minikube
+Remove a image from minikube
 
 ```shell
 minikube image rm IMAGE [IMAGE...] [flags]
