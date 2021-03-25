@@ -292,3 +292,90 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	klog.Infof("Transferred and loaded %s from cache", src)
 	return nil
 }
+
+// removeImages removes images from the container run time
+func removeImages(cc *config.ClusterConfig, runner command.Runner, images []string) error {
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
+	klog.Infof("RemovingImages start: %s", images)
+	start := time.Now()
+
+	defer func() {
+		klog.Infof("RemovingImages completed in %s", time.Since(start))
+	}()
+
+	var g errgroup.Group
+
+	for _, image := range images {
+		image := image
+		g.Go(func() error {
+			return cr.RemoveImage(image)
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "removing images")
+	}
+	klog.Infoln("Successfully removed images")
+	return nil
+}
+
+func RemoveImages(images []string, profiles []*config.Profile) error {
+	api, err := NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "api")
+	}
+	defer api.Close()
+
+	succeeded := []string{}
+	failed := []string{}
+
+	for _, p := range profiles { // loading images to all running profiles
+		pName := p.Name // capture the loop variable
+
+		c, err := config.Load(pName)
+		if err != nil {
+			// Non-fatal because it may race with profile deletion
+			klog.Errorf("Failed to load profile %q: %v", pName, err)
+			failed = append(failed, pName)
+			continue
+		}
+
+		for _, n := range c.Nodes {
+			m := config.MachineName(*c, n)
+
+			status, err := Status(api, m)
+			if err != nil {
+				klog.Warningf("error getting status for %s: %v", m, err)
+				failed = append(failed, m)
+				continue
+			}
+
+			if status == state.Running.String() { // the not running hosts will load on next start
+				h, err := api.Load(m)
+				if err != nil {
+					klog.Warningf("Failed to load machine %q: %v", m, err)
+					failed = append(failed, m)
+					continue
+				}
+				cr, err := CommandRunner(h)
+				if err != nil {
+					return err
+				}
+				err = removeImages(c, cr, images)
+				if err != nil {
+					failed = append(failed, m)
+					klog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+					continue
+				}
+				succeeded = append(succeeded, m)
+			}
+		}
+	}
+
+	klog.Infof("succeeded removing to: %s", strings.Join(succeeded, " "))
+	klog.Infof("failed removing to: %s", strings.Join(failed, " "))
+	return nil
+}

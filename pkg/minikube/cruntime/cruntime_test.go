@@ -157,6 +157,7 @@ type FakeRunner struct {
 	cmds       []string
 	services   map[string]serviceState
 	containers map[string]string
+	images     map[string]string
 	t          *testing.T
 }
 
@@ -167,6 +168,7 @@ func NewFakeRunner(t *testing.T) *FakeRunner {
 		cmds:       []string{},
 		t:          t,
 		containers: map[string]string{},
+		images:     map[string]string{},
 	}
 }
 
@@ -285,6 +287,18 @@ func (f *FakeRunner) dockerInspect(args []string) (string, error) {
 	return "", nil
 }
 
+func (f *FakeRunner) dockerRmi(args []string) (string, error) {
+	// Skip "-f" argument
+	for _, id := range args[1:] {
+		f.t.Logf("fake docker: Removing id %q", id)
+		if f.images[id] == "" {
+			return "", fmt.Errorf("no such image")
+		}
+		delete(f.images, id)
+	}
+	return "", nil
+}
+
 // docker is a fake implementation of docker
 func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	switch cmd := args[0]; cmd {
@@ -307,6 +321,9 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 		if args[1] == "inspect" {
 			return f.dockerInspect(args[1:])
 		}
+
+	case "rmi":
+		return f.dockerRmi(args)
 
 	case "inspect":
 		return f.dockerInspect(args)
@@ -417,7 +434,14 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 			delete(f.containers, id)
 
 		}
-
+	case "rmi":
+		for _, id := range args[1:] {
+			f.t.Logf("fake crictl: Removing id %q", id)
+			if f.images[id] == "" {
+				return "", fmt.Errorf("no such image")
+			}
+			delete(f.images, id)
+		}
 	}
 	return "", nil
 }
@@ -660,6 +684,9 @@ func TestContainerFunctions(t *testing.T) {
 				"fgh1": prefix + "coredns",
 				"xyz2": prefix + "storage",
 			}
+			runner.images = map[string]string{
+				"image1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			}
 			cr, err := New(Config{Type: tc.runtime, Runner: runner})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
@@ -708,6 +735,15 @@ func TestContainerFunctions(t *testing.T) {
 			}
 			if len(got) > 0 {
 				t.Errorf("ListContainers(apiserver) = %v, want 0 items", got)
+			}
+
+			// Remove a image
+			if err := cr.RemoveImage("image1"); err != nil {
+				t.Fatalf("RemoveImage: %v", err)
+			}
+			// imageExists := cr.ImageExists("image1", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+			if len(runner.images) > 0 {
+				t.Errorf("RemoveImage = %v, want 0 items", len(runner.images))
 			}
 		})
 	}
