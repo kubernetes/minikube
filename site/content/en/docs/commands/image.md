@@ -1,17 +1,17 @@
 ---
 title: "image"
 description: >
-  Load a local image into minikube
+  Manage images
 ---
 
 
 ## minikube image
 
-Load a local image into minikube
+Manage images
 
 ### Synopsis
 
-Load a local image into minikube
+Manage images
 
 ### Options inherited from parent commands
 
@@ -124,16 +124,24 @@ Remove one or more images
 
 ### Synopsis
 
-Remove a image from minikube
+Remove one or more images
 
 ```shell
 minikube image rm IMAGE [IMAGE...] [flags]
 ```
 
+### Aliases
+
+[unload]
+
 ### Examples
 
 ```
-minikube image rm image busybox
+
+$ minikube image rm image busybox
+
+$ minikube image unload image busybox
+
 ```
 
 ### Options inherited from parent commands

@@ -33,9 +33,8 @@ import (
 
 // imageCmd represents the image command
 var imageCmd = &cobra.Command{
-	Use:   "image",
-	Short: "Load a local image into minikube",
-	Long:  "Load a local image into minikube",
+	Use:   "image COMMAND",
+	Short: "Manage images",
 }
 
 var (
@@ -126,10 +125,14 @@ var loadImageCmd = &cobra.Command{
 }
 
 var removeImageCmd = &cobra.Command{
-	Use:     "rm IMAGE [IMAGE...]",
-	Short:   "Remove one or more images",
-	Long:    "Remove a image from minikube",
-	Example: "minikube image rm image busybox",
+	Use:   "rm IMAGE [IMAGE...]",
+	Short: "Remove one or more images",
+	Example: `
+$ minikube image rm image busybox
+
+$ minikube image unload image busybox
+`,
+	Aliases: []string{"unload"},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Please provide an image to remove via <minikube image rm IMAGE_NAME>")
