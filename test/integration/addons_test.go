@@ -43,7 +43,7 @@ import (
 // TestAddons tests addons that require no special environment in parallel
 func TestAddons(t *testing.T) {
 	profile := UniqueProfileName("addons")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(45))
 	defer Cleanup(t, profile, cancel)
 
 	// We don't need a dummy file is we're on GCE
@@ -67,7 +67,7 @@ func TestAddons(t *testing.T) {
 		args = append(args, "--addons=ingress")
 	}
 	if !arm64Platform() {
-		args = append(args, "--addons=helm-tiller")
+		args = append(args, "--addons=helm-tiller", "--addons=auto-pause")
 	}
 	if !detect.IsOnGCE() {
 		args = append(args, "--addons=gcp-auth")
@@ -112,6 +112,7 @@ func TestAddons(t *testing.T) {
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
 			{"GCPAuth", validateGCPAuthAddon},
+			{"AutoPause", validateAutoPause},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -709,5 +710,86 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed disabling gcp-auth addon. arg %q.s %v", rr.Command(), err)
+	}
+}
+
+func validateAutoPause(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
+	}
+
+	// wait for auto-pause deployment
+	start := time.Now()
+	if err := kapi.WaitForDeploymentToStabilize(client, "auto-pause", "auto-pause-proxy", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for auto-pause deployment to stabilize: %v", err)
+	}
+	t.Logf("auto-pause stabilized in %s", time.Since(start))
+
+	if _, err := PodWait(ctx, t, profile, "auto-pause", "app=auto-pause-proxy", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for app=auto-pause pod: %v", err)
+	}
+	// check for kubernetes status to be running
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.APIServer}}"))
+	if err != nil {
+		t.Fatalf("failed to get minikube status: %v", err)
+	}
+	want := "Running"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("expected api-server status be %q, but got *%s*", want, rr.Stdout.String())
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.Kubelet}}"))
+	if err != nil {
+		t.Fatalf("failed to get minikube status: %v", err)
+	}
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("expected kubelet status be %q, but got *%s*", want, rr.Stdout.String())
+	}
+	// wait to get kubernetes to get paused
+	time.Sleep(30 * time.Second)
+	// check for kubernetes to be stopped
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.APIServer}}"))
+	if err != nil {
+		t.Fatalf("failed to get minikube status: %v", err)
+	}
+	want = "Paused"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("expected api-server status be %q, but got *%s*", want, rr.Stdout.String())
+	}
+	want = "Stopped"
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.Kubelet}}"))
+	if err != nil {
+		t.Fatalf("failed to get minikube status: %v", err)
+	}
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("expected kubelet status be %q, but got *%s*", want, rr.Stdout.String())
+	}
+	// do some operation in kubernetes
+	_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "ns"))
+	if err != nil {
+		t.Fatalf("get namespace: %v", err)
+	}
+	// check for kubernetes to be running
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.APIServer}}"))
+	if err != nil {
+		t.Fatalf("failed to get minikube status: %v", err)
+	}
+	want = "Running"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("expected api-server status be %q, but got *%s*", want, rr.Stdout.String())
+	}
+	want = "Running"
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.Kubelet}}"))
+	if err != nil {
+		t.Fatalf("failed to get minikube status: %v", err)
+	}
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("expected kubelet status be %q, but got *%s*", want, rr.Stdout.String())
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "auto-pause", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable auto-pause addon: args %q: %v", rr.Command(), err)
 	}
 }
