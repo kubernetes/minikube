@@ -54,7 +54,6 @@ func TestAddons(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
 		}
-
 		err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
 		defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
 		if err != nil {
@@ -245,17 +244,18 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed waiting for pod registry-proxy: %v", err)
 	}
 
-	// Test from inside the cluster (no curl available on busybox)
+	// Test from inside the cluster
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now"))
 	if err != nil {
 		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=yauritux/busybox-curl", "-it", "--", "sh", "-c", "curl -X GET http://registry.kube-system.svc.cluster.local/v2/_catalog"))
 	if err != nil {
 		t.Errorf("failed to hit registry.kube-system.svc.cluster.local. args %q failed: %v", rr.Command(), err)
 	}
-	want := "HTTP/1.1 200"
+
+	want := "{\"repositories\":[]}"
 	if !strings.Contains(rr.Stdout.String(), want) {
 		t.Errorf("expected curl response be %q, but got *%s*", want, rr.Stdout.String())
 	}
@@ -293,6 +293,15 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	if err := retry.Expo(checkExternalAccess, 500*time.Millisecond, Seconds(150)); err != nil {
 		t.Errorf("failed to check external access to %s: %v", u.String(), err.Error())
 	}
+
+	// TODO
+	// if driver == docker:
+	//   in minikube instance,  docker pull   hello-world
+	//   in minikube instance,  docker tag    hello-world $(minikube ip):5000/hello-world
+	//   in minikube instance,  docker push   $(minikube ip):5000/hello-world
+	//     TODO insecure-registry issue happen when docker push to there
+	//   in minikube instance, curl -X GET http://$(minikube ip):5000/v2/_catalog
+	//     check if the stdout equals to  "{"repositories":["hello-world"]}"
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "registry", "--alsologtostderr", "-v=1"))
 	if err != nil {
