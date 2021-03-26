@@ -108,7 +108,7 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 	// ref: https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#drain
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "drain", m,
-		"--force", "--grace-period=1", "--disable-eviction", "--ignore-daemonsets", "--delete-emptydir-data")
+		"--force", "--grace-period=1", "--skip-wait-for-delete-timeout=1", "--disable-eviction", "--ignore-daemonsets", "--delete-emptydir-data", "--delete-local-data")
 	if _, err := runner.RunCmd(cmd); err != nil {
 		klog.Warningf("unable to drain node %q: %v", name, err)
 	} else {
@@ -121,10 +121,14 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, err
 	}
 
-	err = client.CoreV1().Nodes().Delete(context.Background(), m, v1.DeleteOptions{})
+	// set 'GracePeriodSeconds: 0' option to delete node immediately (ie, w/o waiting)
+	var grace *int64
+	err = client.CoreV1().Nodes().Delete(context.Background(), m, v1.DeleteOptions{GracePeriodSeconds: grace})
 	if err != nil {
+		klog.Errorf("unable to delete node %q: %v", name, err)
 		return n, err
 	}
+	klog.Infof("successfully deleted node %q", name)
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
 	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
