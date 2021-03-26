@@ -70,7 +70,7 @@ func (es *ExtraOptionSlice) Set(value string) error {
 	prefixExists := strings.HasPrefix(value, "”") || strings.HasPrefix(value, "“")
 	suffixExists := strings.HasSuffix(value, "”") || strings.HasSuffix(value, "“")
 	if !prefixExists && suffixExists {
-		return fmt.Errorf("invalid value: cannot contain end quotation: %q", value)
+		return fmt.Errorf("invalid value: extra-config cannot contain end quotation: %q", value)
 	}
 
 	// The component is the value before the first dot.
