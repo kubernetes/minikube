@@ -132,16 +132,14 @@ $ minikube image rm image busybox
 
 $ minikube image unload image busybox
 `,
+	Args:    cobra.MinimumNArgs(1),
 	Aliases: []string{"unload"},
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			exit.Message(reason.Usage, "Please provide an image to remove via <minikube image rm IMAGE_NAME>")
-		}
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
-		if err := machine.RemoveImages(args, []*config.Profile{profile}); err != nil {
+		if err := machine.RemoveImages(args, profile); err != nil {
 			exit.Error(reason.GuestImageRemove, "Failed to remove image", err)
 		}
 	},
