@@ -113,7 +113,7 @@ func HasMemoryCgroup() bool {
 	if runtime.GOOS == "linux" {
 		var memory string
 		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
-			memory = "/sys/fs/cgroup/memory/memsw.limit_in_bytes"
+			memory = "/sys/fs/cgroup/memory/memory.high"
 		}
 		if _, err := os.Stat(memory); os.IsNotExist(err) {
 			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
@@ -124,6 +124,10 @@ func HasMemoryCgroup() bool {
 }
 
 func hasMemorySwapCgroup() bool {
+	if !HasMemoryCgroup() {
+		return false
+	}
+
 	memcgSwap := true
 	if runtime.GOOS == "linux" {
 		var memoryswap string
