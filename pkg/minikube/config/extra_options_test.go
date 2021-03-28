@@ -94,6 +94,8 @@ func createEqualError(value string) error {
 
 func TestSet(t *testing.T) {
 	extraOptions := ExtraOptionSlice{}
+
+	// Examples which will error from checks from the Set function.
 	for _, tc := range []struct {
 		valuesToSet string
 		expErr      error
@@ -112,6 +114,7 @@ func TestSet(t *testing.T) {
 		}
 	}
 
+	// Examples which will not error from the Set function.
 	for _, tc := range []struct {
 		valuesToSet string
 		extraOption ExtraOptionSlice
