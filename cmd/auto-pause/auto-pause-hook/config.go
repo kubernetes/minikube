@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -52,7 +53,7 @@ func client() *kubernetes.Clientset {
 // Retrieve the CA cert that will signed the cert used by the
 // "GenericAdmissionWebhook" plugin admission controller.
 func apiServerCert(clientset *kubernetes.Clientset) []byte {
-	c, err := clientset.CoreV1().ConfigMaps("kube-system").Get("extension-apiserver-authentication", metav1.GetOptions{})
+	c, err := clientset.CoreV1().ConfigMaps("kube-system").Get(context.TODO(), "extension-apiserver-authentication", metav1.GetOptions{})
 	if err != nil {
 		glog.Fatal(err)
 	}
@@ -85,9 +86,9 @@ func configTLS(clientset *kubernetes.Clientset, serverCert []byte, serverKey []b
 // by creating externalAdmissionHookConfigurations.
 func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 	client := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations()
-	_, err := client.Get(webhookName, metav1.GetOptions{})
+	_, err := client.Get(context.TODO(), webhookName, metav1.GetOptions{})
 	if err == nil {
-		if err2 := client.Delete(webhookName, &metav1.DeleteOptions{}); err2 != nil {
+		if err2 := client.Delete(context.TODO(), webhookName, metav1.DeleteOptions{}); err2 != nil {
 			glog.Fatal(err2)
 		}
 	}
@@ -140,7 +141,7 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 			},
 		},
 	}
-	if _, err := client.Create(webhookConfig); err != nil {
+	if _, err := client.Create(context.TODO(), webhookConfig, metav1.CreateOptions{}); err != nil {
 		glog.Fatalf("Client creation failed with %s", err)
 	}
 	log.Println("CLIENT CREATED")
