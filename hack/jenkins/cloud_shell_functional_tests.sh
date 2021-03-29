@@ -27,9 +27,9 @@ set -ex
 gcloud cloud-shell ssh --authorize-session << EOF
  OS_ARCH="linux-amd64"
  VM_DRIVER="docker"
- JOB_NAME="Cloud_shell"
+ JOB_NAME="Cloud_Shell"
  CONTAINER_RUNTIME="docker"
- EXTRA_TEST_ARGS="-test.run TestFunctional"
+ EXTRA_TEST_ARGS="-test.run (TestFunctional|TestAddons)"
 
  gsutil -m cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/installers .
  chmod +x ./installers/*.sh
