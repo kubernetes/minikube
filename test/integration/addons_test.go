@@ -333,7 +333,6 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 		return nil
 	}
 
-	// metrics-server takes some time to be able to collect metrics
 	if err := retry.Expo(checkMetricsServer, time.Second*3, Minutes(6)); err != nil {
 		t.Errorf("failed checking metric server: %v", err.Error())
 	}

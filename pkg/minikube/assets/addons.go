@@ -269,12 +269,17 @@ var Addons = map[string]*Addon{
 			"metrics-server-deployment.yaml",
 			"0640"),
 		MustBinAsset(
+			"deploy/addons/metrics-server/metrics-server-rbac.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"metrics-server-rbac.yaml",
+			"0640"),
+		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-server-service.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server", map[string]string{
-		"MetricsServer": fmt.Sprintf("metrics-server-%s:v0.2.1", runtime.GOARCH),
+		"MetricsServer": "metrics-server/metrics-server:v0.4.2@sha256:dbc33d7d35d2a9cc5ab402005aa7a0d13be6192f3550c7d42cba8d2d5e3a5d62",
 	}, map[string]string{
 		"MetricsServer": "k8s.gcr.io",
 	}),
