@@ -33,9 +33,8 @@ import (
 
 // imageCmd represents the image command
 var imageCmd = &cobra.Command{
-	Use:   "image",
-	Short: "Load a local image into minikube",
-	Long:  "Load a local image into minikube",
+	Use:   "image COMMAND",
+	Short: "Manage images",
 }
 
 var (
@@ -125,8 +124,30 @@ var loadImageCmd = &cobra.Command{
 	},
 }
 
+var removeImageCmd = &cobra.Command{
+	Use:   "rm IMAGE [IMAGE...]",
+	Short: "Remove one or more images",
+	Example: `
+$ minikube image rm image busybox
+
+$ minikube image unload image busybox
+`,
+	Args:    cobra.MinimumNArgs(1),
+	Aliases: []string{"unload"},
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+		if err := machine.RemoveImages(args, profile); err != nil {
+			exit.Error(reason.GuestImageRemove, "Failed to remove image", err)
+		}
+	},
+}
+
 func init() {
 	imageCmd.AddCommand(loadImageCmd)
+	imageCmd.AddCommand(removeImageCmd)
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
 }

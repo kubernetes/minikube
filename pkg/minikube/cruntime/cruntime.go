@@ -99,6 +99,9 @@ type Manager interface {
 	// ImageExists takes image name and image sha checks if an it exists
 	ImageExists(string, string) bool
 
+	// RemoveImage remove image based on name
+	RemoveImage(string) error
+
 	// ListContainers returns a list of managed by this container runtime
 	ListContainers(ListOptions) ([]string, error)
 	// KillContainers removes containers based on ID
