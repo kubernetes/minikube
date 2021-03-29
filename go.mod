@@ -83,7 +83,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	golang.org/x/sys v0.0.0-20210217105451-b926d437f341
-	golang.org/x/text v0.3.4
+	golang.org/x/text v0.3.5
 	google.golang.org/api v0.40.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
