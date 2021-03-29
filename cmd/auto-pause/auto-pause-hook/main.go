@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/mattbaird/jsonpatch"
 
 	v1 "k8s.io/api/admission/v1"
@@ -33,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -171,6 +171,6 @@ func main() {
 	go selfRegistration(clientset, cacert)
 	err := server.ListenAndServeTLS("", "")
 	if err != nil {
-		glog.Fatalf("Start https server failed with %s", err)
+		klog.Fatalf("Start https server failed with %s", err)
 	}
 }
