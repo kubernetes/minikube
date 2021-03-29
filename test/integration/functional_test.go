@@ -1234,14 +1234,26 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// cpTestMinikubePath is where the test file will be located in the Minikube instance
+func cpTestMinikubePath() string {
+	return "/home/docker/cp-test.txt"
+}
+
+// cpTestLocalPath is where the test file located in host os
+func cpTestLocalPath() string {
+	return filepath.Join(*testdataDir, "cp-test.txt")
+}
+
 // validateCpCmd asserts basic "cp" command functionality
 func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cp is unsupported by none driver")
 	}
 
-	cpPath := filepath.Join(*testdataDir, "cp-test.txt")
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", cpPath, "/home/docker/hello_cp.txt"))
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", srcPath, dstPath))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
@@ -1249,15 +1261,20 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
 	}
 
-	expected := "Test file for checking file cp process"
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /home/docker/hello_cp.txt"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", dstPath)))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
 	if err != nil {
 		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
 	}
-	if diff := cmp.Diff(expected, rr.Stdout.String()); diff != "" {
+
+	expected, err := ioutil.ReadFile(srcPath)
+	if err != nil {
+		t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
+	}
+
+	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
 		t.Errorf("/testdata/cp-test.txt content mismatch (-want +got):\n%s", diff)
 	}
 }
