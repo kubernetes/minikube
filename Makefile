@@ -100,6 +100,9 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 # to update minikubes default, update deploy/addons/gvisor
 GVISOR_TAG ?= latest
 
+# auto-pause-hook tag to push changes to
+AUTOPAUSE_HOOK_TAG ?= 1.13
+
 # storage provisioner tag to push changes to
 STORAGE_PROVISIONER_TAG ?= v4
 
@@ -833,6 +836,20 @@ out/mkcmp:
 .PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work arround for not passing the whole repo as docker context
 deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
+
+.PHONY: deploy/addons/auto-pause/auto-pause-hook
+deploy/addons/auto-pause/auto-pause-hook: $(SOURCE_GENERATED) ## Build auto-pause hook addon
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOOS=linux CGO_ENABLED=0 go build -a --ldflags '-extldflags "-static"' -tags netgo -installsuffix netgo -o $@ cmd/auto-pause/auto-pause-hook/main.go cmd/auto-pause/auto-pause-hook/config.go cmd/auto-pause/auto-pause-hook/certs.go
+
+.PHONY: auto-pause-hook-image
+auto-pause-hook-image: deploy/addons/auto-pause/auto-pause-hook ## Build docker image for auto-pause hook
+	docker build -t docker.io/azhao155/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) ./deploy/addons/auto-pause
+
+.PHONY: push-auto-pause-hook-image
+push-auto-pause-hook-image: auto-pause-hook-image
+	docker login docker.io/azhao155
+	$(MAKE) push-docker IMAGE=docker.io/azhao155/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG)
 
 .PHONY: out/performance-bot
 out/performance-bot:

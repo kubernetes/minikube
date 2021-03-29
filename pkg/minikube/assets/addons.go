@@ -40,6 +40,11 @@ type Addon struct {
 	Registries map[string]string
 }
 
+// NetworkInfo contains control plane node IP address used for add on template
+type NetworkInfo struct {
+	ControlPlaneNodeIP string
+}
+
 // NewAddon creates a new Addon
 func NewAddon(assets []*BinAsset, enabled bool, addonName string, images map[string]string, registries map[string]string) *Addon {
 	a := &Addon{
@@ -78,6 +83,11 @@ var Addons = map[string]*Addon{
 			"auto-pause.yaml",
 			"0640"),
 		MustBinAsset(
+			"deploy/addons/auto-pause/auto-pause-hook.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"auto-pause-hook.yaml",
+			"0640"),
+		MustBinAsset(
 			"deploy/addons/auto-pause/haproxy.cfg",
 			"/var/lib/minikube/",
 			"haproxy.cfg",
@@ -95,9 +105,9 @@ var Addons = map[string]*Addon{
 
 		//GuestPersistentDir
 	}, false, "auto-pause", map[string]string{
-		"haproxy": "haproxy:2.3.5",
+		"AutoPauseHook": "azhao155/auto-pause-hook:1.13",
 	}, map[string]string{
-		"haproxy": "gcr.io",
+		"AutoPauseHook": "docker.io",
 	}),
 	"dashboard": NewAddon([]*BinAsset{
 		// We want to create the kubernetes-dashboard ns first so that every subsequent object can be created
@@ -650,7 +660,7 @@ var Addons = map[string]*Addon{
 }
 
 // GenerateTemplateData generates template data for template assets
-func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{} {
+func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo NetworkInfo) interface{} {
 
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
@@ -669,6 +679,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 		Images              map[string]string
 		Registries          map[string]string
 		CustomRegistries    map[string]string
+		NetworkInfo         map[string]string
 	}{
 		Arch:                a,
 		ExoticArch:          ea,
@@ -679,10 +690,14 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig) interface{}
 		Images:              addon.Images,
 		Registries:          addon.Registries,
 		CustomRegistries:    make(map[string]string),
+		NetworkInfo:         make(map[string]string),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
 	}
+
+	// Network info for generating template
+	opts.NetworkInfo["ControlPlaneNodeIP"] = networkInfo.ControlPlaneNodeIP
 
 	if opts.Images == nil {
 		opts.Images = make(map[string]string) // Avoid nil access when rendering
