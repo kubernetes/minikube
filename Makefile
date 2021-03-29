@@ -104,7 +104,8 @@ GVISOR_TAG ?= latest
 AUTOPAUSE_HOOK_TAG ?= 1.13
 
 # storage provisioner tag to push changes to
-STORAGE_PROVISIONER_TAG ?= v4
+# NOTE: you will need to bump the PreloadVersion if you change this
+STORAGE_PROVISIONER_TAG ?= v5
 
 STORAGE_PROVISIONER_MANIFEST ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
@@ -687,17 +688,13 @@ upload-preloaded-images-tar: out/minikube # Upload the preloaded images for olde
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o out/upload-preload ./hack/preload-images/*.go
 	./out/upload-preload
 
-.PHONY: push-storage-provisioner-image
-push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
-	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(STORAGE_PROVISIONER_IMAGE)
 
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 IMAGE = $(REGISTRY)/storage-provisioner
 TAG = $(STORAGE_PROVISIONER_TAG)
 
 .PHONY: push-storage-provisioner-manifest
-push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~storage\-provisioner\-image\-&~g")
+push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~storage\-provisioner\-image\-&~g") ## Push multi-arch storage-provisioner image
 	docker login gcr.io/k8s-minikube
 	set -x; for arch in $(ALL_ARCH); do docker push ${IMAGE}-$${arch}:${TAG}; done
 	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
