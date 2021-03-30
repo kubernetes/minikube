@@ -31,6 +31,15 @@ gcloud cloud-shell ssh --authorize-session << EOF
  CONTAINER_RUNTIME="docker"
  EXTRA_TEST_ARGS="-test.run (TestFunctional|TestAddons)"
 
+ # Need to set these in cloud-shell or will not be present in common.sh
+ MINIKUBE_LOCATION=$MINIKUBE_LOCATION
+ COMMIT=$COMMIT
+ EXTRA_BUILD_ARGS=$EXTRA_BUILD_ARGS
+ access_token=$access_token
+
+ # Prevent cloud-shell is ephemeral warnings on apt-get
+ touch ~/.cloudshell/no-apt-get-warning
+
  gsutil -m cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/installers .
  chmod +x ./installers/*.sh
  gsutil -m cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/common.sh .
