@@ -173,6 +173,19 @@ func (r *Docker) LoadImage(path string) error {
 	return nil
 }
 
+// RemoveImage removes a image
+func (r *Docker) RemoveImage(name string) error {
+	klog.Infof("Removing image: %s", name)
+	if r.UseCRI {
+		return removeCRIImage(r.Runner, name)
+	}
+	c := exec.Command("docker", "rmi", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "remove image docker.")
+	}
+	return nil
+}
+
 // BuildImage builds an image into this runtime
 func (r *Docker) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
 	klog.Infof("Building image: %s", src)

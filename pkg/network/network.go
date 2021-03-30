@@ -23,7 +23,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
 
@@ -59,12 +58,13 @@ type reservation struct {
 
 // Parameters contains main network parameters.
 type Parameters struct {
-	IP        string // IP address of the network
-	Netmask   string // form: 4-byte ('a.b.c.d')
-	CIDR      string // form: CIDR
-	Gateway   string // first IP address (assumed, not checked !)
+	IP        string // IP address of network
+	Netmask   string // dotted-decimal format ('a.b.c.d')
+	Prefix    int    // network prefix length (number of leading ones in network mask)
+	CIDR      string // CIDR format ('a.b.c.d/n')
+	Gateway   string // taken from network interface address or assumed as first network IP address from given addr
 	ClientMin string // second IP address
-	ClientMax string // last IP address before broadcastS
+	ClientMax string // last IP address before broadcast
 	Broadcast string // last IP address
 	Interface
 }
@@ -77,9 +77,9 @@ type Interface struct {
 	IfaceMAC  string
 }
 
-// inspect initialises IPv4 network parameters struct from given address.
-// address can be single address (like "192.168.17.42"), network address (like "192.168.17.0"), or in cidr form (like "192.168.17.42/24 or "192.168.17.0/24").
-// If addr is valid existsing interface address, network struct will also contain info about the respective interface.
+// inspect initialises IPv4 network parameters struct from given address addr.
+// addr can be single address (like "192.168.17.42"), network address (like "192.168.17.0") or in CIDR form (like "192.168.17.42/24 or "192.168.17.0/24").
+// If addr belongs to network of local network interface, parameters will also contain info about that network interface.
 func inspect(addr string) (*Parameters, error) {
 	n := &Parameters{}
 
@@ -88,21 +88,24 @@ func inspect(addr string) (*Parameters, error) {
 	if err != nil {
 		ip = net.ParseIP(addr)
 		if ip == nil {
-			return nil, errors.Wrapf(err, "parsing address %q", addr)
+			return nil, fmt.Errorf("failed parsing address %s: %w", addr, err)
 		}
 	}
 
-	// check local interfaces
-	ifaces, _ := net.Interfaces()
+	// check local network interfaces
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, fmt.Errorf("failed listing network interfaces: %w", err)
+	}
 	for _, iface := range ifaces {
 		ifAddrs, err := iface.Addrs()
 		if err != nil {
-			return nil, errors.Wrapf(err, "listing addresses of network interface %+v", iface)
+			return nil, fmt.Errorf("failed listing addresses of network interface %+v: %w", iface, err)
 		}
 		for _, ifAddr := range ifAddrs {
 			ifip, lan, err := net.ParseCIDR(ifAddr.String())
 			if err != nil {
-				return nil, errors.Wrapf(err, "parsing address of network iface %+v", ifAddr)
+				return nil, fmt.Errorf("failed parsing network interface address %+v: %w", ifAddr, err)
 			}
 			if lan.Contains(ip) {
 				n.IfaceName = iface.Name
@@ -116,6 +119,7 @@ func inspect(addr string) (*Parameters, error) {
 		}
 	}
 
+	// couldn't determine network parameters from addr nor from network interfaces
 	if network == nil {
 		ipnet := &net.IPNet{
 			IP:   ip,
@@ -123,15 +127,16 @@ func inspect(addr string) (*Parameters, error) {
 		}
 		_, network, err = net.ParseCIDR(ipnet.String())
 		if err != nil {
-			return nil, errors.Wrapf(err, "determining network address from %q", addr)
+			return nil, fmt.Errorf("failed determining address of network from %s: %w", addr, err)
 		}
 	}
 
 	n.IP = network.IP.String()
-	n.Netmask = net.IP(network.Mask).String() // form: 4-byte ('a.b.c.d')
+	n.Netmask = net.IP(network.Mask).String() // dotted-decimal format ('a.b.c.d')
+	n.Prefix, _ = network.Mask.Size()
 	n.CIDR = network.String()
 
-	networkIP := binary.BigEndian.Uint32(network.IP)                      // IP address of the network
+	networkIP := binary.BigEndian.Uint32(network.IP)                      // IP address of network
 	networkMask := binary.BigEndian.Uint32(network.Mask)                  // network mask
 	broadcastIP := (networkIP & networkMask) | (networkMask ^ 0xffffffff) // last network IP address
 
@@ -161,14 +166,14 @@ func inspect(addr string) (*Parameters, error) {
 // isSubnetTaken returns if local network subnet exists and any error occurred.
 // If will return false in case of an error.
 func isSubnetTaken(subnet string) (bool, error) {
-	ips, err := net.InterfaceAddrs()
+	ifAddrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return false, errors.Wrap(err, "listing local networks")
+		return false, fmt.Errorf("failed listing network interface addresses: %w", err)
 	}
-	for _, ip := range ips {
-		_, lan, err := net.ParseCIDR(ip.String())
+	for _, ifAddr := range ifAddrs {
+		_, lan, err := net.ParseCIDR(ifAddr.String())
 		if err != nil {
-			return false, errors.Wrapf(err, "parsing network iface address %q", ip)
+			return false, fmt.Errorf("failed parsing network interface address %+v: %w", ifAddr, err)
 		}
 		if lan.Contains(net.ParseIP(subnet)) {
 			return true, nil
@@ -177,7 +182,7 @@ func isSubnetTaken(subnet string) (bool, error) {
 	return false, nil
 }
 
-// isSubnetPrivate returns if subnet is a private network.
+// isSubnetPrivate returns if subnet is private network.
 func isSubnetPrivate(subnet string) bool {
 	for _, ipnet := range privateSubnets {
 		if ipnet.Contains(net.ParseIP(subnet)) {
@@ -212,9 +217,9 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 		} else {
 			klog.Infof("skipping subnet %s that is not private", n.CIDR)
 		}
-		ones, _ := net.ParseIP(n.IP).DefaultMask().Size()
+		prefix, _ := net.ParseIP(n.IP).DefaultMask().Size()
 		nextSubnet := net.ParseIP(startSubnet).To4()
-		if ones <= 16 {
+		if prefix <= 16 {
 			nextSubnet[1] += byte(step)
 		} else {
 			nextSubnet[2] += byte(step)

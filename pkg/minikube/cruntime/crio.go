@@ -178,6 +178,11 @@ func (r *CRIO) LoadImage(path string) error {
 	return nil
 }
 
+// RemoveImage removes a image
+func (r *CRIO) RemoveImage(name string) error {
+	return removeCRIImage(r.Runner, name)
+}
+
 // BuildImage builds an image into this runtime
 func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
 	klog.Infof("Building image: %s", src)

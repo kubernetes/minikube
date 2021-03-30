@@ -20,11 +20,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/version"
 )
 
 func TestAuxiliary(t *testing.T) {
 	want := []string{
-		"gcr.io/k8s-minikube/storage-provisioner:v4",
+		"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		"docker.io/kubernetesui/dashboard:v2.1.0",
 		"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 	}
@@ -36,7 +37,7 @@ func TestAuxiliary(t *testing.T) {
 
 func TestAuxiliaryMirror(t *testing.T) {
 	want := []string{
-		"test.mirror/storage-provisioner:v4",
+		"test.mirror/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		"test.mirror/dashboard:v2.1.0",
 		"test.mirror/metrics-scraper:v1.0.4",
 	}

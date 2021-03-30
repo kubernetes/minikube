@@ -251,6 +251,11 @@ func (r *Containerd) LoadImage(path string) error {
 	return nil
 }
 
+// RemoveImage removes a image
+func (r *Containerd) RemoveImage(name string) error {
+	return removeCRIImage(r.Runner, name)
+}
+
 func gitClone(cr CommandRunner, src string) (string, error) {
 	// clone to a temporary directory
 	rr, err := cr.RunCmd(exec.Command("mktemp", "-d"))

@@ -46,7 +46,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
-	"github.com/hashicorp/go-retryablehttp"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
@@ -133,6 +133,7 @@ func TestFunctional(t *testing.T) {
 			{"DockerEnv", validateDockerEnv},
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
+			{"RemoveImage", validateRemoveImage},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -219,18 +220,7 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// make sure the image was correctly loaded
-	var cmd *exec.Cmd
-	if ContainerRuntime() == "docker" {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", newImage)
-	} else if ContainerRuntime() == "containerd" {
-		// crictl inspecti busybox:test-example
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", newImage)
-	} else {
-		// crio adds localhost prefix
-		// crictl inspecti localhost/busybox:test-example
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", "localhost/"+newImage)
-	}
-	rr, err = Run(t, cmd)
+	rr, err = inspectImage(ctx, t, profile, newImage)
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
@@ -238,6 +228,70 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 
+}
+
+// validateRemoveImage makes sures that `minikube rm image` works as expected
+func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+
+	// pull busybox
+	busyboxImage := "busybox:latest"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+	}
+
+	// try to load the image into minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", busyboxImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// try to remove the image from minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", busyboxImage))
+	if err != nil {
+		t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
+	}
+	// make sure the image was removed
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images")
+	} else {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "images")
+	}
+	rr, err = Run(t, cmd)
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if strings.Contains(rr.Output(), busyboxImage) {
+		t.Fatalf("expected %s to be removed from minikube but the image is there", busyboxImage)
+	}
+
+}
+
+func inspectImage(ctx context.Context, t *testing.T, profile string, image string) (*RunResult, error) {
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", image)
+	} else if ContainerRuntime() == "containerd" {
+		// crictl inspecti busybox:test-example
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", image)
+	} else {
+		// crio adds localhost prefix
+		// crictl inspecti localhost/busybox:test-example
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", "localhost/"+image)
+	}
+	rr, err := Run(t, cmd)
+	if err != nil {
+		return rr, err
+	}
+	return rr, nil
 }
 
 // check functionality of minikube after evaling docker-env
@@ -1180,14 +1234,26 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// cpTestMinikubePath is where the test file will be located in the Minikube instance
+func cpTestMinikubePath() string {
+	return "/home/docker/cp-test.txt"
+}
+
+// cpTestLocalPath is where the test file located in host os
+func cpTestLocalPath() string {
+	return filepath.Join(*testdataDir, "cp-test.txt")
+}
+
 // validateCpCmd asserts basic "cp" command functionality
 func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cp is unsupported by none driver")
 	}
 
-	cpPath := filepath.Join(*testdataDir, "cp-test.txt")
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", cpPath, "/home/docker/hello_cp.txt"))
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", srcPath, dstPath))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
@@ -1195,15 +1261,20 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
 	}
 
-	expected := "Test file for checking file cp process"
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /home/docker/hello_cp.txt"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", dstPath)))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
 	if err != nil {
 		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
 	}
-	if diff := cmp.Diff(expected, rr.Stdout.String()); diff != "" {
+
+	expected, err := ioutil.ReadFile(srcPath)
+	if err != nil {
+		t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
+	}
+
+	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
 		t.Errorf("/testdata/cp-test.txt content mismatch (-want +got):\n%s", diff)
 	}
 }

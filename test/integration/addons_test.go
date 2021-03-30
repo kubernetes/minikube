@@ -34,7 +34,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-retryablehttp"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
@@ -46,17 +46,20 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	// Set an env var to point to our dummy credentials file
-	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
-	defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if err != nil {
-		t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
-	}
+	// We don't need a dummy file is we're on GCE
+	if !detect.IsOnGCE() {
+		// Set an env var to point to our dummy credentials file
+		err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
+		defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		if err != nil {
+			t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
+		}
 
-	err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
-	defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
-	if err != nil {
-		t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+		err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
+		defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		if err != nil {
+			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+		}
 	}
 
 	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
@@ -330,7 +333,6 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 		return nil
 	}
 
-	// metrics-server takes some time to be able to collect metrics
 	if err := retry.Expo(checkMetricsServer, time.Second*3, Minutes(6)); err != nil {
 		t.Errorf("failed checking metric server: %v", err.Error())
 	}
@@ -587,27 +589,29 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
 	}
 
-	// Make sure the file contents are correct
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
-	if err != nil {
-		t.Fatalf("cat creds: %v", err)
-	}
+	if !detect.IsOnGCE() {
+		// Make sure the file contents are correct
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
+		if err != nil {
+			t.Fatalf("cat creds: %v", err)
+		}
 
-	var gotJSON map[string]string
-	err = json.Unmarshal(bytes.TrimSpace(rr.Stdout.Bytes()), &gotJSON)
-	if err != nil {
-		t.Fatalf("unmarshal json: %v", err)
-	}
-	expectedJSON := map[string]string{
-		"client_id":        "haha",
-		"client_secret":    "nice_try",
-		"quota_project_id": "this_is_fake",
-		"refresh_token":    "maybe_next_time",
-		"type":             "authorized_user",
-	}
+		var gotJSON map[string]string
+		err = json.Unmarshal(bytes.TrimSpace(rr.Stdout.Bytes()), &gotJSON)
+		if err != nil {
+			t.Fatalf("unmarshal json: %v", err)
+		}
+		expectedJSON := map[string]string{
+			"client_id":        "haha",
+			"client_secret":    "nice_try",
+			"quota_project_id": "this_is_fake",
+			"refresh_token":    "maybe_next_time",
+			"type":             "authorized_user",
+		}
 
-	if !reflect.DeepEqual(gotJSON, expectedJSON) {
-		t.Fatalf("unexpected creds file: got %v, expected %v", gotJSON, expectedJSON)
+		if !reflect.DeepEqual(gotJSON, expectedJSON) {
+			t.Fatalf("unexpected creds file: got %v, expected %v", gotJSON, expectedJSON)
+		}
 	}
 
 	// Check the GOOGLE_CLOUD_PROJECT env var as well
@@ -618,8 +622,26 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	got = strings.TrimSpace(rr.Stdout.String())
 	expected = "this_is_fake"
+	if detect.IsOnGCE() {
+		expected = "k8s-minikube"
+	}
 	if got != expected {
-		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
+		t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
+	}
+
+	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
+	if detect.IsOnGCE() {
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
+		if err != nil {
+			t.Fatalf("print env project: %v", err)
+		}
+
+		// Make sure the pod is up and running, which means we successfully pulled the private image down
+		// 8 minutes, because 4 is not enough for images to pull in all cases.
+		_, err := PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+		if err != nil {
+			t.Fatalf("wait for private image: %v", err)
+		}
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
