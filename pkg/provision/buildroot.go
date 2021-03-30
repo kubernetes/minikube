@@ -163,15 +163,15 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	p.AuthOptions = authOptions
 	p.EngineOptions = engineOptions
 
-	klog.Infof("provisioning hostname %q", p.Driver.GetMachineName())
+	klog.InfoS("provisioning hostname", "machine", p.Driver.GetMachineName())
 	if err := p.SetHostname(p.Driver.GetMachineName()); err != nil {
 		return err
 	}
 
 	p.AuthOptions = setRemoteAuthOptions(p)
-	klog.Infof("set auth options %+v", p.AuthOptions)
+	klog.InfoS("set auth options", "authOptions", p.AuthOptions)
 
-	klog.Infof("setting up certificates")
+	klog.InfoS("setting up certificates")
 	configAuth := func() error {
 		if err := configureAuth(p); err != nil {
 			klog.Warningf("configureAuth failed: %v", err)
@@ -182,13 +182,13 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 
 	err := retry.Expo(configAuth, 100*time.Microsecond, 2*time.Minute)
 	if err != nil {
-		klog.Infof("Error configuring auth during provisioning %v", err)
+		klog.InfoS("Error configuring auth during provisioning", "error", err)
 		return err
 	}
 
-	klog.Infof("setting minikube options for container-runtime")
+	klog.InfoS("setting minikube options for container-runtime")
 	if err := setContainerRuntimeOptions(p.clusterName, p); err != nil {
-		klog.Infof("Error setting container-runtime options during provisioning %v", err)
+		klog.InfoS("Error setting container-runtime options during provisioning", "error", err)
 		return err
 	}
 
