@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -88,7 +89,7 @@ func DigestByGoLib(imgName string) string {
 
 // ExistsImageInCache if img exist in local cache directory
 func ExistsImageInCache(img string) bool {
-	f := filepath.Join(constants.ImageCacheDir, img)
+	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
 
 	// Check if image exists locally
@@ -158,8 +159,12 @@ func Tag(img string) string {
 
 // WriteImageToCache write img to the local cache directory
 func WriteImageToCache(img string) error {
-	f := filepath.Join(constants.ImageCacheDir, img)
+	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
+
+	if err := os.MkdirAll(filepath.Dir(f), 0777); err != nil {
+		return errors.Wrapf(err, "making cache image directory: %s", f)
+	}
 
 	// buffered channel
 	c := make(chan v1.Update, 200)
