@@ -103,3 +103,16 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 
 	return ids, nil
 }
+
+func CheckIfPaused(cr cruntime.Manager, namespaces []string) (bool, error) {
+	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused, Namespaces: namespaces})
+	if err != nil {
+		return true, errors.Wrap(err, "list paused")
+	}
+
+	if len(ids) > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
