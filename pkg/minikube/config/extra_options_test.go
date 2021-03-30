@@ -132,10 +132,10 @@ func TestSet(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
-	extraOptions := ExtraOptionSlice{}
-	err := extraOptions.Set("")
-	if err != nil {
-		t.Errorf("Set empty value string fails.")
+	extraOptions := ExtraOptionSlice{
+		ExtraOption{Component: "c1", Key: "bar", Value: "c1-bar"},
+		ExtraOption{Component: "c1", Key: "baz", Value: "c1-baz"},
+		ExtraOption{Component: "c2", Key: "bar", Value: "c2-bar"},
 	}
 
 	for _, tc := range []struct {
