@@ -108,16 +108,16 @@ func Apply(ctx context.Context, schema map[string]Item, data interface{}, prBran
 	if err != nil {
 		klog.Fatalf("Unable to parse schema: %v\n%s", err, pretty)
 	}
-	klog.Infof("The Plan:\n%s", pretty)
+	klog.InfoS("The Plan", "pretty", pretty)
 
 	if target == "fs" || target == "all" {
 		changed, err := fsUpdate(FSRoot, schema, data)
 		if err != nil {
 			klog.Errorf("Unable to update local repo: %v", err)
 		} else if !changed {
-			klog.Infof("Local repo update skipped: nothing changed")
+			klog.InfoS("Local repo update skipped: nothing changed")
 		} else {
-			klog.Infof("Local repo successfully updated")
+			klog.InfoS("Local repo successfully updated")
 		}
 	}
 
@@ -132,16 +132,16 @@ func Apply(ctx context.Context, schema map[string]Item, data interface{}, prBran
 		if err != nil {
 			klog.Errorf("Unable to check if PR already exists: %v", err)
 		} else if prURL != "" {
-			klog.Infof("PR create skipped: already exists (%s)", prURL)
+			klog.InfoS("PR create skipped: already exists", "prURL", prURL)
 		} else {
 			// create PR
 			pr, err := ghCreatePR(ctx, ghOwner, ghRepo, ghBase, prBranchPrefix, prTitle, prIssue, ghToken, schema, data)
 			if err != nil {
 				klog.Fatalf("Unable to create PR: %v", err)
 			} else if pr == nil {
-				klog.Infof("PR create skipped: nothing changed")
+				klog.InfoS("PR create skipped: nothing changed")
 			} else {
-				klog.Infof("PR successfully created: %s", *pr.HTMLURL)
+				klog.InfoS("PR successfully created", "HTMLURL", *pr.HTMLURL)
 			}
 		}
 	}
