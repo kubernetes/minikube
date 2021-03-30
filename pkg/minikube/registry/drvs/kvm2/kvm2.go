@@ -83,7 +83,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cc.Memory,
 		CPU:            cc.CPUs,
 		Network:        cc.KVMNetwork,
-		PrivateNetwork: "minikube-net",
+		PrivateNetwork: privateNetwork(cc),
 		Boot2DockerURL: download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:       cc.DiskSize,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.rawdisk", name)),
@@ -93,6 +93,14 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ConnectionURI:  cc.KVMQemuURI,
 		NUMANodeCount:  cc.KVMNUMACount,
 	}, nil
+}
+
+// if network is not user-defined it defaults to "mk-<cluster_name>"
+func privateNetwork(cc config.ClusterConfig) string {
+	if cc.Network == "" {
+		return fmt.Sprintf("mk-%s", cc.KubernetesConfig.ClusterName)
+	}
+	return cc.Network
 }
 
 // defaultURI returns the QEMU URI to connect to for health checks

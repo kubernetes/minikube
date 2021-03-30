@@ -20,11 +20,12 @@ aliases:
 
 ## Special features
 
-The `minikube start` command supports 3 additional kvm specific flags:
+The `minikube start` command supports 5 additional KVM specific flags:
 
 * **`--gpu`**: Enable experimental NVIDIA GPU support in minikube
 * **`--hidden`**: Hide the hypervisor signature from the guest in minikube
-* **`--kvm-network`**:  The KVM network name
+* **`--kvm-network`**:  The KVM default network name
+* **`--network`**:  The dedicated KVM private network name
 * **`--kvm-qemu-uri`**: The KVM qemu uri, defaults to qemu:///system
 
 ## Issues
@@ -44,6 +45,7 @@ If you are running KVM in a nested virtualization environment ensure your config
 ## Troubleshooting
 
 * Run `id` to confirm that user belongs to the libvirt[d] group (the output should contain entry similar to: 'groups=...,108(libvirt),...').
+* Run `virsh domcapabilities --virttype="kvm"` to confirm that the host supports KVM virtualisation.
 * Run `virt-host-validate` and check for the suggestions.
 * Run ``ls -la `which virsh` ``, `virsh uri`, `sudo virsh net-list --all` and `ip a s` to collect additional information for debugging.
 * Run `minikube start --alsologtostderr -v=9` to debug crashes.
@@ -70,7 +72,7 @@ where:
 *  ***default*** is the default libvirt network,
 *  ***mk-kvm0*** is a default libvirt network created for minikube ***kvm0*** profile (eg, using `minikube start -p kvm0 --driver=kvm2`),
 *  ***mk-minikube*** is a network created for default minikube profile (eg, using `minikube start --driver=kvm2`) and
-*  ***my-custom-kvm-priv-net*** is a custom network name provided for minikube profile (eg, using `minikube start -p kvm1 --driver=kvm2 --kvm-private-network="my-custom-kvm-priv-net"`).
+*  ***my-custom-kvm-priv-net*** is a custom private network name provided for minikube profile (eg, using `minikube start -p kvm1 --driver=kvm2 --network="my-custom-kvm-priv-net"`).
 
 2.  Run `sudo virsh net-autostart <network>` to manually set **network** to autostart, if not already set.
 
