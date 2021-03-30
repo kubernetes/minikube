@@ -133,7 +133,10 @@ func TestSet(t *testing.T) {
 
 func TestExists(t *testing.T) {
 	extraOptions := ExtraOptionSlice{}
-	extraOptions.Set("")
+	err := extraOptions.Set("")
+	if err != nil {
+		t.Errorf("Set empty value string fails.")
+	}
 
 	for _, tc := range []struct {
 		searchString string
