@@ -48,7 +48,6 @@ var dirs = [...]string{
 	localpath.MakeMiniPath("certs"),
 	localpath.MakeMiniPath("machines"),
 	localpath.MakeMiniPath("cache"),
-	localpath.MakeMiniPath("cache", "iso"),
 	localpath.MakeMiniPath("config"),
 	localpath.MakeMiniPath("addons"),
 	localpath.MakeMiniPath("files"),
