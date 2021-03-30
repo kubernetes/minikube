@@ -209,14 +209,14 @@ func mustRestartDockerd(name string, runner command.Runner) {
 }
 
 func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Duration) error {
-	klog.Infof("waiting for apiserver process to appear ...")
+	klog.InfoS("waiting for apiserver process to appear ...")
 	err := apiWait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
 
 		if time.Since(start) > minLogCheckTime {
-			klog.Infof("waiting for apiserver process to appear ...")
+			klog.InfoS("waiting for apiserver process to appear ...")
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
@@ -229,7 +229,7 @@ func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Du
 	if err != nil {
 		return fmt.Errorf("apiserver process never appeared")
 	}
-	klog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
+	klog.InfoS("duration metric: took to wait for apiserver process to appear ...", "duration", time.Since(start))
 	return nil
 }
 
@@ -335,7 +335,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if sshAdd {
-			klog.Infof("Adding %v", d.GetSSHKeyPath())
+			klog.InfoS("Adding", "SSH", d.GetSSHKeyPath())
 
 			path, err := exec.LookPath("ssh-add")
 			if err != nil {
@@ -459,7 +459,7 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c := exec.Command(bin, "version", "--format={{.Server}}")
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
-	klog.Infof("Testing Docker connectivity with: %v", c)
+	klog.InfoS("Testing Docker connectivity with", "env", c)
 	return c.CombinedOutput()
 }
 
