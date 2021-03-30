@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script runs functional tests on Cloud Shell
+# This script runs functional and addon tests on Cloud Shell
 
 # The script expects the following env variables:
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
@@ -27,7 +27,7 @@ set -ex
 gcloud cloud-shell ssh --authorize-session << EOF
  OS_ARCH="linux-amd64"
  VM_DRIVER="docker"
- JOB_NAME="Cloud_Shell"
+ JOB_NAME="Docker_Cloud_Shell"
  CONTAINER_RUNTIME="docker"
  EXTRA_TEST_ARGS="-test.run (TestFunctional|TestAddons)"
 
