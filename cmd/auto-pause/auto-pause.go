@@ -36,7 +36,6 @@ var unpauseRequests = make(chan struct{})
 var done = make(chan struct{})
 var mu sync.Mutex
 
-// TODO: initialize with current state (handle the case that user enables auto-pause after it is already paused)
 var runtimePaused bool
 var version = "0.0.1"
 
@@ -48,7 +47,7 @@ func main() {
 	const interval = time.Minute * 1
 
 	// Check current state
-	CheckIfPaused()
+	alreadyPaused()
 
 	// channel for incoming messages
 	go func() {
@@ -126,7 +125,7 @@ func runUnpause() {
 	out.Step(style.Unpause, "Unpaused {{.count}} containers", out.V{"count": len(uids)})
 }
 
-func CheckIfPaused() {
+func alreadyPaused() {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -137,5 +136,8 @@ func CheckIfPaused() {
 	}
 
 	runtimePaused, err = cluster.CheckIfPaused(cr, []string{"kube-system"})
+	if err != nil {
+		exit.Error(reason.GuestCheckPaused, "Fail check if container paused", err)
+	}
 	out.Step(style.Check, "containers paused status: {{.paused}}", out.V{"paused": runtimePaused})
 }
