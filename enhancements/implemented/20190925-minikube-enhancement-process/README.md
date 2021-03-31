@@ -35,9 +35,9 @@ The *minikube enhancement process (MEP)* is a way to propose, communicate, and c
 ### Proposal Workflow
 
 1. Copy `template.md` to `proposed/<date>-title.md`
-1. Send PR out for review, titled: `Proposal: <title>`
-1. Proposal will be discussed at the bi-weekly minikube office hours
-1. After a 2-week review window, the proposal can be merged once there are 3 approving maintainers or reviewers. To keep proposals neutral, each reviewer must be independent and/or represent a different company.
+2. Send PR out for review, titled: `Proposal: <title>`
+3. Proposal will be discussed at the bi-weekly minikube office hours
+4. After a 2-week review window, the proposal can be merged once there are 3 approving maintainers or reviewers. To keep proposals neutral, each reviewer must be independent and/or represent a different company.
 
 ### Implementation Workflow
 
