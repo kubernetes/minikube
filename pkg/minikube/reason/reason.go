@@ -120,6 +120,7 @@ var (
 	InternalViewTmpl         = Kind{ID: "MK_VIEW_TMPL", ExitCode: ExProgramError}
 	InternalYamlMarshal      = Kind{ID: "MK_YAML_MARSHAL", ExitCode: ExProgramError}
 	InternalCredsNotFound    = Kind{ID: "MK_CREDENTIALS_NOT_FOUND", ExitCode: ExProgramNotFound, Style: style.Shrug}
+	InternalCredsNotNeeded   = Kind{ID: "MK_CREDENTIALS_NOT_NEEDED", ExitCode: ExProgramNotFound, Style: style.Shrug}
 	InternalSemverParse      = Kind{ID: "MK_SEMVER_PARSE", ExitCode: ExProgramError}
 	DaemonizeError           = Kind{ID: "MK_DAEMONIZE", ExitCode: ExProgramError}
 
@@ -246,6 +247,7 @@ var (
 	GuestCpConfig         = Kind{ID: "GUEST_CP_CONFIG", ExitCode: ExGuestConfig}
 	GuestDeletion         = Kind{ID: "GUEST_DELETION", ExitCode: ExGuestError}
 	GuestImageLoad        = Kind{ID: "GUEST_IMAGE_LOAD", ExitCode: ExGuestError}
+	GuestImageRemove      = Kind{ID: "GUEST_IMAGE_REMOVE", ExitCode: ExGuestError}
 	GuestLoadHost         = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
 	GuestMount            = Kind{ID: "GUEST_MOUNT", ExitCode: ExGuestError}
 	GuestMountConflict    = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}

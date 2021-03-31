@@ -56,6 +56,9 @@ func DocForCommand(command *cobra.Command) (string, error) {
 	if err := generateTitle(command, buf); err != nil {
 		return "", errors.Wrap(err, "generating title")
 	}
+	if err := rewriteLogFile(); err != nil {
+		return "", errors.Wrap(err, "rewriting log_file")
+	}
 	if err := rewriteFlags(command); err != nil {
 		return "", errors.Wrap(err, "rewriting flags")
 	}
@@ -91,6 +94,11 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 
 	if cmd.Runnable() {
 		buf.WriteString(fmt.Sprintf("```shell\n%s\n```\n\n", cmd.UseLine()))
+	}
+
+	if len(cmd.Aliases) > 0 {
+		buf.WriteString("### Aliases\n\n")
+		buf.WriteString(fmt.Sprintf("%s\n\n", cmd.Aliases))
 	}
 
 	if len(cmd.Example) > 0 {

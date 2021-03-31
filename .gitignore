@@ -27,6 +27,7 @@ _testmain.go
 *.prof
 
 /deploy/kicbase/auto-pause
+/deploy/addons/auto-pause/auto-pause-hook
 /out
 /_gopath
 

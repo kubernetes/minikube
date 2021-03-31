@@ -112,7 +112,7 @@ var Addons = []*Addon{
 	{
 		name:      "metrics-server",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
 		name:      "nvidia-driver-installer",

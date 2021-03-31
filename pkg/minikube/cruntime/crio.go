@@ -177,6 +177,11 @@ func (r *CRIO) LoadImage(path string) error {
 	return nil
 }
 
+// RemoveImage removes a image
+func (r *CRIO) RemoveImage(name string) error {
+	return removeCRIImage(r.Runner, name)
+}
+
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
 func (r *CRIO) CGroupDriver() (string, error) {
 	c := exec.Command("crio", "config")

@@ -22,7 +22,7 @@ import (
 
 	"os"
 	pt "path"
-	"path/filepath"
+	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -87,7 +87,7 @@ func validateArgs(srcPath string, dstPath string) {
 		}
 	}
 
-	if !filepath.IsAbs(dstPath) {
+	if !strings.HasPrefix(dstPath, "/") {
 		exit.Message(reason.Usage, `<target file absolute path> must be an absolute Path. Relative Path is not allowed (example: "/home/docker/copied.txt")`)
 	}
 }

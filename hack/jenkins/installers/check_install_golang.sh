@@ -25,6 +25,8 @@ fi
 VERSION_TO_INSTALL=${1}
 INSTALL_PATH=${2}
 
+ARCH=${ARCH:=amd64}
+
 # installs or updates golang if right version doesn't exists
 function check_and_install_golang() {
   if ! go version &>/dev/null; then
@@ -59,7 +61,7 @@ function install_golang() {
   fi
   # using sudo because previously installed versions might have been installed by a different user.
   # as it was the case on jenkins VM.
-  sudo curl -qL -O "https://storage.googleapis.com/golang/go${1}.${INSTALLOS}-amd64.tar.gz" &&
+  sudo curl -qL -O "https://storage.googleapis.com/golang/go${1}.${INSTALLOS}-${ARCH}.tar.gz" &&
     sudo tar -xf go${1}.${INSTALLOS}-amd64.tar.gz &&
     sudo rm -rf "${2}/go" &&
     sudo mv go "${2}/" && sudo chown -R $(whoami): ${2}/go

@@ -172,6 +172,19 @@ func (r *Docker) LoadImage(path string) error {
 	return nil
 }
 
+// RemoveImage removes a image
+func (r *Docker) RemoveImage(name string) error {
+	klog.Infof("Removing image: %s", name)
+	if r.UseCRI {
+		return removeCRIImage(r.Runner, name)
+	}
+	c := exec.Command("docker", "rmi", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "remove image docker.")
+	}
+	return nil
+}
+
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
 func (r *Docker) CGroupDriver() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully

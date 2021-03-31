@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/version"
 )
 
 func TestKubeadmImages(t *testing.T) {
@@ -37,7 +38,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/coredns:1.6.5",
 			"k8s.gcr.io/etcd:3.4.3-0",
 			"k8s.gcr.io/pause:3.1",
-			"gcr.io/k8s-minikube/storage-provisioner:v4",
+			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
@@ -49,7 +50,7 @@ func TestKubeadmImages(t *testing.T) {
 			"mirror.k8s.io/coredns:1.6.2",
 			"mirror.k8s.io/etcd:3.3.15-0",
 			"mirror.k8s.io/pause:3.1",
-			"mirror.k8s.io/storage-provisioner:v4",
+			"mirror.k8s.io/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 			"mirror.k8s.io/dashboard:v2.1.0",
 			"mirror.k8s.io/metrics-scraper:v1.0.4",
 		}},
@@ -61,7 +62,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/coredns:1.3.1",
 			"k8s.gcr.io/etcd:3.3.10",
 			"k8s.gcr.io/pause:3.1",
-			"gcr.io/k8s-minikube/storage-provisioner:v4",
+			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
@@ -73,7 +74,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/coredns:1.3.1",
 			"k8s.gcr.io/etcd:3.3.10",
 			"k8s.gcr.io/pause:3.1",
-			"gcr.io/k8s-minikube/storage-provisioner:v4",
+			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
@@ -85,7 +86,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/coredns:1.2.6",
 			"k8s.gcr.io/etcd:3.2.24",
 			"k8s.gcr.io/pause:3.1",
-			"gcr.io/k8s-minikube/storage-provisioner:v4",
+			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
@@ -97,7 +98,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/coredns:1.2.2",
 			"k8s.gcr.io/etcd:3.2.24",
 			"k8s.gcr.io/pause:3.1",
-			"gcr.io/k8s-minikube/storage-provisioner:v4",
+			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},

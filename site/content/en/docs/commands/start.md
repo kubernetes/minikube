@@ -69,7 +69,7 @@ minikube start [flags]
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.20.2, 'latest' for v1.20.5-rc.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
-      --kvm-network string                The KVM network name. (kvm2 driver only) (default "default")
+      --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
       --kvm-numa-count int                Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only) (default 1)
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
@@ -79,7 +79,7 @@ minikube start [flags]
       --namespace string                  The named space to activate after start (default "default")
       --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
-      --network string                    network to run minikube with. Only available with the docker/podman drivers. If left empty, minikube will create a new network.
+      --network string                    network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.
       --network-plugin string             Kubelet network plug-in to use (default: auto)
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")

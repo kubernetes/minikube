@@ -43,7 +43,7 @@ func installRelease(version string) (f *os.File, err error) {
 	}
 	tf.Close()
 
-	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
+	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS, runtime.GOARCH)
 
 	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, Minutes(3)); err != nil {
 		return tf, err
@@ -79,8 +79,13 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	// Should be a version from the last 6 months
 	legacyVersion := "v1.6.2"
 	if KicDriver() {
-		// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
-		legacyVersion = "v1.9.0"
+		if arm64Platform() {
+			// arm64 KIC driver is supported starting from v1.17.0
+			legacyVersion = "v1.17.0"
+		} else {
+			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
+			legacyVersion = "v1.9.0"
+		}
 	}
 
 	tf, err := installRelease(legacyVersion)
@@ -147,6 +152,10 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	if KicDriver() {
 		// first release with non-experimental KIC
 		legacyVersion = "v1.8.0"
+		if arm64Platform() {
+			// first release with non-experimental arm64 KIC
+			legacyVersion = "v1.17.0"
+		}
 	}
 
 	tf, err := installRelease(legacyVersion)
