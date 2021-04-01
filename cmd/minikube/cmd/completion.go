@@ -40,7 +40,7 @@ const longDescription = `Outputs minikube shell completion for the given shell (
 		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
 	Ubuntu:
 		$ apt-get install bash-completion
-		$ source /etc/bash-completion
+		$ source /etc/bash_completion
 		$ source <(minikube completion bash) # for bash users
 		$ source <(minikube completion zsh) # for zsh users
 		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
