@@ -408,7 +408,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		st.Kubeconfig = Misconfigured
 	} else {
 		err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
-		if err != nil {
+		if err != nil && st.Host != state.Starting.String() {
 			klog.Errorf("kubeconfig endpoint: %v", err)
 			st.Kubeconfig = Misconfigured
 		}
