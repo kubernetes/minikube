@@ -108,11 +108,12 @@ var addonsConfigureCmd = &cobra.Command{
 			}
 
 			cname := ClusterFlagValue()
+			namespace := "kube-system"
 
 			// Create ECR Secret
 			err := service.CreateSecret(
 				cname,
-				"kube-system",
+				namespace,
 				"registry-creds-ecr",
 				map[string]string{
 					"AWS_ACCESS_KEY_ID":     awsAccessID,
@@ -134,7 +135,7 @@ var addonsConfigureCmd = &cobra.Command{
 			// Create GCR Secret
 			err = service.CreateSecret(
 				cname,
-				"kube-system",
+				namespace,
 				"registry-creds-gcr",
 				map[string]string{
 					"application_default_credentials.json": gcrApplicationDefaultCredentials,
@@ -153,7 +154,7 @@ var addonsConfigureCmd = &cobra.Command{
 			// Create Docker Secret
 			err = service.CreateSecret(
 				cname,
-				"kube-system",
+				namespace,
 				"registry-creds-dpr",
 				map[string]string{
 					"DOCKER_PRIVATE_REGISTRY_SERVER":   dockerServer,
@@ -173,7 +174,7 @@ var addonsConfigureCmd = &cobra.Command{
 			// Create Azure Container Registry Secret
 			err = service.CreateSecret(
 				cname,
-				"kube-system",
+				namespace,
 				"registry-creds-acr",
 				map[string]string{
 					"ACR_URL":       acrURL,
