@@ -328,7 +328,3 @@ cluster, and run the build commands there - against the same storage.
 ```shell
 minikube image build -t my_image .
 ```
-
-For more information, see:
-
-* [Reference: image build command]({{< ref "/docs/commands/image.md#minikube-image-build" >}})
