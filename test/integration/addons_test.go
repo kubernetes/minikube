@@ -87,7 +87,7 @@ func TestAddons(t *testing.T) {
 		} else {
 			if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
 				t.Errorf("Unexpected error message: %v", rr.Output())
-			} else {
+			} else if !detect.IsCloudShell() {
 				// ok, use force here since we are in GCE
 				// do not use --force unless absolutely necessary
 				args = append(args, "--force")
