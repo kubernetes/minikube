@@ -319,12 +319,3 @@ For more information, see:
 * [Reference: image load command]({{< ref "/docs/commands/image.md#minikube-image-load" >}})
 
 ---
-
-## 8. Building images to in-cluster container runtime
-
-The minikube client will talk directly to the container runtime in the
-cluster, and run the build commands there - against the same storage.
-
-```shell
-minikube image build -t my_image .
-```
