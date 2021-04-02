@@ -47,7 +47,7 @@ func TestAddons(t *testing.T) {
 	defer Cleanup(t, profile, cancel)
 
 	// We don't need a dummy file is we're on GCE
-	if !detect.IsOnGCE() {
+	if !detect.IsOnGCE() || detect.IsCloudShell() {
 		// Set an env var to point to our dummy credentials file
 		err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
 		defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
