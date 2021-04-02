@@ -462,7 +462,6 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 
 // validateOlmAddon tests the OLM addon
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
-	t.Skipf("Skipping olm test till this timeout issue is solved https://github.com/operator-framework/operator-lifecycle-manager/issues/1534#issuecomment-632342257")
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)
