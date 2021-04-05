@@ -4,10 +4,10 @@
 
 Features:
 
-* add minikube image rm command [#10924](https://github.com/kubernetes/minikube/pull/10924)
-* create registry credentials when gcp-auth addon is enabled [#10853](https://github.com/kubernetes/minikube/pull/10853)
+* add `minikube image rm` command [#10924](https://github.com/kubernetes/minikube/pull/10924)
+* GCP-Auth addon: Add support for GCR creds [#10853](https://github.com/kubernetes/minikube/pull/10853)
 * new command: `minikube cp` to copy files into minikube [#10198](https://github.com/kubernetes/minikube/pull/10198)
-* Add flag "--listen-address" for docker and podman driver [#10653](https://github.com/kubernetes/minikube/pull/10653)
+* new flag "--listen-address" for docker and podman driver [#10653](https://github.com/kubernetes/minikube/pull/10653)
 * iso: enable Network Block Device support [#10217](https://github.com/kubernetes/minikube/pull/10217)
 
 Minor Improvements:
