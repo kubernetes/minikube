@@ -64,7 +64,7 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/10217/minikube-v1.18.0-1617380636-10217.iso,https://github.com/kubernetes/minikube/releases/download/v1.18.0-1617380636-10217/minikube-v1.18.0-1617380636-10217.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.18.0-1617380636-10217.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.19.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.19.0/minikube-v1.19.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.19.0.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.20.2, 'latest' for v1.20.5-rc.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
@@ -111,7 +111,7 @@ minikube start [flags]
   -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
-      --log_file string                  If non-empty, use this log file (default "")
+      --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
