@@ -1,5 +1,132 @@
 # Release Notes
 
+## Version 1.19.0-beta.0 - 2021-04-05
+
+Features:
+
+* iso: enable Network Block Device support [#10217](https://github.com/kubernetes/minikube/pull/10217)
+* add minikube image rm command [#10924](https://github.com/kubernetes/minikube/pull/10924)
+* create registry credentials when gcp-auth addon is enabled [#10853](https://github.com/kubernetes/minikube/pull/10853)
+* new command: `minikube cp` to copy files into minikube [#10198](https://github.com/kubernetes/minikube/pull/10198)
+
+Minor Improvements:
+
+* auto-pause: initialize the pause state from the current state [#10958](https://github.com/kubernetes/minikube/pull/10958)
+* iso: make sure to capture failures through pipes [#10974](https://github.com/kubernetes/minikube/pull/10974)
+* Avoid logging 'kubeconfig endpoint' error when cluster is 'starting' [#10968](https://github.com/kubernetes/minikube/pull/10968)
+* docker-env: improve detecting powershell if SSHed from linux [#10722](https://github.com/kubernetes/minikube/pull/10722)
+* kvm2 driver: add dedicated network & static ip [#10792](https://github.com/kubernetes/minikube/pull/10792)
+* Replace glog with klog [#10955](https://github.com/kubernetes/minikube/pull/10955)
+* retry kapi.ScaleDeployment on failure [#10938](https://github.com/kubernetes/minikube/pull/10938)
+* Auto-pause handle internal kubernetes requests [#10823](https://github.com/kubernetes/minikube/pull/10823)
+* add additional options to avoid node drain or delete getting stuck [#10926](https://github.com/kubernetes/minikube/pull/10926)
+* cache add: improved error message when image does not exist [#10811](https://github.com/kubernetes/minikube/pull/10811)
+* Image load: Allow loading local images from tar or cache [#10807](https://github.com/kubernetes/minikube/pull/10807)
+* status: Omit `timeToStop` if nonexistent [#10906](https://github.com/kubernetes/minikube/pull/10906)
+* arm64: Fix incorrect image arch in the manifest for etcd and other kube images [#10642](https://github.com/kubernetes/minikube/pull/10642)
+* add docker-env and podman-env to minikube status [#10872](https://github.com/kubernetes/minikube/pull/10872)
+* adding new exit code word for when runtime not running  [#10364](https://github.com/kubernetes/minikube/pull/10364)
+* Generate one log file per minikube command [#10425](https://github.com/kubernetes/minikube/pull/10425)
+* bridge cni: Make sure to create the directory for cni config [#10868](https://github.com/kubernetes/minikube/pull/10868)
+* docker-env: Add the daemon host address as Alternate Name in apiserver.crt if it's not an IP [#10873](https://github.com/kubernetes/minikube/pull/10873)
+* Add solution message if Docker is rootless [#10878](https://github.com/kubernetes/minikube/pull/10878)
+* Add a red box around docker desktop registry port [#10818](https://github.com/kubernetes/minikube/pull/10818)
+* new flag --ssh for `minikube kubectl` to allow running it over the ssh connection [#10844](https://github.com/kubernetes/minikube/pull/10844)
+* UI: Add progressbar when downloading kic base image [#10887](https://github.com/kubernetes/minikube/pull/10887)
+* Show last start and audit logs on `minikube logs` if minikube not running [#10839](https://github.com/kubernetes/minikube/pull/10839)
+* unique error codes for KVM network and docker ip conflict [#10841](https://github.com/kubernetes/minikube/pull/10841)
+* Unique error code for no disk space [#10837](https://github.com/kubernetes/minikube/pull/10837)
+* Add rpm and deb packaging for ppc64le and s390x [#10824](https://github.com/kubernetes/minikube/pull/10824)
+* Provide unique error code (GUEST_KIC_CP_PUBKEY) for not copyable cert for kic [#10834](https://github.com/kubernetes/minikube/pull/10834)
+* minikube kubectl: The --cluster flags should be prepended [#10793](https://github.com/kubernetes/minikube/pull/10793)
+* ui: break down usage for no profile found [#10800](https://github.com/kubernetes/minikube/pull/10800)
+* Enable portmap for the default cni bridge [#10782](https://github.com/kubernetes/minikube/pull/10782)
+* install losetup from util-linux in the ISO to enable support for VolumeMode=Block PVCs [#10704](https://github.com/kubernetes/minikube/pull/10704)
+* auto-detect gce and do not enable gcp auth addon [#10730](https://github.com/kubernetes/minikube/pull/10730)
+* add validations --image-repository inputs [#10760](https://github.com/kubernetes/minikube/pull/10760)
+* docker-env & podman-env: silent output when talking to a shell [#10763](https://github.com/kubernetes/minikube/pull/10763)
+* The cluster doesn't have to be healthy for kubectl [#10732](https://github.com/kubernetes/minikube/pull/10732)
+* Need to exit if unable to cache kubectl [#10734](https://github.com/kubernetes/minikube/pull/10734)
+* increase wait for docker starting on windows [#10765](https://github.com/kubernetes/minikube/pull/10765)
+* Correct spelling in --insecure-registry validation error message [#10735](https://github.com/kubernetes/minikube/pull/10735)
+* Add flag "--listen-address" for docker and podman driver [#10653](https://github.com/kubernetes/minikube/pull/10653)
+* kvm: provide solution if user doesn't belong to libvirt group [#10712](https://github.com/kubernetes/minikube/pull/10712)
+* CoreDNS early scale down to 1 replica [#10656](https://github.com/kubernetes/minikube/pull/10656)
+* Wait for crictl version after the socket is up [#10705](https://github.com/kubernetes/minikube/pull/10705)
+
+Bug Fixes:
+
+* Fix CNI issue related to picking up wrong CNI   [#10985](https://github.com/kubernetes/minikube/pull/10985)
+* Added error check for extra quotation for extra-config. [#10886](https://github.com/kubernetes/minikube/pull/10886)
+* Fix the failure of `minikube mount` in case of KVM2 [#10733](https://github.com/kubernetes/minikube/pull/10733)
+* Fix/minikube status for scheduled stop [#10911](https://github.com/kubernetes/minikube/pull/10911)
+* create network: use locks and reservations to solve race condition [#10858](https://github.com/kubernetes/minikube/pull/10858)
+* fix driver.IndexFromMachineName() [#10821](https://github.com/kubernetes/minikube/pull/10821)
+* Fix link for pushing images docs on cache cmd [#10880](https://github.com/kubernetes/minikube/pull/10880)
+* multinode cluster: fix waits and joins [#10758](https://github.com/kubernetes/minikube/pull/10758)
+* hyperkit: fix hyperkit-vpnkit-sock setting [#10631](https://github.com/kubernetes/minikube/pull/10631)
+
+Version changes:
+
+* Bump github.com/cheggaaa/pb/v3 from 3.0.6 to 3.0.7 [#10990](https://github.com/kubernetes/minikube/pull/10990)
+* upgrade spinner library v1.12.6 to v1.12.7 [#10983](https://github.com/kubernetes/minikube/pull/10983)
+* BuildKit 0.8.2 [#10648](https://github.com/kubernetes/minikube/pull/10648)
+* Bump google.golang.org/api from 0.40.0 to 0.43.0 [#10945](https://github.com/kubernetes/minikube/pull/10945)
+* bump storage provisioner image [#10951](https://github.com/kubernetes/minikube/pull/10951)
+* Bump golang.org/x/text from 0.3.4 to 0.3.5 [#10946](https://github.com/kubernetes/minikube/pull/10946)
+* Addon: bump metrics-server to v0.4.2 [#10950](https://github.com/kubernetes/minikube/pull/10950)
+* k8s libs: upgrade to v0.20.5 [#10683](https://github.com/kubernetes/minikube/pull/10683)
+* ISO Upgrade Docker, from 20.10.3 to 20.10.4 [#10647](https://github.com/kubernetes/minikube/pull/10647)
+* Addon: bump csi-hostpath-driver to v1.6.0 [#10798](https://github.com/kubernetes/minikube/pull/10798)
+* Bump github.com/otiai10/copy from 1.0.2 to 1.5.0 [#10891](https://github.com/kubernetes/minikube/pull/10891)
+* Bump github.com/shirou/gopsutil/v3 from 3.21.1 to 3.21.2 [#10893](https://github.com/kubernetes/minikube/pull/10893)
+* Upgrade ingress addon files according to upstream(ingress-nginx v0.44.0) [#10879](https://github.com/kubernetes/minikube/pull/10879)
+* Bump k8s.io/klog/v2 from 2.4.0 to 2.8.0 [#10894](https://github.com/kubernetes/minikube/pull/10894)
+* Bump k8s.io/client-go from 0.18.8 to 0.20.5 [#10890](https://github.com/kubernetes/minikube/pull/10890)
+* Bump github.com/cheggaaa/pb/v3 from 3.0.1 to 3.0.6 [#10828](https://github.com/kubernetes/minikube/pull/10828)
+* Bump golang.org/x/mod from 0.4.1 to 0.4.2 [#10829](https://github.com/kubernetes/minikube/pull/10829)
+* Bump github.com/google/go-cmp from 0.5.4 to 0.5.5 [#10747](https://github.com/kubernetes/minikube/pull/10747)
+* Update go-container registry to 0.4.1 + patch [#10731](https://github.com/kubernetes/minikube/pull/10731)
+* Bump github.com/libvirt/libvirt-go from 3.4.0+incompatible to 3.9.0+incompatible [#10746](https://github.com/kubernetes/minikube/pull/10746)
+* Bump github.com/google/uuid from 1.1.2 to 1.2.0 [#10745](https://github.com/kubernetes/minikube/pull/10745)
+* Bump github.com/hashicorp/go-getter from 1.5.1 to 1.5.2 [#10748](https://github.com/kubernetes/minikube/pull/10748)
+* Bump github.com/hashicorp/go-retryablehttp from 0.6.6 to 0.6.8 [#10749](https://github.com/kubernetes/minikube/pull/10749)
+* addon: Upgrade VolumeSnapshot to GA(v1) [#10654](https://github.com/kubernetes/minikube/pull/10654)
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andrew Stanton
+- BLasan
+- Daehyeok Mun
+- Federico Gallo
+- Ilya Zuyev
+- Kent Iso
+- Madhav Jivrajani
+- Medya Ghazizadeh
+- Niels de Vos
+- Patrik Freij
+- Prasanna Kumar Kalever
+- Predrag Rogic
+- Sharif Elgamal
+- Steven Powell
+- Szabolcs Dombi
+- Tharun
+- Thomas Strömberg
+- Tom Di Nunzio
+- Vishal Jain
+- Yanshu Zhao
+- alonyb
+- anencore94
+- bharathkkb
+- dependabot[bot]
+- hetong07
+- ely
+- maoyangLiu
+- tripolkaandrey
+- yxxhero
+- zhangshj
+- 李龙峰
 
 ## Version 1.18.1 - 2021-03-04
 
