@@ -37,3 +37,9 @@ func IsOnGCE() bool {
 
 	return resp.Header.Get("Metadata-Flavor") == "Google"
 }
+
+// IsCloudShell determines whether minikube is running inside CloudShell
+func IsCloudShell() bool {
+	_, e := os.LookupEnv("CLOUDSHELL_ENVIRONMENT")
+	return e
+}
