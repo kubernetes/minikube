@@ -263,6 +263,7 @@ var (
 	GuestStatus           = Kind{ID: "GUEST_STATUS", ExitCode: ExGuestError}
 	GuestStopTimeout      = Kind{ID: "GUEST_STOP_TIMEOUT", ExitCode: ExGuestTimeout}
 	GuestUnpause          = Kind{ID: "GUEST_UNPAUSE", ExitCode: ExGuestError}
+	GuestCheckPaused      = Kind{ID: "GUEST_CHECK_PAUSED", ExitCode: ExGuestError}
 	GuestDrvMismatch      = Kind{ID: "GUEST_DRIVER_MISMATCH", ExitCode: ExGuestConflict, Style: style.Conflict}
 	GuestMissingConntrack = Kind{ID: "GUEST_MISSING_CONNTRACK", ExitCode: ExGuestUnsupported}
 
