@@ -4,10 +4,11 @@
 
 Features:
 
-* iso: enable Network Block Device support [#10217](https://github.com/kubernetes/minikube/pull/10217)
 * add minikube image rm command [#10924](https://github.com/kubernetes/minikube/pull/10924)
 * create registry credentials when gcp-auth addon is enabled [#10853](https://github.com/kubernetes/minikube/pull/10853)
 * new command: `minikube cp` to copy files into minikube [#10198](https://github.com/kubernetes/minikube/pull/10198)
+* Add flag "--listen-address" for docker and podman driver [#10653](https://github.com/kubernetes/minikube/pull/10653)
+* iso: enable Network Block Device support [#10217](https://github.com/kubernetes/minikube/pull/10217)
 
 Minor Improvements:
 
@@ -49,7 +50,6 @@ Minor Improvements:
 * Need to exit if unable to cache kubectl [#10734](https://github.com/kubernetes/minikube/pull/10734)
 * increase wait for docker starting on windows [#10765](https://github.com/kubernetes/minikube/pull/10765)
 * Correct spelling in --insecure-registry validation error message [#10735](https://github.com/kubernetes/minikube/pull/10735)
-* Add flag "--listen-address" for docker and podman driver [#10653](https://github.com/kubernetes/minikube/pull/10653)
 * kvm: provide solution if user doesn't belong to libvirt group [#10712](https://github.com/kubernetes/minikube/pull/10712)
 * CoreDNS early scale down to 1 replica [#10656](https://github.com/kubernetes/minikube/pull/10656)
 * Wait for crictl version after the socket is up [#10705](https://github.com/kubernetes/minikube/pull/10705)
@@ -57,12 +57,11 @@ Minor Improvements:
 Bug Fixes:
 
 * Fix CNI issue related to picking up wrong CNI   [#10985](https://github.com/kubernetes/minikube/pull/10985)
-* Added error check for extra quotation for extra-config. [#10886](https://github.com/kubernetes/minikube/pull/10886)
+* Added error check for extra validation for extra-config. [#10886](https://github.com/kubernetes/minikube/pull/10886)
 * Fix the failure of `minikube mount` in case of KVM2 [#10733](https://github.com/kubernetes/minikube/pull/10733)
 * Fix/minikube status for scheduled stop [#10911](https://github.com/kubernetes/minikube/pull/10911)
 * create network: use locks and reservations to solve race condition [#10858](https://github.com/kubernetes/minikube/pull/10858)
 * fix driver.IndexFromMachineName() [#10821](https://github.com/kubernetes/minikube/pull/10821)
-* Fix link for pushing images docs on cache cmd [#10880](https://github.com/kubernetes/minikube/pull/10880)
 * multinode cluster: fix waits and joins [#10758](https://github.com/kubernetes/minikube/pull/10758)
 * hyperkit: fix hyperkit-vpnkit-sock setting [#10631](https://github.com/kubernetes/minikube/pull/10631)
 
