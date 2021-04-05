@@ -57,7 +57,7 @@ Minor Improvements:
 Bug Fixes:
 
 * Fix CNI issue related to picking up wrong CNI   [#10985](https://github.com/kubernetes/minikube/pull/10985)
-* Added error check for extra validation for extra-config. [#10886](https://github.com/kubernetes/minikube/pull/10886)
+* Improve validation for extra-config. [#10886](https://github.com/kubernetes/minikube/pull/10886)
 * Fix the failure of `minikube mount` in case of KVM2 [#10733](https://github.com/kubernetes/minikube/pull/10733)
 * Fix/minikube status for scheduled stop [#10911](https://github.com/kubernetes/minikube/pull/10911)
 * create network: use locks and reservations to solve race condition [#10858](https://github.com/kubernetes/minikube/pull/10858)
