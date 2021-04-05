@@ -87,7 +87,7 @@ func TestAddons(t *testing.T) {
 		} else {
 			if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
 				t.Errorf("Unexpected error message: %v", rr.Output())
-			} else if !detect.IsCloudShell() {
+			} else {
 				// ok, use force here since we are in GCE
 				// do not use --force unless absolutely necessary
 				args = append(args, "--force")
@@ -589,7 +589,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
 	}
 
-	if !detect.IsOnGCE() {
+	if !detect.IsOnGCE() || detect.IsCloudShell() {
 		// Make sure the file contents are correct
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
 		if err != nil {
@@ -622,7 +622,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	got = strings.TrimSpace(rr.Stdout.String())
 	expected = "this_is_fake"
-	if detect.IsOnGCE() {
+	if detect.IsOnGCE() && !detect.IsCloudShell() {
 		expected = "k8s-minikube"
 	}
 	if got != expected {
@@ -630,7 +630,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
-	if detect.IsOnGCE() {
+	if detect.IsOnGCE() && !detect.IsCloudShell() {
 		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
 		if err != nil {
 			t.Fatalf("print env project: %v", err)
