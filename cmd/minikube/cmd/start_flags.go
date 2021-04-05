@@ -392,6 +392,9 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		if _, ok := cnm.(cni.Disabled); !ok {
 			klog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
 			cc.KubernetesConfig.NetworkPlugin = "cni"
+			if err := setCNIConfDir(&cc, cnm); err != nil {
+				klog.Errorf("unable to set CNI Config Directory: %v", err)
+			}
 		}
 	}
 
@@ -413,6 +416,24 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		kubeNodeName = "m01"
 	}
 	return createNode(cc, kubeNodeName, existing)
+}
+
+// setCNIConfDir sets kubelet's '--cni-conf-dir' flag to custom CNI Config Directory path (same used also by CNI Deployment) to avoid conflicting CNI configs.
+// ref: https://github.com/kubernetes/minikube/issues/10984
+// Note: currently, this change affects only Kindnet CNI (and all multinodes using it), but it can be easily expanded to other/all CNIs if needed.
+func setCNIConfDir(cc *config.ClusterConfig, cnm cni.Manager) error {
+	if _, kindnet := cnm.(cni.KindNet); kindnet {
+		// auto-set custom CNI Config Directory, if not user-specified
+		eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", cni.CustomCNIConfDir)
+		if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
+			klog.Infof("auto-setting extra-config to %q", eo)
+			if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
+				return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
+			}
+			klog.Infof("extra-config set to %q", eo)
+		}
+	}
+	return nil
 }
 
 func checkNumaCount(k8sVersion string) {
