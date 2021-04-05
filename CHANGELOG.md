@@ -68,29 +68,10 @@ Bug Fixes:
 
 Version changes:
 
-* Bump github.com/cheggaaa/pb/v3 from 3.0.6 to 3.0.7 [#10990](https://github.com/kubernetes/minikube/pull/10990)
-* upgrade spinner library v1.12.6 to v1.12.7 [#10983](https://github.com/kubernetes/minikube/pull/10983)
 * BuildKit 0.8.2 [#10648](https://github.com/kubernetes/minikube/pull/10648)
-* Bump google.golang.org/api from 0.40.0 to 0.43.0 [#10945](https://github.com/kubernetes/minikube/pull/10945)
-* bump storage provisioner image [#10951](https://github.com/kubernetes/minikube/pull/10951)
-* Bump golang.org/x/text from 0.3.4 to 0.3.5 [#10946](https://github.com/kubernetes/minikube/pull/10946)
-* Addon: bump metrics-server to v0.4.2 [#10950](https://github.com/kubernetes/minikube/pull/10950)
-* k8s libs: upgrade to v0.20.5 [#10683](https://github.com/kubernetes/minikube/pull/10683)
 * ISO Upgrade Docker, from 20.10.3 to 20.10.4 [#10647](https://github.com/kubernetes/minikube/pull/10647)
 * Addon: bump csi-hostpath-driver to v1.6.0 [#10798](https://github.com/kubernetes/minikube/pull/10798)
-* Bump github.com/otiai10/copy from 1.0.2 to 1.5.0 [#10891](https://github.com/kubernetes/minikube/pull/10891)
-* Bump github.com/shirou/gopsutil/v3 from 3.21.1 to 3.21.2 [#10893](https://github.com/kubernetes/minikube/pull/10893)
 * Upgrade ingress addon files according to upstream(ingress-nginx v0.44.0) [#10879](https://github.com/kubernetes/minikube/pull/10879)
-* Bump k8s.io/klog/v2 from 2.4.0 to 2.8.0 [#10894](https://github.com/kubernetes/minikube/pull/10894)
-* Bump k8s.io/client-go from 0.18.8 to 0.20.5 [#10890](https://github.com/kubernetes/minikube/pull/10890)
-* Bump github.com/cheggaaa/pb/v3 from 3.0.1 to 3.0.6 [#10828](https://github.com/kubernetes/minikube/pull/10828)
-* Bump golang.org/x/mod from 0.4.1 to 0.4.2 [#10829](https://github.com/kubernetes/minikube/pull/10829)
-* Bump github.com/google/go-cmp from 0.5.4 to 0.5.5 [#10747](https://github.com/kubernetes/minikube/pull/10747)
-* Update go-container registry to 0.4.1 + patch [#10731](https://github.com/kubernetes/minikube/pull/10731)
-* Bump github.com/libvirt/libvirt-go from 3.4.0+incompatible to 3.9.0+incompatible [#10746](https://github.com/kubernetes/minikube/pull/10746)
-* Bump github.com/google/uuid from 1.1.2 to 1.2.0 [#10745](https://github.com/kubernetes/minikube/pull/10745)
-* Bump github.com/hashicorp/go-getter from 1.5.1 to 1.5.2 [#10748](https://github.com/kubernetes/minikube/pull/10748)
-* Bump github.com/hashicorp/go-retryablehttp from 0.6.6 to 0.6.8 [#10749](https://github.com/kubernetes/minikube/pull/10749)
 * addon: Upgrade VolumeSnapshot to GA(v1) [#10654](https://github.com/kubernetes/minikube/pull/10654)
 
 Thank you to our contributors for this release!
