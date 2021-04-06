@@ -98,6 +98,8 @@ type Manager interface {
 
 	// ImageExists takes image name and image sha checks if an it exists
 	ImageExists(string, string) bool
+	// ListImages returns a list of images managed by this container runtime
+	ListImages(ListImagesOptions) ([]string, error)
 
 	// RemoveImage remove image based on name
 	RemoveImage(string) error
@@ -146,6 +148,10 @@ type ListContainersOptions struct {
 	Name string
 	// Namespaces is the namespaces to look into
 	Namespaces []string
+}
+
+// ListImageOptions are the options to use for listing images
+type ListImagesOptions struct {
 }
 
 // ErrContainerRuntimeNotRunning is thrown when container runtime is not running

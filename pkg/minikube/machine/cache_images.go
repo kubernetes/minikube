@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -370,5 +371,56 @@ func RemoveImages(images []string, profile *config.Profile) error {
 
 	klog.Infof("succeeded removing from: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed removing from: %s", strings.Join(failed, " "))
+	return nil
+}
+
+func ListImages(profile *config.Profile) error {
+	api, err := NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "error creating api client")
+	}
+	defer api.Close()
+
+	pName := profile.Name
+
+	c, err := config.Load(pName)
+	if err != nil {
+		klog.Errorf("Failed to load profile %q: %v", pName, err)
+		return errors.Wrapf(err, "error loading config for profile :%v", pName)
+	}
+
+	for _, n := range c.Nodes {
+		m := config.MachineName(*c, n)
+
+		status, err := Status(api, m)
+		if err != nil {
+			klog.Warningf("error getting status for %s: %v", m, err)
+			continue
+		}
+
+		if status == state.Running.String() {
+			h, err := api.Load(m)
+			if err != nil {
+				klog.Warningf("Failed to load machine %q: %v", m, err)
+				continue
+			}
+			runner, err := CommandRunner(h)
+			if err != nil {
+				return err
+			}
+			cr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
+			if err != nil {
+				return errors.Wrap(err, "error creating container runtime")
+			}
+			list, err := cr.ListImages(cruntime.ListImagesOptions{})
+			if err != nil {
+				klog.Warningf("Failed to list images for profile %s %v", pName, err.Error())
+				continue
+			}
+			sort.Sort(sort.Reverse(sort.StringSlice(list)))
+			fmt.Printf(strings.Join(list, "\n") + "\n")
+		}
+	}
+
 	return nil
 }
