@@ -102,8 +102,8 @@ type Manager interface {
 	// RemoveImage remove image based on name
 	RemoveImage(string) error
 
-	// ListContainers returns a list of managed by this container runtime
-	ListContainers(ListOptions) ([]string, error)
+	// ListContainers returns a list of containers managed by this container runtime
+	ListContainers(ListContainersOptions) ([]string, error)
 	// KillContainers removes containers based on ID
 	KillContainers([]string) error
 	// StopContainers stops containers based on ID
@@ -138,8 +138,8 @@ type Config struct {
 	InsecureRegistry []string
 }
 
-// ListOptions are the options to use for listing containers
-type ListOptions struct {
+// ListContainersOptions are the options to use for listing containers
+type ListContainersOptions struct {
 	// State is the container state to filter by (All, Running, Paused)
 	State ContainerState
 	// Name is a name filter

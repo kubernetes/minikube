@@ -212,7 +212,7 @@ func (r *Docker) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of containers
-func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
+func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 	if r.UseCRI {
 		return listCRIContainers(r.Runner, "", o)
 	}

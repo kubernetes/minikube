@@ -248,7 +248,7 @@ func OutputOffline(lines int) {
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
 	for _, pod := range importantPods {
-		ids, err := r.ListContainers(cruntime.ListOptions{Name: pod})
+		ids, err := r.ListContainers(cruntime.ListContainersOptions{Name: pod})
 		if err != nil {
 			klog.Errorf("Failed to list containers for %q: %v", pod, err)
 			continue

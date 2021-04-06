@@ -37,7 +37,7 @@ type container struct {
 }
 
 // crictlList returns the output of 'crictl ps' in an efficient manner
-func crictlList(cr CommandRunner, root string, o ListOptions) (*command.RunResult, error) {
+func crictlList(cr CommandRunner, root string, o ListContainersOptions) (*command.RunResult, error) {
 	klog.Infof("listing CRI containers in root %s: %+v", root, o)
 
 	// Use -a because otherwise paused containers are missed
@@ -63,7 +63,7 @@ func crictlList(cr CommandRunner, root string, o ListOptions) (*command.RunResul
 }
 
 // listCRIContainers returns a list of containers
-func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, error) {
+func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) ([]string, error) {
 	rr, err := crictlList(cr, root, o)
 	if err != nil {
 		return nil, errors.Wrap(err, "crictl list")

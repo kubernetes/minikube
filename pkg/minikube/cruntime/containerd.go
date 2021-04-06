@@ -288,7 +288,7 @@ func (r *Containerd) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *Containerd) ListContainers(o ListOptions) ([]string, error) {
+func (r *Containerd) ListContainers(o ListContainersOptions) ([]string, error) {
 	return listCRIContainers(r.Runner, containerdNamespaceRoot, o)
 }
 
