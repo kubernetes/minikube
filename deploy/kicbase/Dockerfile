@@ -21,7 +21,7 @@
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20210119
 
-ARG BUILDKIT_VERSION="v0.8.1"
+ARG BUILDKIT_VERSION="v0.8.2"
 
 # copy in static files (configs, scripts)
 COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -121,6 +121,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && rm -rf /tmp/buildkit.tgz \
     && chmod 755 /usr/local/bin/buildctl \
     && chmod 755 /usr/local/bin/buildkit-runc \
+    && chmod 755 /usr/local/bin/buildkit-qemu-* \
     && chmod 755 /usr/local/bin/buildkitd
 
 # Install cri-o/podman dependencies:

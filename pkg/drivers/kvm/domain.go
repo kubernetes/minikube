@@ -65,11 +65,11 @@ const domainTmpl = `
       <target dev='hda' bus='virtio'/>
     </disk>
     <interface type='network'>
-      <source network='{{.Network}}'/>
+      <source network='{{.PrivateNetwork}}'/>
       <model type='virtio'/>
     </interface>
     <interface type='network'>
-      <source network='{{.PrivateNetwork}}'/>
+      <source network='{{.Network}}'/>
       <model type='virtio'/>
     </interface>
     <serial type='pty'>

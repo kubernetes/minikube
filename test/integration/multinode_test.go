@@ -393,12 +393,12 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 	// Create a deployment for app
 	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/multinodes/multinode-pod-dns-test.yaml"))
 	if err != nil {
-		t.Errorf("failed to create hello deployment to multinode cluster")
+		t.Errorf("failed to create busybox deployment to multinode cluster")
 	}
 
-	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/hello"))
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/busybox"))
 	if err != nil {
-		t.Errorf("failed to delploy hello to multinode cluster")
+		t.Errorf("failed to delploy busybox to multinode cluster")
 	}
 
 	// resolve Pod IPs
@@ -423,24 +423,25 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 
 	// verify both Pods could resolve a public DNS
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "nslookup", "kubernetes.io"))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.io"))
 		if err != nil {
 			t.Errorf("Pod %s could not resolve 'kubernetes.io': %v", name, err)
 		}
 	}
-	// verify both pods could resolve to a local service.
+	// verify both Pods could resolve "kubernetes.default"
+	// this one is also checked by k8s e2e node conformance tests:
+	// https://github.com/kubernetes/kubernetes/blob/f137c4777095b3972e2dd71a01365d47be459389/test/e2e_node/environment/conformance.go#L125-L179
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "nslookup", "kubernetes.default.svc.cluster.local"))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default"))
 		if err != nil {
-			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
+			t.Errorf("Pod %s could not resolve 'kubernetes.default': %v", name, err)
 		}
 	}
-
-	// clean up, delete all pods
+	// verify both pods could resolve to a local service.
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "delete", "pod", name))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default.svc.cluster.local"))
 		if err != nil {
-			t.Errorf("fail to delete pod %s: %v", name, err)
+			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
 		}
 	}
 }

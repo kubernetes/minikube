@@ -16,7 +16,7 @@ require (
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/cheggaaa/pb/v3 v3.0.6
+	github.com/cheggaaa/pb/v3 v3.0.7
 	github.com/cloudevents/sdk-go/v2 v2.3.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
@@ -73,7 +73,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
-	go.opencensus.io v0.22.6
+	go.opencensus.io v0.23.0
 	go.opentelemetry.io/otel v0.17.0
 	go.opentelemetry.io/otel/sdk v0.16.0
 	go.opentelemetry.io/otel/trace v0.17.0
@@ -81,11 +81,11 @@ require (
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6
 	golang.org/x/mod v0.4.2
-	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210217105451-b926d437f341
+	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4
 	golang.org/x/text v0.3.5
-	google.golang.org/api v0.40.0
+	google.golang.org/api v0.43.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/v3 v3.0.3 // indirect
@@ -100,7 +100,7 @@ require (
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
-	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.6
+	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
 	github.com/docker/docker => github.com/afbjorklund/moby v0.0.0-20210308214533-2fa72faf0e8b
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20210306082426-fcb2ad5bcb17
 	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321165649-761f6f9626b1

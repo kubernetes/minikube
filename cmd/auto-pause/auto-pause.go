@@ -36,8 +36,7 @@ var unpauseRequests = make(chan struct{})
 var done = make(chan struct{})
 var mu sync.Mutex
 
-// TODO: initialize with current state (handle the case that user enables auto-pause after it is already paused)
-var runtimePaused = false
+var runtimePaused bool
 var version = "0.0.1"
 
 // TODO: #10597 make this configurable to support containerd/cri-o
@@ -46,6 +45,10 @@ var runtime = "docker"
 func main() {
 	// TODO: #10595 make this configurable
 	const interval = time.Minute * 1
+
+	// Check current state
+	alreadyPaused()
+
 	// channel for incoming messages
 	go func() {
 		for {
@@ -120,4 +123,21 @@ func runUnpause() {
 	runtimePaused = false
 
 	out.Step(style.Unpause, "Unpaused {{.count}} containers", out.V{"count": len(uids)})
+}
+
+func alreadyPaused() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	r := command.NewExecRunner(true)
+	cr, err := cruntime.New(cruntime.Config{Type: runtime, Runner: r})
+	if err != nil {
+		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
+	}
+
+	runtimePaused, err = cluster.CheckIfPaused(cr, []string{"kube-system"})
+	if err != nil {
+		exit.Error(reason.GuestCheckPaused, "Fail check if container paused", err)
+	}
+	out.Step(style.Check, "containers paused status: {{.paused}}", out.V{"paused": runtimePaused})
 }
