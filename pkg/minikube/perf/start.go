@@ -84,19 +84,10 @@ func collectResults(ctx context.Context, binaries []*Binary, driver string) (*re
 
 func average(nums []float64) float64 {
 	total := float64(0)
-	max := float64(0)
-	min := float64(0)
 	for _, a := range nums {
-		if a > max {
-			max = a
-		}
-		if min > a {
-			min = a
-		}
 		total += a
 	}
-	total = total - min - max
-	return total / float64(len(nums)-2)
+	return total / float64(len(nums))
 }
 
 func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string) error {
