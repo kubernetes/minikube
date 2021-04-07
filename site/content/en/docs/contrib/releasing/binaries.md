@@ -16,7 +16,7 @@ description: >
 ## Update the Kubernetes version
 
 * Run `make update-kubernetes-version` from your local upstream repo copy
-* If any files are updated, combine these changes with the Release Notes PR 
+* If any files are updated, create and merge a PR before moving forward  
 
 ## Build a new ISO
 
