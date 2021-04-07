@@ -24,10 +24,10 @@ fi
 ./installers/check_install_docker.sh
 
 # Make sure gh is installed and configured                                            
-./installers/check_install_gh.sh v1.16.3 /usr/local
+./installers/check_install_gh.sh 
 
 # Make sure go is installed and configured                                            
-./installers/check_install_golang.sh
+./installers/check_install_golang.sh v1.16.3 /usr/local
 
 # Grab latest code                                                                    
 git clone https://github.com/kubernetes/minikube.git                                  
