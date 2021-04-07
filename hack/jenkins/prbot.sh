@@ -27,7 +27,7 @@ fi
 ./installers/check_install_gh.sh 
 
 # Make sure go is installed and configured                                            
-./installers/check_install_golang.sh v1.16.3 /usr/local
+./installers/check_install_golang.sh "1.16" "/usr/local" || true
 
 # Grab latest code                                                                    
 git clone https://github.com/kubernetes/minikube.git                                  
@@ -35,6 +35,9 @@ cd minikube
 
 # Build minikube binary and mkcmp binary                                              
 make out/minikube out/mkcmp                                                           
+
+# Make sure there aren't any old minikube clusters laying around
+out/minikube delete --all
 
 # Run mkcmp                                                                           
 out/mkcmp out/minikube pr://${MINIKUBE_LOCATION} | tee mkcmp.log
