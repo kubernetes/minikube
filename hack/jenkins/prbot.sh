@@ -24,7 +24,7 @@ fi
 ./installers/check_install_docker.sh
 
 # Make sure gh is installed and configured                                            
-./installers/check_install_gh.sh
+./installers/check_install_gh.sh v1.16.3 /usr/local
 
 # Make sure go is installed and configured                                            
 ./installers/check_install_golang.sh
@@ -37,7 +37,7 @@ cd minikube
 make out/minikube out/mkcmp                                                           
 
 # Run mkcmp                                                                           
-out/mkcmp out/minikube pr://${MINIKUBE_LOCATION} | mkcmp.log
+out/mkcmp out/minikube pr://${MINIKUBE_LOCATION} | tee mkcmp.log
 if [ $? -gt 0 ]; then
        # Comment that mkcmp failed
        gh pr comment ${MINIKUBE_LOCATION} --body "timing minikube failed, please try again"
