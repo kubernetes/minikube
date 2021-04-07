@@ -93,6 +93,10 @@ func Execute() {
 		}
 	}
 
+	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
+		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead.")
+	}
+
 	_, callingCmd := filepath.Split(os.Args[0])
 
 	if callingCmd == "kubectl" {
