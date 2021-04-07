@@ -21,7 +21,7 @@ if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
 fi
 
 # Make sure docker is installed and configured                                        
-./installers/check_install_docker.sh
+#./installers/check_install_docker.sh
 
 # Make sure gh is installed and configured                                            
 ./installers/check_install_gh.sh 
