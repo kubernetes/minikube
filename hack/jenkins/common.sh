@@ -41,8 +41,8 @@ fi
 # installing golang so we could do go get for gopogh
 sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
 
-# install docker and kubectl if not present
-sudo ./installers/check_install_docker.sh
+# install docker and kubectl if not present, currently skipping since it fails
+#sudo ./installers/check_install_docker.sh
 
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
