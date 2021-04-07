@@ -367,7 +367,7 @@ func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
 		return err
 	}
 
-	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused, Namespaces: []string{"kube-system"}})
+	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: []string{"kube-system"}})
 	if err != nil {
 		return errors.Wrap(err, "list paused")
 	}
@@ -819,7 +819,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		klog.Warningf("stop kubelet: %v", err)
 	}
 
-	containers, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
+	containers, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
 	if err != nil {
 		klog.Warningf("unable to list kube-system containers: %v", err)
 	}
@@ -1023,7 +1023,7 @@ func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "new cruntime")
 	}
 
-	ids, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
+	ids, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
 	if err != nil {
 		return errors.Wrap(err, "list")
 	}

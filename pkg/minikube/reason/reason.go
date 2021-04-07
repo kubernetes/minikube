@@ -246,6 +246,7 @@ var (
 	GuestCert             = Kind{ID: "GUEST_CERT", ExitCode: ExGuestError}
 	GuestCpConfig         = Kind{ID: "GUEST_CP_CONFIG", ExitCode: ExGuestConfig}
 	GuestDeletion         = Kind{ID: "GUEST_DELETION", ExitCode: ExGuestError}
+	GuestImageList        = Kind{ID: "GUEST_IMAGE_LIST", ExitCode: ExGuestError}
 	GuestImageLoad        = Kind{ID: "GUEST_IMAGE_LOAD", ExitCode: ExGuestError}
 	GuestImageRemove      = Kind{ID: "GUEST_IMAGE_REMOVE", ExitCode: ExGuestError}
 	GuestLoadHost         = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
