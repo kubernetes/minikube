@@ -23,18 +23,22 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
 
 	"github.com/pkg/errors"
 )
 
 const (
 	// runs is the number of times each binary will be timed for 'minikube start'
-	runs = 3
+	runs = 5
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
 func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
 	drivers := []string{"kvm2", "docker"}
+	if runtime.GOOS == "darwin" {
+		drivers = []string{"hyperkit", "docker"}
+	}
 	for _, d := range drivers {
 		fmt.Printf("**%s Driver**\n", d)
 		if err := downloadArtifacts(ctx, binaries, d); err != nil {
@@ -46,7 +50,7 @@ func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary
 			fmt.Printf("error collecting results for %s driver: %v\n", d, err)
 			continue
 		}
-		rm.summarizeResults(binaries, d)
+		rm.summarizeResults(binaries)
 		fmt.Println()
 	}
 	return nil
@@ -62,11 +66,17 @@ func collectResults(ctx context.Context, binaries []*Binary, driver string) (*re
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
 			rm.addResult(binary, r)
-			r, err = timeEnableIngress(ctx, binary)
-			if err != nil {
-				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
+			if runtime.GOOS != "darwin" {
+				r, err = timeEnableIngress(ctx, binary)
+				if err != nil {
+					return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
+				}
+				rm.addResult(binary, r)
 			}
-			rm.addResult(binary, r)
+			deleteCmd := exec.CommandContext(ctx, binary.path, "delete")
+			if err := deleteCmd.Run(); err != nil {
+				log.Printf("error deleting minikube: %v", err)
+			}
 		}
 	}
 	return rm, nil
@@ -108,15 +118,8 @@ func timeMinikubeStart(ctx context.Context, binary *Binary, driver string) (*res
 // timeEnableIngress returns the time it takes to execute `minikube addons enable ingress`
 // It deletes the VM after `minikube addons enable ingress`.
 func timeEnableIngress(ctx context.Context, binary *Binary) (*result, error) {
-	enableCmd := exec.CommandContext(ctx, binary.path, "addons enable ingress")
+	enableCmd := exec.CommandContext(ctx, binary.path, "addons", "enable", "ingress")
 	enableCmd.Stderr = os.Stderr
-
-	deleteCmd := exec.CommandContext(ctx, binary.path, "delete")
-	defer func() {
-		if err := deleteCmd.Run(); err != nil {
-			log.Printf("error deleting minikube: %v", err)
-		}
-	}()
 
 	log.Printf("Running: %v...", enableCmd.Args)
 	r, err := timeCommandLogs(enableCmd)
