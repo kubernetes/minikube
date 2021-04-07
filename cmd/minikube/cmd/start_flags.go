@@ -257,7 +257,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 
 		mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
-		if cmd.Flags().Changed(memory) {
+		if cmd.Flags().Changed(memory) || viper.IsSet(memory) {
 			var err error
 			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
 			if err != nil {
