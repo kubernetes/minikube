@@ -50,7 +50,7 @@ func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary
 			fmt.Printf("error collecting results for %s driver: %v\n", d, err)
 			continue
 		}
-		rm.summarizeResults(binaries, d)
+		rm.summarizeResults(binaries)
 		fmt.Println()
 	}
 	return nil
