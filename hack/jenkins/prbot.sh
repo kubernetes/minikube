@@ -44,4 +44,4 @@ if [ $? -gt 0 ]; then
        exit 1
 fi
 output=$(cat mkcmp.log)
-gh pr comment ${MINIKUBE_LOCATION} --body ${output}
+gh pr comment ${MINIKUBE_LOCATION} --body "${output}"
