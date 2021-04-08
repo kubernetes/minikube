@@ -93,7 +93,7 @@ var settings = []Setting{
 	{
 		name:        "memory",
 		set:         SetString,
-		validations: []setFn{IsValidDiskSize},
+		validations: []setFn{IsValidMemory},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{

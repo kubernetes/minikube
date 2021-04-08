@@ -168,6 +168,16 @@ func (r *CRIO) ImageExists(name string, sha string) bool {
 	return true
 }
 
+// ListImages returns a list of images managed by this container runtime
+func (r *CRIO) ListImages(ListImagesOptions) ([]string, error) {
+	c := exec.Command("sudo", "podman", "images", "--format", "{{.Repository}}:{{.Tag}}")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrapf(err, "podman images")
+	}
+	return strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n"), nil
+}
+
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
@@ -248,7 +258,7 @@ func (r *CRIO) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *CRIO) ListContainers(o ListOptions) ([]string, error) {
+func (r *CRIO) ListContainers(o ListContainersOptions) ([]string, error) {
 	return listCRIContainers(r.Runner, "", o)
 }
 

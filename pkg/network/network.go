@@ -235,13 +235,13 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 // uses sync.Map to manage reservations thread-safe
 func reserveSubnet(subnet string, period time.Duration) bool {
 	// put 'zero' reservation{} Map value for subnet Map key
-	// to block other processes from concurently changing this subnet
+	// to block other processes from concurrently changing this subnet
 	zero := reservation{}
 	r, loaded := reservedSubnets.LoadOrStore(subnet, zero)
 	// check if there was previously issued reservation
 	if loaded {
 		// back off if previous reservation was already set to 'zero'
-		// as then other process is already managing this subnet concurently
+		// as then other process is already managing this subnet concurrently
 		if r == zero {
 			klog.Infof("backing off reserving subnet %s (other process is managing it!): %+v", subnet, &reservedSubnets)
 			return false

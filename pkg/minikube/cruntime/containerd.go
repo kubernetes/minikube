@@ -241,6 +241,24 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 	return true
 }
 
+// ListImages lists images managed by this container runtime
+func (r *Containerd) ListImages(ListImagesOptions) ([]string, error) {
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "list", "--quiet")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrapf(err, "ctr images list")
+	}
+	all := strings.Split(rr.Stdout.String(), "\n")
+	imgs := []string{}
+	for _, img := range all {
+		if img == "" || strings.Contains(img, "sha256:") {
+			continue
+		}
+		imgs = append(imgs, img)
+	}
+	return imgs, nil
+}
+
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
@@ -393,7 +411,7 @@ func (r *Containerd) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *Containerd) ListContainers(o ListOptions) ([]string, error) {
+func (r *Containerd) ListContainers(o ListContainersOptions) ([]string, error) {
 	return listCRIContainers(r.Runner, containerdNamespaceRoot, o)
 }
 
