@@ -25,27 +25,33 @@ import (
 )
 
 type resultManager struct {
-	results map[*Binary][]*result
+	results map[*Binary]resultWrapper
 }
 
 func newResultManager() *resultManager {
 	return &resultManager{
-		results: map[*Binary][]*result{},
+		results: map[*Binary]resultWrapper{},
 	}
 }
 
-func (rm *resultManager) addResult(binary *Binary, r *result) {
-	_, ok := rm.results[binary]
+func (rm *resultManager) addResult(binary *Binary, test string, r result) {
+	a, ok := rm.results[binary]
 	if !ok {
-		rm.results[binary] = []*result{r}
+		r := map[string][]*result{test: []*result{&r}}
+		rm.results[binary] = resultWrapper{r}
 		return
 	}
-	rm.results[binary] = append(rm.results[binary], r)
+	b, ok := a.results[test]
+	if !ok {
+		a.results[test] = []*result{&r}
+		return
+	}
+	a.results[test] = append(b, &r)
 }
 
-func (rm *resultManager) totalTimes(binary *Binary) []float64 {
+func (rm *resultManager) totalTimes(binary *Binary, t string) []float64 {
 	var totals []float64
-	results, ok := rm.results[binary]
+	results, ok := rm.results[binary].results[t]
 	if !ok {
 		return nil
 	}
@@ -59,20 +65,18 @@ func (rm *resultManager) totalTimes(binary *Binary) []float64 {
 	return totals
 }
 
-func (rm *resultManager) averageTime(binary *Binary) float64 {
-	times := rm.totalTimes(binary)
-	return average(times)
-}
-
 func (rm *resultManager) summarizeResults(binaries []*Binary) {
 	// print total and average times
 	for _, b := range binaries {
-		fmt.Printf("Times for %s: ", b.Name())
-		for _, tt := range rm.totalTimes(b) {
-			fmt.Printf("%.1fs ", tt)
+		for t := range rm.results[b].results {
+			fmt.Printf("Times for %s %s: ", b.Name(), t)
+			totalTimes := rm.totalTimes(b, t)
+			for _, tt := range totalTimes {
+				fmt.Printf("%.1fs ", tt)
+			}
+			fmt.Println()
+			fmt.Printf("Average time for %s %s: %.1fs\n\n", b.Name(), t, average(totalTimes))
 		}
-		fmt.Println()
-		fmt.Printf("Average time for %s: %.1fs\n\n", b.Name(), rm.averageTime(b))
 	}
 
 	// print out summary per log
@@ -81,7 +85,7 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 
 func (rm *resultManager) summarizeTimesPerLog(binaries []*Binary) {
 	results := rm.results[binaries[0]]
-	logs := results[0].logs
+	logs := results.results["start"][0].logs
 
 	table := make([][]string, len(logs))
 	for i := range table {
@@ -94,7 +98,7 @@ func (rm *resultManager) summarizeTimesPerLog(binaries []*Binary) {
 
 	for i, b := range binaries {
 		results := rm.results[b]
-		averageTimeForLog := averageTimePerLog(results)
+		averageTimeForLog := averageTimePerLog(results.results["start"])
 		for log, time := range averageTimeForLog {
 			index := indexForLog(logs, log)
 			if index == -1 {

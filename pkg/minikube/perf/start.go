@@ -65,13 +65,13 @@ func collectResults(ctx context.Context, binaries []*Binary, driver string) (*re
 			if err != nil {
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
-			rm.addResult(binary, r)
+			rm.addResult(binary, "start", *r)
 			if runtime.GOOS != "darwin" {
 				r, err = timeEnableIngress(ctx, binary)
 				if err != nil {
 					return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 				}
-				rm.addResult(binary, r)
+				rm.addResult(binary, "ingress", *r)
 			}
 			deleteCmd := exec.CommandContext(ctx, binary.path, "delete")
 			if err := deleteCmd.Run(); err != nil {
