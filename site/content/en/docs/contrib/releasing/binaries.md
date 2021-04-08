@@ -12,6 +12,11 @@ description: >
 * Two minikube repos checked out locally:
   * Your personal fork
   * Upstream  
+  
+## Update the Kubernetes version
+
+* Run `make update-kubernetes-version` from your local upstream repo copy
+* If any files are updated, create and merge a PR before moving forward  
 
 ## Build a new ISO
 
