@@ -19,13 +19,14 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"k8s.io/minikube/pkg/minikube/notify"
-	"k8s.io/minikube/pkg/version"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/notify"
+	"k8s.io/minikube/pkg/version"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

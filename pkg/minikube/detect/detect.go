@@ -17,11 +17,12 @@ limitations under the License.
 package detect
 
 import (
-	. "github.com/klauspost/cpuid"
 	"net/http"
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/klauspost/cpuid"
 )
 
 // IsMicrosoftWSL will return true if process is running in WSL in windows
@@ -49,5 +50,5 @@ func IsCloudShell() bool {
 
 // IsAmd64M1Emulation  determines whether amd64 minikube binary is running on M1 mac in emulation mode
 func IsAmd64M1Emulation() bool {
-	return runtime.GOARCH == "amd64" && strings.HasPrefix(CPU.BrandName, "VirtualApple")
+	return runtime.GOARCH == "amd64" && strings.HasPrefix(cpuid.CPU.BrandName, "VirtualApple")
 }
