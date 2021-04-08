@@ -153,8 +153,8 @@ func getTimeFromFileIfExists(path string) time.Time {
 	return timeInFile
 }
 
-// DownloadUrl returns a URL to get minikube binary version ver for platform os/arch
-func DownloadUrl(ver, os, arch string) string {
+// DownloadURL returns a URL to get minikube binary version ver for platform os/arch
+func DownloadURL(ver, os, arch string) string {
 	if ver == "" || strings.HasSuffix(ver, "-unset") || os == "" || arch == "" {
 		return "https://github.com/kubernetes/minikube/releases"
 	}
