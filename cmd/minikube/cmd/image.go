@@ -145,9 +145,28 @@ $ minikube image unload image busybox
 	},
 }
 
+var listImageCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List images",
+	Example: `
+$ minikube image list
+`,
+	Aliases: []string{"ls"},
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+		if err := machine.ListImages(profile); err != nil {
+			exit.Error(reason.GuestImageList, "Failed to list images", err)
+		}
+	},
+}
+
 func init() {
 	imageCmd.AddCommand(loadImageCmd)
 	imageCmd.AddCommand(removeImageCmd)
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
+	imageCmd.AddCommand(listImageCmd)
 }

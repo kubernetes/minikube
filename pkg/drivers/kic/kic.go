@@ -441,7 +441,7 @@ func (d *Driver) Stop() error {
 		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
 		klog.Errorf("unable to get container runtime: %v", err)
 	} else {
-		containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
+		containers, err := runtime.ListContainers(cruntime.ListContainersOptions{Namespaces: constants.DefaultNamespaces})
 		if err != nil {
 			klog.Infof("unable list containers : %v", err)
 		}

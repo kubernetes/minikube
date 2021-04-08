@@ -152,7 +152,7 @@ func (d *Driver) Kill() error {
 	}
 
 	// First try to gracefully stop containers
-	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
+	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -164,7 +164,7 @@ func (d *Driver) Kill() error {
 		return errors.Wrap(err, "stop")
 	}
 
-	containers, err = d.runtime.ListContainers(cruntime.ListOptions{})
+	containers, err = d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -220,7 +220,7 @@ func (d *Driver) Stop() error {
 			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
-	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
+	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
