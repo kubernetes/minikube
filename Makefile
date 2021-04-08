@@ -834,7 +834,7 @@ out/mkcmp:
 deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
-.PHONY: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause # auto pause binary to be used for ISO
+# auto pause binary to be used for ISO
 deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
