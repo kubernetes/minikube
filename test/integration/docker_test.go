@@ -40,7 +40,7 @@ func TestDockerFlags(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
-	args := append([]string{"start", "-p", profile, "--cache-images=false", "--memory=1800", "--install-addons=false", "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true", "--alsologtostderr", "-v=5"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--cache-images=false", "--memory=2048", "--install-addons=false", "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
@@ -79,7 +79,7 @@ func TestForceSystemdFlag(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
-	args := append([]string{"start", "-p", profile, "--memory=1800", "--force-systemd", "--alsologtostderr", "-v=5"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2048", "--force-systemd", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
@@ -125,7 +125,7 @@ func TestForceSystemdEnv(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "-v=5"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	cmd := exec.CommandContext(ctx, Target(), args...)
 	cmd.Env = append(os.Environ(), "MINIKUBE_FORCE_SYSTEMD=true")
 	rr, err := Run(t, cmd)
