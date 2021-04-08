@@ -38,7 +38,7 @@ require (
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8
-	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
+	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
 	github.com/juju/clock v0.0.0-20190205081909-9c5c9712527c
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d // indirect
@@ -50,6 +50,7 @@ require (
 	github.com/juju/utils v0.0.0-20180820210520-bf9cc5bdd62d // indirect
 	github.com/juju/version v0.0.0-20180108022336-b64dbd566305 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+	github.com/klauspost/cpuid v1.2.0
 	github.com/libvirt/libvirt-go v3.9.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
 	github.com/mattbaird/jsonpatch v0.0.0-20200820163806-098863c1fc24

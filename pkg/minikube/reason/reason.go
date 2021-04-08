@@ -81,6 +81,7 @@ var (
 	Interrupted = Kind{ID: "MK_INTERRUPTED", ExitCode: ExProgramConflict}
 
 	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
+	WrongBinaryM1  = Kind{ID: "MK_WRONG_BINARY_M1", ExitCode: ExProgramUnsupported}
 
 	NewAPIClient             = Kind{ID: "MK_NEW_APICLIENT", ExitCode: ExProgramError}
 	InternalAddonEnable      = Kind{ID: "MK_ADDON_ENABLE", ExitCode: ExProgramError}
