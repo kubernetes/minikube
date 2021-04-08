@@ -19,6 +19,8 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"k8s.io/minikube/pkg/minikube/notify"
+	"k8s.io/minikube/pkg/version"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -94,7 +96,8 @@ func Execute() {
 	}
 
 	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
-		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead.")
+		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead (Download at {{.url}}.",
+			out.V{"url": notify.DownloadUrl(version.GetVersion(), "darwin", "amd64")})
 	}
 
 	_, callingCmd := filepath.Split(os.Args[0])
