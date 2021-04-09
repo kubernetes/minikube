@@ -2,11 +2,10 @@
 
 ## Version 1.19.0 - 2021-04-09
 
-* Add auto-pause to VMs [#11019](https://github.com/kubernetes/minikube/pull/11019)
+* allow Auto-Pause addon on VMs [#11019](https://github.com/kubernetes/minikube/pull/11019)
 * Do not allow running darwin/amd64 minikube binary on darwin/arm64 systems [#11024](https://github.com/kubernetes/minikube/pull/11024)
 * Respect memory being set in the minikube config [#11014](https://github.com/kubernetes/minikube/pull/11014)
-* Add ListImages function and image list command [#11007](https://github.com/kubernetes/minikube/pull/11007)
-* Fix wrong error message on memory validation [#11015](https://github.com/kubernetes/minikube/pull/11015)
+* new command image ls to list images in a cluster [#11007](https://github.com/kubernetes/minikube/pull/11007)
 
 Thank you to our contributors for this release!
 
