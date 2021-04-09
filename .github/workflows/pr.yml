@@ -2,6 +2,7 @@ name: PR
 on:
   pull_request:
     paths:
+      - "go.mod"
       - "**.go"
       - "**.yml"
       - "**.yaml"

@@ -25,7 +25,7 @@ then
     make -s lint-ci && echo ok || ((exitcode += 4))
     echo "= go mod ================================================================"
     go mod download 2>&1 | grep -v "go: finding" || true
-    go mod tidy -v && echo ok || ((exitcode += 2))
+    go mod tidy -v && git diff --quiet && echo ok || (((exitcode += 2)) && echo ERROR: Please run go mod tidy)
 fi
 
 
