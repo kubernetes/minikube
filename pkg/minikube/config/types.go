@@ -79,6 +79,7 @@ type ClusterConfig struct {
 	ScheduledStop           *ScheduledStopConfig
 	ExposedPorts            []string // Only used by the docker and podman driver
 	ListenAddress           string   // Only used by the docker and podman driver
+	ListenApiServerPort     int      // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
 	MultiNodeRequested      bool
 }

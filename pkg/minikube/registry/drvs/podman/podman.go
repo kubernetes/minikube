@@ -83,19 +83,20 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}
 
 	return kic.NewDriver(kic.Config{
-		ClusterName:       cc.Name,
-		MachineName:       config.MachineName(cc, n),
-		StorePath:         localpath.MiniPath(),
-		ImageDigest:       strings.Split(cc.KicBaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
-		Mounts:            mounts,
-		CPU:               cc.CPUs,
-		Memory:            cc.Memory,
-		OCIBinary:         oci.Podman,
-		APIServerPort:     cc.Nodes[0].Port,
-		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
-		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
-		ExtraArgs:         extraArgs,
-		ListenAddress:     cc.ListenAddress,
+		ClusterName:         cc.Name,
+		MachineName:         config.MachineName(cc, n),
+		StorePath:           localpath.MiniPath(),
+		ImageDigest:         strings.Split(cc.KicBaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
+		Mounts:              mounts,
+		CPU:                 cc.CPUs,
+		Memory:              cc.Memory,
+		OCIBinary:           oci.Podman,
+		APIServerPort:       cc.Nodes[0].Port,
+		KubernetesVersion:   cc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:    cc.KubernetesConfig.ContainerRuntime,
+		ExtraArgs:           extraArgs,
+		ListenAddress:       cc.ListenAddress,
+		ListenApiServerPort: cc.ListenApiServerPort,
 	}), nil
 }
 

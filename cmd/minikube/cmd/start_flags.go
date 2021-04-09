@@ -118,6 +118,7 @@ const (
 	defaultSSHUser          = "root"
 	defaultSSHPort          = 22
 	listenAddress           = "listen-address"
+	listenApiServerPort     = "listen-apiserver-port"
 )
 
 var (
@@ -219,6 +220,7 @@ func initDriverFlags() {
 
 	// docker & podman
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
+	startCmd.Flags().Int(listenApiServerPort, 0, "Port that apiserver exposed (docker and podman driver only)")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
 }
 
@@ -369,6 +371,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		DiskSize:                diskSize,
 		Driver:                  drvName,
 		ListenAddress:           viper.GetString(listenAddress),
+		ListenApiServerPort:     viper.GetInt(listenApiServerPort),
 		HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
 		HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
 		NFSShare:                viper.GetStringSlice(nfsShare),
