@@ -1088,8 +1088,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		validateListenAddress(viper.GetString(listenAddress))
 	}
 
-	if cmd.Flags().Changed(listenApiServerPort) {
-		validateListenApiServerPort(viper.GetInt(listenApiServerPort))
+	if cmd.Flags().Changed(listenAPIServerPort) {
+		validateListenAPIServerPort(viper.GetInt(listenAPIServerPort))
 	}
 
 	if cmd.Flags().Changed(imageRepository) {
@@ -1249,9 +1249,9 @@ func validateListenAddress(listenAddr string) {
 }
 
 // This function validates if the --listen-apiserver-port is valid
-func validateListenApiServerPort(listenApiServerPort int) {
-	if listenApiServerPort < 0 || listenApiServerPort > 65535 {
-		exit.Message(reason.Usage, "Sorry, the port provided with the --listen-apiserver-port flag is invalid: {{.listenApiServerPort}}.", out.V{"listenApiServerPort": listenApiServerPort})
+func validateListenAPIServerPort(listenAPIServerPort int) {
+	if listenAPIServerPort < 0 || listenAPIServerPort > 65535 {
+		exit.Message(reason.Usage, "Sorry, the port provided with the --listen-apiserver-port flag is invalid: {{.listenAPIServerPort}}.", out.V{"listenAPIServerPort": listenAPIServerPort})
 	}
 }
 

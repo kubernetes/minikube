@@ -63,5 +63,5 @@ type Config struct {
 	Network             string            //  network to run with kic
 	ExtraArgs           []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	ListenAddress       string            // IP Address to listen to
-	ListenApiServerPort int               // apiserver Port to listen to
+	ListenAPIServerPort int               // apiserver Port to listen to
 }

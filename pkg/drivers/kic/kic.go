@@ -116,16 +116,16 @@ func (d *Driver) Create() error {
 		listAddr = "0.0.0.0"
 	}
 
-	listenApiServerPort := 0
-	if d.NodeConfig.ListenApiServerPort != 0 {
-		listenApiServerPort = d.NodeConfig.ListenApiServerPort
+	listenAPIServerPort := 0
+	if d.NodeConfig.ListenAPIServerPort != 0 {
+		listenAPIServerPort = d.NodeConfig.ListenAPIServerPort
 	}
 
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings,
 		oci.PortMapping{
 			ListenAddress: listAddr,
-			HostPort: int32(listenApiServerPort),
+			HostPort:      int32(listenAPIServerPort),
 			ContainerPort: int32(params.APIServerPort),
 		},
 		oci.PortMapping{
