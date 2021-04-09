@@ -26,6 +26,7 @@ _testmain.go
 *.test
 *.prof
 
+/deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause
 /deploy/kicbase/auto-pause
 /deploy/addons/auto-pause/auto-pause-hook
 /out

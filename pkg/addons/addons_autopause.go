@@ -43,8 +43,8 @@ func enableOrDisableAutoPause(cc *config.ClusterConfig, name string, val string)
 	out.Infof("auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.")
 	out.Infof("https://github.com/kubernetes/minikube/labels/co%2Fauto-pause")
 
-	if !driver.IsKIC(cc.Driver) || runtime.GOARCH != "amd64" {
-		exit.Message(reason.Usage, `auto-pause currently is only supported on docker driver/docker runtime/amd64. Track progress of others here: https://github.com/kubernetes/minikube/issues/10601`)
+	if cc.KubernetesConfig.ContainerRuntime != "docker" || runtime.GOARCH != "amd64" {
+		exit.Message(reason.Usage, `auto-pause currently is only supported on docker runtime and amd64. Track progress of others here: https://github.com/kubernetes/minikube/issues/10601`)
 	}
 	co := mustload.Running(cc.Name)
 	if enable {

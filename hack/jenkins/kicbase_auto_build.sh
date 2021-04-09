@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x -o pipefail
+set -x
 
 # Make sure docker is installed and configured
 ./hack/jenkins/installers/check_install_docker.sh
