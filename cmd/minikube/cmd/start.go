@@ -1248,7 +1248,8 @@ func validateListenAddress(listenAddr string) {
 	}
 }
 
-// This function validates if the --listen-apiserver-port is valid
+// This function validates if the --listen-apiserver-port
+// is valid
 func validateListenAPIServerPort(listenAPIServerPort int) {
 	if listenAPIServerPort < 0 || listenAPIServerPort > 65535 {
 		exit.Message(reason.Usage, "Sorry, the port provided with the --listen-apiserver-port flag is invalid: {{.listenAPIServerPort}}.", out.V{"listenAPIServerPort": listenAPIServerPort})
