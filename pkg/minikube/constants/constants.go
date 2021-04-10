@@ -26,6 +26,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+var (
+	// SupportedArchitectures is the list of supported architectures
+	SupportedArchitectures = [5]string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+)
+
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
 	// dont update till #10545 is solved
