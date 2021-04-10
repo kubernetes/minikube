@@ -120,7 +120,7 @@ func platform() string {
 
 	// This environment is exotic, let's output a bit more.
 	if vrole == "guest" || runtime.GOARCH != "amd64" {
-		if vsys != "" {
+		if vrole == "guest" && vsys != "" {
 			s.WriteString(fmt.Sprintf(" (%s/%s)", vsys, runtime.GOARCH))
 		} else {
 			s.WriteString(fmt.Sprintf(" (%s)", runtime.GOARCH))
