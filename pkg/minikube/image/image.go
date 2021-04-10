@@ -19,7 +19,6 @@ package image
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -163,30 +162,6 @@ func ExistsImageInDaemon(binary, img string) bool {
 	return false
 }
 
-// podmanWrite saves the image into podman as the given tag.
-func podmanWrite(ref name.Reference, img v1.Image, opts ...tarball.WriteOption) (string, error) {
-	pr, pw := io.Pipe()
-	go func() {
-		pw.CloseWithError(tarball.Write(ref, img, pw, opts...))
-	}()
-
-	// write the image in docker save format first, then load it
-	cmd := exec.Command("sudo", "podman", "image", "load")
-	cmd.Stdin = pr
-	output, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("error loading image: %v", err)
-	}
-	// pull the image from the registry, to get the digest too
-	// podman: "Docker references with both a tag and digest are currently not supported"
-	cmd = exec.Command("sudo", "podman", "image", "pull", strings.Split(ref.Name(), "@")[0])
-	err = cmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("error pulling image: %v", err)
-	}
-	return string(output), nil
-}
-
 // LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
 func LoadFromTarball(binary, img string) error {
 	p := filepath.Join(constants.ImageCacheDir, img)
@@ -204,7 +179,7 @@ func LoadFromTarball(binary, img string) error {
 			return errors.Wrap(err, "tarball")
 		}
 
-		_, err = podmanWrite(tag, i)
+		_, err = PodmanWrite(tag, i)
 		return err
 	case driver.Docker:
 		tag, err := name.NewTag(Tag(img))
@@ -346,7 +321,7 @@ func WriteImageToDaemon(binary, img string) error {
 	go func() {
 		switch binary {
 		case driver.Podman:
-			_, err = podmanWrite(ref, i, tarball.WithProgress(c))
+			_, err = PodmanWrite(ref, i, tarball.WithProgress(c))
 		case driver.Docker:
 			_, err = daemon.Write(ref, i, tarball.WithProgress(c))
 		default:
