@@ -50,6 +50,7 @@ const (
 	defaultDomain       = "docker.io"
 )
 
+var daemonBinary string
 var defaultPlatform = v1.Platform{
 	Architecture: runtime.GOARCH,
 	OS:           "linux",
@@ -97,13 +98,14 @@ func DigestByPodmanExec(imgName string) string {
 
 // DigestByGoLib gets image digest uses go-containerregistry lib
 // which is 4s slower thabn local daemon per lookup https://github.com/google/go-containerregistry/issues/627
-func DigestByGoLib(imgName string) string {
+func DigestByGoLib(binary, imgName string) string {
 	ref, err := name.ParseReference(imgName, name.WeakValidation)
 	if err != nil {
 		klog.Infof("error parsing image name %s ref %v ", imgName, err)
 		return ""
 	}
 
+	daemonBinary = binary
 	img, _, err := retrieveImage(ref, imgName)
 	if err != nil {
 		klog.Infof("error retrieve Image %s ref %v ", imgName, err)
@@ -379,7 +381,7 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 				klog.Infof("short name: %s", imgName)
 			}
 		}
-		img, err = retrieveDaemon(ref)
+		img, err = retrieveDaemon(daemonBinary, ref)
 		if err == nil {
 			return img, imgName, nil
 		}
@@ -397,15 +399,28 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 	return nil, "", err
 }
 
-func retrieveDaemon(ref name.Reference) (v1.Image, error) {
-	img, err := daemon.Image(ref)
-	if err == nil {
-		klog.Infof("found %s locally: %+v", ref.Name(), img)
-		return img, nil
+func retrieveDaemon(binary string, ref name.Reference) (v1.Image, error) {
+	switch binary {
+	case driver.Podman:
+		img, err := PodmanImage(ref)
+		if err == nil {
+			klog.Infof("found %s locally: %+v", ref.Name(), img)
+			return img, nil
+		}
+		// reference does not exist in the local podman
+		klog.Infof("podman lookup for %+v: %v", ref, err)
+		return img, err
+	case driver.Docker:
+		img, err := daemon.Image(ref)
+		if err == nil {
+			klog.Infof("found %s locally: %+v", ref.Name(), img)
+			return img, nil
+		}
+		// reference does not exist in the local daemon
+		klog.Infof("daemon lookup for %+v: %v", ref, err)
+		return img, err
 	}
-	// reference does not exist in the local daemon
-	klog.Infof("daemon lookup for %+v: %v", ref, err)
-	return img, err
+	return nil, fmt.Errorf("unknown binary: %s", binary)
 }
 
 func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {

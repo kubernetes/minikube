@@ -27,6 +27,31 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 )
 
+// PodmanImage provides access to an image reference from podman.
+// same as github.com/google/go-containerregistry/pkg/v1/daemon
+func PodmanImage(ref name.Reference, options ...interface{}) (v1.Image, error) {
+	var img v1.Image
+	pr, pw := io.Pipe()
+	go func() {
+		opener := func() (io.ReadCloser, error) {
+			return pr, nil
+		}
+		var err error
+		tag := ref.(name.Digest).Tag()
+		img, err = tarball.Image(opener, &tag)
+		_ = pr.CloseWithError(err)
+	}()
+
+	// write the image in docker save format first, then load it
+	cmd := exec.Command("sudo", "podman", "image", "save", strings.Split(ref.Name(), "@")[0])
+	cmd.Stdout = pw
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("error loading image: %v", err)
+	}
+	return img, nil
+}
+
 // PodmanWrite saves the image into podman as the given tag.
 // same as github.com/google/go-containerregistry/pkg/v1/daemon
 func PodmanWrite(ref name.Reference, img v1.Image, opts ...tarball.WriteOption) (string, error) {

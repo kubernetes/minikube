@@ -158,7 +158,7 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 		}
 	}
 	// if not found with method above try go-container lib (which is 4s slower)
-	imgDgst = image.DigestByGoLib(imgName)
+	imgDgst = image.DigestByGoLib(cr.Name(), imgName)
 	if imgDgst == "" {
 		return fmt.Errorf("got empty img digest %q for %s", imgDgst, imgName)
 	}

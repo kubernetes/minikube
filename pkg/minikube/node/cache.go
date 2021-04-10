@@ -153,8 +153,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 
 			klog.Infof("Downloading %s to local daemon", img)
-			err := image.WriteImageToDaemon(cc.Driver, img)
-			if err == nil {
+			if err = image.WriteImageToDaemon(cc.Driver, img); err == nil {
 				klog.Infof("successfully downloaded %s", img)
 				finalImg = img
 				return nil
