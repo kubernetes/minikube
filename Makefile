@@ -39,7 +39,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2020.02.10
+BUILDROOT_BRANCH ?= 2020.02.11
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
@@ -66,7 +66,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.171
+KERNEL_VERSION ?= 4.19.182
 # latest from https://github.com/golangci/golangci-lint/releases
 GOLINT_VERSION ?= v1.39.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
