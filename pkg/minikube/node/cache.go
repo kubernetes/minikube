@@ -31,7 +31,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -107,6 +106,10 @@ func doCacheBinaries(k8sVersion string) error {
 
 // beginDownloadKicBaseImage downloads the kic image
 func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, downloadOnly bool) {
+	if image.ExistsImageInDaemon(cc.Driver, cc.KicBaseImage) {
+		klog.Infof("%s exists in daemon, skipping pull", cc.KicBaseImage)
+		return
+	}
 
 	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 	register.Reg.SetStep(register.PullingBaseImage)
@@ -141,7 +144,6 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			if downloadOnly {
 				return err
 			}
-
 			if err := image.LoadFromTarball(cc.Driver, img); err == nil {
 				klog.Infof("successfully loaded %s from cached tarball", img)
 				// strip the digest from the img before saving it in the config
@@ -150,17 +152,16 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				return nil
 			}
 
-			if driver.IsDocker(cc.Driver) {
-				if image.ExistsImageInDaemon(img) {
-					klog.Infof("%s exists in daemon, skipping pull", img)
-					finalImg = img
-					return nil
-				}
-
-				klog.Infof("Downloading %s to local daemon", img)
-				err = image.WriteImageToDaemon(img)
-				if err == nil {
-					klog.Infof("successfully downloaded %s", img)
+			klog.Infof("Downloading %s to local daemon", img)
+			err := image.WriteImageToDaemon(cc.Driver, img)
+			if err == nil {
+				klog.Infof("successfully downloaded %s", img)
+				finalImg = img
+				return nil
+			}
+			if downloadOnly {
+				if err := image.SaveToDir([]string{img}, constants.ImageCacheDir); err == nil {
+					klog.Infof("successfully saved %s as a tarball", img)
 					finalImg = img
 					return nil
 				}

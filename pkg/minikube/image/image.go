@@ -19,6 +19,7 @@ package image
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -84,6 +85,17 @@ func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	return img.ID
 }
 
+// DigestByPodmanExec uses podman to return image digest
+func DigestByPodmanExec(imgName string) string {
+	cmd := exec.Command("sudo", "-n", "podman", "image", "inspect", "--format", "{{.Id}}", imgName)
+	output, err := cmd.Output()
+	if err != nil {
+		klog.Infof("couldn't find image digest %s from local podman: %v ", imgName, err)
+		return ""
+	}
+	return strings.TrimSpace(string(output))
+}
+
 // DigestByGoLib gets image digest uses go-containerregistry lib
 // which is 4s slower thabn local daemon per lookup https://github.com/google/go-containerregistry/issues/627
 func DigestByGoLib(imgName string) string {
@@ -125,30 +137,76 @@ func ExistsImageInCache(img string) bool {
 }
 
 // ExistsImageInDaemon if img exist in local docker daemon
-func ExistsImageInDaemon(img string) bool {
+func ExistsImageInDaemon(binary, img string) bool {
 	// Check if image exists locally
-	klog.Infof("Checking for %s in local docker daemon", img)
-	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
-	if output, err := cmd.Output(); err == nil {
-		if strings.Contains(string(output), img) {
-			klog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return true
+	switch binary {
+	case driver.Podman:
+		klog.Infof("Checking for %s in local podman", img)
+		cmd := exec.Command("sudo", "-n", "podman", "images", "--format", `{{$repository := .Repository}}{{$tag := .Tag}}{{range .RepoDigests}}{{$repository}}:{{$tag}}@{{.}}{{printf "\n"}}{{end}}`)
+		if output, err := cmd.Output(); err == nil {
+			if strings.Contains(string(output), img) {
+				klog.Infof("Found %s in local podman, skipping pull", img)
+				return true
+			}
+		}
+	case driver.Docker:
+		klog.Infof("Checking for %s in local docker daemon", img)
+		cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
+		if output, err := cmd.Output(); err == nil {
+			if strings.Contains(string(output), img) {
+				klog.Infof("Found %s in local docker daemon, skipping pull", img)
+				return true
+			}
 		}
 	}
 	// Else, pull it
 	return false
 }
 
+// podmanWrite saves the image into podman as the given tag.
+func podmanWrite(ref name.Reference, img v1.Image, opts ...tarball.WriteOption) (string, error) {
+	pr, pw := io.Pipe()
+	go func() {
+		pw.CloseWithError(tarball.Write(ref, img, pw, opts...))
+	}()
+
+	// write the image in docker save format first, then load it
+	cmd := exec.Command("sudo", "podman", "image", "load")
+	cmd.Stdin = pr
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error loading image: %v", err)
+	}
+	// pull the image from the registry, to get the digest too
+	// podman: "Docker references with both a tag and digest are currently not supported"
+	cmd = exec.Command("sudo", "podman", "image", "pull", strings.Split(ref.Name(), "@")[0])
+	err = cmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("error pulling image: %v", err)
+	}
+	return string(output), nil
+}
+
 // LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
-// TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
 func LoadFromTarball(binary, img string) error {
 	p := filepath.Join(constants.ImageCacheDir, img)
 	p = localpath.SanitizeCacheDir(p)
 
 	switch binary {
 	case driver.Podman:
-		return fmt.Errorf("not yet implemented, see issue #8426")
-	default:
+		tag, err := name.NewTag(Tag(img))
+		if err != nil {
+			return errors.Wrap(err, "new tag")
+		}
+
+		i, err := tarball.ImageFromPath(p, &tag)
+		if err != nil {
+			return errors.Wrap(err, "tarball")
+		}
+
+		_, err = podmanWrite(tag, i)
+		return err
+	case driver.Docker:
 		tag, err := name.NewTag(Tag(img))
 		if err != nil {
 			return errors.Wrap(err, "new tag")
@@ -162,7 +220,7 @@ func LoadFromTarball(binary, img string) error {
 		_, err = daemon.Write(tag, i)
 		return err
 	}
-
+	return fmt.Errorf("unknown binary: %s", binary)
 }
 
 // Tag returns just the image with the tag
@@ -243,11 +301,16 @@ func WriteImageToCache(img string) error {
 }
 
 // WriteImageToDaemon write img to the local docker daemon
-func WriteImageToDaemon(img string) error {
+func WriteImageToDaemon(binary, img string) error {
 	// buffered channel
 	c := make(chan v1.Update, 200)
 
-	klog.Infof("Writing %s to local daemon", img)
+	switch binary {
+	case driver.Podman:
+		klog.Infof("Writing %s to local podman", img)
+	case driver.Docker:
+		klog.Infof("Writing %s to local daemon", img)
+	}
 	ref, err := name.ParseReference(img)
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
@@ -281,7 +344,14 @@ func WriteImageToDaemon(img string) error {
 	p.SetWidth(79)
 
 	go func() {
-		_, err = daemon.Write(ref, i, tarball.WithProgress(c))
+		switch binary {
+		case driver.Podman:
+			_, err = podmanWrite(ref, i, tarball.WithProgress(c))
+		case driver.Docker:
+			_, err = daemon.Write(ref, i, tarball.WithProgress(c))
+		default:
+			err = fmt.Errorf("unknown binary: %s", binary)
+		}
 		errchan <- err
 	}()
 	var update v1.Update
