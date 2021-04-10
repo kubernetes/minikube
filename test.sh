@@ -30,7 +30,7 @@ then
     then
         go mod tidy -v && git diff --quiet go.* && echo ok || (((exitcode += 2)) && echo ERROR: Please run go mod tidy)
         echo "= generate docs ========================================================="
-        make generate-docs > /dev/null 2>&1 && git diff --quiet site && echo ok || (((exitcode += 3)) && echo ERROR: Please run make generate docs)
+        make generate-docs > /dev/null 2>&1 && git diff --quiet site && echo ok || (((exitcode += 3)) && echo ERROR: Please run make generate-docs)
     else
         go mod tidy -v && echo ok || ((exitcode += 2))
     fi
