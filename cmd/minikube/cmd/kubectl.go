@@ -79,19 +79,19 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 				os.Exit(1)
 			}
 			return
-		} else {
-			supported := false
-			arch := detect.RuntimeArchitecture()
-			for _, a := range constants.SupportedArchitectures {
-				if arch == a {
-					supported = true
-					break
-				}
+		}
+
+		supported := false
+		arch := detect.RuntimeArchitecture()
+		for _, a := range constants.SupportedArchitectures {
+			if arch == a {
+				supported = true
+				break
 			}
-			if !supported {
-				fmt.Fprintf(os.Stderr, "Not supported on: %s\n", arch)
-				os.Exit(1)
-			}
+		}
+		if !supported {
+			fmt.Fprintf(os.Stderr, "Not supported on: %s\n", arch)
+			os.Exit(1)
 		}
 
 		if len(args) > 1 && args[0] != "--help" {
