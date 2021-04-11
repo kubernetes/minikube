@@ -24,13 +24,13 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.19-1617905290-11019"
+	Version = "v0.0.19"
 	// SHA of the kic base image
-	baseImageSHA = "f52f5c903f19f6ad4767954309d3127280dbf0b9255b840fe665c34d5bb3c1c6"
+	baseImageSHA = "4d7ca4cd5eda77ade1a15fb898d22ed0111d76106858d1cae25be9b110ec4b4a"
 	// The name of the GCR kicbase repository
-	gcrRepo = "gcr.io/k8s-minikube/kicbase-builds"
+	gcrRepo = "gcr.io/k8s-minikube/kicbase"
 	// The name of the Dockerhub kicbase repository
-	dockerhubRepo = "kicbase/build"
+	dockerhubRepo = "kicbase/stable"
 )
 
 var (
@@ -47,20 +47,21 @@ var (
 
 // Config is configuration for the kic driver used by registry
 type Config struct {
-	ClusterName       string            // The cluster the container belongs to
-	MachineName       string            // maps to the container name being created
-	CPU               int               // Number of CPU cores assigned to the container
-	Memory            int               // max memory in MB
-	StorePath         string            // libmachine store path
-	OCIBinary         string            // oci tool to use (docker, podman,...)
-	ImageDigest       string            // image name with sha to use for the node
-	Mounts            []oci.Mount       // mounts
-	APIServerPort     int               // Kubernetes api server port inside the container
-	PortMappings      []oci.PortMapping // container port mappings
-	Envs              map[string]string // key,value of environment variables passed to the node
-	KubernetesVersion string            // Kubernetes version to install
-	ContainerRuntime  string            // container runtime kic is running
-	Network           string            //  network to run with kic
-	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
-	ListenAddress     string            // IP Address to listen to
+	ClusterName         string            // The cluster the container belongs to
+	MachineName         string            // maps to the container name being created
+	CPU                 int               // Number of CPU cores assigned to the container
+	Memory              int               // max memory in MB
+	StorePath           string            // libmachine store path
+	OCIBinary           string            // oci tool to use (docker, podman,...)
+	ImageDigest         string            // image name with sha to use for the node
+	Mounts              []oci.Mount       // mounts
+	APIServerPort       int               // Kubernetes api server port inside the container
+	PortMappings        []oci.PortMapping // container port mappings
+	Envs                map[string]string // key,value of environment variables passed to the node
+	KubernetesVersion   string            // Kubernetes version to install
+	ContainerRuntime    string            // container runtime kic is running
+	Network             string            //  network to run with kic
+	ExtraArgs           []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
+	ListenAddress       string            // IP Address to listen to
+	ListenAPIServerPort int               // apiserver Port to listen to
 }
