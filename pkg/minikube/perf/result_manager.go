@@ -37,7 +37,7 @@ func newResultManager() *resultManager {
 func (rm *resultManager) addResult(binary *Binary, test string, r result) {
 	a, ok := rm.results[binary]
 	if !ok {
-		r := map[string][]*result{test: []*result{&r}}
+		r := map[string][]*result{test: {&r}}
 		rm.results[binary] = resultWrapper{r}
 		return
 	}
