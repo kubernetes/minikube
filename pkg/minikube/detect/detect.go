@@ -32,12 +32,12 @@ func RuntimeArchitecture() string {
 	if arch == "arm" {
 		// runtime.GOARM
 		if !cpu.ARM.HasVFP {
-			return "armv5"
+			return "arm/v5"
 		}
 		if !cpu.ARM.HasVFPv3 {
-			return "armv6"
+			return "arm/v6"
 		}
-		// "arm" (== "armv7")
+		// "arm" (== "arm/v7")
 	}
 	return arch
 }
