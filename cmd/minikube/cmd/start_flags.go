@@ -220,7 +220,7 @@ func initDriverFlags() {
 
 	// docker & podman
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
-	startCmd.Flags().Int(listenAPIServerPort, 0, "Port that apiserver exposed (docker and podman driver only). Use it with --listen-address=0.0.0.0(for remotely access) --apiserver-ips=HostIP(for certificate).")
+	startCmd.Flags().Int(listenAPIServerPort, 0, "Port that apiserver exposed (docker and podman driver only). Use it with --listen-address=0.0.0.0(for remote access) --apiserver-ips=HostIP(for certificate).")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
 }
 
