@@ -359,9 +359,25 @@ func AddHostAlias(c command.Runner, name string, ip net.IP) error {
 		return nil
 	}
 
-	script := fmt.Sprintf(`{ grep -v '\t%s$' /etc/hosts; echo "%s"; } > /tmp/h.$$; sudo cp /tmp/h.$$ /etc/hosts`, name, record)
-	if _, err := c.RunCmd(exec.Command("/bin/bash", "-c", script)); err != nil {
+	if _, err := c.RunCmd(addHostAliasCommand(name, ip, record, true, "/etc/hosts")); err != nil {
 		return errors.Wrap(err, "hosts update")
 	}
 	return nil
+}
+
+func addHostAliasCommand(name string, ip net.IP, record string, sudo bool, path string) *exec.Cmd {
+	sudoCmd := "sudo"
+	if !sudo { // for testing
+		sudoCmd = ""
+	}
+	// bug introduced in https://github.com/kubernetes/minikube/pull/7247/files#diff-b417251c2aba7198bb6b5fa1ec5894bd5d89288dddccf9ea9d9da249dadbfc8dR257
+	// missing $ before '\t%s$'; as it is \t matches nothing
+	script := fmt.Sprintf(
+		`{ grep -v $'\t%s$' "%s"; echo "%s"; } > /tmp/h.$$; %s cp /tmp/h.$$ "%s"`,
+		name,
+		path,
+		record,
+		sudoCmd,
+		path)
+	return exec.Command("/bin/bash", "-c", script)
 }
