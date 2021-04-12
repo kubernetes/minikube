@@ -187,8 +187,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	}
 	klog.Infof("%s (temp): %s --> %s (%d bytes)", k.ociBin, src, dst, f.GetLength())
 
-	isSnap := isSnapBinary()
-	tmpFolder, err := tempDirectory(isSnap)
+	tmpFolder, err := tempDirectory(isMinikubeSnap(), isDockerSnap())
 	if err != nil {
 		return errors.Wrap(err, "determining temp directory")
 	}
@@ -207,8 +206,8 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 
 // tempDirectory returns the directory to use as the temp directory
 // or an empty string if it should use the os default temp directory.
-func tempDirectory(isSnap bool) (string, error) {
-	if !isSnap {
+func tempDirectory(isMinikubeSnap bool, isDockerSnap bool) (string, error) {
+	if !isMinikubeSnap && !isDockerSnap {
 		return "", nil
 	}
 
@@ -222,14 +221,24 @@ func tempDirectory(isSnap bool) (string, error) {
 	return home, nil
 }
 
-// isSnapBinary returns true if the binary path includes "snap".
-func isSnapBinary() bool {
+// isMinikubeSnap returns true if the minikube binary path includes "snap".
+func isMinikubeSnap() bool {
 	ex, err := os.Executable()
 	if err != nil {
 		return false
 	}
 	exPath := filepath.Dir(ex)
 	return strings.Contains(exPath, "snap")
+}
+
+// isDockerSnap returns true if Docker binary path includes "snap".
+func isDockerSnap() bool {
+	c := exec.Command("which", "docker")
+	o, err := c.Output()
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(o), "snap")
 }
 
 func (k *kicRunner) copy(src string, dst string) error {
