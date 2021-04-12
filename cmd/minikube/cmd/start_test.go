@@ -97,32 +97,32 @@ func TestMirrorCountry(t *testing.T) {
 		cfg             *cfg.ClusterConfig
 	}{
 		{
-			description:     "image-repository none, image-mirror-country none",
+			description:     "repository-none_mirror-none",
 			imageRepository: "",
 			mirrorCountry:   "",
 		},
 		{
-			description:     "image-repository none, image-mirror-country china",
+			description:     "repository-none_mirror-cn",
 			imageRepository: "",
 			mirrorCountry:   "cn",
 		},
 		{
-			description:     "image-repository auto, image-mirror-country none",
+			description:     "repository-auto_mirror-none",
 			imageRepository: "auto",
 			mirrorCountry:   "",
 		},
 		{
-			description:     "image-repository auto, image-mirror-country china",
+			description:     "repository-auto_mirror-cn",
 			imageRepository: "auto",
 			mirrorCountry:   "cn",
 		},
 		{
-			description:     "image-repository registry.test.com, image-mirror-country none",
+			description:     "repository-registry.test.com_mirror-none",
 			imageRepository: "registry.test.com",
 			mirrorCountry:   "",
 		},
 		{
-			description:     "image-repository registry.test.com, image-mirror-country china",
+			description:     "repository-registry.test.com_mirror-cn",
 			imageRepository: "registry.test.com",
 			mirrorCountry:   "cn",
 		},
@@ -134,7 +134,7 @@ func TestMirrorCountry(t *testing.T) {
 			viper.SetDefault(imageRepository, test.imageRepository)
 			viper.SetDefault(imageMirrorCountry, test.mirrorCountry)
 			viper.SetDefault(kvmNUMACount, 1)
-			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, driver.Mock)
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}

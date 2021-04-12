@@ -782,7 +782,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	}, st.Error.Error())
 }
 
-func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string, error) {
+func selectImageRepository(mirrorCountry string, v semver.Version, drvName string) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	klog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -823,6 +823,10 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 	for _, code := range tryCountries {
 		localRepos := constants.ImageRepositories[code]
 		for _, repo := range localRepos {
+			// Avoid network calls for tests
+			if drvName == driver.Mock {
+				return true, repo, nil
+			}
 			err := checkRepository(repo)
 			if err == nil {
 				return true, repo, nil
