@@ -47,20 +47,21 @@ var (
 
 // Config is configuration for the kic driver used by registry
 type Config struct {
-	ClusterName       string            // The cluster the container belongs to
-	MachineName       string            // maps to the container name being created
-	CPU               int               // Number of CPU cores assigned to the container
-	Memory            int               // max memory in MB
-	StorePath         string            // libmachine store path
-	OCIBinary         string            // oci tool to use (docker, podman,...)
-	ImageDigest       string            // image name with sha to use for the node
-	Mounts            []oci.Mount       // mounts
-	APIServerPort     int               // Kubernetes api server port inside the container
-	PortMappings      []oci.PortMapping // container port mappings
-	Envs              map[string]string // key,value of environment variables passed to the node
-	KubernetesVersion string            // Kubernetes version to install
-	ContainerRuntime  string            // container runtime kic is running
-	Network           string            //  network to run with kic
-	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
-	ListenAddress     string            // IP Address to listen to
+	ClusterName         string            // The cluster the container belongs to
+	MachineName         string            // maps to the container name being created
+	CPU                 int               // Number of CPU cores assigned to the container
+	Memory              int               // max memory in MB
+	StorePath           string            // libmachine store path
+	OCIBinary           string            // oci tool to use (docker, podman,...)
+	ImageDigest         string            // image name with sha to use for the node
+	Mounts              []oci.Mount       // mounts
+	APIServerPort       int               // Kubernetes api server port inside the container
+	PortMappings        []oci.PortMapping // container port mappings
+	Envs                map[string]string // key,value of environment variables passed to the node
+	KubernetesVersion   string            // Kubernetes version to install
+	ContainerRuntime    string            // container runtime kic is running
+	Network             string            //  network to run with kic
+	ExtraArgs           []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
+	ListenAddress       string            // IP Address to listen to
+	ListenAPIServerPort int               // apiserver Port to listen to
 }
