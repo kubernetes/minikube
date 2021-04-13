@@ -1,6 +1,6 @@
 ---
-title: "minikube vs kind"
-linkTitle: "minikube vs kind"
+title: "minikube vs kind Benchmarks"
+linkTitle: "minikube vs kind Benchmarks"
 weight: 1
 ---
 
