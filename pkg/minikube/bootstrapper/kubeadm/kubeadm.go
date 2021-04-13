@@ -351,7 +351,8 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 		return errors.Wrap(err, "cni apply")
 	}
 
-	if cfg.KubernetesConfig.ContainerRuntime == constants.CRIO {
+	_, custom := cnm.(cni.Custom)
+	if cfg.KubernetesConfig.ContainerRuntime == constants.CRIO && !custom {
 		if err := cruntime.UpdateCRIONet(k.c, cnm.CIDR()); err != nil {
 			return errors.Wrap(err, "update crio")
 		}
