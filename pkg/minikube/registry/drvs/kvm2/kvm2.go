@@ -72,8 +72,8 @@ type kvmDriver struct {
 	NUMANodeCount  int
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	name := config.MachineName(cc, n)
+func configure(cc *config.ClusterConfig, n config.Node) (interface{}, error) {
+	name := config.MachineName(*cc, n)
 	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
@@ -96,7 +96,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 // if network is not user-defined it defaults to "mk-<cluster_name>"
-func privateNetwork(cc config.ClusterConfig) string {
+func privateNetwork(cc *config.ClusterConfig) string {
 	if cc.Network == "" {
 		return fmt.Sprintf("mk-%s", cc.KubernetesConfig.ClusterName)
 	}
