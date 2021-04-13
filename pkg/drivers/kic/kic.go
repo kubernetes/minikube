@@ -98,7 +98,11 @@ func (d *Driver) Create() error {
 		params.Network = networkName
 		ip := gateway.To4()
 		// calculate the container IP based on guessing the machine index
-		ip[3] += byte(driver.IndexFromMachineName(d.NodeConfig.MachineName))
+		index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
+		if int(ip[3])+index > 255 {
+			return fmt.Errorf("too many machines to calculate an IP")
+		}
+		ip[3] += byte(index)
 		klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
 		params.IP = ip.String()
 	}
