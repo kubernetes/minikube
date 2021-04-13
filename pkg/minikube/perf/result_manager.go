@@ -73,7 +73,7 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 	}
 	table[0][0] = "minikube start"
 	table[1][0] = "enable ingress"
-	var totalTimes map[string]map[string][]float64
+	totalTimes := make(map[string]map[string][]float64)
 	for i, b := range binaries {
 		for t := range rm.results[b].results {
 			index := 0
