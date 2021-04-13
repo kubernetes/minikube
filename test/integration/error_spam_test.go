@@ -59,7 +59,6 @@ func TestErrorSpam(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver always shows a warning")
 	}
-	MaybeParallel(t)
 
 	profile := UniqueProfileName("nospam")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(25))
