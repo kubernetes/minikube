@@ -21,11 +21,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"runtime/debug"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -43,8 +44,8 @@ var (
 	containerRuntimes   = []string{"docker", "containerd", "cri-o"}
 	k8sVersions         []string
 	k8sVersion          = flag.String("kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
-	noUpload			= flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
-	force				= flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
+	noUpload            = flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
+	force               = flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
 )
 
 func main() {
