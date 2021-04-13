@@ -52,8 +52,8 @@ func init() {
 	}
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := virtualbox.NewDriver(config.MachineName(cc, n), localpath.MiniPath())
+func configure(cc *config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := virtualbox.NewDriver(config.MachineName(*cc, n), localpath.MiniPath())
 	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
 	d.Memory = cc.Memory
 	d.CPU = cc.CPUs

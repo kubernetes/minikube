@@ -53,7 +53,7 @@ func init() {
 	}
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc *config.ClusterConfig, n config.Node) (interface{}, error) {
 	mounts := make([]oci.Mount, len(cc.ContainerVolumeMounts))
 	for i, spec := range cc.ContainerVolumeMounts {
 		var err error
@@ -71,7 +71,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	return kic.NewDriver(kic.Config{
 		ClusterName:       cc.Name,
-		MachineName:       config.MachineName(cc, n),
+		MachineName:       config.MachineName(*cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       cc.KicBaseImage,
 		Mounts:            mounts,

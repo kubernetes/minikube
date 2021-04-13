@@ -59,7 +59,7 @@ func init() {
 	}
 }
 
-func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cfg *config.ClusterConfig, n config.Node) (interface{}, error) {
 	u := cfg.UUID
 	if u == "" {
 		u = uuid.NewUUID().String()
@@ -67,7 +67,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: config.MachineName(cfg, n),
+			MachineName: config.MachineName(*cfg, n),
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},

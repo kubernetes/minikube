@@ -137,7 +137,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.Driver)
 	}
-	dd, err := def.Config(*cfg, *n)
+	dd, err := def.Config(cfg, *n)
 	if err != nil {
 		return nil, errors.Wrap(err, "config")
 	}
