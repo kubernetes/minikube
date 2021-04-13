@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -35,6 +34,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 // kicRunner runs commands inside a container
@@ -187,7 +187,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	}
 	klog.Infof("%s (temp): %s --> %s (%d bytes)", k.ociBin, src, dst, f.GetLength())
 
-	tmpFolder, err := tempDirectory(isMinikubeSnap(), isDockerSnap())
+	tmpFolder, err := tempDirectory(detect.MinikubeInstalledViaSnap(), detect.DockerInstalledViaSnap())
 	if err != nil {
 		return errors.Wrap(err, "determining temp directory")
 	}
@@ -219,26 +219,6 @@ func tempDirectory(isMinikubeSnap bool, isDockerSnap bool) (string, error) {
 		return "", errors.Wrap(err, "detecting home dir")
 	}
 	return home, nil
-}
-
-// isMinikubeSnap returns true if the minikube binary path includes "snap".
-func isMinikubeSnap() bool {
-	ex, err := os.Executable()
-	if err != nil {
-		return false
-	}
-	exPath := filepath.Dir(ex)
-	return strings.Contains(exPath, "snap")
-}
-
-// isDockerSnap returns true if Docker binary path includes "snap".
-func isDockerSnap() bool {
-	c := exec.Command("which", "docker")
-	o, err := c.Output()
-	if err != nil {
-		return false
-	}
-	return strings.Contains(string(o), "snap")
 }
 
 func (k *kicRunner) copy(src string, dst string) error {
