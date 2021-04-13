@@ -66,7 +66,7 @@ func collectResults(ctx context.Context, binaries []*Binary, driver string) (*re
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
 			rm.addResult(binary, "start", *r)
-			if runtime.GOOS != "darwin" {
+			if !skipIngress(driver) {
 				r, err = timeEnableIngress(ctx, binary)
 				if err != nil {
 					return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
@@ -127,4 +127,8 @@ func timeEnableIngress(ctx context.Context, binary *Binary) (*result, error) {
 		return nil, errors.Wrapf(err, "timing cmd: %v", enableCmd.Args)
 	}
 	return r, nil
+}
+
+func skipIngress(driver string) bool {
+	return runtime.GOOS == "darwin" && driver == "docker"
 }
