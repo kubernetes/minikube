@@ -67,20 +67,34 @@ func (rm *resultManager) totalTimes(binary *Binary, t string) []float64 {
 
 func (rm *resultManager) summarizeResults(binaries []*Binary) {
 	// print total and average times
-	for _, b := range binaries {
+	table := make([][]string, 2)
+	for i := range table {
+		table[i] = make([]string, len(binaries)+1)
+	}
+	table[0][0] = "minikube start"
+	table[1][0] = "enable ingress"
+	for i, b := range binaries {
 		for t := range rm.results[b].results {
-			fmt.Printf("Times for %s %s: ", b.Name(), t)
-			totalTimes := rm.totalTimes(b, t)
-			for _, tt := range totalTimes {
-				fmt.Printf("%.1fs ", tt)
+			//fmt.Printf("Times for %s %s: ", b.Name(), t)
+			index := 0
+			if t == "ingress" {
+				index = 1
 			}
-			fmt.Println()
-			fmt.Printf("Average time for %s %s: %.1fs\n\n", b.Name(), t, average(totalTimes))
+			totalTimes := rm.totalTimes(b, t)
+			table[index][i+1] = fmt.Sprintf("%.1fs", average(totalTimes))
+			//fmt.Printf("Average time for %s %s: %.1fs\n\n", b.Name(), t, average(totalTimes))
 		}
 	}
 
+	t := tablewriter.NewWriter(os.Stdout)
+	t.SetHeader([]string{"Command", binaries[0].Name(), binaries[1].Name()})
+	for _, v := range table {
+		t.Append(v)
+	}
+	t.Render()
+
 	// print out summary per log
-	rm.summarizeTimesPerLog(binaries)
+	//rm.summarizeTimesPerLog(binaries)
 }
 
 func (rm *resultManager) summarizeTimesPerLog(binaries []*Binary) {

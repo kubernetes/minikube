@@ -30,7 +30,7 @@ import (
 
 const (
 	// runs is the number of times each binary will be timed for 'minikube start'
-	runs = 5
+	runs = 2
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
