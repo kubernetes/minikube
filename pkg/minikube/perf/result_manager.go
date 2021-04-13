@@ -92,7 +92,9 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 	for _, v := range table {
 		t.Append(v)
 	}
+	fmt.Println("```")
 	t.Render()
+	fmt.Println("```")
 	fmt.Println()
 
 	fmt.Println("<details>")
