@@ -25,7 +25,7 @@ import (
 )
 
 // RecentK8sVersions returns the most recent k8s version, usually around 30
-func RecentK8sVersions() ([]string, error) {
+func recentK8sVersions() ([]string, error) {
 	client := github.NewClient(nil)
 	k8s := "kubernetes"
 	list, _, err := client.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{})

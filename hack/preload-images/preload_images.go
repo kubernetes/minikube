@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"runtime/debug"
@@ -40,61 +41,78 @@ var (
 	dockerStorageDriver = "overlay2"
 	podmanStorageDriver = "overlay"
 	containerRuntimes   = []string{"docker", "containerd", "cri-o"}
-	k8sVersion          string
 	k8sVersions         []string
+	k8sVersion          = flag.String("kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
+	noUpload			= flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
+	force				= flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
 )
 
-func init() {
-	flag.StringVar(&k8sVersion, "kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
-	flag.Parse()
-	if k8sVersion != "" {
-		k8sVersions = append(k8sVersions, k8sVersion)
-	}
-	viper.Set("preload", "true")
-}
-
 func main() {
-	defer func() {
-		if err := deleteMinikube(); err != nil {
-			fmt.Printf("error cleaning up minikube: %v \n", err)
-		}
-	}()
+	flag.Parse()
+	viper.Set("preload", "true")
+
+	if *k8sVersion != "" {
+		k8sVersions = []string{*k8sVersion}
+	}
 
 	if err := deleteMinikube(); err != nil {
 		fmt.Printf("error cleaning up minikube at start up: %v \n", err)
 	}
 
-	if k8sVersions == nil {
-		var err error
-		k8sVersions, err = RecentK8sVersions()
-		if err != nil {
-			exit("Unable to get recent k8s versions: %v\n", err)
-		}
+	k8sVersions, err := collectK8sVers()
+	if err != nil {
+		exit("Unable to get recent k8s versions: %v\n", err)
 	}
-
-	k8sVersions = append(k8sVersions, constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion, constants.OldestKubernetesVersion)
 
 	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
-			tf := download.TarballName(kv, cr)
-			if download.PreloadExists(kv, cr) {
-				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
-				continue
+			if err := process(kv, cr); err != nil {
+				exit(err.Error(), err)
 			}
-			fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
-			if err := generateTarball(kv, cr, tf); err != nil {
-				exit(fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
-			}
-			if err := uploadTarball(tf); err != nil {
-				exit(fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
-			}
-
-			if err := deleteMinikube(); err != nil {
-				fmt.Printf("error cleaning up minikube before finishing up: %v\n", err)
-			}
-
 		}
 	}
+}
+
+func collectK8sVers() ([]string, error) {
+	if k8sVersions == nil {
+		recent, err := recentK8sVersions()
+		if err != nil {
+			return nil, err
+		}
+		k8sVersions = recent
+	}
+	return append(k8sVersions,
+		constants.DefaultKubernetesVersion,
+		constants.NewestKubernetesVersion,
+		constants.OldestKubernetesVersion), nil
+}
+
+func process(kv, cr string) error {
+
+	defer func() {
+		if err := deleteMinikube(); err != nil {
+			fmt.Printf("error cleaning up minikube before finishing up: %v\n", err)
+		}
+	}()
+
+	if !*force && download.PreloadExists(kv, cr) {
+		fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
+		return nil
+	}
+	fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
+	tf := download.TarballName(kv, cr)
+	if err := generateTarball(kv, cr, tf); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr))
+	}
+
+	if *noUpload {
+		fmt.Printf("skip upload of %q\n", tf)
+		return nil
+	}
+	if err := uploadTarball(tf); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr))
+	}
+	return nil
 }
 
 func verifyDockerStorage() error {
