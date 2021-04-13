@@ -19,7 +19,6 @@ package perf
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -74,6 +73,10 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 	table[0][0] = "minikube start"
 	table[1][0] = "enable ingress"
 	totalTimes := make(map[string]map[string][]float64)
+	for i := range rm.results[binaries[0]].results {
+		totalTimes[i] = make(map[string][]float64)
+	}
+
 	for i, b := range binaries {
 		for t := range rm.results[b].results {
 			index := 0
@@ -90,89 +93,19 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 		t.Append(v)
 	}
 	t.Render()
+	fmt.Println()
 
 	fmt.Println("<details>")
 	fmt.Println()
-	for timing, times := range totalTimes {
-		for b, t := range times {
-			fmt.Printf("Times for %s %s: ", b, timing)
-			for _, tt := range t {
+	for t, times := range totalTimes {
+		for b, f := range times {
+			fmt.Printf("Times for %s %s: ", b, t)
+			for _, tt := range f {
 				fmt.Printf("%.1fs ", tt)
 			}
 			fmt.Println()
 		}
+		fmt.Println()
 	}
-	fmt.Println()
 	fmt.Println("</details>")
-
-	// print out summary per log
-	//rm.summarizeTimesPerLog(binaries)
-}
-
-func (rm *resultManager) summarizeTimesPerLog(binaries []*Binary) {
-	results := rm.results[binaries[0]]
-	logs := results.results["start"][0].logs
-
-	table := make([][]string, len(logs))
-	for i := range table {
-		table[i] = make([]string, len(binaries)+1)
-	}
-
-	for i, l := range logs {
-		table[i][0] = l
-	}
-
-	for i, b := range binaries {
-		results := rm.results[b]
-		averageTimeForLog := averageTimePerLog(results.results["start"])
-		for log, time := range averageTimeForLog {
-			index := indexForLog(logs, log)
-			if index == -1 {
-				continue
-			}
-			table[index][i+1] = fmt.Sprintf("%.1fs", time)
-		}
-	}
-
-	t := tablewriter.NewWriter(os.Stdout)
-	t.SetHeader([]string{"Log", binaries[0].Name(), binaries[1].Name()})
-
-	for _, v := range table {
-		t.Append(v)
-	}
-	fmt.Println("Averages Time Per Log")
-	fmt.Println("<details>")
-	fmt.Println()
-	fmt.Println("```")
-	t.Render() // Send output
-	fmt.Println("```")
-	fmt.Println()
-	fmt.Println("</details>")
-}
-
-func indexForLog(logs []string, log string) int {
-	for i, l := range logs {
-		if strings.Contains(log, l) {
-			return i
-		}
-	}
-	return -1
-}
-
-func averageTimePerLog(results []*result) map[string]float64 {
-	collection := map[string][]float64{}
-	for _, r := range results {
-		for log, time := range r.timedLogs {
-			if _, ok := collection[log]; !ok {
-				collection[log] = []float64{time}
-			} else {
-				collection[log] = append(collection[log], time)
-			}
-		}
-	}
-	avgs := map[string]float64{}
-	for log, times := range collection {
-		avgs[log] = average(times)
-	}
-	return avgs
 }
