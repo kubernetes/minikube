@@ -136,6 +136,7 @@ SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 SOURCE_GENERATED = pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
+GOTEST_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep _test.go)
 
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
@@ -365,6 +366,15 @@ generate-docs: out/minikube ## Automatically generate commands documentation.
 gotest: $(SOURCE_GENERATED) ## Trigger minikube test
 	$(if $(quiet),@echo "  TEST     $@")
 	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
+
+test-report.json: $(SOURCE_FILES) $(GOTEST_FILES)
+	$(if $(quiet),@echo "  TEST     $@")
+	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -json $(MINIKUBE_TEST_FILES) -coverprofile=coverage.out > test-report.json
+
+coverage.out: test-report.json
+coverage.html: coverage.out
+	$(if $(quiet),@echo "  COVER    $@")
+	$(Q)go tool cover -html=$< -o $@
 
 .PHONY: extract
 extract: ## Compile extract tool
