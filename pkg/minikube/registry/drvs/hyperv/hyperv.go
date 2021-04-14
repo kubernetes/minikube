@@ -90,7 +90,7 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent`)
+	cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent`)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -107,7 +107,7 @@ func status() registry.State {
 	}
 
 	// Ensure user is either a Windows Administrator or a Hyper-V Administrator.
-	adminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')`)
+	adminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')`)
 	adminCheckOut, adminCheckErr := adminCheckCmd.CombinedOutput()
 
 	if adminCheckErr != nil {
@@ -116,7 +116,7 @@ func status() registry.State {
 		return registry.State{Installed: true, Running: false, Error: errorMessage, Fix: fixMessage}
 	}
 
-	hypervAdminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(([System.Security.Principal.SecurityIdentifier]::new("S-1-5-32-578")))`)
+	hypervAdminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(([System.Security.Principal.SecurityIdentifier]::new("S-1-5-32-578")))`)
 	hypervAdminCheckOut, hypervAdminCheckErr := hypervAdminCheckCmd.CombinedOutput()
 
 	if hypervAdminCheckErr != nil {
