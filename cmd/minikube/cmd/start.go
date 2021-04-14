@@ -782,7 +782,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	}, st.Error.Error())
 }
 
-func selectImageRepository(mirrorCountry string, v semver.Version, drvName string) (bool, string, error) {
+func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	klog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -809,25 +809,10 @@ func selectImageRepository(mirrorCountry string, v semver.Version, drvName strin
 		}
 	}
 
-	checkRepository := func(repo string) error {
-		pauseImage := images.Pause(v, repo)
-		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
-		if err != nil {
-			return err
-		}
-
-		_, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
-		return err
-	}
-
 	for _, code := range tryCountries {
 		localRepos := constants.ImageRepositories[code]
 		for _, repo := range localRepos {
-			// Avoid network calls for tests
-			if drvName == driver.Mock {
-				return true, repo, nil
-			}
-			err := checkRepository(repo)
+			err := checkRepository(v, repo)
 			if err == nil {
 				return true, repo, nil
 			}
@@ -835,6 +820,17 @@ func selectImageRepository(mirrorCountry string, v semver.Version, drvName strin
 	}
 
 	return false, fallback, nil
+}
+
+var checkRepository = func(v semver.Version, repo string) error {
+	pauseImage := images.Pause(v, repo)
+	ref, err := name.ParseReference(pauseImage, name.WeakValidation)
+	if err != nil {
+		return err
+	}
+
+	_, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	return err
 }
 
 // validateUser validates minikube is run by the recommended user (privileged or regular)

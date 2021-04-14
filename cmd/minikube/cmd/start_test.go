@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -84,10 +85,14 @@ func TestGetKubernetesVersion(t *testing.T) {
 	}
 }
 
+var checkRepoMock = func(v semver.Version, repo string) error {
+	return nil
+}
+
 func TestMirrorCountry(t *testing.T) {
 	// Set default disk size value in lieu of flag init
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
-
+	checkRepository = checkRepoMock
 	k8sVersion := constants.DefaultKubernetesVersion
 	var tests = []struct {
 		description     string
