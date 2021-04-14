@@ -90,7 +90,7 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `"@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent"`)
+	cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent`)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
