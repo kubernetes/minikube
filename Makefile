@@ -367,12 +367,14 @@ gotest: $(SOURCE_GENERATED) ## Trigger minikube test
 	$(if $(quiet),@echo "  TEST     $@")
 	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
 
+# Run the gotest, while recording JSON report and coverage
 out/test-report.json: $(SOURCE_FILES) $(GOTEST_FILES)
 	$(if $(quiet),@echo "  TEST     $@")
 	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES) \
-	-json -coverprofile=out/coverage.out > out/test-report.json
-
+	-coverprofile=out/coverage.out -json > out/test-report.json
 out/coverage.out: out/test-report.json
+
+# Generate go coverage report (from gotest) as a HTML page
 coverage.html: out/coverage.out
 	$(if $(quiet),@echo "  COVER    $@")
 	$(Q)go tool cover -html=$< -o $@
