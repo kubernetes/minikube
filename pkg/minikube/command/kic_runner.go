@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -35,6 +34,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 // kicRunner runs commands inside a container
@@ -187,8 +187,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	}
 	klog.Infof("%s (temp): %s --> %s (%d bytes)", k.ociBin, src, dst, f.GetLength())
 
-	isSnap := isSnapBinary()
-	tmpFolder, err := tempDirectory(isSnap)
+	tmpFolder, err := tempDirectory(detect.MinikubeInstalledViaSnap(), detect.DockerInstalledViaSnap())
 	if err != nil {
 		return errors.Wrap(err, "determining temp directory")
 	}
@@ -207,8 +206,8 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 
 // tempDirectory returns the directory to use as the temp directory
 // or an empty string if it should use the os default temp directory.
-func tempDirectory(isSnap bool) (string, error) {
-	if !isSnap {
+func tempDirectory(isMinikubeSnap bool, isDockerSnap bool) (string, error) {
+	if !isMinikubeSnap && !isDockerSnap {
 		return "", nil
 	}
 
@@ -220,16 +219,6 @@ func tempDirectory(isSnap bool) (string, error) {
 		return "", errors.Wrap(err, "detecting home dir")
 	}
 	return home, nil
-}
-
-// isSnapBinary returns true if the binary path includes "snap".
-func isSnapBinary() bool {
-	ex, err := os.Executable()
-	if err != nil {
-		return false
-	}
-	exPath := filepath.Dir(ex)
-	return strings.Contains(exPath, "snap")
 }
 
 func (k *kicRunner) copy(src string, dst string) error {
