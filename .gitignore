@@ -21,9 +21,7 @@ _cgo_gotypes.go
 _cgo_export.*
 
 _testmain.go
-test-report.json
 
-coverage.out
 coverage.html
 
 *.exe
