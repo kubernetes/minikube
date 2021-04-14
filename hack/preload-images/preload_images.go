@@ -54,7 +54,7 @@ type preloadCfg struct {
 }
 
 func (p preloadCfg) String() string {
-	return fmt.Sprintf("[k8s:%q, runtime: %q", p.k8sVer, p.runtime)
+	return fmt.Sprintf("%q/%q", p.runtime, p.k8sVer)
 }
 
 func main() {
