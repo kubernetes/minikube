@@ -48,6 +48,15 @@ var (
 	force               = flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
 )
 
+type preloadCfg struct {
+	k8sVer  string
+	runtime string
+}
+
+func (p preloadCfg) String() string {
+	return fmt.Sprintf("[k8s:%q, runtime: %q", p.k8sVer, p.runtime)
+}
+
 func main() {
 	flag.Parse()
 	viper.Set("preload", "true")
@@ -64,12 +73,24 @@ func main() {
 	if err != nil {
 		exit("Unable to get recent k8s versions: %v\n", err)
 	}
+	var toGenerate []preloadCfg
 
 	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
-			if err := process(kv, cr); err != nil {
-				exit(err.Error(), err)
+			if *force || !download.PreloadExists(kv, cr) {
+				toGenerate = append(toGenerate, preloadCfg{kv, cr})
+				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
+			} else {
+				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
 			}
+		}
+	}
+
+	fmt.Printf("Going to generate preloads for %v\n", toGenerate)
+
+	for _, cfg := range toGenerate {
+		if err := process(cfg); err != nil {
+			exit(err.Error(), err)
 		}
 	}
 }
@@ -88,7 +109,11 @@ func collectK8sVers() ([]string, error) {
 		constants.OldestKubernetesVersion), nil
 }
 
-func process(kv, cr string) error {
+func process(cfg preloadCfg) error {
+	kv, cr := cfg.k8sVer, cfg.runtime
+
+	fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
+	tf := download.TarballName(kv, cr)
 
 	defer func() {
 		if err := deleteMinikube(); err != nil {
@@ -96,12 +121,6 @@ func process(kv, cr string) error {
 		}
 	}()
 
-	if !*force && download.PreloadExists(kv, cr) {
-		fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
-		return nil
-	}
-	fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
-	tf := download.TarballName(kv, cr)
 	if err := generateTarball(kv, cr, tf); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr))
 	}
