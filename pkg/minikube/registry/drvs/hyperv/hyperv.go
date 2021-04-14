@@ -107,7 +107,7 @@ func status() registry.State {
 	}
 
 	// Ensure user is either a Windows Administrator or a Hyper-V Administrator.
-	adminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
+	adminCheckCmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", `@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')`)
 	adminCheckOut, adminCheckErr := adminCheckCmd.CombinedOutput()
 
 	if adminCheckErr != nil {
