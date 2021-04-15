@@ -20,6 +20,7 @@ package kverify
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	core "k8s.io/api/core/v1"
@@ -63,7 +64,12 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 			}
 			if match || pod.Spec.PriorityClassName == "system-cluster-critical" || pod.Spec.PriorityClassName == "system-node-critical" {
 				if err := waitPodCondition(cs, pod.Name, pod.Namespace, core.PodReady, timeout); err != nil {
-					klog.Errorf("WaitExtra: %v", err)
+					// ignore terminated pods
+					// eg, error: "waitPodCondition: error getting pod "coredns-74ff55c5b-57fhw" in "kube-system" namespace: pods "coredns-74ff55c5b-57fhw" not found"
+					if !strings.HasSuffix(err.Error(), "not found") {
+						klog.Errorf("WaitExtra: %v", err)
+					}
+					continue
 				}
 				break
 			}
