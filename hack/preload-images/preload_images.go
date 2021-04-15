@@ -46,6 +46,7 @@ var (
 	k8sVersion          = flag.String("kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
 	noUpload            = flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
 	force               = flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
+	limit               = flag.Int("limit", 0, "Limit the number of tarballs to generate")
 )
 
 type preloadCfg struct {
@@ -73,10 +74,17 @@ func main() {
 	if err != nil {
 		exit("Unable to get recent k8s versions: %v\n", err)
 	}
-	var toGenerate []preloadCfg
 
+	var toGenerate []preloadCfg
+	var i int
+
+	out:
 	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
+			if *limit > 0 && i >= *limit {
+				break out
+			}
+			i++
 			if *force || !download.PreloadExists(kv, cr) {
 				toGenerate = append(toGenerate, preloadCfg{kv, cr})
 				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
