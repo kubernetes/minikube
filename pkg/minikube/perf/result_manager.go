@@ -19,6 +19,7 @@ package perf
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -90,6 +91,15 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 	t := tablewriter.NewWriter(os.Stdout)
 	t.SetHeader([]string{"Command", binaries[0].Name(), binaries[1].Name()})
 	for _, v := range table {
+		// Add warning sign if PR average is 5 seconds higher than average at HEAD
+		if len(v) > 2 {
+			prTime, _ := strconv.ParseFloat(v[2][:len(v[2])-1], 64)
+			headTime, _ := strconv.ParseFloat(v[1][:len(v[1])-1], 64)
+			if prTime-headTime > threshold {
+				v[0] = fmt.Sprintf("⚠️  %s", v[0])
+				v[2] = fmt.Sprintf("%s ⚠️", v[2])
+			}
+		}
 		t.Append(v)
 	}
 	fmt.Println("```")
