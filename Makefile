@@ -693,7 +693,7 @@ upload-preloaded-images-tar: out/minikube out/upload-preload # Upload the preloa
 
 .PHONY: generate-preloaded-images-tar
 generate-preloaded-images-tar: out/minikube out/upload-preload # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
-	./out/upload-preload --no-upload --force --limit 5
+	./out/upload-preload --no-upload --limit 16
 
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 IMAGE = $(REGISTRY)/storage-provisioner
