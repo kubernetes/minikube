@@ -64,24 +64,36 @@ func testDocs(docPath string) error {
 				}
 
 				if strings.HasPrefix(fnName, "valid") {
-					writeSubTest(fnName, buf)
+					e := writeSubTest(fnName, buf)
+					if e != nil {
+						return false
+					}
 				} else {
-					writeTest(fnName, buf)
+					e := writeTest(fnName, buf)
+					if e != nil {
+						return false
+					}
 				}
 
 				counter++
 				comments := fd.Doc
 				if comments == nil {
-					writeComment("NEEDS DOC\n", buf)
-					return true
+					e := writeComment("NEEDS DOC\n", buf)
+					return e == nil
 				}
 				for _, comment := range comments.List {
 					if strings.Contains(comment.Text, "TODO") {
 						continue
 					}
-					writeComment(comment.Text, buf)
+					e := writeComment(comment.Text, buf)
+					if e != nil {
+						return false
+					}
 				}
-				buf.WriteString("\n")
+				_, e := buf.WriteString("\n")
+				if e != nil {
+					return false
+				}
 			}
 			return true
 		})
