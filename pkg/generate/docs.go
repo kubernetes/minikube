@@ -19,14 +19,10 @@ package generate
 import (
 	"bytes"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -36,8 +32,8 @@ import (
 )
 
 // Docs generates docs for minikube command
-func Docs(root *cobra.Command, path string) error {
-	/*cmds := root.Commands()
+func Docs(root *cobra.Command, path string, testPath string) error {
+	cmds := root.Commands()
 	for _, c := range cmds {
 		if c.Hidden {
 			klog.Infof("Skipping generating doc for %s as it's a hidden command", c.Name())
@@ -50,8 +46,8 @@ func Docs(root *cobra.Command, path string) error {
 		if err := saveDocForCommand(c, []byte(contents), path); err != nil {
 			return errors.Wrapf(err, "saving doc for %s", c.Name())
 		}
-	}*/
-	return tests()
+	}
+	return testDocs(testPath)
 }
 
 // DocForCommand returns the specific doc for that command
@@ -166,74 +162,4 @@ func saveDocForCommand(command *cobra.Command, contents []byte, path string) err
 		klog.Warningf("error removing %s", fp)
 	}
 	return ioutil.WriteFile(fp, contents, 0o644)
-}
-
-func tests() error {
-	counter := 0
-	err := filepath.Walk("test/integration", func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() || !strings.HasSuffix(path, ".go") {
-			return nil
-		}
-		fset := token.NewFileSet()
-		r, e := ioutil.ReadFile(path)
-		if e != nil {
-			return errors.Wrap(e, fmt.Sprintf("error reading file %s", path))
-		}
-		file, e := parser.ParseFile(fset, "", r, parser.ParseComments)
-		if e != nil {
-			return errors.Wrap(e, fmt.Sprintf("error parsing file %s", path))
-		}
-
-		ast.Inspect(file, func(x ast.Node) bool {
-			if fd, ok := x.(*ast.FuncDecl); ok {
-				fnName := fd.Name.Name
-				if !shouldParse(fnName) {
-					return true
-				}
-				subtest := false
-				if strings.HasPrefix(fnName, "valid") {
-					subtest = true
-					fnName = fmt.Sprintf("\t%s", fnName)
-				}
-				fmt.Println(fnName)
-				counter++
-				comments := fd.Doc
-				if comments == nil {
-					if subtest {
-						fmt.Print("\t")
-					}
-					fmt.Println("NEEDS DOC")
-					fmt.Println("")
-					return true
-				}
-				for _, comment := range comments.List {
-					if strings.Contains(comment.Text, "TODO") {
-						continue
-					}
-					if subtest {
-						fmt.Print("\t")
-					}
-					fmt.Println(comment.Text)
-				}
-				fmt.Println("")
-			}
-			return true
-		})
-		return nil
-	})
-
-	fmt.Printf("TEST COUNT: %d\n", counter)
-	return err
-}
-
-func shouldParse(name string) bool {
-	if strings.HasPrefix(name, "Test") && !strings.HasPrefix(name, "TestMain") {
-		return true
-	}
-
-	if strings.HasPrefix(name, "valid") {
-		return true
-	}
-
-	return false
 }
