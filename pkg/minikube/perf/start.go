@@ -74,7 +74,7 @@ func collectResults(ctx context.Context, binaries []*Binary, driver string, runt
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
 			rm.addResult(binary, "start", *r)
-			if !skipIngress(driver) {
+			if !skipIngress(driver, runtime) {
 				r, err = timeEnableIngress(ctx, binary)
 				if err != nil {
 					return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
@@ -136,8 +136,8 @@ func timeEnableIngress(ctx context.Context, binary *Binary) (*result, error) {
 }
 
 // Ingress doesn't currently work on MacOS with the docker driver
-func skipIngress(driver string) bool {
-	return runtime.GOOS == "darwin" && driver == "docker"
+func skipIngress(driver string, cruntime string) bool {
+	return (runtime.GOOS == "darwin" && driver == "docker") || cruntime == "containerd"
 }
 
 // We only want to run the tests if:
