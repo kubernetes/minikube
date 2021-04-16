@@ -32,6 +32,9 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// TestNetworkPlugins tests all supported CNI options
+// Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
+// Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
 func TestNetworkPlugins(t *testing.T) {
 	MaybeParallel(t)
 	if NoneDriver() {

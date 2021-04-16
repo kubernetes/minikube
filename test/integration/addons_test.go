@@ -40,7 +40,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// TestAddons tests addons that require no special environment -- in parallel
+// TestAddons tests addons that require no special environment in parallel
 func TestAddons(t *testing.T) {
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
@@ -140,6 +140,7 @@ func TestAddons(t *testing.T) {
 	}
 }
 
+// validateIngressAddon tests the ingress addon by deploying a default nginx pod
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	if NoneDriver() || (runtime.GOOS == "darwin" && KicDriver()) {
@@ -224,6 +225,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateRegistryAddon tests the registry addon
 func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -300,6 +302,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateMetricsServerAddon tests the metrics server addon by making sure "kubectl top pods" returns a sensible result
 func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -343,6 +346,7 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 	}
 }
 
+// validateHelmTillerAddon tests the helm tiller addon by running "helm version" inside the cluster
 func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) {
 
 	defer PostMortemLogs(t, profile)
@@ -400,6 +404,7 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+// validateOlmAddon tests the OLM addon
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	t.Skipf("Skipping olm test till this timeout issue is solved https://github.com/operator-framework/operator-lifecycle-manager/issues/1534#issuecomment-632342257")
 	defer PostMortemLogs(t, profile)
@@ -463,6 +468,7 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateCSIDriverAndSnapshots tests the csi hostpath driver by creating a persistent volume, snapshotting it and restoring it.
 func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -562,6 +568,7 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 }
 
+// validateGCPAuthAddon tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 

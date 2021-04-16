@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 )
 
+// TestKicCustomNetwork verifies the docker driver works with a custom network
 func TestKicCustomNetwork(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("only runs with docker driver")
@@ -66,6 +67,7 @@ func TestKicCustomNetwork(t *testing.T) {
 	}
 }
 
+// TestKicExistingNetwork verifies the docker driver and run with an existing network
 func TestKicExistingNetwork(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("only runs with docker driver")
