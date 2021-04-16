@@ -6,6 +6,27 @@ description: >
   Questions that come up regularly
 ---
 
+
+## How to run an older Kubernetes version with minikube ?
+
+You can create a minikube cluster with  exact Kubernetes version you desire using
+
+for Example to run an old Kubernetes version, you do NOT need to download an older minikube version. you can simply do :
+
+```bash
+minikube start --kubernetes-version=v1.15.0
+```
+
+
+## Docker Driver: How to run minikube change cgroup manager used by minikube?
+
+By default minikube uses the `cgroupfs` cgroup manager for the Kubernetes clusters, if you are on a system with a systemd cgroup manager, this could cause conflicts.
+To use `systemd` cgroup manager, run:
+
+```bash
+minikube start --force-systemd=true
+```
+
 ## Does minikube support IPv6?
 
 minikube currently doesn't support IPv6. However, it is on the [roadmap]({{< ref "/docs/contrib/roadmap.en.md" >}}).
