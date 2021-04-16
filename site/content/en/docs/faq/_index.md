@@ -27,6 +27,22 @@ To use `systemd` cgroup manager, run:
 minikube start --force-systemd=true
 ```
 
+## How to run minikube with Docker driver if existing cluster is VM?
+
+If you have an existing cluster with a VM driver (virtualbox, hyperkit, KVM,...).
+
+First please ensure your Docker service is running and then you need to either delete the existing cluster and create one
+```bash
+minikube delete
+minikube start --driver=docker
+```
+
+Alternatively, if you want to keep your existing cluster you can create a second cluster with a different profile name. (example p1)
+
+```bash
+minikube start -p p1 --driver=docker 
+```
+
 ## Does minikube support IPv6?
 
 minikube currently doesn't support IPv6. However, it is on the [roadmap]({{< ref "/docs/contrib/roadmap.en.md" >}}).
