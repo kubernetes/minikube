@@ -809,21 +809,10 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 		}
 	}
 
-	checkRepository := func(repo string) error {
-		pauseImage := images.Pause(v, repo)
-		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
-		if err != nil {
-			return err
-		}
-
-		_, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
-		return err
-	}
-
 	for _, code := range tryCountries {
 		localRepos := constants.ImageRepositories[code]
 		for _, repo := range localRepos {
-			err := checkRepository(repo)
+			err := checkRepository(v, repo)
 			if err == nil {
 				return true, repo, nil
 			}
@@ -831,6 +820,17 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 	}
 
 	return false, fallback, nil
+}
+
+var checkRepository = func(v semver.Version, repo string) error {
+	pauseImage := images.Pause(v, repo)
+	ref, err := name.ParseReference(pauseImage, name.WeakValidation)
+	if err != nil {
+		return err
+	}
+
+	_, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	return err
 }
 
 // validateUser validates minikube is run by the recommended user (privileged or regular)
