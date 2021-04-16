@@ -231,6 +231,7 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	}
 }
 
+// validateStopMultiNodeCluster runs minikube stop on a multinode cluster
 func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
 	// Run minikube stop on the cluster
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "stop"))

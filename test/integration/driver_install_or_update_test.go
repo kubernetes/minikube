@@ -110,6 +110,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	}
 }
 
+// TestHyperKitDriverInstallOrUpdate makes sure our docker-machine-driver-hyperkit binary can be installed properly
 func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skip("Skip if not darwin.")
@@ -122,7 +123,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 		path string
 	}{
 		{name: "driver-without-version-support", path: filepath.Join(*testdataDir, "hyperkit-driver-without-version")},
-		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "hyperkit-driver-without-version")},
+		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "hyperkit-driver-older-version")},
 	}
 
 	originalPath := os.Getenv("PATH")
