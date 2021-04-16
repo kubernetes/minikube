@@ -24,7 +24,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// RecentK8sVersions returns the most recent k8s version, usually around 30
+// recentK8sVersions returns the most recent k8s version, usually around 30
 func recentK8sVersions() ([]string, error) {
 	client := github.NewClient(nil)
 	k8s := "kubernetes"
