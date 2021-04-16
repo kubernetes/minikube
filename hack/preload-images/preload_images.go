@@ -78,7 +78,7 @@ func main() {
 	var toGenerate []preloadCfg
 	var i int
 
-	out:
+out:
 	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
 			if *limit > 0 && i >= *limit {
@@ -111,10 +111,11 @@ func collectK8sVers() ([]string, error) {
 		}
 		k8sVersions = recent
 	}
-	return append(k8sVersions,
+	return append([]string{
 		constants.DefaultKubernetesVersion,
 		constants.NewestKubernetesVersion,
-		constants.OldestKubernetesVersion), nil
+		constants.OldestKubernetesVersion,
+	}, k8sVersions...), nil
 }
 
 func process(cfg preloadCfg) error {
