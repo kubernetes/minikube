@@ -84,10 +84,10 @@ func main() {
 			if *limit > 0 && i >= *limit {
 				break out
 			}
-			i++
 			if *force || !download.PreloadExists(kv, cr) {
 				toGenerate = append(toGenerate, preloadCfg{kv, cr})
-				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
+				i++
+				fmt.Printf("[%d] A preloaded tarball for k8s version %s - runtime %q does not exist.\n", i, kv, cr)
 			} else {
 				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
 			}
