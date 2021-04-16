@@ -47,6 +47,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	d.Memory = cc.Memory
 	d.CPU = cc.CPUs
 	d.DiskSize = cc.DiskSize
+	d.NetworkType = cc.VMWareNetworkType
 
 	// TODO(frapposelli): push these defaults upstream to fixup this driver
 	d.SSHPort = 22

@@ -82,6 +82,7 @@ type ClusterConfig struct {
 	ExposedPorts            []string // Only used by the docker and podman driver
 	ListenAddress           string   // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
+	VMWareNetworkType       string   // Only used by vmware driver
 	MultiNodeRequested      bool
 }
 
