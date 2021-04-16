@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -60,6 +61,14 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "generateCRIOConfig.")
 	}
+
+	if cni.CNIConfDir != cni.DefaultCNIConfDir {
+		c = exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^network_dir = .*$|network_dir = \"%s/\"|' -i %s", cni.CNIConfDir, cPath))
+		if _, err := cr.RunCmd(c); err != nil {
+			return errors.Wrap(err, "generateCRIOConfig/CNIConfDir")
+		}
+	}
+
 	return nil
 }
 

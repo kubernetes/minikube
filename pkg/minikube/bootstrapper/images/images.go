@@ -141,6 +141,8 @@ func dashboardMetrics(repo string) string {
 }
 
 // KindNet returns the image used for kindnet
+// ref: https://hub.docker.com/r/kindest/kindnetd/tags
+// src: https://github.com/kubernetes-sigs/kind/tree/master/images/kindnetd
 func KindNet(repo string) string {
 	if repo == "" {
 		repo = "kindest"
