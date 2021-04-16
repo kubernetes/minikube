@@ -431,6 +431,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 // setCNIConfDir sets kubelet's '--cni-conf-dir' flag to custom CNI Config Directory path (same used also by CNI Deployment) to avoid conflicting CNI configs.
 // ref: https://github.com/kubernetes/minikube/issues/10984
 // Note: currently, this change affects only Kindnet CNI (and all multinodes using it), but it can be easily expanded to other/all CNIs if needed.
+// Note2: Cilium does not need workaround as they automatically restart pods after CNI is successfully deployed
 func setCNIConfDir(cc *config.ClusterConfig, cnm cni.Manager) error {
 	if _, kindnet := cnm.(cni.KindNet); kindnet {
 		// auto-set custom CNI Config Directory, if not user-specified
@@ -440,7 +441,11 @@ func setCNIConfDir(cc *config.ClusterConfig, cnm cni.Manager) error {
 			if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
 				return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
 			}
+			cni.CNIConfDir = cni.CustomCNIConfDir
 			klog.Infof("extra-config set to %q", eo)
+		} else {
+			// respect user-specified custom CNI Config Directory
+			cni.CNIConfDir = cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet")
 		}
 	}
 	return nil

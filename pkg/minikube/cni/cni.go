@@ -37,12 +37,17 @@ import (
 const (
 	// DefaultPodCIDR is the default CIDR to use in minikube CNI's.
 	DefaultPodCIDR = "10.244.0.0/16"
-)
 
-var (
+	// DefaultCNIConfDir is the default CNI Config Directory path
+	DefaultCNIConfDir = "/etc/cni/net.d"
 	// CustomCNIConfDir is the custom CNI Config Directory path used to avoid conflicting CNI configs
 	// ref: https://github.com/kubernetes/minikube/issues/10984
 	CustomCNIConfDir = "/etc/cni/net.mk"
+)
+
+var (
+	// CNIConfDir is the CNI Config Directory path that can be customised, defaulting to DefaultCNIConfDir
+	CNIConfDir = DefaultCNIConfDir
 )
 
 // Runner is the subset of command.Runner this package consumes
@@ -79,12 +84,6 @@ func New(cc config.ClusterConfig) (Manager, error) {
 	}
 
 	klog.Infof("Creating CNI manager for %q", cc.KubernetesConfig.CNI)
-
-	// respect user-specified custom CNI Config Directory, if any
-	userCNIConfDir := cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet")
-	if userCNIConfDir != "" {
-		CustomCNIConfDir = userCNIConfDir
-	}
 
 	switch cc.KubernetesConfig.CNI {
 	case "", "auto":
