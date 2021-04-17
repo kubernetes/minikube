@@ -176,6 +176,9 @@ It may take a moment, but your deployment will soon show up when you run:
 kubectl get services hello-minikube
 ```
 
+> :warning: On M1-based machines (`arm64` architecture) the `echoserver:1.4` image currently fails to start.
+> Your best bet is to build a custom `echoserver` image and deploy that as is outlined in [#11107](/../../issues/11107#).
+
 The easiest way to access this service is to let minikube launch a web browser for you:
 
 ```shell
