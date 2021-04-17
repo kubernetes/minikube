@@ -4,6 +4,7 @@ on:
     branches:
       - master
     paths:
+      - "go.mod"
       - "**.go"
       - "**.yml"
       - "**.yaml"
