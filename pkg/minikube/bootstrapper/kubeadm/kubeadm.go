@@ -330,7 +330,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 		regStep = registerStep[0]
 	}
 
-	cnm, err := cni.New(cfg)
+	cnm, err := cni.New(&cfg)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
 	}
