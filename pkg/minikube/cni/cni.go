@@ -41,7 +41,7 @@ const (
 	// DefaultCNIConfDir is the default CNI Config Directory path
 	DefaultCNIConfDir = "/etc/cni/net.d"
 	// CustomCNIConfDir is the custom CNI Config Directory path used to avoid conflicting CNI configs
-	// ref: https://github.com/kubernetes/minikube/issues/10984
+	// ref: https://github.com/kubernetes/minikube/issues/10984 and https://github.com/kubernetes/minikube/pull/11106
 	CustomCNIConfDir = "/etc/cni/net.mk"
 )
 
@@ -192,9 +192,9 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 }
 
 // setCNIConfDir sets kubelet's '--cni-conf-dir' flag to custom CNI Config Directory path (same used also by CNI Deployment) to avoid conflicting CNI configs.
-// ref: https://github.com/kubernetes/minikube/issues/10984
+// ref: https://github.com/kubernetes/minikube/issues/10984 and https://github.com/kubernetes/minikube/pull/11106
 // Note: currently, this change affects only Kindnet CNI (and all multinodes using it), but it can be easily expanded to other/all CNIs if needed.
-// Note2: Cilium does not need workaround as they automatically restart pods after CNI is successfully deployed
+// Note2: Cilium does not need workaround as they automatically restart pods after CNI is successfully deployed.
 func setCNIConfDir(cc *config.ClusterConfig, cnm Manager) error {
 	if _, kindnet := cnm.(KindNet); kindnet {
 		// auto-set custom CNI Config Directory, if not user-specified
