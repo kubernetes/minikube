@@ -274,6 +274,16 @@ func (r *Containerd) PullImage(name string) error {
 	return pullCRIImage(r.Runner, name)
 }
 
+// SaveImage save an image from this runtime
+func (r *Containerd) SaveImage(name string, path string) error {
+	klog.Infof("Saving image %s: %s", name, path)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "export", path, name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ctr images export")
+	}
+	return nil
+}
+
 // RemoveImage removes a image
 func (r *Containerd) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)

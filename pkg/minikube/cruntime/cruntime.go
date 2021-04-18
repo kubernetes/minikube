@@ -99,6 +99,8 @@ type Manager interface {
 	PullImage(string) error
 	// Build an image idempotently into the runtime on a host
 	BuildImage(string, string, string, bool, []string, []string) error
+	// Save an image from the runtime on a host
+	SaveImage(string, string) error
 
 	// ImageExists takes image name and image sha checks if an it exists
 	ImageExists(string, string) bool
