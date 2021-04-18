@@ -187,6 +187,19 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	return nil
 }
 
+// pullCRIImage pulls image using crictl
+func pullCRIImage(cr CommandRunner, name string) error {
+	klog.Infof("Pulling image: %s", name)
+
+	crictl := getCrictlPath(cr)
+	args := append([]string{crictl, "pull"}, name)
+	c := exec.Command("sudo", args...)
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crictl")
+	}
+	return nil
+}
+
 // removeCRIImage remove image using crictl
 func removeCRIImage(cr CommandRunner, name string) error {
 	klog.Infof("Removing image: %s", name)

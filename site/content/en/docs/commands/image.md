@@ -139,6 +139,7 @@ minikube image load image.tar
 
 ```
       --daemon   Cache image from docker daemon
+      --pull     Pull the remote image (no caching)
       --remote   Cache image from remote registry
 ```
 
