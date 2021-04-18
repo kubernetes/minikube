@@ -19,6 +19,7 @@ package download
 import (
 	"context"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -141,6 +142,10 @@ func Preload(k8sVersion, containerRuntime string) error {
 	out.Step(style.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
 	url := remoteTarballURL(k8sVersion, containerRuntime)
 
+	if checksum, err := getChecksum(k8sVersion, containerRuntime); err == nil {
+		url += "?checksum=" + checksum
+	}
+
 	if err := download(url, targetPath); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
@@ -154,6 +159,21 @@ func Preload(k8sVersion, containerRuntime string) error {
 	}
 
 	return nil
+}
+
+func getChecksum(k8sVersion, containerRuntime string) (string, error) {
+	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return "", errors.Wrap(err, "getting storage client")
+	}
+	attrs, err := client.Bucket(PreloadBucket).Object(TarballName(k8sVersion, containerRuntime)).Attrs(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "getting storage object")
+	}
+	md5 := hex.EncodeToString(attrs.MD5)
+	return fmt.Sprintf("md5:%s", md5), nil
 }
 
 func saveChecksumFile(k8sVersion, containerRuntime string) error {
