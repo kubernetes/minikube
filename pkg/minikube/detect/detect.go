@@ -26,8 +26,13 @@ import (
 	"golang.org/x/sys/cpu"
 )
 
-// RuntimeArchitecture returns the runtime architecture
-func RuntimeArchitecture() string {
+// RuntimeOS returns the runtime operating system
+func RuntimeOS() string {
+	return runtime.GOOS
+}
+
+// RuntimeArch returns the runtime architecture
+func RuntimeArch() string {
 	arch := runtime.GOARCH
 	if arch == "arm" {
 		// runtime.GOARM

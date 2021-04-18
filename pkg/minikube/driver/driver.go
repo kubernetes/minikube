@@ -72,7 +72,7 @@ var (
 
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
-	arch := detect.RuntimeArchitecture()
+	arch := detect.RuntimeArch()
 	for _, a := range constants.SupportedArchitectures {
 		if arch == a {
 			return supportedDrivers

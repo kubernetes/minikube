@@ -82,7 +82,7 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 		}
 
 		supported := false
-		arch := detect.RuntimeArchitecture()
+		arch := detect.RuntimeArch()
 		for _, a := range constants.SupportedArchitectures {
 			if arch == a {
 				supported = true

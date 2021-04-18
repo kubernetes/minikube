@@ -716,8 +716,8 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 // validateDriver validates that the selected driver appears sane, exits if not
 func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
-	os := runtime.GOOS
-	arch := detect.RuntimeArchitecture()
+	os := detect.RuntimeOS()
+	arch := detect.RuntimeArch()
 	klog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
 		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": os, "arch": arch})
