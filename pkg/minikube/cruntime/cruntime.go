@@ -152,7 +152,7 @@ type ListContainersOptions struct {
 	Namespaces []string
 }
 
-// ListImageOptions are the options to use for listing images
+// ListImagesOptions are the options to use for listing images
 type ListImagesOptions struct {
 }
 
