@@ -959,23 +959,18 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 0 ];then echo "*** Failed to pass at least 20! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
-  # After all integration tests finished  # collect all the reports and upload them
+  # After all integration tests finished
+  # collect all the reports and upload them
   upload_all_reports:
     if: always()
     needs:
       [
         functional_docker_ubuntu,
+        functional_docker_ubuntu_arm64,
         functional_virtualbox_macos,
         functional_docker_windows,
         functional_hyperv_windows,
         functional_baremetal_ubuntu18_04,
-        functional_docker_ubuntu_arm64,
-        addons_certs_docker_ubuntu,
-        addons_certs_virtualbox_macos,
-        multinode_docker_ubuntu,
-        multinode_virtualbox_macos,
-        preload_dockerflags_docker_ubuntu,
-        pause_preload_dockerflags_virtualbox_macos,
       ]
     runs-on: ubuntu-18.04
     steps:
@@ -988,17 +983,11 @@ jobs:
           mkdir -p all_reports
           ls -lah
           cp -r ./functional_docker_ubuntu ./all_reports/
+          cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
           cp -r ./functional_virtualbox_macos ./all_reports/
           cp -r ./functional_docker_windows ./all_reports/
           cp -r ./functional_hyperv_windows ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
-          cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
-          cp -r ./addons_certs_docker_ubuntu ./all_reports/
-          cp -r ./addons_certs_virtualbox_macos ./all_reports/
-          cp -r ./multinode_docker_ubuntu ./all_reports/
-          cp -r ./multinode_virtualbox_macos ./all_reports/
-          cp -r ./preload_dockerflags_docker_ubuntu ./all_reports/
-          cp -r ./pause_preload_dockerflags_virtualbox_macos ./all_reports/
 
       - uses: actions/upload-artifact@v1
         with:
