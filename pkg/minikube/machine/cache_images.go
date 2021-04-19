@@ -318,7 +318,8 @@ func pullImages(cruntime cruntime.Manager, images []string) error {
 	return nil
 }
 
-func DoPullImages(images []string, profile *config.Profile) error {
+// PullImages pulls images to all nodes in profile
+func PullImages(images []string, profile *config.Profile) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "error creating api client")
@@ -398,6 +399,7 @@ func removeImages(cruntime cruntime.Manager, images []string) error {
 	return nil
 }
 
+// RemoveImages removes images from all nodes in profile
 func RemoveImages(images []string, profile *config.Profile) error {
 	api, err := NewAPIClient()
 	if err != nil {
@@ -454,6 +456,7 @@ func RemoveImages(images []string, profile *config.Profile) error {
 	return nil
 }
 
+// ListImages lists images on all nodes in profile
 func ListImages(profile *config.Profile) error {
 	api, err := NewAPIClient()
 	if err != nil {

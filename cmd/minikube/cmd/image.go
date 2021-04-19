@@ -78,7 +78,7 @@ var loadImageCmd = &cobra.Command{
 		if pull {
 			// Pull image from remote registry, without doing any caching except in container runtime.
 			// This is similar to daemon.Image but it is done by the container runtime in the cluster.
-			if err := machine.DoPullImages(args, profile); err != nil {
+			if err := machine.PullImages(args, profile); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to pull image", err)
 			}
 			return
