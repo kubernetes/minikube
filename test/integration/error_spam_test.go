@@ -54,7 +54,7 @@ var stderrAllow = []string{
 // stderrAllowRe combines rootCauses into a single regex
 var stderrAllowRe = regexp.MustCompile(strings.Join(stderrAllow, "|"))
 
-// TestErrorSpam asserts that there are no errors displayed in UI.
+// TestErrorSpam asserts that there are no unexpected errors displayed in minikube command outputs.
 func TestErrorSpam(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver always shows a warning")

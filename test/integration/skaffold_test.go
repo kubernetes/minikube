@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// TestSkaffold makes sure skaffold run can be run with minikube
 func TestSkaffold(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver doesn't support `minikube docker-env`; skaffold depends on this command")

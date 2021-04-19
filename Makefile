@@ -360,7 +360,7 @@ test: $(SOURCE_GENERATED) ## Trigger minikube test
 
 .PHONY: generate-docs
 generate-docs: out/minikube ## Automatically generate commands documentation.
-	out/minikube generate-docs --path ./site/content/en/docs/commands/
+	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md
 
 .PHONY: gotest
 gotest: $(SOURCE_GENERATED) ## Trigger minikube test

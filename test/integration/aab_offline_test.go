@@ -26,7 +26,8 @@ import (
 	"testing"
 )
 
-// TestOffline makes sure minikube works without internet, once it the user has already cached the images, This test has to run after TestDownloadOnly
+// TestOffline makes sure minikube works without internet, once the user has cached the necessary images.
+// This test has to run after TestDownloadOnly.
 func TestOffline(t *testing.T) {
 	MaybeParallel(t)
 	rt := ContainerRuntime()

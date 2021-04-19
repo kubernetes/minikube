@@ -25,6 +25,7 @@ import (
 	"testing"
 )
 
+// TestCertOptions makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 func TestCertOptions(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")

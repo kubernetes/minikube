@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// TestInsufficientStorage makes sure minikube status displays the correct info if there is insufficient disk space on the machine
 func TestInsufficientStorage(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("only runs with docker driver")
