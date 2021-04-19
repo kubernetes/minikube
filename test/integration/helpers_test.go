@@ -400,7 +400,7 @@ func PVCWait(ctx context.Context, t *testing.T, profile string, ns string, name 
 	return wait.PollImmediate(1*time.Second, timeout, f)
 }
 
-//// VolumeSnapshotWait waits for volume snapshot to be ready to use
+// VolumeSnapshotWait waits for volume snapshot to be ready to use
 func VolumeSnapshotWait(ctx context.Context, t *testing.T, profile string, ns string, name string, timeout time.Duration) error {
 	t.Helper()
 

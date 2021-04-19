@@ -103,7 +103,7 @@ var Addons = map[string]*Addon{
 			"auto-pause.service",
 			"0640"),
 
-		//GuestPersistentDir
+		// GuestPersistentDir
 	}, false, "auto-pause", map[string]string{
 		"AutoPauseHook": "azhao155/auto-pause-hook:1.13",
 	}, map[string]string{

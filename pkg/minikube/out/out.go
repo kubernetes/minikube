@@ -386,9 +386,9 @@ func applyTmpl(format string, a ...V) string {
 
 	// escape any outstanding '%' signs so that they don't get interpreted
 	// as a formatting directive down the line
-	out = strings.Replace(out, "%", "%%", -1)
+	out = strings.ReplaceAll(out, "%", "%%")
 	// avoid doubling up in case this function is called multiple times
-	out = strings.Replace(out, "%%%%", "%%", -1)
+	out = strings.ReplaceAll(out, "%%%%", "%%")
 	return out
 }
 
