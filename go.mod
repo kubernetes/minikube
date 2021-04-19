@@ -17,7 +17,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/cheggaaa/pb/v3 v3.0.8
-	github.com/cloudevents/sdk-go/v2 v2.3.1
+	github.com/cloudevents/sdk-go/v2 v2.4.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/docker/cli v0.0.0-20200303162255-7d407207c304 // indirect
