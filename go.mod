@@ -59,7 +59,7 @@ require (
 	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/go-digest v1.0.0
-	github.com/otiai10/copy v1.5.0
+	github.com/otiai10/copy v1.5.1
 	github.com/pborman/uuid v1.2.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
@@ -85,7 +85,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
-	golang.org/x/text v0.3.5
+	golang.org/x/text v0.3.6
 	google.golang.org/api v0.44.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
