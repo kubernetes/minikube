@@ -36,7 +36,7 @@ func TestExtract(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Creating temp dir: %v", err)
 	}
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(tempdir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", tempdir)

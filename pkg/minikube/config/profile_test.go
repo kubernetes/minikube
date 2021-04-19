@@ -278,7 +278,7 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 
 	for _, tc := range tests {
 		// To save converted config file from old style config at ./testdata/.minikube,
-		//rather than at env(MINIKUBE_HOME) which depends on test environment
+		// rather than at env(MINIKUBE_HOME) which depends on test environment
 		originalMinikubeHomeEnv := os.Getenv("MINIKUBE_HOME")
 		err = os.Setenv("MINIKUBE_HOME", miniDir)
 		if err != nil {

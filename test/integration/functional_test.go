@@ -1444,7 +1444,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Strip carriage returned by ssh
-		got := strings.Replace(rr.Stdout.String(), "\r", "", -1)
+		got := strings.ReplaceAll(rr.Stdout.String(), "\r", "")
 		if diff := cmp.Diff(string(want), got); diff != "" {
 			t.Errorf("failed verify pem file. minikube_test.pem -> %s mismatch (-want +got):\n%s", vp, diff)
 		}

@@ -522,7 +522,7 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 				out += "[Unit]\n"
 				out += "Description=Docker Application Container Engine\n"
 				out += "Documentation=https://docs.docker.com\n"
-				//out += "BindsTo=containerd.service\n"
+				// out += "BindsTo=containerd.service\n"
 				return out, nil
 			}
 			return out, fmt.Errorf("%s cat unimplemented", svc)
