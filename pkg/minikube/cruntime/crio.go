@@ -373,11 +373,11 @@ func (r *CRIO) ImagesPreloaded(images []string) bool {
 
 // UpdateCRIONet updates CRIO CNI network configuration and restarts it
 func UpdateCRIONet(r CommandRunner) error {
-	klog.Infof("Updating CRIO to use CNIConfDir: %q", cni.CNIConfDir)
 	if cni.CNIConfDir != cni.DefaultCNIConfDir {
+		klog.Infof("Updating CRIO to use custom CNIConfDir: %q", cni.CNIConfDir)
 		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^network_dir = .*$|network_dir = \"%s/\"|' -i %s", cni.CNIConfDir, crioConfigFile))
 		if _, err := r.RunCmd(c); err != nil {
-			return errors.Wrap(err, "generateCRIOConfig/CNIConfDir")
+			return errors.Wrap(err, "UpdateCRIONet")
 		}
 		return sysinit.New(r).Restart("crio")
 	}

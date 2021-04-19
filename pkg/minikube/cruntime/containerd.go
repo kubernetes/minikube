@@ -93,7 +93,7 @@ oom_score = 0
         runtime_root = ""
     [plugins.cri.cni]
       bin_dir = "/opt/cni/bin"
-      conf_dir = "{{.CNIConfDir}}"
+      conf_dir = "/etc/cni/net.d"
       conf_template = ""
     [plugins.cri.registry]
       [plugins.cri.registry.mirrors]
@@ -189,12 +189,10 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 		PodInfraContainerImage string
 		SystemdCgroup          bool
 		InsecureRegistry       []string
-		CNIConfDir             string
 	}{
 		PodInfraContainerImage: pauseImage,
 		SystemdCgroup:          forceSystemd,
 		InsecureRegistry:       insecureRegistry,
-		CNIConfDir:             cni.CNIConfDir,
 	}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -460,4 +458,17 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 // ImagesPreloaded returns true if all images have been preloaded
 func (r *Containerd) ImagesPreloaded(images []string) bool {
 	return containerdImagesPreloaded(r.Runner, images)
+}
+
+// UpdateContainerdNet updates Containerd CNI network configuration and restarts it
+func UpdateContainerdNet(r CommandRunner) error {
+	if cni.CNIConfDir != cni.DefaultCNIConfDir {
+		klog.Infof("Updating Containerd to use custom CNIConfDir: %q", cni.CNIConfDir)
+		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.CNIConfDir, containerdConfigFile))
+		if _, err := r.RunCmd(c); err != nil {
+			return errors.Wrap(err, "UpdateContainerdNet")
+		}
+		return sysinit.New(r).Restart("containerd")
+	}
+	return nil
 }

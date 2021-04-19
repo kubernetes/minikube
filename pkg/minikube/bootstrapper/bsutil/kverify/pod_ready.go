@@ -20,6 +20,7 @@ package kverify
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -44,6 +45,7 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 		return fmt.Errorf("error listing pods in %q namespace: %w", meta.NamespaceSystem, err)
 	}
 
+	unstartedMinion := regexp.MustCompile(`node "(.*-m[0-9]+)" has status "Ready":"Unknown"`)
 	for _, pod := range pods.Items {
 		if time.Since(start) > timeout {
 			return fmt.Errorf("timed out waiting %v for all system-critical and pods with labels %v to be %q", timeout, labels, core.NodeReady)
@@ -64,9 +66,11 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 			}
 			if match || pod.Spec.PriorityClassName == "system-cluster-critical" || pod.Spec.PriorityClassName == "system-node-critical" {
 				if err := waitPodCondition(cs, pod.Name, pod.Namespace, core.PodReady, timeout); err != nil {
-					// ignore terminated pods
-					// eg, error: "waitPodCondition: error getting pod "coredns-74ff55c5b-57fhw" in "kube-system" namespace: pods "coredns-74ff55c5b-57fhw" not found"
-					if !strings.HasSuffix(err.Error(), "not found") {
+					// ignore unstarted minion nodes and terminated pods, eg:
+					// error: `waitPodCondition: node "docker-containerd-multinode-wait-m02" hosting pod "kube-proxy-frz7b" in "kube-system" namespace is currently not "Ready": node "docker-containerd-multinode-wait-m02" has status "Ready":"Unknown"`, or
+					// error: `waitPodCondition: error getting pod "coredns-74ff55c5b-57fhw" in "kube-system" namespace: pods "coredns-74ff55c5b-57fhw" not found`
+					terminatedPod := strings.HasSuffix(err.Error(), "not found")
+					if !unstartedMinion.MatchString(err.Error()) && !terminatedPod {
 						klog.Errorf("WaitExtra: %v", err)
 					}
 					continue
