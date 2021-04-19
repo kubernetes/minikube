@@ -684,16 +684,20 @@ endif
 	env $(X_BUILD_ENV) docker buildx build --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
 
 
-out/upload-preload: ./hack/preload-images/*.go
+out/preload-tool:
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ ./hack/preload-images/*.go
 
 .PHONY: upload-preloaded-images-tar
-upload-preloaded-images-tar: out/minikube out/upload-preload # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
-	./out/upload-preload
+upload-preloaded-images-tar: out/minikube out/preload-tool ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
+	./out/preload-tool
+
+.PHONY: upload-preloaded-images-tar
+upload-preloaded-images-tar: out/minikube out/preload-tool ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
+	./out/preload-tool
 
 .PHONY: generate-preloaded-images-tar
-generate-preloaded-images-tar: out/minikube out/upload-preload # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
-	./out/upload-preload --no-upload --limit 16
+generate-preloaded-images-tar: out/minikube out/preload-tool ## Generates the preloaded images for oldest supported, newest supported, and default kubernetes versions
+	./out/preload-tool --no-upload
 
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 IMAGE = $(REGISTRY)/storage-provisioner
