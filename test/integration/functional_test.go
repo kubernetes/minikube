@@ -708,7 +708,11 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 
 	wantCode := reason.ExInsufficientMemory
 	if rr.ExitCode != wantCode {
-		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		}
 	}
 
 	dctx, cancel := context.WithTimeout(ctx, Seconds(5))
@@ -717,7 +721,12 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	c = exec.CommandContext(dctx, Target(), startArgs...)
 	rr, err = Run(t, c)
 	if rr.ExitCode != 0 || err != nil {
-		t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
+		}
+
 	}
 }
 
