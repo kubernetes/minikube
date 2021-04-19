@@ -332,7 +332,8 @@ jobs:
           $docker_running = $?
           }
           Write-Output "Docker is running"
-          docker system prune -f 
+          docker system prune -f
+          docker system prune --volumes -f
       - name: Info
         shell: powershell
         run: |
@@ -471,6 +472,7 @@ jobs:
           }
           Write-Output "Docker is running"
           docker system prune -f
+          docker system prune --volumes -f
       - name: Info
         continue-on-error: true
         shell: powershell
