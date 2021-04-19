@@ -41,12 +41,7 @@ func TestAddHostAliasInner(t *testing.T) {
 	hostsFileLine := fmt.Sprintf("%s\t%s", ip, hostname)
 
 	// Act
-	cmd := addHostAliasCommand(
-		hostname,
-		ip,
-		hostsFileLine,
-		false,
-		tempFilePath)
+	cmd := addHostAliasCommand(hostname, hostsFileLine, false, tempFilePath)
 	if err = cmd.Run(); err != nil {
 		t.Error(err)
 	}
