@@ -396,6 +396,8 @@ endif
 	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
 	@#golint: Html should be HTML (compat sed)
 	@sed -i -e 's/Html/HTML/g' $@ && rm -f ./-e
+	@#golint: don't use underscores in Go names
+	@sed -i -e 's/SnapshotStorageK8sIo_volumesnapshot/SnapshotStorageK8sIoVolumesnapshot/g' $@ && rm -f ./-e
 
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
