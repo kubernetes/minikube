@@ -194,6 +194,9 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("got %d test machines, expected %d: %s", len(mFiles), numberOfTotalMachineDirs, mFiles)
 	}
 
+	config.DockerContainers = func() ([]string, error) {
+		return []string{}, nil
+	}
 	validProfiles, inValidProfiles, err := config.ListProfiles()
 	if err != nil {
 		t.Error(err)
