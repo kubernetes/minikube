@@ -332,7 +332,8 @@ jobs:
           $docker_running = $?
           }
           Write-Output "Docker is running"
-          docker system prune -f 
+          docker system prune -f
+          docker system prune --volumes -f
       - name: Info
         shell: powershell
         run: |
@@ -471,6 +472,7 @@ jobs:
           }
           Write-Output "Docker is running"
           docker system prune -f
+          docker system prune --volumes -f
       - name: Info
         continue-on-error: true
         shell: powershell
@@ -710,6 +712,13 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
+
+      - name: Pre-cleanup
+        continue-on-error: true
+        run: |
+          minikube_binaries/minikube-linux-arm64 delete --all --purge || true
+          docker kill $(docker ps -aq) || true
+          docker system prune --volumes --force || true
 
       - name: Run Integration Test
         continue-on-error: false
