@@ -188,6 +188,11 @@ func (r *CRIO) LoadImage(path string) error {
 	return nil
 }
 
+// PullImage pulls an image
+func (r *CRIO) PullImage(name string) error {
+	return pullCRIImage(r.Runner, name)
+}
+
 // RemoveImage removes a image
 func (r *CRIO) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)

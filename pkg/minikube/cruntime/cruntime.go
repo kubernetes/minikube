@@ -95,6 +95,8 @@ type Manager interface {
 
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
+	// Pull an image to the runtime from the container registry
+	PullImage(string) error
 	// Build an image idempotently into the runtime on a host
 	BuildImage(string, string, string, bool, []string, []string) error
 
@@ -152,7 +154,7 @@ type ListContainersOptions struct {
 	Namespaces []string
 }
 
-// ListImageOptions are the options to use for listing images
+// ListImagesOptions are the options to use for listing images
 type ListImagesOptions struct {
 }
 

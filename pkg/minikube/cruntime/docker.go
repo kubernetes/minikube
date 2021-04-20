@@ -192,6 +192,19 @@ func (r *Docker) LoadImage(path string) error {
 	return nil
 }
 
+// PullImage pulls an image
+func (r *Docker) PullImage(name string) error {
+	klog.Infof("Pulling image: %s", name)
+	if r.UseCRI {
+		return pullCRIImage(r.Runner, name)
+	}
+	c := exec.Command("docker", "pull", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "pull image docker.")
+	}
+	return nil
+}
+
 // RemoveImage removes a image
 func (r *Docker) RemoveImage(name string) error {
 	klog.Infof("Removing image: %s", name)

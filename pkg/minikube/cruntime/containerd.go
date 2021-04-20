@@ -269,6 +269,11 @@ func (r *Containerd) LoadImage(path string) error {
 	return nil
 }
 
+// PullImage pulls an image into this runtime
+func (r *Containerd) PullImage(name string) error {
+	return pullCRIImage(r.Runner, name)
+}
+
 // RemoveImage removes a image
 func (r *Containerd) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)

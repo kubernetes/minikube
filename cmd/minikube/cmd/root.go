@@ -155,7 +155,7 @@ func Execute() {
 
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
-		os.Exit(reason.ExProgramUsage)
+		defer os.Exit(reason.ExProgramUsage)
 	}
 }
 

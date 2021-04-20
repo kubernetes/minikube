@@ -274,7 +274,7 @@ func podmanEnvVars(ec PodmanEnvConfig) map[string]string {
 		constants.PodmanContainerHostEnv:   podmanURL(ec.username, ec.hostname, ec.port),
 		constants.PodmanContainerSSHKeyEnv: ec.keypath,
 	}
-	//common
+	// common
 	env0 := map[string]string{
 		constants.MinikubeActivePodmanEnv: ec.profile,
 	}

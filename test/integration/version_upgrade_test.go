@@ -60,7 +60,7 @@ func installRelease(version string) (f *os.File, err error) {
 
 // legacyStartArgs returns the arguments normally used for starting older versions of minikube
 func legacyStartArgs() []string {
-	return strings.Split(strings.Replace(*startArgs, "--driver", "--vm-driver", -1), " ")
+	return strings.Split(strings.ReplaceAll(*startArgs, "--driver", "--vm-driver"), " ")
 }
 
 // TestRunningBinaryUpgrade upgrades a running legacy cluster to minikube at HEAD

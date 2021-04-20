@@ -419,8 +419,7 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 	podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 	if len(podIPs) != 2 {
 		t.Errorf("expected 2 Pod IPs but got %d", len(podIPs))
-	}
-	if podIPs[0] == podIPs[1] {
+	} else if podIPs[0] == podIPs[1] {
 		t.Errorf("expected 2 different pod IPs but got %s and %s", podIPs[0], podIPs[0])
 	}
 
