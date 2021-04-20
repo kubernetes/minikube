@@ -62,7 +62,7 @@ var RootCmd = &cobra.Command{
 	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
-			if err := os.MkdirAll(path, 0777); err != nil {
+			if err := os.MkdirAll(path, 0o777); err != nil {
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
 		}
