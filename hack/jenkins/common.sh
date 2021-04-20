@@ -31,7 +31,7 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-readonly TIMEOUT=${1:-70m}
+readonly TIMEOUT=${1:-90m}
 
 if [ "$(uname)" != "Darwin" ]; then
   # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
