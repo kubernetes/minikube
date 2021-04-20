@@ -26,6 +26,7 @@ import (
 	"testing"
 )
 
+// TestDockerFlags makes sure the --docker-env and --docker-opt parameters are respected
 func TestDockerFlags(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")
@@ -68,6 +69,7 @@ func TestDockerFlags(t *testing.T) {
 	}
 }
 
+// TestForceSystemdFlag tests the --force-systemd flag, as one would expect.
 func TestForceSystemdFlag(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")
@@ -95,6 +97,7 @@ func TestForceSystemdFlag(t *testing.T) {
 
 }
 
+// validateDockerSystemd makes sure the --force-systemd flag worked with the docker container runtime
 func validateDockerSystemd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "docker info --format {{.CgroupDriver}}"))
 	if err != nil {
@@ -105,6 +108,7 @@ func validateDockerSystemd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateContainerdSystemd makes sure the --force-systemd flag worked with the containerd container runtime
 func validateContainerdSystemd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/containerd/config.toml"))
 	if err != nil {
@@ -115,6 +119,7 @@ func validateContainerdSystemd(ctx context.Context, t *testing.T, profile string
 	}
 }
 
+// TestForceSystemdEnv makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as the --force-systemd flag
 func TestForceSystemdEnv(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")

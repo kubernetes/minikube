@@ -355,6 +355,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateStartWithProxy makes sure minikube start respects the HTTP_PROXY environment variable
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -388,6 +389,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+// validateAuditAfterStart makes sure the audit log contains the correct logging after minikube start
 func validateAuditAfterStart(ctx context.Context, t *testing.T, profile string) {
 	got, err := auditContains(profile)
 	if err != nil {
@@ -490,6 +492,7 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	}
 }
 
+// validateExtraConfig verifies minikube with --extra-config works as expected
 func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -536,7 +539,7 @@ func imageID(image string) string {
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
-// note: it expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag (ie, with extra wait)
+// NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -588,6 +591,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+// validateStatusCmd makes sure minikube status outputs correctly
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))

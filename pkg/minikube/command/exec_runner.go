@@ -155,7 +155,7 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 	}
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
-	if err != nil {
+	if err != nil || perms > 07777 {
 		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
 

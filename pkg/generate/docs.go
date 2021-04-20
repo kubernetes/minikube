@@ -32,7 +32,7 @@ import (
 )
 
 // Docs generates docs for minikube command
-func Docs(root *cobra.Command, path string) error {
+func Docs(root *cobra.Command, path string, testPath string) error {
 	cmds := root.Commands()
 	for _, c := range cmds {
 		if c.Hidden {
@@ -47,7 +47,7 @@ func Docs(root *cobra.Command, path string) error {
 			return errors.Wrapf(err, "saving doc for %s", c.Name())
 		}
 	}
-	return nil
+	return testDocs(testPath)
 }
 
 // DocForCommand returns the specific doc for that command

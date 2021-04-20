@@ -769,7 +769,7 @@ var internetIssues = []match{
 			URL:      proxyDoc,
 			Issues:   []int{3860},
 		},
-		Regexp: re(`gcr.io.*443: connect: invalid argument`),
+		Regexp: re(`gcr.io\.*443: connect: invalid argument`),
 	},
 	{
 		Kind: Kind{

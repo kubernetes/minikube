@@ -19,6 +19,8 @@ package detect
 import (
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -51,4 +53,26 @@ func IsCloudShell() bool {
 // IsAmd64M1Emulation  determines whether amd64 minikube binary is running on M1 mac in emulation mode
 func IsAmd64M1Emulation() bool {
 	return runtime.GOARCH == "amd64" && strings.HasPrefix(cpuid.CPU.BrandName, "VirtualApple")
+}
+
+// MinikubeInstalledViaSnap returns true if the minikube binary path includes "snap".
+func MinikubeInstalledViaSnap() bool {
+	ex, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	exPath := filepath.Dir(ex)
+
+	return strings.Contains(exPath, "snap")
+}
+
+// DockerInstalledViaSnap returns true if the Docker binary path includes "snap".
+func DockerInstalledViaSnap() bool {
+	c := exec.Command("which", "docker")
+	o, err := c.Output()
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(string(o), "snap")
 }
