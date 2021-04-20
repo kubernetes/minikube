@@ -116,27 +116,42 @@ func TestErr(t *testing.T) {
 	}
 }
 
-func TestGetLatestLogPath(t *testing.T) {
+func createLogFile() (string, error) {
 	td := os.Getenv("TMPDIR")
 	if td == "" {
 		td = "/tmp/"
 	}
-	want := fmt.Sprintf("%sminikube_test_test_test.log", td)
-	f, err := os.Create(want)
+	name := fmt.Sprintf("%sminikube_test_test_test.log", td)
+	f, err := os.Create(name)
 	if err != nil {
-		t.Fatalf("failed to create file: %v", err)
+		return "", fmt.Errorf("failed to create log file: %v", err)
 	}
-	defer os.Remove(f.Name())
+
+	return f.Name(), nil
+}
+
+func TestGetLatestLogPath(t *testing.T) {
+	want, err := createLogFile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(want)
 	got, err := getLatestLogFilePath()
 	if err != nil {
 		t.Fatalf("failed to get latest log file name: %v", err)
 	}
 	if got != want {
-		t.Errorf("getLatestLogFile() = %q; want %q", got, want)
+		t.Errorf("getLatestLogPath() = %q; want %q", got, want)
 	}
 }
 
 func TestDisplayLogLocationMessage(t *testing.T) {
+	filename, err := createLogFile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(filename)
+
 	testCases := []struct {
 		args []string
 		want string
@@ -147,7 +162,7 @@ func TestDisplayLogLocationMessage(t *testing.T) {
 		},
 		{
 			[]string{"minikube", "status"},
-			"minikube",
+			filename,
 		},
 	}
 
