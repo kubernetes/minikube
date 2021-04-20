@@ -368,7 +368,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	// changing api server so later in soft start we verify it didn't change
 	memoryFlag := "--memory=4000"
 	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if (GithubActionRunner() && runtime.GOOS == "darwin") || HypervDriver() {
 		memoryFlag = "--memory=6000"
 	}
 	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
