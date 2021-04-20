@@ -102,19 +102,19 @@ func execute() error {
 
 	// Add x-lay names
 	if runtime.GOOS == "darwin" {
-		p.NominalX("OS idle", "minikube hyperkit", "minikube virtualbox", "minikube docker", "Docker for Mac Kubernetes", "k3d", "kind")
+		p.NominalX("OS idle", "minikube hyperkit", "minikube virtualbox", "minikube docker", "minikube docker auto-pause", "Docker for Mac Kubernetes", "k3d", "kind")
 	} else if runtime.GOOS == "linux" {
-		p.NominalX("OS idle", "minikube kvm2", "minikube virtualbox", "minikube docker", "Docker idle", "k3d", "kind")
+		p.NominalX("OS idle", "minikube kvm2", "minikube virtualbox", "minikube docker", "minikube docker auto-pause", "Docker idle", "k3d", "kind")
 	}
 
 	// output bar graph
 	if runtime.GOOS == "darwin" {
-		if err := p.Save(10*vg.Inch, 8*vg.Inch, "./site/static/images/benchmarks/cpuUsage/mac.png"); err != nil {
+		if err := p.Save(13*vg.Inch, 8*vg.Inch, "./site/static/images/benchmarks/cpuUsage/mac.png"); err != nil {
 			return errors.Wrap(err, "Failed to create bar graph png")
 		}
 		log.Printf("Generated graph png to 'site/static/images/benchmarks/cpuUsage/mac.png'")
 	} else if runtime.GOOS == "linux" {
-		if err := p.Save(10*vg.Inch, 10*vg.Inch, "./site/static/images/benchmarks/cpuUsage/linux.png"); err != nil {
+		if err := p.Save(13*vg.Inch, 10*vg.Inch, "./site/static/images/benchmarks/cpuUsage/linux.png"); err != nil {
 			return errors.Wrap(err, "Failed to create bar graph png")
 		}
 		log.Printf("Generated graph png to 'site/static/images/benchmarks/cpuUsage/linux.png'")

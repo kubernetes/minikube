@@ -138,7 +138,7 @@ start_docker() {
 
     # Give time for d4d Kubernetes to begin, if it's around
     if [[ "${started}" == 1 ]]; then
-      sleep 15
+      sleep 60
     fi
 }
 
@@ -203,7 +203,7 @@ main() {
     # depending on whether Docker for Mac Kubernetes is enabled
     if [[ "${OS}" == "Darwin" ]]; then
       # wait kubernetes system pods for Docker for Mac, if it is enabled
-      sleep 15
+      sleep 60
       kubectl --context docker-desktop version
 
       # measure Docker for Mac Kubernetes
@@ -237,9 +237,9 @@ main() {
 
     # test different drivers
     if [[ "${OS}" == "Darwin" ]]; then
-      drivers=(docker hyperkit virtualbox)
+      drivers=(docker docker-autopause hyperkit virtualbox)
     elif [[ "${OS}" == "Linux" ]]; then
-      drivers=(docker kvm2 virtualbox)
+      drivers=(docker docker-autopause kvm2 virtualbox)
     fi
 
     for driver in "${drivers[@]}"; do
@@ -250,15 +250,20 @@ main() {
       fi
 
       echo ""
-      echo "-> out/minikube --driver=${driver}"
-      time out/minikube start --driver "${driver}" && measure "minikube.${driver}" $i || fail "minikube.${driver}" $i
+      if [[ "${driver}" == "docker-autopause" ]]; then
+        echo "-> out/minikube --driver=${driver} --addons=auto-pause"
+        time out/minikube start --driver docker --addons auto-pause && measure "minikube.${driver}" $i || fail "minikube.${driver}" $i
+      else
+        echo "-> out/minikube --driver=${driver}"
+        time out/minikube start --driver "${driver}" && measure "minikube.${driver}" $i || fail "minikube.${driver}" $i
+      fi
       cleanup
 
       # We won't be needing docker for the remaining tests this iteration
-      if [[ "${OS}" == "Darwin" && "${driver}" == "docker" ]]; then
+      if [[ "${OS}" == "Darwin" && "${driver}" == "docker-autopause" ]]; then
         echo "  >> Quitting Docker for Desktop ..."
         osascript -e 'quit app "Docker"'
-      elif [[ "${OS}" == "Linux" && ${driver} == "docker"  ]]; then
+      elif [[ "${OS}" == "Linux" && ${driver} == "docker-autopause" ]]; then
         echo "  >> Quitting Docker Engine ..."
         sudo systemctl stop docker
       fi
