@@ -60,6 +60,8 @@ func (p preloadCfg) String() string {
 
 func main() {
 	flag.Parse()
+
+	// used by pkg/minikube/download.PreloadExists()
 	viper.Set("preload", "true")
 
 	if *k8sVersion != "" {
@@ -84,10 +86,15 @@ out:
 			if *limit > 0 && i >= *limit {
 				break out
 			}
-			if *force || !download.PreloadExists(kv, cr) {
+			if !download.PreloadExists(kv, cr) {
 				toGenerate = append(toGenerate, preloadCfg{kv, cr})
 				i++
 				fmt.Printf("[%d] A preloaded tarball for k8s version %s - runtime %q does not exist.\n", i, kv, cr)
+			} else if *force {
+				// the tarball already exists, but '--force' is passed. we need to overwrite the file
+				toGenerate = append(toGenerate, preloadCfg{kv, cr})
+				i++
+				fmt.Printf("[%d] A preloaded tarball for k8s version %s - runtime %q already exists. Going to overwrite it.\n", i, kv, cr)
 			} else {
 				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
 			}
@@ -97,7 +104,7 @@ out:
 	fmt.Printf("Going to generate preloads for %v\n", toGenerate)
 
 	for _, cfg := range toGenerate {
-		if err := process(cfg); err != nil {
+		if err := makePreload(cfg); err != nil {
 			exit(err.Error(), err)
 		}
 	}
@@ -118,7 +125,7 @@ func collectK8sVers() ([]string, error) {
 	}, k8sVersions...), nil
 }
 
-func process(cfg preloadCfg) error {
+func makePreload(cfg preloadCfg) error {
 	kv, cr := cfg.k8sVer, cfg.runtime
 
 	fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
