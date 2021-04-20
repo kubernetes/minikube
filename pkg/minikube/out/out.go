@@ -34,6 +34,7 @@ import (
 	isatty "github.com/mattn/go-isatty"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -360,15 +361,12 @@ func displayError(msg string, err error) {
 	ErrT(style.Empty, "")
 	ErrT(style.Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
 	ErrT(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
-	logFileName, err := getLatestLogFileName()
-	if err != nil {
-		klog.Warning(err)
-		return
+	if err := displayLogLocationMessage(); err != nil {
+		klog.Warningf("failed to display log location message: %v", err)
 	}
-	ErrT(style.Tip, "If you are able to drag and drop the following log-file into the issue, we'll be able to make faster progress: {{.logFileName}}", V{"logFileName": logFileName})
 }
 
-func getLatestLogFileName() (string, error) {
+func getLatestLogFilePath() (string, error) {
 	dir := os.Getenv("TMPDIR")
 	if dir == "" {
 		dir = "/tmp/"
@@ -383,6 +381,24 @@ func getLatestLogFileName() (string, error) {
 	name := string(o)[:len(o)-1]
 
 	return name, nil
+}
+
+func displayLogLocationMessage() error {
+	if len(os.Args) < 2 {
+		return fmt.Errorf("unable to detect command")
+	}
+	logPath := localpath.LastStartLog()
+	cmd := os.Args[1]
+	if cmd != "start" {
+		var err error
+		logPath, err = getLatestLogFilePath()
+		if err != nil {
+			return err
+		}
+	}
+	ErrT(style.Tip, "If you are able to drag and drop the following log-file into the issue, we'll be able to make faster progress: {{.logPath}}", V{"logPath": logPath})
+
+	return nil
 }
 
 // applyTmpl applies formatting

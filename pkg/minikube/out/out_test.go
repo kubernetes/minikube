@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/style"
@@ -115,7 +116,7 @@ func TestErr(t *testing.T) {
 	}
 }
 
-func TestGetLatestLogFile(t *testing.T) {
+func TestGetLatestLogPath(t *testing.T) {
 	td := os.Getenv("TMPDIR")
 	if td == "" {
 		td = "/tmp/"
@@ -126,11 +127,42 @@ func TestGetLatestLogFile(t *testing.T) {
 		t.Fatalf("failed to create file: %v", err)
 	}
 	defer os.Remove(f.Name())
-	got, err := getLatestLogFileName()
+	got, err := getLatestLogFilePath()
 	if err != nil {
 		t.Fatalf("failed to get latest log file name: %v", err)
 	}
 	if got != want {
 		t.Errorf("getLatestLogFile() = %q; want %q", got, want)
+	}
+}
+
+func TestDisplayLogLocationMessage(t *testing.T) {
+	testCases := []struct {
+		args []string
+		want string
+	}{
+		{
+			[]string{"minikube", "start"},
+			"lastStart.txt",
+		},
+		{
+			[]string{"minikube", "status"},
+			"minikube",
+		},
+	}
+
+	for _, tt := range testCases {
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = tt.args
+		f := tests.NewFakeFile()
+		SetErrFile(f)
+		if err := displayLogLocationMessage(); err != nil {
+			t.Fatalf("failed to displayLogLocationMessage: %v", err)
+		}
+		got := f.String()
+		if !strings.Contains(got, tt.want) {
+			t.Errorf("displayLogLocationMessage() = %q; wanted to contain %q", got, tt.want)
+		}
 	}
 }
