@@ -366,8 +366,8 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	memoryFlag : ="--memory=4000"
-	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions, 
+	memoryFlag := "--memory=4000"
+	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		memoryFlag = "--memory=6000"
 	}
