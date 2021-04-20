@@ -52,7 +52,15 @@ func TestListProfiles(t *testing.T) {
 		{2, "p5_partial_config", ""},
 	}
 
+	DockerContainers = func() ([]string, error) {
+		return []string{}, nil
+	}
 	val, inv, err := ListProfiles(miniDir)
+
+	num := len(testCasesValidProfs) + len(testCasesInValidProfs)
+	if num != len(val)+len(inv) {
+		t.Errorf("ListProfiles length = %d, expected %d\nvalid: %v\ninvalid: %v\n", len(val)+len(inv), num, val, inv)
+	}
 
 	for _, tt := range testCasesValidProfs {
 		if val[tt.index].Name != tt.expectName {
