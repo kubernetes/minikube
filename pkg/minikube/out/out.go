@@ -25,6 +25,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -384,8 +385,9 @@ func getLatestLogFilePath() (string, error) {
 		lastModName = file.Name()
 		lastModTime = file.ModTime()
 	}
+	fullPath := filepath.Join(tmpdir, lastModName)
 
-	return tmpdir + lastModName, nil
+	return fullPath, nil
 }
 
 func displayLogLocationMessage() error {
