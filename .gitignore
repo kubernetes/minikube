@@ -22,8 +22,6 @@ _cgo_export.*
 
 _testmain.go
 
-coverage.html
-
 *.exe
 *.test
 *.prof
