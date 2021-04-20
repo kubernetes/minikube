@@ -334,7 +334,7 @@ func wantsColor(w fdWriter) bool {
 
 // LogEntries outputs an error along with any important log entries.
 func LogEntries(msg string, err error, entries map[string][]string) {
-	DisplayError(msg, err)
+	displayError(msg, err)
 
 	for name, lines := range entries {
 		Step(style.Failure, "Problems detected in {{.entry}}:", V{"entry": name})
@@ -347,8 +347,8 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	}
 }
 
-// DisplayError prints the error and displays the standard minikube error messaging
-func DisplayError(msg string, err error) {
+// displayError prints the error and displays the standard minikube error messaging
+func displayError(msg string, err error) {
 	klog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	if JSON {
 		FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})

@@ -36,6 +36,7 @@ package out
 import (
 	"strings"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -117,4 +118,10 @@ func displayText(k reason.Kind, format string, a ...V) {
 		ErrT(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 	}
 	Ln("")
+	logFileName, err := getLatestLogFileName()
+	if err != nil {
+		klog.Warning(err)
+		return
+	}
+	ErrT(style.Tip, "If you are able to drag and drop the following log-file into the issue, we'll be able to make faster progress: {{.logFileName}}", V{"logFileName": logFileName})
 }
