@@ -113,6 +113,9 @@ function cleanup() {
 	done
 	echo -e "\nafter the cleanup:"
 	overview
+
+	# clean up /tmp
+	find /tmp -name . -o -prune -exec rm -rf -- {} + >/dev/null 2>&1 || true
 }
 
 # Give 15m for Linux-specific cleanup

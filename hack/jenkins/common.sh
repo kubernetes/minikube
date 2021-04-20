@@ -48,6 +48,9 @@ sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
 docker system prune --force --volumes || true
 docker system df || true
 
+# clean up /tmp
+find /tmp -name . -o -prune -exec rm -rf -- {} + >/dev/null 2>&1 || true
+
 echo ">> Starting at $(date)"
 echo ""
 echo "arch:      ${OS_ARCH}"
