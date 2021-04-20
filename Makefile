@@ -374,6 +374,11 @@ out/test-report.json: $(SOURCE_FILES) $(GOTEST_FILES)
 	-coverprofile=out/coverage.out -json > out/test-report.json
 out/coverage.out: out/test-report.json
 
+# Generate go test report (from gotest) as a a HTML page
+test-report.html: out/test-report.json
+	$(if $(quiet),@echo "  REPORT   $@")
+	$(Q)go-test-report < $< -o $@
+
 # Generate go coverage report (from gotest) as a HTML page
 coverage.html: out/coverage.out
 	$(if $(quiet),@echo "  COVER    $@")

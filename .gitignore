@@ -22,6 +22,7 @@ _cgo_export.*
 
 _testmain.go
 
+test-report.html
 coverage.html
 
 *.exe
