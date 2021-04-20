@@ -1253,6 +1253,15 @@ func validateListenAddress(listenAddr string) {
 func validateListenAPIServerPort(listenAPIServerPort int) {
 	if listenAPIServerPort < 0 || listenAPIServerPort > 65535 {
 		exit.Message(reason.Usage, "Sorry, the port provided with the --listen-apiserver-port flag is invalid: {{.listenAPIServerPort}}.", out.V{"listenAPIServerPort": listenAPIServerPort})
+	} else {
+		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", listenAPIServerPort))
+		if err != nil {
+			exit.Message(reason.Usage, "Sorry, the port provided with the --listen-apiserver-port flag is already allocated: {{.listenAPIServerPort}}.", out.V{"listenAPIServerPort": listenAPIServerPort})
+		}
+		err = ln.Close()
+		if err != nil {
+			exit.Message(reason.Usage, "Sorry, the port provided with the --listen-apiserver-port flag cannot be used: {{.listenAPIServerPort}}.", out.V{"listenAPIServerPort": listenAPIServerPort})
+		}
 	}
 }
 
