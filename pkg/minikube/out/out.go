@@ -24,6 +24,7 @@ import (
 	"html/template"
 	"io"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -359,6 +360,25 @@ func DisplayError(msg string, err error) {
 	ErrT(style.Empty, "")
 	ErrT(style.Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
 	ErrT(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	logFileName, err := getLatestLogFileName()
+	if err != nil {
+		klog.Warning(err)
+		return
+	}
+	ErrT(style.Tip, "If you are able to drag and drop the following log-file into the issue, we'll be able to make faster progress: {{.logFileName}}", V{"logFileName": logFileName})
+}
+
+func getLatestLogFileName() (string, error) {
+	args := "cd $TMPDIR && echo $TMPDIR$(ls -t *minikube_*_*_*log | head -1)"
+	c := exec.Command("/bin/bash", "-c", args)
+	o, err := c.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get latest log file name: %v", err)
+	}
+	// trim newline
+	name := string(o)[:len(o)-1]
+
+	return name, nil
 }
 
 // applyTmpl applies formatting

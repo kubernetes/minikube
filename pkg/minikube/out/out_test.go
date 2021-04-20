@@ -114,3 +114,20 @@ func TestErr(t *testing.T) {
 		t.Errorf("Err() = %q, want %q", got, want)
 	}
 }
+
+func TestGetLatestLogFile(t *testing.T) {
+	td := os.Getenv("TMPDIR")
+	want := fmt.Sprintf("%sminikube_test_test_test.log", td)
+	f, err := os.Create(want)
+	if err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+	defer os.Remove(f.Name())
+	got, err := getLatestLogFileName()
+	if err != nil {
+		t.Fatalf("failed to get latest log file name: %v", err)
+	}
+	if got != want {
+		t.Errorf("getLatestLogFile() = %q; want %q", got, want)
+	}
+}
