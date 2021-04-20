@@ -161,16 +161,24 @@ func Preload(k8sVersion, containerRuntime string) error {
 	return nil
 }
 
-func getChecksum(k8sVersion, containerRuntime string) (string, error) {
-	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
+func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
-		return "", errors.Wrap(err, "getting storage client")
+		return nil, errors.Wrap(err, "getting storage client")
 	}
-	attrs, err := client.Bucket(PreloadBucket).Object(TarballName(k8sVersion, containerRuntime)).Attrs(ctx)
+	attrs, err := client.Bucket(PreloadBucket).Object(name).Attrs(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "getting storage object")
+		return nil, errors.Wrap(err, "getting storage object")
+	}
+	return attrs, nil
+}
+
+func getChecksum(k8sVersion, containerRuntime string) (string, error) {
+	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
+	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
+	if err != nil {
+		return "", err
 	}
 	md5 := hex.EncodeToString(attrs.MD5)
 	return fmt.Sprintf("md5:%s", md5), nil
@@ -178,14 +186,9 @@ func getChecksum(k8sVersion, containerRuntime string) (string, error) {
 
 func saveChecksumFile(k8sVersion, containerRuntime string) error {
 	klog.Infof("saving checksum for %s ...", TarballName(k8sVersion, containerRuntime))
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
 	if err != nil {
-		return errors.Wrap(err, "getting storage client")
-	}
-	attrs, err := client.Bucket(PreloadBucket).Object(TarballName(k8sVersion, containerRuntime)).Attrs(ctx)
-	if err != nil {
-		return errors.Wrap(err, "getting storage object")
+		return err
 	}
 	checksum := attrs.MD5
 	return ioutil.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
