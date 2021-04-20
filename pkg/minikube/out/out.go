@@ -369,7 +369,11 @@ func DisplayError(msg string, err error) {
 }
 
 func getLatestLogFileName() (string, error) {
-	args := "cd $TMPDIR && echo $TMPDIR$(ls -t *minikube_*_*_*log | head -1)"
+	dir := os.Getenv("TMPDIR")
+	if dir == "" {
+		dir = "/tmp"
+	}
+	args := fmt.Sprintf("cd %s && echo %s$(ls -t *minikube_*_*_*log | head -1)", dir, dir)
 	c := exec.Command("/bin/bash", "-c", args)
 	o, err := c.Output()
 	if err != nil {

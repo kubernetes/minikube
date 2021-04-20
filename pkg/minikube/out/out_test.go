@@ -117,6 +117,9 @@ func TestErr(t *testing.T) {
 
 func TestGetLatestLogFile(t *testing.T) {
 	td := os.Getenv("TMPDIR")
+	if td == "" {
+		td = "/tmp"
+	}
 	want := fmt.Sprintf("%sminikube_test_test_test.log", td)
 	f, err := os.Create(want)
 	if err != nil {
