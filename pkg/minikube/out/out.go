@@ -23,8 +23,8 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -367,20 +367,25 @@ func displayError(msg string, err error) {
 }
 
 func getLatestLogFilePath() (string, error) {
-	dir := os.Getenv("TMPDIR")
-	if dir == "" {
-		dir = "/tmp/"
-	}
-	args := fmt.Sprintf("cd %s && echo %s$(ls -t *minikube_*_*_*log | head -1)", dir, dir)
-	c := exec.Command("/bin/bash", "-c", args)
-	o, err := c.Output()
+	tmpdir := os.TempDir()
+	files, err := ioutil.ReadDir(tmpdir)
 	if err != nil {
-		return "", fmt.Errorf("failed to get latest log file name: %v", err)
+		return "", fmt.Errorf("failed to get list of files in tempdir: %v", err)
 	}
-	// trim newline
-	name := string(o)[:len(o)-1]
+	var lastModName string
+	var lastModTime time.Time
+	for _, file := range files {
+		if !strings.Contains(file.Name(), "minikube_") {
+			continue
+		}
+		if !lastModTime.IsZero() && lastModTime.After(file.ModTime()) {
+			continue
+		}
+		lastModName = file.Name()
+		lastModTime = file.ModTime()
+	}
 
-	return name, nil
+	return tmpdir + lastModName, nil
 }
 
 func displayLogLocationMessage() error {
