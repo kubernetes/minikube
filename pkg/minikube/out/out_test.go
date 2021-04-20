@@ -19,6 +19,7 @@ package out
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -117,11 +118,8 @@ func TestErr(t *testing.T) {
 }
 
 func createLogFile() (string, error) {
-	td := os.Getenv("TMPDIR")
-	if td == "" {
-		td = "/tmp/"
-	}
-	name := fmt.Sprintf("%sminikube_test_test_test.log", td)
+	td := os.TempDir()
+	name := filepath.Join(td, "minikube_test_test_test.log")
 	f, err := os.Create(name)
 	if err != nil {
 		return "", fmt.Errorf("failed to create log file: %v", err)
