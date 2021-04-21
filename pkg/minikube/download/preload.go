@@ -144,9 +144,10 @@ func Preload(k8sVersion, containerRuntime string) error {
 
 	checksum, err := getChecksum(k8sVersion, containerRuntime)
 	if err != nil {
-		return errors.Wrap(err, "getting checksum")
+		klog.Warningf("No checksum for preloaded tarball for k8s version %s", k8sVersion)
+	} else if checksum != "" {
+		url += "?checksum=" + checksum
 	}
-	url += "?checksum=" + checksum
 
 	if err := download(url, targetPath); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
