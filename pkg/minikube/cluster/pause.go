@@ -104,6 +104,7 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 	return ids, nil
 }
 
+// CheckIfPaused checks if the Kubernetes cluster is paused
 func CheckIfPaused(cr cruntime.Manager, namespaces []string) (bool, error) {
 	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {

@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.19.0-1618553696-11111
+ISO_VERSION ?= v1.19.0-1618897865-11099
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -368,14 +368,19 @@ gotest: $(SOURCE_GENERATED) ## Trigger minikube test
 	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
 
 # Run the gotest, while recording JSON report and coverage
-out/test-report.json: $(SOURCE_FILES) $(GOTEST_FILES)
+out/unittest.json: $(SOURCE_FILES) $(GOTEST_FILES)
 	$(if $(quiet),@echo "  TEST     $@")
 	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES) \
-	-coverprofile=out/coverage.out -json > out/test-report.json
-out/coverage.out: out/test-report.json
+	-coverprofile=out/coverage.out -json > out/unittest.json
+out/coverage.out: out/unittest.json
+
+# Generate go test report (from gotest) as a a HTML page
+out/unittest.html: out/unittest.json
+	$(if $(quiet),@echo "  REPORT   $@")
+	$(Q)go-test-report < $< -o $@
 
 # Generate go coverage report (from gotest) as a HTML page
-coverage.html: out/coverage.out
+out/coverage.html: out/coverage.out
 	$(if $(quiet),@echo "  COVER    $@")
 	$(Q)go tool cover -html=$< -o $@
 
@@ -396,6 +401,8 @@ endif
 	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
 	@#golint: Html should be HTML (compat sed)
 	@sed -i -e 's/Html/HTML/g' $@ && rm -f ./-e
+	@#golint: don't use underscores in Go names
+	@sed -i -e 's/SnapshotStorageK8sIo_volumesnapshot/SnapshotStorageK8sIoVolumesnapshot/g' $@ && rm -f ./-e
 
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)

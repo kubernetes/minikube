@@ -365,8 +365,13 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Use more memory so that we may reliably fit MySQL and nginx
-	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
+	memoryFlag := "--memory=4000"
+	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
+	if GithubActionRunner() && VirtualboxDriver() {
+		memoryFlag = "--memory=6000"
+	}
+	// passing --api-server-port so later verify it didn't change in soft start.
+	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
