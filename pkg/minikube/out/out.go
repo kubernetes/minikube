@@ -114,17 +114,14 @@ func Styled(st style.Enum, format string, a ...V) {
 }
 
 // Boxed writes a stylized and templated message in a box to stdout
-func Boxed(st style.Enum, format string, a ...V) {
+func Boxed(format string, a ...V) {
 	str := Sprintf(style.None, format, a...)
 	str = strings.TrimSpace(str)
-	box := box.New(box.Config{Type: "Round"})
+	box := box.New(box.Config{Py: 1, Px: 4, Type: "Round"})
 	if useColor {
 		box.Config.Color = "Red"
 	}
-	txt := strings.Split(box.String("", str), "\n")
-	Styled(style.Indent, txt[0])
-	Styled(st, txt[1])
-	Styled(style.Indent, txt[2])
+	box.Println("", str)
 }
 
 // Sprintf is used for returning the string (doesn't write anything)
@@ -360,14 +357,18 @@ func displayError(msg string, err error) {
 	ErrT(style.Empty, "")
 	FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
 	ErrT(style.Empty, "")
-	ErrT(style.Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
-	ErrT(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
-	if err := displayLogLocationMessage(); err != nil {
-		klog.Warningf("failed to display log location message: %v", err)
-	}
+	displayGitHubIssueMessage()
 }
 
-func getLatestLogFilePath() (string, error) {
+func latestLogFilePath() (string, error) {
+	if len(os.Args) < 2 {
+		return "", fmt.Errorf("unable to detect command")
+	}
+	cmd := os.Args[1]
+	if cmd == "start" {
+		return localpath.LastStartLog(), nil
+	}
+
 	tmpdir := os.TempDir()
 	files, err := ioutil.ReadDir(tmpdir)
 	if err != nil {
@@ -390,22 +391,20 @@ func getLatestLogFilePath() (string, error) {
 	return fullPath, nil
 }
 
-func displayLogLocationMessage() error {
-	if len(os.Args) < 2 {
-		return fmt.Errorf("unable to detect command")
+func displayGitHubIssueMessage() {
+	logPath, err := latestLogFilePath()
+	if err != nil {
+		klog.Warningf("failed to diplay GitHub issue message: %v", err)
 	}
-	logPath := localpath.LastStartLog()
-	cmd := os.Args[1]
-	if cmd != "start" {
-		var err error
-		logPath, err = getLatestLogFilePath()
-		if err != nil {
-			return err
-		}
-	}
-	ErrT(style.Tip, "If you are able to drag and drop the following log-file into the issue, we'll be able to make faster progress: {{.logPath}}", V{"logPath": logPath})
 
-	return nil
+	msg := `If the above advice does not help, please let us know:
+https://github.com/kubernetes/minikube/issues/new/choose
+
+Please attach the following file to the GitHub issue:
+- `
+	msg += logPath
+
+	Boxed(msg)
 }
 
 // applyTmpl applies formatting

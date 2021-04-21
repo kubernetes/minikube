@@ -36,7 +36,6 @@ package out
 import (
 	"strings"
 
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -114,11 +113,7 @@ func displayText(k reason.Kind, format string, a ...V) {
 
 	if k.NewIssueLink {
 		ErrT(style.Empty, "")
-		ErrT(style.Sad, "If the above advice does not help, please let us know: ")
-		ErrT(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
-		if err := displayLogLocationMessage(); err != nil {
-			klog.Warningf("failed to display log location message: %v", err)
-		}
+		displayGitHubIssueMessage()
 	}
 	Ln("")
 }
