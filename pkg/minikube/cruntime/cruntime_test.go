@@ -522,7 +522,7 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 				out += "[Unit]\n"
 				out += "Description=Docker Application Container Engine\n"
 				out += "Documentation=https://docs.docker.com\n"
-				//out += "BindsTo=containerd.service\n"
+				// out += "BindsTo=containerd.service\n"
 				return out, nil
 			}
 			return out, fmt.Errorf("%s cat unimplemented", svc)
@@ -699,7 +699,7 @@ func TestContainerFunctions(t *testing.T) {
 			}
 
 			// Get the list of apiservers
-			got, err := cr.ListContainers(ListOptions{Name: "apiserver"})
+			got, err := cr.ListContainers(ListContainersOptions{Name: "apiserver"})
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
@@ -712,7 +712,7 @@ func TestContainerFunctions(t *testing.T) {
 			if err := cr.StopContainers(got); err != nil {
 				t.Fatalf("stop failed: %v", err)
 			}
-			got, err = cr.ListContainers(ListOptions{Name: "apiserver"})
+			got, err = cr.ListContainers(ListContainersOptions{Name: "apiserver"})
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
@@ -722,7 +722,7 @@ func TestContainerFunctions(t *testing.T) {
 			}
 
 			// Get the list of everything else.
-			got, err = cr.ListContainers(ListOptions{})
+			got, err = cr.ListContainers(ListContainersOptions{})
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
@@ -735,7 +735,7 @@ func TestContainerFunctions(t *testing.T) {
 			if err := cr.KillContainers(got); err != nil {
 				t.Errorf("KillContainers: %v", err)
 			}
-			got, err = cr.ListContainers(ListOptions{})
+			got, err = cr.ListContainers(ListContainersOptions{})
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}

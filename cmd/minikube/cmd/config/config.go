@@ -93,7 +93,7 @@ var settings = []Setting{
 	{
 		name:        "memory",
 		set:         SetString,
-		validations: []setFn{IsValidDiskSize},
+		validations: []setFn{IsValidMemory},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
@@ -140,7 +140,7 @@ var settings = []Setting{
 	},
 	{
 		name: Bootstrapper,
-		set:  SetString, //TODO(r2d4): more validation here?
+		set:  SetString,
 	},
 	{
 		name: config.ShowDriverDeprecationNotification,

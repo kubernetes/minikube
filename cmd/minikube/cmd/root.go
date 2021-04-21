@@ -25,6 +25,9 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/notify"
+	"k8s.io/minikube/pkg/version"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -93,6 +96,11 @@ func Execute() {
 		}
 	}
 
+	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
+		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead (Download at {{.url}}.)",
+			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "amd64")})
+	}
+
 	_, callingCmd := filepath.Split(os.Args[0])
 
 	if callingCmd == "kubectl" {
@@ -147,7 +155,7 @@ func Execute() {
 
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
-		os.Exit(reason.ExProgramUsage)
+		defer os.Exit(reason.ExProgramUsage)
 	}
 }
 

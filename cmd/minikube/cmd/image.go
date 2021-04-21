@@ -38,6 +38,7 @@ var imageCmd = &cobra.Command{
 }
 
 var (
+	pull      bool
 	imgDaemon bool
 	imgRemote bool
 )
@@ -72,6 +73,15 @@ var loadImageCmd = &cobra.Command{
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if pull {
+			// Pull image from remote registry, without doing any caching except in container runtime.
+			// This is similar to daemon.Image but it is done by the container runtime in the cluster.
+			if err := machine.PullImages(args, profile); err != nil {
+				exit.Error(reason.GuestImageLoad, "Failed to pull image", err)
+			}
+			return
 		}
 
 		var local bool
@@ -145,9 +155,29 @@ $ minikube image unload image busybox
 	},
 }
 
+var listImageCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List images",
+	Example: `
+$ minikube image list
+`,
+	Aliases: []string{"ls"},
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+		if err := machine.ListImages(profile); err != nil {
+			exit.Error(reason.GuestImageList, "Failed to list images", err)
+		}
+	},
+}
+
 func init() {
 	imageCmd.AddCommand(loadImageCmd)
 	imageCmd.AddCommand(removeImageCmd)
+	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
+	imageCmd.AddCommand(listImageCmd)
 }

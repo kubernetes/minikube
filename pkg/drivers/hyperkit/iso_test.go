@@ -27,7 +27,7 @@ func TestExtractFile(t *testing.T) {
 	if nil != err {
 		return
 	}
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(testDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", testDir)

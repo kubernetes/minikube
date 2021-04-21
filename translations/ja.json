@@ -685,7 +685,7 @@
 	"[WARNING] For full functionality, the 'csi-hostpath-driver' addon requires the 'volumesnapshots' addon to be enabled.\n\nYou can enable 'volumesnapshots' addon by running: 'minikube addons enable volumesnapshots'\n": "",
 	"[{{.id}}] {{.msg}} {{.error}}": "[{{.id}}] {{.msg}} {{.error}}",
 	"adding node": "ノードを追加しています",
-	"addon '{{.name}}' is currently not enabled.\nTo enable this addon run:\nminikube addons enable {{.name}}": "「 {{.name}} 」アドオンは現在無効になっています。\n有効にするためには、以下のコマンドを実行してくだいさい。 \nminikube addons enable {{.name}}",
+	"addon '{{.name}}' is currently not enabled.\nTo enable this addon run:\nminikube addons enable {{.name}}": "「 {{.name}} 」アドオンは現在無効になっています。\n有効にするためには、以下のコマンドを実行してください。 \nminikube addons enable {{.name}}",
 	"addon '{{.name}}' is not a valid addon packaged with minikube.\nTo see the list of available addons run:\nminikube addons list": "「 {{.name}} 」アドオンは minikube では有効なアドオンではありません。\n利用可能なアドオンの一覧を表示するためには、以下のコマンドを実行してください。 \nminikube addons list",
 	"addons modifies minikube addons files using subcommands like \"minikube addons enable dashboard\"": "addons では以下のようにサブコマンドを使用することで、 minikube のアドオンのファイルを編集することができます。 \"minikube addons enable dashboard\"",
 	"bash completion failed": "bash の補完が失敗しました",

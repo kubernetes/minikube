@@ -19,6 +19,7 @@ package kverify
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -40,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -219,10 +221,16 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 func apiServerHealthzNow(hostname string, port int) (state.State, error) {
 	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(hostname, fmt.Sprint(port)))
 	klog.Infof("Checking apiserver healthz at %s ...", url)
-	// To avoid: x509: certificate signed by unknown authority
+	cert, err := ioutil.ReadFile(localpath.CACert())
+	if err != nil {
+		klog.Infof("ca certificate: %v", err)
+		return state.Stopped, err
+	}
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(cert)
 	tr := &http.Transport{
 		Proxy:           nil, // Avoid using a proxy to speak to a local host
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: &tls.Config{RootCAs: pool},
 	}
 	client := &http.Client{Transport: tr}
 	resp, err := client.Get(url)

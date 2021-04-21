@@ -355,6 +355,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateStartWithProxy makes sure minikube start respects the HTTP_PROXY environment variable
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -364,8 +365,13 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Use more memory so that we may reliably fit MySQL and nginx
-	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
+	memoryFlag := "--memory=4000"
+	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
+	if GithubActionRunner() && VirtualboxDriver() {
+		memoryFlag = "--memory=6000"
+	}
+	// passing --api-server-port so later verify it didn't change in soft start.
+	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -388,6 +394,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+// validateAuditAfterStart makes sure the audit log contains the correct logging after minikube start
 func validateAuditAfterStart(ctx context.Context, t *testing.T, profile string) {
 	got, err := auditContains(profile)
 	if err != nil {
@@ -490,6 +497,7 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	}
 }
 
+// validateExtraConfig verifies minikube with --extra-config works as expected
 func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -536,7 +544,7 @@ func imageID(image string) string {
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
-// note: it expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag (ie, with extra wait)
+// NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -588,6 +596,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+// validateStatusCmd makes sure minikube status outputs correctly
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
@@ -704,7 +713,11 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 
 	wantCode := reason.ExInsufficientMemory
 	if rr.ExitCode != wantCode {
-		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		}
 	}
 
 	dctx, cancel := context.WithTimeout(ctx, Seconds(5))
@@ -713,7 +726,12 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	c = exec.CommandContext(dctx, Target(), startArgs...)
 	rr, err = Run(t, c)
 	if rr.ExitCode != 0 || err != nil {
-		t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
+		}
+
 	}
 }
 
@@ -1431,7 +1449,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Strip carriage returned by ssh
-		got := strings.Replace(rr.Stdout.String(), "\r", "", -1)
+		got := strings.ReplaceAll(rr.Stdout.String(), "\r", "")
 		if diff := cmp.Diff(string(want), got); diff != "" {
 			t.Errorf("failed verify pem file. minikube_test.pem -> %s mismatch (-want +got):\n%s", vp, diff)
 		}

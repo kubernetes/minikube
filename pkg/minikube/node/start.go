@@ -432,7 +432,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	}
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, cc.KubernetesConfig.APIServerName, -1)
+		addr = strings.ReplaceAll(addr, n.IP, cc.KubernetesConfig.APIServerName)
 	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,

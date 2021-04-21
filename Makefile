@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 18
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 19
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.19.0
+ISO_VERSION ?= v1.19.0-1618897865-11099
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -32,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.16.0
+GO_VERSION ?= 1.16.1
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -68,7 +68,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.171
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.30.0
+GOLINT_VERSION ?= v1.39.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -76,7 +76,7 @@ GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
+	  --enable gofmt,goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
 	  --skip-files "pkg/minikube/translate/translations.go|pkg/minikube/assets/assets.go"
 
@@ -136,6 +136,7 @@ SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 SOURCE_GENERATED = pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
+GOTEST_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep _test.go)
 
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
@@ -261,7 +262,7 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-minikube_iso: # old target kept for making tests happy
+minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause # build minikube iso
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
@@ -359,12 +360,29 @@ test: $(SOURCE_GENERATED) ## Trigger minikube test
 
 .PHONY: generate-docs
 generate-docs: out/minikube ## Automatically generate commands documentation.
-	out/minikube generate-docs --path ./site/content/en/docs/commands/
+	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md
 
 .PHONY: gotest
 gotest: $(SOURCE_GENERATED) ## Trigger minikube test
 	$(if $(quiet),@echo "  TEST     $@")
 	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
+
+# Run the gotest, while recording JSON report and coverage
+out/unittest.json: $(SOURCE_FILES) $(GOTEST_FILES)
+	$(if $(quiet),@echo "  TEST     $@")
+	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES) \
+	-coverprofile=out/coverage.out -json > out/unittest.json
+out/coverage.out: out/unittest.json
+
+# Generate go test report (from gotest) as a a HTML page
+out/unittest.html: out/unittest.json
+	$(if $(quiet),@echo "  REPORT   $@")
+	$(Q)go-test-report < $< -o $@
+
+# Generate go coverage report (from gotest) as a HTML page
+out/coverage.html: out/coverage.out
+	$(if $(quiet),@echo "  COVER    $@")
+	$(Q)go tool cover -html=$< -o $@
 
 .PHONY: extract
 extract: ## Compile extract tool
@@ -383,6 +401,8 @@ endif
 	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
 	@#golint: Html should be HTML (compat sed)
 	@sed -i -e 's/Html/HTML/g' $@ && rm -f ./-e
+	@#golint: don't use underscores in Go names
+	@sed -i -e 's/SnapshotStorageK8sIo_volumesnapshot/SnapshotStorageK8sIoVolumesnapshot/g' $@ && rm -f ./-e
 
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -833,6 +853,11 @@ out/mkcmp:
 .PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work arround for not passing the whole repo as docker context
 deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
+
+# auto pause binary to be used for ISO
+deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
+	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
+
 
 .PHONY: deploy/addons/auto-pause/auto-pause-hook
 deploy/addons/auto-pause/auto-pause-hook: $(SOURCE_GENERATED) ## Build auto-pause hook addon

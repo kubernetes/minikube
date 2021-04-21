@@ -32,9 +32,8 @@ limitations under the License.
 
 package reason
 
+// Reserved UNIX exit codes
 const (
-	// Reserved UNIX exit codes
-
 	ExFailure     = 1 // Failure represents a general failure code
 	ExInterrupted = 2 // Ctrl-C (SIGINT)
 

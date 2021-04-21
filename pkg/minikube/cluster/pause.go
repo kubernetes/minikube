@@ -55,7 +55,7 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 		return ids, errors.Wrap(err, "kubelet stop")
 	}
 
-	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Running, Namespaces: namespaces})
+	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Running, Namespaces: namespaces})
 	if err != nil {
 		return ids, errors.Wrap(err, "list running")
 	}
@@ -84,7 +84,7 @@ func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 
 // unpause unpauses a Kubernetes cluster
 func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
-	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused, Namespaces: namespaces})
+	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
 		return ids, errors.Wrap(err, "list paused")
 	}
@@ -104,8 +104,9 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 	return ids, nil
 }
 
+// CheckIfPaused checks if the Kubernetes cluster is paused
 func CheckIfPaused(cr cruntime.Manager, namespaces []string) (bool, error) {
-	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused, Namespaces: namespaces})
+	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
 		return true, errors.Wrap(err, "list paused")
 	}

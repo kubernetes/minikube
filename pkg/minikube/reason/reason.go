@@ -81,6 +81,7 @@ var (
 	Interrupted = Kind{ID: "MK_INTERRUPTED", ExitCode: ExProgramConflict}
 
 	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
+	WrongBinaryM1  = Kind{ID: "MK_WRONG_BINARY_M1", ExitCode: ExProgramUnsupported}
 
 	NewAPIClient             = Kind{ID: "MK_NEW_APICLIENT", ExitCode: ExProgramError}
 	InternalAddonEnable      = Kind{ID: "MK_ADDON_ENABLE", ExitCode: ExProgramError}
@@ -246,6 +247,7 @@ var (
 	GuestCert             = Kind{ID: "GUEST_CERT", ExitCode: ExGuestError}
 	GuestCpConfig         = Kind{ID: "GUEST_CP_CONFIG", ExitCode: ExGuestConfig}
 	GuestDeletion         = Kind{ID: "GUEST_DELETION", ExitCode: ExGuestError}
+	GuestImageList        = Kind{ID: "GUEST_IMAGE_LIST", ExitCode: ExGuestError}
 	GuestImageLoad        = Kind{ID: "GUEST_IMAGE_LOAD", ExitCode: ExGuestError}
 	GuestImageRemove      = Kind{ID: "GUEST_IMAGE_REMOVE", ExitCode: ExGuestError}
 	GuestLoadHost         = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
