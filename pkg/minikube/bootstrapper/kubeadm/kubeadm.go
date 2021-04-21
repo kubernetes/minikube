@@ -259,6 +259,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	kw.Close()
 	wg.Wait()
+
 	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
@@ -351,16 +352,12 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 		return errors.Wrap(err, "cni apply")
 	}
 
-	if cfg.KubernetesConfig.ContainerRuntime == constants.CRIO {
-		if err := cruntime.UpdateCRIONet(k.c); err != nil {
-			return errors.Wrap(err, "update crio")
-		}
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return errors.Wrap(err, "new cruntime")
 	}
-
-	if cfg.KubernetesConfig.ContainerRuntime == "containerd" {
-		if err := cruntime.UpdateContainerdNet(k.c); err != nil {
-			return errors.Wrap(err, "update containerd")
-		}
+	if err := cr.UpdateCNIConf(); err != nil {
+		return errors.Wrapf(err, "update %s cni net conf", cr.Name())
 	}
 
 	return nil

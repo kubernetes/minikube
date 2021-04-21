@@ -311,6 +311,11 @@ func (r *Containerd) KubeletOptions() map[string]string {
 	}
 }
 
+// UpdateCNIConf if not already set, updates containerd configuration to use the custom CNIConfDir and restarts it
+func (r *Containerd) UpdateCNIConf() error {
+	return updateContainerdCNIConf(r)
+}
+
 // ListContainers returns a list of managed by this container runtime
 func (r *Containerd) ListContainers(o ListContainersOptions) ([]string, error) {
 	return listCRIContainers(r.Runner, containerdNamespaceRoot, o)
@@ -460,15 +465,19 @@ func (r *Containerd) ImagesPreloaded(images []string) bool {
 	return containerdImagesPreloaded(r.Runner, images)
 }
 
-// UpdateContainerdNet updates Containerd CNI network configuration and restarts it
-func UpdateContainerdNet(r CommandRunner) error {
+// updateContainerdCNIConf if not already set, updates containerd configuration to use the custom CNIConfDir and restarts it
+func updateContainerdCNIConf(r *Containerd) error {
 	if cni.CNIConfDir != cni.DefaultCNIConfDir {
-		klog.Infof("Updating Containerd to use custom CNIConfDir: %q", cni.CNIConfDir)
-		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.CNIConfDir, containerdConfigFile))
-		if _, err := r.RunCmd(c); err != nil {
-			return errors.Wrap(err, "UpdateContainerdNet")
+		if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("grep -qs 'conf_dir = \"%s\"' %s", cni.CNIConfDir, containerdConfigFile))); err == nil {
+			klog.Infof("containerd already set to use the custom CNIConfDir %q, no update needed", cni.CNIConfDir)
+			return nil
 		}
-		return sysinit.New(r).Restart("containerd")
+
+		klog.Infof("Updating Containerd to use custom CNIConfDir: %q", cni.CNIConfDir)
+		if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.CNIConfDir, containerdConfigFile))); err != nil {
+			return errors.Wrap(err, "update containerd CNI conf")
+		}
+		return r.Restart()
 	}
 	return nil
 }

@@ -93,6 +93,9 @@ type Manager interface {
 	// SocketPath returns the path to the socket file for a given runtime
 	SocketPath() string
 
+	// UpdateCNIConf if not already set, updates container runtime's configuration to use the custom CNIConfDir and restarts it
+	UpdateCNIConf() error
+
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
 	// Pull an image to the runtime from the container registry

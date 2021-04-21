@@ -227,6 +227,11 @@ func (r *CRIO) KubeletOptions() map[string]string {
 	}
 }
 
+// UpdateCNIConf if not already set, updates CRIO configuration to use the custom CNIConfDir and restarts it
+func (r *CRIO) UpdateCNIConf() error {
+	return updateCRIOCNIConf(r)
+}
+
 // ListContainers returns a list of managed by this container runtime
 func (r *CRIO) ListContainers(o ListContainersOptions) ([]string, error) {
 	return listCRIContainers(r.Runner, "", o)
@@ -317,6 +322,11 @@ func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
 	return nil
 }
 
+// Restart restarts CRIO on a host
+func (r *CRIO) Restart() error {
+	return r.Init.Restart("crio")
+}
+
 // crioImagesPreloaded returns true if all images have been preloaded
 func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
@@ -371,15 +381,19 @@ func (r *CRIO) ImagesPreloaded(images []string) bool {
 	return crioImagesPreloaded(r.Runner, images)
 }
 
-// UpdateCRIONet updates CRIO CNI network configuration and restarts it
-func UpdateCRIONet(r CommandRunner) error {
+// updateCRIOCNIConf if not already set, updates CRIO configuration to use the custom CNIConfDir and restarts it
+func updateCRIOCNIConf(r *CRIO) error {
 	if cni.CNIConfDir != cni.DefaultCNIConfDir {
-		klog.Infof("Updating CRIO to use custom CNIConfDir: %q", cni.CNIConfDir)
-		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^network_dir = .*$|network_dir = \"%s/\"|' -i %s", cni.CNIConfDir, crioConfigFile))
-		if _, err := r.RunCmd(c); err != nil {
-			return errors.Wrap(err, "UpdateCRIONet")
+		if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("grep -qs 'network_dir = \"%s/\"' %s", cni.CNIConfDir, crioConfigFile))); err == nil {
+			klog.Infof("CRIO already set to use the custom CNIConfDir %q, no update needed", cni.CNIConfDir)
+			return nil
 		}
-		return sysinit.New(r).Restart("crio")
+
+		klog.Infof("Updating CRIO to use the custom CNIConfDir %q", cni.CNIConfDir)
+		if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^network_dir = .*$|network_dir = \"%s/\"|' -i %s", cni.CNIConfDir, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "update CRIO CNI conf")
+		}
+		return r.Restart()
 	}
 	return nil
 }
