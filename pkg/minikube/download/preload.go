@@ -143,8 +143,15 @@ func Preload(k8sVersion, containerRuntime string) error {
 	url := remoteTarballURL(k8sVersion, containerRuntime)
 
 	checksum, err := getChecksum(k8sVersion, containerRuntime)
+	var realPath string
 	if err != nil {
 		klog.Warningf("No checksum for preloaded tarball for k8s version %s", k8sVersion)
+		realPath = targetPath
+		tmp, err := ioutil.TempFile(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
+		if err != nil {
+			return errors.Wrap(err, "tempfile")
+		}
+		targetPath = tmp.Name()
 	} else if checksum != "" {
 		url += "?checksum=" + checksum
 	}
@@ -159,6 +166,14 @@ func Preload(k8sVersion, containerRuntime string) error {
 
 	if err := verifyChecksum(k8sVersion, containerRuntime, targetPath); err != nil {
 		return errors.Wrap(err, "verify")
+	}
+
+	if realPath != "" {
+		klog.Infof("renaming tempfile to %s ...", TarballName(k8sVersion, containerRuntime))
+		err := os.Rename(targetPath, realPath)
+		if err != nil {
+			return errors.Wrap(err, "rename")
+		}
 	}
 
 	return nil
