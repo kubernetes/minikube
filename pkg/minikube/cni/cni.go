@@ -136,15 +136,6 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return Bridge{}
 	}
 
-	if cc.KubernetesConfig.ContainerRuntime != "docker" {
-		if driver.IsKIC(cc.Driver) {
-			klog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-			return KindNet{cc: cc}
-		}
-		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-		return Bridge{cc: cc}
-	}
-
 	if driver.BareMetal(cc.Driver) {
 		klog.Infof("Driver %s used, CNI unnecessary in this configuration, recommending no CNI", cc.Driver)
 		return Disabled{cc: cc}
@@ -155,6 +146,15 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.
 		klog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
 		return KindNet{cc: cc}
+	}
+
+	if cc.KubernetesConfig.ContainerRuntime != "docker" {
+		if driver.IsKIC(cc.Driver) {
+			klog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+			return KindNet{cc: cc}
+		}
+		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		return Bridge{cc: cc}
 	}
 
 	klog.Infof("CNI unnecessary in this configuration, recommending no CNI")
