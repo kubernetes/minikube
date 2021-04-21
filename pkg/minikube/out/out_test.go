@@ -155,10 +155,10 @@ func TestLatestLogPath(t *testing.T) {
 		os.Args = tt.args
 		got, err := latestLogFilePath()
 		if err != nil {
-			t.Fatalf("failed latestLogFilePath(): %v", err)
+			t.Fatalf("os.Args = %s; latestLogFilePath() failed with error = %v", tt.args, err)
 		}
 		if got != tt.want {
-			t.Errorf("oa.Args = %s; latestLogFilePath() = %q; wanted to contain %q", tt.args, got, tt.want)
+			t.Errorf("os.Args = %s; latestLogFilePath() = %q; wanted %q", tt.args, got, tt.want)
 		}
 	}
 }
