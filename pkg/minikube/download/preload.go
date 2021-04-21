@@ -145,7 +145,7 @@ func Preload(k8sVersion, containerRuntime string) error {
 	checksum, err := getChecksum(k8sVersion, containerRuntime)
 	var realPath string
 	if err != nil {
-		klog.Warningf("No checksum for preloaded tarball for k8s version %s", k8sVersion)
+		klog.Warningf("No checksum for preloaded tarball for k8s version %s: %v", k8sVersion, err)
 		realPath = targetPath
 		tmp, err := ioutil.TempFile(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
 		if err != nil {
