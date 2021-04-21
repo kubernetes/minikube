@@ -166,11 +166,23 @@ if [[ "${zombie_defuncts}" != "" ]]; then
 fi
 
 if type -P virsh; then
-  virsh -c qemu:///system list --all --uuid \
-    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+  sudo virsh -c qemu:///system list --all --uuid \
+    | xargs -I {} sh -c "sudo virsh -c qemu:///system destroy {}; sudo virsh -c qemu:///system undefine {}" \
     || true
   echo ">> virsh VM list after clean up (should be empty):"
-  virsh -c qemu:///system list --all || true
+  sudo virsh -c qemu:///system list --all || true
+
+  for NET in $( sudo virsh -c qemu:///system net-list --all --name ); do
+    if [ "${NET}" != "default" ]; then
+      sudo virsh -c qemu:///system net-destroy "${NET}" || \
+      sudo virsh -c qemu:///system net-undefine "${NET}" || true
+    fi
+  done
+  echo ">> virsh VM networks list after clean up (should have only 'default'):"
+  sudo virsh -c qemu:///system net-list --all || true
+  echo ">> host networks after KVM clean up:"
+  sudo ip link show || true
+  echo
 fi
 
 if type -P vboxmanage; then
