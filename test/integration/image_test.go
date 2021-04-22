@@ -37,6 +37,17 @@ func TestImage(t *testing.T) {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
 	}
 
+	if ContainerRuntime() == "containerd" {
+		// sudo systemctl start buildkit.socket
+		cmd := exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "nohup",
+			"sudo", "-b", "buildkitd", "--oci-worker=false",
+			"--containerd-worker=true", "--containerd-worker-namespace=k8s.io")
+		if rr, err = Run(t, cmd); err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+		// unix:///run/buildkit/buildkitd.sock
+	}
+
 	tests := []struct {
 		command string
 		args    []string
