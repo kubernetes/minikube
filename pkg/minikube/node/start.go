@@ -196,10 +196,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err := cnm.Apply(cpr); err != nil {
 			return nil, errors.Wrap(err, "cni apply")
 		}
-
-		if err := cr.UpdateCNIConf(); err != nil {
-			return nil, errors.Wrap(err, "cni net conf apply")
-		}
 	}
 	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {

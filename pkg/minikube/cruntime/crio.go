@@ -60,6 +60,14 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "generateCRIOConfig.")
 	}
+
+	if cni.Network != "" {
+		klog.Infof("Updating CRIO to use the custom CNI network %q", cni.Network)
+		if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cni_default_network = .*$|cni_default_network = \"%s\"|' -i %s", cni.Network, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "update network_dir")
+		}
+	}
+
 	return nil
 }
 
@@ -227,11 +235,6 @@ func (r *CRIO) KubeletOptions() map[string]string {
 	}
 }
 
-// UpdateCNIConf if not already set, updates CRIO configuration to use the custom CNIConfDir and restarts it
-func (r *CRIO) UpdateCNIConf() error {
-	return updateCRIOCNIConf(r)
-}
-
 // ListContainers returns a list of managed by this container runtime
 func (r *CRIO) ListContainers(o ListContainersOptions) ([]string, error) {
 	return listCRIContainers(r.Runner, "", o)
@@ -379,21 +382,4 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 // ImagesPreloaded returns true if all images have been preloaded
 func (r *CRIO) ImagesPreloaded(images []string) bool {
 	return crioImagesPreloaded(r.Runner, images)
-}
-
-// updateCRIOCNIConf if not already set, updates CRIO configuration to use the custom CNIConfDir and restarts it
-func updateCRIOCNIConf(r *CRIO) error {
-	if cni.CNIConfDir != cni.DefaultCNIConfDir {
-		if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("grep -qs 'network_dir = \"%s/\"' %s", cni.CNIConfDir, crioConfigFile))); err == nil {
-			klog.Infof("CRIO already set to use the custom CNIConfDir %q, no update needed", cni.CNIConfDir)
-			return nil
-		}
-
-		klog.Infof("Updating CRIO to use the custom CNIConfDir %q", cni.CNIConfDir)
-		if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^network_dir = .*$|network_dir = \"%s/\"|' -i %s", cni.CNIConfDir, crioConfigFile))); err != nil {
-			return errors.Wrap(err, "update CRIO CNI conf")
-		}
-		return r.Restart()
-	}
-	return nil
 }

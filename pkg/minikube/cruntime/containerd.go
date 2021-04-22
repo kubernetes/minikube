@@ -93,7 +93,7 @@ oom_score = 0
         runtime_root = ""
     [plugins.cri.cni]
       bin_dir = "/opt/cni/bin"
-      conf_dir = "/etc/cni/net.d"
+      conf_dir = "{{.CNIConfDir}}"
       conf_template = ""
     [plugins.cri.registry]
       [plugins.cri.registry.mirrors]
@@ -189,10 +189,12 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 		PodInfraContainerImage string
 		SystemdCgroup          bool
 		InsecureRegistry       []string
+		CNIConfDir             string
 	}{
 		PodInfraContainerImage: pauseImage,
 		SystemdCgroup:          forceSystemd,
 		InsecureRegistry:       insecureRegistry,
+		CNIConfDir:             cni.ConfDir,
 	}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -309,11 +311,6 @@ func (r *Containerd) KubeletOptions() map[string]string {
 		"image-service-endpoint":     fmt.Sprintf("unix://%s", r.SocketPath()),
 		"runtime-request-timeout":    "15m",
 	}
-}
-
-// UpdateCNIConf if not already set, updates containerd configuration to use the custom CNIConfDir and restarts it
-func (r *Containerd) UpdateCNIConf() error {
-	return updateContainerdCNIConf(r)
 }
 
 // ListContainers returns a list of managed by this container runtime
@@ -463,21 +460,4 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 // ImagesPreloaded returns true if all images have been preloaded
 func (r *Containerd) ImagesPreloaded(images []string) bool {
 	return containerdImagesPreloaded(r.Runner, images)
-}
-
-// updateContainerdCNIConf if not already set, updates containerd configuration to use the custom CNIConfDir and restarts it
-func updateContainerdCNIConf(r *Containerd) error {
-	if cni.CNIConfDir != cni.DefaultCNIConfDir {
-		if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("grep -qs 'conf_dir = \"%s\"' %s", cni.CNIConfDir, containerdConfigFile))); err == nil {
-			klog.Infof("containerd already set to use the custom CNIConfDir %q, no update needed", cni.CNIConfDir)
-			return nil
-		}
-
-		klog.Infof("Updating Containerd to use custom CNIConfDir: %q", cni.CNIConfDir)
-		if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.CNIConfDir, containerdConfigFile))); err != nil {
-			return errors.Wrap(err, "update containerd CNI conf")
-		}
-		return r.Restart()
-	}
-	return nil
 }

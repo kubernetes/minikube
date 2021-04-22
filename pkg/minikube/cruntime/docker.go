@@ -243,12 +243,6 @@ func (r *Docker) KubeletOptions() map[string]string {
 	}
 }
 
-// UpdateCNIConf if not already set, updates Docker configuration to use the custom CNIConfDir and restarts it
-// Note: ATM it seems that Docker does not _require_ this
-func (r *Docker) UpdateCNIConf() error {
-	return nil
-}
-
 // ListContainers returns a list of containers
 func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 	if r.UseCRI {

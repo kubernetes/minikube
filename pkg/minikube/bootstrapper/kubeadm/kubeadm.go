@@ -352,14 +352,6 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 		return errors.Wrap(err, "cni apply")
 	}
 
-	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
-	if err != nil {
-		return errors.Wrap(err, "new cruntime")
-	}
-	if err := cr.UpdateCNIConf(); err != nil {
-		return errors.Wrapf(err, "update %s cni net conf", cr.Name())
-	}
-
 	return nil
 }
 
