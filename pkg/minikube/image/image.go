@@ -87,7 +87,7 @@ func DigestByGoLib(imgName string) string {
 		return ""
 	}
 
-	img, err := retrieveImage(ref)
+	img, _, err := retrieveImage(ref, imgName)
 	if err != nil {
 		klog.Infof("error retrieve Image %s ref %v ", imgName, err)
 		return ""
@@ -212,29 +212,44 @@ func WriteImageToDaemon(img string) error {
 	}
 }
 
-func retrieveImage(ref name.Reference) (v1.Image, error) {
+func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error) {
 	var err error
 	var img v1.Image
 
 	if !useDaemon && !useRemote {
-		return nil, fmt.Errorf("neither daemon nor remote")
+		return nil, "", fmt.Errorf("neither daemon nor remote")
 	}
 
 	klog.Infof("retrieving image: %+v", ref)
 	if useDaemon {
+		if useRemote {
+			klog.Infof("checking repository: %+v", ref.Context())
+			_, err := remote.Head(ref)
+			if err == nil {
+				imgName = ref.Name()
+				klog.Infof("canonical name: %s", imgName)
+			}
+			if err != nil {
+				klog.Warningf("remote: %v", err)
+				klog.Infof("short name: %s", imgName)
+			}
+		}
 		img, err = retrieveDaemon(ref)
 		if err == nil {
-			return img, nil
+			return img, imgName, nil
 		}
 	}
 	if useRemote {
 		img, err = retrieveRemote(ref, defaultPlatform)
 		if err == nil {
-			return fixPlatform(ref, img, defaultPlatform)
+			img, err = fixPlatform(ref, img, defaultPlatform)
+			if err == nil {
+				return img, ref.Name(), nil
+			}
 		}
 	}
 
-	return nil, err
+	return nil, "", err
 }
 
 func retrieveDaemon(ref name.Reference) (v1.Image, error) {
