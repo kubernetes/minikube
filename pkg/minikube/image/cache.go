@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -34,11 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
-)
-
-const (
-	legacyDefaultDomain = "index.docker.io"
-	defaultDomain       = "docker.io"
 )
 
 type cacheError struct {
@@ -142,9 +136,6 @@ func saveToTarFile(iname, rawDest string) error {
 	}
 	if img == nil {
 		return errors.Wrapf(err, "nil image for %s", iname)
-	}
-	if strings.HasPrefix(cname, legacyDefaultDomain) {
-		cname = strings.Replace(cname, legacyDefaultDomain, defaultDomain, 1)
 	}
 
 	// use new canonical name
