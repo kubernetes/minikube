@@ -44,6 +44,9 @@ var (
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
 func MaybePrintUpdateTextFromGithub() bool {
+	if notified := MaybePrintBetaUpdateText(GithubMinikubeBetaReleasesURL, lastUpdateCheckFilePath); notified {
+		return true
+	}
 	return MaybePrintUpdateText(GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
@@ -74,12 +77,49 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) bool {
 	return false
 }
 
+// MaybePrintBetaUpdateText returns true and prints update text of a new beta version of minikube is available.
+func MaybePrintBetaUpdateText(url string, lastUpdatePath string) bool {
+	if !shouldCheckURLBetaVersion(lastUpdatePath) {
+		return false
+	}
+	latestVersion, err := getLatestVersionFromURL(url)
+	if err != nil {
+		klog.Warning(err)
+		return false
+	}
+	localVersion, err := version.GetSemverVersion()
+	if err != nil {
+		klog.Warning(err)
+		return false
+	}
+	if localVersion.Compare(latestVersion) >= 0 {
+		return false
+	}
+	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
+		klog.Errorf("write time failed: %v", err)
+	}
+	url = "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
+	out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
+	out.Styled(style.Tip, "To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'\n")
+	out.Styled(style.Tip, "To disable update notices in general, run: 'minikube config set WantUpdateNotification false'\n")
+
+	return true
+}
+
 func shouldCheckURLVersion(filePath string) bool {
 	if !viper.GetBool(config.WantUpdateNotification) {
 		return false
 	}
 	lastUpdateTime := getTimeFromFileIfExists(filePath)
 	return time.Since(lastUpdateTime).Hours() >= viper.GetFloat64(config.ReminderWaitPeriodInHours)
+}
+
+func shouldCheckURLBetaVersion(filePath string) bool {
+	if !viper.GetBool(config.WantBetaUpdateNotification) {
+		return false
+	}
+
+	return shouldCheckURLVersion(filePath)
 }
 
 // Release represents a release

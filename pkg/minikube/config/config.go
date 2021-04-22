@@ -32,7 +32,9 @@ import (
 const (
 	// WantUpdateNotification is the key for WantUpdateNotification
 	WantUpdateNotification = "WantUpdateNotification"
-	// ReminderWaitPeriodInHours is the key for WantUpdateNotification
+	// WantBetaUpdateNotification is the key for WantBetaUpdateNotification
+	WantBetaUpdateNotification = "WantBetaUpdateNotification"
+	// ReminderWaitPeriodInHours is the key for ReminderWaitPeriodInHours
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
 	// WantReportError is the key for WantReportError
 	WantReportError = "WantReportError"

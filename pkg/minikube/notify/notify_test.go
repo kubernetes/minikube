@@ -41,7 +41,7 @@ func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
 	}
 }
 
-func TestShouldCheckURL(t *testing.T) {
+func TestShouldCheckURLVersion(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 
@@ -76,6 +76,52 @@ func TestShouldCheckURL(t *testing.T) {
 	}
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
 		t.Fatalf("shouldCheckURLVersion returned true even though less than 24 hours since last update")
+	}
+
+}
+
+func TestShouldCheckURLBetaVersion(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
+	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
+
+	// test that if users disable update notification in config, the URL version does not get checked
+	viper.Set(config.WantUpdateNotification, true)
+	viper.Set(config.WantBetaUpdateNotification, false)
+	if shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
+		t.Fatalf("shouldCheckURLBetaVersion returned true even though config had WantBetaUpdateNotification: false")
+	}
+
+	viper.Set(config.WantUpdateNotification, false)
+	viper.Set(config.WantBetaUpdateNotification, true)
+	if shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
+		t.Fatalf("shouldCheckURLBetaVersion returned true even though config had WantUpdateNotification: false")
+	}
+
+	// test that if users want update notification, the URL version does get checked
+	viper.Set(config.WantUpdateNotification, true)
+	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
+		t.Fatalf("shouldCheckURLBetaVersion returned false even though there was no last_update_check file")
+	}
+
+	// test that update notifications get triggered if it has been longer than 24 hours
+	viper.Set(config.ReminderWaitPeriodInHours, 24)
+
+	//time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
+	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Time{}); err != nil {
+		t.Errorf("write failed: %v", err)
+	}
+	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
+		t.Fatalf("shouldCheckURLBetaVersion returned false even though longer than 24 hours since last update")
+	}
+
+	// test that update notifications do not get triggered if it has been less than 24 hours
+	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
+		t.Errorf("write failed: %v", err)
+	}
+	if shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
+		t.Fatalf("shouldCheckURLBetaVersion returned true even though less than 24 hours since last update")
 	}
 
 }
@@ -230,6 +276,106 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			}
 			if len(outputBuffer.String()) == test.len {
 				t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
+					version.GetVersion(), latestVersionFromURL, outputBuffer.String())
+			}
+		})
+	}
+}
+
+func TestMaybePrintBetaUpdateText(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+	outputBuffer := tests.NewFakeFile()
+	out.SetOutFile(outputBuffer)
+
+	var tc = []struct {
+		len                        int
+		wantUpdateNotification     bool
+		wantBetaUpdateNotification bool
+		latestVersionFromURL       string
+		description                string
+		status                     bool
+		url                        string
+		lastUpdateCheckFilePath    string
+	}{
+		{
+			len:                        1,
+			latestVersionFromURL:       "0.0.0-dev",
+			wantUpdateNotification:     true,
+			wantBetaUpdateNotification: true,
+			description:                "latest version lower or equal",
+		},
+		{
+			len:                        0,
+			latestVersionFromURL:       "100.0.0-dev",
+			wantUpdateNotification:     true,
+			wantBetaUpdateNotification: true,
+			description:                "latest version greater",
+			status:                     true,
+		},
+		{
+			len:                        1,
+			latestVersionFromURL:       "100.0.0-dev",
+			wantUpdateNotification:     false,
+			wantBetaUpdateNotification: true,
+			description:                "notification unwanted",
+		},
+		{
+			len:                        1,
+			latestVersionFromURL:       "100.0.0-dev",
+			wantUpdateNotification:     true,
+			wantBetaUpdateNotification: false,
+			description:                "beta notification unwanted",
+		},
+		{
+			len:                        1,
+			latestVersionFromURL:       "100.0.0-dev",
+			wantUpdateNotification:     true,
+			wantBetaUpdateNotification: true,
+			description:                "bad url",
+			url:                        "this is not valid url",
+			status:                     false,
+		},
+		{
+			len:                        1,
+			latestVersionFromURL:       "10.0.0-dev",
+			wantUpdateNotification:     true,
+			wantBetaUpdateNotification: true,
+			description:                "bad lastUpdateCheckFilePath",
+			lastUpdateCheckFilePath:    "/etc/passwd",
+			status:                     true,
+		},
+	}
+
+	viper.Set(config.ReminderWaitPeriodInHours, 24)
+	for _, test := range tc {
+		t.Run(test.description, func(t *testing.T) {
+			viper.Set(config.WantUpdateNotification, test.wantUpdateNotification)
+			viper.Set(config.WantBetaUpdateNotification, test.wantBetaUpdateNotification)
+			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
+			if test.lastUpdateCheckFilePath != "" {
+				lastUpdateCheckFilePath = test.lastUpdateCheckFilePath
+			}
+			latestVersionFromURL := test.latestVersionFromURL
+			handler := &URLHandlerCorrect{
+				releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
+			}
+			server := httptest.NewServer(handler)
+			defer server.Close()
+			if test.url == "" {
+				test.url = server.URL
+			}
+			tmpfile, err := ioutil.TempFile("", "")
+			if err != nil {
+				t.Fatalf("Cannot create temp file: %v", err)
+			}
+			defer os.Remove(tmpfile.Name())
+			status := MaybePrintBetaUpdateText(test.url, tmpfile.Name())
+			if test.status != status {
+				t.Fatalf("MaybePrintBetaUpdateText expected to return %v, but got %v", test.status, status)
+			}
+			if len(outputBuffer.String()) == test.len {
+				t.Fatalf("Expected MaybePrintBetaUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
 					version.GetVersion(), latestVersionFromURL, outputBuffer.String())
 			}
 		})
