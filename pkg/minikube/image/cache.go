@@ -138,13 +138,15 @@ func saveToTarFile(iname, rawDest string) error {
 		return errors.Wrapf(err, "nil image for %s", iname)
 	}
 
-	// use new canonical name
-	ref, err = name.ParseReference(cname, name.WeakValidation)
-	if err != nil {
-		return errors.Wrapf(err, "parsing image ref name for %s", cname)
-	}
-	if ref == nil {
-		return errors.Wrapf(err, "nil reference for %s", cname)
+	if cname != iname {
+		// use new canonical name
+		ref, err = name.ParseReference(cname, name.WeakValidation)
+		if err != nil {
+			return errors.Wrapf(err, "parsing image ref name for %s", cname)
+		}
+		if ref == nil {
+			return errors.Wrapf(err, "nil reference for %s", cname)
+		}
 	}
 
 	err = writeImage(img, dst, ref)
