@@ -758,6 +758,15 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	// Join the master by specifying its token
 	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, config.MachineName(cc, n))
 
+	// avoid "Found multiple CRI sockets, please use --cri-socket to select one: /var/run/dockershim.sock, /var/run/crio/crio.sock" error
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c, Socket: cc.KubernetesConfig.CRISocket})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+	if sp := cr.SocketPath(); sp != "" {
+		joinCmd = fmt.Sprintf("%s --cri-socket=%s", joinCmd, sp)
+	}
+
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd)); err != nil {
 		return errors.Wrapf(err, "kubeadm join")
 	}
