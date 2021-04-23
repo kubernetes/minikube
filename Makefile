@@ -39,7 +39,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2020.02.11
+BUILDROOT_BRANCH ?= 2020.02.12
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
