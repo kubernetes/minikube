@@ -259,7 +259,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	kw.Close()
 	wg.Wait()
-
 	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
@@ -331,7 +330,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 		regStep = registerStep[0]
 	}
 
-	cnm, err := cni.New(&cfg)
+	cnm, err := cni.New(cfg)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
 	}
@@ -350,6 +349,12 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
+	}
+
+	if cfg.KubernetesConfig.ContainerRuntime == constants.CRIO {
+		if err := cruntime.UpdateCRIONet(k.c, cnm.CIDR()); err != nil {
+			return errors.Wrap(err, "update crio")
+		}
 	}
 
 	return nil
@@ -753,15 +758,6 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
 	// Join the master by specifying its token
 	joinCmd = fmt.Sprintf("%s --node-name=%s", joinCmd, config.MachineName(cc, n))
-
-	// avoid "Found multiple CRI sockets, please use --cri-socket to select one: /var/run/dockershim.sock, /var/run/crio/crio.sock" error
-	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c, Socket: cc.KubernetesConfig.CRISocket})
-	if err != nil {
-		return errors.Wrap(err, "runtime")
-	}
-	if sp := cr.SocketPath(); sp != "" {
-		joinCmd = fmt.Sprintf("%s --cri-socket=%s", joinCmd, sp)
-	}
 
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd)); err != nil {
 		return errors.Wrapf(err, "kubeadm join")

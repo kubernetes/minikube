@@ -48,13 +48,6 @@ rules:
     verbs:
       - list
       - watch
-      - patch
-  - apiGroups:
-     - ""
-    resources:
-      - configmaps
-    verbs:
-      - get
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -166,7 +159,7 @@ func (c KindNet) manifest() (assets.CopyableFile, error) {
 		DefaultRoute: "0.0.0.0/0", // assumes IPv4
 		PodCIDR:      DefaultPodCIDR,
 		ImageName:    images.KindNet(c.cc.KubernetesConfig.ImageRepository),
-		CNIConfDir:   ConfDir,
+		CNIConfDir:   CustomCNIConfDir,
 	}
 
 	b := bytes.Buffer{}

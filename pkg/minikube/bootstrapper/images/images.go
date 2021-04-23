@@ -141,13 +141,11 @@ func dashboardMetrics(repo string) string {
 }
 
 // KindNet returns the image used for kindnet
-// ref: https://hub.docker.com/r/kindest/kindnetd/tags
-// src: https://github.com/kubernetes-sigs/kind/tree/master/images/kindnetd
 func KindNet(repo string) string {
 	if repo == "" {
 		repo = "kindest"
 	}
-	return path.Join(repo, "kindnetd:v20210326-1e038dc5")
+	return path.Join(repo, "kindnetd:v20210220-5b7e6d01")
 }
 
 // CalicoDaemonSet returns the image used for calicoDaemonSet

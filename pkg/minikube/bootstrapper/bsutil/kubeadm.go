@@ -74,7 +74,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
-	cnm, err := cni.New(&cc)
+	cnm, err := cni.New(cc)
 	if err != nil {
 		return nil, errors.Wrap(err, "cni")
 	}
