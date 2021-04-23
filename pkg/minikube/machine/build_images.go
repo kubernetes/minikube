@@ -51,6 +51,9 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 	failed := []string{}
 
 	u, err := url.Parse(path)
+	if err == nil && u.Scheme == "file" {
+		path = u.Path
+	}
 	remote := err == nil && u.Scheme != ""
 	if runtime.GOOS == "windows" && filepath.VolumeName(path) != "" {
 		remote = false
