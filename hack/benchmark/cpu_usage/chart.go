@@ -20,6 +20,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"runtime"
 	"strconv"
@@ -30,6 +31,16 @@ import (
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
 )
+
+type integerTicks struct{}
+
+func (integerTicks) Ticks(min, max float64) []plot.Tick {
+	var t []plot.Tick
+	for i := math.Trunc(min); i <= max; i += 50 {
+		t = append(t, plot.Tick{Value: i, Label: fmt.Sprint(i)})
+	}
+	return t
+}
 
 func main() {
 	if err := execute(); err != nil {
@@ -106,8 +117,45 @@ func execute() error {
 	} else if runtime.GOOS == "linux" {
 		p.NominalX("OS idle", "minikube kvm2", "minikube virtualbox", "minikube docker", "minikube docker auto-pause", "Docker idle", "k3d", "kind")
 	}
+	p.X.Label.Text = "Tools"
 
-	// output bar graph
+	// Set data label to each bar
+	var cpuLabels []string
+	for i := range results {
+		cLabel := strconv.FormatFloat(results[i], 'f', -1, 64)
+		cpuLabels = append(cpuLabels, cLabel)
+	}
+
+	var xysCPU []plotter.XY
+	for i := range results {
+		rxPos := float64(i)-0.13
+		ryPos := results[i]+0.1
+		cXY := plotter.XY{X: rxPos, Y: ryPos}
+		xysCPU = append(xysCPU, cXY)
+	}
+	// CPU Busy% data label
+	cl, err := plotter.NewLabels(plotter.XYLabels{
+			XYs:    xysCPU,
+			Labels: cpuLabels,
+		},
+	)
+	if err != nil {
+		log.Fatalf("could not creates labels plotter: %+v", err)
+	}
+	//for i := range rl.TextStyle {
+	//	rl.TextStyle[i].Color = color.RGBA{R: 255, A: 255}
+	//}
+	var t []plot.Tick
+	for i := math.Trunc(0); i <= 300; i += 50 {
+		t = append(t, plot.Tick{Value: i, Label: fmt.Sprint(i)})
+	}
+	// define max cpu busy% to 30%
+	p.Y.Max = 30
+	p.Y.Tick.Marker = integerTicks{}
+	// Add CPU Busy% label to plot
+	p.Add(cl)
+
+	// Output bar graph
 	if runtime.GOOS == "darwin" {
 		if err := p.Save(13*vg.Inch, 8*vg.Inch, "./site/static/images/benchmarks/cpuUsage/mac.png"); err != nil {
 			return errors.Wrap(err, "Failed to create bar graph png")
