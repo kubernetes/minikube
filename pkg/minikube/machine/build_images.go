@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/docker/machine/libmachine/state"
@@ -51,6 +52,9 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 
 	u, err := url.Parse(path)
 	remote := err == nil && u.Scheme != ""
+	if runtime.GOOS == "windows" && filepath.VolumeName(path) != "" {
+		remote = false
+	}
 
 	for _, p := range profiles { // building images to all running profiles
 		pName := p.Name // capture the loop variable

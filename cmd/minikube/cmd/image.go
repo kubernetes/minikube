@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -197,7 +199,11 @@ var buildImageCmd = &cobra.Command{
 		} else {
 			// If it is an URL, pass it as-is
 			u, err := url.Parse(img)
-			if err == nil && u.Scheme == "" && u.Host == "" {
+			local := err == nil && u.Scheme == "" && u.Host == ""
+			if runtime.GOOS == "windows" && filepath.VolumeName(img) != "" {
+				local = true
+			}
+			if local {
 				// If it's a directory, tar it
 				info, err := os.Stat(img)
 				if err == nil && info.IsDir() {
