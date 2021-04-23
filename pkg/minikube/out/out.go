@@ -397,12 +397,10 @@ func displayGitHubIssueMessage() {
 		klog.Warningf("failed to diplay GitHub issue message: %v", err)
 	}
 
-	msg := `If the above advice does not help, please let us know:
-https://github.com/kubernetes/minikube/issues/new/choose
-
-Please attach the following file to the GitHub issue:
-- `
-	msg += logPath
+	msg := Sprintf(style.Sad, "If the above advice does not help, please let us know:")
+	msg += Sprintf(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose\n")
+	msg += Sprintf(style.Empty, "Please attach the following file to the GitHub issue:")
+	msg += Sprintf(style.Empty, "- {{.logPath}}", V{"logPath": logPath})
 
 	Boxed(msg)
 }
