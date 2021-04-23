@@ -232,7 +232,7 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
-	if !strings.Contains(rr.Output(), newImage) {
+	if !strings.Contains(rr.Output(), fmt.Sprintf("busybox:%s", profile)) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 
