@@ -48,6 +48,13 @@ rules:
     verbs:
       - list
       - watch
+      - patch
+  - apiGroups:
+     - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
