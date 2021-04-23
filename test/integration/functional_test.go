@@ -134,6 +134,7 @@ func TestFunctional(t *testing.T) {
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
 			{"RemoveImage", validateRemoveImage},
+			{"BuildImage", validateBuildImage},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -292,6 +293,54 @@ func inspectImage(ctx context.Context, t *testing.T, profile string, image strin
 		return rr, err
 	}
 	return rr, nil
+}
+
+// validateBuildImage makes sures that `minikube image build` works as expected
+func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+
+	newImage := "my-image"
+	if ContainerRuntime() == "containerd" {
+		startBuildkit(ctx, t, profile)
+		// unix:///run/buildkit/buildkitd.sock
+	}
+
+	// try to build the new image with minikube
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
+	if err != nil {
+		t.Fatalf("building image with minikube: %v\n%s", err, rr.Output())
+	}
+	if rr.Stdout.Len() > 0 {
+		t.Logf("(dbg) Stdout: %s:\n%s", rr.Command(), rr.Stdout)
+	}
+	if rr.Stderr.Len() > 0 {
+		t.Logf("(dbg) Stderr: %s:\n%s", rr.Command(), rr.Stderr)
+	}
+
+	// make sure the image was correctly built
+	rr, err = inspectImage(ctx, t, profile, newImage)
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), newImage) {
+		t.Fatalf("expected %s to be built with minikube but the image is not there", newImage)
+	}
+}
+
+func startBuildkit(ctx context.Context, t *testing.T, profile string) {
+	// sudo systemctl start buildkit.socket
+	cmd := exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "nohup",
+		"sudo", "-b", "buildkitd", "--oci-worker=false",
+		"--containerd-worker=true", "--containerd-worker-namespace=k8s.io")
+	if rr, err := Run(t, cmd); err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
 }
 
 // check functionality of minikube after evaling docker-env
