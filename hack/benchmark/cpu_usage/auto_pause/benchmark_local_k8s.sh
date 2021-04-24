@@ -35,6 +35,7 @@ readonly OS=$(uname)
 measure() {
   local name=$1
   local iteration=$2
+  local totalduration=$3
   local filename="benchmark-results/${SESSION_ID}/cstat.${name}.$$-${iteration}"
 
   echo ""
@@ -53,7 +54,11 @@ measure() {
 
   echo ""
   echo "  >> Measuring ${name} and saving to out/${filename} ..."
-  cstat --poll "${POLL_DURATION}" --for "${TOTAL_DURATION}" --busy --header=false | tee "$(pwd)/out/${filename}"
+  if [[ "${totalduration}" != "" ]]; then
+    cstat --poll "${POLL_DURATION}" --for "${totalduration}" --busy --header=false | tee "$(pwd)/out/${filename}"
+  else
+    cstat --poll "${POLL_DURATION}" --for "${TOTAL_DURATION}" --busy --header=false | tee "$(pwd)/out/${filename}"
+  fi
 }
 
 
@@ -210,60 +215,62 @@ main() {
       if  [[ $? == 0 ]]; then
         echo "Kubernetes is running in Docker for Desktop - adjusting tests"
         docker_k8s=1
-        measure docker_k8s $i
+        kubectl create deployment nginx --image=nginx:1.20.0 && measure docker_k8s $i
+        echo "end of measurement for Docker for Desktop"
+        kubectl delete deployment nginx
       # measure Docker idle
       else
+        kubectl create deployment nginx --image=nginx:1.20.0
         measure docker $i
+        echo "end of measurement for Docker for Desktop Kubernetes"
+        kubectl delete deployment nginx
       fi
     # measure Docker idle only
     elif [[ "${OS}" == "Linux" ]]; then
       measure docker $i
     fi
 
-    # measure k3d and kind, if Docker for Mac kubernetes is disable
-    if [[ "${OS}" == "Darwin" && "${docker_k8s}" == 1 ]]; then
-      echo "Dcoker for Mac Kubernetes is running. Skip k3d and kind measurement"
-    else
-      echo ""
-      echo "-> k3d"
-      time k3d cluster create && measure k3d $i || fail k3d $i
-      cleanup
+    echo ""
+    echo "-> k3d"
+    time k3d cluster create
+    echo "-> deploy nginx deployment"
+    kubectl create deployment nginx --image=nginx:1.20.0 && measure k3d $i || fail k3d $i
+    cleanup
 
-      echo ""
-      echo "-> kind"
-      time kind create cluster && measure kind $i || fail kind $i
-      cleanup
-    fi
+    echo ""
+    echo "-> kind"
+    time kind create cluster
+    echo "-> deploy nginx deployment"
+    kubectl create deployment nginx --image=nginx:1.20.0 && measure kind $i || fail kind $i
+    cleanup
 
     # test different drivers
     if [[ "${OS}" == "Darwin" ]]; then
-      drivers=(docker docker-autopause hyperkit virtualbox)
+      drivers=(docker hyperkit virtualbox)
     elif [[ "${OS}" == "Linux" ]]; then
-      drivers=(docker docker-autopause kvm2 virtualbox)
+      drivers=(docker kvm2 virtualbox)
     fi
 
     for driver in "${drivers[@]}"; do
-      if [[ "${OS}" == "Darwin" && "${docker_k8s}" == 1 && "${driver}" == "docker" ]]; then
-        echo "  >> Quitting Docker for Desktop ..."
-        osascript -e 'quit app "Docker"'
-        continue
-      fi
-
       echo ""
-      if [[ "${driver}" == "docker-autopause" ]]; then
-        echo "-> out/minikube --driver=${driver} --addons=auto-pause"
-        time out/minikube start --driver docker --addons auto-pause && measure "minikube.${driver}" $i || fail "minikube.${driver}" $i
-      else
-        echo "-> out/minikube --driver=${driver}"
-        time out/minikube start --driver "${driver}" && measure "minikube.${driver}" $i || fail "minikube.${driver}" $i
-      fi
+      # 1. start minikube cluster
+      echo "-> out/minikube --driver=${driver}"
+      time out/minikube start --driver "${driver}"
+
+      #2. deploy sample application(nginx deployment) and 3. wait 1 minute without anything and 4. measure No.3 idle CPU usage
+      echo "-> deploy nginx deployment"
+      kubectl create deployment nginx --image=nginx:1.20.0 && measure "minikube.${driver}.nonautopause" $i "1m" || fail "minikube.${driver}.nonautopause" $i
+
+      # 5. enable auto-pause addons and 6. wait 3 minute without anything and measure No.6 idle CPU usage
+      echo "-> enable auto-pause to control plane"
+      out/minikube addons enable auto-pause && measure "minikube.${driver}.autopause" $i "3m" || fail "minikube.${driver}.autopause" $i
       cleanup
 
       # We won't be needing docker for the remaining tests this iteration
-      if [[ "${OS}" == "Darwin" && "${driver}" == "docker-autopause" ]]; then
+      if [[ "${OS}" == "Darwin" && "${driver}" == "docker" ]]; then
         echo "  >> Quitting Docker for Desktop ..."
         osascript -e 'quit app "Docker"'
-      elif [[ "${OS}" == "Linux" && ${driver} == "docker-autopause" ]]; then
+      elif [[ "${OS}" == "Linux" && ${driver} == "docker" ]]; then
         echo "  >> Quitting Docker Engine ..."
         sudo systemctl stop docker
       fi
@@ -273,5 +280,5 @@ main() {
 
 main "$@"
 # update benchmark result into docs contents
-./hack/benchmark/cpu_usage/update_summary.sh "${SESSION_ID}"
-go run ./hack/benchmark/cpu_usage/chart.go "${SESSION_ID}"
+./hack/benchmark/cpu_usage/auto_pause/update_summary.sh "${SESSION_ID}"
+go run ./hack/benchmark/cpu_usage/auto_pause/chart.go "${SESSION_ID}"

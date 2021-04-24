@@ -20,9 +20,9 @@ RESULTS=()
 OS=$(uname)
 
 if [[ ${OS} == "Darwin" ]]; then
-  TESTS_TARGETS=("idle" "minikube.hyperkit" "minikube.virtualbox" "minikube.docker" "minikube.docker-autopause" "docker" "k3d" "kind")
+  TESTS_TARGETS=("idle" "minikube.hyperkit" "minikube.virtualbox" "minikube.docker" "docker" "k3d" "kind")
 elif [[ ${OS} == "Linux" ]]; then
-  TESTS_TARGETS=("idle" "minikube.kvm2" "minikube.virtualbox" "minikube.docker" "minikube.docker-autopause" "docker" "k3d" "kind")
+  TESTS_TARGETS=("idle" "minikube.kvm2" "minikube.virtualbox" "minikube.docker" "docker" "k3d" "kind")
 fi
 
 # calc average each test target
@@ -30,7 +30,7 @@ calcAvarage() {
   for target in ${TESTS_TARGETS[@]}; do
     count=0;
     total=0;
-    FILES=$(ls out/benchmark-results/${SESSION_ID}  | grep cstat.${target})
+    FILES=$(ls out/benchmark-results/${SESSION_ID} | grep cstat.${target})
 
     # calc average per test target
     for file in ${FILES[@]}; do

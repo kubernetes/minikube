@@ -32,6 +32,8 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
+var FOLDER = "site/static/images/benchmarks/cpuUsage/idleOnly"
+
 type integerTicks struct{}
 
 func (integerTicks) Ticks(min, max float64) []plot.Tick {
@@ -113,9 +115,9 @@ func execute() error {
 
 	// Add x-lay names
 	if runtime.GOOS == "darwin" {
-		p.NominalX("OS idle", "minikube hyperkit", "minikube virtualbox", "minikube docker", "minikube docker auto-pause", "Docker for Mac Kubernetes", "k3d", "kind")
+		p.NominalX("OS idle", "minikube hyperkit", "minikube virtualbox", "minikube docker", "Docker for Mac Kubernetes", "k3d", "kind")
 	} else if runtime.GOOS == "linux" {
-		p.NominalX("OS idle", "minikube kvm2", "minikube virtualbox", "minikube docker", "minikube docker auto-pause", "Docker idle", "k3d", "kind")
+		p.NominalX("OS idle", "minikube kvm2", "minikube virtualbox", "minikube docker", "Docker idle", "k3d", "kind")
 	}
 	p.X.Label.Text = "Tools"
 
@@ -142,30 +144,27 @@ func execute() error {
 	if err != nil {
 		log.Fatalf("could not creates labels plotter: %+v", err)
 	}
-	//for i := range rl.TextStyle {
-	//	rl.TextStyle[i].Color = color.RGBA{R: 255, A: 255}
-	//}
 	var t []plot.Tick
 	for i := math.Trunc(0); i <= 300; i += 50 {
 		t = append(t, plot.Tick{Value: i, Label: fmt.Sprint(i)})
 	}
-	// define max cpu busy% to 30%
-	p.Y.Max = 30
+	// define max cpu busy% to 20%
+	p.Y.Max = 20
 	p.Y.Tick.Marker = integerTicks{}
 	// Add CPU Busy% label to plot
 	p.Add(cl)
 
 	// Output bar graph
 	if runtime.GOOS == "darwin" {
-		if err := p.Save(13*vg.Inch, 8*vg.Inch, "./site/static/images/benchmarks/cpuUsage/mac.png"); err != nil {
+		if err := p.Save(13*vg.Inch, 8*vg.Inch, FOLDER+"/mac.png"); err != nil {
 			return errors.Wrap(err, "Failed to create bar graph png")
 		}
-		log.Printf("Generated graph png to 'site/static/images/benchmarks/cpuUsage/mac.png'")
+		log.Printf("Generated graph png to %s/mac.png", FOLDER)
 	} else if runtime.GOOS == "linux" {
-		if err := p.Save(13*vg.Inch, 10*vg.Inch, "./site/static/images/benchmarks/cpuUsage/linux.png"); err != nil {
+		if err := p.Save(13*vg.Inch, 10*vg.Inch, FOLDER+"/linux.png"); err != nil {
 			return errors.Wrap(err, "Failed to create bar graph png")
 		}
-		log.Printf("Generated graph png to 'site/static/images/benchmarks/cpuUsage/linux.png'")
+		log.Printf("Generated graph png to %s/linux.png", FOLDER)
 	}
 	return nil
 }
