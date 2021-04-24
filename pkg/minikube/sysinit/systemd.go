@@ -67,7 +67,7 @@ func (s *Systemd) Enable(svc string) error {
 	return err
 }
 
-// Enable enables a service and then activates it too (not waiting for next start)
+// EnableNow enables a service and then activates it too (not waiting for next start)
 func (s *Systemd) EnableNow(svc string) error {
 	if svc == "kubelet" {
 		return errors.New("please don't enable kubelet as it creates a race condition; if it starts on systemd boot it will pick up /etc/hosts before we have time to configure /etc/hosts")

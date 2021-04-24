@@ -1,32 +1,35 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello
+  name: busybox
+  labels:
+    app: busybox
 spec:
   replicas: 2
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 100%
   selector:
     matchLabels:
-      app: hello
+      app: busybox
   template:
     metadata:
       labels:
-        app: hello
+        app: busybox
     spec:
+      containers:
+      - name: busybox
+        # flaky nslookup in busybox versions newer than 1.28:
+        # https://github.com/docker-library/busybox/issues/48
+        # note: gcr.io/kubernetes-e2e-test-images/dnsutils:1.3
+        # has similar issues (ie, resolves but returns exit code 1)
+        image: busybox:1.28
+        command:
+          - sleep
+          - "3600"
+        imagePullPolicy: IfNotPresent
+      restartPolicy: Always
       affinity:
         # ⬇⬇⬇ This ensures pods will land on separate hosts
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
-              matchExpressions: [{ key: app, operator: In, values: [hello-from] }]
+              matchExpressions: [{ key: app, operator: In, values: [busybox] }]
             topologyKey: "kubernetes.io/hostname"
-      containers:
-      - name: hello-from
-        image: pbitty/hello-from:latest
-        ports:
-          - name: http
-            containerPort: 80
-      terminationGracePeriodSeconds: 1

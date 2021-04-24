@@ -48,6 +48,7 @@ var (
 	domain   = "nginx-svc.default.svc.cluster.local."
 )
 
+// validateTunnelCmd makes sure the minikube tunnel command works as expected
 func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	ctx, cancel := context.WithTimeout(ctx, Minutes(20))
 	type validateFunc func(context.Context, *testing.T, string)

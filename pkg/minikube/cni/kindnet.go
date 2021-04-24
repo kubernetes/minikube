@@ -130,7 +130,8 @@ spec:
       volumes:
       - name: cni-cfg
         hostPath:
-          path: /etc/cni/net.d
+          path: {{.CNIConfDir}}
+          type: DirectoryOrCreate
       - name: xtables-lock
         hostPath:
           path: /run/xtables.lock
@@ -158,6 +159,7 @@ func (c KindNet) manifest() (assets.CopyableFile, error) {
 		DefaultRoute: "0.0.0.0/0", // assumes IPv4
 		PodCIDR:      DefaultPodCIDR,
 		ImageName:    images.KindNet(c.cc.KubernetesConfig.ImageRepository),
+		CNIConfDir:   CustomCNIConfDir,
 	}
 
 	b := bytes.Buffer{}

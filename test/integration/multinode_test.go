@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
+// TestMultiNode tests all multi node cluster functionality
 func TestMultiNode(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver does not support multinode")
@@ -53,7 +54,7 @@ func TestMultiNode(t *testing.T) {
 			{"DeleteNode", validateDeleteNodeFromMultiNode},
 			{"StopMultiNode", validateStopMultiNodeCluster},
 			{"RestartMultiNode", validateRestartMultiNodeCluster},
-			{"ValidateNameConflict", validatNameConflict},
+			{"ValidateNameConflict", validateNameConflict},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -68,6 +69,7 @@ func TestMultiNode(t *testing.T) {
 	})
 }
 
+// validateMultiNodeStart makes sure a 2 node cluster can start
 func validateMultiNodeStart(ctx context.Context, t *testing.T, profile string) {
 	// Start a 2 node cluster with the --nodes param
 	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory=2200", "--nodes=2", "-v=8", "--alsologtostderr"}, StartArgs()...)
@@ -92,6 +94,7 @@ func validateMultiNodeStart(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+// validateAddNodeToMultiNode uses the minikube node add command to add a node to an existing cluster
 func validateAddNodeToMultiNode(ctx context.Context, t *testing.T, profile string) {
 	// Add a node to the current cluster
 	addArgs := []string{"node", "add", "-p", profile, "-v", "3", "--alsologtostderr"}
@@ -115,6 +118,7 @@ func validateAddNodeToMultiNode(ctx context.Context, t *testing.T, profile strin
 	}
 }
 
+// validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
 func validateProfileListWithMultiNode(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 	if err != nil {
@@ -153,6 +157,7 @@ func validateProfileListWithMultiNode(ctx context.Context, t *testing.T, profile
 
 }
 
+// validateStopRunningNode tests the minikube node stop command
 func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) {
 	// Run minikube node stop on that node
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "stop", ThirdNodeName))
@@ -186,6 +191,7 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+// validateStartNodeAfterStop tests the minikube node start command on an existing stopped node
 func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile string) {
 	if DockerDriver() {
 		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
@@ -225,6 +231,7 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	}
 }
 
+// validateStopMultiNodeCluster runs minikube stop on a multinode cluster
 func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
 	// Run minikube stop on the cluster
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "stop"))
@@ -254,6 +261,7 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 	}
 }
 
+// validateRestartMultiNodeCluster verifies a soft restart on a multinode cluster works
 func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
 	if DockerDriver() {
 		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
@@ -303,8 +311,8 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 	}
 }
 
+// validateDeleteNodeFromMultiNode tests the minikube node delete command
 func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile string) {
-
 	// Start the node back up
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "delete", ThirdNodeName))
 	if err != nil {
@@ -353,7 +361,8 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 	}
 }
 
-func validatNameConflict(ctx context.Context, t *testing.T, profile string) {
+// validateNameConflict tests that the node name verification works as expected
+func validateNameConflict(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile))
 	if err != nil {
 		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
@@ -389,16 +398,17 @@ func validatNameConflict(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateDeployAppToMultiNode deploys an app to a multinode cluster and makes sure all nodes can serve traffic
 func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile string) {
 	// Create a deployment for app
 	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/multinodes/multinode-pod-dns-test.yaml"))
 	if err != nil {
-		t.Errorf("failed to create hello deployment to multinode cluster")
+		t.Errorf("failed to create busybox deployment to multinode cluster")
 	}
 
-	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/hello"))
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/busybox"))
 	if err != nil {
-		t.Errorf("failed to delploy hello to multinode cluster")
+		t.Errorf("failed to delploy busybox to multinode cluster")
 	}
 
 	// resolve Pod IPs
@@ -409,8 +419,7 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 	podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 	if len(podIPs) != 2 {
 		t.Errorf("expected 2 Pod IPs but got %d", len(podIPs))
-	}
-	if podIPs[0] == podIPs[1] {
+	} else if podIPs[0] == podIPs[1] {
 		t.Errorf("expected 2 different pod IPs but got %s and %s", podIPs[0], podIPs[0])
 	}
 
@@ -423,24 +432,25 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 
 	// verify both Pods could resolve a public DNS
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "nslookup", "kubernetes.io"))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.io"))
 		if err != nil {
 			t.Errorf("Pod %s could not resolve 'kubernetes.io': %v", name, err)
 		}
 	}
-	// verify both pods could resolve to a local service.
+	// verify both Pods could resolve "kubernetes.default"
+	// this one is also checked by k8s e2e node conformance tests:
+	// https://github.com/kubernetes/kubernetes/blob/f137c4777095b3972e2dd71a01365d47be459389/test/e2e_node/environment/conformance.go#L125-L179
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "nslookup", "kubernetes.default.svc.cluster.local"))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default"))
 		if err != nil {
-			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
+			t.Errorf("Pod %s could not resolve 'kubernetes.default': %v", name, err)
 		}
 	}
-
-	// clean up, delete all pods
+	// verify both pods could resolve to a local service.
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "delete", "pod", name))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default.svc.cluster.local"))
 		if err != nil {
-			t.Errorf("fail to delete pod %s: %v", name, err)
+			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
 		}
 	}
 }

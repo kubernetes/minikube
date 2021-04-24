@@ -186,9 +186,9 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	ignore := []string{
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(bsutil.EtcdDataDir(), "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.ReplaceAll(vmpath.GuestManifestsDir, "/", "-")),
+		fmt.Sprintf("DirAvailable-%s", strings.ReplaceAll(vmpath.GuestPersistentDir, "/", "-")),
+		fmt.Sprintf("DirAvailable-%s", strings.ReplaceAll(bsutil.EtcdDataDir(), "/", "-")),
 		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
@@ -367,7 +367,7 @@ func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
 		return err
 	}
 
-	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused, Namespaces: []string{"kube-system"}})
+	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: []string{"kube-system"}})
 	if err != nil {
 		return errors.Wrap(err, "list paused")
 	}
@@ -819,7 +819,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		klog.Warningf("stop kubelet: %v", err)
 	}
 
-	containers, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
+	containers, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
 	if err != nil {
 		klog.Warningf("unable to list kube-system containers: %v", err)
 	}
@@ -859,7 +859,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
-		if err := machine.LoadImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
+		if err := machine.LoadCachedImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}
@@ -1023,7 +1023,7 @@ func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "new cruntime")
 	}
 
-	ids, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
+	ids, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
 	if err != nil {
 		return errors.Wrap(err, "list")
 	}

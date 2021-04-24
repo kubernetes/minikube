@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// validatePersistentVolumeClaim makes sure PVCs work properly
 func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 

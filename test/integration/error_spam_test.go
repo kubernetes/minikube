@@ -39,30 +39,40 @@ var stderrAllow = []string{
 	`cache_images.go:.*error getting status`,
 	// don't care if we can't push images to other profiles which are deleted.
 	`cache_images.go:.*Failed to load profile`,
-	// ! 'docker' driver reported a issue that could affect the performance."
+	// "! 'docker' driver reported a issue that could affect the performance."
 	`docker.*issue.*performance`,
 	// "* Suggestion: enable overlayfs kernel module on your Linux"
 	`Suggestion.*overlayfs`,
+	// "! docker is currently using the btrfs storage driver, consider switching to overlay2 for better performance"
+	`docker.*btrfs storage driver`,
 	// jenkins VMs (debian 9) cgoups don't allow setting memory
 	`Your cgroup does not allow setting memory.`,
+	// progress bar output
+	`    > .*`,
 }
 
 // stderrAllowRe combines rootCauses into a single regex
 var stderrAllowRe = regexp.MustCompile(strings.Join(stderrAllow, "|"))
 
-// TestErrorSpam asserts that there are no errors displayed in UI.
+// TestErrorSpam asserts that there are no unexpected errors displayed in minikube command outputs.
 func TestErrorSpam(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver always shows a warning")
 	}
-	MaybeParallel(t)
 
 	profile := UniqueProfileName("nospam")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(25))
 	defer CleanupWithLogs(t, profile, cancel)
 
+	logDir := filepath.Join(os.TempDir(), profile)
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		t.Fatalf("Unable to make logDir %s: %v", logDir, err)
+	}
+	defer os.RemoveAll(logDir)
+
 	// This should likely use multi-node once it's ready
-	args := append([]string{"start", "-p", profile, "-n=1", "--memory=2250", "--wait=false"}, StartArgs()...)
+	// use `--log_dir` flag to run isolated and avoid race condition - ie, failing to clean up (locked) log files created by other concurently-run tests, or counting them in results
+	args := append([]string{"start", "-p", profile, "-n=1", "--memory=2250", "--wait=false", fmt.Sprintf("--log_dir=%s", logDir)}, StartArgs()...)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -116,8 +126,8 @@ func TestErrorSpam(t *testing.T) {
 	}{
 		{
 			command:          "start",
-			args:             []string{"--dry-run", "--log_dir", os.TempDir()},
-			runCount:         120, // calling this 120 times should create 2 files with 1 greater than 1M
+			args:             []string{"--dry-run"},
+			runCount:         175, // calling this 175 times should create 2 files with 1 greater than 1M
 			expectedLogFiles: 2,
 		},
 		{
@@ -141,38 +151,46 @@ func TestErrorSpam(t *testing.T) {
 
 	for _, test := range logTests {
 		t.Run(test.command, func(t *testing.T) {
-			args := []string{test.command, "-p", profile}
+			args := []string{test.command, "-p", profile, "--log_dir", logDir}
 			args = append(args, test.args...)
+
 			// before starting the test, ensure no other logs from the current command are written
-			logFiles, err := getLogFiles(test.command)
+			logFiles, err := filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
 			if err != nil {
-				t.Errorf("failed to find tmp log files: command %s : %v", test.command, err)
+				t.Errorf("failed to get old log files for command %s : %v", test.command, err)
 			}
 			cleanupLogFiles(t, logFiles)
+
 			// run command runCount times
 			for i := 0; i < test.runCount; i++ {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 				if err != nil {
-					t.Fatalf("%q failed: %v", rr.Command(), err)
+					t.Errorf("%q failed: %v", rr.Command(), err)
 				}
 			}
+
 			// get log files generated above
-			logFiles, err = getLogFiles(test.command)
+			logFiles, err = filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
 			if err != nil {
-				t.Errorf("failed to find tmp log files: command %s : %v", test.command, err)
+				t.Errorf("failed to get new log files for command %s : %v", test.command, err)
 			}
-			// cleanup generated logfiles
-			defer cleanupLogFiles(t, logFiles)
+
 			// if not the expected number of files, throw err
 			if len(logFiles) != test.expectedLogFiles {
 				t.Errorf("failed to find expected number of log files: cmd %s: expected: %d got %d", test.command, test.expectedLogFiles, len(logFiles))
 			}
+
 			// if more than 1 logfile is expected, only one file should be less than 1M
 			if test.expectedLogFiles > 1 {
 				foundSmall := false
-				maxSize := 1024 * 1024 // 1M
+				var maxSize int64 = 1024 * 1024 // 1M
 				for _, logFile := range logFiles {
-					isSmall := int(logFile.Size()) < maxSize
+					finfo, err := os.Stat(logFile)
+					if err != nil {
+						t.Logf("logfile %q for command %q not found:", logFile, test.command)
+						continue
+					}
+					isSmall := finfo.Size() < maxSize
 					if isSmall && !foundSmall {
 						foundSmall = true
 					} else if isSmall && foundSmall {
@@ -185,25 +203,12 @@ func TestErrorSpam(t *testing.T) {
 	}
 }
 
-// getLogFiles returns logfiles corresponding to cmd
-func getLogFiles(cmdName string) ([]os.FileInfo, error) {
-	var logFiles []os.FileInfo
-	err := filepath.Walk(os.TempDir(), func(path string, info os.FileInfo, err error) error {
-		if strings.Contains(info.Name(), fmt.Sprintf("minikube_%s", cmdName)) {
-			logFiles = append(logFiles, info)
-		}
-		return nil
-	})
-	return logFiles, err
-}
-
 // cleanupLogFiles removes logfiles generated during testing
-func cleanupLogFiles(t *testing.T, logFiles []os.FileInfo) {
+func cleanupLogFiles(t *testing.T, logFiles []string) {
+	t.Logf("Cleaning up %d logfile(s) ...", len(logFiles))
 	for _, logFile := range logFiles {
-		logFilePath := filepath.Join(os.TempDir(), logFile.Name())
-		t.Logf("Cleaning up logfile %s ...", logFilePath)
-		if err := os.Remove(logFilePath); err != nil {
-			t.Errorf("failed to cleanup log file: %s : %v", logFilePath, err)
+		if err := os.Remove(logFile); err != nil {
+			t.Logf("failed to cleanup log file: %s : %v", logFile, err)
 		}
 	}
 }

@@ -58,9 +58,8 @@ var (
 	watch        time.Duration
 )
 
+// Additional legacy states
 const (
-	// Additional legacy states:
-
 	// Configured means configured
 	Configured = "Configured" // ~state.Saved
 	// Misconfigured means misconfigured
@@ -69,8 +68,10 @@ const (
 	Nonexistent = "Nonexistent" // ~state.None
 	// Irrelevant is used for statuses that aren't meaningful for worker nodes
 	Irrelevant = "Irrelevant"
+)
 
-	// New status modes, based roughly on HTTP/SMTP standards
+// New status modes, based roughly on HTTP/SMTP standards
+const (
 
 	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
 
@@ -136,7 +137,7 @@ type Status struct {
 	APIServer  string
 	Kubeconfig string
 	Worker     bool
-	TimeToStop string
+	TimeToStop string `json:",omitempty"`
 	DockerEnv  string `json:",omitempty"`
 	PodManEnv  string `json:",omitempty"`
 }
@@ -146,7 +147,7 @@ type ClusterState struct {
 	BaseState
 
 	BinaryVersion string
-	TimeToStop    string
+	TimeToStop    string `json:",omitempty"`
 	Components    map[string]BaseState
 	Nodes         []NodeState
 }
@@ -185,7 +186,9 @@ host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
+{{- if .TimeToStop }}
 timeToStop: {{.TimeToStop}}
+{{- end }}
 {{- if .DockerEnv }}
 docker-env: {{.DockerEnv}}
 {{- end }}
@@ -319,7 +322,6 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		Kubelet:    Nonexistent,
 		Kubeconfig: Nonexistent,
 		Worker:     !controlPlane,
-		TimeToStop: Nonexistent,
 	}
 
 	hs, err := machine.Status(api, name)
@@ -407,7 +409,7 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		st.Kubeconfig = Misconfigured
 	} else {
 		err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
-		if err != nil {
+		if err != nil && st.Host != state.Starting.String() {
 			klog.Errorf("kubeconfig endpoint: %v", err)
 			st.Kubeconfig = Misconfigured
 		}

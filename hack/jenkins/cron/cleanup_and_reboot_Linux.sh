@@ -72,13 +72,12 @@ function cleanup() {
 	echo -e "\nbefore the cleanup:"
 	overview
 	for DOM in $( sudo virsh list --all --name ); do
-		if sudo virsh destroy "${DOM}"; then
-			if sudo virsh undefine "${DOM}"; then
-				echo "successfully deleted KVM domain:" "${DOM}"
-				continue
-			fi
-			echo "unable to delete KVM domain:" "${DOM}"
+		sudo virsh destroy "${DOM}" || true
+		if sudo virsh undefine "${DOM}"; then
+			echo "successfully deleted KVM domain:" "${DOM}"
+			continue
 		fi
+		echo "unable to delete KVM domain:" "${DOM}"
 	done
 	#for POOL in $( sudo virsh pool-list --all --name ); do  # better, but flag '--name' is not supported for 'virsh pool-list' command on older libvirt versions
 	for POOL in $( sudo virsh pool-list --all | awk 'NR>2 {print $1}' ); do
@@ -92,11 +91,10 @@ function cleanup() {
 	done
 	for NET in $( sudo virsh net-list --all --name ); do
 		if [ "${NET}" != "default" ]; then
-			if sudo virsh net-destroy "${NET}"; then
-				if sudo virsh net-undefine "${NET}"; then
-					echo "successfully deleted KVM network" "${NET}"
-					continue
-				fi
+			sudo virsh net-destroy "${NET}" || true
+			if sudo virsh net-undefine "${NET}"; then
+				echo "successfully deleted KVM network" "${NET}"
+				continue
 			fi
 			echo "unable to delete KVM network" "${NET}"
 		fi
@@ -113,6 +111,9 @@ function cleanup() {
 	done
 	echo -e "\nafter the cleanup:"
 	overview
+
+	# clean up /tmp
+	find /tmp -name . -o -prune -exec rm -rf -- {} + >/dev/null 2>&1 || true
 }
 
 # Give 15m for Linux-specific cleanup

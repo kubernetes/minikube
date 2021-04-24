@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.18@sha256:ddd0c02d289e3a6fb4bba9a94435840666f4eb81484ff3e707b69c1c484aa45e")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.20@sha256:0250dab3644403384bd54f566921c6b57138eecffbb861f9392feef9b2ec44f6")
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
       --container-runtime string          The container runtime to be used (docker, cri-o, containerd). (default "docker")
@@ -64,12 +64,12 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/10647/minikube-v1.18.0-1616464260-10647.iso,https://github.com/kubernetes/minikube/releases/download/v1.18.0-1616464260-10647/minikube-v1.18.0-1616464260-10647.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.18.0-1616464260-10647.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/11099/minikube-v1.19.0-1618897865-11099.iso,https://github.com/kubernetes/minikube/releases/download/v1.19.0-1618897865-11099/minikube-v1.19.0-1618897865-11099.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.19.0-1618897865-11099.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.20.2, 'latest' for v1.20.5-rc.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
-      --kvm-network string                The KVM network name. (kvm2 driver only) (default "default")
+      --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
       --kvm-numa-count int                Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only) (default 1)
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
@@ -79,7 +79,7 @@ minikube start [flags]
       --namespace string                  The named space to activate after start (default "default")
       --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
-      --network string                    network to run minikube with. Only available with the docker/podman drivers. If left empty, minikube will create a new network.
+      --network string                    network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.
       --network-plugin string             Kubelet network plug-in to use (default: auto)
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")

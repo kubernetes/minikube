@@ -26,7 +26,8 @@ import (
 	"testing"
 )
 
-// TestOffline makes sure minikube works without internet, once it the user has already cached the images, This test has to run after TestDownloadOnly
+// TestOffline makes sure minikube works without internet, once the user has cached the necessary images.
+// This test has to run after TestDownloadOnly.
 func TestOffline(t *testing.T) {
 	MaybeParallel(t)
 	rt := ContainerRuntime()
@@ -42,7 +43,7 @@ func TestOffline(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--memory=2000", "--wait=true"}
+	startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--memory=2048", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()

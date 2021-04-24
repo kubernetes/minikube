@@ -17,26 +17,54 @@ limitations under the License.
 package cmd
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 // imageCmd represents the image command
 var imageCmd = &cobra.Command{
-	Use:   "image",
-	Short: "Load a local image into minikube",
-	Long:  "Load a local image into minikube",
+	Use:   "image COMMAND",
+	Short: "Manage images",
+}
+
+var (
+	pull      bool
+	imgDaemon bool
+	imgRemote bool
+)
+
+func saveFile(r io.Reader) (string, error) {
+	tmp, err := ioutil.TempFile("", "build.*.tar")
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(tmp, r)
+	if err != nil {
+		return "", err
+	}
+	err = tmp.Close()
+	if err != nil {
+		return "", err
+	}
+	return tmp.Name(), nil
 }
 
 // loadImageCmd represents the image load command
 var loadImageCmd = &cobra.Command{
-	Use:   "load",
-	Short: "Load a local image into minikube",
-	Long:  "Load a local image into minikube",
+	Use:     "load IMAGE | ARCHIVE | -",
+	Short:   "Load a image into minikube",
+	Long:    "Load a image into minikube",
+	Example: "minikube image load image\nminikube image load image.tar",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Please provide an image in your local daemon to load into minikube via <minikube image load IMAGE_NAME>")
@@ -46,13 +74,110 @@ var loadImageCmd = &cobra.Command{
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
 		}
-		img := args[0]
-		if err := machine.CacheAndLoadImages([]string{img}, []*config.Profile{profile}); err != nil {
-			exit.Error(reason.GuestImageLoad, "Failed to load image", err)
+
+		if pull {
+			// Pull image from remote registry, without doing any caching except in container runtime.
+			// This is similar to daemon.Image but it is done by the container runtime in the cluster.
+			if err := machine.PullImages(args, profile); err != nil {
+				exit.Error(reason.GuestImageLoad, "Failed to pull image", err)
+			}
+			return
+		}
+
+		var local bool
+		if imgRemote || imgDaemon {
+			local = false
+		} else {
+			for _, img := range args {
+				if img == "-" { // stdin
+					local = true
+					imgDaemon = false
+					imgRemote = false
+				} else if strings.HasPrefix(img, "/") || strings.HasPrefix(img, ".") {
+					local = true
+					imgDaemon = false
+					imgRemote = false
+				} else if _, err := os.Stat(img); err == nil {
+					local = true
+					imgDaemon = false
+					imgRemote = false
+				}
+			}
+
+			if !local {
+				imgDaemon = true
+				imgRemote = true
+			}
+		}
+
+		if args[0] == "-" {
+			tmp, err := saveFile(os.Stdin)
+			if err != nil {
+				exit.Error(reason.GuestImageLoad, "Failed to save stdin", err)
+			}
+			args = []string{tmp}
+		}
+
+		if imgDaemon || imgRemote {
+			image.UseDaemon(imgDaemon)
+			image.UseRemote(imgRemote)
+			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}); err != nil {
+				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
+			}
+		} else if local {
+			// Load images from local files, without doing any caching or checks in container runtime
+			// This is similar to tarball.Image but it is done by the container runtime in the cluster.
+			if err := machine.DoLoadImages(args, []*config.Profile{profile}, ""); err != nil {
+				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
+			}
+		}
+	},
+}
+
+var removeImageCmd = &cobra.Command{
+	Use:   "rm IMAGE [IMAGE...]",
+	Short: "Remove one or more images",
+	Example: `
+$ minikube image rm image busybox
+
+$ minikube image unload image busybox
+`,
+	Args:    cobra.MinimumNArgs(1),
+	Aliases: []string{"unload"},
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+		if err := machine.RemoveImages(args, profile); err != nil {
+			exit.Error(reason.GuestImageRemove, "Failed to remove image", err)
+		}
+	},
+}
+
+var listImageCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List images",
+	Example: `
+$ minikube image list
+`,
+	Aliases: []string{"ls"},
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+		if err := machine.ListImages(profile); err != nil {
+			exit.Error(reason.GuestImageList, "Failed to list images", err)
 		}
 	},
 }
 
 func init() {
 	imageCmd.AddCommand(loadImageCmd)
+	imageCmd.AddCommand(removeImageCmd)
+	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
+	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
+	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
+	imageCmd.AddCommand(listImageCmd)
 }

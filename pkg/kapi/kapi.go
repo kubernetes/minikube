@@ -212,23 +212,34 @@ func KubectlBinaryPath(version string) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }
 
-// ScaleDeployment sets the number of replicas of deployment in namespace and context
+// ScaleDeployment tries to set the number of deployment replicas in namespace and context.
+// It will retry (usually needed due to "the object has been modified; please apply your changes to the latest version and try again" error) up to ReasonableMutateTime to ensure target scale is achieved.
 func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) error {
 	client, err := Client(kcontext)
 	if err != nil {
 		return fmt.Errorf("client: %v", err)
 	}
 
-	scale, err := client.AppsV1().Deployments(namespace).GetScale(context.Background(), deploymentName, meta.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("deployment scale: %v", err)
-	}
-	if scale.Spec.Replicas != int32(replicas) {
-		scale.Spec.Replicas = int32(replicas)
-		_, err = client.AppsV1().Deployments(namespace).UpdateScale(context.Background(), deploymentName, scale, meta.UpdateOptions{})
+	err = wait.PollImmediate(kconst.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
+		scale, err := client.AppsV1().Deployments(namespace).GetScale(context.Background(), deploymentName, meta.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("deployment rescale: %v", err)
+			klog.Warningf("failed getting deployment scale, will retry: %v", err)
+			return false, nil
 		}
+		if scale.Spec.Replicas != int32(replicas) {
+			scale.Spec.Replicas = int32(replicas)
+			_, err = client.AppsV1().Deployments(namespace).UpdateScale(context.Background(), deploymentName, scale, meta.UpdateOptions{})
+			if err != nil {
+				klog.Warningf("failed rescaling deployment, will retry: %v", err)
+			}
+			// repeat (if change was successful - once again to check & confirm requested scale)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		klog.Infof("timed out trying to rescale deployment %q in namespace %q and context %q to %d: %v", deploymentName, namespace, kcontext, replicas, err)
+		return err
 	}
 	klog.Infof("deployment %q in namespace %q and context %q rescaled to %d", deploymentName, namespace, kcontext, replicas)
 

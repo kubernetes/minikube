@@ -133,7 +133,7 @@ func AskForPasswordValue(s string) string {
 
 	result, err := concealableAskForStaticValue(os.Stdin, s, true)
 	if err != nil {
-		log.Fatal(err)
+		defer log.Fatal(err)
 	}
 	return result
 }

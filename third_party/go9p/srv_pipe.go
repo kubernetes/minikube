@@ -173,7 +173,7 @@ func (*Pipefs) Create(req *SrvReq) {
 		e = os.Symlink(tc.Ext, path)
 
 	case tc.Perm&DMLINK != 0:
-		n, e := strconv.ParseUint(tc.Ext, 10, 0)
+		n, e := strconv.ParseUint(tc.Ext, 10, 32)
 		if e != nil {
 			break
 		}

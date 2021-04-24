@@ -19,12 +19,17 @@ package addons
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -32,12 +37,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
 	credentialsPath = "/var/lib/minikube/google_application_credentials.json"
 	projectPath     = "/var/lib/minikube/google_cloud_project"
+	secretName      = "gcp-auth"
 )
 
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
@@ -54,7 +61,7 @@ func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) 
 
 func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	if !Force && detect.IsOnGCE() {
-		exit.Message(reason.InternalCredsNotFound, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+		exit.Message(reason.InternalCredsNotNeeded, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
 	}
 
 	// Grab command runner from running cluster
@@ -64,20 +71,92 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Grab credentials from where GCP would normally look
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
-	if err != nil {
+	if err != nil || creds.JSON == nil {
 		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
-	// Don't mount in empty credentials file
-	if creds.JSON == nil {
-		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
-	}
-
+	// Actually copy the creds over
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
 
 	err = r.Copy(f)
 	if err != nil {
 		return err
+	}
+
+	// Create a registry secret in every namespace we can find
+	client, err := service.K8s.GetCoreClient(cfg.Name)
+	if err != nil {
+		return err
+	}
+
+	token, err := creds.TokenSource.Token()
+	// Only try to add secret if Token was found
+	if err == nil {
+		data := map[string][]byte{
+			".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}, "https://us-docker.pkg.dev":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken, token.AccessToken)),
+		}
+
+		namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+
+		for _, n := range namespaces.Items {
+			secrets := client.Secrets(n.Name)
+
+			exists := false
+			secList, err := secrets.List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+			for _, s := range secList.Items {
+				if s.Name == secretName {
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				secretObj := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: secretName,
+					},
+					Data: data,
+					Type: "kubernetes.io/dockercfg",
+				}
+
+				_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
+				if err != nil {
+					return err
+				}
+			}
+
+			// Now patch the secret into all the service accounts we can find
+			serviceaccounts := client.ServiceAccounts(n.Name)
+			salist, err := serviceaccounts.List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+
+			// Let's make sure we at least find the default service account
+			for len(salist.Items) == 0 {
+				salist, err = serviceaccounts.List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					return err
+				}
+				time.Sleep(1 * time.Second)
+			}
+
+			ips := corev1.LocalObjectReference{Name: "gcp-auth"}
+			for _, sa := range salist.Items {
+				sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
+				_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
+			}
+
+		}
 	}
 
 	// First check if the project env var is explicitly set
@@ -122,6 +201,25 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	err = r.Remove(project)
 	if err != nil {
 		return err
+	}
+
+	client, err := service.K8s.GetCoreClient(cfg.Name)
+	if err != nil {
+		return err
+	}
+
+	namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	// No need to check for an error here, if the secret doesn't exist, no harm done.
+	for _, n := range namespaces.Items {
+		secrets := client.Secrets(n.Name)
+		err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{})
+		if err != nil {
+			klog.Infof("error deleting secret: %v", err)
+		}
 	}
 
 	return nil

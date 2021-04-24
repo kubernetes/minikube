@@ -31,7 +31,7 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-readonly TIMEOUT=${1:-70m}
+readonly TIMEOUT=${1:-90m}
 
 if [ "$(uname)" != "Darwin" ]; then
   # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
@@ -41,12 +41,15 @@ fi
 # installing golang so we could do go get for gopogh
 sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
 
-# install docker and kubectl if not present
-sudo ./installers/check_install_docker.sh
+# install docker and kubectl if not present, currently skipping since it fails
+#sudo ./installers/check_install_docker.sh
 
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
 docker system df || true
+
+# clean up /tmp
+find /tmp -name . -o -prune -exec rm -rf -- {} + >/dev/null 2>&1 || true
 
 echo ">> Starting at $(date)"
 echo ""
@@ -163,11 +166,23 @@ if [[ "${zombie_defuncts}" != "" ]]; then
 fi
 
 if type -P virsh; then
-  virsh -c qemu:///system list --all --uuid \
-    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+  sudo virsh -c qemu:///system list --all --uuid \
+    | xargs -I {} sh -c "sudo virsh -c qemu:///system destroy {}; sudo virsh -c qemu:///system undefine {}" \
     || true
   echo ">> virsh VM list after clean up (should be empty):"
-  virsh -c qemu:///system list --all || true
+  sudo virsh -c qemu:///system list --all || true
+
+  for NET in $( sudo virsh -c qemu:///system net-list --all --name ); do
+    if [ "${NET}" != "default" ]; then
+      sudo virsh -c qemu:///system net-destroy "${NET}" || \
+      sudo virsh -c qemu:///system net-undefine "${NET}" || true
+    fi
+  done
+  echo ">> virsh VM networks list after clean up (should have only 'default'):"
+  sudo virsh -c qemu:///system net-list --all || true
+  echo ">> host networks after KVM clean up:"
+  sudo ip link show || true
+  echo
 fi
 
 if type -P vboxmanage; then

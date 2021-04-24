@@ -45,9 +45,29 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+const (
+	legacyDefaultDomain = "index.docker.io"
+	defaultDomain       = "docker.io"
+)
+
 var defaultPlatform = v1.Platform{
 	Architecture: runtime.GOARCH,
 	OS:           "linux",
+}
+
+var (
+	useDaemon = true
+	useRemote = true
+)
+
+// UseDaemon is if we should look in local daemon for image ref
+func UseDaemon(use bool) {
+	useDaemon = use
+}
+
+// UseRemote is if we should look in remote registry for image ref
+func UseRemote(use bool) {
+	useRemote = use
 }
 
 // DigestByDockerLib uses client by docker lib to return image digest
@@ -73,7 +93,7 @@ func DigestByGoLib(imgName string) string {
 		return ""
 	}
 
-	img, err := retrieveImage(ref)
+	img, _, err := retrieveImage(ref, imgName)
 	if err != nil {
 		klog.Infof("error retrieve Image %s ref %v ", imgName, err)
 		return ""
@@ -280,8 +300,59 @@ func WriteImageToDaemon(img string) error {
 	}
 }
 
-func retrieveImage(ref name.Reference) (v1.Image, error) {
+func canonicalName(ref name.Reference) string {
+	cname := ref.Name()
+	// go-containerregistry always uses the legacy index.docker.io registry
+	if strings.HasPrefix(cname, legacyDefaultDomain) {
+		cname = strings.Replace(cname, legacyDefaultDomain, defaultDomain, 1)
+	}
+	return cname
+}
+
+func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error) {
+	var err error
+	var img v1.Image
+
+	if !useDaemon && !useRemote {
+		return nil, "", fmt.Errorf("neither daemon nor remote")
+	}
+
 	klog.Infof("retrieving image: %+v", ref)
+	if useDaemon {
+		local := strings.HasPrefix(imgName, "localhost/")
+		canonical := imgName == canonicalName(ref)
+		// lookup unqualified short names
+		if !local && !canonical && useRemote {
+			klog.Infof("checking repository: %+v", ref.Context())
+			_, err := remote.Head(ref)
+			if err == nil {
+				imgName = canonicalName(ref)
+				klog.Infof("canonical name: %s", imgName)
+			}
+			if err != nil {
+				klog.Warningf("remote: %v", err)
+				klog.Infof("short name: %s", imgName)
+			}
+		}
+		img, err = retrieveDaemon(ref)
+		if err == nil {
+			return img, imgName, nil
+		}
+	}
+	if useRemote {
+		img, err = retrieveRemote(ref, defaultPlatform)
+		if err == nil {
+			img, err = fixPlatform(ref, img, defaultPlatform)
+			if err == nil {
+				return img, canonicalName(ref), nil
+			}
+		}
+	}
+
+	return nil, "", err
+}
+
+func retrieveDaemon(ref name.Reference) (v1.Image, error) {
 	img, err := daemon.Image(ref)
 	if err == nil {
 		klog.Infof("found %s locally: %+v", ref.Name(), img)
@@ -289,12 +360,7 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	}
 	// reference does not exist in the local daemon
 	klog.Infof("daemon lookup for %+v: %v", ref, err)
-
-	img, err = retrieveRemote(ref, defaultPlatform)
-	if err != nil {
-		return nil, err
-	}
-	return fixPlatform(ref, img, defaultPlatform)
+	return img, err
 }
 
 func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
@@ -304,7 +370,12 @@ func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 	}
 
 	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
-	return remote.Image(ref, remote.WithPlatform(p))
+	img, err = remote.Image(ref, remote.WithPlatform(p))
+	// reference does not exist in the remote registry
+	if err != nil {
+		klog.Infof("remote lookup for %+v: %v", ref, err)
+	}
+	return img, err
 }
 
 // See https://github.com/kubernetes/minikube/issues/10402

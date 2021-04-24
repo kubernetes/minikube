@@ -415,7 +415,7 @@ func checkBinaryExpression(b *ast.BinaryExpr) string {
 		}
 	}
 
-	//Check the right side
+	// Check the right side
 	if l, ok := b.Y.(*ast.BasicLit); ok {
 		if x := checkString(l.Value); x != "" {
 			s += x

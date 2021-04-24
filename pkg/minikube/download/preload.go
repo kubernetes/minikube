@@ -19,6 +19,7 @@ package download
 import (
 	"context"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -41,7 +42,7 @@ const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v9"
+	PreloadVersion = "v10"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
@@ -141,6 +142,20 @@ func Preload(k8sVersion, containerRuntime string) error {
 	out.Step(style.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
 	url := remoteTarballURL(k8sVersion, containerRuntime)
 
+	checksum, err := getChecksum(k8sVersion, containerRuntime)
+	var realPath string
+	if err != nil {
+		klog.Warningf("No checksum for preloaded tarball for k8s version %s: %v", k8sVersion, err)
+		realPath = targetPath
+		tmp, err := ioutil.TempFile(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
+		if err != nil {
+			return errors.Wrap(err, "tempfile")
+		}
+		targetPath = tmp.Name()
+	} else if checksum != "" {
+		url += "?checksum=" + checksum
+	}
+
 	if err := download(url, targetPath); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
@@ -153,19 +168,45 @@ func Preload(k8sVersion, containerRuntime string) error {
 		return errors.Wrap(err, "verify")
 	}
 
+	if realPath != "" {
+		klog.Infof("renaming tempfile to %s ...", TarballName(k8sVersion, containerRuntime))
+		err := os.Rename(targetPath, realPath)
+		if err != nil {
+			return errors.Wrap(err, "rename")
+		}
+	}
+
 	return nil
+}
+
+func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return nil, errors.Wrap(err, "getting storage client")
+	}
+	attrs, err := client.Bucket(PreloadBucket).Object(name).Attrs(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting storage object")
+	}
+	return attrs, nil
+}
+
+func getChecksum(k8sVersion, containerRuntime string) (string, error) {
+	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
+	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
+	if err != nil {
+		return "", err
+	}
+	md5 := hex.EncodeToString(attrs.MD5)
+	return fmt.Sprintf("md5:%s", md5), nil
 }
 
 func saveChecksumFile(k8sVersion, containerRuntime string) error {
 	klog.Infof("saving checksum for %s ...", TarballName(k8sVersion, containerRuntime))
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
 	if err != nil {
-		return errors.Wrap(err, "getting storage client")
-	}
-	attrs, err := client.Bucket(PreloadBucket).Object(TarballName(k8sVersion, containerRuntime)).Attrs(ctx)
-	if err != nil {
-		return errors.Wrap(err, "getting storage object")
+		return err
 	}
 	checksum := attrs.MD5
 	return ioutil.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
