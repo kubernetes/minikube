@@ -134,6 +134,7 @@ func TestFunctional(t *testing.T) {
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
 			{"RemoveImage", validateRemoveImage},
+			{"BuildImage", validateBuildImage},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -156,10 +157,17 @@ func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("docker is not installed, cannot delete docker images")
 	} else {
 		t.Run("delete busybox image", func(t *testing.T) {
-			newImage := fmt.Sprintf("busybox:%s", profile)
+			newImage := fmt.Sprintf("docker.io/library/busybox:%s", profile)
 			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
 			if err != nil {
 				t.Logf("failed to remove image busybox from docker images. args %q: %v", rr.Command(), err)
+			}
+		})
+		t.Run("delete my-image image", func(t *testing.T) {
+			newImage := fmt.Sprintf("localhost/my-image:%s", profile)
+			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
+			if err != nil {
+				t.Logf("failed to remove image my-image from docker images. args %q: %v", rr.Command(), err)
 			}
 		})
 
@@ -207,7 +215,7 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// tag busybox
-	newImage := fmt.Sprintf("busybox:%s", profile)
+	newImage := fmt.Sprintf("docker.io/library/busybox:%s", profile)
 	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busybox, newImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
@@ -224,7 +232,7 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
-	if !strings.Contains(rr.Output(), newImage) {
+	if !strings.Contains(rr.Output(), fmt.Sprintf("busybox:%s", profile)) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 
@@ -259,13 +267,7 @@ func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
 	}
 	// make sure the image was removed
-	var cmd *exec.Cmd
-	if ContainerRuntime() == "docker" {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images")
-	} else {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "images")
-	}
-	rr, err = Run(t, cmd)
+	rr, err = listImages(ctx, t, profile)
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
@@ -279,19 +281,78 @@ func inspectImage(ctx context.Context, t *testing.T, profile string, image strin
 	var cmd *exec.Cmd
 	if ContainerRuntime() == "docker" {
 		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", image)
-	} else if ContainerRuntime() == "containerd" {
-		// crictl inspecti busybox:test-example
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", image)
 	} else {
-		// crio adds localhost prefix
-		// crictl inspecti localhost/busybox:test-example
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", "localhost/"+image)
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", image)
 	}
 	rr, err := Run(t, cmd)
 	if err != nil {
 		return rr, err
 	}
 	return rr, nil
+}
+
+func listImages(ctx context.Context, t *testing.T, profile string) (*RunResult, error) {
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images")
+	} else {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "images")
+	}
+	rr, err := Run(t, cmd)
+	if err != nil {
+		return rr, err
+	}
+	return rr, nil
+}
+
+// validateBuildImage makes sures that `minikube image build` works as expected
+func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+
+	newImage := fmt.Sprintf("localhost/my-image:%s", profile)
+	if ContainerRuntime() == "containerd" {
+		startBuildkit(ctx, t, profile)
+		// unix:///run/buildkit/buildkitd.sock
+	}
+
+	// try to build the new image with minikube
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
+	if err != nil {
+		t.Fatalf("building image with minikube: %v\n%s", err, rr.Output())
+	}
+	if rr.Stdout.Len() > 0 {
+		t.Logf("(dbg) Stdout: %s:\n%s", rr.Command(), rr.Stdout)
+	}
+	if rr.Stderr.Len() > 0 {
+		t.Logf("(dbg) Stderr: %s:\n%s", rr.Command(), rr.Stderr)
+	}
+
+	// make sure the image was correctly built
+	rr, err = inspectImage(ctx, t, profile, newImage)
+	if err != nil {
+		ll, _ := listImages(ctx, t, profile)
+		t.Logf("(dbg) images: %s", ll.Output())
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), newImage) {
+		t.Fatalf("expected %s to be built with minikube but the image is not there", newImage)
+	}
+}
+
+func startBuildkit(ctx context.Context, t *testing.T, profile string) {
+	// sudo systemctl start buildkit.socket
+	cmd := exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "nohup",
+		"sudo", "-b", "buildkitd", "--oci-worker=false",
+		"--containerd-worker=true", "--containerd-worker-namespace=k8s.io")
+	if rr, err := Run(t, cmd); err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
 }
 
 // check functionality of minikube after evaling docker-env

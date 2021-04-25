@@ -250,6 +250,7 @@ var (
 	GuestImageList        = Kind{ID: "GUEST_IMAGE_LIST", ExitCode: ExGuestError}
 	GuestImageLoad        = Kind{ID: "GUEST_IMAGE_LOAD", ExitCode: ExGuestError}
 	GuestImageRemove      = Kind{ID: "GUEST_IMAGE_REMOVE", ExitCode: ExGuestError}
+	GuestImageBuild       = Kind{ID: "GUEST_IMAGE_BUILD", ExitCode: ExGuestError}
 	GuestLoadHost         = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
 	GuestMount            = Kind{ID: "GUEST_MOUNT", ExitCode: ExGuestError}
 	GuestMountConflict    = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}
