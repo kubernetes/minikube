@@ -1258,10 +1258,7 @@ func validateListenAPIServerPort(listenAPIServerPort int) {
 		if err != nil {
 			exit.Message(reason.Usage, "Sorry, the port provided with the --listen-apiserver-port flag is already allocated: {{.listenAPIServerPort}}.", out.V{"listenAPIServerPort": listenAPIServerPort})
 		}
-		err = ln.Close()
-		if err != nil {
-			exit.Message(reason.Usage, "Sorry, the port provided with the --listen-apiserver-port flag cannot be used: {{.listenAPIServerPort}}.", out.V{"listenAPIServerPort": listenAPIServerPort})
-		}
+		defer ln.Close()
 	}
 }
 
