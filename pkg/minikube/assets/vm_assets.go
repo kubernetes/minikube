@@ -21,11 +21,8 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
-	"runtime"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
