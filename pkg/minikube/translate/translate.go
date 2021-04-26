@@ -125,12 +125,3 @@ func SetPreferredLanguage(s string) {
 func GetPreferredLanguage() language.Tag {
 	return preferredLanguage
 }
-
-//Get translationFile bytes from filePath
-func Asset(translationFile string) ([]byte,error){
-	t, err := ioutil.ReadFile(translationFile)
-	if err != nil {
-		return nil, fmt.Errorf("asset %s can't read by error: %v", translationFile, err)
-	}
-	return t, nil
-}
