@@ -76,45 +76,19 @@ func TestShouldCheckURLBetaVersion(t *testing.T) {
 	defer tests.RemoveTempDir(tempDir)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
-
-	// test that if users disable update notification in config, the URL version does not get checked
 	viper.Set(config.WantUpdateNotification, true)
+
+	// test if the user disables beta update notification in config, the URL version does not get checked
 	viper.Set(config.WantBetaUpdateNotification, false)
 	if shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
 		t.Fatalf("shouldCheckURLBetaVersion returned true even though config had WantBetaUpdateNotification: false")
 	}
 
-	viper.Set(config.WantUpdateNotification, false)
+	// test if the user enables beta update notification in config, the URL version does get checked
 	viper.Set(config.WantBetaUpdateNotification, true)
-	if shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
-		t.Fatalf("shouldCheckURLBetaVersion returned true even though config had WantUpdateNotification: false")
-	}
-
-	// test that if users want update notification, the URL version does get checked
-	viper.Set(config.WantUpdateNotification, true)
 	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
-		t.Fatalf("shouldCheckURLBetaVersion returned false even though there was no last_update_check file")
+		t.Fatalf("shouldCheckURLBetaVersion returned false even though config had WantBetaUpdateNotification: true")
 	}
-
-	// test that update notifications get triggered if it has been longer than 24 hours
-	viper.Set(config.ReminderWaitPeriodInHours, 24)
-
-	// time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
-	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Time{}); err != nil {
-		t.Errorf("write failed: %v", err)
-	}
-	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
-		t.Fatalf("shouldCheckURLBetaVersion returned false even though longer than 24 hours since last update")
-	}
-
-	// test that update notifications do not get triggered if it has been less than 24 hours
-	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
-		t.Errorf("write failed: %v", err)
-	}
-	if shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
-		t.Fatalf("shouldCheckURLBetaVersion returned true even though less than 24 hours since last update")
-	}
-
 }
 
 type URLHandlerCorrect struct {

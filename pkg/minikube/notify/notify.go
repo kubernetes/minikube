@@ -70,6 +70,7 @@ func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string) {
 	printUpdateText(latestVersion)
 }
 
+// maybePrintBetaUpdateText returns true if update text is printed
 func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Version, latestFullVersion semver.Version) bool {
 	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
 		return false
