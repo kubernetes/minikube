@@ -43,67 +43,69 @@ var (
 )
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
-func MaybePrintUpdateTextFromGithub() bool {
-	if notified := MaybePrintBetaUpdateText(GithubMinikubeBetaReleasesURL, lastUpdateCheckFilePath); notified {
-		return true
-	}
-	return MaybePrintUpdateText(GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+func MaybePrintUpdateTextFromGithub() {
+	maybePrintUpdateText(GithubMinikubeReleasesURL, GithubMinikubeBetaReleasesURL)
 }
 
-// MaybePrintUpdateText prints update text, returns a bool if life is good.
-func MaybePrintUpdateText(url string, lastUpdatePath string) bool {
-	if !shouldCheckURLVersion(lastUpdatePath) {
-		return false
+func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string) {
+	if !shouldCheckURLVersion(lastUpdateCheckFilePath) {
+		return
 	}
-	latestVersion, err := getLatestVersionFromURL(url)
+	latestVersion, err := getLatestVersionFromURL(latestReleasesURL)
 	if err != nil {
 		klog.Warning(err)
-		return true
+		return
 	}
 	localVersion, err := version.GetSemverVersion()
 	if err != nil {
 		klog.Warning(err)
-		return true
+		return
 	}
-	if localVersion.Compare(latestVersion) < 0 {
-		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
-			klog.Errorf("write time failed: %v", err)
-		}
-		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
-		out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
-		out.Styled(style.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
-		return true
-	}
-	return false
-}
-
-// MaybePrintBetaUpdateText returns true and prints update text of a new beta version of minikube is available.
-func MaybePrintBetaUpdateText(url string, lastUpdatePath string) bool {
-	if !shouldCheckURLBetaVersion(lastUpdatePath) {
-		return false
-	}
-	latestVersion, err := getLatestVersionFromURL(url)
-	if err != nil {
-		klog.Warning(err)
-		return false
-	}
-	localVersion, err := version.GetSemverVersion()
-	if err != nil {
-		klog.Warning(err)
-		return false
+	if maybePrintBetaUpdateText(betaReleasesURL, localVersion, latestVersion) {
+		return
 	}
 	if localVersion.Compare(latestVersion) >= 0 {
+		return
+	}
+	printUpdateText(latestVersion)
+}
+
+func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Version, latestFullVersion semver.Version) bool {
+	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
 		return false
 	}
+	latestBetaVersion, err := getLatestVersionFromURL(betaReleasesURL)
+	if err != nil {
+		klog.Warning(err)
+		return false
+	}
+	if latestFullVersion.Compare(latestBetaVersion) >= 0 {
+		return false
+	}
+	if localVersion.Compare(latestBetaVersion) >= 0 {
+		return false
+	}
+	printBetaUpdateText(latestBetaVersion)
+	return true
+}
+
+func printUpdateTextCommon(version semver.Version) {
 	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 		klog.Errorf("write time failed: %v", err)
 	}
-	url = "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
-	out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
+	url := "https://github.com/kubernetes/minikube/releases/tag/v" + version.String()
+	out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": version, "url": url})
+}
+
+func printUpdateText(version semver.Version) {
+	printUpdateTextCommon(version)
+	out.Styled(style.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
+}
+
+func printBetaUpdateText(version semver.Version) {
+	printUpdateTextCommon(version)
 	out.Styled(style.Tip, "To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'\n")
 	out.Styled(style.Tip, "To disable update notices in general, run: 'minikube config set WantUpdateNotification false'\n")
-
-	return true
 }
 
 func shouldCheckURLVersion(filePath string) bool {

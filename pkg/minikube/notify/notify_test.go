@@ -19,10 +19,8 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -30,16 +28,9 @@ import (
 	"github.com/blang/semver"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/version"
 )
-
-func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
-	if MaybePrintUpdateTextFromGithub() {
-		t.Fatal("MaybePrintUpdateTextFromGithub() expected to return false for basic setup, bot got true")
-	}
-}
 
 func TestShouldCheckURLVersion(t *testing.T) {
 	tempDir := tests.MakeTempDir()
@@ -193,192 +184,6 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 	_, err := getLatestVersionFromURL(server.URL)
 	if err == nil {
 		t.Fatalf("Malformed version value was returned from URL but no error was thrown")
-	}
-}
-
-func TestMaybePrintUpdateText(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
-	outputBuffer := tests.NewFakeFile()
-	out.SetOutFile(outputBuffer)
-
-	var tc = []struct {
-		len                     int
-		wantUpdateNotification  bool
-		latestVersionFromURL    string
-		description             string
-		status                  bool
-		url                     string
-		lastUpdateCheckFilePath string
-	}{
-		{
-			len:                    1,
-			latestVersionFromURL:   "0.0.0-dev",
-			wantUpdateNotification: true,
-			description:            "latest version lower or equal",
-		},
-		{
-			len:                    0,
-			latestVersionFromURL:   "100.0.0-dev",
-			wantUpdateNotification: true,
-			description:            "latest version greater",
-			status:                 true,
-		},
-		{
-			len:                    1,
-			latestVersionFromURL:   "100.0.0-dev",
-			wantUpdateNotification: false,
-			description:            "notification unwanted",
-		},
-		{
-			len:                    1,
-			latestVersionFromURL:   "100.0.0-dev",
-			wantUpdateNotification: true,
-			description:            "bad url",
-			url:                    "this is not valid url",
-			status:                 true,
-		},
-		{
-			len:                     1,
-			latestVersionFromURL:    "10.0.0-dev",
-			wantUpdateNotification:  true,
-			description:             "bad lastUpdateCheckFilePath",
-			lastUpdateCheckFilePath: "/etc/passwd",
-			status:                  true,
-		},
-	}
-
-	viper.Set(config.ReminderWaitPeriodInHours, 24)
-	for _, test := range tc {
-		t.Run(test.description, func(t *testing.T) {
-			viper.Set(config.WantUpdateNotification, test.wantUpdateNotification)
-			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
-			if test.lastUpdateCheckFilePath != "" {
-				lastUpdateCheckFilePath = test.lastUpdateCheckFilePath
-			}
-			latestVersionFromURL := test.latestVersionFromURL
-			handler := &URLHandlerCorrect{
-				releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
-			}
-			server := httptest.NewServer(handler)
-			defer server.Close()
-			if test.url == "" {
-				test.url = server.URL
-			}
-			tmpfile, err := ioutil.TempFile("", "")
-			if err != nil {
-				t.Fatalf("Cannot create temp file: %v", err)
-			}
-			defer os.Remove(tmpfile.Name())
-			status := MaybePrintUpdateText(test.url, tmpfile.Name())
-			if test.status != status {
-				t.Fatalf("MaybePrintUpdateText expected to return %v, but got %v", test.status, status)
-			}
-			if len(outputBuffer.String()) == test.len {
-				t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
-					version.GetVersion(), latestVersionFromURL, outputBuffer.String())
-			}
-		})
-	}
-}
-
-func TestMaybePrintBetaUpdateText(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
-	outputBuffer := tests.NewFakeFile()
-	out.SetOutFile(outputBuffer)
-
-	var tc = []struct {
-		len                        int
-		wantUpdateNotification     bool
-		wantBetaUpdateNotification bool
-		latestVersionFromURL       string
-		description                string
-		status                     bool
-		url                        string
-		lastUpdateCheckFilePath    string
-	}{
-		{
-			len:                        1,
-			latestVersionFromURL:       "0.0.0-dev",
-			wantUpdateNotification:     true,
-			wantBetaUpdateNotification: true,
-			description:                "latest version lower or equal",
-		},
-		{
-			len:                        0,
-			latestVersionFromURL:       "100.0.0-dev",
-			wantUpdateNotification:     true,
-			wantBetaUpdateNotification: true,
-			description:                "latest version greater",
-			status:                     true,
-		},
-		{
-			len:                        1,
-			latestVersionFromURL:       "100.0.0-dev",
-			wantUpdateNotification:     false,
-			wantBetaUpdateNotification: true,
-			description:                "notification unwanted",
-		},
-		{
-			len:                        1,
-			latestVersionFromURL:       "100.0.0-dev",
-			wantUpdateNotification:     true,
-			wantBetaUpdateNotification: false,
-			description:                "beta notification unwanted",
-		},
-		{
-			len:                        1,
-			latestVersionFromURL:       "100.0.0-dev",
-			wantUpdateNotification:     true,
-			wantBetaUpdateNotification: true,
-			description:                "bad url",
-			url:                        "this is not valid url",
-			status:                     false,
-		},
-		{
-			len:                        1,
-			latestVersionFromURL:       "10.0.0-dev",
-			wantUpdateNotification:     true,
-			wantBetaUpdateNotification: true,
-			description:                "bad lastUpdateCheckFilePath",
-			lastUpdateCheckFilePath:    "/etc/passwd",
-			status:                     true,
-		},
-	}
-
-	viper.Set(config.ReminderWaitPeriodInHours, 24)
-	for _, test := range tc {
-		t.Run(test.description, func(t *testing.T) {
-			viper.Set(config.WantUpdateNotification, test.wantUpdateNotification)
-			viper.Set(config.WantBetaUpdateNotification, test.wantBetaUpdateNotification)
-			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
-			if test.lastUpdateCheckFilePath != "" {
-				lastUpdateCheckFilePath = test.lastUpdateCheckFilePath
-			}
-			latestVersionFromURL := test.latestVersionFromURL
-			handler := &URLHandlerCorrect{
-				releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
-			}
-			server := httptest.NewServer(handler)
-			defer server.Close()
-			if test.url == "" {
-				test.url = server.URL
-			}
-			tmpfile, err := ioutil.TempFile("", "")
-			if err != nil {
-				t.Fatalf("Cannot create temp file: %v", err)
-			}
-			defer os.Remove(tmpfile.Name())
-			status := MaybePrintBetaUpdateText(test.url, tmpfile.Name())
-			if test.status != status {
-				t.Fatalf("MaybePrintBetaUpdateText expected to return %v, but got %v", test.status, status)
-			}
-			if len(outputBuffer.String()) == test.len {
-				t.Fatalf("Expected MaybePrintBetaUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
-					version.GetVersion(), latestVersionFromURL, outputBuffer.String())
-			}
-		})
 	}
 }
 
