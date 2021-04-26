@@ -676,6 +676,30 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		}
 	}
 
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
+	// We must ensure that the apiserver is healthy before proceeding
+	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "apiserver healthz")
+	}
+
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), hostname, port, kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "apiserver health")
+	}
+
+	// because reboots clear /etc/cni
+	if err := k.applyCNI(cfg); err != nil {
+		return errors.Wrap(err, "apply cni")
+	}
+
+	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "system pods")
+	}
+
+	// must be called after applyCNI
 	if cfg.VerifyComponents[kverify.ExtraKey] {
 		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
 		// it appears as to be immediately Ready as well as all kube-system pods (last observed state),
@@ -702,29 +726,6 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
 			return errors.Wrap(err, "extra")
 		}
-	}
-
-	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
-	if err != nil {
-		return errors.Wrap(err, "runtime")
-	}
-
-	// We must ensure that the apiserver is healthy before proceeding
-	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
-		return errors.Wrap(err, "apiserver healthz")
-	}
-
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), hostname, port, kconst.DefaultControlPlaneTimeout); err != nil {
-		return errors.Wrap(err, "apiserver health")
-	}
-
-	// because reboots clear /etc/cni
-	if err := k.applyCNI(cfg); err != nil {
-		return errors.Wrap(err, "apply cni")
-	}
-
-	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
-		return errors.Wrap(err, "system pods")
 	}
 
 	if err := kverify.NodePressure(client); err != nil {
