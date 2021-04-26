@@ -21,8 +21,11 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -290,4 +293,21 @@ func (m *BinAsset) Read(p []byte) (int, error) {
 // Seek resets the reader to offset
 func (m *BinAsset) Seek(offset int64, whence int) (int64, error) {
 	return m.reader.Seek(offset, whence)
+}
+
+//Get file bytes from filePath
+func Asset(sourcePath string) ([]byte, error) {
+	execDirAbsPath, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("getting exec dir abspath is error: %v", err)
+	}
+	if runtime.GOOS == "windows" {
+		replacePathDelimiter := strings.Replace(execDirAbsPath, "\\", "/", -1)
+		execDirAbsPath = replacePathDelimiter[:strings.Index(replacePathDelimiter, "minikube")+len("minikube")]
+	}
+	contents, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", execDirAbsPath, sourcePath))
+	if err != nil {
+		return nil, fmt.Errorf("asset %s can't read by error: %v", sourcePath, err)
+	}
+	return contents, nil
 }
