@@ -290,10 +290,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	return createNode(cc, kubeNodeName, existing)
 }
 
-// generateNewConfigFromFlags generate a config.ClusterConfig based on flags
-func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) config.ClusterConfig {
-	var cc config.ClusterConfig
-
+func getMemorySize(cmd *cobra.Command, drvName string) int {
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
 		klog.Warningf("Unable to query memory limits: %+v", err)
@@ -314,11 +311,19 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		klog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 	}
 
+	return mem
+}
+
+func getDiskSize() int {
 	diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 	if err != nil {
 		exit.Message(reason.Usage, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 	}
 
+	return diskSize
+}
+
+func getRepository(cmd *cobra.Command, k8sVersion string) string {
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || (mirrorCountry != "" && repository == "") {
@@ -342,12 +347,23 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		out.Styled(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
+	return repository
+}
+
+func getCNIConfig(cmd *cobra.Command) string {
 	// Backwards compatibility with --enable-default-cni
 	chosenCNI := viper.GetString(cniFlag)
 	if viper.GetBool(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
 		klog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
 		chosenCNI = "bridge"
 	}
+	return chosenCNI
+}
+
+// generateNewConfigFromFlags generate a config.ClusterConfig based on flags
+func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) config.ClusterConfig {
+	var cc config.ClusterConfig
+
 	// networkPlugin cni deprecation warning
 	chosenNetworkPlugin := viper.GetString(networkPlugin)
 	if chosenNetworkPlugin == "cni" {
@@ -367,9 +383,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
-		Memory:                  mem,
+		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    viper.GetInt(cpus),
-		DiskSize:                diskSize,
+		DiskSize:                getDiskSize(),
 		Driver:                  drvName,
 		ListenAddress:           viper.GetString(listenAddress),
 		HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
@@ -415,10 +431,10 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
-			ImageRepository:        repository,
+			ImageRepository:        getRepository(cmd, k8sVersion),
 			ExtraOptions:           config.ExtraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
-			CNI:                    chosenCNI,
+			CNI:                    getCNIConfig(cmd),
 			NodePort:               viper.GetInt(apiServerPort),
 		},
 		MultiNodeRequested: viper.GetInt(nodes) > 1,
