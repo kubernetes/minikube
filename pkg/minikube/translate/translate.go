@@ -19,7 +19,6 @@ package translate
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"path"
 	"strings"
 
