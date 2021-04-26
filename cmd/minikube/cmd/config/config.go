@@ -191,7 +191,7 @@ Configurable fields: ` + "\n\n" + configurableFields(),
 }
 
 func configurableFields() string {
-	fields := []string{}
+	var fields []string
 	for _, s := range settings {
 		fields = append(fields, " * "+s.name)
 	}
