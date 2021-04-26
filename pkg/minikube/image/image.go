@@ -195,7 +195,7 @@ func WriteImageToCache(img string) error {
 		return errors.Wrap(err, "parsing reference")
 	}
 	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref)
+	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
 	if err != nil {
 		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
 			ErrGithubNeedsLogin = errors.New(err.Error())
@@ -253,7 +253,7 @@ func WriteImageToDaemon(img string) error {
 		return errors.Wrap(err, "parsing reference")
 	}
 	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref)
+	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
 	if err != nil {
 		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
 			ErrGithubNeedsLogin = errors.New(err.Error())
