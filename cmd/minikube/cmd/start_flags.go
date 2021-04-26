@@ -524,7 +524,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 			klog.Warningf("error calculate memory size in mb : %v", err)
 		}
 		if memInMB != cc.Memory {
-			out.WarningT("You cannot change the memory size for an exiting minikube cluster. Please first delete the cluster.")
+			out.WarningT("You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.")
 		}
 	}
 
