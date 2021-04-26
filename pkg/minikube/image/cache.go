@@ -121,6 +121,7 @@ func saveToTarFile(iname, rawDest string) error {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
+	// use given short name
 	ref, err := name.ParseReference(iname, name.WeakValidation)
 	if err != nil {
 		return errors.Wrapf(err, "parsing image ref name for %s", iname)
@@ -129,12 +130,23 @@ func saveToTarFile(iname, rawDest string) error {
 		return errors.Wrapf(err, "nil reference for %s", iname)
 	}
 
-	img, err := retrieveImage(ref)
+	img, cname, err := retrieveImage(ref, iname)
 	if err != nil {
 		return errCacheImageDoesntExist
 	}
 	if img == nil {
 		return errors.Wrapf(err, "nil image for %s", iname)
+	}
+
+	if cname != iname {
+		// use new canonical name
+		ref, err = name.ParseReference(cname, name.WeakValidation)
+		if err != nil {
+			return errors.Wrapf(err, "parsing image ref name for %s", cname)
+		}
+		if ref == nil {
+			return errors.Wrapf(err, "nil reference for %s", cname)
+		}
 	}
 
 	err = writeImage(img, dst, ref)

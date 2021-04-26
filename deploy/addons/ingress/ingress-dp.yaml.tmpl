@@ -180,6 +180,9 @@ spec:
           secret:
             secretName: ingress-nginx-admission
 ---
+# Currently(v0.44.0), ValidatingWebhookConfiguration of this validates v1beta1 request
+# TODO(govargo): check this after upstream ingress-nginx can validate v1 version
+# https://github.com/kubernetes/ingress-nginx/blob/controller-v0.44.0/internal/admission/controller/main.go#L46-L52
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -197,7 +200,6 @@ webhooks:
           - networking.k8s.io
         apiVersions:
           - v1beta1
-          - v1
         operations:
           - CREATE
           - UPDATE

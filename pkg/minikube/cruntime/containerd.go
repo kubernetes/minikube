@@ -21,6 +21,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -275,6 +277,109 @@ func (r *Containerd) PullImage(name string) error {
 // RemoveImage removes a image
 func (r *Containerd) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)
+}
+
+func gitClone(cr CommandRunner, src string) (string, error) {
+	// clone to a temporary directory
+	rr, err := cr.RunCmd(exec.Command("mktemp", "-d"))
+	if err != nil {
+		return "", err
+	}
+	tmp := strings.TrimSpace(rr.Stdout.String())
+	cmd := exec.Command("git", "clone", src, tmp)
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return "", err
+	}
+	return tmp, nil
+}
+
+func downloadRemote(cr CommandRunner, src string) (string, error) {
+	u, err := url.Parse(src)
+	if err != nil {
+		return "", err
+	}
+	if u.Scheme == "" && u.Host == "" { // regular file, return
+		return src, nil
+	}
+	if u.Scheme == "git" {
+		return gitClone(cr, src)
+	}
+
+	// download to a temporary file
+	rr, err := cr.RunCmd(exec.Command("mktemp"))
+	if err != nil {
+		return "", err
+	}
+	dst := strings.TrimSpace(rr.Stdout.String())
+	cmd := exec.Command("curl", "-L", "-o", dst, src)
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return "", err
+	}
+
+	// extract to a temporary directory
+	rr, err = cr.RunCmd(exec.Command("mktemp", "-d"))
+	if err != nil {
+		return "", err
+	}
+	tmp := strings.TrimSpace(rr.Stdout.String())
+	cmd = exec.Command("tar", "-C", tmp, "-xf", dst)
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return "", err
+	}
+
+	return tmp, nil
+}
+
+// BuildImage builds an image into this runtime
+func (r *Containerd) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
+	// download url if not already present
+	dir, err := downloadRemote(r.Runner, src)
+	if err != nil {
+		return err
+	}
+	if file != "" {
+		if dir != src {
+			file = path.Join(dir, file)
+		}
+		// copy to standard path for Dockerfile
+		df := path.Join(dir, "Dockerfile")
+		if file != df {
+			cmd := exec.Command("sudo", "cp", "-f", file, df)
+			if _, err := r.Runner.RunCmd(cmd); err != nil {
+				return err
+			}
+		}
+	}
+	klog.Infof("Building image: %s", dir)
+	extra := ""
+	if tag != "" {
+		// add default tag if missing
+		if !strings.Contains(tag, ":") {
+			tag += ":latest"
+		}
+		extra = fmt.Sprintf(",name=%s", tag)
+		if push {
+			extra += ",push=true"
+		}
+	}
+	args := []string{"buildctl", "build",
+		"--frontend", "dockerfile.v0",
+		"--local", fmt.Sprintf("context=%s", dir),
+		"--local", fmt.Sprintf("dockerfile=%s", dir),
+		"--output", fmt.Sprintf("type=image%s", extra)}
+	for _, opt := range opts {
+		args = append(args, "--"+opt)
+	}
+	c := exec.Command("sudo", args...)
+	e := os.Environ()
+	e = append(e, env...)
+	c.Env = e
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "buildctl build.")
+	}
+	return nil
 }
 
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")

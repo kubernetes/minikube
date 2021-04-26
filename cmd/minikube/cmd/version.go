@@ -45,9 +45,13 @@ var versionCmd = &cobra.Command{
 		}
 		switch versionOutput {
 		case "":
-			out.Ln("minikube version: %v", minikubeVersion)
-			if !shortVersion && gitCommitID != "" {
-				out.Ln("commit: %v", gitCommitID)
+			if !shortVersion {
+				out.Ln("minikube version: %v", minikubeVersion)
+				if gitCommitID != "" {
+					out.Ln("commit: %v", gitCommitID)
+				}
+			} else {
+				out.Ln("%v", minikubeVersion)
 			}
 		case "json":
 			json, err := json.Marshal(data)
