@@ -10,7 +10,7 @@ This chart shows each tool's CPU busy overhead percentage.
 After each tool's starting, we measured each tool's idle for 5 minutes.  
 This chart was measured only after the start without deploying any pods.
 
-![idleOnly](/images/benchmarks/cpuUsage/linux.png)
+![idleOnly](/images/benchmarks/cpuUsage/idleOnly/linux.png)
 
 ## CPU% Busy Overhead - With Auto Pause vs. Non Auto Pause
 
