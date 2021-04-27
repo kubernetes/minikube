@@ -173,19 +173,19 @@ func execute() error {
 
 	var napCPU []plotter.XY
 	for i := range napResults {
-		napXPos := float64(i)-0.25
-		napYPos := napResults[i]+0.1
+		napXPos := float64(i) - 0.25
+		napYPos := napResults[i] + 0.1
 		napXY := plotter.XY{X: napXPos, Y: napYPos}
 		napCPU = append(napCPU, napXY)
 	}
 	// CPU Busy% non-autopause data label
 	napl, err := plotter.NewLabels(plotter.XYLabels{
-			XYs:    napCPU,
-			Labels: napLabels,
-		},
+		XYs:    napCPU,
+		Labels: napLabels,
+	},
 	)
 	if err != nil {
-		log.Fatalf("could not creates labels plotter: %+v", err)
+		return err
 	}
 
 	// Set auto-pause data label to each bar
@@ -201,8 +201,8 @@ func execute() error {
 
 	var apCPU []plotter.XY
 	for i := range apResults {
-		apXPos := float64(i)+0.05
-		apYPos := apResults[i]+0.1
+		apXPos := float64(i) + 0.05
+		apYPos := apResults[i] + 0.1
 		apXY := plotter.XY{X: apXPos, Y: apYPos}
 		apCPU = append(apCPU, apXY)
 	}
@@ -213,12 +213,9 @@ func execute() error {
 	},
 	)
 	if err != nil {
-		log.Fatalf("could not creates labels plotter: %+v", err)
+		return err
 	}
-	var t []plot.Tick
-	for i := math.Trunc(0); i <= 300; i += 50 {
-		t = append(t, plot.Tick{Value: i, Label: fmt.Sprint(i)})
-	}
+
 	// define max cpu busy% to 20%
 	p.Y.Max = 20
 	p.Y.Tick.Marker = integerTicks{}

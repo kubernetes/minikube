@@ -130,24 +130,21 @@ func execute() error {
 
 	var xysCPU []plotter.XY
 	for i := range results {
-		rxPos := float64(i)-0.13
-		ryPos := results[i]+0.1
+		rxPos := float64(i) - 0.13
+		ryPos := results[i] + 0.1
 		cXY := plotter.XY{X: rxPos, Y: ryPos}
 		xysCPU = append(xysCPU, cXY)
 	}
 	// CPU Busy% data label
 	cl, err := plotter.NewLabels(plotter.XYLabels{
-			XYs:    xysCPU,
-			Labels: cpuLabels,
-		},
+		XYs:    xysCPU,
+		Labels: cpuLabels,
+	},
 	)
 	if err != nil {
-		log.Fatalf("could not creates labels plotter: %+v", err)
+		return err
 	}
-	var t []plot.Tick
-	for i := math.Trunc(0); i <= 300; i += 50 {
-		t = append(t, plot.Tick{Value: i, Label: fmt.Sprint(i)})
-	}
+
 	// define max cpu busy% to 20%
 	p.Y.Max = 20
 	p.Y.Tick.Marker = integerTicks{}
