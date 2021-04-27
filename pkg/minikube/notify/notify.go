@@ -44,11 +44,11 @@ var (
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
 func MaybePrintUpdateTextFromGithub() {
-	maybePrintUpdateText(GithubMinikubeReleasesURL, GithubMinikubeBetaReleasesURL)
+	maybePrintUpdateText(GithubMinikubeReleasesURL, GithubMinikubeBetaReleasesURL, lastUpdateCheckFilePath)
 }
 
-func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string) {
-	if !shouldCheckURLVersion(lastUpdateCheckFilePath) {
+func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string, lastUpdatePath string) {
+	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
 	}
 	latestVersion, err := getLatestVersionFromURL(latestReleasesURL)
@@ -61,7 +61,7 @@ func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string) {
 		klog.Warning(err)
 		return
 	}
-	if maybePrintBetaUpdateText(betaReleasesURL, localVersion, latestVersion) {
+	if maybePrintBetaUpdateText(betaReleasesURL, localVersion, latestVersion, lastUpdatePath) {
 		return
 	}
 	if localVersion.Compare(latestVersion) >= 0 {
@@ -71,8 +71,8 @@ func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string) {
 }
 
 // maybePrintBetaUpdateText returns true if update text is printed
-func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Version, latestFullVersion semver.Version) bool {
-	if !shouldCheckURLBetaVersion(lastUpdateCheckFilePath) {
+func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Version, latestFullVersion semver.Version, lastUpdatePath string) bool {
+	if !shouldCheckURLBetaVersion(lastUpdatePath) {
 		return false
 	}
 	latestBetaVersion, err := getLatestVersionFromURL(betaReleasesURL)
@@ -105,7 +105,7 @@ func printUpdateText(version semver.Version) {
 
 func printBetaUpdateText(version semver.Version) {
 	printUpdateTextCommon(version)
-	out.Styled(style.Tip, "To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'\n")
+	out.Styled(style.Tip, "To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'")
 	out.Styled(style.Tip, "To disable update notices in general, run: 'minikube config set WantUpdateNotification false'\n")
 }
 
@@ -155,7 +155,7 @@ func getJSON(url string, target *Releases) error {
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
-func getLatestVersionFromURL(url string) (semver.Version, error) {
+var getLatestVersionFromURL = func(url string) (semver.Version, error) {
 	r, err := GetAllVersionsFromURL(url)
 	if err != nil {
 		return semver.Version{}, err

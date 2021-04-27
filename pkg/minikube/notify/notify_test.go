@@ -19,15 +19,19 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/blang/semver"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/version"
 )
@@ -158,6 +162,84 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 	_, err := getLatestVersionFromURL(server.URL)
 	if err == nil {
 		t.Fatalf("Malformed version value was returned from URL but no error was thrown")
+	}
+}
+
+var mockGetLatestVersionFromURL = func(url string) (semver.Version, error) {
+	return semver.Make(url)
+}
+
+func TestMaybePrintUpdateText(t *testing.T) {
+	getLatestVersionFromURL = mockGetLatestVersionFromURL
+
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+	//outputBuffer := tests.NewFakeFile()
+	//out.SetOutFile(outputBuffer)
+
+	var tc = []struct {
+		wantUpdateNotification     bool
+		wantBetaUpdateNotification bool
+		latestFullVersionFromURL   string
+		latestBetaVersionFromURL   string
+		description                string
+		want                       string
+	}{
+		{
+			wantUpdateNotification:     true,
+			wantBetaUpdateNotification: true,
+			latestFullVersionFromURL:   "99.0.0",
+			latestBetaVersionFromURL:   "99.0.0-beta.0",
+			description:                "latest full version greater",
+			want:                       "99.0.0 ",
+		},
+		{
+			wantUpdateNotification:     true,
+			wantBetaUpdateNotification: true,
+			latestFullVersionFromURL:   "97.0.0",
+			latestBetaVersionFromURL:   "98.0.0-beta.0",
+			description:                "latest beta version greater",
+			want:                       "98.0.0-beta.0",
+		},
+		{
+			wantUpdateNotification:     false,
+			wantBetaUpdateNotification: true,
+			latestFullVersionFromURL:   "97.0.0",
+			latestBetaVersionFromURL:   "96.0.0-beta.0",
+			description:                "notification unwanted",
+		},
+		{
+			wantUpdateNotification:     true,
+			wantBetaUpdateNotification: false,
+			latestFullVersionFromURL:   "0.0.0-unset",
+			latestBetaVersionFromURL:   "95.0.0-beta.0",
+			description:                "beta notification unwanted",
+		},
+	}
+
+	viper.Set(config.ReminderWaitPeriodInHours, 24)
+	for _, tt := range tc {
+		t.Run(tt.description, func(t *testing.T) {
+			outputBuffer := tests.NewFakeFile()
+			out.SetOutFile(outputBuffer)
+
+			viper.Set(config.WantUpdateNotification, tt.wantUpdateNotification)
+			viper.Set(config.WantBetaUpdateNotification, tt.wantBetaUpdateNotification)
+			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
+
+			tmpfile, err := ioutil.TempFile("", "")
+			if err != nil {
+				t.Fatalf("Cannot create temp file: %v", err)
+			}
+			defer os.Remove(tmpfile.Name())
+
+			maybePrintUpdateText(tt.latestFullVersionFromURL, tt.latestBetaVersionFromURL, tmpfile.Name())
+			got := outputBuffer.String()
+			if (tt.want == "" && len(got) != 0) || (tt.want != "" && !strings.Contains(got, tt.want)) {
+				t.Fatalf("Expected MaybePrintUpdateText to contain the text %q as the current version is %s and full version %s and beta version %s, but output was [%s]",
+					tt.want, version.GetVersion(), tt.latestFullVersionFromURL, tt.latestBetaVersionFromURL, outputBuffer.String())
+			}
+		})
 	}
 }
 
