@@ -75,6 +75,11 @@ func ImageExistsInDaemon(img string) bool {
 
 // ImageToCache writes img to the local cache directory
 func ImageToCache(img string) error {
+	if ImageExistsInCache(img) {
+		klog.Infof("%s exists in cache, skipping pull", img)
+		return nil
+	}
+
 	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
 
@@ -140,6 +145,10 @@ func ImageToCache(img string) error {
 
 // ImageToDaemon writes img to the local docker daemon
 func ImageToDaemon(img string) error {
+	if ImageExistsInDaemon(img) {
+		klog.Infof("%s exists in daemon, skipping pull", img)
+		return nil
+	}
 	// buffered channel
 	c := make(chan v1.Update, 200)
 

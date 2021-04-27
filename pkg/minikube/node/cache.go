@@ -127,16 +127,11 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
-			if download.ImageExistsInCache(img) {
-				klog.Infof("%s exists in cache, skipping pull", img)
+			klog.Infof("Downloading %s to local cache", img)
+			err = download.ImageToCache(img)
+			if err == nil {
+				klog.Infof("successfully saved %s as a tarball", img)
 				finalImg = img
-			} else {
-				klog.Infof("Downloading %s to local cache", img)
-				err = download.ImageToCache(img)
-				if err == nil {
-					klog.Infof("successfully saved %s as a tarball", img)
-					finalImg = img
-				}
 			}
 			if downloadOnly {
 				return err
