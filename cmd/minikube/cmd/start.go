@@ -77,6 +77,15 @@ var (
 	apiServerNames   []string
 	apiServerIPs     []net.IP
 	hostRe           = regexp.MustCompile(`^[^-][\w\.-]+$`)
+	slowK8sVersions  = map[string]struct{}{
+		"1.18.16": {},
+		"1.18.17": {},
+		"1.19.8":  {},
+		"1.19.9":  {},
+		"1.20.3":  {},
+		"1.20.4":  {},
+		"1.20.5":  {},
+	}
 )
 
 func init() {
@@ -394,7 +403,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 }
 
 func warnAboutMultiNodeCNI() {
-	out.WarningT("Cluster was created without any CNI, adding node to it might cause broken network.")
+	out.WarningT("Cluster was created without any CNI, adding a node to it might cause broken networking.")
 }
 
 func updateDriver(driverName string) {
@@ -1368,6 +1377,11 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}
 		exitIfNotForced(reason.KubernetesTooOld, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+	}
+
+	if _, ok := slowK8sVersions[nvs.String()]; ok {
+		out.WarningT("The requested version of Kubernetes has a known performance issue on cluster startup. It might take 2 to 3 minutes for a cluster to start.")
+		out.WarningT("For more info, see https://github.com/kubernetes/kubeadm/issues/2395")
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
