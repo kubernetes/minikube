@@ -174,8 +174,6 @@ func TestMaybePrintUpdateText(t *testing.T) {
 
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
-	//outputBuffer := tests.NewFakeFile()
-	//out.SetOutFile(outputBuffer)
 
 	var tc = []struct {
 		wantUpdateNotification     bool
