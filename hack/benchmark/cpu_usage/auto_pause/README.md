@@ -7,15 +7,24 @@ These scripts are for the benchmark of cpu usage, minikube vs kind vs k3d.
  
 In `benchmark_local_k8s.sh`, we compare minikube drivers(hyperkit, virtualbox, docker, docker with auto-pause) and kind, k3d, Docker for Mac Kubernetes in case of macOS.   
 In `benchmark_local_k8s.sh`, we compare minikube drivers(kvm2, virtualbox, docker, docker with auto-pause) and kind, k3d in case of Linux.   
+`benchmark_local_k8s.sh` take these steps to measure `auto-pause` vs. `non auto-pause`.   
+
+ 1. start each local kubernetes tool
+ 2. deploy sample application(nginx deployment)
+ 3. wait 1 minute without anything
+ 4. measure No.3 idle CPU usage with [cstat](https://github.com/tstromberg/cstat)
+ 5. enable auto-pause addons(only if tool is minikube)
+ 6. wait 3 minute without anything
+ 7. measure No.6 idle CPU usage with [cstat](https://github.com/tstromberg/cstat)
 
 # How to use these scripts
  
 ```
 cd <Top of minikube directory>
-make cpu-benchmark
+make cpu-benchmark-benchmark-autopause
 ```
 
-After running `make cpu-benchmark`, the png file of the bar chart graph will be generated.  
+After running `make cpu-benchmark-autopause`, the png file of the bar chart graph will be generated.  
 If you update the benchmark results to [our website](https://minikube.sigs.k8s.io/docs/benchmarks/), please commit this change.
 
 ```
