@@ -23,9 +23,11 @@ import (
 	"runtime"
 
 	"github.com/blang/semver"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // binaryWithChecksumURL gets the location of a Kubernetes binary
@@ -46,11 +48,19 @@ func binaryWithChecksumURL(binaryName, version, osName, archName string) (string
 func Binary(binary, version, osName, archName string) (string, error) {
 	targetDir := localpath.MakeMiniPath("cache", osName, version)
 	targetFilepath := path.Join(targetDir, binary)
+	targetLock := targetFilepath + ".lock"
 
 	url, err := binaryWithChecksumURL(binary, version, osName, archName)
 	if err != nil {
 		return "", err
 	}
+
+	spec := lock.PathMutexSpec(targetLock)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", targetLock, spec)
+	}
+	defer releaser.Release()
 
 	if _, err := checkCache(targetFilepath); err == nil {
 		klog.Infof("Not caching binary, using %s", url)

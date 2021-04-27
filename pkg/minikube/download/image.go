@@ -30,10 +30,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 var (
@@ -81,13 +83,21 @@ var checkImageExistsInDaemon = ImageExistsInDaemon
 
 // ImageToCache writes img to the local cache directory
 func ImageToCache(img string) error {
+	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
+	f = localpath.SanitizeCacheDir(f)
+	fileLock := f + ".lock"
+
+	spec := lock.PathMutexSpec(fileLock)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", fileLock, spec)
+	}
+	defer releaser.Release()
+
 	if checkImageExistsInCache(img) {
 		klog.Infof("%s exists in cache, skipping pull", img)
 		return nil
 	}
-
-	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
-	f = localpath.SanitizeCacheDir(f)
 
 	if err := os.MkdirAll(filepath.Dir(f), 0777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", f)
@@ -158,6 +168,16 @@ func ImageToCache(img string) error {
 
 // ImageToDaemon writes img to the local docker daemon
 func ImageToDaemon(img string) error {
+	fileLock := filepath.Join(constants.KICCacheDir, path.Base(img)+".d.lock")
+	fileLock = localpath.SanitizeCacheDir(fileLock)
+
+	spec := lock.PathMutexSpec(fileLock)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", fileLock, spec)
+	}
+	defer releaser.Release()
+
 	if checkImageExistsInDaemon(img) {
 		klog.Infof("%s exists in daemon, skipping pull", img)
 		return nil

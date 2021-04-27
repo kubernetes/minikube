@@ -30,12 +30,14 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 const (
@@ -129,6 +131,14 @@ var checkPreloadExists = PreloadExists
 // Preload caches the preloaded images tarball on the host machine
 func Preload(k8sVersion, containerRuntime string) error {
 	targetPath := TarballPath(k8sVersion, containerRuntime)
+	targetLock := targetPath + ".lock"
+
+	spec := lock.PathMutexSpec(targetLock)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", targetLock, spec)
+	}
+	defer releaser.Release()
 
 	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found %s in cache, skipping download", targetPath)
