@@ -52,7 +52,7 @@ func Binary(binary, version, osName, archName string) (string, error) {
 		return "", err
 	}
 
-	if _, err := os.Stat(targetFilepath); err == nil {
+	if _, err := checkCache(targetFilepath); err == nil {
 		klog.Infof("Not caching binary, using %s", url)
 		return targetFilepath, nil
 	}

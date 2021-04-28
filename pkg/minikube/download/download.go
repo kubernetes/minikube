@@ -30,7 +30,8 @@ import (
 )
 
 var (
-	mockMode = false
+	mockMode   = false
+	checkCache = os.Stat
 )
 
 // EnableMock allows tests to selectively enable if downloads are mocked
