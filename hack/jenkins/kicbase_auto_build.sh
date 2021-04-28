@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
+set -x -o pipefail
 
 # Make sure docker is installed and configured
 ./hack/jenkins/installers/check_install_docker.sh
@@ -61,7 +61,7 @@ export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
 
 
 # Build a new kicbase image
-yes | make push-kic-base-image | tee kic-logs.txt
+CIBUILD=yes make push-kic-base-image | tee kic-logs.txt
 
 # Abort with error message if above command failed
 ec=$?
