@@ -215,7 +215,8 @@ main() {
       if  [[ $? == 0 ]]; then
         echo "Kubernetes is running in Docker for Desktop - adjusting tests"
         docker_k8s=1
-        kubectl create deployment nginx --image=nginx:1.20.0 && measure docker_k8s $i
+        kubectl create deployment nginx --image=nginx:1.20.0
+        measure docker_k8s $i
         echo "end of measurement for Docker for Desktop"
         kubectl delete deployment nginx
       # measure Docker idle
@@ -234,14 +235,16 @@ main() {
     echo "-> k3d"
     time k3d cluster create
     echo "-> deploy nginx deployment"
-    kubectl create deployment nginx --image=nginx:1.20.0 && measure k3d $i || fail k3d $i
+    kubectl create deployment nginx --image=nginx:1.20.0
+    measure k3d $i || fail k3d $i
     cleanup
 
     echo ""
     echo "-> kind"
     time kind create cluster
     echo "-> deploy nginx deployment"
-    kubectl create deployment nginx --image=nginx:1.20.0 && measure kind $i || fail kind $i
+    kubectl create deployment nginx --image=nginx:1.20.0
+    measure kind $i || fail kind $i
     cleanup
 
     # test different drivers
@@ -257,13 +260,32 @@ main() {
       echo "-> out/minikube --driver=${driver}"
       time out/minikube start --driver "${driver}"
 
-      #2. deploy sample application(nginx deployment) and 3. wait 1 minute without anything and 4. measure No.3 idle CPU usage
+      #2. deploy sample application(nginx deployment)
       echo "-> deploy nginx deployment"
-      kubectl create deployment nginx --image=nginx:1.20.0 && measure "minikube.${driver}.nonautopause" $i "1m" || fail "minikube.${driver}.nonautopause" $i
+      kubectl create deployment nginx --image=nginx:1.20.0
 
-      # 5. enable auto-pause addons and 6. wait 3 minute without anything and measure No.6 idle CPU usage
+      #3. wait 1 minute without anything and 4. measure No.3 idle CPU usage
+      measure "minikube.${driver}.nonautopause" $i "1m" || fail "minikube.${driver}.nonautopause" $i
+
+      # 5. enable auto-pause addons
       echo "-> enable auto-pause to control plane"
-      out/minikube addons enable auto-pause && measure "minikube.${driver}.autopause" $i "3m" || fail "minikube.${driver}.autopause" $i
+      out/minikube addons enable auto-pause
+
+      # 6. wait 1 minute so that control plane will become Paused status(It takes 1 minute)
+      sleep 65
+      # 7. verify if minikube control plane is paused
+      PAUSE=$(out/minikube status)
+      echo $PAUSE | grep "apiserver: Paused"
+      # 8. wait 3 minute without anything
+      # 9. measure No.6 idle CPU usage
+      if [[ "$?" == 0 ]]; then
+        echo "kube-apiserver is paused"
+        measure "minikube.${driver}.autopause" $i "3m" || fail "minikube.${driver}.autopause" $i
+      else
+        echo "failed to auto pause"
+        fail "minikube.${driver}.autopause" $i
+      fi
+
       cleanup
 
       # We won't be needing docker for the remaining tests this iteration
