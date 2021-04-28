@@ -318,9 +318,11 @@ docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hype
 .PHONY: docker-machine-driver-kvm2
 docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
+INTEGRATION_TIMEOUT ?= 90m
+
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to ./out/testout_COMMIT.txt
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=$(INTEGRATION_TIMEOUT) $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test, logs to ./out/testout_COMMIT.txt
@@ -328,7 +330,7 @@ integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Tr
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing, logs to ./out/testout_COMMIT.txt
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=$(INTEGRATION_TIMEOUT) $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: functional
 functional: integration-functional-only
