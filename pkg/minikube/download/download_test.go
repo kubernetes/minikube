@@ -26,6 +26,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 type mockLogger struct {
@@ -80,6 +81,42 @@ func TestBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 	dlCall := func() {
 		if _, err := Binary("kubectl", "v1.20.2", "linux", "amd64"); err != nil {
 			t.Errorf("Failed to download binary: %+v", err)
+		}
+		group.Done()
+	}
+
+	go dlCall()
+	go dlCall()
+
+	group.Wait()
+
+	if tlog.downloads != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", tlog.downloads)
+	}
+}
+
+func TestPreloadDownloadPreventsMultipleDownload(t *testing.T) {
+	EnableMock(true)
+	defer EnableMock(false)
+	tlog := &mockLogger{downloads: 0, t: t}
+
+	klog.SetLogger(tlog)
+	defer klog.SetLogger(nil)
+
+	checkCache = func(file string) (fs.FileInfo, error) {
+		if tlog.downloads == 0 {
+			return nil, fmt.Errorf("some error")
+		}
+		return nil, nil
+	}
+	checkPreloadExists = func(k8sVersion, containerRuntime string, forcePreload ...bool) bool { return true }
+	compareChecksum = func(k8sVersion, containerRuntime, path string) error { return nil }
+
+	var group sync.WaitGroup
+	group.Add(2)
+	dlCall := func() {
+		if err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime); err != nil {
+			t.Errorf("Failed to download preload: %+v", err)
 		}
 		group.Done()
 	}

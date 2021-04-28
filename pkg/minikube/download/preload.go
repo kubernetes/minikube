@@ -102,7 +102,7 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
-	if _, err := os.Stat(targetPath); err == nil {
+	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found local preload: %s", targetPath)
 		return true
 	}
@@ -124,17 +124,19 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 	return true
 }
 
+var checkPreloadExists = PreloadExists
+
 // Preload caches the preloaded images tarball on the host machine
 func Preload(k8sVersion, containerRuntime string) error {
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 
-	if _, err := os.Stat(targetPath); err == nil {
+	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found %s in cache, skipping download", targetPath)
 		return nil
 	}
 
 	// Make sure we support this k8s version
-	if !PreloadExists(k8sVersion, containerRuntime) {
+	if !checkPreloadExists(k8sVersion, containerRuntime) {
 		klog.Infof("Preloaded tarball for k8s version %s does not exist", k8sVersion)
 		return nil
 	}
@@ -164,7 +166,7 @@ func Preload(k8sVersion, containerRuntime string) error {
 		return errors.Wrap(err, "saving checksum file")
 	}
 
-	if err := verifyChecksum(k8sVersion, containerRuntime, targetPath); err != nil {
+	if err := compareChecksum(k8sVersion, containerRuntime, targetPath); err != nil {
 		return errors.Wrap(err, "verify")
 	}
 
@@ -234,3 +236,5 @@ func verifyChecksum(k8sVersion, containerRuntime, path string) error {
 	}
 	return nil
 }
+
+var compareChecksum = verifyChecksum
