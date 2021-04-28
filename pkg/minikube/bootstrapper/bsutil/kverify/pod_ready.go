@@ -66,11 +66,12 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 			}
 			if match || pod.Spec.PriorityClassName == "system-cluster-critical" || pod.Spec.PriorityClassName == "system-node-critical" {
 				if err := waitPodCondition(cs, pod.Name, pod.Namespace, core.PodReady, timeout); err != nil {
-					// ignore unstarted minion nodes and terminated pods, eg:
+					// ignore unstarted minion nodes, non-running pods and non-pending pods, eg:
 					// error: `waitPodCondition: node "docker-containerd-multinode-wait-m02" hosting pod "kube-proxy-frz7b" in "kube-system" namespace is currently not "Ready": node "docker-containerd-multinode-wait-m02" has status "Ready":"Unknown"`, or
-					// error: `waitPodCondition: error getting pod "coredns-74ff55c5b-57fhw" in "kube-system" namespace: pods "coredns-74ff55c5b-57fhw" not found`
-					terminatedPod := strings.HasSuffix(err.Error(), "not found")
-					if !unstartedMinion.MatchString(err.Error()) && !terminatedPod {
+					// error: `waitPodCondition: error getting pod "coredns-74ff55c5b-57fhw" in "kube-system" namespace (skipping!): pods "coredns-74ff55c5b-57fhw" not found`
+					// error: `waitPodCondition: pod "coredns-74ff55c5b-57fhw" in "kube-system" namespace has status phase "Failed" (skipping!)`
+					skipPod := strings.Contains(err.Error(), "skipping!")
+					if !unstartedMinion.MatchString(err.Error()) && !skipPod {
 						klog.Errorf("WaitExtra: %v", err)
 					}
 					continue
@@ -111,6 +112,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 			klog.Info(reason)
 			lap = time.Now()
 		}
+		// status == core.ConditionFalse
 		return false, nil
 	}
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkCondition); err != nil {
@@ -124,7 +126,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 func podConditionStatus(cs *kubernetes.Clientset, name, namespace string, condition core.PodConditionType) (status core.ConditionStatus, reason string) {
 	pod, err := cs.CoreV1().Pods(namespace).Get(context.Background(), name, meta.GetOptions{})
 	if err != nil {
-		return core.ConditionUnknown, fmt.Sprintf("error getting pod %q in %q namespace: %v", name, namespace, err)
+		return core.ConditionUnknown, fmt.Sprintf("error getting pod %q in %q namespace (skipping!): %v", name, namespace, err)
 	}
 
 	// check if undelying node is Ready - in case we got stale data about the pod
