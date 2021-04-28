@@ -699,7 +699,21 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "system pods")
 	}
 
-	// must be called after applyCNI
+	if err := kverify.NodePressure(client); err != nil {
+		adviseNodePressure(err, cfg.Name, cfg.Driver)
+	}
+
+	// This can fail during upgrades if the old pods have not shut down yet
+	addonPhase := func() error {
+		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf)))
+		return err
+	}
+	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
+		klog.Warningf("addon install failed, wil retry: %v", err)
+		return errors.Wrap(err, "addons")
+	}
+
+	// must be called after applyCNI and `kubeadm phase addon all` (ie, coredns redeploy)
 	if cfg.VerifyComponents[kverify.ExtraKey] {
 		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
 		// it appears as to be immediately Ready as well as all kube-system pods (last observed state),
@@ -726,20 +740,6 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
 			return errors.Wrap(err, "extra")
 		}
-	}
-
-	if err := kverify.NodePressure(client); err != nil {
-		adviseNodePressure(err, cfg.Name, cfg.Driver)
-	}
-
-	// This can fail during upgrades if the old pods have not shut down yet
-	addonPhase := func() error {
-		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf)))
-		return err
-	}
-	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
-		klog.Warningf("addon install failed, wil retry: %v", err)
-		return errors.Wrap(err, "addons")
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {

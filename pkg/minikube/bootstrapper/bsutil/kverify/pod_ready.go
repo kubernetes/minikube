@@ -20,8 +20,6 @@ package kverify
 import (
 	"context"
 	"fmt"
-	"regexp"
-	"strings"
 	"time"
 
 	core "k8s.io/api/core/v1"
@@ -45,7 +43,6 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 		return fmt.Errorf("error listing pods in %q namespace: %w", meta.NamespaceSystem, err)
 	}
 
-	unstartedMinion := regexp.MustCompile(`node "(.*-m[0-9]+)" has status "Ready":"Unknown"`)
 	for _, pod := range pods.Items {
 		if time.Since(start) > timeout {
 			return fmt.Errorf("timed out waiting %v for all system-critical and pods with labels %v to be %q", timeout, labels, core.NodeReady)
@@ -66,15 +63,7 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 			}
 			if match || pod.Spec.PriorityClassName == "system-cluster-critical" || pod.Spec.PriorityClassName == "system-node-critical" {
 				if err := waitPodCondition(cs, pod.Name, pod.Namespace, core.PodReady, timeout); err != nil {
-					// ignore unstarted minion nodes, non-running pods and non-pending pods, eg:
-					// error: `waitPodCondition: node "docker-containerd-multinode-wait-m02" hosting pod "kube-proxy-frz7b" in "kube-system" namespace is currently not "Ready": node "docker-containerd-multinode-wait-m02" has status "Ready":"Unknown"`, or
-					// error: `waitPodCondition: error getting pod "coredns-74ff55c5b-57fhw" in "kube-system" namespace (skipping!): pods "coredns-74ff55c5b-57fhw" not found`
-					// error: `waitPodCondition: pod "coredns-74ff55c5b-57fhw" in "kube-system" namespace has status phase "Failed" (skipping!)`
-					skipPod := strings.Contains(err.Error(), "skipping!")
-					if !unstartedMinion.MatchString(err.Error()) && !skipPod {
-						klog.Errorf("WaitExtra: %v", err)
-					}
-					continue
+					klog.Errorf("WaitExtra: %v", err)
 				}
 				break
 			}
@@ -132,7 +121,7 @@ func podConditionStatus(cs *kubernetes.Clientset, name, namespace string, condit
 	// check if undelying node is Ready - in case we got stale data about the pod
 	if pod.Spec.NodeName != "" {
 		if status, reason := nodeConditionStatus(cs, pod.Spec.NodeName, core.NodeReady); status != core.ConditionTrue {
-			return core.ConditionUnknown, fmt.Sprintf("node %q hosting pod %q in %q namespace is currently not %q: %v", pod.Spec.NodeName, name, namespace, core.NodeReady, reason)
+			return core.ConditionUnknown, fmt.Sprintf("node %q hosting pod %q in %q namespace is currently not %q (skipping!): %v", pod.Spec.NodeName, name, namespace, core.NodeReady, reason)
 		}
 	}
 
