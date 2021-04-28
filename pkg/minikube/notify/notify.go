@@ -51,7 +51,7 @@ func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string, last
 	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
 	}
-	latestVersion, err := getLatestVersionFromURL(latestReleasesURL)
+	latestVersion, err := latestVersionFromURL(latestReleasesURL)
 	if err != nil {
 		klog.Warning(err)
 		return
@@ -75,7 +75,7 @@ func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Versio
 	if !shouldCheckURLBetaVersion(lastUpdatePath) {
 		return false
 	}
-	latestBetaVersion, err := getLatestVersionFromURL(betaReleasesURL)
+	latestBetaVersion, err := latestVersionFromURL(betaReleasesURL)
 	if err != nil {
 		klog.Warning(err)
 		return false
@@ -113,7 +113,7 @@ func shouldCheckURLVersion(filePath string) bool {
 	if !viper.GetBool(config.WantUpdateNotification) {
 		return false
 	}
-	lastUpdateTime := getTimeFromFileIfExists(filePath)
+	lastUpdateTime := timeFromFileIfExists(filePath)
 	return time.Since(lastUpdateTime).Hours() >= viper.GetFloat64(config.ReminderWaitPeriodInHours)
 }
 
@@ -155,16 +155,16 @@ func getJSON(url string, target *Releases) error {
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
-var getLatestVersionFromURL = func(url string) (semver.Version, error) {
-	r, err := GetAllVersionsFromURL(url)
+var latestVersionFromURL = func(url string) (semver.Version, error) {
+	r, err := AllVersionsFromURL(url)
 	if err != nil {
 		return semver.Version{}, err
 	}
 	return semver.Make(strings.TrimPrefix(r[0].Name, version.VersionPrefix))
 }
 
-// GetAllVersionsFromURL get all versions from a JSON URL
-func GetAllVersionsFromURL(url string) (Releases, error) {
+// AllVersionsFromURL get all versions from a JSON URL
+func AllVersionsFromURL(url string) (Releases, error) {
 	var releases Releases
 	klog.Info("Checking for updates...")
 	if err := getJSON(url, &releases); err != nil {
@@ -184,7 +184,7 @@ func writeTimeToFile(path string, inputTime time.Time) error {
 	return nil
 }
 
-func getTimeFromFileIfExists(path string) time.Time {
+func timeFromFileIfExists(path string) time.Time {
 	lastUpdateCheckTime, err := ioutil.ReadFile(path)
 	if err != nil {
 		return time.Time{}

@@ -113,19 +113,19 @@ func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func TestGetLatestVersionFromURLCorrect(t *testing.T) {
+func TestLatestVersionFromURLCorrect(t *testing.T) {
 	// test that the version is correctly parsed if returned if valid JSON is returned the url endpoint
-	latestVersionFromURL := "0.0.0-dev"
+	versionFromURL := "0.0.0-dev"
 	handler := &URLHandlerCorrect{
-		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
+		releases: []Release{{Name: version.VersionPrefix + versionFromURL}},
 	}
 	server := httptest.NewServer(handler)
 
-	latestVersion, err := getLatestVersionFromURL(server.URL)
+	latestVersion, err := latestVersionFromURL(server.URL)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	expectedVersion, _ := semver.Make(latestVersionFromURL)
+	expectedVersion, _ := semver.Make(versionFromURL)
 	if latestVersion.Compare(expectedVersion) != 0 {
 		t.Fatalf("Expected latest version from URL to be %s, it was instead %s", expectedVersion, latestVersion)
 	}
@@ -136,12 +136,12 @@ type URLHandlerNone struct{}
 func (h *URLHandlerNone) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
-func TestGetLatestVersionFromURLNone(t *testing.T) {
+func TestLatestVersionFromURLNone(t *testing.T) {
 	// test that an error is returned if nothing is returned at the url endpoint
 	handler := &URLHandlerNone{}
 	server := httptest.NewServer(handler)
 
-	_, err := getLatestVersionFromURL(server.URL)
+	_, err := latestVersionFromURL(server.URL)
 	if err == nil {
 		t.Fatalf("No version value was returned from URL but no error was thrown")
 	}
@@ -154,21 +154,21 @@ func (h *URLHandlerMalformed) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	fmt.Fprintf(w, "Malformed JSON")
 }
 
-func TestGetLatestVersionFromURLMalformed(t *testing.T) {
+func TestLatestVersionFromURLMalformed(t *testing.T) {
 	// test that an error is returned if malformed JSON is at the url endpoint
 	handler := &URLHandlerMalformed{}
 	server := httptest.NewServer(handler)
 
-	_, err := getLatestVersionFromURL(server.URL)
+	_, err := latestVersionFromURL(server.URL)
 	if err == nil {
 		t.Fatalf("Malformed version value was returned from URL but no error was thrown")
 	}
 }
 
-var mockGetLatestVersionFromURL = semver.Make
+var mockLatestVersionFromURL = semver.Make
 
 func TestMaybePrintUpdateText(t *testing.T) {
-	getLatestVersionFromURL = mockGetLatestVersionFromURL
+	latestVersionFromURL = mockLatestVersionFromURL
 
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
