@@ -77,16 +77,6 @@ var (
 	apiServerNames   []string
 	apiServerIPs     []net.IP
 	hostRe           = regexp.MustCompile(`^[^-][\w\.-]+$`)
-	slowK8sVersions  = map[string]struct{}{
-		"1.18.16": {},
-		"1.18.17": {},
-		"1.19.8":  {},
-		"1.19.9":  {},
-		"1.20.3":  {},
-		"1.20.4":  {},
-		"1.20.5":  {},
-		"1.21.0":  {},
-	}
 )
 
 func init() {
@@ -1380,9 +1370,12 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 		exitIfNotForced(reason.KubernetesTooOld, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
 
-	if _, ok := slowK8sVersions[nvs.String()]; ok {
-		out.WarningT("The requested version of Kubernetes has a known performance issue on cluster startup. It might take 2 to 3 minutes for a cluster to start.")
-		out.WarningT("For more info, see https://github.com/kubernetes/kubeadm/issues/2395")
+	// If the version of Kubernetes has a known issue, print a warning out to the screen
+	if issue := reason.ProblematicK8sVersion(nvs); issue.Suggestion != "" {
+		out.WarningT(issue.Suggestion, out.V{"version": nvs.String()})
+		if issue.URL != "" {
+			out.WarningT("For more information, see: {{.url}}", out.V{"url": issue.URL})
+		}
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
