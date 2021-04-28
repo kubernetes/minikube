@@ -130,3 +130,61 @@ func TestPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", tlog.downloads)
 	}
 }
+
+func TestImageToCache(t *testing.T) {
+	EnableMock(true)
+	defer EnableMock(false)
+	tlog := &mockLogger{downloads: 0, t: t}
+
+	klog.SetLogger(tlog)
+	defer klog.SetLogger(nil)
+
+	checkImageExistsInCache = func(img string) bool { return tlog.downloads > 0 }
+
+	var group sync.WaitGroup
+	group.Add(2)
+	dlCall := func() {
+		if err := ImageToCache("testimg"); err != nil {
+			t.Errorf("Failed to download preload: %+v", err)
+		}
+		group.Done()
+	}
+
+	go dlCall()
+	go dlCall()
+
+	group.Wait()
+
+	if tlog.downloads != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", tlog.downloads)
+	}
+}
+
+func TestImageToDaemon(t *testing.T) {
+	EnableMock(true)
+	defer EnableMock(false)
+	tlog := &mockLogger{downloads: 0, t: t}
+
+	klog.SetLogger(tlog)
+	defer klog.SetLogger(nil)
+
+	checkImageExistsInCache = func(img string) bool { return tlog.downloads > 0 }
+
+	var group sync.WaitGroup
+	group.Add(2)
+	dlCall := func() {
+		if err := ImageToCache("testimg"); err != nil {
+			t.Errorf("Failed to download preload: %+v", err)
+		}
+		group.Done()
+	}
+
+	go dlCall()
+	go dlCall()
+
+	group.Wait()
+
+	if tlog.downloads != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", tlog.downloads)
+	}
+}

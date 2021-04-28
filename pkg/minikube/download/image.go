@@ -60,6 +60,8 @@ func ImageExistsInCache(img string) bool {
 	return false
 }
 
+var checkImageExistsInCache = ImageExistsInCache
+
 // ImageExistsInDaemon if img exist in local docker daemon
 func ImageExistsInDaemon(img string) bool {
 	// Check if image exists locally
@@ -75,9 +77,11 @@ func ImageExistsInDaemon(img string) bool {
 	return false
 }
 
+var checkImageExistsInDaemon = ImageExistsInDaemon
+
 // ImageToCache writes img to the local cache directory
 func ImageToCache(img string) error {
-	if ImageExistsInCache(img) {
+	if checkImageExistsInCache(img) {
 		klog.Infof("%s exists in cache, skipping pull", img)
 		return nil
 	}
@@ -154,7 +158,7 @@ func ImageToCache(img string) error {
 
 // ImageToDaemon writes img to the local docker daemon
 func ImageToDaemon(img string) error {
-	if ImageExistsInDaemon(img) {
+	if checkImageExistsInDaemon(img) {
 		klog.Infof("%s exists in daemon, skipping pull", img)
 		return nil
 	}
