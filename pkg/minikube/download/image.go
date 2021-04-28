@@ -36,10 +36,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-var defaultPlatform = v1.Platform{
-	Architecture: runtime.GOARCH,
-	OS:           "linux",
-}
+var (
+	defaultPlatform = v1.Platform{
+		Architecture: runtime.GOARCH,
+		OS:           "linux",
+	}
+)
 
 // ImageExistsInCache if img exist in local cache directory
 func ImageExistsInCache(img string) bool {
@@ -85,6 +87,13 @@ func ImageToCache(img string) error {
 
 	if err := os.MkdirAll(filepath.Dir(f), 0777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", f)
+	}
+
+	if mockMode {
+		klog.Infof("Mock download: %s -> %s", img, f)
+		// Callers expect the file to exist
+		_, err := os.Create(f)
+		return err
 	}
 
 	// buffered channel
@@ -157,6 +166,12 @@ func ImageToDaemon(img string) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
 	}
+
+	if mockMode {
+		klog.Infof("Mock download: %s -> daemon", img)
+		return nil
+	}
+
 	klog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
 	if err != nil {
@@ -170,6 +185,7 @@ func ImageToDaemon(img string) error {
 
 		return errors.Wrap(err, "getting remote image")
 	}
+
 	klog.V(3).Infof("Writing image %v", ref)
 	errchan := make(chan error)
 	p := pb.Full.Start64(0)
