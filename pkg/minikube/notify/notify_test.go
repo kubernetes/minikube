@@ -165,9 +165,7 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 	}
 }
 
-var mockGetLatestVersionFromURL = func(url string) (semver.Version, error) {
-	return semver.Make(url)
-}
+var mockGetLatestVersionFromURL = semver.Make
 
 func TestMaybePrintUpdateText(t *testing.T) {
 	getLatestVersionFromURL = mockGetLatestVersionFromURL
