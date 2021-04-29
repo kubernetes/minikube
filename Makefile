@@ -924,6 +924,14 @@ endif
 stress: ## run the stress tests
 	go test -test.v -test.timeout=2h ./test/stress -loops=10 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
+.PHONY: cpu-benchmark-idle
+cpu-benchmark-idle: ## run the cpu usage 5 minutes idle benchmark
+	./hack/benchmark/cpu_usage/idle_only/benchmark_local_k8s.sh
+
+.PHONY: cpu-benchmark-autopause
+cpu-benchmark-autopause: ## run the cpu usage auto-pause benchmark
+	./hack/benchmark/cpu_usage/auto_pause/benchmark_local_k8s.sh
+
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version
 	(cd hack/update/gopogh_version && \
