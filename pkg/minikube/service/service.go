@@ -210,7 +210,7 @@ func CheckService(cname string, namespace string, service string) error {
 	if len(svc.Spec.Ports) == 0 {
 		return fmt.Errorf("%s:%s has no ports", namespace, service)
 	}
-	klog.Infof("Found service: %+v", svc)
+	klog.InfoS("Found service", "service", svc)
 	return nil
 }
 
@@ -327,7 +327,7 @@ func CreateSecret(cname string, namespace, name string, dataValues map[string]st
 	secrets := client.Secrets(namespace)
 	secret, err := secrets.Get(name, meta.GetOptions{})
 	if err != nil {
-		klog.Infof("Failed to retrieve existing secret: %v", err)
+		klog.InfoS("Failed to retrieve existing secret", "err", err)
 	}
 
 	// Delete existing secret
