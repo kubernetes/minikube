@@ -271,21 +271,25 @@ main() {
       echo "-> enable auto-pause to control plane"
       out/minikube addons enable auto-pause
 
-      # 6. wait 1 minute so that control plane will become Paused status(It takes 1 minute)
-      sleep 65
-      # 7. verify if minikube control plane is paused
-      PAUSE=$(out/minikube status)
-      echo $PAUSE | grep "apiserver: Paused"
-      # 8. wait 3 minute without anything
-      # 9. measure No.6 idle CPU usage
-      if [[ "$?" == 0 ]]; then
-        echo "kube-apiserver is paused"
-        measure "minikube.${driver}.autopause" $i "3m" || fail "minikube.${driver}.autopause" $i
-      else
-        echo "failed to auto pause"
-        fail "minikube.${driver}.autopause" $i
-      fi
+      # 6. wait 1 minute so that control plane will become Paused status
+      pause=0
+      while [ "${pause}" = 0 ]
+      do
+	# It takes 1 minute to become Pause status from Stopped status. 70s is a number with a margin
+	sleep 70
+        # 7. verify if minikube control plane is paused
+        PAUSE=$(out/minikube status)
+        echo $PAUSE | grep "apiserver: Paused"
+        if [[ "$?" == 0 ]]; then
+          echo "kube-apiserver is paused"
+	  pause=1
+	else
+	  echo "...status is not Paused. wait for becoming Pause..."
+        fi
+      done
 
+      # 8. wait 3 minute without anything and 9. measure No.8 idle CPU usage
+      measure "minikube.${driver}.autopause" $i "3m" || fail "minikube.${driver}.autopause" $i
       cleanup
 
       # We won't be needing docker for the remaining tests this iteration
