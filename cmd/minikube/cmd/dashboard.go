@@ -61,7 +61,7 @@ var dashboardCmd = &cobra.Command{
 
 		for _, n := range co.Config.Nodes {
 			if err := proxy.ExcludeIP(n.IP); err != nil {
-				klog.Errorf("Error excluding IP from proxy: %s", err)
+				klog.ErrorS(err, "Error excluding IP from proxy: %s")
 			}
 		}
 
@@ -118,9 +118,9 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		klog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
+		klog.InfoS("Success! I will now quietly sit around until kubectl proxy exits!")
 		if err = p.Wait(); err != nil {
-			klog.Errorf("Wait: %v", err)
+			klog.ErrorS(err, "Wait")
 		}
 	},
 }
