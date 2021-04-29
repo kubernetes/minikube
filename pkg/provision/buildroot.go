@@ -67,7 +67,7 @@ func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision
 	noPivot := true
 	// Using pivot_root is not supported on fstype rootfs
 	if fstype, err := rootFileSystemType(p); err == nil {
-		klog.Infof("root file system type: %s", fstype)
+		klog.InfoS("root file system type", "fstype", fstype)
 		noPivot = fstype == "rootfs"
 	}
 
@@ -163,15 +163,15 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	p.AuthOptions = authOptions
 	p.EngineOptions = engineOptions
 
-	klog.Infof("provisioning hostname %q", p.Driver.GetMachineName())
+	klog.InfoS("provisioning hostname", "hostname", p.Driver.GetMachineName())
 	if err := p.SetHostname(p.Driver.GetMachineName()); err != nil {
 		return err
 	}
 
 	p.AuthOptions = setRemoteAuthOptions(p)
-	klog.Infof("set auth options %+v", p.AuthOptions)
+	klog.InfoS("set auth options", "options", p.AuthOptions)
 
-	klog.Infof("setting up certificates")
+	klog.InfoS("setting up certificates")
 	configAuth := func() error {
 		if err := configureAuth(p); err != nil {
 			klog.Warningf("configureAuth failed: %v", err)
@@ -182,13 +182,13 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 
 	err := retry.Expo(configAuth, 100*time.Microsecond, 2*time.Minute)
 	if err != nil {
-		klog.Infof("Error configuring auth during provisioning %v", err)
+		klog.InfoS("Error configuring auth during provisioning", "err", err)
 		return err
 	}
 
-	klog.Infof("setting minikube options for container-runtime")
+	klog.InfoS("setting minikube options for container-runtime")
 	if err := setContainerRuntimeOptions(p.clusterName, p); err != nil {
-		klog.Infof("Error setting container-runtime options during provisioning %v", err)
+		klog.Infof("Error setting container-runtime options during provisioning", "err", err)
 		return err
 	}
 
