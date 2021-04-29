@@ -318,7 +318,7 @@ docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hype
 .PHONY: docker-machine-driver-kvm2
 docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
-INTEGRATION_TIMEOUT ?= 90m
+INTEGRATION_TIMEOUT ?= 180m
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to ./out/testout_COMMIT.txt
 	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=$(INTEGRATION_TIMEOUT) $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"

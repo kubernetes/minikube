@@ -50,6 +50,7 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 		if time.Since(start) > timeout {
 			return fmt.Errorf("timed out waiting %v for all system-critical and pods with labels %v to be %q", timeout, labels, core.NodeReady)
 		}
+		klog.Infof("[z] inspecting pod %v, status: %v, labels: %v", pod.Name, pod.Status, pod.Labels)
 
 		for k, v := range pod.Labels {
 			label := fmt.Sprintf("%s=%s", k, v)
