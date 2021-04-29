@@ -38,4 +38,4 @@ install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "F
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
-echo ${jenkins_pass} | sudo -S source common.sh
+source common.sh
