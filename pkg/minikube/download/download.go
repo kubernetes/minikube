@@ -118,7 +118,7 @@ func lockDownload(file string) (mutex.Releaser, error) {
 	case r := <-lockChannel:
 		return r.Releaser, r.error
 	case <-time.After(time.Millisecond * 100):
-		out.Step(style.Waiting, "Another minikube instance is downloading dependencies...")
+		out.Step(style.WaitingWithSpinner, "Another minikube instance is downloading dependencies... ")
 	}
 
 	r := <-lockChannel
