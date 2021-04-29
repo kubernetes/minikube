@@ -18,33 +18,39 @@ package reason
 
 import "github.com/blang/semver"
 
+// K8sIssue represents a known issue with a particular version of Kubernetes
 type K8sIssue struct {
-	VersionsAffected map[string]struct{}
-	Suggestion       string
-	URL              string
+	// VersionAffected is the list of Kubernetes versions that has a particular issue
+	VersionsAffected []string
+	// Description is what will be printed to the user describing the issue
+	Description string
+	// URL is a link to an issue or documentation about the issue, optional.
+	URL string
 }
 
 var k8sIssues = []K8sIssue{
 	{
-		VersionsAffected: map[string]struct{}{
-			"1.18.16": {},
-			"1.18.17": {},
-			"1.19.8":  {},
-			"1.19.9":  {},
-			"1.20.3":  {},
-			"1.20.4":  {},
-			"1.20.5":  {},
-			"1.21.0":  {},
+		VersionsAffected: []string{
+			"1.18.16",
+			"1.18.17",
+			"1.19.8",
+			"1.19.9",
+			"1.20.3",
+			"1.20.4",
+			"1.20.5",
+			"1.21.0",
 		},
-		Suggestion: "Kubernetes {{.version}} has a known performance issue on cluster startup. It might take 2 to 3 minutes for a cluster to start.",
-		URL:        "https://github.com/kubernetes/kubeadm/issues/2395",
+		Description: "Kubernetes {{.version}} has a known performance issue on cluster startup. It might take 2 to 3 minutes for a cluster to start.",
+		URL:         "https://github.com/kubernetes/kubeadm/issues/2395",
 	},
 }
 
 func ProblematicK8sVersion(v semver.Version) K8sIssue {
 	for _, issue := range k8sIssues {
-		if _, ok := issue.VersionsAffected[v.String()]; ok {
-			return issue
+		for _, va := range issue.VersionsAffected {
+			if va == v.String() {
+				return issue
+			}
 		}
 	}
 	return K8sIssue{}
