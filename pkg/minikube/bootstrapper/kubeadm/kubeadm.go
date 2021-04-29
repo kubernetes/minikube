@@ -259,6 +259,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	kw.Close()
 	wg.Wait()
+
 	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
@@ -330,7 +331,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 		regStep = registerStep[0]
 	}
 
-	cnm, err := cni.New(cfg)
+	cnm, err := cni.New(&cfg)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
 	}
@@ -349,12 +350,6 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
-	}
-
-	if cfg.KubernetesConfig.ContainerRuntime == constants.CRIO {
-		if err := cruntime.UpdateCRIONet(k.c, cnm.CIDR()); err != nil {
-			return errors.Wrap(err, "update crio")
-		}
 	}
 
 	return nil
