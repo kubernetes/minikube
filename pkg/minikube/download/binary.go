@@ -23,11 +23,9 @@ import (
 	"runtime"
 
 	"github.com/blang/semver"
-	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/util/lock"
 )
 
 // binaryWithChecksumURL gets the location of a Kubernetes binary
@@ -55,10 +53,9 @@ func Binary(binary, version, osName, archName string) (string, error) {
 		return "", err
 	}
 
-	spec := lock.PathMutexSpec(targetLock)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lockDownload(targetLock)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", targetLock, spec)
+		return "", err
 	}
 	defer releaser.Release()
 

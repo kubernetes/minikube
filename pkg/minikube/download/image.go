@@ -30,12 +30,10 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/util/lock"
 )
 
 var (
@@ -87,10 +85,9 @@ func ImageToCache(img string) error {
 	f = localpath.SanitizeCacheDir(f)
 	fileLock := f + ".lock"
 
-	spec := lock.PathMutexSpec(fileLock)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lockDownload(fileLock)
 	if err != nil {
-		return errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", fileLock, spec)
+		return err
 	}
 	defer releaser.Release()
 
@@ -171,10 +168,9 @@ func ImageToDaemon(img string) error {
 	fileLock := filepath.Join(constants.KICCacheDir, path.Base(img)+".d.lock")
 	fileLock = localpath.SanitizeCacheDir(fileLock)
 
-	spec := lock.PathMutexSpec(fileLock)
-	releaser, err := mutex.Acquire(spec)
+	releaser, err := lockDownload(fileLock)
 	if err != nil {
-		return errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", fileLock, spec)
+		return err
 	}
 	defer releaser.Release()
 

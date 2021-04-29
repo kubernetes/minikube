@@ -24,9 +24,11 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-getter"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 var (
@@ -91,4 +93,13 @@ func withinUnitTest() bool {
 	}
 
 	return flag.Lookup("test.v") != nil || strings.HasSuffix(os.Args[0], "test")
+}
+
+func lockDownload(file string) (mutex.Releaser, error) {
+	spec := lock.PathMutexSpec(file)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", file, spec)
+	}
+	return releaser, err
 }
