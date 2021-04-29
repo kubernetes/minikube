@@ -73,10 +73,10 @@ func (l *LoadBalancerEmulator) applyOnLBServices(action func(restClient rest.Int
 
 	for _, svc := range serviceList.Items {
 		if svc.Spec.Type != "LoadBalancer" {
-			klog.V(3).Infof("%s is not type LoadBalancer, skipping.", svc.Name)
+			klog.V(3).InfoS("is not type LoadBalancer, skipping.", "svc.Name", svc.Name)
 			continue
 		}
-		klog.Infof("%s is type LoadBalancer.", svc.Name)
+		klog.InfoS("is type LoadBalancer.", "svc.Name", svc.Name)
 		managedServices = append(managedServices, svc.Name)
 		result, err := action(restClient, svc)
 		if err != nil {
@@ -102,7 +102,7 @@ func (l *LoadBalancerEmulator) updateServiceIP(restClient rest.Interface, svc co
 	if len(ip) == 0 {
 		return nil, nil
 	}
-	klog.V(3).Infof("[%s] setting ClusterIP as the LoadBalancer Ingress", svc.Name)
+	klog.V(3).InfoS("setting ClusterIP as the LoadBalancer Ingress", "svc.Name", svc.Name)
 	jsonPatch := fmt.Sprintf(`[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "%s" } ] }]`, ip)
 	patch := &Patch{
 		Type:         types.JSONPatchType,
@@ -128,7 +128,7 @@ func (l *LoadBalancerEmulator) cleanupService(restClient rest.Interface, svc cor
 	if len(ingresses) == 0 {
 		return nil, nil
 	}
-	klog.V(3).Infof("[%s] cleanup: unset load balancer ingress", svc.Name)
+	klog.V(3).InfoS("cleanup: unset load balancer ingress", "svc.Name", svc.Name)
 	jsonPatch := `[{"op": "remove", "path": "/status/loadBalancer/ingress" }]`
 	patch := &Patch{
 		Type:         types.JSONPatchType,
@@ -141,7 +141,7 @@ func (l *LoadBalancerEmulator) cleanupService(restClient rest.Interface, svc cor
 	}
 	request := l.patchConverter.convert(restClient, patch)
 	result, err := l.requestSender.send(request)
-	klog.Infof("Removed load balancer ingress from %s.", svc.Name)
+	klog.InfoS("Removed load balancer ingress from.", "svc.Name", svc.Name)
 	return result, err
 
 }
