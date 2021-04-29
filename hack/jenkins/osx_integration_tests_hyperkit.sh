@@ -24,7 +24,7 @@
 # access_token: The Github API access token. Injected by the Jenkins credential provider. 
 
 
-set -e
+set -ex
 
 OS_ARCH="darwin-amd64"
 VM_DRIVER="hyperkit"
@@ -38,4 +38,4 @@ install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "F
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
-source common.sh
+echo ${jenkins_pass} | sudo -S source common.sh
