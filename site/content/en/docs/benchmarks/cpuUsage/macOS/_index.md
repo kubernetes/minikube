@@ -19,8 +19,9 @@ This chart was measured only after the start without deploying any pods.
 
 This chart shows each tool's CPU busy overhead percentage with auto-pause addon.   
 The auto-pause is mechanism which reduce CPU busy usage by pausing kube-apiserver.  
-This chart was measured with the following steps.
-By these steps, we compare CPU usage with auto-pause vs. non-auto-pause.  
+We compare CPU usage after deploying sample application(nginx deployment) to all tools(including minikube and other tools).   
+This chart was measured with the following steps.   
+By these steps, we compare CPU usage with auto-pause vs. non-auto-pause.   
 
  1. start each local kubernetes tool
  2. deploy sample application(nginx deployment) to each tool

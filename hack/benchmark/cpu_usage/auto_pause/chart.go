@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"image/color"
 	"log"
 	"math"
 	"os"
@@ -131,9 +132,9 @@ func execute() error {
 	// Set border of the bar graph. 0 is no border color
 	barNAP.LineStyle.Width = vg.Length(0)
 	// Add bar name
-	p.Legend.Add("Initial start CPU usage", barNAP)
-	// Set bar color. 2 is blue
-	barNAP.Color = plotutil.Color(2)
+	p.Legend.Add("Initial Start CPU usage Before Pause", barNAP)
+	// Set bar color to gray.
+	barNAP.Color = color.RGBA{184, 184, 184, 255}
 
 	// Create Bar instance with auto-pause benchmark results
 	barAP, err := plotter.NewBarChart(plotter.Values(apResults), breadth)
@@ -144,7 +145,7 @@ func execute() error {
 	// Set border of the bar graph. 0 is no border color
 	barAP.LineStyle.Width = vg.Length(0)
 	// Add bar name
-	p.Legend.Add("Auto-paused CPU usage", barAP)
+	p.Legend.Add("Auto Paused CPU usage", barAP)
 	// Set bar color. 1 is green
 	barAP.Color = plotutil.Color(1)
 
@@ -162,7 +163,6 @@ func execute() error {
 	} else if runtime.GOOS == "linux" {
 		p.NominalX("OS idle", "minikube kvm2", "minikube virtualbox", "minikube docker", "Docker idle", "k3d", "kind")
 	}
-	p.X.Label.Text = "Tools"
 
 	// Set non-autopause data label to each bar
 	var napLabels []string

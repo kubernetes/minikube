@@ -119,7 +119,6 @@ func execute() error {
 	} else if runtime.GOOS == "linux" {
 		p.NominalX("OS idle", "minikube kvm2", "minikube virtualbox", "minikube docker", "Docker idle", "k3d", "kind")
 	}
-	p.X.Label.Text = "Tools"
 
 	// Set data label to each bar
 	var cpuLabels []string
