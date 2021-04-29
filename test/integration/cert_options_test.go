@@ -25,6 +25,7 @@ import (
 	"testing"
 )
 
+// TestCertOptions makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 func TestCertOptions(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")
@@ -36,7 +37,7 @@ func TestCertOptions(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
-	args := append([]string{"start", "-p", profile, "--memory=1900", "--apiserver-ips=127.0.0.1", "--apiserver-ips=192.168.15.15", "--apiserver-names=localhost", "--apiserver-names=www.google.com", "--apiserver-port=8555"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2048", "--apiserver-ips=127.0.0.1", "--apiserver-ips=192.168.15.15", "--apiserver-names=localhost", "--apiserver-names=www.google.com", "--apiserver-port=8555"}, StartArgs()...)
 
 	// We can safely override --apiserver-name with
 	if NeedsPortForward() {

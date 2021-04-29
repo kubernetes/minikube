@@ -19,7 +19,7 @@
 # 	ISO_BUCKET = the bucket location to upload the ISO (e.g. minikube-builds/PR_NUMBER)
 # 	ISO_VERSION = the suffix for the iso (i.e. minikube-$(ISO_VERSION).iso)
 
-set -x
+set -x -o pipefail
 
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh

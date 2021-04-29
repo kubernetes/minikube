@@ -192,6 +192,11 @@ func DeleteProfile(profile string, miniHome ...string) error {
 	return os.RemoveAll(ProfileFolderPath(profile, miniPath))
 }
 
+// DockerContainers lists all containers created by docker driver
+var DockerContainers = func() ([]string, error) {
+	return oci.ListOwnedContainers(oci.Docker)
+}
+
 // ListProfiles returns all valid and invalid (if any) minikube profiles
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
@@ -203,7 +208,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		return nil, nil, err
 	}
 	// try to get profiles list based on all containers created by docker driver
-	cs, err := oci.ListOwnedContainers(oci.Docker)
+	cs, err := DockerContainers()
 	if err == nil {
 		pDirs = append(pDirs, cs...)
 	}

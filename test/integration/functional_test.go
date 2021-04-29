@@ -133,6 +133,8 @@ func TestFunctional(t *testing.T) {
 			{"DockerEnv", validateDockerEnv},
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
+			{"RemoveImage", validateRemoveImage},
+			{"BuildImage", validateBuildImage},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -155,10 +157,17 @@ func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("docker is not installed, cannot delete docker images")
 	} else {
 		t.Run("delete busybox image", func(t *testing.T) {
-			newImage := fmt.Sprintf("busybox:%s", profile)
+			newImage := fmt.Sprintf("docker.io/library/busybox:%s", profile)
 			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
 			if err != nil {
 				t.Logf("failed to remove image busybox from docker images. args %q: %v", rr.Command(), err)
+			}
+		})
+		t.Run("delete my-image image", func(t *testing.T) {
+			newImage := fmt.Sprintf("localhost/my-image:%s", profile)
+			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
+			if err != nil {
+				t.Logf("failed to remove image my-image from docker images. args %q: %v", rr.Command(), err)
 			}
 		})
 
@@ -206,7 +215,7 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// tag busybox
-	newImage := fmt.Sprintf("busybox:%s", profile)
+	newImage := fmt.Sprintf("docker.io/library/busybox:%s", profile)
 	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busybox, newImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
@@ -219,25 +228,131 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// make sure the image was correctly loaded
-	var cmd *exec.Cmd
-	if ContainerRuntime() == "docker" {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", newImage)
-	} else if ContainerRuntime() == "containerd" {
-		// crictl inspecti busybox:test-example
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", newImage)
-	} else {
-		// crio adds localhost prefix
-		// crictl inspecti localhost/busybox:test-example
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", "localhost/"+newImage)
-	}
-	rr, err = Run(t, cmd)
+	rr, err = inspectImage(ctx, t, profile, newImage)
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
-	if !strings.Contains(rr.Output(), newImage) {
+	if !strings.Contains(rr.Output(), fmt.Sprintf("busybox:%s", profile)) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 
+}
+
+// validateRemoveImage makes sures that `minikube rm image` works as expected
+func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+
+	// pull busybox
+	busyboxImage := "busybox:latest"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+	}
+
+	// try to load the image into minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", busyboxImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// try to remove the image from minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", busyboxImage))
+	if err != nil {
+		t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
+	}
+	// make sure the image was removed
+	rr, err = listImages(ctx, t, profile)
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if strings.Contains(rr.Output(), busyboxImage) {
+		t.Fatalf("expected %s to be removed from minikube but the image is there", busyboxImage)
+	}
+
+}
+
+func inspectImage(ctx context.Context, t *testing.T, profile string, image string) (*RunResult, error) {
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "image", "inspect", image)
+	} else {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "inspecti", image)
+	}
+	rr, err := Run(t, cmd)
+	if err != nil {
+		return rr, err
+	}
+	return rr, nil
+}
+
+func listImages(ctx context.Context, t *testing.T, profile string) (*RunResult, error) {
+	var cmd *exec.Cmd
+	if ContainerRuntime() == "docker" {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images")
+	} else {
+		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "images")
+	}
+	rr, err := Run(t, cmd)
+	if err != nil {
+		return rr, err
+	}
+	return rr, nil
+}
+
+// validateBuildImage makes sures that `minikube image build` works as expected
+func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+
+	newImage := fmt.Sprintf("localhost/my-image:%s", profile)
+	if ContainerRuntime() == "containerd" {
+		startBuildkit(ctx, t, profile)
+		// unix:///run/buildkit/buildkitd.sock
+	}
+
+	// try to build the new image with minikube
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
+	if err != nil {
+		t.Fatalf("building image with minikube: %v\n%s", err, rr.Output())
+	}
+	if rr.Stdout.Len() > 0 {
+		t.Logf("(dbg) Stdout: %s:\n%s", rr.Command(), rr.Stdout)
+	}
+	if rr.Stderr.Len() > 0 {
+		t.Logf("(dbg) Stderr: %s:\n%s", rr.Command(), rr.Stderr)
+	}
+
+	// make sure the image was correctly built
+	rr, err = inspectImage(ctx, t, profile, newImage)
+	if err != nil {
+		ll, _ := listImages(ctx, t, profile)
+		t.Logf("(dbg) images: %s", ll.Output())
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), newImage) {
+		t.Fatalf("expected %s to be built with minikube but the image is not there", newImage)
+	}
+}
+
+func startBuildkit(ctx context.Context, t *testing.T, profile string) {
+	// sudo systemctl start buildkit.socket
+	cmd := exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "nohup",
+		"sudo", "-b", "buildkitd", "--oci-worker=false",
+		"--containerd-worker=true", "--containerd-worker-namespace=k8s.io")
+	if rr, err := Run(t, cmd); err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
 }
 
 // check functionality of minikube after evaling docker-env
@@ -301,6 +416,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateStartWithProxy makes sure minikube start respects the HTTP_PROXY environment variable
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -310,8 +426,13 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Use more memory so that we may reliably fit MySQL and nginx
-	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, "--memory=4000", fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
+	memoryFlag := "--memory=4000"
+	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
+	if GithubActionRunner() && VirtualboxDriver() {
+		memoryFlag = "--memory=6000"
+	}
+	// passing --api-server-port so later verify it didn't change in soft start.
+	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -334,6 +455,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+// validateAuditAfterStart makes sure the audit log contains the correct logging after minikube start
 func validateAuditAfterStart(ctx context.Context, t *testing.T, profile string) {
 	got, err := auditContains(profile)
 	if err != nil {
@@ -436,6 +558,7 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	}
 }
 
+// validateExtraConfig verifies minikube with --extra-config works as expected
 func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -482,7 +605,7 @@ func imageID(image string) string {
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
-// note: it expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag (ie, with extra wait)
+// NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include '--wait=all' start flag
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -534,6 +657,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+// validateStatusCmd makes sure minikube status outputs correctly
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
@@ -650,7 +774,11 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 
 	wantCode := reason.ExInsufficientMemory
 	if rr.ExitCode != wantCode {
-		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		}
 	}
 
 	dctx, cancel := context.WithTimeout(ctx, Seconds(5))
@@ -659,7 +787,12 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	c = exec.CommandContext(dctx, Target(), startArgs...)
 	rr, err = Run(t, c)
 	if rr.ExitCode != 0 || err != nil {
-		t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
+		}
+
 	}
 }
 
@@ -1180,14 +1313,26 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// cpTestMinikubePath is where the test file will be located in the Minikube instance
+func cpTestMinikubePath() string {
+	return "/home/docker/cp-test.txt"
+}
+
+// cpTestLocalPath is where the test file located in host os
+func cpTestLocalPath() string {
+	return filepath.Join(*testdataDir, "cp-test.txt")
+}
+
 // validateCpCmd asserts basic "cp" command functionality
 func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cp is unsupported by none driver")
 	}
 
-	cpPath := filepath.Join(*testdataDir, "cp-test.txt")
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", cpPath, "/home/docker/hello_cp.txt"))
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cp", srcPath, dstPath))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
@@ -1195,15 +1340,20 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
 	}
 
-	expected := "Test file for checking file cp process"
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /home/docker/hello_cp.txt"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", dstPath)))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
 	}
 	if err != nil {
 		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
 	}
-	if diff := cmp.Diff(expected, rr.Stdout.String()); diff != "" {
+
+	expected, err := ioutil.ReadFile(srcPath)
+	if err != nil {
+		t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
+	}
+
+	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
 		t.Errorf("/testdata/cp-test.txt content mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -1360,7 +1510,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Strip carriage returned by ssh
-		got := strings.Replace(rr.Stdout.String(), "\r", "", -1)
+		got := strings.ReplaceAll(rr.Stdout.String(), "\r", "")
 		if diff := cmp.Diff(string(want), got); diff != "" {
 			t.Errorf("failed verify pem file. minikube_test.pem -> %s mismatch (-want +got):\n%s", vp, diff)
 		}

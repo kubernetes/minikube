@@ -62,7 +62,7 @@ func TestShouldCheckURL(t *testing.T) {
 	// test that update notifications get triggered if it has been longer than 24 hours
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
 
-	//time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
+	// time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
 	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Time{}); err != nil {
 		t.Errorf("write failed: %v", err)
 	}
@@ -231,6 +231,36 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			if len(outputBuffer.String()) == test.len {
 				t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
 					version.GetVersion(), latestVersionFromURL, outputBuffer.String())
+			}
+		})
+	}
+}
+
+func TestDownloadURL(t *testing.T) {
+	const urlBase = "https://github.com/kubernetes/minikube/releases/download/"
+	type args struct {
+		ver  string
+		os   string
+		arch string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"linux-amd64", args{"foo", "linux", "amd64"}, urlBase + "foo/minikube-linux-amd64"},
+		{"linux-arm64", args{"foo", "linux", "arm64"}, urlBase + "foo/minikube-linux-arm64"},
+		{"darwin-amd64", args{"foo", "darwin", "amd64"}, urlBase + "foo/minikube-darwin-amd64"},
+		{"darwin-arm64", args{"foo", "darwin", "arm64"}, urlBase + "foo/minikube-darwin-arm64"},
+		{"windows", args{"foo", "windows", "amd64"}, urlBase + "foo/minikube-windows-amd64.exe"},
+		{"linux-unset", args{"foo-unset", "linux", "amd64"}, "https://github.com/kubernetes/minikube/releases"},
+		{"linux-unset", args{"foo-unset", "windows", "arm64"}, "https://github.com/kubernetes/minikube/releases"},
+		{"windows-zzz", args{"bar", "windows", "zzz"}, urlBase + "bar/minikube-windows-zzz.exe"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := DownloadURL(tt.args.ver, tt.args.os, tt.args.arch); got != tt.want {
+				t.Errorf("DownloadURL() = %v, want %v", got, tt.want)
 			}
 		})
 	}

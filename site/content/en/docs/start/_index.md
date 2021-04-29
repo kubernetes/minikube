@@ -125,6 +125,9 @@ choco install minikube
 ### Stand-alone Windows Installer
 Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
+
+_If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._ 
+
 {{% /windowstab %}}
 {{% /tabs %}}
 

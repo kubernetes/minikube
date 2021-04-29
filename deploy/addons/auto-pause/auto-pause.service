@@ -3,7 +3,7 @@ Description=Auto Pause Service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/auto-pause
+ExecStart=/bin/auto-pause
 Restart=always
 
 [Install]

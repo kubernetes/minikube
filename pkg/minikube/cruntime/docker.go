@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -162,12 +163,91 @@ func (r *Docker) ImageExists(name string, sha string) bool {
 	return true
 }
 
+// ListImages returns a list of images managed by this container runtime
+func (r *Docker) ListImages(ListImagesOptions) ([]string, error) {
+	c := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrapf(err, "docker images")
+	}
+	short := strings.Split(rr.Stdout.String(), "\n")
+	imgs := []string{}
+	for _, img := range short {
+		if img == "" {
+			continue
+		}
+		img = addDockerIO(img)
+		imgs = append(imgs, img)
+	}
+	return imgs, nil
+}
+
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
 	c := exec.Command("docker", "load", "-i", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "loadimage docker.")
+	}
+	return nil
+}
+
+// PullImage pulls an image
+func (r *Docker) PullImage(name string) error {
+	klog.Infof("Pulling image: %s", name)
+	if r.UseCRI {
+		return pullCRIImage(r.Runner, name)
+	}
+	c := exec.Command("docker", "pull", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "pull image docker.")
+	}
+	return nil
+}
+
+// RemoveImage removes a image
+func (r *Docker) RemoveImage(name string) error {
+	klog.Infof("Removing image: %s", name)
+	if r.UseCRI {
+		return removeCRIImage(r.Runner, name)
+	}
+	c := exec.Command("docker", "rmi", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "remove image docker.")
+	}
+	return nil
+}
+
+// BuildImage builds an image into this runtime
+func (r *Docker) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
+	klog.Infof("Building image: %s", src)
+	args := []string{"build"}
+	if file != "" {
+		args = append(args, "-f", file)
+	}
+	if tag != "" {
+		args = append(args, "-t", tag)
+	}
+	args = append(args, src)
+	for _, opt := range opts {
+		args = append(args, "--"+opt)
+	}
+	c := exec.Command("docker", args...)
+	e := os.Environ()
+	e = append(e, env...)
+	c.Env = e
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "buildimage docker.")
+	}
+	if tag != "" && push {
+		c := exec.Command("docker", "push", tag)
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		if _, err := r.Runner.RunCmd(c); err != nil {
+			return errors.Wrap(err, "pushimage docker.")
+		}
 	}
 	return nil
 }
@@ -199,7 +279,7 @@ func (r *Docker) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of containers
-func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
+func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 	if r.UseCRI {
 		return listCRIContainers(r.Runner, "", o)
 	}
@@ -431,6 +511,29 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 		}
 	}
 	return true
+}
+
+// Add docker.io prefix
+func addDockerIO(name string) string {
+	var reg, usr, img string
+	p := strings.SplitN(name, "/", 2)
+	if len(p) > 1 && strings.Contains(p[0], ".") {
+		reg = p[0]
+		img = p[1]
+	} else {
+		reg = "docker.io"
+		img = name
+		p = strings.SplitN(img, "/", 2)
+		if len(p) > 1 {
+			usr = p[0]
+			img = p[1]
+		} else {
+			usr = "library"
+			img = name
+		}
+		return reg + "/" + usr + "/" + img
+	}
+	return reg + "/" + img
 }
 
 // Remove docker.io prefix since it won't be included in images names

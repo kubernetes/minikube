@@ -107,15 +107,6 @@ func doCacheBinaries(k8sVersion string) error {
 
 // beginDownloadKicBaseImage downloads the kic image
 func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, downloadOnly bool) {
-	if cc.Driver != "docker" {
-		// TODO: driver == "podman"
-		klog.Info("Driver isn't docker, skipping base image download")
-		return
-	}
-	if image.ExistsImageInDaemon(cc.KicBaseImage) {
-		klog.Infof("%s exists in daemon, skipping pull", cc.KicBaseImage)
-		return
-	}
 
 	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 	register.Reg.SetStep(register.PullingBaseImage)
@@ -135,23 +126,41 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
-			if err := image.LoadFromTarball(driver.Docker, img); err == nil {
+			var err error
+			if image.ExistsImageInCache(img) {
+				klog.Infof("%s exists in cache, skipping pull", img)
+				finalImg = img
+			} else {
+				klog.Infof("Downloading %s to local cache", img)
+				err = image.WriteImageToCache(img)
+				if err == nil {
+					klog.Infof("successfully saved %s as a tarball", img)
+					finalImg = img
+				}
+			}
+			if downloadOnly {
+				return err
+			}
+
+			if err := image.LoadFromTarball(cc.Driver, img); err == nil {
 				klog.Infof("successfully loaded %s from cached tarball", img)
 				// strip the digest from the img before saving it in the config
 				// because loading an image from tarball to daemon doesn't load the digest
 				finalImg = img
 				return nil
 			}
-			klog.Infof("Downloading %s to local daemon", img)
-			err := image.WriteImageToDaemon(img)
-			if err == nil {
-				klog.Infof("successfully downloaded %s", img)
-				finalImg = img
-				return nil
-			}
-			if downloadOnly {
-				if err := image.SaveToDir([]string{img}, constants.ImageCacheDir); err == nil {
-					klog.Infof("successfully saved %s as a tarball", img)
+
+			if driver.IsDocker(cc.Driver) {
+				if image.ExistsImageInDaemon(img) {
+					klog.Infof("%s exists in daemon, skipping pull", img)
+					finalImg = img
+					return nil
+				}
+
+				klog.Infof("Downloading %s to local daemon", img)
+				err = image.WriteImageToDaemon(img)
+				if err == nil {
+					klog.Infof("successfully downloaded %s", img)
 					finalImg = img
 					return nil
 				}

@@ -32,6 +32,9 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// TestNetworkPlugins tests all supported CNI options
+// Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
+// Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
 func TestNetworkPlugins(t *testing.T) {
 	MaybeParallel(t)
 	if NoneDriver() {
@@ -73,7 +76,7 @@ func TestNetworkPlugins(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {

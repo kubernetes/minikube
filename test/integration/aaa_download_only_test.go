@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// TestDownloadOnly makes sure the --download-only parameter in minikube start caches the appropriate images and tarballs.
 func TestDownloadOnly(t *testing.T) {
 	// Stores the startup run result for later error messages
 	var rrr *RunResult
@@ -187,6 +188,7 @@ func TestDownloadOnly(t *testing.T) {
 
 }
 
+// TestDownloadOnlyKic makes sure --download-only caches the docker driver images as well.
 func TestDownloadOnlyKic(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("skipping, only for docker or podman driver")

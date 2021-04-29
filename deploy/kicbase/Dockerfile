@@ -19,17 +19,17 @@
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20210119
+FROM ubuntu:focal-20210401
 
-ARG BUILDKIT_VERSION="v0.8.1"
+ARG BUILDKIT_VERSION="v0.8.2"
 
 # copy in static files (configs, scripts)
 COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
 COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
 COPY clean-install /usr/local/bin/clean-install
 COPY entrypoint /usr/local/bin/entrypoint
-# must first run make out/auto-pause
-COPY auto-pause /usr/local/bin/auto-pause
+# must first run `make deploy/kicbase/auto-pause`
+COPY auto-pause /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -91,8 +91,9 @@ STOPSIGNAL SIGRTMIN+3
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
 ARG COMMIT_SHA
-# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/1da0c5e6/images/base/Dockerfile
-# which is an ubuntu 20.04 with an entry-point that helps running systemd
+# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile
+# available as a docker image: docker.io/kindest/base:v20210402-3d9112b0
+# which is an ubuntu 20.10 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
 USER root
 
@@ -121,6 +122,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && rm -rf /tmp/buildkit.tgz \
     && chmod 755 /usr/local/bin/buildctl \
     && chmod 755 /usr/local/bin/buildkit-runc \
+    && chmod 755 /usr/local/bin/buildkit-qemu-* \
     && chmod 755 /usr/local/bin/buildkitd
 
 # Install cri-o/podman dependencies:

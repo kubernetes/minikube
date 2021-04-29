@@ -340,13 +340,13 @@ func (t tempError) Error() string {
 	return "Temporary error: " + t.Err.Error()
 }
 
-//recoverFromUncleanShutdown searches for an existing hyperkit.pid file in
-//the machine directory. If it can't find it, a clean shutdown is assumed.
-//If it finds the pid file, it checks for a running hyperkit process with that pid
-//as the existence of a file might not indicate an unclean shutdown but an actual running
-//hyperkit server. This is an error situation - we shouldn't start minikube as there is likely
-//an instance running already. If the PID in the pidfile does not belong to a running hyperkit
-//process, we can safely delete it, and there is a good chance the machine will recover when restarted.
+// recoverFromUncleanShutdown searches for an existing hyperkit.pid file in
+// the machine directory. If it can't find it, a clean shutdown is assumed.
+// If it finds the pid file, it checks for a running hyperkit process with that pid
+// as the existence of a file might not indicate an unclean shutdown but an actual running
+// hyperkit server. This is an error situation - we shouldn't start minikube as there is likely
+// an instance running already. If the PID in the pidfile does not belong to a running hyperkit
+// process, we can safely delete it, and there is a good chance the machine will recover when restarted.
 func (d *Driver) recoverFromUncleanShutdown() error {
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	pidFile := filepath.Join(stateDir, pidFileName)

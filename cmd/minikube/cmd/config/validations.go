@@ -53,6 +53,15 @@ func IsValidDiskSize(name string, disksize string) error {
 	return nil
 }
 
+// IsValidMemory checks if a string is a valid memory size
+func IsValidMemory(name string, memsize string) error {
+	_, err := units.FromHumanSize(memsize)
+	if err != nil {
+		return fmt.Errorf("invalid memory size: %v", err)
+	}
+	return nil
+}
+
 // IsValidURL checks if a location is a valid URL
 func IsValidURL(name string, location string) error {
 	_, err := url.Parse(location)

@@ -159,7 +159,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(td)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", td)
@@ -194,6 +194,9 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("got %d test machines, expected %d: %s", len(mFiles), numberOfTotalMachineDirs, mFiles)
 	}
 
+	config.DockerContainers = func() ([]string, error) {
+		return []string{}, nil
+	}
 	validProfiles, inValidProfiles, err := config.ListProfiles()
 	if err != nil {
 		t.Error(err)

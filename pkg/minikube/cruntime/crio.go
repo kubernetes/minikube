@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -167,12 +168,66 @@ func (r *CRIO) ImageExists(name string, sha string) bool {
 	return true
 }
 
+// ListImages returns a list of images managed by this container runtime
+func (r *CRIO) ListImages(ListImagesOptions) ([]string, error) {
+	c := exec.Command("sudo", "podman", "images", "--format", "{{.Repository}}:{{.Tag}}")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrapf(err, "podman images")
+	}
+	return strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n"), nil
+}
+
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
 	c := exec.Command("sudo", "podman", "load", "-i", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crio load image")
+	}
+	return nil
+}
+
+// PullImage pulls an image
+func (r *CRIO) PullImage(name string) error {
+	return pullCRIImage(r.Runner, name)
+}
+
+// RemoveImage removes a image
+func (r *CRIO) RemoveImage(name string) error {
+	return removeCRIImage(r.Runner, name)
+}
+
+// BuildImage builds an image into this runtime
+func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
+	klog.Infof("Building image: %s", src)
+	args := []string{"podman", "build"}
+	if file != "" {
+		args = append(args, "-f", file)
+	}
+	if tag != "" {
+		args = append(args, "-t", tag)
+	}
+	args = append(args, src)
+	for _, opt := range opts {
+		args = append(args, "--"+opt)
+	}
+	c := exec.Command("sudo", args...)
+	e := os.Environ()
+	e = append(e, env...)
+	c.Env = e
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio build image")
+	}
+	if tag != "" && push {
+		c := exec.Command("sudo", "podman", "push", tag)
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		if _, err := r.Runner.RunCmd(c); err != nil {
+			return errors.Wrap(err, "crio push image")
+		}
 	}
 	return nil
 }
@@ -208,7 +263,7 @@ func (r *CRIO) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *CRIO) ListContainers(o ListOptions) ([]string, error) {
+func (r *CRIO) ListContainers(o ListContainersOptions) ([]string, error) {
 	return listCRIContainers(r.Runner, "", o)
 }
 

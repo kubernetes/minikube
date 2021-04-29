@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auto-pause
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: env-inject
+  name: env-inject
+  namespace: auto-pause
+spec:
+  selector:
+    matchLabels:
+      app: env-inject
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: env-inject
+      name: env-inject
+    spec:
+      containers:
+        - name: webhook
+          image: {{.CustomRegistries.AutoPauseHook  | default .ImageRepository | default .Registries.AutoPauseHook }}{{.Images.AutoPauseHook}}
+          ports:
+            - containerPort: 8080
+          command: ["/auto-pause-hook"]
+          args: ["-targetIP={{.NetworkInfo.ControlPlaneNodeIP}}"]            
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    role: webhook
+  name: webhook
+  namespace: auto-pause
+spec:
+  ports:
+    - port: 443
+      targetPort: 8080
+  selector:
+    app: env-inject
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: webhook
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: auto-pause

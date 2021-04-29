@@ -37,12 +37,10 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// TestScheduledStopWindows tests the schedule stop functionality on Windows
 func TestScheduledStopWindows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("test only runs on windows")
-	}
-	if NoneDriver() {
-		t.Skip("--schedule does not work with the none driver")
 	}
 	profile := UniqueProfileName("scheduled-stop")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
@@ -73,6 +71,7 @@ func TestScheduledStopWindows(t *testing.T) {
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
 }
 
+// TestScheduledStopWindows tests the schedule stop functionality on Unix
 func TestScheduledStopUnix(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test only runs on unix")
@@ -123,7 +122,7 @@ func TestScheduledStopUnix(t *testing.T) {
 }
 
 func startMinikube(ctx context.Context, t *testing.T, profile string) {
-	args := append([]string{"start", "-p", profile, "--memory=1900"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2048"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())

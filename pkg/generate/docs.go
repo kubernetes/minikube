@@ -32,7 +32,7 @@ import (
 )
 
 // Docs generates docs for minikube command
-func Docs(root *cobra.Command, path string) error {
+func Docs(root *cobra.Command, path string, testPath string) error {
 	cmds := root.Commands()
 	for _, c := range cmds {
 		if c.Hidden {
@@ -47,7 +47,7 @@ func Docs(root *cobra.Command, path string) error {
 			return errors.Wrapf(err, "saving doc for %s", c.Name())
 		}
 	}
-	return nil
+	return testDocs(testPath)
 }
 
 // DocForCommand returns the specific doc for that command
@@ -94,6 +94,11 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 
 	if cmd.Runnable() {
 		buf.WriteString(fmt.Sprintf("```shell\n%s\n```\n\n", cmd.UseLine()))
+	}
+
+	if len(cmd.Aliases) > 0 {
+		buf.WriteString("### Aliases\n\n")
+		buf.WriteString(fmt.Sprintf("%s\n\n", cmd.Aliases))
 	}
 
 	if len(cmd.Example) > 0 {

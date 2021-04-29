@@ -12,9 +12,17 @@ aliases:
 
 Glossary:
 
+**Pull** means downloading a container image directly from a remote registry.
+
+**Push** means uploading a container image directly to a remote registry.
+
 **Load** takes an image that is available as an archive, and makes it available in the cluster.
 
+**Save** saves an image into an archive.
+
 **Build** takes a "build context" (directory) and creates a new image in the cluster from it.
+
+**Tag** means assigning a name and tag.
 
 ## Comparison table for different methods
 

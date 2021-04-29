@@ -28,7 +28,7 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
@@ -40,7 +40,7 @@ const fileScheme = "file"
 // DefaultISOURLs returns a list of ISO URL's to consult by default, in priority order
 func DefaultISOURLs() []string {
 	v := version.GetISOVersion()
-	isoBucket := "minikube-builds/iso/10647"
+	isoBucket := "minikube-builds/iso/11054"
 	return []string{
 		fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", isoBucket, v),
 		fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/minikube-%s.iso", v, v),
@@ -75,7 +75,7 @@ func localISOPath(u *url.URL) string {
 		return u.String()
 	}
 
-	return filepath.Join(localpath.MiniPath(), "cache", "iso", path.Base(u.Path))
+	return filepath.Join(constants.ISOCacheDir, path.Base(u.Path))
 }
 
 // ISO downloads and returns the path to the downloaded ISO
@@ -115,6 +115,9 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 
 	// Lock before we check for existence to avoid thundering herd issues
 	dst := localISOPath(u)
+	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
+		return errors.Wrapf(err, "making cache image directory: %s", dst)
+	}
 	spec := lock.PathMutexSpec(dst)
 	spec.Timeout = 10 * time.Minute
 	klog.Infof("acquiring lock: %+v", spec)

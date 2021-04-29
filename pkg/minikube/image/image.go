@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -42,6 +43,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
+)
+
+const (
+	legacyDefaultDomain = "index.docker.io"
+	defaultDomain       = "docker.io"
 )
 
 var defaultPlatform = v1.Platform{
@@ -87,7 +93,7 @@ func DigestByGoLib(imgName string) string {
 		return ""
 	}
 
-	img, err := retrieveImage(ref)
+	img, _, err := retrieveImage(ref, imgName)
 	if err != nil {
 		klog.Infof("error retrieve Image %s ref %v ", imgName, err)
 		return ""
@@ -99,6 +105,23 @@ func DigestByGoLib(imgName string) string {
 		return cf.Hex
 	}
 	return cf.Hex
+}
+
+// ExistsImageInCache if img exist in local cache directory
+func ExistsImageInCache(img string) bool {
+	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
+	f = localpath.SanitizeCacheDir(f)
+
+	// Check if image exists locally
+	klog.Infof("Checking for %s in local cache directory", img)
+	if st, err := os.Stat(f); err == nil {
+		if st.Size() > 0 {
+			klog.Infof("Found %s in local cache directory, skipping pull", img)
+			return true
+		}
+	}
+	// Else, pull it
+	return false
 }
 
 // ExistsImageInDaemon if img exist in local docker daemon
@@ -154,6 +177,71 @@ func Tag(img string) string {
 	return img
 }
 
+// WriteImageToCache write img to the local cache directory
+func WriteImageToCache(img string) error {
+	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
+	f = localpath.SanitizeCacheDir(f)
+
+	if err := os.MkdirAll(filepath.Dir(f), 0777); err != nil {
+		return errors.Wrapf(err, "making cache image directory: %s", f)
+	}
+
+	// buffered channel
+	c := make(chan v1.Update, 200)
+
+	klog.Infof("Writing %s to local cache", img)
+	ref, err := name.ParseReference(img)
+	if err != nil {
+		return errors.Wrap(err, "parsing reference")
+	}
+	klog.V(3).Infof("Getting image %v", ref)
+	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
+	if err != nil {
+		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
+			ErrGithubNeedsLogin = errors.New(err.Error())
+			return ErrGithubNeedsLogin
+		} else if strings.Contains(err.Error(), "UNAUTHORIZED") {
+			ErrNeedsLogin = errors.New(err.Error())
+			return ErrNeedsLogin
+		}
+
+		return errors.Wrap(err, "getting remote image")
+	}
+	klog.V(3).Infof("Writing image %v", ref)
+	errchan := make(chan error)
+	p := pb.Full.Start64(0)
+	fn := strings.Split(ref.Name(), "@")[0]
+	// abbreviate filename for progress
+	maxwidth := 30 - len("...")
+	if len(fn) > maxwidth {
+		fn = fn[0:maxwidth] + "..."
+	}
+	p.Set("prefix", "    > "+fn+": ")
+	p.Set(pb.Bytes, true)
+
+	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
+	p.SetWidth(79)
+
+	go func() {
+		err = tarball.WriteToFile(f, ref, i, tarball.WithProgress(c))
+		errchan <- err
+	}()
+	var update v1.Update
+	for {
+		select {
+		case update = <-c:
+			p.SetCurrent(update.Complete)
+			p.SetTotal(update.Total)
+		case err = <-errchan:
+			p.Finish()
+			if err != nil {
+				return errors.Wrap(err, "writing tarball image")
+			}
+			return nil
+		}
+	}
+}
+
 // WriteImageToDaemon write img to the local docker daemon
 func WriteImageToDaemon(img string) error {
 	// buffered channel
@@ -165,7 +253,7 @@ func WriteImageToDaemon(img string) error {
 		return errors.Wrap(err, "parsing reference")
 	}
 	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref)
+	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
 	if err != nil {
 		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
 			ErrGithubNeedsLogin = errors.New(err.Error())
@@ -212,29 +300,56 @@ func WriteImageToDaemon(img string) error {
 	}
 }
 
-func retrieveImage(ref name.Reference) (v1.Image, error) {
+func canonicalName(ref name.Reference) string {
+	cname := ref.Name()
+	// go-containerregistry always uses the legacy index.docker.io registry
+	if strings.HasPrefix(cname, legacyDefaultDomain) {
+		cname = strings.Replace(cname, legacyDefaultDomain, defaultDomain, 1)
+	}
+	return cname
+}
+
+func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error) {
 	var err error
 	var img v1.Image
 
 	if !useDaemon && !useRemote {
-		return nil, fmt.Errorf("neither daemon nor remote")
+		return nil, "", fmt.Errorf("neither daemon nor remote")
 	}
 
 	klog.Infof("retrieving image: %+v", ref)
 	if useDaemon {
+		local := strings.HasPrefix(imgName, "localhost/")
+		canonical := imgName == canonicalName(ref)
+		// lookup unqualified short names
+		if !local && !canonical && useRemote {
+			klog.Infof("checking repository: %+v", ref.Context())
+			_, err := remote.Head(ref)
+			if err == nil {
+				imgName = canonicalName(ref)
+				klog.Infof("canonical name: %s", imgName)
+			}
+			if err != nil {
+				klog.Warningf("remote: %v", err)
+				klog.Infof("short name: %s", imgName)
+			}
+		}
 		img, err = retrieveDaemon(ref)
 		if err == nil {
-			return img, nil
+			return img, imgName, nil
 		}
 	}
 	if useRemote {
 		img, err = retrieveRemote(ref, defaultPlatform)
 		if err == nil {
-			return fixPlatform(ref, img, defaultPlatform)
+			img, err = fixPlatform(ref, img, defaultPlatform)
+			if err == nil {
+				return img, canonicalName(ref), nil
+			}
 		}
 	}
 
-	return nil, err
+	return nil, "", err
 }
 
 func retrieveDaemon(ref name.Reference) (v1.Image, error) {
