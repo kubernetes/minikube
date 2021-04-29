@@ -22,12 +22,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-getter"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -96,10 +98,29 @@ func withinUnitTest() bool {
 }
 
 func lockDownload(file string) (mutex.Releaser, error) {
-	spec := lock.PathMutexSpec(file)
-	releaser, err := mutex.Acquire(spec)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", file, spec)
+	type retPair struct {
+		mutex.Releaser
+		error
 	}
-	return releaser, err
+	lockChannel := make(chan retPair)
+
+	go func() {
+		spec := lock.PathMutexSpec(file)
+		releaser, err := mutex.Acquire(spec)
+		if err != nil {
+			lockChannel <- retPair{nil, errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", file, spec)}
+			return
+		}
+		lockChannel <- retPair{releaser, err}
+	}()
+
+	select {
+	case r := <-lockChannel:
+		return r.Releaser, r.error
+	case <-time.After(time.Millisecond * 100):
+		out.Step(style.Waiting, "Another minikube instance is downloading dependencies...")
+	}
+
+	r := <-lockChannel
+	return r.Releaser, r.error
 }
