@@ -322,12 +322,6 @@ then
     EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
 fi
 
-# temp hack to fix integration tests
-if [ "${CONTAINER_RUNTIME}" = "containerd" ]
-then
-   EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME} --cni=bridge"
-fi
-
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=${TIMEOUT} -test.v \
