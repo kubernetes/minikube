@@ -205,6 +205,16 @@ func (r *Docker) PullImage(name string) error {
 	return nil
 }
 
+// SaveImage saves an image from this runtime
+func (r *Docker) SaveImage(name string, path string) error {
+	klog.Infof("Saving image %s: %s", name, path)
+	c := exec.Command("docker", "save", name, "-o", path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "saveimage docker.")
+	}
+	return nil
+}
+
 // RemoveImage removes a image
 func (r *Docker) RemoveImage(name string) error {
 	klog.Infof("Removing image: %s", name)
