@@ -92,6 +92,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 			klog.Info(reason)
 			return true, nil
 		}
+		// return immediately: status == core.ConditionUnknown
 		if status == core.ConditionUnknown {
 			klog.Info(reason)
 			return false, fmt.Errorf(reason)
@@ -101,7 +102,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 			klog.Info(reason)
 			lap = time.Now()
 		}
-		// status == core.ConditionFalse
+		// return immediately: status == core.ConditionFalse
 		return false, nil
 	}
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkCondition); err != nil {
