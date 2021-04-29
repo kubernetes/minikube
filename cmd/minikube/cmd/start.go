@@ -1371,8 +1371,8 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	}
 
 	// If the version of Kubernetes has a known issue, print a warning out to the screen
-	if issue := reason.ProblematicK8sVersion(nvs); issue.Suggestion != "" {
-		out.WarningT(issue.Suggestion, out.V{"version": nvs.String()})
+	if issue := reason.ProblematicK8sVersion(nvs); issue.Description != "" {
+		out.WarningT(issue.Description, out.V{"version": nvs.String()})
 		if issue.URL != "" {
 			out.WarningT("For more information, see: {{.url}}", out.V{"url": issue.URL})
 		}
