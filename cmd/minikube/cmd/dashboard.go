@@ -143,12 +143,12 @@ func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string,
 		return nil, "", errors.Wrap(err, "cmd stdout")
 	}
 
-	klog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
+	klog.InfoS("Executing", "path", cmd.Path, "args", cmd.Args)
 	if err := cmd.Start(); err != nil {
 		return nil, "", errors.Wrap(err, "proxy start")
 	}
 
-	klog.Infof("Waiting for kubectl to output host:port ...")
+	klog.InfoS("Waiting for kubectl to output host:port ...")
 	reader := bufio.NewReader(stdoutPipe)
 
 	var out []byte
@@ -161,12 +161,12 @@ func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string,
 			break
 		}
 		if timedOut {
-			klog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
+			klog.InfoS("timed out waiting for input: possibly due to an old kubectl version.")
 			break
 		}
 		out = append(out, r)
 	}
-	klog.Infof("proxy stdout: %s", string(out))
+	klog.InfoS("proxy stdout", "stdout", string(out))
 	return cmd, hostPortRe.FindString(string(out)), nil
 }
 
@@ -203,7 +203,7 @@ func dashboardURL(proxy string, ns string, svc string) string {
 // checkURL checks if a URL returns 200 HTTP OK
 func checkURL(url string) error {
 	resp, err := http.Get(url)
-	klog.Infof("%s response: %v %+v", url, err, resp)
+	klog.InfoS("response", "url", url, "err", err, "response", resp)
 	if err != nil {
 		return errors.Wrap(err, "checkURL")
 	}
