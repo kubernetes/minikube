@@ -193,6 +193,16 @@ func (r *CRIO) PullImage(name string) error {
 	return pullCRIImage(r.Runner, name)
 }
 
+// SaveImage saves an image from this runtime
+func (r *CRIO) SaveImage(name string, path string) error {
+	klog.Infof("Saving image %s: %s", name, path)
+	c := exec.Command("sudo", "podman", "save", name, "-o", path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio save image")
+	}
+	return nil
+}
+
 // RemoveImage removes a image
 func (r *CRIO) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)
