@@ -13,7 +13,7 @@ Bug Fixes:
 
 * Ingress Addon: fix bug which the networking.k8s.io/v1 ingress is always rejected [#11189](https://github.com/kubernetes/minikube/pull/11189)
 * Improve how cni and cruntimes work together [#11185, #11209](https://github.com/kubernetes/minikube/pull/11209, https://github.com/kubernetes/minikube/pull/11185)
-* Check if Docker installed via Snap Package Manager [#11088](https://github.com/kubernetes/minikube/pull/11088)
+* Docker driverr: support docker installed by Snap Package Manager [#11088](https://github.com/kubernetes/minikube/pull/11088)
 * Change 'minikube version --short' to only print the version without a prompt. [#11167](https://github.com/kubernetes/minikube/pull/11167)
 
 
