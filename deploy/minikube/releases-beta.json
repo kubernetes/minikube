@@ -1,2 +1,11 @@
 [
+{
+      "name": "v1.20.0-beta.0",
+      "checksums": {
+          "darwin": "",
+          "linux": "",
+          "windows": ""
+      }
+  },
+  {}
 ]
