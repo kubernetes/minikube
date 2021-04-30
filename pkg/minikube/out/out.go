@@ -113,30 +113,28 @@ func Styled(st style.Enum, format string, a ...V) {
 	}
 }
 
-func boxedCommon(format string, a ...V) (string, box.Box) {
+func boxedCommon(printFunc func(format string, a ...interface{}), format string, a ...V) {
 	str := Sprintf(style.None, format, a...)
 	str = strings.TrimSpace(str)
 	box := box.New(box.Config{Py: 1, Px: 4, Type: "Round"})
 	if useColor {
 		box.Config.Color = "Red"
 	}
-	return str, box
+	str = box.String("", str)
+	lines := strings.Split(str, "\n")
+	for _, line := range lines {
+		printFunc(line + "\n")
+	}
 }
 
 // Boxed writes a stylized and templated message in a box to stdout
 func Boxed(format string, a ...V) {
-	str, box := boxedCommon(format, a...)
-	box.Println("", str)
+	boxedCommon(String, format, a...)
 }
 
 // BoxedErr writes a stylized and templated message in a box to stderr
 func BoxedErr(format string, a ...V) {
-	str, box := boxedCommon(format, a...)
-	str = box.String("", str)
-	lines := strings.Split(str, "\n")
-	for _, line := range lines {
-		Err(line + "\n")
-	}
+	boxedCommon(Err, format, a...)
 }
 
 // Sprintf is used for returning the string (doesn't write anything)
