@@ -8,13 +8,13 @@ Features:
 * New command 'image pull': allow to load remote images directly without cache [#11127](https://github.com/kubernetes/minikube/pull/11127)
 * Add feature to opt-in to get notifications for beta releases [#11169](https://github.com/kubernetes/minikube/pull/11169)
 * UI: Add log file to GitHub issue output [#11158](https://github.com/kubernetes/minikube/pull/11158)
-* Change 'minikube version --short' to only print the version without a prompt. [#11167](https://github.com/kubernetes/minikube/pull/11167)
 
 Bug Fixes:
 
 * Ingress Addon: fix bug which the networking.k8s.io/v1 ingress is always rejected [#11189](https://github.com/kubernetes/minikube/pull/11189)
 * Improve how cni and cruntimes work together [#11185, #11209](https://github.com/kubernetes/minikube/pull/11209, https://github.com/kubernetes/minikube/pull/11185)
 * Check if Docker installed via Snap Package Manager [#11088](https://github.com/kubernetes/minikube/pull/11088)
+* Change 'minikube version --short' to only print the version without a prompt. [#11167](https://github.com/kubernetes/minikube/pull/11167)
 
 
 Thank you to our contributors for this release!
