@@ -36,9 +36,11 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 readonly TIMEOUT=${1:-120m}
 
+# We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
-  # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
   sudo apt-get -y install lsof psmisc
+else
+  brew install pstree
 fi
 
 # installing golang so we could do go get for gopogh
