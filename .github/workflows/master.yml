@@ -266,7 +266,7 @@ jobs:
         with:
           name: functional_docker_containerd_ubuntu
           path: minikube_binaries/report
-      - name: The End Result functional_docker_ubuntu
+      - name: The End Result functional_docker_containerd_ubuntu
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
