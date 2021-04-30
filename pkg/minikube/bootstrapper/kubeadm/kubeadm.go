@@ -676,34 +676,6 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		}
 	}
 
-	if cfg.VerifyComponents[kverify.ExtraKey] {
-		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
-		// it appears as to be immediately Ready as well as all kube-system pods (last observed state),
-		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts,
-		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
-		klog.Info("waiting for restarted kubelet to initialise ...")
-		start := time.Now()
-		wait := func() error {
-			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{LabelSelector: "tier=control-plane"})
-			if err != nil {
-				return err
-			}
-			for _, pod := range pods.Items {
-				if ready, _ := kverify.IsPodReady(&pod); !ready {
-					return nil
-				}
-			}
-			return fmt.Errorf("kubelet not initialised")
-		}
-		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
-		klog.Infof("kubelet initialised")
-		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
-
-		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
-			return errors.Wrap(err, "extra")
-		}
-	}
-
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -741,6 +713,35 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "addons")
 	}
 
+	// must be called after applyCNI and `kubeadm phase addon all` (ie, coredns redeploy)
+	if cfg.VerifyComponents[kverify.ExtraKey] {
+		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
+		// it appears as to be immediately Ready as well as all kube-system pods (last observed state),
+		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts,
+		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
+		klog.Info("waiting for restarted kubelet to initialise ...")
+		start := time.Now()
+		wait := func() error {
+			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{LabelSelector: "tier=control-plane"})
+			if err != nil {
+				return err
+			}
+			for _, pod := range pods.Items {
+				if ready, _ := kverify.IsPodReady(&pod); !ready {
+					return nil
+				}
+			}
+			return fmt.Errorf("kubelet not initialised")
+		}
+		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
+		klog.Infof("kubelet initialised")
+		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
+
+		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
+			return errors.Wrap(err, "extra")
+		}
+	}
+
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		klog.Warningf("unable to adjust resource limits: %v", err)
 	}
@@ -776,9 +777,17 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
-	if cc.KubernetesConfig.CRISocket != "" {
-		joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, cc.KubernetesConfig.CRISocket)
+
+	// avoid "Found multiple CRI sockets, please use --cri-socket to select one: /var/run/dockershim.sock, /var/run/crio/crio.sock" error
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c, Socket: cc.KubernetesConfig.CRISocket})
+	if err != nil {
+		klog.Errorf("cruntime: %v", err)
 	}
+	sp := cr.SocketPath()
+	if sp == "" {
+		sp = kconst.DefaultDockerCRISocket
+	}
+	joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, sp)
 
 	return joinCmd, nil
 }

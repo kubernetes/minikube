@@ -44,11 +44,17 @@ type Manager interface {
 	// Disable disables a service and stops it right after.
 	DisableNow(string) error
 
+	// Mask prevents a service from being started
+	Mask(string) error
+
 	// Enable enables a service
 	Enable(string) error
 
 	// EnableNow enables a service and starts it right after.
 	EnableNow(string) error
+
+	// Unmask allows a service to be started
+	Unmask(string) error
 
 	// Start starts a service idempotently
 	Start(string) error
