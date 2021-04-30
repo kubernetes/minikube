@@ -172,8 +172,8 @@ func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string,
 
 // readByteWithTimeout returns a byte from a reader or an indicator that a timeout has occurred.
 func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
-	bc := make(chan byte)
-	ec := make(chan error)
+	bc := make(chan byte, 1)
+	ec := make(chan error, 1)
 	go func() {
 		b, err := r.ReadByte()
 		if err != nil {
