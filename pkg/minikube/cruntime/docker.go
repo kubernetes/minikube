@@ -120,6 +120,14 @@ func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 		return err
 	}
 
+	if err := r.Init.Unmask("docker.service"); err != nil {
+		return err
+	}
+
+	if err := r.Init.Enable("docker.socket"); err != nil {
+		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
+	}
+
 	if forceSystemd {
 		if err := r.forceSystemd(); err != nil {
 			return err
@@ -146,7 +154,14 @@ func (r *Docker) Disable() error {
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
 		klog.ErrorS(err, "Failed to stop", "service", "docker.socket")
 	}
-	return r.Init.ForceStop("docker")
+	if err := r.Init.ForceStop("docker.service"); err != nil {
+		klog.ErrorS(err, "Failed to stop", "service", "docker.service")
+		return err
+	}
+	if err := r.Init.Disable("docker.socket"); err != nil {
+		klog.ErrorS(err, "Failed to disable", "service", "docker.socket")
+	}
+	return r.Init.Mask("docker.service")
 }
 
 // ImageExists checks if an image exists
