@@ -26,7 +26,8 @@
 
 set -ex
 
-OS_ARCH="darwin-amd64"
+ARCH="amd64"
+OS="darwin"
 VM_DRIVER="hyperkit"
 JOB_NAME="HyperKit_Functional_macOS"
 EXTRA_TEST_ARGS="-test.run TestFunctional"
@@ -38,4 +39,4 @@ install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "F
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
-source common.sh
+source run_tests.sh
