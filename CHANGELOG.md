@@ -1,5 +1,36 @@
 # Release Notes
 
+## Version 1.20.0-beta.0 - 2021-04-30
+
+* Add cpu usage benchmark command `make cpu-benchmark` and website docs [#11140](https://github.com/kubernetes/minikube/pull/11140)
+* Ingress Addon: fix bug which the networking.k8s.io/v1 ingress is always rejected [#11189](https://github.com/kubernetes/minikube/pull/11189)
+* New command: `build` to build images using minikube [#11164](https://github.com/kubernetes/minikube/pull/11164)
+* New command "image pull: allow to load remote images directly without cache [#11127](https://github.com/kubernetes/minikube/pull/11127)
+* Add feature to opt-in to get notifications for beta releases [#11169](https://github.com/kubernetes/minikube/pull/11169)
+* UI: Add log file to GitHub issue output [#11158](https://github.com/kubernetes/minikube/pull/11158)
+* Change 'minikube version --short' to only print the version without a prompt. [#11167](https://github.com/kubernetes/minikube/pull/11167)
+* Check if Docker installed via Snap Package Manager [#11088](https://github.com/kubernetes/minikube/pull/11088)
+
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andriy Dzikh
+- Ed Vinyard
+- Hu Shuai
+- Ilya Zuyev
+- Kenta Iso
+- Medya Ghazizadeh
+- Michael Captain
+- Predrag Rogic
+- Sharif Elgamal
+- Steven Powell
+- Tobias Klauser
+- csiepka
+- hiroygo
+- 李龙峰
+
+
 ## Version 1.19.0 - 2021-04-09
 
 * allow Auto-Pause addon on VMs [#11019](https://github.com/kubernetes/minikube/pull/11019)
