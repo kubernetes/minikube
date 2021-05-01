@@ -137,6 +137,7 @@ func TestFunctional(t *testing.T) {
 			{"LoadImage", validateLoadImage},
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
+			{"ListImages", validateListImages},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -370,6 +371,38 @@ func startBuildkit(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateListImages makes sures that `minikube image ls` works as expected
+func validateListImages(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("list images not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+
+	// try to list the images with minikube
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls"))
+	if err != nil {
+		t.Fatalf("listing image with minikube: %v\n%s", err, rr.Output())
+	}
+	if rr.Stdout.Len() > 0 {
+		t.Logf("(dbg) Stdout: %s:\n%s", rr.Command(), rr.Stdout)
+	}
+	if rr.Stderr.Len() > 0 {
+		t.Logf("(dbg) Stderr: %s:\n%s", rr.Command(), rr.Stderr)
+	}
+
+	list := rr.Output()
+	for _, theImage := range []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"} {
+		if !strings.Contains(list, theImage) {
+			t.Fatalf("expected %s to be listed with minikube but the image is not there", theImage)
+		}
+	}
+}
+
+// check functionality of minikube after evaling docker-env
+// TODO: Add validatePodmanEnv for crio runtime: #10231
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("none driver does not support docker-env")

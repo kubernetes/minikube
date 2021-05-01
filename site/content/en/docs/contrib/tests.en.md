@@ -84,6 +84,9 @@ validateRemoveImage makes sures that `minikube image rm` works as expected
 #### validateBuildImage
 validateBuildImage makes sures that `minikube image build` works as expected
 
+#### validateListImages
+validateListImages makes sures that `minikube image ls` works as expected
+
 #### validateDockerEnv
 check functionality of minikube after evaling docker-env
 
@@ -348,4 +351,4 @@ TestKubernetesUpgrade upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 TestMissingContainerUpgrade tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 111
+TEST COUNT: 112
