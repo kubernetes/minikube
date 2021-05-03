@@ -131,6 +131,7 @@ func TestFunctional(t *testing.T) {
 			{"CertSync", validateCertSync},
 			{"UpdateContextCmd", validateUpdateContextCmd},
 			{"DockerEnv", validateDockerEnv},
+			{"PodmanEnv", validatePodmanEnv},
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
 			{"RemoveImage", validateRemoveImage},
