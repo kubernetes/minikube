@@ -26,7 +26,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func TestBinaryDownloadPreventsMultipleDownload(t *testing.T) {
+// Force download tests to run in serial.
+func TestDownload(t *testing.T) {
+	t.Run("BinaryDownloadPreventsMultipleDownload", testBinaryDownloadPreventsMultipleDownload)
+	t.Run("PreloadDownloadPreventsMultipleDownload", testPreloadDownloadPreventsMultipleDownload)
+	t.Run("ImageToCache", testImageToCache)
+	t.Run("ImageToDaemon", testImageToDaemon)
+}
+
+func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 	downloads := 0
 	SetDownloadMock(func(src, dst string) error {
 		// Sleep for a second to assure locking must have occurred.
@@ -61,7 +69,7 @@ func TestBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 	}
 }
 
-func TestPreloadDownloadPreventsMultipleDownload(t *testing.T) {
+func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 	downloads := 0
 	SetDownloadMock(func(src, dst string) error {
 		// Sleep for a second to assure locking must have occurred.
@@ -98,7 +106,7 @@ func TestPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 	}
 }
 
-func TestImageToCache(t *testing.T) {
+func testImageToCache(t *testing.T) {
 	downloads := 0
 	SetDownloadMock(func(src, dst string) error {
 		// Sleep for a second to assure locking must have occurred.
@@ -128,7 +136,7 @@ func TestImageToCache(t *testing.T) {
 	}
 }
 
-func TestImageToDaemon(t *testing.T) {
+func testImageToDaemon(t *testing.T) {
 	downloads := 0
 	SetDownloadMock(func(src, dst string) error {
 		// Sleep for a second to assure locking must have occurred.
