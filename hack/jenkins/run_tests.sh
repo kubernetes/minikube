@@ -40,7 +40,7 @@ readonly TIMEOUT=${1:-120m}
 if [ "$(uname)" != "Darwin" ]; then
   sudo apt-get -y install lsof psmisc
 else
-  brew install pstree coreutils
+  brew install pstree coreutils pidof
   ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 fi
 
