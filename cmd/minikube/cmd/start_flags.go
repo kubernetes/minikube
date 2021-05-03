@@ -249,11 +249,17 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	var cc config.ClusterConfig
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
+
+		// identify appropriate cni then configure cruntime accordingly
+		_, err := cni.New(&cc)
+		if err != nil {
+			return cc, config.Node{}, errors.Wrap(err, "cni")
+		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
 		cc = generateNewConfigFromFlags(cmd, k8sVersion, drvName)
 
-		cnm, err := cni.New(cc)
+		cnm, err := cni.New(&cc)
 		if err != nil {
 			return cc, config.Node{}, errors.Wrap(err, "cni")
 		}
@@ -261,9 +267,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		if _, ok := cnm.(cni.Disabled); !ok {
 			klog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
 			cc.KubernetesConfig.NetworkPlugin = "cni"
-			if err := setCNIConfDir(&cc, cnm); err != nil {
-				klog.Errorf("unable to set CNI Config Directory: %v", err)
-			}
 		}
 	}
 
@@ -428,24 +431,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 	return cc
 }
 
-// setCNIConfDir sets kubelet's '--cni-conf-dir' flag to custom CNI Config Directory path (same used also by CNI Deployment) to avoid conflicting CNI configs.
-// ref: https://github.com/kubernetes/minikube/issues/10984
-// Note: currently, this change affects only Kindnet CNI (and all multinodes using it), but it can be easily expanded to other/all CNIs if needed.
-func setCNIConfDir(cc *config.ClusterConfig, cnm cni.Manager) error {
-	if _, kindnet := cnm.(cni.KindNet); kindnet {
-		// auto-set custom CNI Config Directory, if not user-specified
-		eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", cni.CustomCNIConfDir)
-		if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
-			klog.Infof("auto-setting extra-config to %q", eo)
-			if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
-				return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
-			}
-			klog.Infof("extra-config set to %q", eo)
-		}
-	}
-	return nil
-}
-
 func checkNumaCount(k8sVersion string) {
 	if viper.GetInt(kvmNUMACount) < 1 || viper.GetInt(kvmNUMACount) > 8 {
 		exit.Message(reason.Usage, "--kvm-numa-count range is 1-8")
@@ -524,7 +509,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 			klog.Warningf("error calculate memory size in mb : %v", err)
 		}
 		if memInMB != cc.Memory {
-			out.WarningT("You cannot change the memory size for an exiting minikube cluster. Please first delete the cluster.")
+			out.WarningT("You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.")
 		}
 	}
 

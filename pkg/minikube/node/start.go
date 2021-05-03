@@ -188,7 +188,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "joining cp")
 		}
 
-		cnm, err := cni.New(*starter.Cfg)
+		cnm, err := cni.New(starter.Cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "cni")
 		}
@@ -432,7 +432,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	}
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, cc.KubernetesConfig.APIServerName, -1)
+		addr = strings.ReplaceAll(addr, n.IP, cc.KubernetesConfig.APIServerName)
 	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,

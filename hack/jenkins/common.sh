@@ -31,7 +31,7 @@ export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-readonly TIMEOUT=${1:-70m}
+readonly TIMEOUT=${1:-90m}
 
 if [ "$(uname)" != "Darwin" ]; then
   # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
@@ -47,6 +47,9 @@ sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
 docker system df || true
+
+# clean up /tmp
+find /tmp -name . -o -prune -exec rm -rf -- {} + >/dev/null 2>&1 || true
 
 echo ">> Starting at $(date)"
 echo ""
@@ -163,11 +166,23 @@ if [[ "${zombie_defuncts}" != "" ]]; then
 fi
 
 if type -P virsh; then
-  virsh -c qemu:///system list --all --uuid \
-    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+  sudo virsh -c qemu:///system list --all --uuid \
+    | xargs -I {} sh -c "sudo virsh -c qemu:///system destroy {}; sudo virsh -c qemu:///system undefine {}" \
     || true
   echo ">> virsh VM list after clean up (should be empty):"
-  virsh -c qemu:///system list --all || true
+  sudo virsh -c qemu:///system list --all || true
+
+  for NET in $( sudo virsh -c qemu:///system net-list --all --name ); do
+    if [ "${NET}" != "default" ]; then
+      sudo virsh -c qemu:///system net-destroy "${NET}" || \
+      sudo virsh -c qemu:///system net-undefine "${NET}" || true
+    fi
+  done
+  echo ">> virsh VM networks list after clean up (should have only 'default'):"
+  sudo virsh -c qemu:///system net-list --all || true
+  echo ">> host networks after KVM clean up:"
+  sudo ip link show || true
+  echo
 fi
 
 if type -P vboxmanage; then
@@ -301,6 +316,10 @@ if test -f "${TEST_OUT}"; then
   rm "${TEST_OUT}" || true # clean up previous runs of same build
 fi
 touch "${TEST_OUT}"
+if test -f "${JSON_OUT}"; then
+  rm "${JSON_OUT}" || true # clean up previous runs of same build
+fi
+touch "${JSON_OUT}"
 
 if [ ! -z "${CONTAINER_RUNTIME}" ]
 then
@@ -311,9 +330,10 @@ ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=${TIMEOUT} -test.v \
   ${EXTRA_TEST_ARGS} \
-  -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
+  -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}" | go tool test2json -t > "${JSON_OUT}"
 
 result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
+cat "${TEST_OUT}"
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
@@ -338,17 +358,6 @@ JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_
 echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
 gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
-
-echo ">> Attmpting to convert test logs to json"
-if test -f "${JSON_OUT}"; then
-  rm "${JSON_OUT}" || true # clean up previous runs of same build
-fi
-
-touch "${JSON_OUT}"
-
-# Generate JSON output
-echo ">> Running go test2json"
-go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 
 if ! type "jq" > /dev/null; then
 echo ">> Installing jq"

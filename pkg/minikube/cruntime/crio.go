@@ -19,7 +19,7 @@ package cruntime
 import (
 	"encoding/json"
 	"fmt"
-	"net"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -60,6 +61,14 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "generateCRIOConfig.")
 	}
+
+	if cni.Network != "" {
+		klog.Infof("Updating CRIO to use the custom CNI network %q", cni.Network)
+		if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cni_default_network = .*$|cni_default_network = \"%s\"|' -i %s", cni.Network, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "update network_dir")
+		}
+	}
+
 	return nil
 }
 
@@ -187,9 +196,58 @@ func (r *CRIO) LoadImage(path string) error {
 	return nil
 }
 
+// PullImage pulls an image
+func (r *CRIO) PullImage(name string) error {
+	return pullCRIImage(r.Runner, name)
+}
+
+// SaveImage saves an image from this runtime
+func (r *CRIO) SaveImage(name string, path string) error {
+	klog.Infof("Saving image %s: %s", name, path)
+	c := exec.Command("sudo", "podman", "save", name, "-o", path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio save image")
+	}
+	return nil
+}
+
 // RemoveImage removes a image
 func (r *CRIO) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)
+}
+
+// BuildImage builds an image into this runtime
+func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
+	klog.Infof("Building image: %s", src)
+	args := []string{"podman", "build"}
+	if file != "" {
+		args = append(args, "-f", file)
+	}
+	if tag != "" {
+		args = append(args, "-t", tag)
+	}
+	args = append(args, src)
+	for _, opt := range opts {
+		args = append(args, "--"+opt)
+	}
+	c := exec.Command("sudo", args...)
+	e := os.Environ()
+	e = append(e, env...)
+	c.Env = e
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio build image")
+	}
+	if tag != "" && push {
+		c := exec.Command("sudo", "podman", "push", tag)
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		if _, err := r.Runner.RunCmd(c); err != nil {
+			return errors.Wrap(err, "crio push image")
+		}
+	}
+	return nil
 }
 
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
@@ -364,31 +422,4 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 // ImagesPreloaded returns true if all images have been preloaded
 func (r *CRIO) ImagesPreloaded(images []string) bool {
 	return crioImagesPreloaded(r.Runner, images)
-}
-
-// UpdateCRIONet updates CRIO CNI network configuration and restarts it
-func UpdateCRIONet(r CommandRunner, cidr string) error {
-	klog.Infof("Updating CRIO to use CIDR: %q", cidr)
-	ip, net, err := net.ParseCIDR(cidr)
-	if err != nil {
-		return errors.Wrap(err, "parse cidr")
-	}
-
-	oldNet := "10.88.0.0/16"
-	oldGw := "10.88.0.1"
-
-	newNet := cidr
-
-	// Assume gateway is first IP in netmask (10.244.0.1, for instance)
-	newGw := ip.Mask(net.Mask)
-	newGw[3]++
-
-	// Update subnets used by 100-crio-bridge.conf & 87-podman-bridge.conflist
-	// avoids: "Error adding network: failed to set bridge addr: could not add IP address to \"cni0\": permission denied"
-	sed := fmt.Sprintf("sed -i -e s#%s#%s# -e s#%s#%s# /etc/cni/net.d/*bridge*", oldNet, newNet, oldGw, newGw)
-	if _, err := r.RunCmd(exec.Command("sudo", "/bin/bash", "-c", sed)); err != nil {
-		klog.Errorf("netconf update failed: %v", err)
-	}
-
-	return sysinit.New(r).Restart("crio")
 }

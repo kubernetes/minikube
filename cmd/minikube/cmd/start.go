@@ -394,7 +394,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 }
 
 func warnAboutMultiNodeCNI() {
-	out.WarningT("Cluster was created without any CNI, adding node to it might cause broken network.")
+	out.WarningT("Cluster was created without any CNI, adding a node to it might cause broken networking.")
 }
 
 func updateDriver(driverName string) {
@@ -809,21 +809,10 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 		}
 	}
 
-	checkRepository := func(repo string) error {
-		pauseImage := images.Pause(v, repo)
-		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
-		if err != nil {
-			return err
-		}
-
-		_, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
-		return err
-	}
-
 	for _, code := range tryCountries {
 		localRepos := constants.ImageRepositories[code]
 		for _, repo := range localRepos {
-			err := checkRepository(repo)
+			err := checkRepository(v, repo)
 			if err == nil {
 				return true, repo, nil
 			}
@@ -831,6 +820,17 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 	}
 
 	return false, fallback, nil
+}
+
+var checkRepository = func(v semver.Version, repo string) error {
+	pauseImage := images.Pause(v, repo)
+	ref, err := name.ParseReference(pauseImage, name.WeakValidation)
+	if err != nil {
+		return err
+	}
+
+	_, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	return err
 }
 
 // validateUser validates minikube is run by the recommended user (privileged or regular)
@@ -1368,6 +1368,14 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}
 		exitIfNotForced(reason.KubernetesTooOld, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+	}
+
+	// If the version of Kubernetes has a known issue, print a warning out to the screen
+	if issue := reason.ProblematicK8sVersion(nvs); issue != nil {
+		out.WarningT(issue.Description, out.V{"version": nvs.String()})
+		if issue.URL != "" {
+			out.WarningT("For more information, see: {{.url}}", out.V{"url": issue.URL})
+		}
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {

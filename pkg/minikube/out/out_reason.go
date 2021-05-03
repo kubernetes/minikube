@@ -113,8 +113,7 @@ func displayText(k reason.Kind, format string, a ...V) {
 
 	if k.NewIssueLink {
 		ErrT(style.Empty, "")
-		ErrT(style.Sad, "If the above advice does not help, please let us know: ")
-		ErrT(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+		displayGitHubIssueMessage()
 	}
 	Ln("")
 }

@@ -52,7 +52,15 @@ func TestListProfiles(t *testing.T) {
 		{2, "p5_partial_config", ""},
 	}
 
+	DockerContainers = func() ([]string, error) {
+		return []string{}, nil
+	}
 	val, inv, err := ListProfiles(miniDir)
+
+	num := len(testCasesValidProfs) + len(testCasesInValidProfs)
+	if num != len(val)+len(inv) {
+		t.Errorf("ListProfiles length = %d, expected %d\nvalid: %v\ninvalid: %v\n", len(val)+len(inv), num, val, inv)
+	}
 
 	for _, tt := range testCasesValidProfs {
 		if val[tt.index].Name != tt.expectName {
@@ -278,7 +286,7 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 
 	for _, tc := range tests {
 		// To save converted config file from old style config at ./testdata/.minikube,
-		//rather than at env(MINIKUBE_HOME) which depends on test environment
+		// rather than at env(MINIKUBE_HOME) which depends on test environment
 		originalMinikubeHomeEnv := os.Getenv("MINIKUBE_HOME")
 		err = os.Setenv("MINIKUBE_HOME", miniDir)
 		if err != nil {

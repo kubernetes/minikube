@@ -35,6 +35,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// TestStartStop tests starting, stopping and restarting a minikube clusters with various Kubernetes versions and configurations
+// The oldest supported, newest supported and default Kubernetes versions are always tested.
 func TestStartStop(t *testing.T) {
 	MaybeParallel(t)
 
@@ -150,6 +152,7 @@ func TestStartStop(t *testing.T) {
 	})
 }
 
+// validateFirstStart runs the initial minikube start
 func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -158,6 +161,7 @@ func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcNam
 	}
 }
 
+// validateDeploying deploys an app the minikube cluster
 func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	if !strings.Contains(tcName, "cni") {
@@ -165,6 +169,7 @@ func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName
 	}
 }
 
+// validateStop tests minikube stop
 func validateStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
@@ -173,6 +178,7 @@ func validateStop(ctx context.Context, t *testing.T, profile string, tcName stri
 	}
 }
 
+// validateEnableAddonAfterStop makes sure addons can be enabled on a stopped cluster
 func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	// The none driver never really stops
@@ -191,6 +197,7 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 
 }
 
+// validateSecondStart verifies that starting a stopped cluster works
 func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -227,12 +234,14 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 	}
 }
 
+// validateKubernetesImages verifies that a restarted cluster contains all the necessary images
 func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	if !NoneDriver() {
 		testPulledImages(ctx, t, profile, tcVersion)
 	}
 }
 
+// validatePauseAfterStart verifies that minikube pause works
 func validatePauseAfterStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	testPause(ctx, t, profile)

@@ -14,7 +14,7 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 19
+VERSION_MINOR ?= 20
 VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.19.0-1617859429-11019
+ISO_VERSION ?= v1.20.0-beta.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -32,14 +32,14 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.16.0
+GO_VERSION ?= 1.16.1
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2020.02.10
+BUILDROOT_BRANCH ?= 2020.02.12
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
@@ -56,9 +56,6 @@ BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSIO
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(KVM_GO_VERSION)
 
-KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
-KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
-
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -66,9 +63,9 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.171
+KERNEL_VERSION ?= 4.19.182
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.30.0
+GOLINT_VERSION ?= v1.39.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -76,7 +73,7 @@ GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
+	  --enable gofmt,goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
 	  --skip-files "pkg/minikube/translate/translations.go|pkg/minikube/assets/assets.go"
 
@@ -141,6 +138,7 @@ SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 SOURCE_GENERATED = pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
+GOTEST_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep _test.go)
 
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
@@ -291,16 +289,12 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 		echo "On darwin 'make case-sensitive-buildroot-dir' will move the buildroot dir to a case-sensitive sparseimage."; \
 		exit 1; \
 	fi;
-	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
-	if [ ! -d $(BUILDROOT_DIR)/.git ]; then \
-		rm -rf $(BUILDROOT_DIR)/* $(BUILDROOT_DIR)/.[a-zA-Z]*; \
-		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILDROOT_DIR); \
-	fi
-	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILDROOT_DIR)
-	mkdir -p $(BUILDROOT_DIR)/output/build
-	echo "module buildroot.org/go" > $(BUILDROOT_DIR)/output/build/go.mod
-	$(MAKE) -C $(BUILDROOT_DIR)
-	mv $(BUILDROOT_DIR)/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
+	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
+	mkdir -p $(BUILD_DIR)/buildroot/output/build
+	echo "module buildroot.org/go" > $(BUILD_DIR)/buildroot/output/build/go.mod
+	$(MAKE) -C $(BUILD_DIR)/buildroot host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot
+	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
 
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
@@ -369,6 +363,7 @@ integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl te
 
 .PHONY: html_report
 html_report: ## Generate HTML  report out of the last ran integration test logs.
+	@#TODO the json needs to be recorded when the go test is run, for timestamps to work properly
 	@go tool test2json -t < "./out/testout_$(COMMIT_SHORT).txt" > "./out/testout_$(COMMIT_SHORT).json"
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
@@ -388,12 +383,29 @@ test: $(SOURCE_GENERATED) ## Trigger minikube test
 
 .PHONY: generate-docs
 generate-docs: out/minikube ## Automatically generate commands documentation.
-	out/minikube generate-docs --path ./site/content/en/docs/commands/
+	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md
 
 .PHONY: gotest
 gotest: $(SOURCE_GENERATED) ## Trigger minikube test
 	$(if $(quiet),@echo "  TEST     $@")
 	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
+
+# Run the gotest, while recording JSON report and coverage
+out/unittest.json: $(SOURCE_FILES) $(GOTEST_FILES)
+	$(if $(quiet),@echo "  TEST     $@")
+	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES) \
+	-coverprofile=out/coverage.out -json > out/unittest.json
+out/coverage.out: out/unittest.json
+
+# Generate go test report (from gotest) as a a HTML page
+out/unittest.html: out/unittest.json
+	$(if $(quiet),@echo "  REPORT   $@")
+	$(Q)go-test-report < $< -o $@
+
+# Generate go coverage report (from gotest) as a HTML page
+out/coverage.html: out/coverage.out
+	$(if $(quiet),@echo "  COVER    $@")
+	$(Q)go tool cover -html=$< -o $@
 
 .PHONY: extract
 extract: ## Compile extract tool
@@ -412,6 +424,8 @@ endif
 	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
 	@#golint: Html should be HTML (compat sed)
 	@sed -i -e 's/Html/HTML/g' $@ && rm -f ./-e
+	@#golint: don't use underscores in Go names
+	@sed -i -e 's/SnapshotStorageK8sIo_volumesnapshot/SnapshotStorageK8sIoVolumesnapshot/g' $@ && rm -f ./-e
 
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -702,7 +716,9 @@ docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker buildx create --name $(X_DOCKER_BUILDER) --buildkitd-flags '--debug' || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
-KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
+KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
+KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
+KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 
 .PHONY: push-kic-base-image 
 push-kic-base-image: deploy/kicbase/auto-pause docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
@@ -713,16 +729,21 @@ ifdef AUTOPUSH
 endif
 	$(foreach REG,$(KICBASE_IMAGE_REGISTRIES), \
 		@docker pull $(REG) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry";)
-ifndef AUTOPUSH
+ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
 	env $(X_BUILD_ENV) docker buildx build --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
 
-.PHONY: upload-preloaded-images-tar
-upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
-	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o out/upload-preload ./hack/preload-images/*.go
-	./out/upload-preload
+out/preload-tool:
+	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ ./hack/preload-images/*.go
 
+.PHONY: upload-preloaded-images-tar
+upload-preloaded-images-tar: out/minikube out/preload-tool ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
+	out/preload-tool
+
+.PHONY: generate-preloaded-images-tar
+generate-preloaded-images-tar: out/minikube out/preload-tool ## Generates the preloaded images for oldest supported, newest supported, and default kubernetes versions
+	out/preload-tool --no-upload
 
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 IMAGE = $(REGISTRY)/storage-provisioner
@@ -865,7 +886,7 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serv
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
-.PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work arround for not passing the whole repo as docker context
+.PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work around for not passing the whole repo as docker context
 deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
@@ -932,6 +953,14 @@ endif
 .PHONY: stress
 stress: ## run the stress tests
 	go test -test.v -test.timeout=2h ./test/stress -loops=10 | tee "./out/testout_$(COMMIT_SHORT).txt"
+
+.PHONY: cpu-benchmark-idle
+cpu-benchmark-idle: ## run the cpu usage 5 minutes idle benchmark
+	./hack/benchmark/cpu_usage/idle_only/benchmark_local_k8s.sh
+
+.PHONY: cpu-benchmark-autopause
+cpu-benchmark-autopause: ## run the cpu usage auto-pause benchmark
+	./hack/benchmark/cpu_usage/auto_pause/benchmark_local_k8s.sh
 
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version

@@ -115,6 +115,10 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
+		name: config.WantBetaUpdateNotification,
+		set:  SetBool,
+	},
+	{
 		name: config.ReminderWaitPeriodInHours,
 		set:  SetInt,
 	},
@@ -140,7 +144,7 @@ var settings = []Setting{
 	},
 	{
 		name: Bootstrapper,
-		set:  SetString, //TODO(r2d4): more validation here?
+		set:  SetString,
 	},
 	{
 		name: config.ShowDriverDeprecationNotification,

@@ -58,9 +58,8 @@ var (
 	watch        time.Duration
 )
 
+// Additional legacy states
 const (
-	// Additional legacy states:
-
 	// Configured means configured
 	Configured = "Configured" // ~state.Saved
 	// Misconfigured means misconfigured
@@ -69,8 +68,10 @@ const (
 	Nonexistent = "Nonexistent" // ~state.None
 	// Irrelevant is used for statuses that aren't meaningful for worker nodes
 	Irrelevant = "Irrelevant"
+)
 
-	// New status modes, based roughly on HTTP/SMTP standards
+// New status modes, based roughly on HTTP/SMTP standards
+const (
 
 	// 1xx signifies a transitional state. If retried, it will soon return a 2xx, 4xx, or 5xx
 

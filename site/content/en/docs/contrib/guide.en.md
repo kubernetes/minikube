@@ -29,6 +29,17 @@ Once you've discovered an issue to work on:
 * Send a PR out that mentions the issue
 * Comment on the issue with `/assign` to assign it to yourself
 
+
+### clone `minikube`
+
+After forking minikube you can `clone` for best practices use the following instruction:
+
+```bash 
+git clone git@github.com:kubernetes/minikube.git
+git remote rename origin upstream
+git remote set-url --push upstream NO_PUSH
+git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/minikube.git
+```
 ### Contributing A Patch
 
 1. Submit an issue describing your proposed change

@@ -4,13 +4,14 @@ on:
     branches:
       - master
     paths:
+      - "go.mod"
       - "**.go"
       - "Makefile"
       - "!deploy/kicbase/**"
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: 1.16.0
+  GO_VERSION: 1.16.1
 jobs:
   build_minikube:
     runs-on: ubuntu-18.04

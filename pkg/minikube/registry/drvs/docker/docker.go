@@ -171,7 +171,7 @@ func checkDockerVersion(o string) registry.State {
 	case 2:
 		p = append(p, "0") // patch version not found
 	case 3:
-		//remove postfix string for unstable(test/nightly) channel. https://docs.docker.com/engine/install/
+		// remove postfix string for unstable(test/nightly) channel. https://docs.docker.com/engine/install/
 		p[2] = strings.SplitN(p[2], "-", 2)[0]
 	default:
 		return registry.State{

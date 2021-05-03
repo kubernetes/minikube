@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -119,6 +120,14 @@ func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 		return err
 	}
 
+	if err := r.Init.Unmask("docker.service"); err != nil {
+		return err
+	}
+
+	if err := r.Init.Enable("docker.socket"); err != nil {
+		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
+	}
+
 	if forceSystemd {
 		if err := r.forceSystemd(); err != nil {
 			return err
@@ -145,7 +154,14 @@ func (r *Docker) Disable() error {
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
 		klog.ErrorS(err, "Failed to stop", "service", "docker.socket")
 	}
-	return r.Init.ForceStop("docker")
+	if err := r.Init.ForceStop("docker.service"); err != nil {
+		klog.ErrorS(err, "Failed to stop", "service", "docker.service")
+		return err
+	}
+	if err := r.Init.Disable("docker.socket"); err != nil {
+		klog.ErrorS(err, "Failed to disable", "service", "docker.socket")
+	}
+	return r.Init.Mask("docker.service")
 }
 
 // ImageExists checks if an image exists
@@ -191,6 +207,29 @@ func (r *Docker) LoadImage(path string) error {
 	return nil
 }
 
+// PullImage pulls an image
+func (r *Docker) PullImage(name string) error {
+	klog.Infof("Pulling image: %s", name)
+	if r.UseCRI {
+		return pullCRIImage(r.Runner, name)
+	}
+	c := exec.Command("docker", "pull", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "pull image docker.")
+	}
+	return nil
+}
+
+// SaveImage saves an image from this runtime
+func (r *Docker) SaveImage(name string, path string) error {
+	klog.Infof("Saving image %s: %s", name, path)
+	c := exec.Command("docker", "save", name, "-o", path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "saveimage docker.")
+	}
+	return nil
+}
+
 // RemoveImage removes a image
 func (r *Docker) RemoveImage(name string) error {
 	klog.Infof("Removing image: %s", name)
@@ -200,6 +239,40 @@ func (r *Docker) RemoveImage(name string) error {
 	c := exec.Command("docker", "rmi", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "remove image docker.")
+	}
+	return nil
+}
+
+// BuildImage builds an image into this runtime
+func (r *Docker) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
+	klog.Infof("Building image: %s", src)
+	args := []string{"build"}
+	if file != "" {
+		args = append(args, "-f", file)
+	}
+	if tag != "" {
+		args = append(args, "-t", tag)
+	}
+	args = append(args, src)
+	for _, opt := range opts {
+		args = append(args, "--"+opt)
+	}
+	c := exec.Command("docker", args...)
+	e := os.Environ()
+	e = append(e, env...)
+	c.Env = e
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "buildimage docker.")
+	}
+	if tag != "" && push {
+		c := exec.Command("docker", "push", tag)
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		if _, err := r.Runner.RunCmd(c); err != nil {
+			return errors.Wrap(err, "pushimage docker.")
+		}
 	}
 	return nil
 }
