@@ -470,8 +470,6 @@ func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-
-
 // validateStartWithProxy makes sure minikube start respects the HTTP_PROXY environment variable
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
