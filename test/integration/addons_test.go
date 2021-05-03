@@ -746,7 +746,7 @@ func validateAutoPause(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected kubelet status be %q, but got *%s*", want, rr.Stdout.String())
 	}
 	// wait to get kubernetes to get paused
-	time.Sleep(30 * time.Second)
+	time.Sleep(70 * time.Second)
 	// check for kubernetes to be stopped
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.APIServer}}"))
 	if err != nil {
