@@ -101,7 +101,7 @@ GVISOR_TAG ?= latest
 AUTOPAUSE_HOOK_TAG ?= 1.13
 
 # prow-test tag to push changes to
-PROW_TEST_TAG ?= 1.7
+PROW_TEST_TAG ?= v0.0.1
 
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
