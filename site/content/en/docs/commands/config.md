@@ -27,6 +27,7 @@ Configurable fields:
  * kubernetes-version
  * iso-url
  * WantUpdateNotification
+ * WantBetaUpdateNotification
  * ReminderWaitPeriodInHours
  * WantReportError
  * WantReportErrorPrompt

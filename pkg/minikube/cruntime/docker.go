@@ -120,6 +120,14 @@ func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 		return err
 	}
 
+	if err := r.Init.Unmask("docker.service"); err != nil {
+		return err
+	}
+
+	if err := r.Init.Enable("docker.socket"); err != nil {
+		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
+	}
+
 	if forceSystemd {
 		if err := r.forceSystemd(); err != nil {
 			return err
@@ -146,7 +154,14 @@ func (r *Docker) Disable() error {
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
 		klog.ErrorS(err, "Failed to stop", "service", "docker.socket")
 	}
-	return r.Init.ForceStop("docker")
+	if err := r.Init.ForceStop("docker.service"); err != nil {
+		klog.ErrorS(err, "Failed to stop", "service", "docker.service")
+		return err
+	}
+	if err := r.Init.Disable("docker.socket"); err != nil {
+		klog.ErrorS(err, "Failed to disable", "service", "docker.socket")
+	}
+	return r.Init.Mask("docker.service")
 }
 
 // ImageExists checks if an image exists
@@ -201,6 +216,16 @@ func (r *Docker) PullImage(name string) error {
 	c := exec.Command("docker", "pull", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "pull image docker.")
+	}
+	return nil
+}
+
+// SaveImage saves an image from this runtime
+func (r *Docker) SaveImage(name string, path string) error {
+	klog.Infof("Saving image %s: %s", name, path)
+	c := exec.Command("docker", "save", name, "-o", path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "saveimage docker.")
 	}
 	return nil
 }

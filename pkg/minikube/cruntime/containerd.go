@@ -34,6 +34,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -94,7 +95,7 @@ oom_score = 0
         runtime_root = ""
     [plugins.cri.cni]
       bin_dir = "/opt/cni/bin"
-      conf_dir = "/etc/cni/net.d"
+      conf_dir = "{{.CNIConfDir}}"
       conf_template = ""
     [plugins.cri.registry]
       [plugins.cri.registry.mirrors]
@@ -190,10 +191,12 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 		PodInfraContainerImage string
 		SystemdCgroup          bool
 		InsecureRegistry       []string
+		CNIConfDir             string
 	}{
 		PodInfraContainerImage: pauseImage,
 		SystemdCgroup:          forceSystemd,
 		InsecureRegistry:       insecureRegistry,
+		CNIConfDir:             cni.ConfDir,
 	}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -272,6 +275,16 @@ func (r *Containerd) LoadImage(path string) error {
 // PullImage pulls an image into this runtime
 func (r *Containerd) PullImage(name string) error {
 	return pullCRIImage(r.Runner, name)
+}
+
+// SaveImage save an image from this runtime
+func (r *Containerd) SaveImage(name string, path string) error {
+	klog.Infof("Saving image %s: %s", name, path)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "export", path, name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ctr images export")
+	}
+	return nil
 }
 
 // RemoveImage removes a image
