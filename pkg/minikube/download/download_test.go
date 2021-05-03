@@ -19,58 +19,24 @@ package download
 import (
 	"fmt"
 	"io/fs"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-type mockLogger struct {
-	downloads int
-	t         *testing.T
-}
-
-func (ml *mockLogger) Enabled() bool {
-	return true
-}
-func (ml *mockLogger) Info(msg string, keysAndValues ...interface{}) {
-	fmt.Println("hi - ", msg)
-	if strings.Contains(msg, "Mock download") {
-		// Make "downloads" take longer to increase lock time.
-		dur, err := time.ParseDuration("1s")
-		if err != nil {
-			ml.t.Errorf("Could not parse 1 second duration - should never happen")
-		}
-		time.Sleep(dur)
-
-		ml.downloads++
-	}
-}
-func (ml *mockLogger) Error(err error, msg string, keysAndValues ...interface{}) {}
-func (ml *mockLogger) V(level int) logr.Logger {
-	return ml
-}
-func (ml *mockLogger) WithValues(keysAndValues ...interface{}) logr.Logger {
-	return ml
-}
-func (ml *mockLogger) WithName(name string) logr.Logger {
-	return ml
-}
-
 func TestBinaryDownloadPreventsMultipleDownload(t *testing.T) {
-	EnableMock(true)
-	defer EnableMock(false)
-	tlog := &mockLogger{downloads: 0, t: t}
-
-	klog.SetLogger(tlog)
-	defer klog.SetLogger(nil)
+	downloads := 0
+	SetDownloadMock(func(src, dst string) error {
+		// Sleep for a second to assure locking must have occurred.
+		time.Sleep(time.Second)
+		downloads++
+		return CreateDstDownloadMock(src, dst)
+	})
 
 	checkCache = func(file string) (fs.FileInfo, error) {
-		if tlog.downloads == 0 {
+		if downloads == 0 {
 			return nil, fmt.Errorf("some error")
 		}
 		return nil, nil
@@ -90,21 +56,22 @@ func TestBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 
 	group.Wait()
 
-	if tlog.downloads != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", tlog.downloads)
+	if downloads != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloads)
 	}
 }
 
 func TestPreloadDownloadPreventsMultipleDownload(t *testing.T) {
-	EnableMock(true)
-	defer EnableMock(false)
-	tlog := &mockLogger{downloads: 0, t: t}
-
-	klog.SetLogger(tlog)
-	defer klog.SetLogger(nil)
+	downloads := 0
+	SetDownloadMock(func(src, dst string) error {
+		// Sleep for a second to assure locking must have occurred.
+		time.Sleep(time.Second)
+		downloads++
+		return CreateDstDownloadMock(src, dst)
+	})
 
 	checkCache = func(file string) (fs.FileInfo, error) {
-		if tlog.downloads == 0 {
+		if downloads == 0 {
 			return nil, fmt.Errorf("some error")
 		}
 		return nil, nil
@@ -126,20 +93,21 @@ func TestPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 
 	group.Wait()
 
-	if tlog.downloads != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", tlog.downloads)
+	if downloads != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloads)
 	}
 }
 
 func TestImageToCache(t *testing.T) {
-	EnableMock(true)
-	defer EnableMock(false)
-	tlog := &mockLogger{downloads: 0, t: t}
+	downloads := 0
+	SetDownloadMock(func(src, dst string) error {
+		// Sleep for a second to assure locking must have occurred.
+		time.Sleep(time.Second)
+		downloads++
+		return CreateDstDownloadMock(src, dst)
+	})
 
-	klog.SetLogger(tlog)
-	defer klog.SetLogger(nil)
-
-	checkImageExistsInCache = func(img string) bool { return tlog.downloads > 0 }
+	checkImageExistsInCache = func(img string) bool { return downloads > 0 }
 
 	var group sync.WaitGroup
 	group.Add(2)
@@ -155,20 +123,21 @@ func TestImageToCache(t *testing.T) {
 
 	group.Wait()
 
-	if tlog.downloads != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", tlog.downloads)
+	if downloads != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloads)
 	}
 }
 
 func TestImageToDaemon(t *testing.T) {
-	EnableMock(true)
-	defer EnableMock(false)
-	tlog := &mockLogger{downloads: 0, t: t}
+	downloads := 0
+	SetDownloadMock(func(src, dst string) error {
+		// Sleep for a second to assure locking must have occurred.
+		time.Sleep(time.Second)
+		downloads++
+		return CreateDstDownloadMock(src, dst)
+	})
 
-	klog.SetLogger(tlog)
-	defer klog.SetLogger(nil)
-
-	checkImageExistsInCache = func(img string) bool { return tlog.downloads > 0 }
+	checkImageExistsInCache = func(img string) bool { return downloads > 0 }
 
 	var group sync.WaitGroup
 	group.Add(2)
@@ -184,7 +153,7 @@ func TestImageToDaemon(t *testing.T) {
 
 	group.Wait()
 
-	if tlog.downloads != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", tlog.downloads)
+	if downloads != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloads)
 	}
 }
