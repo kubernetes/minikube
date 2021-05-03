@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cni"
@@ -236,6 +237,15 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 		klog.Infof("trying to join worker node %q to cluster: %+v", starter.Node.Name, starter.Node)
 		if err := bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			klog.Errorf("worker node failed to join cluster, will retry: %v", err)
+
+			// reset worker node to revert any changes made by previous kubeadm init/join
+			klog.Infof("resetting worker node %q before attempting to rejoin cluster...", starter.Node.Name)
+			if _, err := starter.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset --force", bsutil.InvokeKubeadm(starter.Cfg.KubernetesConfig.KubernetesVersion)))); err != nil {
+				klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
+			} else {
+				klog.Infof("successfully reset worker node %q", starter.Node.Name)
+			}
+
 			return err
 		}
 		return nil
