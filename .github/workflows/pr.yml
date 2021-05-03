@@ -299,7 +299,7 @@ jobs:
       - name: Install Podman
         shell: bash
         run: |
-          sudo apt udpate
+          sudo apt update
           sudo install -y podman
           echo "--------------------------"
           podman version || true
