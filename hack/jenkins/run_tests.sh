@@ -40,7 +40,8 @@ readonly TIMEOUT=${1:-120m}
 if [ "$(uname)" != "Darwin" ]; then
   sudo apt-get -y install lsof psmisc
 else
-  brew install pstree
+  brew install pstree coreutils
+  ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 fi
 
 # installing golang so we could do go get for gopogh
