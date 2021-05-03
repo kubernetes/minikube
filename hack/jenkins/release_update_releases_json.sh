@@ -30,11 +30,6 @@ export DARWIN_SHA256=$(cat out/minikube-darwin-amd64.sha256)
 export LINUX_SHA256=$(cat out/minikube-linux-amd64.sha256)
 export WINDOWS_SHA256=$(cat out/minikube-windows-amd64.exe.sha256)
 
-if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
-  echo "NOTE: ${TAGNAME} appears to be a non-standard release, not updating releases.json"
-  exit 0
-fi
-
 # Update releases.json w/ new release in gcs and github
 git config user.name "minikube-bot"
 git config user.email "minikube-bot@google.com"
@@ -43,20 +38,36 @@ git checkout -b "jenkins-releases.json-${TAGNAME}"
 
 git status
 
-#Prepends the new version to the release.json file
-sed -i "0,/{/s/{/{\n      \"name\": \"${TAGNAME}\",\n      \"checksums\": {\n          \"darwin\": \"${DARWIN_SHA256}\",\n          \"linux\": \"${LINUX_SHA256}\",\n          \"windows\": \"${WINDOWS_SHA256}\"\n      }\n  },\n  {"/ deploy/minikube/releases.json
+if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
+  #Prepends the new version to the release-beta.json file
+  sed -i "0,/{/s/{/{\n      \"name\": \"${TAGNAME}\",\n      \"checksums\": {\n          \"darwin\": \"${DARWIN_SHA256}\",\n          \"linux\": \"${LINUX_SHA256}\",\n          \"windows\": \"${WINDOWS_SHA256}\"\n      }\n  },\n  {"/ deploy/minikube/releases-beta.json
 
-#Update the front page of our documentation
-now=$(date +"%b %d, %Y")
-sed -i "s/Latest Release: .* (/Latest Release: ${TAGNAME} - ${now} (/" site/content/en/docs/_index.md
+  git add -A
+  git commit -m "Update releases-beta.json to include ${TAGNAME}"
+  git remote add minikube-bot git@github.com:minikube-bot/minikube.git
+  git push -f minikube-bot jenkins-releases.json-${TAGNAME}
 
-git add -A
-git commit -m "Update releases.json to include ${TAGNAME}"
-git remote add minikube-bot git@github.com:minikube-bot/minikube.git
-git push -f minikube-bot jenkins-releases.json-${TAGNAME}
+  # Send PR from minikube-bot/minikube to kubernetes/minikube
+  curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update releases-beta.json to include ${TAGNAME}\",\"head\": \"minikube-bot:jenkins-releases.json-${TAGNAME}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
 
-# Send PR from minikube-bot/minikube to kubernetes/minikube
-curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update releases.json to include ${TAGNAME}\",\"head\": \"minikube-bot:jenkins-releases.json-${TAGNAME}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
+  # Upload file to GCS so that minikube can see the new version
+  gsutil cp deploy/minikube/releases-beta.json gs://minikube/releases-beta.json
+else
+  #Prepends the new version to the release.json file
+  sed -i "0,/{/s/{/{\n      \"name\": \"${TAGNAME}\",\n      \"checksums\": {\n          \"darwin\": \"${DARWIN_SHA256}\",\n          \"linux\": \"${LINUX_SHA256}\",\n          \"windows\": \"${WINDOWS_SHA256}\"\n      }\n  },\n  {"/ deploy/minikube/releases.json
 
-# Upload file to GCS so that minikube can see the new version
-gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
+  #Update the front page of our documentation
+  now=$(date +"%b %d, %Y")
+  sed -i "s/Latest Release: .* (/Latest Release: ${TAGNAME} - ${now} (/" site/content/en/docs/_index.md
+
+  git add -A
+  git commit -m "Update releases.json to include ${TAGNAME}"
+  git remote add minikube-bot git@github.com:minikube-bot/minikube.git
+  git push -f minikube-bot jenkins-releases.json-${TAGNAME}
+
+  # Send PR from minikube-bot/minikube to kubernetes/minikube
+  curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update releases.json to include ${TAGNAME}\",\"head\": \"minikube-bot:jenkins-releases.json-${TAGNAME}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
+
+  # Upload file to GCS so that minikube can see the new version
+  gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
+fi
