@@ -45,13 +45,14 @@ var k8sIssues = []K8sIssue{
 	},
 }
 
-func ProblematicK8sVersion(v semver.Version) K8sIssue {
+// ProblematicK8sVersion checks for the supplied Kubernetes version and checks if there's a known issue with it.
+func ProblematicK8sVersion(v semver.Version) *K8sIssue {
 	for _, issue := range k8sIssues {
 		for _, va := range issue.VersionsAffected {
 			if va == v.String() {
-				return issue
+				return &issue
 			}
 		}
 	}
-	return K8sIssue{}
+	return nil
 }
