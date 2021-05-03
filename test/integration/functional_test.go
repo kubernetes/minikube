@@ -46,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
