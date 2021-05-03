@@ -95,7 +95,6 @@ fi
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
 
-
 echo
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \

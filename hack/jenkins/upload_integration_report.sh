@@ -25,14 +25,14 @@
 # EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
 
+set -x
 
 # upload results to GCS
 JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${UPSTREAM_JOB}"
 
 ARTIFACTS=artifacts/test_reports
 
-ls -l artifacts
-ls -l artifacts/test_reports
+ls -l $ARTIFACTS
 
 TEST_OUT="$ARTIFACTS/out.txt"
 echo ">> uploading ${TEST_OUT} to gs://${JOB_GCS_BUCKET}.txt"
@@ -49,4 +49,3 @@ gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 SUMMARY_OUT="$ARTIFACTS/summary.txt"
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-#
