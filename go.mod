@@ -3,7 +3,7 @@ module k8s.io/minikube
 go 1.16
 
 require (
-	cloud.google.com/go/storage v1.13.0
+	cloud.google.com/go/storage v1.15.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
 	github.com/Azure/azure-sdk-for-go v43.0.0+incompatible
 	github.com/Delta456/box-cli-maker/v2 v2.2.1
