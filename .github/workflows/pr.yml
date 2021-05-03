@@ -300,7 +300,7 @@ jobs:
         shell: bash
         run: |
           sudo apt update
-          sudo install -y podman
+          sudo apt install -y podman
           echo "--------------------------"
           podman version || true
           echo "--------------------------"
