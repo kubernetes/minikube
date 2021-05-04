@@ -105,9 +105,9 @@ var Addons = map[string]*Addon{
 
 		// GuestPersistentDir
 	}, false, "auto-pause", map[string]string{
-		"AutoPauseHook": "azhao155/auto-pause-hook:1.13",
+		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.2",
 	}, map[string]string{
-		"AutoPauseHook": "docker.io",
+		"AutoPauseHook": "gcr.io",
 	}),
 	"dashboard": NewAddon([]*BinAsset{
 		// We want to create the kubernetes-dashboard ns first so that every subsequent object can be created
