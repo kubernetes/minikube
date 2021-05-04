@@ -305,10 +305,6 @@ if test -f "${TEST_OUT}"; then
   rm "${TEST_OUT}" || true # clean up previous runs of same build
 fi
 touch "${TEST_OUT}"
-if test -f "${JSON_OUT}"; then
-  rm "${JSON_OUT}" || true # clean up previous runs of same build
-fi
-touch "${JSON_OUT}"
 
 if [ ! -z "${CONTAINER_RUNTIME}" ]
 then
@@ -319,10 +315,9 @@ ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=${TIMEOUT} -test.v \
   ${EXTRA_TEST_ARGS} \
-  -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}" | go tool test2json -t > "${JSON_OUT}"
+  -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
 
 result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
-cat "${TEST_OUT}"
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
@@ -343,6 +338,17 @@ sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
 
+
+echo ">> Attmpting to convert test logs to json"
+if test -f "${JSON_OUT}"; then
+  rm "${JSON_OUT}" || true # clean up previous runs of same build
+fi
+
+touch "${JSON_OUT}"
+
+# Generate JSON output
+echo ">> Running go test2json"
+go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 
 if ! type "jq" > /dev/null; then
 echo ">> Installing jq"

@@ -339,7 +339,6 @@ integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl te
 
 .PHONY: html_report
 html_report: ## Generate HTML  report out of the last ran integration test logs.
-	@#TODO the json needs to be recorded when the go test is run, for timestamps to work properly
 	@go tool test2json -t < "./out/testout_$(COMMIT_SHORT).txt" > "./out/testout_$(COMMIT_SHORT).json"
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
