@@ -111,7 +111,7 @@ func TestFunctional(t *testing.T) {
 
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
-		i := []struct {
+		tests := []struct {
 			name      string
 			validator validateFunc
 		}{
@@ -138,7 +138,6 @@ func TestFunctional(t *testing.T) {
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
 		}
-		tests := i
 		for _, tc := range tests {
 			tc := tc
 			if ctx.Err() == context.DeadlineExceeded {
