@@ -42,3 +42,6 @@ recent=$(git describe --abbrev=0)
 echo "Thank you to our contributors for this release!"
 echo ""
 git log "$recent".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
+
+echo ""
+echo "These release notes are relative to our [last release](https://github.com/kubernetes/minikube/releases/tag/$recent)."
