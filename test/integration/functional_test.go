@@ -118,6 +118,7 @@ func TestFunctional(t *testing.T) {
 			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
+			{"LogsFileCmd", validateLogsFileCmd},
 			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
 			{"ServiceCmd", validateServiceCmd},
@@ -1057,12 +1058,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateLogsCmd asserts basic "logs" command functionality
-func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Command(), err)
-	}
+func checkSaneLogs(t *testing.T, logs string) {
 	expectedWords := []string{"apiserver", "Linux", "kubelet", "Audit", "Last Start"}
 	switch ContainerRuntime() {
 	case "docker":
@@ -1074,10 +1070,44 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	for _, word := range expectedWords {
-		if !strings.Contains(rr.Stdout.String(), word) {
-			t.Errorf("expected minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
+		if !strings.Contains(logs, word) {
+			t.Errorf("expected minikube logs to include word: -%q- but got \n***%s***\n", word, logs)
 		}
 	}
+}
+
+// validateLogsCmd asserts basic "logs" command functionality
+func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Command(), err)
+	}
+
+	checkSaneLogs(t, rr.Stdout.String())
+}
+
+// validateLogsFileCmd asserts "logs --file" command functionality
+func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
+	dname, err := ioutil.TempDir("", profile)
+	if err != nil {
+		t.Fatalf("Cannot create temp dir: %v", err)
+	}
+	logFileName := filepath.Join(dname, "logs.txt")
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs", "--file", logFileName))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Command(), err)
+	}
+	if rr.Stdout.String() != "" {
+		t.Errorf("expected empty minikube logs output, but got: \n***%s***\n", rr.Output())
+	}
+
+	logs, err := ioutil.ReadFile(logFileName)
+	if err != nil {
+		t.Errorf("Failed to read logs output '%s': %v", logFileName, err)
+	}
+
+	checkSaneLogs(t, string(logs))
 }
 
 // validateProfileCmd asserts "profile" command functionality
