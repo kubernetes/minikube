@@ -27,7 +27,7 @@ elif [[ ${OS} == "Linux" ]]; then
 fi
 
 # calc average each non-autopause test target
-calcAvarageNonAutopause() {
+calcAverageNonAutopause() {
   for target in ${TESTS_TARGETS[@]}; do
     nap_count=0;
     nap_total=0;
@@ -50,7 +50,7 @@ calcAvarageNonAutopause() {
 }
 
 # calc average each autopause test target
-calcAvarageAutopause() {
+calcAverageAutopause() {
   for target in ${TESTS_TARGETS[@]}; do
     if [[ "${target}" == "minikube."* ]]; then
       ap_count=0;
@@ -85,8 +85,8 @@ updateAutopauseSummary() {
   }
 }
 
-calcAvarageNonAutopause
+calcAverageNonAutopause
 updateNonAutopauseSummary
 
-calcAvarageAutopause
+calcAverageAutopause
 updateAutopauseSummary
