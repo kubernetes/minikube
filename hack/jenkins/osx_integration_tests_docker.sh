@@ -30,7 +30,7 @@ ARCH="amd64"
 OS="darwin"
 VM_DRIVER="docker"
 JOB_NAME="Docker_macOS"
-EXTRA_TEST_ARGS="-test.run TestFunctional"
+EXTRA_TEST_ARGS=""
 EXPECTED_DEFAULT_DRIVER="docker"
 
 
