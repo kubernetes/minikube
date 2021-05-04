@@ -47,6 +47,9 @@ recent_date=$(git log -1 --format=%as $recent)
 "${DIR}/release-notes" kubernetes minikube --since $recent
 
 echo ""
+echo "For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md)."
+echo ""
+
 echo "Thank you to our contributors for this release!"
 echo ""
 git log "$recent".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
