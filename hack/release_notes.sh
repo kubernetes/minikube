@@ -54,3 +54,7 @@ echo ""
 echo "Thank you to our PR reviewers for this release!"
 echo ""
 "${DIR}/pullsheet" reviews --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt | awk -F ',' 'function cmp_value_order(i1,v1,i2,v2){ return v1 < v2 } NR>1{arr[$4] += $6 + $7}END{PROCINFO["sorted_in"] = "cmp_value_order"; for (a in arr) printf "- %s (%d comments)\n", a, arr[a]}'
+echo ""
+echo "Thank you to our triage members for this release!"
+echo ""
+"${DIR}/pullsheet" issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt | awk -F ',' 'function cmp_value_order(i1,v1,i2,v2){ return v1 < v2 } NR>1{arr[$4] += $7}END{PROCINFO["sorted_in"] = "cmp_value_order"; for (a in arr) printf "- %s (%d comments)\n", a, arr[a]}' | head -n 5
