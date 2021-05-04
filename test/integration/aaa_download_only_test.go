@@ -158,6 +158,14 @@ func TestDownloadOnly(t *testing.T) {
 				}
 			})
 
+			t.Run("minikube logs", func(t *testing.T) {
+				ctx, cancel := context.WithTimeout(context.Background(), Seconds(5))
+				args := append([]string{"logs", "-p", profile})
+				if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+					t.Errorf("minikube logs failed with error: %v", err)
+				}
+			})
+
 		})
 	}
 
