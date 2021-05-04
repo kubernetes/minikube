@@ -18,6 +18,11 @@ set -eu -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
+if ! [[ -r "${DIR}/gh_token.txt" ]]; then
+  echo "Missing '${DIR}/gh_token.txt'. Please create a GitHub token at https://github.com/settings/tokens and store in '${DIR}/gh_token.txt'."
+  exit 1
+fi
+
 install_release_notes_helper() {
   release_notes_workdir="$(mktemp -d)"
   trap 'rm -rf -- ${release_notes_workdir}' RETURN
@@ -26,19 +31,30 @@ install_release_notes_helper() {
   cd "${release_notes_workdir}"
   go mod init release-notes
   GOBIN="$DIR" go get github.com/corneliusweig/release-notes
+  GOBIN="$DIR" go get github.com/google/pullsheet
   cd -
 }
 
-if ! [[ -x "${DIR}/release-notes" ]]; then
+if ! [[ -x "${DIR}/release-notes" ]] || ! [[ -x "${DIR}/pullsheet" ]]; then
   echo >&2 'Installing release-notes'
   install_release_notes_helper
 fi
 
 git pull git@github.com:kubernetes/minikube master --tags
 recent=$(git describe --abbrev=0)
+recent_date=$(git log -1 --format=%as $recent)
 
 "${DIR}/release-notes" kubernetes minikube --since $recent
 
+echo ""
 echo "Thank you to our contributors for this release!"
 echo ""
 git log "$recent".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
+echo ""
+echo "Thank you to our PR reviewers for this release!"
+echo ""
+"${DIR}/pullsheet" reviews --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt | awk -F ',' 'function cmp_value_order(i1,v1,i2,v2){ return v1 < v2 } NR>1{arr[$4] += $6 + $7}END{PROCINFO["sorted_in"] = "cmp_value_order"; for (a in arr) printf "- %s (%d comments)\n", a, arr[a]}'
+echo ""
+echo "Thank you to our triage members for this release!"
+echo ""
+"${DIR}/pullsheet" issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt | awk -F ',' 'function cmp_value_order(i1,v1,i2,v2){ return v1 < v2 } NR>1{arr[$4] += $7}END{PROCINFO["sorted_in"] = "cmp_value_order"; for (a in arr) printf "- %s (%d comments)\n", a, arr[a]}' | head -n 5
