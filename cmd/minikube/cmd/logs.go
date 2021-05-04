@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -59,10 +60,15 @@ var logsCmd = &cobra.Command{
 
 		if fileOutput != "" {
 			logOutput, err = os.Create(fileOutput)
+			defer func() {
+				err := logOutput.Close()
+				if err != nil {
+					klog.Warning("Failed to close file: %v", err)
+				}
+			}()
 			if err != nil {
 				exit.Error(reason.Usage, "Failed to create file", err)
 			}
-			defer logOutput.Close()
 		}
 
 		logs.OutputOffline(numberOfLines, logOutput)
