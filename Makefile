@@ -883,12 +883,12 @@ push-auto-pause-hook-image: auto-pause-hook-image
 
 .PHONY: prow-test-image
 prow-test-image:
-	docker build --build-arg "GO_VERSION=$(GO_VERSION)"  -t docker.io/azhao155/prow-test:$(PROW_TEST_TAG) ./deploy/prow
+	docker build --build-arg "GO_VERSION=$(GO_VERSION)"  -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) ./deploy/prow
 
 .PHONY: push-prow-test-image
 push-prow-test-image: prow-test-image
-	docker login docker.io/azhao155
-	$(MAKE) push-docker IMAGE=docker.io/azhao155/prow-test:$(PROW_TEST_TAG)	
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(REGISTRY)/prow-test:$(PROW_TEST_TAG)
 
 .PHONY: out/performance-bot
 out/performance-bot:
