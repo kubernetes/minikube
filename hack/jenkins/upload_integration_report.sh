@@ -18,17 +18,17 @@
 # This script uploads the test reports to the GCS bucket
 
 # The script expects the following env variables:
-# OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
-# VM_DRIVER: the driver to use for the test
-# CONTAINER_RUNTIME: the container runtime to use for the test
-# EXTRA_START_ARGS: additional flags to pass into minikube start
-# EXTRA_TEST_ARGS: additional flags to pass into go test
-# JOB_NAME: the name of the logfile and check name to update on github
+# UPSTREAM_JOB: the name of the job that needs logs uploaded
+# FILE_NAME: the name of the file upload to
 
 set -x
 
 # upload results to GCS
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${UPSTREAM_JOB}"
+if [[ -z "${FILE_NAME}" ]]; then
+	FILE_NAME=${UPSTREAM_JOB}
+fi
+
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${FILE_NAME}"
 
 ARTIFACTS=artifacts/test_reports
 
