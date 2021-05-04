@@ -165,7 +165,7 @@ func TestDownloadOnly(t *testing.T) {
 				if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
 					t.Errorf("minikube logs failed with error: %v", err)
 				}
-				if err := ctx.Err(); err != nil {
+				if err := ctx.Err(); err == context.DeadlineExceeded {
 					t.Error("minikube logs expected to finish by 5 seconds, but took longer")
 				}
 			})
