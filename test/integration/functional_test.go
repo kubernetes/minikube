@@ -93,6 +93,8 @@ func TestFunctional(t *testing.T) {
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
 			{"ComponentHealth", validateComponentHealth},
+			{"MountCmd", validateMountCmd},
+
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -109,7 +111,7 @@ func TestFunctional(t *testing.T) {
 
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
-		tests := []struct {
+		i := []struct {
 			name      string
 			validator validateFunc
 		}{
@@ -118,7 +120,6 @@ func TestFunctional(t *testing.T) {
 			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
-			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
 			{"ServiceCmd", validateServiceCmd},
 			{"AddonsCmd", validateAddonsCmd},
@@ -137,6 +138,7 @@ func TestFunctional(t *testing.T) {
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
 		}
+		tests := i
 		for _, tc := range tests {
 			tc := tc
 			if ctx.Err() == context.DeadlineExceeded {
