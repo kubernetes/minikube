@@ -35,7 +35,7 @@ if ! [[ -x "${DIR}/release-notes" ]]; then
 fi
 
 git pull git@github.com:kubernetes/minikube master --tags
-recent=$(git describe --abbrev=0)
+recent=${1:-$(git describe --abbrev=0)}
 
 "${DIR}/release-notes" kubernetes minikube --since $recent
 
