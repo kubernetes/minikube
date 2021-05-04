@@ -36,9 +36,10 @@ EXPECTED_DEFAULT_DRIVER="docker"
 
 # fix mac os as a service on mac os
 # https://github.com/docker/for-mac/issues/882#issuecomment-506372814
-osascript -e 'quit app "Docker"';
+osascript -e 'quit app "Docker"'
 /Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
-osascript -e 'quit app "Docker"'; /Applications/Docker.app/Contents/MacOS/Docker --unattended & || true
+osascript -e 'quit app "Docker"'
+/Applications/Docker.app/Contents/MacOS/Docker --unattended &
 
 begin=$(date +%s)
 while [ -z "$(docker info 2> /dev/null )" ];
