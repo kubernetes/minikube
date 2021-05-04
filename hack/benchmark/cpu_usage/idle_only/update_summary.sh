@@ -26,7 +26,7 @@ elif [[ ${OS} == "Linux" ]]; then
 fi
 
 # calc average each test target
-calcAvarage() {
+calcAverage() {
   for target in ${TESTS_TARGETS[@]}; do
     count=0;
     total=0;
@@ -51,5 +51,5 @@ updateSummary() {
   }
 }
 
-calcAvarage
+calcAverage
 updateSummary
