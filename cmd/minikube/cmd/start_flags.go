@@ -249,6 +249,12 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	var cc config.ClusterConfig
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
+
+		// identify appropriate cni then configure cruntime accordingly
+		_, err := cni.New(&cc)
+		if err != nil {
+			return cc, config.Node{}, errors.Wrap(err, "cni")
+		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
 		cc = generateNewConfigFromFlags(cmd, k8sVersion, drvName)

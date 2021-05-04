@@ -51,7 +51,7 @@ if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
   curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update releases-beta.json to include ${TAGNAME}\",\"head\": \"minikube-bot:jenkins-releases.json-${TAGNAME}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
 
   # Upload file to GCS so that minikube can see the new version
-  gsutil cp deploy/minikube/releases.json gs://minikube/releases-beta.json
+  gsutil cp deploy/minikube/releases-beta.json gs://minikube/releases-beta.json
 else
   #Prepends the new version to the release.json file
   sed -i "0,/{/s/{/{\n      \"name\": \"${TAGNAME}\",\n      \"checksums\": {\n          \"darwin\": \"${DARWIN_SHA256}\",\n          \"linux\": \"${LINUX_SHA256}\",\n          \"windows\": \"${WINDOWS_SHA256}\"\n      }\n  },\n  {"/ deploy/minikube/releases.json
