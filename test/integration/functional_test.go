@@ -137,6 +137,7 @@ func TestFunctional(t *testing.T) {
 			{"LoadImage", validateLoadImage},
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
+			{"ListImages", validateListImages},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -159,8 +160,13 @@ func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("docker is not installed, cannot delete docker images")
 	} else {
 		t.Run("delete busybox image", func(t *testing.T) {
-			newImage := fmt.Sprintf("docker.io/library/busybox:%s", profile)
+			newImage := fmt.Sprintf("docker.io/library/busybox:load-%s", profile)
 			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
+			if err != nil {
+				t.Logf("failed to remove image busybox from docker images. args %q: %v", rr.Command(), err)
+			}
+			newImage = fmt.Sprintf("docker.io/library/busybox:remove-%s", profile)
+			rr, err = Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
 			if err != nil {
 				t.Logf("failed to remove image busybox from docker images. args %q: %v", rr.Command(), err)
 			}
@@ -200,7 +206,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateLoadImage makes sure that `minikube load image` works as expected
+// validateLoadImage makes sure that `minikube image load` works as expected
 func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skip("load image not available on none driver")
@@ -210,15 +216,15 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 	defer PostMortemLogs(t, profile)
 	// pull busybox
-	busybox := "busybox:latest"
-	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busybox))
+	busyboxImage := "busybox:latest"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
 	// tag busybox
-	newImage := fmt.Sprintf("docker.io/library/busybox:%s", profile)
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busybox, newImage))
+	newImage := fmt.Sprintf("docker.io/library/busybox:load-%s", profile)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, newImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 	}
@@ -234,13 +240,13 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
-	if !strings.Contains(rr.Output(), fmt.Sprintf("busybox:%s", profile)) {
+	if !strings.Contains(rr.Output(), fmt.Sprintf("busybox:load-%s", profile)) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 
 }
 
-// validateRemoveImage makes sures that `minikube rm image` works as expected
+// validateRemoveImage makes sures that `minikube image rm` works as expected
 func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skip("load image not available on none driver")
@@ -257,24 +263,32 @@ func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
+	// tag busybox
+	newImage := fmt.Sprintf("docker.io/library/busybox:remove-%s", profile)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, newImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
 	// try to load the image into minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", busyboxImage))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", newImage))
 	if err != nil {
 		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
 	}
 
 	// try to remove the image from minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", busyboxImage))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", newImage))
 	if err != nil {
 		t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
 	}
+
 	// make sure the image was removed
 	rr, err = listImages(ctx, t, profile)
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
-	if strings.Contains(rr.Output(), busyboxImage) {
-		t.Fatalf("expected %s to be removed from minikube but the image is there", busyboxImage)
+	if strings.Contains(rr.Output(), fmt.Sprintf("busybox:remove-%s", profile)) {
+		t.Fatalf("expected %s to be removed from minikube but the image is there", newImage)
 	}
 
 }
@@ -354,6 +368,37 @@ func startBuildkit(ctx context.Context, t *testing.T, profile string) {
 		"--containerd-worker=true", "--containerd-worker-namespace=k8s.io")
 	if rr, err := Run(t, cmd); err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+}
+
+
+// validateListImages makes sures that `minikube image ls` works as expected
+func validateListImages(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("list images not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+
+	// try to list the images with minikube
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls"))
+	if err != nil {
+		t.Fatalf("listing image with minikube: %v\n%s", err, rr.Output())
+	}
+	if rr.Stdout.Len() > 0 {
+		t.Logf("(dbg) Stdout: %s:\n%s", rr.Command(), rr.Stdout)
+	}
+	if rr.Stderr.Len() > 0 {
+		t.Logf("(dbg) Stderr: %s:\n%s", rr.Command(), rr.Stderr)
+	}
+
+	list := rr.Output()
+	for _, theImage := range []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"} {
+		if !strings.Contains(list, theImage) {
+			t.Fatalf("expected %s to be listed with minikube but the image is not there", theImage)
+		}
 	}
 }
 
