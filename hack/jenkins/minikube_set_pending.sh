@@ -69,8 +69,8 @@ function retry_github_status() {
 
   while [[ "${attempt}" -lt 8 ]]; do
     local out=$(mktemp)
-    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L \
-      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}?access_token=${token}" \
+    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L  -u minikube-bot:$token \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}" \
       -H "Content-Type: application/json" \
       -X POST \
       -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
