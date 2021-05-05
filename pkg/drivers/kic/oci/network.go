@@ -71,6 +71,12 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 
 // gatewayIP inspects oci container to find a gateway IP string
 func gatewayIP(ociBin, containerName string) (string, error) {
+	rr1, err1 := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings}}", containerName))
+	if err1 != nil {
+		return "", errors.Wrapf(err1, "inspect gateway")
+	}
+	klog.Infof("[zz] network settings: %q", rr1.Stdout.String())
+
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
 	if err != nil {
 		return "", errors.Wrapf(err, "inspect gateway")
@@ -81,7 +87,7 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 	}
 	// https://github.com/kubernetes/minikube/issues/11293
 	// need to check nested network
-	format := fmt.Sprintf("{{.NetworkSettings.Networks.%s.Gateway}}", containerName)
+	format := fmt.Sprintf("{{.NetworkSettings.Networks[%q].Gateway}}", containerName)
 	rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
 	if err != nil {
 		return "", errors.Wrapf(err, "inspect gateway")
