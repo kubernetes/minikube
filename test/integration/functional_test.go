@@ -94,7 +94,6 @@ func TestFunctional(t *testing.T) {
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
 			{"ComponentHealth", validateComponentHealth},
 			{"MountCmd", validateMountCmd},
-
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -370,7 +369,6 @@ func startBuildkit(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 }
-
 
 // validateListImages makes sures that `minikube image ls` works as expected
 func validateListImages(ctx context.Context, t *testing.T, profile string) {
