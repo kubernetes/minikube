@@ -36,9 +36,12 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 readonly TIMEOUT=${1:-120m}
 
+# We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
-  # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
   sudo apt-get -y install lsof psmisc
+else
+  brew install pstree coreutils pidof
+  ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 fi
 
 # installing golang so we could do go get for gopogh
@@ -92,7 +95,6 @@ fi
 
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
-
 
 echo
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
@@ -158,7 +160,8 @@ function cleanup_procs() {
   # sometimes tests left over zombie procs that won't exit
   # for example:
   # jenkins  20041  0.0  0.0      0     0 ?        Z    Aug19   0:00 [minikube-linux-] <defunct>
-  zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
+  pgrep docker > d.pids
+  zombie_defuncts=$(ps -A -ostat,ppid | grep -v -f d.pids | awk '/[zZ]/ && !a[$2]++ {print $2}')
   if [[ "${zombie_defuncts}" != "" ]]; then
     echo "Found zombie defunct procs to kill..."
     ps -f -p ${zombie_defuncts} || true

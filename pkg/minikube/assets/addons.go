@@ -105,9 +105,9 @@ var Addons = map[string]*Addon{
 
 		// GuestPersistentDir
 	}, false, "auto-pause", map[string]string{
-		"AutoPauseHook": "azhao155/auto-pause-hook:1.13",
+		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.2@sha256:c76be418df5ca9c66d0d11c2c68461acbf4072c1cdfc17e64729c5ef4d5a4128",
 	}, map[string]string{
-		"AutoPauseHook": "docker.io",
+		"AutoPauseHook": "gcr.io",
 	}),
 	"dashboard": NewAddon([]*BinAsset{
 		// We want to create the kubernetes-dashboard ns first so that every subsequent object can be created
@@ -305,7 +305,7 @@ var Addons = map[string]*Addon{
 			"olm.yaml",
 			"0640"),
 	}, false, "olm", map[string]string{
-		"OLM":                        "operator-framework/olm:0.14.1@sha256:0d15ffb5d10a176ef6e831d7865f98d51255ea5b0d16403618c94a004d049373",
+		"OLM":                        "operator-framework/olm:v0.17.0@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607",
 		"UpstreamCommunityOperators": "operator-framework/upstream-community-operators:07bbc13@sha256:cc7b3fdaa1ccdea5866fcd171669dc0ed88d3477779d8ed32e3712c827e38cc0",
 	}, map[string]string{
 		"OLM":                        "quay.io",

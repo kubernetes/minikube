@@ -184,10 +184,12 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 			failed = append(failed, name)
 			continue
 		}
+		l := ""
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			out.Styled(style.Empty, scanner.Text())
+			l += scanner.Text() + "\n"
 		}
+		out.Styled(style.Empty, l)
 	}
 
 	if len(failed) > 0 {
@@ -223,10 +225,12 @@ func outputLastStart() error {
 		return fmt.Errorf("failed to open file %s: %v", fp, err)
 	}
 	defer f.Close()
+	l := ""
 	s := bufio.NewScanner(f)
 	for s.Scan() {
-		out.Styled(style.Empty, s.Text())
+		l += s.Text() + "\n"
 	}
+	out.Styled(style.Empty, l)
 	if err := s.Err(); err != nil {
 		return fmt.Errorf("failed to read file %s: %v", fp, err)
 	}

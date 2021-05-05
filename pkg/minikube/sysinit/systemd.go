@@ -58,6 +58,12 @@ func (s *Systemd) DisableNow(svc string) error {
 	return err
 }
 
+// Mask prevents a service from being started
+func (s *Systemd) Mask(svc string) error {
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "mask", svc))
+	return err
+}
+
 // Enable enables a service
 func (s *Systemd) Enable(svc string) error {
 	if svc == "kubelet" {
@@ -73,6 +79,12 @@ func (s *Systemd) EnableNow(svc string) error {
 		return errors.New("please don't enable kubelet as it creates a race condition; if it starts on systemd boot it will pick up /etc/hosts before we have time to configure /etc/hosts")
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "enable", "--now", svc))
+	return err
+}
+
+// Unmask allows a service to be started
+func (s *Systemd) Unmask(svc string) error {
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "unmask", svc))
 	return err
 }
 

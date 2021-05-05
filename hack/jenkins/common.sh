@@ -33,16 +33,18 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 readonly TIMEOUT=${1:-90m}
 
+# We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
-  # install lsof for finding none driver procs, psmisc to use pstree in cronjobs
   sudo apt-get -y install lsof psmisc
+else
+  brew install pstree
 fi
 
 # installing golang so we could do go get for gopogh
 sudo ./installers/check_install_golang.sh "1.16" "/usr/local" || true
 
 # install docker and kubectl if not present, currently skipping since it fails
-#sudo ./installers/check_install_docker.sh
+#sudo ./installers/check_install_docker.sh || true
 
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true

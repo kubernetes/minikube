@@ -115,6 +115,10 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
+		name: config.WantBetaUpdateNotification,
+		set:  SetBool,
+	},
+	{
 		name: config.ReminderWaitPeriodInHours,
 		set:  SetInt,
 	},

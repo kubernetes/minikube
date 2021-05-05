@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 19
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 20
+VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,8 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.20.0-1620072892-11218
+ISO_VERSION ?= v1.20.0-beta.0
+
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -55,9 +56,6 @@ BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSIO
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(KVM_GO_VERSION)
-
-KIC_BASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
-KIC_BASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 
 ISO_BUCKET ?= minikube/iso
 
@@ -101,7 +99,10 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # auto-pause-hook tag to push changes to
-AUTOPAUSE_HOOK_TAG ?= 1.13
+AUTOPAUSE_HOOK_TAG ?= v0.0.2
+
+# prow-test tag to push changes to
+PROW_TEST_TAG ?= v0.0.1
 
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
@@ -688,7 +689,9 @@ docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker buildx create --name $(X_DOCKER_BUILDER) --buildkitd-flags '--debug' || true
 
 KICBASE_ARCH = linux/arm64,linux/amd64
-KICBASE_IMAGE_REGISTRIES ?= $(REGISTRY)/kicbase:$(KIC_VERSION) kicbase/stable:$(KIC_VERSION)
+KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
+KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
+KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 
 .PHONY: push-kic-base-image 
 push-kic-base-image: deploy/kicbase/auto-pause docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
@@ -699,7 +702,7 @@ ifdef AUTOPUSH
 endif
 	$(foreach REG,$(KICBASE_IMAGE_REGISTRIES), \
 		@docker pull $(REG) && echo "Image already exist in registry" && exit 1 || echo "Image doesn't exist in registry";)
-ifndef AUTOPUSH
+ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
 	env $(X_BUILD_ENV) docker buildx build --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
@@ -856,7 +859,7 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serv
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
-.PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work arround for not passing the whole repo as docker context
+.PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work around for not passing the whole repo as docker context
 deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
@@ -872,12 +875,21 @@ deploy/addons/auto-pause/auto-pause-hook: $(SOURCE_GENERATED) ## Build auto-paus
 
 .PHONY: auto-pause-hook-image
 auto-pause-hook-image: deploy/addons/auto-pause/auto-pause-hook ## Build docker image for auto-pause hook
-	docker build -t docker.io/azhao155/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) ./deploy/addons/auto-pause
+	docker build -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) ./deploy/addons/auto-pause
 
 .PHONY: push-auto-pause-hook-image
 push-auto-pause-hook-image: auto-pause-hook-image
-	docker login docker.io/azhao155
-	$(MAKE) push-docker IMAGE=docker.io/azhao155/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG)
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG)
+
+.PHONY: prow-test-image
+prow-test-image:
+	docker build --build-arg "GO_VERSION=$(GO_VERSION)"  -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) ./deploy/prow
+
+.PHONY: push-prow-test-image
+push-prow-test-image: prow-test-image
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(REGISTRY)/prow-test:$(PROW_TEST_TAG)
 
 .PHONY: out/performance-bot
 out/performance-bot:
@@ -924,6 +936,14 @@ endif
 .PHONY: stress
 stress: ## run the stress tests
 	go test -test.v -test.timeout=2h ./test/stress -loops=10 | tee "./out/testout_$(COMMIT_SHORT).txt"
+
+.PHONY: cpu-benchmark-idle
+cpu-benchmark-idle: ## run the cpu usage 5 minutes idle benchmark
+	./hack/benchmark/cpu_usage/idle_only/benchmark_local_k8s.sh
+
+.PHONY: cpu-benchmark-autopause
+cpu-benchmark-autopause: ## run the cpu usage auto-pause benchmark
+	./hack/benchmark/cpu_usage/auto_pause/benchmark_local_k8s.sh
 
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version
