@@ -46,7 +46,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
@@ -459,7 +459,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// check functionality of minikube after evaling docker-env
+// check functionality of minikube after evaluating podman-env
 func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("none driver does not support podman-env")
