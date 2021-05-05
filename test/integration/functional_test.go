@@ -46,9 +46,9 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
-	"github.com/phayes/freeport"
+	"github.com/phayes`/freeport"
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
 )
@@ -118,6 +118,7 @@ func TestFunctional(t *testing.T) {
 			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
+			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
 			{"ServiceCmd", validateServiceCmd},
 			{"AddonsCmd", validateAddonsCmd},
@@ -136,7 +137,6 @@ func TestFunctional(t *testing.T) {
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
-			{"MountCmd", validateMountCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
