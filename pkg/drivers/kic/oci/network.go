@@ -69,14 +69,38 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	return ip, nil
 }
 
+
+// gatewayIP inspects oci container to find a gateway IP string
+func gatewayIP(ociBin, containerName string) (string, error) {
+	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
+	if err != nil {
+		return "", errors.Wrapf(err, "inspect gateway")
+	}
+	gatewayIP := strings.TrimSpace(rr.Stdout.String())
+	if gatewayIP != "" {
+		return gatewayIP, nil
+	}
+	// https://github.com/kubernetes/minikube/issues/11293
+	// need to check nested network
+	format := fmt.Sprintf("{{.NetworkSettings.Networks.%s.Gateway}}", containerName)
+	rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
+	if err != nil {
+		return "", errors.Wrapf(err, "inspect gateway")
+	}
+	gatewayIP = strings.TrimSpace(rr.Stdout.String())
+	if gatewayIP != "" {
+		return gatewayIP, nil
+	}
+	return "", fmt.Errorf("gateway IP is empty for container %s", containerName)
+}
+
 // containerGatewayIP gets the default gateway ip for the container
 func containerGatewayIP(ociBin string, containerName string) (net.IP, error) {
-	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
+	gatewayIP, err := gatewayIP(ociBin, containerName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect gateway")
 	}
-	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
-	return ip, nil
+	return net.ParseIP(gatewayIP), nil
 }
 
 // ForwardedPort will return port mapping for a container using cli.
