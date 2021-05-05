@@ -158,6 +158,19 @@ func TestDownloadOnly(t *testing.T) {
 				}
 			})
 
+			// checks if the duration of `minikube logs` takes longer than 5 seconds
+			t.Run("LogsDuration", func(t *testing.T) {
+				ctx, cancel := context.WithTimeout(context.Background(), Seconds(5))
+				defer cancel()
+				args := []string{"logs", "-p", profile}
+				if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+					t.Logf("minikube logs failed with error: %v", err)
+				}
+				if err := ctx.Err(); err == context.DeadlineExceeded {
+					t.Error("minikube logs expected to finish by 5 seconds, but took longer")
+				}
+			})
+
 		})
 	}
 
