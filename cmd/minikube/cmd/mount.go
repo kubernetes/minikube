@@ -109,6 +109,7 @@ var mountCmd = &cobra.Command{
 
 		var ip net.IP
 		var err error
+		klog.Infof("[zz] mount ip:  %v %v %v", mountIP, co.CP.Host, co.Config.Name)
 		if mountIP == "" {
 			ip, err = cluster.HostIP(co.CP.Host, co.Config.Name)
 			if err != nil {
