@@ -34,14 +34,19 @@ func TestDownload(t *testing.T) {
 	t.Run("ImageToDaemon", testImageToDaemon)
 }
 
+// Returns a mock function that sleeps before incrementing `downloadsCounter` and creates the requested file.
+func mockSleepDownload(downloadsCounter *int) func(src, dst string) error {
+	return func(src, dst string) error {
+		// Sleep for 200ms to assure locking must have occurred.
+		time.Sleep(time.Millisecond * 200)
+		*downloadsCounter++
+		return CreateDstDownloadMock(src, dst)
+	}
+}
+
 func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 	downloads := 0
-	SetDownloadMock(func(src, dst string) error {
-		// Sleep for a second to assure locking must have occurred.
-		time.Sleep(time.Second)
-		downloads++
-		return CreateDstDownloadMock(src, dst)
-	})
+	SetDownloadMock(mockSleepDownload(&downloads))
 
 	checkCache = func(file string) (fs.FileInfo, error) {
 		if downloads == 0 {
@@ -71,12 +76,7 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 
 func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 	downloads := 0
-	SetDownloadMock(func(src, dst string) error {
-		// Sleep for a second to assure locking must have occurred.
-		time.Sleep(time.Second)
-		downloads++
-		return CreateDstDownloadMock(src, dst)
-	})
+	SetDownloadMock(mockSleepDownload(&downloads))
 
 	checkCache = func(file string) (fs.FileInfo, error) {
 		if downloads == 0 {
@@ -108,12 +108,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 
 func testImageToCache(t *testing.T) {
 	downloads := 0
-	SetDownloadMock(func(src, dst string) error {
-		// Sleep for a second to assure locking must have occurred.
-		time.Sleep(time.Second)
-		downloads++
-		return CreateDstDownloadMock(src, dst)
-	})
+	SetDownloadMock(mockSleepDownload(&downloads))
 
 	checkImageExistsInCache = func(img string) bool { return downloads > 0 }
 
@@ -138,12 +133,7 @@ func testImageToCache(t *testing.T) {
 
 func testImageToDaemon(t *testing.T) {
 	downloads := 0
-	SetDownloadMock(func(src, dst string) error {
-		// Sleep for a second to assure locking must have occurred.
-		time.Sleep(time.Second)
-		downloads++
-		return CreateDstDownloadMock(src, dst)
-	})
+	SetDownloadMock(mockSleepDownload(&downloads))
 
 	checkImageExistsInCache = func(img string) bool { return downloads > 0 }
 
