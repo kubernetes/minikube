@@ -435,8 +435,8 @@ func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 	mctx, cancel := context.WithTimeout(ctx, Seconds(120))
 	defer cancel()
 
-	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
-	// we should be able to get minikube status with a bash which evaled docker-env
+	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" podman-env) && "+Target()+" status -p "+profile)
+	// we should be able to get minikube status with a bash which evaluated podman-env
 	rr, err := Run(t, c)
 
 	if mctx.Err() == context.DeadlineExceeded {
