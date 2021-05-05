@@ -32,9 +32,9 @@ if [ "${ghprbPullId}" == "master" ]; then
 fi
 
 jobs=(
-     # 'HyperKit_Functional_macOS'
-     'Hyper-V_Windows'
-     'VirtualBox_Linux'
+     'Hyperkit_macOS'
+     # 'Hyper-V_Windows'
+     # 'VirtualBox_Linux'
      # 'VirtualBox_macOS'
      'VirtualBox_Windows'
      # 'KVM-GPU_Linux' - Disabled
@@ -48,7 +48,7 @@ jobs=(
      'Docker_Linux_crio_arm64'
      'Docker_Linux_containerd'
      'Docker_Linux_crio'
-     # 'Docker_macOS'
+     'Docker_macOS'
      'Docker_Windows'
      # 'Podman_Linux'
      'Docker_Cloud_Shell'

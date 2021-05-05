@@ -26,24 +26,37 @@
 
 set -e
 
-OS_ARCH="darwin-amd64"
+ARCH="amd64"
+OS="darwin"
 VM_DRIVER="docker"
 JOB_NAME="Docker_macOS"
-EXTRA_START_ARGS=""
-EXPECTED_DEFAULT_DRIVER="hyperkit"
+EXTRA_TEST_ARGS=""
+EXPECTED_DEFAULT_DRIVER="docker"
 
 
 # fix mac os as a service on mac os
 # https://github.com/docker/for-mac/issues/882#issuecomment-506372814
-osascript -e 'quit app "Docker"';
-sudo /Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
-# repeating without sudo because  https://github.com/docker/for-mac/issues/882#issuecomment-516946766
-/Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
-osascript -e 'quit app "Docker"'; /Applications/Docker.app/Contents/MacOS/Docker --unattended &; while [ -z "$(docker info 2> /dev/null )" ]; do printf "."; sleep 1; done; echo "" || true
+#osascript -e 'quit app "Docker"'
+#/Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
+#osascript -e 'quit app "Docker"'
+#/Applications/Docker.app/Contents/MacOS/Docker --unattended &
+
+begin=$(date +%s)
+while [ -z "$(docker info 2> /dev/null )" ];
+do
+  printf "."
+  sleep 1
+  now=$(date +%s)
+  elapsed=$((now-begun))
+  if [ $elapsed -ge 120 ];
+  then
+    break
+  fi
+done
 
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "FAILED TO INSTALL CLEANUP"
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
-source common.sh
+source run_tests.sh
