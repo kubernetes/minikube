@@ -56,6 +56,10 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		t.Skip("skipping: mount broken on windows: https://github.com/kubernetes/minikube/issues/8303")
 	}
 
+	if GithubActionRunner() && PodmanDriver() {
+		t.Skip("skipping: https://github.com/kubernetes/minikube/issues/11293")
+	}
+
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	defer func() { // clean up tempdir
 		err := os.RemoveAll(tempDir)

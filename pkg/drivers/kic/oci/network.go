@@ -71,13 +71,6 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 
 // containerGatewayIP gets the default gateway ip for the container
 func containerGatewayIP(ociBin string, containerName string) (net.IP, error) {
-	rr1, err1 := runCmd(exec.Command(ociBin, "container", "inspect", containerName))
-	if err1 != nil {
-		return nil, errors.Wrapf(err1, "inspect gateway")
-	}
-	klog.Infof("[zz] %q", strings.TrimSpace(rr1.Stdout.String()))
-
-
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect gateway")

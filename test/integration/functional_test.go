@@ -93,7 +93,6 @@ func TestFunctional(t *testing.T) {
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
 			{"ComponentHealth", validateComponentHealth},
-			{"MountCmd", validateMountCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -137,6 +136,7 @@ func TestFunctional(t *testing.T) {
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
+			{"MountCmd", validateMountCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
