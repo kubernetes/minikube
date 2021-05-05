@@ -90,7 +90,7 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 	if gatewayIP != "" {
 		return gatewayIP, nil
 	}
-	return "", fmt.Errorf("gateway IP is empty for container %s", containerName)
+	return "", nil
 }
 
 // containerGatewayIP gets the default gateway ip for the container
