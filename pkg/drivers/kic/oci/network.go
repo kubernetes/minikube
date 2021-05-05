@@ -75,6 +75,7 @@ func containerGatewayIP(ociBin string, containerName string) (net.IP, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect gateway")
 	}
+	klog.Infof("[zz] %q", strings.TrimSpace(rr.Stdout.String()))
 	ip := net.ParseIP(strings.TrimSpace(rr.Stdout.String()))
 	return ip, nil
 }
