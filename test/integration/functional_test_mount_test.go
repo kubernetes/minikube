@@ -79,7 +79,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		if t.Failed() {
 			t.Logf("%q failed, getting debug info...", t.Name())
 			b, _ := ioutil.ReadAll(ss.Stdout)
-			t.Log("mount output: ", b)
+			t.Log("mount output: ", string(b))
 
 			rr, err := Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"))
 			if err != nil {
