@@ -69,7 +69,6 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	return ip, nil
 }
 
-
 // gatewayIP inspects oci container to find a gateway IP string
 func gatewayIP(ociBin, containerName string) (string, error) {
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
@@ -166,7 +165,7 @@ func podmanContainerIP(ociBin string, name string) (string, string, error) {
 		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
 	}
 	output := strings.TrimSpace(rr.Stdout.String())
-	if err == nil && output == "" { // podman returns empty for 127.0.0.1
+	if output == "" { // podman returns empty for 127.0.0.1
 		// check network, if the ip address is missing
 		ipv4, ipv6, err := dockerContainerIP(ociBin, name)
 		if err == nil {
