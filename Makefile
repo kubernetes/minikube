@@ -100,6 +100,9 @@ GVISOR_TAG ?= latest
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= 1.13
 
+# prow-test tag to push changes to
+PROW_TEST_TAG ?= v0.0.1
+
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
 STORAGE_PROVISIONER_TAG ?= v5
@@ -855,7 +858,7 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serv
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
-.PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work arround for not passing the whole repo as docker context
+.PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work around for not passing the whole repo as docker context
 deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
@@ -877,6 +880,15 @@ auto-pause-hook-image: deploy/addons/auto-pause/auto-pause-hook ## Build docker 
 push-auto-pause-hook-image: auto-pause-hook-image
 	docker login docker.io/azhao155
 	$(MAKE) push-docker IMAGE=docker.io/azhao155/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG)
+
+.PHONY: prow-test-image
+prow-test-image:
+	docker build --build-arg "GO_VERSION=$(GO_VERSION)"  -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) ./deploy/prow
+
+.PHONY: push-prow-test-image
+push-prow-test-image: prow-test-image
+	docker login gcr.io/k8s-minikube
+	$(MAKE) push-docker IMAGE=$(REGISTRY)/prow-test:$(PROW_TEST_TAG)
 
 .PHONY: out/performance-bot
 out/performance-bot:

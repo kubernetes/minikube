@@ -78,9 +78,9 @@ spec:
           command:
           - /bin/olm
           args:
-          - -namespace
+          - --namespace
           - $(OPERATOR_NAMESPACE)
-          - -writeStatusName
+          - --writeStatusName
           - ""
           image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
           imagePullPolicy: IfNotPresent
@@ -113,7 +113,7 @@ spec:
           
       
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -143,6 +143,8 @@ spec:
           - '-namespace'
           - olm
           - -configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
+          - -util-image
+          -  {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
           image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
           imagePullPolicy: IfNotPresent
           ports:
@@ -168,7 +170,7 @@ spec:
           
       
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -222,7 +224,7 @@ metadata:
   name: packageserver
   namespace: olm
   labels:
-    olm.version: 0.14.1
+    olm.version: 0.17.0
 spec:
   displayName: Package Server
   description: Represents an Operator package that is available from a given CatalogSource which will resolve to a ClusterServiceVersion.
@@ -297,7 +299,7 @@ spec:
             spec:
               serviceAccountName: olm-operator-serviceaccount
               nodeSelector:
-                beta.kubernetes.io/os: linux
+                kubernetes.io/os: linux
               containers:
               - name: packageserver
                 command:
@@ -308,7 +310,7 @@ spec:
                 - --global-namespace
                 - olm
                 image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
-                imagePullPolicy: IfNotPresent
+                imagePullPolicy: Always
                 ports:
                 - containerPort: 5443
                 livenessProbe:
@@ -326,8 +328,16 @@ spec:
                   requests:
                     cpu: 10m
                     memory: 50Mi
+                securityContext:
+                  runAsUser: 1000
+                volumeMounts:
+                - name: tmpfs
+                  mountPath: /tmp
+              volumes:
+              - name: tmpfs
+                emptyDir: {}
   maturity: alpha
-  version: 0.14.1
+  version: 0.17.0
   apiservicedefinitions:
     owned:
     - group: packages.operators.coreos.com

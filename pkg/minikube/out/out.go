@@ -113,15 +113,28 @@ func Styled(st style.Enum, format string, a ...V) {
 	}
 }
 
-// Boxed writes a stylized and templated message in a box to stdout
-func Boxed(format string, a ...V) {
+func boxedCommon(printFunc func(format string, a ...interface{}), format string, a ...V) {
 	str := Sprintf(style.None, format, a...)
 	str = strings.TrimSpace(str)
 	box := box.New(box.Config{Py: 1, Px: 4, Type: "Round"})
 	if useColor {
 		box.Config.Color = "Red"
 	}
-	box.Println("", str)
+	str = box.String("", str)
+	lines := strings.Split(str, "\n")
+	for _, line := range lines {
+		printFunc(line + "\n")
+	}
+}
+
+// Boxed writes a stylized and templated message in a box to stdout
+func Boxed(format string, a ...V) {
+	boxedCommon(String, format, a...)
+}
+
+// BoxedErr writes a stylized and templated message in a box to stderr
+func BoxedErr(format string, a ...V) {
+	boxedCommon(Err, format, a...)
 }
 
 // Sprintf is used for returning the string (doesn't write anything)
@@ -402,7 +415,7 @@ func displayGitHubIssueMessage() {
 	msg += Sprintf(style.Empty, "Please attach the following file to the GitHub issue:")
 	msg += Sprintf(style.Empty, "- {{.logPath}}", V{"logPath": logPath})
 
-	Boxed(msg)
+	BoxedErr(msg)
 }
 
 // applyTmpl applies formatting
