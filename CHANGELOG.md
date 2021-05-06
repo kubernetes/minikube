@@ -1,5 +1,35 @@
 # Release Notes
 
+## Version 1.20.0 - 2021-05-06
+
+Feature:
+* Add --file flag to 'minikube logs' to automatically put logs into a file. [#11240](https://github.com/kubernetes/minikube/pull/11240)
+
+Minor Improvements:
+* Batch logs output to speedup `minikube logs` command [#11274](https://github.com/kubernetes/minikube/pull/11274)
+* warn about performance for certain versions of kubernetes [#11217](https://github.com/kubernetes/minikube/pull/11217)
+
+Version Upgrades:
+* Update olm addon to v0.17.0 [#10947](https://github.com/kubernetes/minikube/pull/10947)
+* Update newest supported Kubernetes version to v1.22.0-alpha.1 [#11287](https://github.com/kubernetes/minikube/pull/11287)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andriy Dzikh
+- Daehyeok Mun
+- Ilya Zuyev
+- Medya Ghazizadeh
+- Predrag Rogic
+- Sharif Elgamal
+- Steven Powell
+- Tomas Kral
+- Yanshu
+- zhangshj
+
+
 ## Version 1.20.0-beta.0 - 2021-04-30
 
 Features:
