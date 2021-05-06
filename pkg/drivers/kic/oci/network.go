@@ -92,9 +92,8 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 		if gatewayIP := strings.TrimSpace(rr.Stdout.String()); gatewayIP != "" {
 			return gatewayIP, nil
 		}
-		klog.Infof("Couldn't find gateway for container %s", containerName)
 	}
-
+	klog.Infof("Couldn't find gateway for container %s", containerName)
 	return "", nil
 }
 
