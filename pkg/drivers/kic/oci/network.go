@@ -87,7 +87,7 @@ func gatewayIP(ociBin, containerName, defNetwork string) (string, error) {
 
 	// https://github.com/kubernetes/minikube/issues/11293
 	// need to check nested network
-	format := fmt.Sprintf("{{(index .NetworkSettings.Networks %s).Gateway}}", containerName)
+	format := fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", containerName)
 	rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
 	if err != nil {
 		return "", errors.Wrapf(err, "inspect gateway")
@@ -96,7 +96,7 @@ func gatewayIP(ociBin, containerName, defNetwork string) (string, error) {
 		return gatewayIP, nil
 	}
 
-	format = fmt.Sprintf("{{(index .NetworkSettings.Networks %s).Gateway}}", defNetwork)
+	format = fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", defNetwork)
 	rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
 	if err != nil {
 		return "", errors.Wrapf(err, "inspect gateway")
