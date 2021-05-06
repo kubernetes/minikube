@@ -462,7 +462,7 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 
 // validateOlmAddon tests the OLM addon
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
-	t.Skip("skipping till this issue is fixed https://github.com/kubernetes/minikube/issues/11311")
+	t.Skip("skipping olm test till this issue is fixed https://github.com/kubernetes/minikube/issues/11311")
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)
