@@ -139,6 +139,9 @@ validateConfigCmd asserts basic "config" command functionality
 #### validateLogsCmd
 validateLogsCmd asserts basic "logs" command functionality
 
+#### validateLogsFileCmd
+validateLogsFileCmd asserts "logs --file" command functionality
+
 #### validateProfileCmd
 validateProfileCmd asserts "profile" command functionality
 
@@ -354,4 +357,4 @@ TestKubernetesUpgrade upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 TestMissingContainerUpgrade tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 113
+TEST COUNT: 114
