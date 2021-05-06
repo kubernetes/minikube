@@ -83,22 +83,16 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 	// need to check nested network
 	// check .NetworkSettings.Networks["cluster-name"].Gateway and then
 	// .NetworkSettings.Networks["bridge"|"podman"].Gateway
-	format := fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", containerName)
-	rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
-	if err != nil {
-		return "", errors.Wrapf(err, "inspect gateway")
-	}
-	if gatewayIP := strings.TrimSpace(rr.Stdout.String()); gatewayIP != "" {
-		return gatewayIP, nil
-	}
-
-	format = fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", defaultBridgeName(ociBin))
-	rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
-	if err != nil {
-		return "", errors.Wrapf(err, "inspect gateway")
-	}
-	if gatewayIP := strings.TrimSpace(rr.Stdout.String()); gatewayIP != "" {
-		return gatewayIP, nil
+	for _, network := range []string{containerName, defaultBridgeName(ociBin)} {
+		format := fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", network)
+		rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
+		if err != nil {
+			return "", errors.Wrapf(err, "inspect gateway")
+		}
+		if gatewayIP := strings.TrimSpace(rr.Stdout.String()); gatewayIP != "" {
+			return gatewayIP, nil
+		}
+		klog.Infof("Couldn't find gateway for container %s", containerName)
 	}
 
 	return "", nil
