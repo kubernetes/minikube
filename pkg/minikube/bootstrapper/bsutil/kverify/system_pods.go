@@ -20,6 +20,7 @@ package kverify
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -150,7 +151,7 @@ func podStatusMsg(pod core.Pod) string {
 func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner) {
 	problems := logs.FindProblems(r, bs, cfg, cr)
 	if len(problems) > 0 {
-		logs.OutputProblems(problems, 5)
+		logs.OutputProblems(problems, 5, os.Stderr)
 		time.Sleep(kconst.APICallRetryInterval * 15)
 	}
 }
