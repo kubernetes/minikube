@@ -69,7 +69,7 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 	})
 }
 
-// HandleDownloadOnly caches appropariate binaries and images
+// handleDownloadOnly caches appropariate binaries and images
 func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
@@ -102,7 +102,7 @@ func CacheKubectlBinary(k8sVersion string) (string, error) {
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
 func doCacheBinaries(k8sVersion string) error {
-	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), constants.KubernetesReleaseBinaries)
 }
 
 // beginDownloadKicBaseImage downloads the kic image
@@ -191,7 +191,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 	klog.Info("Successfully downloaded all kic artifacts")
 }
 
-// WaitCacheRequiredImages blocks until the required images are all cached.
+// waitCacheRequiredImages blocks until the required images are all cached.
 func waitCacheRequiredImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return

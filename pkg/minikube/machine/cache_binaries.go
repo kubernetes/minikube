@@ -28,12 +28,28 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 )
 
+// isExcluded returns whether `binary` is expected to be excluded, based on `excludedBinaries`.
+func isExcluded(binary string, excludedBinaries []string) bool {
+	if excludedBinaries == nil {
+		return false
+	}
+	for _, excludedBinary := range excludedBinaries {
+		if binary == excludedBinary {
+			return true
+		}
+	}
+	return false
+}
+
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
-func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) error {
+func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, excludeBinaries []string) error {
 	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
 
 	var g errgroup.Group
 	for _, bin := range binaries {
+		if isExcluded(bin, excludeBinaries) {
+			continue
+		}
 		bin := bin // https://golang.org/doc/faq#closures_and_goroutines
 		g.Go(func() error {
 			if _, err := download.Binary(bin, version, "linux", runtime.GOARCH); err != nil {

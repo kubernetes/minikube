@@ -121,7 +121,7 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	for _, test := range tc {
 		t.Run(test.version, func(t *testing.T) {
 			os.Setenv("MINIKUBE_HOME", test.minikubeHome)
-			err := CacheBinariesForBootstrapper(test.version, test.clusterBootstrapper)
+			err := CacheBinariesForBootstrapper(test.version, test.clusterBootstrapper, nil)
 			if err != nil && !test.err {
 				t.Fatalf("Got unexpected error %v", err)
 			}
