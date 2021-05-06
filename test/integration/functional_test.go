@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -1555,7 +1556,22 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	// docs: Run `minikube cp ...` to copy a file to the minikube node
 	// docs: Run `minikube ssh sudo cat ...` to print out the copied file within minikube
 	// docs: make sure the file is correctly copied
-	testCpCmd(ctx, t, profile, "")
+
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	// copy to node
+	testCpCmd(ctx, t, profile, "", srcPath, "", dstPath)
+
+	// copy from node
+	tmpDir, err := ioutil.TempDir("", "mk_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	tmpPath := filepath.Join(tmpDir, "cp-test.txt")
+	testCpCmd(ctx, t, profile, profile, dstPath, "", tmpPath)
 }
 
 // validateMySQL validates a minimalist MySQL deployment
