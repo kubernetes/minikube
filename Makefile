@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.20.0-beta.0
+ISO_VERSION ?= v1.19.0-1620080100-10506
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -84,7 +84,12 @@ GOARCH ?= $(shell go env GOARCH)
 GOARM ?= 7 # the default is 5
 GOPATH ?= $(shell go env GOPATH)
 BUILD_DIR ?= ./out
-$(shell mkdir -p $(BUILD_DIR))
+IGNORED := $(shell mkdir -p $(BUILD_DIR))
+BUILDROOT_DIR ?= $(BUILD_DIR)/buildroot
+# Re-attach case-sensitive buildroot sparseimage in case it got detached by e.g. a reboot
+ifeq ($(GOOS),darwin)
+	IGNORED := $(shell test ! -e $(BUILDROOT_DIR) -a -f $(BUILDROOT_DIR).sparseimage && hdiutil attach -mountpoint $(BUILDROOT_DIR) $(BUILDROOT_DIR).sparseimage)
+endif
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
 # Use system python if it exists, otherwise use Docker.
@@ -262,11 +267,30 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
+.PHONY: case-sensitive-buildroot-dir
+case-sensitive-buildroot-dir:
+ifeq ($(GOOS),darwin)
+	test ! -f $(BUILDROOT_DIR).sparseimage
+	mkdir -p $(BUILDROOT_DIR)
+	mv $(BUILDROOT_DIR) $(BUILDROOT_DIR).orig
+	hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 100G -volname buildroot $(BUILDROOT_DIR).sparseimage
+	hdiutil attach -mountpoint $(BUILDROOT_DIR) $(BUILDROOT_DIR).sparseimage
+	touch $(BUILDROOT_DIR).orig/ignore-me
+	mv $(BUILDROOT_DIR).orig/* $(BUILDROOT_DIR)
+	rm -rf $(BUILDROOT_DIR).orig
+else
+	@echo "The 'case-sensitive-buildroot-dir' target is not supported on $(GOOS)"
+	exit 1
+endif
+
 minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
-	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
-		mkdir -p $(BUILD_DIR); \
-		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+	mkdir -p $(BUILDROOT_DIR)
+	echo yes > $(BUILDROOT_DIR)/.case-sensitive
+	echo no > $(BUILDROOT_DIR)/.CASE-sensitive
+	if [ "$$(cat $(BUILDROOT_DIR)/.case-sensitive)" != "yes" ]; then \
+		echo "Buildroot directory $(BUILDROOT_DIR) is not a case-sensitive filesystem."; \
+		echo "On darwin 'make case-sensitive-buildroot-dir' will move the buildroot dir to a case-sensitive sparseimage."; \
+		exit 1; \
 	fi;
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
 	mkdir -p $(BUILD_DIR)/buildroot/output/build
@@ -278,15 +302,15 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
 iso-menuconfig: ## Configure buildroot configuration
-	$(MAKE) -C $(BUILD_DIR)/buildroot menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot savedefconfig
+	$(MAKE) -C $(BUILDROOT_DIR) menuconfig
+	$(MAKE) -C $(BUILDROOT_DIR) savedefconfig
 
 # Change the kernel configuration for the minikube ISO
 .PHONY: linux-menuconfig
 linux-menuconfig:  ## Configure Linux kernel configuration
-	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ savedefconfig
-	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux_defconfig
+	$(MAKE) -C $(BUILDROOT_DIR)/output/build/linux-$(KERNEL_VERSION)/ menuconfig
+	$(MAKE) -C $(BUILDROOT_DIR)/output/build/linux-$(KERNEL_VERSION)/ savedefconfig
+	cp $(BUILDROOT_DIR)/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux_defconfig
 
 out/minikube.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
@@ -447,6 +471,12 @@ checksum: ## Generate checksums
 
 .PHONY: clean
 clean: ## Clean build
+ifeq ($(GOOS),darwin)
+	if [ -d $(BUILDROOT_DIR) -a -f $(BUILDROOT_DIR).sparseimage ]; then \
+		hdiutil detach -force $(BUILDROOT_DIR); \
+		rm -f $(BUILDROOT_DIR).sparseimage; \
+	fi
+endif
 	rm -rf $(BUILD_DIR)
 	rm -f pkg/minikube/assets/assets.go
 	rm -f pkg/minikube/translate/translations.go
@@ -907,7 +937,6 @@ compare: out/mkcmp out/minikube
 	mv out/minikube out/master.minikube
 	git checkout $(CURRENT_GIT_BRANCH)
 	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
-	
 
 .PHONY: help
 help:
