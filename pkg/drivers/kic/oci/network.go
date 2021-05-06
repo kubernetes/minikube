@@ -70,13 +70,7 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 }
 
 // gatewayIP inspects oci container to find a gateway IP string
-func gatewayIP(ociBin, containerName, defNetwork string) (string, error) {
-	rr1, err1 := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings}}", containerName))
-	if err1 != nil {
-		return "", errors.Wrapf(err1, "inspect gateway")
-	}
-	klog.Infof("[zz] network settings: %q", rr1.Stdout.String())
-
+func gatewayIP(ociBin, containerName string) (string, error) {
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", "{{.NetworkSettings.Gateway}}", containerName))
 	if err != nil {
 		return "", errors.Wrapf(err, "inspect gateway")
@@ -87,6 +81,8 @@ func gatewayIP(ociBin, containerName, defNetwork string) (string, error) {
 
 	// https://github.com/kubernetes/minikube/issues/11293
 	// need to check nested network
+	// check .NetworkSettings.Networks["cluster-name"].Gateway and then
+	// .NetworkSettings.Networks["bridge"|"podman"].Gateway
 	format := fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", containerName)
 	rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
 	if err != nil {
@@ -96,7 +92,7 @@ func gatewayIP(ociBin, containerName, defNetwork string) (string, error) {
 		return gatewayIP, nil
 	}
 
-	format = fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", defNetwork)
+	format = fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", defaultBridgeName(ociBin))
 	rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
 	if err != nil {
 		return "", errors.Wrapf(err, "inspect gateway")
@@ -110,7 +106,7 @@ func gatewayIP(ociBin, containerName, defNetwork string) (string, error) {
 
 // containerGatewayIP gets the default gateway ip for the container
 func containerGatewayIP(ociBin string, containerName string) (net.IP, error) {
-	gatewayIP, err := gatewayIP(ociBin, containerName, ociBin)
+	gatewayIP, err := gatewayIP(ociBin, containerName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect gateway")
 	}
