@@ -26,7 +26,7 @@
 
 set -e
 OS_ARCH="darwin-amd64"
-VM_DRIVER="virtualbox"
+DRIVER="virtualbox"
 JOB_NAME="VirtualBox_macOS"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
 # hyperkit behaves better, so it has higher precedence.
@@ -39,4 +39,4 @@ install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh  || echo "
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
-source common.sh
+source run_tests.sh

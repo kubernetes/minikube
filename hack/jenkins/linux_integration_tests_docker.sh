@@ -26,7 +26,7 @@
 set -e
 
 OS_ARCH="linux-amd64"
-VM_DRIVER="docker"
+DRIVER="docker"
 JOB_NAME="Docker_Linux"
 CONTAINER_RUNTIME="docker"
 
@@ -36,4 +36,4 @@ sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboo
 # removing possible left over docker containers from previous runs
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
 
-source ./common.sh
+source ./run_tests.sh

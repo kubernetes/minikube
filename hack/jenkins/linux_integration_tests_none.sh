@@ -27,7 +27,7 @@
 set -e
 
 OS_ARCH="linux-amd64"
-VM_DRIVER="none"
+DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
 EXPECTED_DEFAULT_DRIVER="kvm2"
@@ -71,4 +71,4 @@ sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboo
 # We need this for reasons now
 sudo sysctl fs.protected_regular=0
 
-source ./common.sh
+source ./run_tests.sh

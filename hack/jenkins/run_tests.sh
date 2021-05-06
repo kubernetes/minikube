@@ -20,7 +20,7 @@
 # The script expects the following env variables:
 # OS: The operating system
 # ARCH: The architecture
-# VM_DRIVER: the driver to use for the test
+# DRIVER: the driver to use for the test
 # CONTAINER_RUNTIME: the container runtime to use for the test
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_TEST_ARGS: additional flags to pass into go test
@@ -28,7 +28,7 @@
 
 readonly OS_ARCH="${OS}-${ARCH}"
 readonly TEST_ROOT="${HOME}/minikube-integration"
-readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${CONTAINER_RUNTIME}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
+readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${DRIVER}-${CONTAINER_RUNTIME}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
 
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
@@ -45,7 +45,7 @@ else
 fi
 
 # installing golang so we could do go get for gopogh
-sudo ARCH="$ARCH"./installers/check_install_golang.sh "1.16" "/usr/local" || true
+sudo ARCH="$ARCH"./installers/check_install_golang.sh "1.16.1" "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh
@@ -58,7 +58,7 @@ echo ">> Starting at $(date)"
 echo ""
 echo "arch:      ${OS_ARCH}"
 echo "build:     ${MINIKUBE_LOCATION}"
-echo "driver:    ${VM_DRIVER}"
+echo "driver:    ${DRIVER}"
 echo "runtime:   ${CONTAINER_RUNTIME}"
 echo "job:       ${JOB_NAME}"
 echo "test home: ${TEST_HOME}"
@@ -72,7 +72,7 @@ echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"
 echo "go:        $(go version || true)"
 
 
-case "${VM_DRIVER}" in
+case "${DRIVER}" in
   kvm2)
     echo "virsh:     $(virsh --version)"
   ;;
@@ -217,7 +217,7 @@ function cleanup_procs() {
     done
   fi
 
-  if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
+  if [[ "${DRIVER}" == "hyperkit" ]]; then
     if [[ -e out/docker-machine-driver-hyperkit ]]; then
       sudo chown root:wheel out/docker-machine-driver-hyperkit || true
       sudo chmod u+s out/docker-machine-driver-hyperkit || true
@@ -315,7 +315,7 @@ then
 fi
 
 ${SUDO_PREFIX}${E2E_BIN} \
-  -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
+  -minikube-start-args="--driver=${DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=${TIMEOUT} -test.v \
   ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
@@ -333,14 +333,12 @@ else
   echo "minikube: FAIL"
 fi
 
-## caclucate the time took to finish running e2e binary test.
+# calculate the time took to finish running e2e binary test.
 e2e_end_time="$(date -u +%s)"
 elapsed=$(($e2e_end_time-$e2e_start_time))
 min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
-
-
 
 echo ">> Attmpting to convert test logs to json"
 if test -f "${JSON_OUT}"; then
@@ -349,13 +347,14 @@ fi
 
 touch "${JSON_OUT}"
 
+  
 # Generate JSON output
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 
 if ! type "jq" > /dev/null; then
 echo ">> Installing jq"
-    if [ "$(uname)" != "Darwin" ]; then
+    if [ "${OS}" != "darwin" ]; then
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
     else
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
@@ -384,14 +383,27 @@ if [ "$status" = "failure" ]; then
 fi
 echo "$description"
 
-
-REPORTS_PATH=test_reports
-mkdir -p "$REPORTS_PATH"
-cp "${TEST_OUT}" "$REPORTS_PATH/out.txt"
-cp "${JSON_OUT}" "$REPORTS_PATH/out.json"
-cp "${HTML_OUT}" "$REPORTS_PATH/out.html"
-cp "${SUMMARY_OUT}" "$REPORTS_PATH/summary.txt"
-
+if [ -z "${EXTERNAL}" ]; then
+  # If we're already in GCP, then upload results to GCS directly
+  SHORT_COMMIT=${COMMIT:0:7}
+  JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
+  echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
+  gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
+  echo ">> uploading ${JSON_OUT}"
+  gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
+  echo ">> uploading ${HTML_OUT}"
+  gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
+  echo ">> uploading ${SUMMARY_OUT}"
+  gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
+else 
+  # Otherwise, put the results in a predictable spot so the upload job can find them
+  REPORTS_PATH=test_reports
+  mkdir -p "$REPORTS_PATH"
+  cp "${TEST_OUT}" "$REPORTS_PATH/out.txt"
+  cp "${JSON_OUT}" "$REPORTS_PATH/out.json"
+  cp "${HTML_OUT}" "$REPORTS_PATH/out.html"
+  cp "${SUMMARY_OUT}" "$REPORTS_PATH/summary.txt"
+fi
 
 echo ">> Cleaning up after ourselves ..."
 timeout 3m ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
@@ -400,6 +412,9 @@ cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
+${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
+${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
+${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
 
 rmdir "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"

@@ -28,11 +28,11 @@ set -e
 
 ARCH="amd64"
 OS="darwin"
-VM_DRIVER="docker"
+DRIVER="docker"
 JOB_NAME="Docker_macOS"
 EXTRA_TEST_ARGS=""
 EXPECTED_DEFAULT_DRIVER="docker"
-
+EXTERNAL="yes"
 
 # fix mac os as a service on mac os
 # https://github.com/docker/for-mac/issues/882#issuecomment-506372814
