@@ -166,6 +166,9 @@ func checkDockerVersion(o string) registry.State {
 		}
 	}
 
+	hintInstallOfficial := fmt.Sprintf("Install the official release of %s (Minimum recommended version is %2d.%02d.%d, current version is %s)",
+		driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2], parts[1])
+
 	p := strings.SplitN(parts[1], ".", 3)
 	switch l := len(p); l {
 	case 2:
@@ -174,12 +177,13 @@ func checkDockerVersion(o string) registry.State {
 		// remove postfix string for unstable(test/nightly) channel. https://docs.docker.com/engine/install/
 		p[2] = strings.SplitN(p[2], "-", 2)[0]
 	default:
+		// When Docker (Moby) was installed from the source code, the version string is typically set to "dev", or "library-import".
 		return registry.State{
-			Reason:    "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
-			Error:     errors.Errorf("expected version format is \"<year>.<month>.{patch}\". but got %s", parts[1]),
-			Installed: true,
-			Healthy:   false,
-			Doc:       docURL,
+			Installed:        true,
+			Healthy:          true,
+			NeedsImprovement: true,
+			Fix:              hintInstallOfficial,
+			Doc:              docURL,
 		}
 	}
 
@@ -187,11 +191,11 @@ func checkDockerVersion(o string) registry.State {
 		k, err := strconv.Atoi(s)
 		if err != nil {
 			return registry.State{
-				Reason:    "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
-				Error:     errors.Wrap(err, "docker version"),
-				Installed: true,
-				Healthy:   false,
-				Doc:       docURL,
+				Installed:        true,
+				Healthy:          true,
+				NeedsImprovement: true,
+				Fix:              hintInstallOfficial,
+				Doc:              docURL,
 			}
 		}
 
