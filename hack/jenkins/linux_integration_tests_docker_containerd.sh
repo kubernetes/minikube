@@ -25,7 +25,8 @@
 
 set -e
 
-OS_ARCH="linux-amd64"
+OS="linux"
+ARCH="amd64"
 DRIVER="docker"
 JOB_NAME="Docker_Linux_containerd"
 CONTAINER_RUNTIME="containerd"

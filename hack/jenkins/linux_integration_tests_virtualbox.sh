@@ -25,7 +25,8 @@
 
 set -e
 
-OS_ARCH="linux-amd64"
+OS="linux"
+ARCH="amd64"
 DRIVER="virtualbox"
 JOB_NAME="VirtualBox_Linux"
 EXTRA_TEST_ARGS=""

@@ -24,8 +24,8 @@
 # access_token: The Github API access token. Injected by the Jenkins credential provider.
 
 
-set -e
-OS_ARCH="darwin-amd64"
+OS="darwin"
+ARCH="amd64"
 DRIVER="virtualbox"
 JOB_NAME="VirtualBox_macOS"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"

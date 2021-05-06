@@ -26,7 +26,8 @@
 
 set -e
 
-OS_ARCH="linux-amd64"
+OS="linux"
+ARCH="amd64"
 DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"

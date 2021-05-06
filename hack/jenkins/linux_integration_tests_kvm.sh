@@ -25,7 +25,8 @@
 
 set -e
 
-OS_ARCH="linux-amd64"
+OS="linux"
+ARCH="amd64"
 DRIVER="kvm2"
 JOB_NAME="KVM_Linux"
 EXPECTED_DEFAULT_DRIVER="kvm2"
