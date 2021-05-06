@@ -84,17 +84,25 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 	// check .NetworkSettings.Networks["cluster-name"].Gateway and then
 	// .NetworkSettings.Networks["bridge"|"podman"].Gateway
 	for _, network := range []string{containerName, defaultBridgeName(ociBin)} {
-		format := fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", network)
-		rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, containerName))
+		gatewayIP, err := networkGateway(ociBin, containerName, network)
 		if err != nil {
-			return "", errors.Wrapf(err, "inspect gateway")
+			return "", err
 		}
-		if gatewayIP := strings.TrimSpace(rr.Stdout.String()); gatewayIP != "" {
+		if gatewayIP != "" {
 			return gatewayIP, nil
 		}
 	}
 	klog.Infof("Couldn't find gateway for container %s", containerName)
 	return "", nil
+}
+
+func networkGateway(ociBin, container, network string) (string, error) {
+	format := fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", network)
+	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, container))
+	if err != nil {
+		return "", errors.Wrapf(err, "inspect gateway")
+	}
+	return strings.TrimSpace(rr.Stdout.String()), nil
 }
 
 // containerGatewayIP gets the default gateway ip for the container
