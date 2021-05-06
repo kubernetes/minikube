@@ -36,4 +36,4 @@ DRIVER="docker" \
 JOB_NAME="$JOB_NAME" \
 CONTAINER_RUNTIME="crio" \
 EXTERNAL="yes" \
-source ./run_tests.sh
+source ./common.sh

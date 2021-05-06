@@ -31,7 +31,7 @@ gcloud cloud-shell ssh --authorize-session << EOF
  CONTAINER_RUNTIME="docker"
  EXTRA_TEST_ARGS="-test.run (TestFunctional|TestAddons)"
 
- # Need to set these in cloud-shell or will not be present in run_tests.sh
+ # Need to set these in cloud-shell or will not be present in common.sh
  MINIKUBE_LOCATION=$MINIKUBE_LOCATION
  COMMIT=$COMMIT
  EXTRA_BUILD_ARGS=$EXTRA_BUILD_ARGS
@@ -42,7 +42,7 @@ gcloud cloud-shell ssh --authorize-session << EOF
 
  gsutil -m cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/installers .
  chmod +x ./installers/*.sh
- gsutil -m cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/run_tests.sh .
- chmod +x ./run_tests.sh
- source ./run_tests.sh
+ gsutil -m cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/common.sh .
+ chmod +x ./common.sh
+ source ./common.sh
 EOF

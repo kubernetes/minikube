@@ -36,4 +36,4 @@ sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboo
 # remove possible left over podman containers
 sudo podman rm -f -v $(sudo podman ps -aq) || true
 
-source ./run_tests.sh
+source ./common.sh

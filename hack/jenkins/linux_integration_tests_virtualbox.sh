@@ -34,4 +34,4 @@ EXPECTED_DEFAULT_DRIVER="kvm2"
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
-source ./run_tests.sh 2h
+source ./common.sh 2h

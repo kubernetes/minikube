@@ -71,4 +71,4 @@ sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboo
 # We need this for reasons now
 sudo sysctl fs.protected_regular=0
 
-source ./run_tests.sh
+source ./common.sh

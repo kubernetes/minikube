@@ -36,4 +36,4 @@ DRIVER="docker" \
 JOB_NAME="$JOB_NAME" \
 CONTAINER_RUNTIME="docker" \
 EXTERNAL="yes" \
-source ./run_tests.sh
+source ./common.sh
