@@ -26,8 +26,9 @@
 
 set -e
 
-OS_ARCH="linux-amd64"
-VM_DRIVER="none"
+OS="linux"
+ARCH="amd64"
+DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
 EXPECTED_DEFAULT_DRIVER="kvm2"
