@@ -177,7 +177,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if existing != nil {
-		upgradeExistingConfig(existing)
+		upgradeExistingConfig(cmd, existing)
 	} else {
 		validateProfileName()
 	}
