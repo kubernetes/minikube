@@ -101,6 +101,7 @@ func withinUnitTest() bool {
 	return flag.Lookup("test.v") != nil || strings.HasSuffix(os.Args[0], "test")
 }
 
+// lockDownload locks `file` if possible and returns a releaser that must be called to release the lock.
 func lockDownload(file string) (mutex.Releaser, error) {
 	type retPair struct {
 		mutex.Releaser
