@@ -24,11 +24,9 @@
 set -x
 
 # upload results to GCS
-if [[ -z "${FILE_NAME}" ]]; then
-	FILE_NAME=${UPSTREAM_JOB}
-fi
+UPSTREAM_JOB=${UPSTREAM_JOB%"_integration"}
 
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${FILE_NAME}"
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${UPSTREAM_JOB}"
 
 ARTIFACTS=artifacts/test_reports
 
