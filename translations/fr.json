@@ -277,7 +277,7 @@
 	"Generate command completion for a shell": "",
 	"Generate unable to parse disk size '{{.diskSize}}': {{.error}}": "",
 	"Generate unable to parse memory '{{.memory}}': {{.error}}": "",
-	"Generating certificates and keys ...": "Générer des certificats et des clés ...",
+	"Generating certificates and keys ...": "Génération des certificats et des clés",
 	"Get or list the current profiles (clusters)": "",
 	"Gets the logs of the running instance, used for debugging minikube, not user code.": "",
 	"Gets the status of a local Kubernetes cluster": "",
