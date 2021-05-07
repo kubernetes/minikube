@@ -100,9 +100,9 @@ func ImageToCache(img string) error {
 		return errors.Wrapf(err, "making cache image directory: %s", f)
 	}
 
-	if mockDownload != nil {
+	if DownloadMock != nil {
 		klog.Infof("Mock download: %s -> %s", img, f)
-		return mockDownload(img, f)
+		return DownloadMock(img, f)
 	}
 
 	// buffered channel
@@ -185,9 +185,9 @@ func ImageToDaemon(img string) error {
 		return errors.Wrap(err, "parsing reference")
 	}
 
-	if mockDownload != nil {
+	if DownloadMock != nil {
 		klog.Infof("Mock download: %s -> daemon", img)
-		return mockDownload(img, "daemon")
+		return DownloadMock(img, "daemon")
 	}
 
 	klog.V(3).Infof("Getting image %v", ref)

@@ -34,18 +34,13 @@ import (
 )
 
 var (
-	mockDownload func(src, dst string) error = nil
+	DownloadMock func(src, dst string) error = nil
 	checkCache                               = os.Stat
 )
 
 func CreateDstDownloadMock(src, dst string) error {
 	_, err := os.Create(dst)
 	return err
-}
-
-// SetDownloadMock allows tests to selectively enable if downloads are mocked
-func SetDownloadMock(mockFunc func(src, dst string) error) {
-	mockDownload = mockFunc
 }
 
 // download is a well-configured atomic download function
@@ -73,9 +68,9 @@ func download(src string, dst string) error {
 	}
 
 	// Don't bother with getter.MockGetter, as we don't provide a way to inspect the outcome
-	if mockDownload != nil {
+	if DownloadMock != nil {
 		klog.Infof("Mock download: %s -> %s", src, dst)
-		return mockDownload(src, dst)
+		return DownloadMock(src, dst)
 	}
 
 	// Politely prevent tests from shooting themselves in the foot

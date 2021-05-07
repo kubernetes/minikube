@@ -46,7 +46,7 @@ func mockSleepDownload(downloadsCounter *int) func(src, dst string) error {
 
 func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 	downloads := 0
-	SetDownloadMock(mockSleepDownload(&downloads))
+	DownloadMock = mockSleepDownload(&downloads)
 
 	checkCache = func(file string) (fs.FileInfo, error) {
 		if downloads == 0 {
@@ -76,7 +76,7 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 
 func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 	downloads := 0
-	SetDownloadMock(mockSleepDownload(&downloads))
+	DownloadMock = mockSleepDownload(&downloads)
 
 	checkCache = func(file string) (fs.FileInfo, error) {
 		if downloads == 0 {
@@ -108,7 +108,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 
 func testImageToCache(t *testing.T) {
 	downloads := 0
-	SetDownloadMock(mockSleepDownload(&downloads))
+	DownloadMock = mockSleepDownload(&downloads)
 
 	checkImageExistsInCache = func(img string) bool { return downloads > 0 }
 
@@ -133,7 +133,7 @@ func testImageToCache(t *testing.T) {
 
 func testImageToDaemon(t *testing.T) {
 	downloads := 0
-	SetDownloadMock(mockSleepDownload(&downloads))
+	DownloadMock = mockSleepDownload(&downloads)
 
 	checkImageExistsInCache = func(img string) bool { return downloads > 0 }
 
