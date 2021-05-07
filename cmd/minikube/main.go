@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/user"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -32,6 +33,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
+
 	// Register drivers
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
 
@@ -141,6 +143,15 @@ func checkLogFileMaxSize(file string, maxSizeKB int64) bool {
 // logFileName generates a default logfile name in the form minikube_<argv[1]>_<hash>_<count>.log from args
 func logFileName(dir string, logIdx int64) string {
 	h := sha1.New()
+	user, err := user.Current()
+	if err != nil {
+		klog.Warningf("Unable to get username to add to log filename hash: %v", err)
+	} else {
+		_, err := h.Write([]byte(user.Username))
+		if err != nil {
+			klog.Warningf("Unable to add username %s to log filename hash: %v", user.Username, err)
+		}
+	}
 	for _, s := range os.Args {
 		if _, err := h.Write([]byte(s)); err != nil {
 			klog.Warningf("Unable to add arg %s to log filename hash: %v", s, err)

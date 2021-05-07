@@ -88,7 +88,10 @@ validateBuildImage makes sures that `minikube image build` works as expected
 validateListImages makes sures that `minikube image ls` works as expected
 
 #### validateDockerEnv
-check functionality of minikube after evaling docker-env
+check functionality of minikube after evaluating docker-env
+
+#### validatePodmanEnv
+check functionality of minikube after evaluating podman-env
 
 #### validateStartWithProxy
 validateStartWithProxy makes sure minikube start respects the HTTP_PROXY environment variable
@@ -135,6 +138,9 @@ validateConfigCmd asserts basic "config" command functionality
 
 #### validateLogsCmd
 validateLogsCmd asserts basic "logs" command functionality
+
+#### validateLogsFileCmd
+validateLogsFileCmd asserts "logs --file" command functionality
 
 #### validateProfileCmd
 validateProfileCmd asserts "profile" command functionality
@@ -351,4 +357,4 @@ TestKubernetesUpgrade upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 TestMissingContainerUpgrade tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 112
+TEST COUNT: 114

@@ -46,7 +46,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
@@ -118,6 +118,7 @@ func TestFunctional(t *testing.T) {
 			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
+			{"LogsFileCmd", validateLogsFileCmd},
 			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
 			{"ServiceCmd", validateServiceCmd},
@@ -131,6 +132,7 @@ func TestFunctional(t *testing.T) {
 			{"CertSync", validateCertSync},
 			{"UpdateContextCmd", validateUpdateContextCmd},
 			{"DockerEnv", validateDockerEnv},
+			{"PodmanEnv", validatePodmanEnv},
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
 			{"RemoveImage", validateRemoveImage},
@@ -399,8 +401,7 @@ func validateListImages(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// check functionality of minikube after evaling docker-env
-// TODO: Add validatePodmanEnv for crio runtime: #10231
+// check functionality of minikube after evaluating docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("none driver does not support docker-env")
@@ -452,6 +453,61 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 
 	if err != nil {
 		t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
+	}
+
+	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
+	if !strings.Contains(rr.Output(), expectedImgInside) {
+		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
+	}
+}
+
+// check functionality of minikube after evaluating podman-env
+func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("none driver does not support podman-env")
+	}
+
+	if cr := ContainerRuntime(); cr != "podman" {
+		t.Skipf("only validate podman env with docker container runtime, currently testing %s", cr)
+	}
+
+	if runtime.GOOS != "linux" {
+		t.Skipf("only validate podman env on linux, currently testing %s", runtime.GOOS)
+	}
+
+	defer PostMortemLogs(t, profile)
+
+	mctx, cancel := context.WithTimeout(ctx, Seconds(120))
+	defer cancel()
+
+	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" podman-env) && "+Target()+" status -p "+profile)
+	// we should be able to get minikube status with a bash which evaluated podman-env
+	rr, err := Run(t, c)
+
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
+	}
+	if err != nil {
+		t.Fatalf("failed to do status after eval-ing podman-env. error: %v", err)
+	}
+	if !strings.Contains(rr.Output(), "Running") {
+		t.Fatalf("expected status output to include 'Running' after eval podman-env but got: *%s*", rr.Output())
+	}
+	if !strings.Contains(rr.Output(), "in-use") {
+		t.Fatalf("expected status output to include `in-use` after eval podman-env but got *%s*", rr.Output())
+	}
+
+	mctx, cancel = context.WithTimeout(ctx, Seconds(60))
+	defer cancel()
+	// do a eval $(minikube -p profile podman-env) and check if we are point to docker inside minikube
+	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" podman-env) && docker images")
+	rr, err = Run(t, c)
+
+	if mctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+	}
+	if err != nil {
+		t.Fatalf("failed to run minikube podman-env. args %q : %v ", rr.Command(), err)
 	}
 
 	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
@@ -1002,12 +1058,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateLogsCmd asserts basic "logs" command functionality
-func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Command(), err)
-	}
+func checkSaneLogs(t *testing.T, logs string) {
 	expectedWords := []string{"apiserver", "Linux", "kubelet", "Audit", "Last Start"}
 	switch ContainerRuntime() {
 	case "docker":
@@ -1019,10 +1070,44 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	for _, word := range expectedWords {
-		if !strings.Contains(rr.Stdout.String(), word) {
-			t.Errorf("expected minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
+		if !strings.Contains(logs, word) {
+			t.Errorf("expected minikube logs to include word: -%q- but got \n***%s***\n", word, logs)
 		}
 	}
+}
+
+// validateLogsCmd asserts basic "logs" command functionality
+func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Command(), err)
+	}
+
+	checkSaneLogs(t, rr.Stdout.String())
+}
+
+// validateLogsFileCmd asserts "logs --file" command functionality
+func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
+	dname, err := ioutil.TempDir("", profile)
+	if err != nil {
+		t.Fatalf("Cannot create temp dir: %v", err)
+	}
+	logFileName := filepath.Join(dname, "logs.txt")
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs", "--file", logFileName))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Command(), err)
+	}
+	if rr.Stdout.String() != "" {
+		t.Errorf("expected empty minikube logs output, but got: \n***%s***\n", rr.Output())
+	}
+
+	logs, err := ioutil.ReadFile(logFileName)
+	if err != nil {
+		t.Errorf("Failed to read logs output '%s': %v", logFileName, err)
+	}
+
+	checkSaneLogs(t, string(logs))
 }
 
 // validateProfileCmd asserts "profile" command functionality

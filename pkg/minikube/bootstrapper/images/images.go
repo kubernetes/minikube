@@ -62,6 +62,10 @@ func coreDNS(v semver.Version, mirror string) string {
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	cv := "1.7.0"
 	switch v.Minor {
+	case 22:
+		cv = "1.8.0"
+	case 10, 20, 21:
+		cv = "1.7.0"
 	case 18:
 		cv = "1.6.7"
 	case 17:
