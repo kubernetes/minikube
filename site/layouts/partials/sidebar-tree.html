@@ -85,7 +85,7 @@
           <!-- always show pages in the current section -->
           {{ if $activeSection }}
               {{ $showPage = true }}
-              {{ $activePage := eq . $p }}
+              {{ $activePage = eq . $p }}
           {{ end }}
 
          <!-- show handbook unless we are in a very long section -->
