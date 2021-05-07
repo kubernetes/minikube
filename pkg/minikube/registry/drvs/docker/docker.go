@@ -87,7 +87,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}), nil
 }
 
-func status() registry.State {
+func status() (retState registry.State) {
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
@@ -116,10 +116,25 @@ func status() registry.State {
 		return registry.State{Reason: reason, Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
 	}
 
+	var improvement string
+	recordImprovement := func(s registry.State) {
+		if s.NeedsImprovement && s.Fix != "" {
+			improvement = s.Fix
+		}
+	}
+	defer func() {
+		if retState.Error == nil && retState.Fix == "" && improvement != "" {
+			retState.NeedsImprovement = true
+			retState.Fix = improvement
+		}
+	}()
+
 	klog.Infof("docker version: %s", o)
-	if s := checkDockerVersion(strings.TrimSpace(string(o))); s.Error != nil { // remove '\n' from o at the end
+	s := checkDockerVersion(strings.TrimSpace(string(o))) // remove '\n' from o at the end
+	if s.Error != nil {
 		return s
 	}
+	recordImprovement(s)
 
 	si, err := oci.CachedDaemonInfo("docker")
 	if err != nil {
