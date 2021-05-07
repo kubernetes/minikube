@@ -17,18 +17,17 @@ Outputs minikube shell completion for the given shell (bash, zsh or fish)
 	OS X:
 		$ brew install bash-completion
 		$ source $(brew --prefix)/etc/bash_completion
-		$ minikube completion bash > ~/.minikube-completion  # for bash users
-		$ minikube completion zsh > ~/.minikube-completion  # for zsh users
-		$ source ~/.minikube-completion
-		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
+		$ minikube completion bash > $(brew --prefix)/etc/bash_completion.d/minikube  # for bash users
+		$ minikube completion zsh | tee "${fpath[1]}/_minikube"  # for zsh users
+		$ minikube completion fish > ~/.config/fish/completions/minikube.fish  # for fish users
 	Ubuntu:
 		$ apt-get install bash-completion
-		$ source /etc/bash_completion
-		$ source <(minikube completion bash) # for bash users
-		$ source <(minikube completion zsh) # for zsh users
-		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
+		$ dir="${BASH_COMPLETION_USER_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion}/completions"
+		$ mkdir -p "${dir}" && minikube completion bash > "${dir}/minikube"  # for bash users
+		$ minikube completion zsh | tee "${fpath[1]}/_minikube"  # for zsh users
+		$ minikube completion fish > ~/.config/fish/completions/minikube.fish  # for fish users
 
-	Additionally, you may want to output the completion to a file and source in your .bashrc
+	Then restart the shell
 
 	Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2
 	Note for fish users: [2] please refer to this docs for more details https://fishshell.com/docs/current/#tab-completion
