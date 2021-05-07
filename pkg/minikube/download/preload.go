@@ -132,10 +132,10 @@ func Preload(k8sVersion, containerRuntime string) error {
 	targetLock := targetPath + ".lock"
 
 	releaser, err := lockDownload(targetLock)
+	defer releaser.Release()
 	if err != nil {
 		return err
 	}
-	defer releaser.Release()
 
 	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found %s in cache, skipping download", targetPath)

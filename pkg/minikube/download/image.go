@@ -86,10 +86,10 @@ func ImageToCache(img string) error {
 	fileLock := f + ".lock"
 
 	releaser, err := lockDownload(fileLock)
+	defer releaser.Release()
 	if err != nil {
 		return err
 	}
-	defer releaser.Release()
 
 	if checkImageExistsInCache(img) {
 		klog.Infof("%s exists in cache, skipping pull", img)
@@ -167,10 +167,10 @@ func ImageToDaemon(img string) error {
 	fileLock = localpath.SanitizeCacheDir(fileLock)
 
 	releaser, err := lockDownload(fileLock)
+	defer releaser.Release()
 	if err != nil {
 		return err
 	}
-	defer releaser.Release()
 
 	if checkImageExistsInDaemon(img) {
 		klog.Infof("%s exists in daemon, skipping pull", img)
