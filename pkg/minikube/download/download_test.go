@@ -45,11 +45,11 @@ func mockSleepDownload(downloadsCounter *int) func(src, dst string) error {
 }
 
 func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
-	downloads := 0
-	DownloadMock = mockSleepDownload(&downloads)
+	downloadNum := 0
+	DownloadMock = mockSleepDownload(&downloadNum)
 
 	checkCache = func(file string) (fs.FileInfo, error) {
-		if downloads == 0 {
+		if downloadNum == 0 {
 			return nil, fmt.Errorf("some error")
 		}
 		return nil, nil
@@ -69,17 +69,17 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 
 	group.Wait()
 
-	if downloads != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloads)
+	if downloadNum != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloadNum)
 	}
 }
 
 func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
-	downloads := 0
-	DownloadMock = mockSleepDownload(&downloads)
+	downloadNum := 0
+	DownloadMock = mockSleepDownload(&downloadNum)
 
 	checkCache = func(file string) (fs.FileInfo, error) {
-		if downloads == 0 {
+		if downloadNum == 0 {
 			return nil, fmt.Errorf("some error")
 		}
 		return nil, nil
@@ -101,16 +101,16 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 
 	group.Wait()
 
-	if downloads != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloads)
+	if downloadNum != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloadNum)
 	}
 }
 
 func testImageToCache(t *testing.T) {
-	downloads := 0
-	DownloadMock = mockSleepDownload(&downloads)
+	downloadNum := 0
+	DownloadMock = mockSleepDownload(&downloadNum)
 
-	checkImageExistsInCache = func(img string) bool { return downloads > 0 }
+	checkImageExistsInCache = func(img string) bool { return downloadNum > 0 }
 
 	var group sync.WaitGroup
 	group.Add(2)
@@ -126,16 +126,16 @@ func testImageToCache(t *testing.T) {
 
 	group.Wait()
 
-	if downloads != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloads)
+	if downloadNum != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloadNum)
 	}
 }
 
 func testImageToDaemon(t *testing.T) {
-	downloads := 0
-	DownloadMock = mockSleepDownload(&downloads)
+	downloadNum := 0
+	DownloadMock = mockSleepDownload(&downloadNum)
 
-	checkImageExistsInCache = func(img string) bool { return downloads > 0 }
+	checkImageExistsInCache = func(img string) bool { return downloadNum > 0 }
 
 	var group sync.WaitGroup
 	group.Add(2)
@@ -151,7 +151,7 @@ func testImageToDaemon(t *testing.T) {
 
 	group.Wait()
 
-	if downloads != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloads)
+	if downloadNum != 1 {
+		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloadNum)
 	}
 }
