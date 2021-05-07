@@ -34,11 +34,17 @@ import (
 )
 
 var (
+	// DownloadMock is called instead of the download implementation if not nil.
 	DownloadMock func(src, dst string) error = nil
 	checkCache                               = os.Stat
 )
 
+// CreateDstDownloadMock is the default mock implementation of download.
 func CreateDstDownloadMock(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+
 	_, err := os.Create(dst)
 	return err
 }
