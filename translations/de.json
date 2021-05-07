@@ -225,6 +225,7 @@
 	"Failed to change permissions for {{.minikube_dir_path}}: {{.error}}": "Fehler beim Ändern der Berechtigungen für {{.minikube_dir_path}}: {{.error}}",
 	"Failed to check main repository and mirrors for images": "",
 	"Failed to configure metallb IP {{.profile}}": "",
+	"Failed to copying file": "",
 	"Failed to create file": "",
 	"Failed to delete cluster {{.name}}, proceeding with retry anyway.": "",
 	"Failed to delete cluster {{.name}}.": "",
