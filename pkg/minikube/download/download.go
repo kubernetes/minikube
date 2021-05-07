@@ -73,7 +73,6 @@ func download(src string, dst string) error {
 		return errors.Wrap(err, "mkdir")
 	}
 
-	// Don't bother with getter.MockGetter, as we don't provide a way to inspect the outcome
 	if DownloadMock != nil {
 		klog.Infof("Mock download: %s -> %s", src, dst)
 		return DownloadMock(src, dst)
