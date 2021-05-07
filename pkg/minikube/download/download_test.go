@@ -70,7 +70,7 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 	group.Wait()
 
 	if downloadNum != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloadNum)
+		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
 	}
 }
 
@@ -102,7 +102,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 	group.Wait()
 
 	if downloadNum != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloadNum)
+		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
 	}
 }
 
@@ -127,7 +127,7 @@ func testImageToCache(t *testing.T) {
 	group.Wait()
 
 	if downloadNum != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloadNum)
+		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
 	}
 }
 
@@ -152,6 +152,6 @@ func testImageToDaemon(t *testing.T) {
 	group.Wait()
 
 	if downloadNum != 1 {
-		t.Errorf("Wrong number of downloads occurred. Actual: %v, Expected: 1", downloadNum)
+		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
 	}
 }
