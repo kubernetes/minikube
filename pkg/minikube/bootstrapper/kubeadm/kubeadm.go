@@ -297,13 +297,12 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 	type step struct {
 		logTag       string
 		registerStep register.RegStep
-		stepMessage  string
 	}
 
 	steps := []step{
-		{logTag: "certs", registerStep: register.PreparingKubernetesCerts, stepMessage: "Generating certificates and keys ..."},
-		{logTag: "control-plane", registerStep: register.PreparingKubernetesControlPlane, stepMessage: "Booting up control plane ..."},
-		{logTag: "bootstrap-token", registerStep: register.PreparingKubernetesBootstrapToken, stepMessage: "Configuring RBAC rules ..."},
+		{logTag: "certs", registerStep: register.PreparingKubernetesCerts},
+		{logTag: "control-plane", registerStep: register.PreparingKubernetesControlPlane},
+		{logTag: "bootstrap-token", registerStep: register.PreparingKubernetesBootstrapToken},
 	}
 	nextStepIndex := 0
 
@@ -318,7 +317,17 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 			continue
 		}
 		register.Reg.SetStep(nextStep.registerStep)
-		out.Step(style.SubStep, nextStep.stepMessage)
+		// because the translation extract (make extract) needs simple strings to be included in translations we have to pass simple strings
+		if nextStepIndex == 0 {
+			out.Step(style.SubStep, "Generating certificates and keys ...")
+		}
+		if nextStepIndex == 1 {
+			out.Step(style.SubStep, "Booting up control plane ...")
+		}
+		if nextStepIndex == 2 {
+			out.Step(style.SubStep, "Configuring RBAC rules ...")
+		}
+
 		nextStepIndex++
 	}
 	wg.Done()
