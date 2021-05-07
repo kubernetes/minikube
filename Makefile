@@ -360,7 +360,7 @@ test: $(SOURCE_GENERATED) ## Trigger minikube test
 	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
 .PHONY: generate-docs
-generate-docs: out/minikube ## Automatically generate commands documentation.
+generate-docs: extract out/minikube ## Automatically generate commands documentation.
 	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md
 
 .PHONY: gotest
@@ -385,8 +385,8 @@ out/coverage.html: out/coverage.out
 	$(if $(quiet),@echo "  COVER    $@")
 	$(Q)go tool cover -html=$< -o $@
 
-.PHONY: extract
-extract: ## Compile extract tool
+.PHONY: extract 
+extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
 
 # Regenerates assets.go when template files have been updated
