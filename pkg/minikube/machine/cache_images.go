@@ -99,7 +99,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 			// because it takes much less than that time to just transfer the image.
 			// This is needed because if running in offline mode, we can spend minutes here
 			// waiting for i/o timeout.
-			err := timedNeedsTransfer(imgClient, image, cr, 10*time.Second)
+			err := timedNeedsTransfer(cc.Driver, imgClient, image, cr, 10*time.Second)
 			if err == nil {
 				return nil
 			}
@@ -114,7 +114,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 	return nil
 }
 
-func timedNeedsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager, t time.Duration) error {
+func timedNeedsTransfer(driver string, imgClient *client.Client, imgName string, cr cruntime.Manager, t time.Duration) error {
 	timeout := make(chan bool, 1)
 	go func() {
 		time.Sleep(t)
@@ -124,7 +124,7 @@ func timedNeedsTransfer(imgClient *client.Client, imgName string, cr cruntime.Ma
 	transferFinished := make(chan bool, 1)
 	var err error
 	go func() {
-		err = needsTransfer(imgClient, imgName, cr)
+		err = needsTransfer(driver, imgClient, imgName, cr)
 		transferFinished <- true
 	}()
 
@@ -137,9 +137,9 @@ func timedNeedsTransfer(imgClient *client.Client, imgName string, cr cruntime.Ma
 }
 
 // needsTransfer returns an error if an image needs to be retransfered
-func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager) error {
-	imgDgst := ""         // for instance sha256:7c92a2c6bbcb6b6beff92d0a940779769c2477b807c202954c537e2e0deb9bed
-	if imgClient != nil { // if possible try to get img digest from Client lib which is 4s faster.
+func needsTransfer(driver string, imgClient *client.Client, imgName string, cr cruntime.Manager) error {
+	imgDgst := ""                               // for instance sha256:7c92a2c6bbcb6b6beff92d0a940779769c2477b807c202954c537e2e0deb9bed
+	if driver == "docker" && imgClient != nil { // if possible try to get img digest from Client lib which is 4s faster.
 		imgDgst = image.DigestByDockerLib(imgClient, imgName)
 		if imgDgst != "" {
 			if !cr.ImageExists(imgName, imgDgst) {
@@ -148,8 +148,17 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 			return nil
 		}
 	}
+	if driver == "podman" {
+		imgDgst = image.DigestByPodmanExec(imgName)
+		if imgDgst != "" {
+			if !cr.ImageExists(imgName, imgDgst) {
+				return fmt.Errorf("%q does not exist at hash %q in container runtime", imgName, imgDgst)
+			}
+			return nil
+		}
+	}
 	// if not found with method above try go-container lib (which is 4s slower)
-	imgDgst = image.DigestByGoLib(imgName)
+	imgDgst = image.DigestByGoLib(driver, imgName)
 	if imgDgst == "" {
 		return fmt.Errorf("got empty img digest %q for %s", imgDgst, imgName)
 	}
