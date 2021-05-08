@@ -36,7 +36,10 @@ var configSetCmd = &cobra.Command{
 			exit.Message(reason.Usage, "not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
 		if len(args) > 2 {
-			exit.Message(reason.Usage, "toom any arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
+			exit.Message(reason.Usage, "too many arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
+		}
+		if cmd.Flags().Lookup(config.ProfileName).Changed {
+			exit.Message(reason.Usage, "Persistent config is global. Setting a specific profile name is not allowed.")
 		}
 		err := Set(args[0], args[1])
 		if err != nil {
