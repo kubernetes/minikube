@@ -189,7 +189,8 @@ Sets an individual value in a minikube config file
 ### Synopsis
 
 Sets the PROPERTY_NAME config value to PROPERTY_VALUE
-	These values can be overwritten by flags or environment variables at runtime.
+Config values are global and will be applied to all profiles.
+These values can be overwritten by flags or environment variables at runtime.
 
 ```shell
 minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]

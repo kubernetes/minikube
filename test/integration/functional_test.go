@@ -1035,13 +1035,14 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
 		{[]string{"set", "cpus", "2"}, "", "! These changes will take effect upon a minikube delete and then a minikube start"},
+		{[]string{"-p", profile, "set", "cpus", "2"}, "", "X Exiting due to MK_USAGE: Persistent config is global. Setting a specific profile name is not allowed."},
 		{[]string{"get", "cpus"}, "2", ""},
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
 	}
 
 	for _, tc := range tests {
-		args := append([]string{"-p", profile, "config"}, tc.args...)
+		args := append([]string{"config"}, tc.args...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil && tc.wantErr == "" {
 			t.Errorf("failed to config minikube. args %q : %v", rr.Command(), err)
