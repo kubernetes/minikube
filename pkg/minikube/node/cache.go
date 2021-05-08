@@ -145,7 +145,8 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				}
 			}
 
-			if err := image.LoadFromTarball(cc.Driver, img); err == nil {
+			klog.Infof("Loading %s from local cache", img)
+			if err := image.LoadFromTarball(cc.Driver, img, download.ImagePathInCache(img)); err == nil {
 				klog.Infof("successfully loaded %s from cached tarball", img)
 				// strip the digest from the img before saving it in the config
 				// because loading an image from tarball to daemon doesn't load the digest
@@ -154,6 +155,8 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 
 			if driver.IsDocker(cc.Driver) {
+				klog.Infof("failed to load %s, will try remote image if available: %v", img, err)
+
 				klog.Infof("Downloading %s to local daemon", img)
 				err = download.ImageToDaemon(img)
 				if err == nil {

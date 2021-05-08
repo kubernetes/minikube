@@ -43,10 +43,16 @@ var (
 	}
 )
 
-// imageExistsInCache if img exist in local cache directory
-func imageExistsInCache(img string) bool {
+// ImagePathInCache returns path in local cache directory
+func ImagePathInCache(img string) string {
 	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
+	return f
+}
+
+// ImageExistsInCache if img exist in local cache directory
+func ImageExistsInCache(img string) bool {
+	f := ImagePathInCache(img)
 
 	// Check if image exists locally
 	klog.Infof("Checking for %s in local cache directory", img)
@@ -60,7 +66,7 @@ func imageExistsInCache(img string) bool {
 	return false
 }
 
-var checkImageExistsInCache = imageExistsInCache
+var checkImageExistsInCache = ImageExistsInCache
 
 // ImageExistsInDaemon if img exist in local docker daemon
 func ImageExistsInDaemon(img string) bool {
@@ -81,8 +87,7 @@ var checkImageExistsInDaemon = ImageExistsInDaemon
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
 func ImageToCache(img string) error {
-	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
-	f = localpath.SanitizeCacheDir(f)
+	f := ImagePathInCache(img)
 	fileLock := f + ".lock"
 
 	releaser, err := lockDownload(fileLock)

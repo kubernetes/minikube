@@ -39,7 +39,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -104,12 +103,8 @@ func DigestByGoLib(imgName string) string {
 	return cf.Hex
 }
 
-// LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
-// TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
-func LoadFromTarball(binary, img string) error {
-	p := filepath.Join(constants.ImageCacheDir, img)
-	p = localpath.SanitizeCacheDir(p)
-
+// LoadFromTarball loads image from tarball
+func LoadFromTarball(binary, img, p string) error {
 	switch binary {
 	case driver.Podman:
 		return fmt.Errorf("not yet implemented, see issue #8426")
@@ -124,10 +119,10 @@ func LoadFromTarball(binary, img string) error {
 			return errors.Wrap(err, "tarball")
 		}
 
-		_, err = daemon.Write(tag, i)
+		resp, err := daemon.Write(tag, i)
+		klog.V(2).Infof("response: %s", resp)
 		return err
 	}
-
 }
 
 // Tag returns just the image with the tag
