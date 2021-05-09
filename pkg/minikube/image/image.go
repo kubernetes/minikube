@@ -50,7 +50,6 @@ const (
 	defaultDomain       = "docker.io"
 )
 
-var daemonBinary string
 var defaultPlatform = v1.Platform{
 	Architecture: runtime.GOARCH,
 	OS:           "linux",
@@ -85,27 +84,15 @@ func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	return img.ID
 }
 
-// DigestByPodmanExec uses podman to return image digest
-func DigestByPodmanExec(imgName string) string {
-	cmd := exec.Command("sudo", "-n", "podman", "image", "inspect", "--format", "{{.Id}}", imgName)
-	output, err := cmd.Output()
-	if err != nil {
-		klog.Infof("couldn't find image digest %s from local podman: %v ", imgName, err)
-		return ""
-	}
-	return strings.TrimSpace(string(output))
-}
-
 // DigestByGoLib gets image digest uses go-containerregistry lib
 // which is 4s slower thabn local daemon per lookup https://github.com/google/go-containerregistry/issues/627
-func DigestByGoLib(binary, imgName string) string {
+func DigestByGoLib(imgName string) string {
 	ref, err := name.ParseReference(imgName, name.WeakValidation)
 	if err != nil {
 		klog.Infof("error parsing image name %s ref %v ", imgName, err)
 		return ""
 	}
 
-	daemonBinary = binary
 	img, _, err := retrieveImage(ref, imgName)
 	if err != nil {
 		klog.Infof("error retrieve Image %s ref %v ", imgName, err)
@@ -138,26 +125,14 @@ func ExistsImageInCache(img string) bool {
 }
 
 // ExistsImageInDaemon if img exist in local docker daemon
-func ExistsImageInDaemon(binary, img string) bool {
+func ExistsImageInDaemon(img string) bool {
 	// Check if image exists locally
-	switch binary {
-	case driver.Podman:
-		klog.Infof("Checking for %s in local podman", img)
-		cmd := exec.Command("sudo", "-n", "podman", "images", "--format", `{{$repository := .Repository}}{{$tag := .Tag}}{{range .RepoDigests}}{{$repository}}:{{$tag}}@{{.}}{{printf "\n"}}{{end}}`)
-		if output, err := cmd.Output(); err == nil {
-			if strings.Contains(string(output), img) {
-				klog.Infof("Found %s in local podman, skipping pull", img)
-				return true
-			}
-		}
-	case driver.Docker:
-		klog.Infof("Checking for %s in local docker daemon", img)
-		cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
-		if output, err := cmd.Output(); err == nil {
-			if strings.Contains(string(output), img) {
-				klog.Infof("Found %s in local docker daemon, skipping pull", img)
-				return true
-			}
+	klog.Infof("Checking for %s in local docker daemon", img)
+	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
+	if output, err := cmd.Output(); err == nil {
+		if strings.Contains(string(output), img) {
+			klog.Infof("Found %s in local docker daemon, skipping pull", img)
+			return true
 		}
 	}
 	// Else, pull it
@@ -165,25 +140,15 @@ func ExistsImageInDaemon(binary, img string) bool {
 }
 
 // LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
+// TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
 func LoadFromTarball(binary, img string) error {
 	p := filepath.Join(constants.ImageCacheDir, img)
 	p = localpath.SanitizeCacheDir(p)
 
 	switch binary {
 	case driver.Podman:
-		tag, err := name.NewTag(Tag(img))
-		if err != nil {
-			return errors.Wrap(err, "new tag")
-		}
-
-		i, err := tarball.ImageFromPath(p, &tag)
-		if err != nil {
-			return errors.Wrap(err, "tarball")
-		}
-
-		_, err = PodmanWrite(tag, i)
-		return err
-	case driver.Docker:
+		return fmt.Errorf("not yet implemented, see issue #8426")
+	default:
 		tag, err := name.NewTag(Tag(img))
 		if err != nil {
 			return errors.Wrap(err, "new tag")
@@ -197,7 +162,7 @@ func LoadFromTarball(binary, img string) error {
 		_, err = daemon.Write(tag, i)
 		return err
 	}
-	return fmt.Errorf("unknown binary: %s", binary)
+
 }
 
 // Tag returns just the image with the tag
@@ -278,16 +243,11 @@ func WriteImageToCache(img string) error {
 }
 
 // WriteImageToDaemon write img to the local docker daemon
-func WriteImageToDaemon(binary, img string) error {
+func WriteImageToDaemon(img string) error {
 	// buffered channel
 	c := make(chan v1.Update, 200)
 
-	switch binary {
-	case driver.Podman:
-		klog.Infof("Writing %s to local podman", img)
-	case driver.Docker:
-		klog.Infof("Writing %s to local daemon", img)
-	}
+	klog.Infof("Writing %s to local daemon", img)
 	ref, err := name.ParseReference(img)
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
@@ -321,14 +281,7 @@ func WriteImageToDaemon(binary, img string) error {
 	p.SetWidth(79)
 
 	go func() {
-		switch binary {
-		case driver.Podman:
-			_, err = PodmanWrite(ref, i, tarball.WithProgress(c))
-		case driver.Docker:
-			_, err = daemon.Write(ref, i, tarball.WithProgress(c))
-		default:
-			err = fmt.Errorf("unknown binary: %s", binary)
-		}
+		_, err = daemon.Write(ref, i, tarball.WithProgress(c))
 		errchan <- err
 	}()
 	var update v1.Update
@@ -381,7 +334,7 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 				klog.Infof("short name: %s", imgName)
 			}
 		}
-		img, err = retrieveDaemon(daemonBinary, ref)
+		img, err = retrieveDaemon(ref)
 		if err == nil {
 			return img, imgName, nil
 		}
@@ -399,28 +352,15 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 	return nil, "", err
 }
 
-func retrieveDaemon(binary string, ref name.Reference) (v1.Image, error) {
-	switch binary {
-	case driver.Podman:
-		img, err := PodmanImage(ref)
-		if err == nil {
-			klog.Infof("found %s locally: %+v", ref.Name(), img)
-			return img, nil
-		}
-		// reference does not exist in the local podman
-		klog.Infof("podman lookup for %+v: %v", ref, err)
-		return img, err
-	case driver.Docker:
-		img, err := daemon.Image(ref)
-		if err == nil {
-			klog.Infof("found %s locally: %+v", ref.Name(), img)
-			return img, nil
-		}
-		// reference does not exist in the local daemon
-		klog.Infof("daemon lookup for %+v: %v", ref, err)
-		return img, err
+func retrieveDaemon(ref name.Reference) (v1.Image, error) {
+	img, err := daemon.Image(ref)
+	if err == nil {
+		klog.Infof("found %s locally: %+v", ref.Name(), img)
+		return img, nil
 	}
-	return nil, fmt.Errorf("unknown binary: %s", binary)
+	// reference does not exist in the local daemon
+	klog.Infof("daemon lookup for %+v: %v", ref, err)
+	return img, err
 }
 
 func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
