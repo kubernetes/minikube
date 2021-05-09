@@ -20,61 +20,162 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
-{{% tabs %}}
-{{% linuxtab %}}
+Click on the buttons that describe your target platform:
 
-For Linux users, we provide 3 easy download options (for each architecture):
+{{% quiz_row base="" name="Operating system" %}}
+{{% quiz_button option="Linux" %}} {{% quiz_button option="macOS" %}} {{% quiz_button option="Windows" %}}
+{{% /quiz_row %}}
 
-### amd64 / x86_64
+{{% quiz_row base="/Linux" name="Architecture" %}}
+{{% quiz_button option="x86-64" %}} {{% quiz_button option="ARM64" %}} {{% quiz_button option="ARMv7" %}} {{% quiz_button option="ppc64" %}} {{% quiz_button option="S390x" %}}
+{{% /quiz_row %}}
 
-#### Binary download
+{{% quiz_row base="/Linux/x86-64" name="Installer type" %}}
+{{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
+{{% /quiz_row %}}
 
+{{% quiz_row base="/Linux/ARM64" name="Installer type" %}}
+{{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
+{{% /quiz_row %}}
 
+{{% quiz_row base="/Linux/ppc64" name="Installer type" %}}
+{{% quiz_button option="Binary download" %}}
+{{% /quiz_row %}}
+
+{{% quiz_row base="/Linux/S390x" name="Installer type" %}}
+{{% quiz_button option="Binary download" %}}
+{{% /quiz_row %}}
+
+{{% quiz_row base="/Linux/ARMv7" name="Installer type" %}}
+{{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
+{{% /quiz_row %}}
+
+{{% quiz_row base="/macOS" name="Architecture" %}}
+{{% quiz_button option="x86-64" %}} {{% quiz_button option="ARM64" %}}
+{{% /quiz_row %}}
+
+{{% quiz_row base="/macOS/x86-64" name="Installer type" %}}
+{{% quiz_button option="Homebrew" %}} {{% quiz_button option="Binary download" %}}
+{{% /quiz_row %}}
+
+{{% quiz_row base="/macOS/ARM64" name="Installer type" %}}
+{{% quiz_button option="Binary download" %}}
+{{% /quiz_row %}}
+
+{{% quiz_row base="/Windows" name="Architecture" %}}
+{{% quiz_button option="x86-64" %}}
+{{% /quiz_row %}}
+
+{{% quiz_row base="/Windows/x86-64" name="Architecture" %}}
+{{% quiz_button option="Windows Package Manager" %}} {{% quiz_button option="Chocolatey" %}} {{% quiz_button option=".exe download" %}}
+{{% /quiz_row %}}
+
+{{% quiz_instruction type="/Linux/x86-64/Binary download" %}}
 ```shell
- curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
- sudo install minikube-linux-amd64 /usr/local/bin/minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
+{{% /quiz_instruction %}}
 
-#### Debian package
-
+{{% quiz_instruction type="/Linux/x86-64/Debian package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
 sudo dpkg -i minikube_latest_amd64.deb
 ```
+{{% /quiz_instruction %}}
 
-#### RPM package
-
+{{% quiz_instruction type="/Linux/x86-64/RPM package" %}}
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
-sudo rpm -Uvh minikube-latest.x86_64.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86-64.rpm
+sudo rpm -Uvh minikube-latest.x86-64.rpm
 ```
+{{% /quiz_instruction %}}
 
-### arm64 / aarch64
-
-#### Binary download
-
+{{% quiz_instruction type="/Linux/ARM64/Binary download" %}}
 ```shell
- curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm64
- sudo install minikube-linux-arm64 /usr/local/bin/minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm64
+sudo install minikube-linux-arm64 /usr/local/bin/minikube
 ```
+{{% /quiz_instruction %}}
 
-#### Debian package
-
+{{% quiz_instruction type="/Linux/ARM64/Debian package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_arm64.deb
 sudo dpkg -i minikube_latest_arm64.deb
 ```
+{{% /quiz_instruction %}}
 
-#### RPM package
-
+{{% quiz_instruction type="/Linux/ARM64/RPM package" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.aarch64.rpm
 sudo rpm -Uvh minikube-latest.aarch64.rpm
 ```
+{{% /quiz_instruction %}}
 
-{{% /linuxtab %}}
-{{% mactab %}}
+{{% quiz_instruction type="/Linux/ppc64/Binary download" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-ppc64le
+sudo install minikube-linux-ppc64le /usr/local/bin/minikube
+```
+{{% /quiz_instruction %}}
 
+{{% quiz_instruction type="/Linux/ppc64/Debian package" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_ppc64le.deb
+sudo dpkg -i minikube_latest_ppc64le.deb
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction type="/Linux/ppc64/RPM package" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.ppc64el.rpm
+sudo rpm -Uvh minikube-latest.ppc64el.rpm
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction type="/Linux/S390x/Binary download" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-s390x
+sudo install minikube-linux-s390x /usr/local/bin/minikube
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction type="/Linux/S390x/Debian package" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_s390x.deb
+sudo dpkg -i minikube_latest_s390x.deb
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction type="/Linux/S390x/RPM package" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.s390x.rpm
+sudo rpm -Uvh minikube-latest.s390x.rpm
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction type="/Linux/ARMv7/Binary download" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm
+sudo install minikube-linux-arm /usr/local/bin/minikube
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction type="/Linux/ARMv7/Debian package" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_armhf.deb
+sudo dpkg -i minikube_latest_armhf.deb
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction type="/Linux/ARMv7/RPM package" %}}
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.armv7hl.rpm
+sudo rpm -Uvh minikube-latest.armv7hl.rpm
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction type="/macOS/x86-64/Homebrew" %}}
 If the [Brew Package Manager](https://brew.sh/) is installed:
 
 ```shell
@@ -87,49 +188,44 @@ If `which minikube` fails after installation via brew, you may have to remove th
 brew unlink minikube
 brew link minikube
 ```
+{{% /quiz_instruction %}}
 
-Otherwise, download minikube directly:
-
-### x86
-
+{{% quiz_instruction type="/macOS/x86-64/Binary download" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
 sudo install minikube-darwin-amd64 /usr/local/bin/minikube
 ```
+{{% /quiz_instruction %}}
 
-### ARM
-
+{{% quiz_instruction type="/macOS/ARM64/Binary download" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-arm64
 sudo install minikube-darwin-arm64 /usr/local/bin/minikube
 ```
+{{% /quiz_instruction %}}
 
-{{% /mactab %}}
-{{% windowstab %}}
-
-### Windows Package Manager
-
+{{% quiz_instruction type="/Windows/x86-64/Windows Package Manager" %}}
 If the [Windows Package Manager](https://docs.microsoft.com/en-us/windows/package-manager/) is installed, use the following command to install minikube:
 
 ```shell
 winget install minikube
 ```
+{{% /quiz_instruction %}}
 
-### Chocolatey
+{{% quiz_instruction type="/Windows/x86-64/Chocolatey" %}}
 If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use the following command:
 
 ```shell
 choco install minikube
 ```
+{{% /quiz_instruction %}}
 
-### Stand-alone Windows Installer
-Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
+{{% quiz_instruction type="/Windows/x86-64/.exe download" %}}
+Download and run the stand-alone [minikube Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
 
+_If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+{{% /quiz_instruction %}}
 
-_If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._ 
-
-{{% /windowstab %}}
-{{% /tabs %}}
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>Start your cluster</h2>
 

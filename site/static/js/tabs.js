@@ -17,7 +17,7 @@ function initTabs() {
       let tabSelector = getTabSelector(this);
       $(this).find('div'+tabSelector).addClass('active');
     })
- 
+
     $('.nav-tabs a').click(function(e){
       e.preventDefault();
       var tab = $(this).parent(),
