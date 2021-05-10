@@ -54,7 +54,9 @@ func Binary(binary, version, osName, archName string) (string, error) {
 	}
 
 	releaser, err := lockDownload(targetLock)
-	defer releaser.Release()
+	if releaser != nil {
+		defer releaser.Release()
+	}
 	if err != nil {
 		return "", err
 	}

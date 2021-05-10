@@ -86,7 +86,9 @@ func ImageToCache(img string) error {
 	fileLock := f + ".lock"
 
 	releaser, err := lockDownload(fileLock)
-	defer releaser.Release()
+	if releaser != nil {
+		defer releaser.Release()
+	}
 	if err != nil {
 		return err
 	}
@@ -167,7 +169,9 @@ func ImageToDaemon(img string) error {
 	fileLock = localpath.SanitizeCacheDir(fileLock)
 
 	releaser, err := lockDownload(fileLock)
-	defer releaser.Release()
+	if releaser != nil {
+		defer releaser.Release()
+	}
 	if err != nil {
 		return err
 	}

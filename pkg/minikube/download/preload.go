@@ -132,7 +132,9 @@ func Preload(k8sVersion, containerRuntime string) error {
 	targetLock := targetPath + ".lock"
 
 	releaser, err := lockDownload(targetLock)
-	defer releaser.Release()
+	if releaser != nil {
+		defer releaser.Release()
+	}
 	if err != nil {
 		return err
 	}
