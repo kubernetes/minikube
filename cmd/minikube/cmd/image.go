@@ -130,7 +130,7 @@ var loadImageCmd = &cobra.Command{
 		if imgDaemon || imgRemote {
 			image.UseDaemon(imgDaemon)
 			image.UseRemote(imgRemote)
-			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}); err != nil {
+			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}, true); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 		} else if local {
