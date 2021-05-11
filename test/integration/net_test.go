@@ -49,7 +49,8 @@ func TestNetworkPlugins(t *testing.T) {
 			podLabel      string
 			hairpin       bool
 		}{
-			{"auto", []string{}, "", "", false},
+			// for containerd and crio runtimes kindnet CNI is used by default and hairpin is enabled
+			{"auto", []string{}, "", "", ContainerRuntime() != "docker"},
 			{"kubenet", []string{"--network-plugin=kubenet"}, "kubenet", "", true},
 			{"bridge", []string{"--cni=bridge"}, "cni", "", true},
 			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", true},
