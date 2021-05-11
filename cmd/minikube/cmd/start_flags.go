@@ -515,7 +515,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	cc := *existing
 
 	if cmd.Flags().Changed(memory) && getMemorySize(cmd, cc.Driver) != cc.Memory {
-		out.WarningT("You cannot change the memory size for an exiting minikube cluster. Please first delete the cluster.")
+		out.WarningT("You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.")
 	}
 
 	if cmd.Flags().Changed(cpus) && viper.GetInt(cpus) != cc.CPUs {
@@ -526,7 +526,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	validateRequestedMemorySize(cc.Memory, cc.Driver)
 
 	if cmd.Flags().Changed(humanReadableDiskSize) && getDiskSize() != existing.DiskSize {
-		out.WarningT("You cannot change the Disk size for an existing minikube cluster. Please first delete the cluster.")
+		out.WarningT("You cannot change the disk size for an existing minikube cluster. Please first delete the cluster.")
 	}
 
 	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
