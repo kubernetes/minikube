@@ -214,7 +214,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			// Walk down the rest of the options
 			for _, alt := range alts {
 				// Skip non-default drivers
-				if !ds.Default {
+				if !alt.Default {
 					continue
 				}
 				out.WarningT("Startup with {{.old_driver}} driver failed, trying with alternate driver {{.new_driver}}: {{.error}}", out.V{"old_driver": ds.Name, "new_driver": alt.Name, "error": err})
