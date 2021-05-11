@@ -78,7 +78,7 @@ func TestGenerateTestDocs(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(string(actualContents), string(expectedContents)); diff != "" {
-		t.Errorf("Docs are not updated. Please run `make generate-docs` to update commands documentation: %s", diff)
+		t.Errorf("Test docs are not updated. Please run `make generate-docs` to update documentation: %s", diff)
 	}
 
 	rest := string(actualContents)
