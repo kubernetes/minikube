@@ -79,7 +79,7 @@ func imageExistsInDaemon(img string) bool {
 
 var checkImageExistsInDaemon = imageExistsInDaemon
 
-// ImageToCache writes img to the local cache directory
+// ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
 func ImageToCache(img string) error {
 	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
@@ -163,7 +163,7 @@ func ImageToCache(img string) error {
 	}
 }
 
-// ImageToDaemon writes img to the local docker daemon
+// ImageToDaemon downloads img (if not present in daemon) and writes it to the local docker daemon
 func ImageToDaemon(img string) error {
 	fileLock := filepath.Join(constants.KICCacheDir, path.Base(img)+".d.lock")
 	fileLock = localpath.SanitizeCacheDir(fileLock)
