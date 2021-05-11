@@ -884,7 +884,6 @@
 	"stat failed": "stat en échec",
 	"status json failure": "état du JSON en échec",
 	"status text failure": "état du texte en échec",
-	"test/integration": "",
 	"toom any arguments ({{.ArgCount}}).\\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "toom tous les arguments ({{.ArgCount}}).\\nusage : jeu de configuration de minikube PROPERTY_NAME PROPERTY_VALUE",
 	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer": "le tunnel crée une route vers les services déployés avec le type LoadBalancer et définit leur Ingress sur leur ClusterIP. Pour un exemple détaillé, voir https://minikube.sigs.k8s.io/docs/tasks/loadbalancer",
 	"unable to bind flags": "impossible de lier les configurations",

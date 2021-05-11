@@ -1004,7 +1004,6 @@
 	"stat failed": "",
 	"status json failure": "",
 	"status text failure": "",
-	"test/integration": "",
 	"toom any arguments ({{.ArgCount}}).\\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "",
 	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer": "",
 	"tunnel makes services of type LoadBalancer accessible on localhost": "隧道使本地主机上可以访问 LoadBalancer 类型的服务",

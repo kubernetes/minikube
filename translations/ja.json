@@ -893,7 +893,6 @@
 	"stat failed": "stat が失敗しました",
 	"status json failure": "ステータスは JSON エラーです",
 	"status text failure": "ステータスはテキストエラーです",
-	"test/integration": "",
 	"toom any arguments ({{.ArgCount}}).\\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "引数の数（{{.ArgCount}}）が多すぎます。\\n使用方法: minikube config set PROPERTY_NAME PROPERTY_VALUE",
 	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer": "tunnel によってタイプが LoadBalancer なサービスへのルーティングが作成され、Ingress をサービスの ClusterIP へと向けさせます。より詳細な例は以下を参照してください。https://minikube.sigs.k8s.io/docs/tasks/loadbalancer",
 	"tunnel makes services of type LoadBalancer accessible on localhost": "tunnel によってタイプが LoadBalancer なサービスが localhost からアクセス可能になります",
