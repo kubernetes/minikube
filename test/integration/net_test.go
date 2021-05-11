@@ -173,7 +173,7 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() {
 					t.Run("HairPin", func(t *testing.T) {
-						verifyHairpinMode(t, ctx, profile, tc.hairpin)
+						validateHairpinMode(ctx, t, profile, tc.hairpin)
 					})
 				}
 
@@ -183,8 +183,10 @@ func TestNetworkPlugins(t *testing.T) {
 	})
 }
 
-// verifyHairpinMode makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
-func verifyHairpinMode(t *testing.T, ctx context.Context, profile string, hairpin bool) {
+// validateHairpinMode makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
+// try to access deployment/netcat pod using external, obtained from 'netcat' service dns resolution, IP address
+// should fail if hairpinMode is off
+func validateHairpinMode(ctx context.Context, t *testing.T, profile string, hairpin bool) {
 	tryHairPin := func() error {
 		_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
 		return err
