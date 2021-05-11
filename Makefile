@@ -207,6 +207,10 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
+out/minikube-linux-i686: out/minikube-linux-386
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
 out/minikube-linux-x86_64: out/minikube-linux-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
@@ -248,6 +252,10 @@ else
 	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" $(if $(call eq,$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*))),arm),GOARM=$(GOARM)) \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
+
+out/minikube-linux-armv6:
+	$(Q)GOOS=linux GOARCH=arm GOARM=6 \
+	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 
 .PHONY: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe
 e2e-linux-amd64: out/e2e-linux-amd64 ## build end2end binary for Linux x86 64bit
@@ -310,7 +318,7 @@ test-pkg/%: $(SOURCE_GENERATED) ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross cross-tars exotic out/gvisor-addon ## Build all different minikube components
+all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
 
 .PHONY: drivers
 drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2 ## Build Hyperkit and KVM2 drivers
@@ -421,6 +429,9 @@ cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## 
 
 .PHONY: exotic
 exotic: out/minikube-linux-arm out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x ## Build minikube for non-amd64 linux
+
+.PHONY: retro
+retro: out/minikube-linux-386 out/minikube-linux-armv6 ## Build minikube for legacy 32-bit linux
 
 .PHONY: windows
 windows: minikube-windows-amd64.exe ## Build minikube for Windows 64bit
