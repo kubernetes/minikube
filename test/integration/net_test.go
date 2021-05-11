@@ -173,20 +173,7 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() {
 					t.Run("HairPin", func(t *testing.T) {
-						tryHairPin := func() error {
-							_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
-							return err
-						}
-
-						if tc.hairpin {
-							if err := retry.Expo(tryHairPin, 1*time.Second, Seconds(60)); err != nil {
-								t.Errorf("failed to connect via pod host: %v", err)
-							}
-						} else {
-							if tryHairPin() == nil {
-								t.Fatalf("hairpin connection unexpectedly succeeded - misconfigured test?")
-							}
-						}
+						verifyHairpinMode(t, ctx, profile, tc.hairpin)
 					})
 				}
 
@@ -194,6 +181,23 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
+}
+
+// verifyHairpinMode makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
+func verifyHairpinMode(t *testing.T, ctx context.Context, profile string, hairpin bool) {
+	tryHairPin := func() error {
+		_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
+		return err
+	}
+	if hairpin {
+		if err := retry.Expo(tryHairPin, 1*time.Second, Seconds(60)); err != nil {
+			t.Errorf("failed to connect via pod host: %v", err)
+		}
+	} else {
+		if tryHairPin() == nil {
+			t.Fatalf("hairpin connection unexpectedly succeeded - misconfigured test?")
+		}
+	}
 }
 
 func verifyKubeletFlagsOutput(t *testing.T, kubeletPlugin, out string) {
