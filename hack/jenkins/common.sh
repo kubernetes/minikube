@@ -45,7 +45,7 @@ else
 fi
 
 # installing golang so we could do go get for gopogh
-sudo ARCH="$ARCH"./installers/check_install_golang.sh "1.16.1" "/usr/local" || true
+sudo ARCH="$ARCH"./installers/check_install_golang.sh "1.16.4" "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
