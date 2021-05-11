@@ -45,6 +45,7 @@ var (
 	pull       bool
 	imgDaemon  bool
 	imgRemote  bool
+	overWrite  bool
 	tag        string
 	push       bool
 	dockerFile string
@@ -130,7 +131,7 @@ var loadImageCmd = &cobra.Command{
 		if imgDaemon || imgRemote {
 			image.UseDaemon(imgDaemon)
 			image.UseRemote(imgRemote)
-			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}, true); err != nil {
+			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}, overWrite); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 		} else if local {
@@ -248,6 +249,7 @@ func init() {
 	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
+	loadImageCmd.Flags().BoolVar(&overWrite, "over-write", true, "Over write the existing image if the name:tag of the images are the same")
 	imageCmd.AddCommand(loadImageCmd)
 	imageCmd.AddCommand(removeImageCmd)
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")

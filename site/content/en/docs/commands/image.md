@@ -192,6 +192,11 @@ minikube image ls [flags]
 $ minikube image ls
 
 ```
+      --daemon       Cache image from docker daemon
+      --over-write   Over write the existing image if the name:tag of the images are the same (default true)
+      --pull         Pull the remote image (no caching)
+      --remote       Cache image from remote registry
+```
 
 ### Options inherited from parent commands
 
