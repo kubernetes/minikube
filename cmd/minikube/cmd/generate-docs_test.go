@@ -19,7 +19,9 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -50,4 +52,50 @@ func TestGenerateDocs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateTestDocs(t *testing.T) {
+	tempdir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("creating temp dir failed: %v", err)
+	}
+	defer os.RemoveAll(tempdir)
+	docPath := filepath.Join(tempdir, "tests.md")
+	realPath := "../../../site/content/en/docs/contrib/tests.en.md"
+
+	expectedContents, err := ioutil.ReadFile(realPath)
+	if err != nil {
+		t.Fatalf("error reading existing file: %v", err)
+	}
+
+	err = generate.TestDocs(docPath, "../../../test/integration")
+	if err != nil {
+		t.Fatalf("error generating test docs: %v", err)
+	}
+	actualContents, err := ioutil.ReadFile(docPath)
+	if err != nil {
+		t.Fatalf("error reading generated file: %v", err)
+	}
+
+	if diff := cmp.Diff(string(actualContents), string(expectedContents)); diff != "" {
+		t.Errorf("Docs are not updated. Please run `make generate-docs` to update commands documentation: %s", diff)
+	}
+
+	rest := string(actualContents)
+	for rest != "" {
+		rest = checkForNeedsDoc(t, rest)
+	}
+}
+
+func checkForNeedsDoc(t *testing.T, content string) string {
+	needs := "\nNEEDS DOC\n"
+	index := strings.Index(content, needs)
+	if index < 0 {
+		return ""
+	}
+
+	topHalf := content[:index]
+	testName := topHalf[strings.LastIndex(topHalf, "\n"):]
+	t.Errorf("%s is missing a doc string.", testName)
+	return content[index+len(needs):]
 }
