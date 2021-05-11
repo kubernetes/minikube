@@ -48,7 +48,10 @@ make verify-iso
 env BUILD_IN_DOCKER=y \
   make -j 16 \
   all \
+  out/minikube-linux-arm64 \
+  out/minikube-linux-arm64.tar.gz \
   out/minikube-darwin-arm64 \
+  out/minikube-darwin-arm64.tar.gz \
   out/minikube-installer.exe \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_arm64.deb" \
