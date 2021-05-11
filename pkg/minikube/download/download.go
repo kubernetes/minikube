@@ -125,6 +125,8 @@ func lockDownload(file string) (mutex.Releaser, error) {
 		out.Step(style.WaitingWithSpinner, "Another minikube instance is downloading dependencies... ")
 	}
 
+	// lock.PathMutexSpec returns a spec including a 60s timeout. Therefore, this
+	// will not block indefinitely.
 	r := <-lockChannel
 	return r.Releaser, r.error
 }
