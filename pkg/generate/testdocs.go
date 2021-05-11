@@ -103,7 +103,7 @@ func TestDocs(docPath string, pathToCheck string) error {
 		return err
 	}
 
-	_, err = buf.WriteString(fmt.Sprintf("TEST COUNT: %d\n", counter))
+	_, err = buf.WriteString(fmt.Sprintf("TEST COUNT: %d", counter))
 	if err != nil {
 		return err
 	}
