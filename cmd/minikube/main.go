@@ -141,7 +141,7 @@ func checkLogFileMaxSize(file string, maxSizeKB int64) bool {
 }
 
 // logFileName generates a default logfile name in the form minikube_<argv[1]>_<hash>_<count>.log from args
-func logFileName(dir string, logIdx int64) string {
+func logFileName(dir string, logIdx int64, nonFlagArgs []string) string {
 	h := sha1.New()
 	user, err := user.Current()
 	if err != nil {
@@ -152,7 +152,7 @@ func logFileName(dir string, logIdx int64) string {
 			klog.Warningf("Unable to add username %s to log filename hash: %v", user.Username, err)
 		}
 	}
-	for _, s := range os.Args {
+	for _, s := range nonFlagArgs {
 		if _, err := h.Write([]byte(s)); err != nil {
 			klog.Warningf("Unable to add arg %s to log filename hash: %v", s, err)
 		}
@@ -160,14 +160,14 @@ func logFileName(dir string, logIdx int64) string {
 	hs := hex.EncodeToString(h.Sum(nil))
 	var logfilePath string
 	// check if subcommand specified
-	if len(os.Args) < 2 {
+	if len(nonFlagArgs) < 1 {
 		logfilePath = filepath.Join(dir, fmt.Sprintf("minikube_%s_%d.log", hs, logIdx))
 	} else {
-		logfilePath = filepath.Join(dir, fmt.Sprintf("minikube_%s_%s_%d.log", os.Args[1], hs, logIdx))
+		logfilePath = filepath.Join(dir, fmt.Sprintf("minikube_%s_%s_%d.log", nonFlagArgs[0], hs, logIdx))
 	}
 	// if log has reached max size 1M, generate new logfile name by incrementing count
 	if checkLogFileMaxSize(logfilePath, 1024) {
-		return logFileName(dir, logIdx+1)
+		return logFileName(dir, logIdx+1, nonFlagArgs)
 	}
 	return logfilePath
 }
@@ -205,7 +205,7 @@ func setFlags(parse bool) {
 		if pflag.CommandLine.Changed("log_dir") && pflag.Lookup("log_dir").Value.String() != "" {
 			dir = pflag.Lookup("log_dir").Value.String()
 		}
-		l := logFileName(dir, 0)
+		l := logFileName(dir, 0, pflag.Args())
 		if err := pflag.Set("log_file", l); err != nil {
 			klog.Warningf("Unable to set default flag value for log_file: %v", err)
 		}
