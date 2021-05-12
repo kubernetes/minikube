@@ -910,6 +910,7 @@
 	"version yaml failure": "échec de la version du YAML",
 	"zsh completion failed": "complétion de zsh en échec",
 	"zsh completion.": "",
+	"{{ .name }}: Suggestion: {{ .suggestion}}": "",
 	"{{ .name }}: {{ .rejection }}": "{{ .name }} : {{ .rejection }}",
 	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "",
 	"{{.count}} nodes stopped.": "{{.count}} nœud(s) arrêté(s).",
