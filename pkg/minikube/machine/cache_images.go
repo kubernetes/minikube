@@ -55,7 +55,7 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 		return errors.Wrap(err, "cached images list")
 	}
 
-	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
+	if err := image.SaveToDir(images, constants.ImageCacheDir, false); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
 
@@ -63,19 +63,14 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 }
 
 // LoadCachedImages loads previously cached images into the container runtime
-func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string, force ...bool) error {
+func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string, overwrite bool) error {
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
 
-	f := false
-	if len(force) > 0 {
-		f = force[0]
-	}
-
 	// Skip loading images if images already exist
-	if !f && cr.ImagesPreloaded(images) {
+	if !overwrite && cr.ImagesPreloaded(images) {
 		klog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
@@ -181,21 +176,21 @@ func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []s
 }
 
 // CacheAndLoadImages caches and loads images to all profiles
-func CacheAndLoadImages(images []string, profiles []*config.Profile, force ...bool) error {
+func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite bool) error {
 	if len(images) == 0 {
 		return nil
 	}
 
 	// This is the most important thing
-	if err := image.SaveToDir(images, constants.ImageCacheDir, force...); err != nil {
+	if err := image.SaveToDir(images, constants.ImageCacheDir, overwrite); err != nil {
 		return errors.Wrap(err, "save to dir")
 	}
 
-	return DoLoadImages(images, profiles, constants.ImageCacheDir, force...)
+	return DoLoadImages(images, profiles, constants.ImageCacheDir, overwrite)
 }
 
 // DoLoadImages loads images to all profiles
-func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, force ...bool) error {
+func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, overwrite bool) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "api")
@@ -239,7 +234,7 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 				}
 				if cacheDir != "" {
 					// loading image names, from cache
-					err = LoadCachedImages(c, cr, images, cacheDir, force...)
+					err = LoadCachedImages(c, cr, images, cacheDir, overwrite)
 				} else {
 					// loading image files
 					err = LoadLocalImages(c, cr, images)

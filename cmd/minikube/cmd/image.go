@@ -137,7 +137,7 @@ var loadImageCmd = &cobra.Command{
 		} else if local {
 			// Load images from local files, without doing any caching or checks in container runtime
 			// This is similar to tarball.Image but it is done by the container runtime in the cluster.
-			if err := machine.DoLoadImages(args, []*config.Profile{profile}, ""); err != nil {
+			if err := machine.DoLoadImages(args, []*config.Profile{profile}, "", false); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 		}
@@ -249,7 +249,7 @@ func init() {
 	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
-	loadImageCmd.Flags().BoolVar(&overwrite, "overwrite", true, "Overwrite the existing image if the name:tag of the images are the same")
+	loadImageCmd.Flags().BoolVar(&overwrite, "overwrite", true, "Overwrite image even if same image:tag name exists")
 	imageCmd.AddCommand(loadImageCmd)
 	imageCmd.AddCommand(removeImageCmd)
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
