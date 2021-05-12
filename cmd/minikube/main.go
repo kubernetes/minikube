@@ -205,7 +205,8 @@ func setFlags(parse bool) {
 		if pflag.CommandLine.Changed("log_dir") && pflag.Lookup("log_dir").Value.String() != "" {
 			dir = pflag.Lookup("log_dir").Value.String()
 		}
-		l := logFileName(dir, 0, pflag.Args())
+		nonFlagArgs := pflag.Args()
+		l := logFileName(dir, 0, nonFlagArgs)
 		if err := pflag.Set("log_file", l); err != nil {
 			klog.Warningf("Unable to set default flag value for log_file: %v", err)
 		}
