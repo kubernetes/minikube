@@ -152,7 +152,7 @@ $ minikube image rm image busybox
 $ minikube image unload image busybox
 `,
 	Args:    cobra.MinimumNArgs(1),
-	Aliases: []string{"unload"},
+	Aliases: []string{"remove", "unload"},
 	Run: func(cmd *cobra.Command, args []string) {
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
@@ -226,12 +226,12 @@ var buildImageCmd = &cobra.Command{
 }
 
 var listImageCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "ls",
 	Short: "List images",
 	Example: `
-$ minikube image list
+$ minikube image ls
 `,
-	Aliases: []string{"ls"},
+	Aliases: []string{"list"},
 	Run: func(cmd *cobra.Command, args []string) {
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {

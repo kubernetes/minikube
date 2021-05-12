@@ -46,7 +46,7 @@ sudo dpkg -i minikube_latest_amd64.deb
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
-sudo rpm -ivh minikube-latest.x86_64.rpm
+sudo rpm -Uvh minikube-latest.x86_64.rpm
 ```
 
 ### arm64 / aarch64
@@ -69,7 +69,7 @@ sudo dpkg -i minikube_latest_arm64.deb
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.aarch64.rpm
-sudo rpm -ivh minikube-latest.aarch64.rpm
+sudo rpm -Uvh minikube-latest.aarch64.rpm
 ```
 
 {{% /linuxtab %}}

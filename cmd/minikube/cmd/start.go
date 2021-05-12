@@ -50,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -120,7 +121,7 @@ func platform() string {
 
 	// This environment is exotic, let's output a bit more.
 	if vrole == "guest" || runtime.GOARCH != "amd64" {
-		if vsys != "" {
+		if vrole == "guest" && vsys != "" {
 			s.WriteString(fmt.Sprintf(" (%s/%s)", vsys, runtime.GOARCH))
 		} else {
 			s.WriteString(fmt.Sprintf(" (%s)", runtime.GOARCH))
@@ -177,7 +178,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if existing != nil {
-		upgradeExistingConfig(existing)
+		upgradeExistingConfig(cmd, existing)
 	} else {
 		validateProfileName()
 	}
@@ -715,9 +716,11 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 // validateDriver validates that the selected driver appears sane, exits if not
 func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
+	os := detect.RuntimeOS()
+	arch := detect.RuntimeArch()
 	klog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": runtime.GOOS, "arch": runtime.GOARCH})
+		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": os, "arch": arch})
 	}
 
 	// if we are only downloading artifacts for a driver, we can stop validation here
