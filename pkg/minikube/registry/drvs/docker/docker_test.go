@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 type testCase struct {
@@ -88,22 +90,22 @@ func TestCheckDockerVersion(t *testing.T) {
 			// "dev" is set when Docker (Moby) was installed with `make binary && make install`
 			version: "linux-dev",
 			expect:  "",
-			expectFixContains: fmt.Sprintf("Install the official release of Docker (Minimum recommended version is %02d.%02d.%d, current version is dev)",
-				minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+			expectFixContains: fmt.Sprintf("Install the official release of %s (Minimum recommended version is %02d.%02d.%d, current version is dev)",
+				driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
 		},
 		{
 			// "library-import" is set when Docker (Moby) was installed with `go build github.com/docker/docker/cmd/dockerd` (unrecommended, but valid)
 			version: "linux-library-import",
 			expect:  "",
-			expectFixContains: fmt.Sprintf("Install the official release of Docker (Minimum recommended version is %02d.%02d.%d, current version is library-import)",
-				minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+			expectFixContains: fmt.Sprintf("Install the official release of %s (Minimum recommended version is %02d.%02d.%d, current version is library-import)",
+				driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
 		},
 		{
 			// "foo.bar.baz" is a triplet that cannot be parsed as "%02d.%02d.%d"
 			version: "linux-foo.bar.baz",
 			expect:  "",
-			expectFixContains: fmt.Sprintf("Install the official release of Docker (Minimum recommended version is %02d.%02d.%d, current version is foo.bar.baz)",
-				minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+			expectFixContains: fmt.Sprintf("Install the official release of %s (Minimum recommended version is %02d.%02d.%d, current version is foo.bar.baz)",
+				driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
 		},
 	}...)
 
