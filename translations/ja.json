@@ -920,6 +920,7 @@
 	"version yaml failure": "YAML でバージョンを表示するのに失敗しました",
 	"zsh completion failed": "zsh の補完が失敗しました",
 	"zsh completion.": "",
+	"{{ .name }}: Suggestion: {{ .suggestion}}": "",
 	"{{ .name }}: {{ .rejection }}": "{{ .name }}: {{ .rejection }}",
 	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "",
 	"{{.cluster}} IP has been updated to point at {{.ip}}": "{{.cluster}} の IP アドレスは {{.ip}} へと更新されました",

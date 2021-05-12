@@ -920,6 +920,7 @@
 	"version yaml failure": "",
 	"zsh completion failed": "zsh 완성이 실패하였습니다",
 	"zsh completion.": "",
+	"{{ .name }}: Suggestion: {{ .suggestion}}": "",
 	"{{ .name }}: {{ .rejection }}": "",
 	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "",
 	"{{.count}} nodes stopped.": "{{.count}}개의 노드가 중지되었습니다.",
