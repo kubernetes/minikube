@@ -137,7 +137,7 @@ var loadImageCmd = &cobra.Command{
 		} else if local {
 			// Load images from local files, without doing any caching or checks in container runtime
 			// This is similar to tarball.Image but it is done by the container runtime in the cluster.
-			if err := machine.DoLoadImages(args, []*config.Profile{profile}, "", false); err != nil {
+			if err := machine.DoLoadImages(args, []*config.Profile{profile}, "", overwrite); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 		}
