@@ -253,7 +253,7 @@ else
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
-out/minikube-linux-armv6: $(SOURCE_GENERATED) $(SOURCE_FILES)
+out/minikube-linux-armv6:
 	$(Q)GOOS=linux GOARCH=arm GOARM=6 \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 
