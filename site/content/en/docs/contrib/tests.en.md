@@ -267,6 +267,11 @@ tests all supported CNI options
 Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
 Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
 
+#### validateHairpinMode
+makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
+try to access deployment/netcat pod using external, obtained from 'netcat' service dns resolution, IP address
+should fail if hairpinMode is off
+
 ## TestChangeNoneUser
 tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected
 and changes the minikube file permissions from root to the correct user.
@@ -357,4 +362,4 @@ upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 114
+TEST COUNT: 115
