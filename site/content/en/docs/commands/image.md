@@ -143,7 +143,7 @@ minikube image load image.tar
 
 ```
       --daemon      Cache image from docker daemon
-      --overwrite   Overwrite the existing image if the name:tag of the images are the same (default true)
+      --overwrite   Overwrite image even if same image:tag name exists (default true)
       --pull        Pull the remote image (no caching)
       --remote      Cache image from remote registry
 ```

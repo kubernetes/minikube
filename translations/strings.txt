@@ -377,7 +377,7 @@
 	"Options:      {{.options}}": "",
 	"Output format. Accepted values: [json]": "",
 	"Outputs minikube shell completion for the given shell (bash, zsh or fish)\n\n\tThis depends on the bash-completion binary.  Example installation instructions:\n\tOS X:\n\t\t$ brew install bash-completion\n\t\t$ source $(brew --prefix)/etc/bash_completion\n\t\t$ minikube completion bash \u003e ~/.minikube-completion  # for bash users\n\t\t$ minikube completion zsh \u003e ~/.minikube-completion  # for zsh users\n\t\t$ source ~/.minikube-completion\n\t\t$ minikube completion fish \u003e ~/.config/fish/completions/minikube.fish # for fish users\n\tUbuntu:\n\t\t$ apt-get install bash-completion\n\t\t$ source /etc/bash_completion\n\t\t$ source \u003c(minikube completion bash) # for bash users\n\t\t$ source \u003c(minikube completion zsh) # for zsh users\n\t\t$ minikube completion fish \u003e ~/.config/fish/completions/minikube.fish # for fish users\n\n\tAdditionally, you may want to output the completion to a file and source in your .bashrc\n\n\tNote for zsh users: [1] zsh completions are only supported in versions of zsh \u003e= 5.2\n\tNote for fish users: [2] please refer to this docs for more details https://fishshell.com/docs/current/#tab-completion\n": "",
-	"Overwrite the existing image if the name:tag of the images are the same": "",
+	"Overwrite image even if same image:tag name exists": "",
 	"Path to the Dockerfile to use (optional)": "",
 	"Pause": "",
 	"Paused {{.count}} containers": "",
