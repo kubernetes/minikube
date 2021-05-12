@@ -31,7 +31,6 @@ import (
 
 	"github.com/golang-collections/collections/stack"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/util/lock"
 )
 
 // exclude is a list of strings to explicitly omit from translation files.
@@ -48,6 +47,7 @@ var exclude = []string{
 	"==\u003e {{.name}} \u003c==",
 	"- {{.profile}}",
 	"    - {{.profile}}",
+	"test/integration",
 }
 
 // ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
@@ -491,7 +491,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "marshalling translations")
 		}
-		err = lock.WriteFile(path, c, info.Mode())
+		err = ioutil.WriteFile(path, c, info.Mode())
 		if err != nil {
 			return errors.Wrap(err, "writing translation file")
 		}
@@ -509,7 +509,7 @@ func writeStringsToFiles(e *state, output string) error {
 		return errors.Wrap(err, "marshalling translations")
 	}
 	path := filepath.Join(output, "strings.txt")
-	err = lock.WriteFile(path, c, 0644)
+	err = ioutil.WriteFile(path, c, 0644)
 	if err != nil {
 		return errors.Wrap(err, "writing translation file")
 	}

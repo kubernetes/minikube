@@ -47,7 +47,7 @@ func Docs(root *cobra.Command, path string, testPath string) error {
 			return errors.Wrapf(err, "saving doc for %s", c.Name())
 		}
 	}
-	return testDocs(testPath)
+	return TestDocs(testPath, "test/integration")
 }
 
 // DocForCommand returns the specific doc for that command
