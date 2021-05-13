@@ -848,6 +848,7 @@
 	"version yaml failure": "",
 	"zsh completion failed": "",
 	"zsh completion.": "",
+	"{{ .name }}: Suggestion: {{ .suggestion}}": "",
 	"{{ .name }}: {{ .rejection }}": "",
 	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "",
 	"{{.count}} nodes stopped.": "",

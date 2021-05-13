@@ -25,3 +25,7 @@ Also see [co/hyperv open issues](https://github.com/kubernetes/minikube/labels/c
 ## Troubleshooting
 
 * Run `minikube start --alsologtostderr -v=7` to debug crashes
+* While reinstalling minikube you may encounter error in starting minikube due to stuck.vmcx file from previous installation,a possible fix is:
+    * Install [Handle Windows tool](https://docs.microsoft.com/en-us/sysinternals/downloads/handle), identify the process handling .vmcx file,kill it.
+
+    * Run `minikube delete --all --purge` to remove the extra config files
