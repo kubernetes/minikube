@@ -562,6 +562,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateIntFromFlag(cmd, &cc.SSHPort, sshSSHPort)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.Namespace, startNamespace)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.APIServerName, apiServerName)
+	updateStringSliceFromFlag(cmd, &cc.KubernetesConfig.APIServerNames, "apiserver-names")
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.DNSDomain, dnsDomain)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.FeatureGates, featureGates)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ContainerRuntime, containerRuntime)
@@ -570,6 +571,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
+
+	if cmd.Flags().Changed(kubernetesVersion) {
+		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
+	}
 
 	if cmd.Flags().Changed("extra-config") {
 		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
