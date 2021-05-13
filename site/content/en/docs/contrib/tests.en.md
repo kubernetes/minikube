@@ -202,6 +202,9 @@ NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook
 #### validateTunnelDelete
 stops `minikube tunnel`
 
+## TestGeneratedLogs
+Verifies logs generated in the /tmp directory
+
 ## TestGuestEnvironment
 verifies files and packges installed inside minikube ISO/Base image
 
@@ -356,8 +359,5 @@ upgrades Kubernetes from oldest to newest
 
 ## TestMissingContainerUpgrade
 tests a Docker upgrade where the underlying container is missing
-
-## TestGeneratedLogs
-Verifies logs generated in the /tmp directory
 
 TEST COUNT: 115

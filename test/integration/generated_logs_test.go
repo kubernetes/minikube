@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	// "strings"
 	"testing"
 )
 
@@ -59,12 +58,18 @@ func TestGeneratedLogs(t *testing.T) {
 		t.Logf("minikube stderr:\n%s", stderr)
 	}
 
+	logsToBeRemoved, err := filepath.Glob(filepath.Join(logDir, "minikube_*"))
+	if err != nil {
+		t.Error("failed to clean old log files", err)
+	}
+	cleanupLogFiles(t, logsToBeRemoved)
+
 	logTests := []struct {
 		command          string
 		args             []string
-		runCount         int // number of times to run command
-		expectedLogFiles int // number of logfiles expected after running command runCount times
-		checkReverse     bool
+		runCount         int  // number of times to run command
+		expectedLogFiles int  // number of logfiles expected after running command runCount times
+		checkReverse     bool // the subcommand can be in the middle, before or after the flags
 	}{
 		{
 			command:          "start",
@@ -98,13 +103,6 @@ func TestGeneratedLogs(t *testing.T) {
 
 	for _, test := range logTests {
 		t.Run(test.command, func(t *testing.T) {
-			if test.checkReverse {
-				args := []string{"-p", profile, "--log_dir", logDir, test.command}
-				args = append(args, test.args...)
-			} else {
-				args := []string{test.command, "-p", profile, "--log_dir", logDir}
-				args = append(args, test.args...)
-			}
 
 			// before starting the test, ensure no other logs from the current command are written
 			logFiles, err := filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
