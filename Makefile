@@ -741,7 +741,7 @@ ifndef CIBUILD
 endif
 	set -x; for arch in $(ALL_ARCH); do docker push ${IMAGE}-$${arch}:${TAG}; done
 	$(X_BUILD_ENV) docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	set -x; for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
+	set -x; for arch in $(ALL_ARCH); do $(X_BUILD_ENV) docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
 	$(X_BUILD_ENV) docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
 
 .PHONY: push-docker
