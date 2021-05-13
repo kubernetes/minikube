@@ -67,37 +67,31 @@ func TestGeneratedLogs(t *testing.T) {
 	logTests := []struct {
 		command          string
 		args             []string
-		runCount         int  // number of times to run command
-		expectedLogFiles int  // number of logfiles expected after running command runCount times
-		checkReverse     bool // the subcommand can be in the middle, before or after the flags
+		runCount         int // number of times to run command
+		expectedLogFiles int // number of logfiles expected after running command runCount times
 	}{
 		{
 			command:          "start",
 			args:             []string{"--dry-run"},
 			runCount:         175, // calling this 175 times should create 2 files with 1 greater than 1M
 			expectedLogFiles: 2,
-			checkReverse:     false,
 		},
 		{
 			command:          "status",
 			runCount:         100,
 			expectedLogFiles: 1,
-			checkReverse:     false,
 		}, {
 			command:          "pause",
 			runCount:         5,
 			expectedLogFiles: 1,
-			checkReverse:     false,
 		}, {
 			command:          "unpause",
 			runCount:         1,
 			expectedLogFiles: 1,
-			checkReverse:     false,
 		}, {
 			command:          "stop",
 			runCount:         1,
 			expectedLogFiles: 1,
-			checkReverse:     false,
 		},
 	}
 
@@ -108,6 +102,21 @@ func TestGeneratedLogs(t *testing.T) {
 			logFiles, err := filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
 			if err != nil {
 				t.Errorf("failed to get old log files for command %s : %v", test.command, err)
+			}
+			cleanupLogFiles(t, logFiles)
+
+			args := []string{"-p", profile, "--log_dir", logDir, test.command}
+			args = append(args, test.args...)
+
+			singleRun, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+			if err != nil {
+				t.Errorf("%q failed: %v", singleRun.Command(), err)
+			}
+
+			// get log files generated above for a single run
+			logFiles, err = filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
+			if err != nil {
+				t.Errorf("failed to get new log files for command %s : %v", test.command, err)
 			}
 			cleanupLogFiles(t, logFiles)
 
