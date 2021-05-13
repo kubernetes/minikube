@@ -52,6 +52,9 @@ PLV=v${RAW}
 ${SED} "s/PreloadVersion = .*/PreloadVersion = \"${PLV}\"/" pkg/minikube/download/preload.go
 
 # Open a PR with the changes
+git config user.name "minikube-bot"
+git config user.email "minikube-bot@google.com"
+
 branch=storage-provisioner-${SP_VERSION}
 git checkout -b ${branch}
 
