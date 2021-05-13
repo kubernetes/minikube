@@ -134,7 +134,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 		}
 		// inject {"host.minikube.internal": hostIP} record into CoreDNS
-		if err := updateCoreDNS(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
+		if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
 			klog.Errorf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
 		}
 	} else {
@@ -676,13 +676,16 @@ func prepareNone() {
 	}
 }
 
-// updateCoreDNS adds host name and IP record to the DNS by updating CoreDNS's ConfigMap.
+// addCoreDNSEntry adds host name and IP record to the DNS by updating CoreDNS's ConfigMap.
 // ref: https://coredns.io/plugins/hosts/
-func updateCoreDNS(runner command.Runner, name, ip string, cc config.ClusterConfig) error {
+func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterConfig) error {
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	kubecfg := path.Join(vmpath.GuestPersistentDir, "kubeconfig")
+	// get current coredns configmap
 	cur := fmt.Sprintf("sudo %s --kubeconfig=%s -n kube-system get configmap coredns -o yaml", kubectl, kubecfg)
+	// inject hosts record into coredns configmap
 	sed := fmt.Sprintf("sed '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
+	// replace coredns configmap
 	new := fmt.Sprintf("sudo %s --kubeconfig=%s replace -f -", kubectl, kubecfg)
 	_, err := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s | %s", cur, sed, new)))
 	if err == nil {

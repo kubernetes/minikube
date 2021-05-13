@@ -485,21 +485,9 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 
 	// verify both pods could resolve "host.minikube.internal"
 	for _, name := range podNames {
-		// get node's default gateway via 'ip' - eg: "default via 192.168.49.1 dev eth0" => "192.168.49.1"
-		out, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "ip -4 route show default | cut -d' ' -f3"))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "host.minikube.internal"))
 		if err != nil {
-			t.Errorf("Error getting default gateway for pod %s: %v", name, err)
-		} else {
-			dgw := strings.TrimSpace(out.Stdout.String())
-			out, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3"))
-			if err != nil {
-				t.Errorf("Pod %s could not resolve 'host.minikube.internal': %v", name, err)
-			} else {
-				hip := strings.TrimSpace(out.Stdout.String())
-				if hip != dgw {
-					t.Errorf("Pod %s resolved 'host.minikube.internal' to %q different from host's IP (%s)", name, hip, dgw)
-				}
-			}
+			t.Errorf("Pod %s could not resolve 'host.minikube.internal': %v", name, err)
 		}
 	}
 }
