@@ -216,7 +216,7 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 	defer PostMortemLogs(t, profile)
 	// pull busybox
-	busyboxImage := "busybox:latest"
+	busyboxImage := "busybox:1.33"
 	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
@@ -257,7 +257,7 @@ func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// pull busybox
-	busyboxImage := "busybox:latest"
+	busyboxImage := "busybox:1.32"
 	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
