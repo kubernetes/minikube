@@ -23,12 +23,12 @@ yes|gcloud auth configure-docker
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
-if [ "$SP_VERSION" -ne "v*" ]; then
+if [[ $SP_VERSION != v* ]]; then
 	SP_VERSION=v$SP_VERSION
 fi
 
 SED="sed -i"
-if [ "$(uname)" -eq "Darwin" ]; then
+if [ "$(uname)" = "Darwin" ]; then
        SED="sed -i ''"
 fi
 
