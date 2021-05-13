@@ -464,6 +464,7 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 			t.Errorf("Pod %s could not resolve 'kubernetes.io': %v", name, err)
 		}
 	}
+
 	// verify both Pods could resolve "kubernetes.default"
 	// this one is also checked by k8s e2e node conformance tests:
 	// https://github.com/kubernetes/kubernetes/blob/f137c4777095b3972e2dd71a01365d47be459389/test/e2e_node/environment/conformance.go#L125-L179
@@ -473,11 +474,32 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 			t.Errorf("Pod %s could not resolve 'kubernetes.default': %v", name, err)
 		}
 	}
+
 	// verify both pods could resolve to a local service.
 	for _, name := range podNames {
 		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default.svc.cluster.local"))
 		if err != nil {
 			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
+		}
+	}
+
+	// verify both pods could resolve "host.minikube.internal"
+	for _, name := range podNames {
+		// get node's default gateway via 'ip' - eg: "default via 192.168.49.1 dev eth0" => "192.168.49.1"
+		out, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "ip -4 route show default | cut -d' ' -f3"))
+		if err != nil {
+			t.Errorf("Error getting default gateway for pod %s: %v", name, err)
+		} else {
+			dgw := strings.TrimSpace(out.Stdout.String())
+			out, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3"))
+			if err != nil {
+				t.Errorf("Pod %s could not resolve 'host.minikube.internal': %v", name, err)
+			} else {
+				hip := strings.TrimSpace(out.Stdout.String())
+				if hip != dgw {
+					t.Errorf("Pod %s resolved 'host.minikube.internal' to %q different from host's IP (%s)", name, hip, dgw)
+				}
+			}
 		}
 	}
 }

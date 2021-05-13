@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -60,6 +61,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -130,6 +132,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		// scale down CoreDNS from default 2 to 1 replica
 		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
 			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+		}
+		// inject {"host.minikube.internal": hostIP} record into CoreDNS
+		if err := updateCoreDNS(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
+			klog.Errorf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
 		}
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
@@ -668,4 +674,19 @@ func prepareNone() {
 	if err := util.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
 		exit.Message(reason.HostHomeChown, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": localpath.MiniPath(), "error": err})
 	}
+}
+
+// updateCoreDNS adds host name and IP record to the DNS by updating CoreDNS's ConfigMap.
+// ref: https://coredns.io/plugins/hosts/
+func updateCoreDNS(runner command.Runner, name, ip string, cc config.ClusterConfig) error {
+	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
+	kubecfg := path.Join(vmpath.GuestPersistentDir, "kubeconfig")
+	cur := fmt.Sprintf("sudo %s --kubeconfig=%s -n kube-system get configmap coredns -o yaml", kubectl, kubecfg)
+	sed := fmt.Sprintf("sed '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
+	new := fmt.Sprintf("sudo %s --kubeconfig=%s replace -f -", kubectl, kubecfg)
+	_, err := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s | %s", cur, sed, new)))
+	if err == nil {
+		klog.Infof("{%q: %s} record injected into CoreDNS", name, ip)
+	}
+	return err
 }
