@@ -47,7 +47,7 @@ Click on the buttons that describe your target platform:
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARMv7" name="Installer type" %}}
-{{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
+{{% quiz_button option="Binary download" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS" name="Architecture" %}}
@@ -158,20 +158,6 @@ sudo rpm -Uvh minikube-latest.s390x.rpm
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm
 sudo install minikube-linux-arm /usr/local/bin/minikube
-```
-{{% /quiz_instruction %}}
-
-{{% quiz_instruction type="/Linux/ARMv7/Debian package" %}}
-```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_armhf.deb
-sudo dpkg -i minikube_latest_armhf.deb
-```
-{{% /quiz_instruction %}}
-
-{{% quiz_instruction type="/Linux/ARMv7/RPM package" %}}
-```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.armv7hl.rpm
-sudo rpm -Uvh minikube-latest.armv7hl.rpm
 ```
 {{% /quiz_instruction %}}
 
