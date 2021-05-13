@@ -75,7 +75,7 @@ sudo rpm -Uvh minikube-latest.aarch64.rpm
 {{% /linuxtab %}}
 {{% mactab %}}
 
-If the [Brew Package Manager](https://brew.sh/) installed:
+If the [Brew Package Manager](https://brew.sh/) is installed:
 
 ```shell
 brew install minikube
