@@ -266,7 +266,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 	}
 
 	if cv.ServerVersion.GitVersion != constants.NewestKubernetesVersion {
-		t.Fatalf("expected server version %s is not the same with latest version %s", cv.ServerVersion.GitVersion, constants.NewestKubernetesVersion)
+		t.Fatalf("server version %s is not the same with the expected version %s after upgrade", cv.ServerVersion.GitVersion, constants.NewestKubernetesVersion)
 	}
 
 	t.Logf("Attempting to downgrade Kubernetes (should fail)")

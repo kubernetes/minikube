@@ -571,6 +571,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
 
+	if cmd.Flags().Changed(kubernetesVersion) {
+		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
+	}
+
 	if cmd.Flags().Changed("extra-config") {
 		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
 	}
