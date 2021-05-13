@@ -2,6 +2,7 @@
 
 {{ $hide := "" }}
 {{ if gt $level 0 }}
+    {{/* Initially we only show the top-level options */}}
     {{ $hide = "hide" }}
 {{ end }}
 
@@ -11,4 +12,3 @@
     </div>
     <div class="col-lg-10">{{ .Inner }}</div>
 </div>
-
