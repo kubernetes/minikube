@@ -72,6 +72,8 @@ type DriverState struct {
 	State    State
 	// Rejection is why we chose not to use this driver
 	Rejection string
+	// Suggestion is how the user could improve health
+	Suggestion string
 }
 
 func (d DriverState) String() string {

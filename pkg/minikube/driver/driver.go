@@ -289,6 +289,7 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 
 			if !ds.State.Healthy {
 				ds.Rejection = fmt.Sprintf("Not healthy: %v", ds.State.Error)
+				ds.Suggestion = fmt.Sprintf("%s <%s>", ds.State.Fix, ds.State.Doc)
 				rejects = append(rejects, ds)
 				continue
 			}
