@@ -660,6 +660,23 @@ var Addons = map[string]*Addon{
 	}),
 }
 
+// parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
+func parseMapString(str string) map[string]string {
+	mapResult := make(map[string]string)
+	if str == "" {
+		return mapResult
+	}
+	for _, pairText := range strings.Split(str, ",") {
+		vals := strings.Split(pairText, "=")
+		if len(vals) != 2 {
+			out.WarningT("Ignoring invalid pair entry {{.pair}}", out.V{"pair": pairText})
+			continue
+		}
+		mapResult[vals[0]] = vals[1]
+	}
+	return mapResult
+}
+
 // GenerateTemplateData generates template data for template assets
 func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo) interface{} {
 
@@ -705,19 +722,16 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		opts.Images = make(map[string]string) // Avoid nil access when rendering
 	}
 
-	images := viper.GetString(config.AddonImages)
-	if images != "" {
-		for _, image := range strings.Split(images, ",") {
-			vals := strings.Split(image, "=")
-			if len(vals) != 2 || vals[1] == "" {
-				out.WarningT("Ignoring invalid custom image {{.conf}}", out.V{"conf": image})
-				continue
-			}
-			if _, ok := opts.Images[vals[0]]; ok {
-				opts.Images[vals[0]] = vals[1]
-			} else {
-				out.WarningT("Ignoring unknown custom image {{.name}}", out.V{"name": vals[0]})
-			}
+	images := parseMapString(viper.GetString(config.AddonImages))
+	for name, image := range images {
+		if image == "" {
+			out.WarningT("Ignoring empty custom image {{.name}}", out.V{"name": name})
+			continue
+		}
+		if _, ok := opts.Images[name]; ok {
+			opts.Images[name] = image
+		} else {
+			out.WarningT("Ignoring unknown custom image {{.name}}", out.V{"name": name})
 		}
 	}
 
@@ -725,19 +739,12 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		opts.Registries = make(map[string]string)
 	}
 
-	registries := viper.GetString(config.AddonRegistries)
-	if registries != "" {
-		for _, registry := range strings.Split(registries, ",") {
-			vals := strings.Split(registry, "=")
-			if len(vals) != 2 {
-				out.WarningT("Ignoring invalid custom registry {{.conf}}", out.V{"conf": registry})
-				continue
-			}
-			if _, ok := opts.Images[vals[0]]; ok { // check images map because registry map may omitted default registry
-				opts.CustomRegistries[vals[0]] = vals[1]
-			} else {
-				out.WarningT("Ignoring unknown custom registry {{.name}}", out.V{"name": vals[0]})
-			}
+	registries := parseMapString(viper.GetString(config.AddonRegistries))
+	for name, registry := range registries {
+		if _, ok := opts.Images[name]; ok { // check images map because registry map may omitted default registry
+			opts.CustomRegistries[name] = registry
+		} else {
+			out.WarningT("Ignoring unknown custom registry {{.name}}", out.V{"name": registry})
 		}
 	}
 
