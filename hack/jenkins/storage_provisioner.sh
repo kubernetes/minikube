@@ -23,16 +23,12 @@ yes|gcloud auth configure-docker
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
-# Grab current storage provisioner version and bump it
-SP_VERSION=$(egrep "STORAGE_PROVISIONER_TAG \?=" Makefile | cut -d ' ' -f 3)
-
-# SP_VERSION is going to be of the form "v4", grab that number, increment it, and tack the v back on
-RAW_VERSION=${SP_VERSION:1}
-RAW_VERSION=$((RAW_VERSION+1))
-SP_VERSION=v${RAW_VERSION}
+if [ "$SP_VERSION" -ne "v*" ]; then
+	SP_VERSION=v$SP_VERSION
+fi
 
 SED="sed -i"
-if [ "$(uname)" == "Darwin" ]; then
+if [ "$(uname)" -eq "Darwin" ]; then
        SED="sed -i ''"
 fi
 
