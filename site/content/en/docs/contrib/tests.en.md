@@ -357,4 +357,7 @@ upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 114
+## TestGeneratedLogs
+Verifies logs generated in the /tmp directory
+
+TEST COUNT: 115
