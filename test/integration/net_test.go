@@ -69,7 +69,7 @@ func TestNetworkPlugins(t *testing.T) {
 					t.Skipf("flannel is not yet compatible with Docker driver: iptables v1.8.3 (legacy): Couldn't load target `CNI-x': No such file or directory")
 				}
 
-				if !DockerDriver() && tc.Name == "false" {
+				if !DockerDriver() && tc.name == "false" {
 					t.Skipf("skipping the test as CNI is required for container runtime %s", ContainerRuntime())
 				}
 
@@ -99,10 +99,13 @@ func TestNetworkPlugins(t *testing.T) {
 				}
 				if !t.Failed() {
 					t.Run("KubeletFlags", func(t *testing.T) {
-						// none does not support 'minikube ssh'
-						rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
+						var rr *RunResult
+						var err error
 						if NoneDriver() {
 							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
+						} else {
+							// none does not support 'minikube ssh'
+							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
 						}
 						if err != nil {
 							t.Fatalf("ssh failed: %v", err)
