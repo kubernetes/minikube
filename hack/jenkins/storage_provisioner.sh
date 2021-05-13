@@ -17,7 +17,7 @@
 set -x -o pipefail
 
 # Make sure docker is installed and configured
-./hack/jenkins/installers/check_install_docker.sh
+./hack/jenkins/installers/check_install_docker.sh || true
 yes|gcloud auth configure-docker
 
 # Make sure gh is installed and configured
