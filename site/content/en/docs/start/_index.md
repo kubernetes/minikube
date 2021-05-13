@@ -66,7 +66,7 @@ Click on the buttons that describe your target platform:
 {{% quiz_button option="x86-64" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/Windows/x86-64" name="Architecture" %}}
+{{% quiz_row base="/Windows/x86-64" name="Installer type" %}}
 {{% quiz_button option="Windows Package Manager" %}} {{% quiz_button option="Chocolatey" %}} {{% quiz_button option=".exe download" %}}
 {{% /quiz_row %}}
 
