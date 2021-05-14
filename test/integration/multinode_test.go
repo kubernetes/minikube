@@ -48,6 +48,7 @@ func TestMultiNode(t *testing.T) {
 		}{
 			{"FreshStart2Nodes", validateMultiNodeStart},
 			{"DeployApp2Nodes", validateDeployAppToMultiNode},
+			{"PingHostFrom2Pods", validatePodsPingHost},
 			{"AddNode", validateAddNodeToMultiNode},
 			{"ProfileList", validateProfileListWithMultiNode},
 			{"CopyFile", validateCopyFileWithMultiNode},
@@ -154,9 +155,7 @@ func validateProfileListWithMultiNode(ctx context.Context, t *testing.T, profile
 				t.Errorf("expected the json of 'profile list' to not include profile or node in invalid profile but got *%q*. args: %q", rr.Stdout.String(), rr.Command())
 			}
 		}
-
 	}
-
 }
 
 // validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
@@ -482,8 +481,17 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
 		}
 	}
+}
 
-	// verify both pods could resolve "host.minikube.internal"
+// validatePodsPingHost uses app previously deplyed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
+func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
+	// get Pod names
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
+	if err != nil {
+		t.Errorf("failed get Pod names")
+	}
+	podNames := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
+
 	for _, name := range podNames {
 		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "host.minikube.internal"))
 		if err != nil {

@@ -265,6 +265,9 @@ tests that the node name verification works as expected
 #### validateDeployAppToMultiNode
 deploys an app to a multinode cluster and makes sure all nodes can serve traffic
 
+#### validatePodsPingHost
+uses app previously deplyed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
+
 ## TestNetworkPlugins
 tests all supported CNI options
 Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
