@@ -74,6 +74,8 @@ type ClusterConfig struct {
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
 	Addons                  map[string]bool
+	CustomAddonImages       map[string]string
+	CustomAddonRegistries   map[string]string
 	VerifyComponents        map[string]bool // map of components to verify and wait for after start.
 	StartHostTimeout        time.Duration
 	ScheduledStop           *ScheduledStopConfig

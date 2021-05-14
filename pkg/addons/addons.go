@@ -185,6 +185,12 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
 	}
 
+	// Persist images even if the machine is running so starting gets the correct images.
+	images, customRegistries, err := assets.SelectAndPersistImages(addon, cc)
+	if err != nil {
+		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
+	}
+
 	mName := config.MachineName(*cc, cp)
 	host, err := machine.LoadHost(api, mName)
 	if err != nil || !machine.IsRunning(api, mName) {
@@ -224,7 +230,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		out.WarningT("At least needs control plane nodes to enable addon")
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo)
+	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 
