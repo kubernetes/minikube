@@ -85,6 +85,7 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 	// .NetworkSettings.Networks["bridge"|"podman"].Gateway
 	for _, network := range []string{containerName, defaultBridgeName(ociBin)} {
 		gatewayIP, err := networkGateway(ociBin, containerName, network)
+		// err == nil here doesn't mean we get a valid gateway IP, it still can be an empty string
 		if err != nil {
 			return "", err
 		}
@@ -97,7 +98,11 @@ func gatewayIP(ociBin, containerName string) (string, error) {
 }
 
 func networkGateway(ociBin, container, network string) (string, error) {
-	format := fmt.Sprintf("{{(index .NetworkSettings.Networks %q).Gateway}}", network)
+	format := fmt.Sprintf(`
+{{ if index .NetworkSettings.Networks %q}} 
+	{{(index .NetworkSettings.Networks %q).Gateway}}
+{{ end }}
+`, network, network)
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", "--format", format, container))
 	if err != nil {
 		return "", errors.Wrapf(err, "inspect gateway")
