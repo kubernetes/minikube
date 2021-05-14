@@ -33,12 +33,10 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 const (
@@ -101,28 +99,6 @@ func DigestByGoLib(imgName string) string {
 		return cf.Hex
 	}
 	return cf.Hex
-}
-
-// LoadFromTarball loads image from tarball
-func LoadFromTarball(binary, img, p string) error {
-	switch binary {
-	case driver.Podman:
-		return fmt.Errorf("not yet implemented, see issue #8426")
-	default:
-		tag, err := name.NewTag(Tag(img))
-		if err != nil {
-			return errors.Wrap(err, "new tag")
-		}
-
-		i, err := tarball.ImageFromPath(p, &tag)
-		if err != nil {
-			return errors.Wrap(err, "tarball")
-		}
-
-		resp, err := daemon.Write(tag, i)
-		klog.V(2).Infof("response: %s", resp)
-		return err
-	}
 }
 
 // Tag returns just the image with the tag

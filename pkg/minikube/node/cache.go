@@ -145,13 +145,17 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				}
 			}
 
-			klog.Infof("Loading %s from local cache", img)
-			if err := image.LoadFromTarball(cc.Driver, img, download.ImagePathInCache(img)); err == nil {
-				klog.Infof("successfully loaded %s from cached tarball", img)
-				// strip the digest from the img before saving it in the config
-				// because loading an image from tarball to daemon doesn't load the digest
-				finalImg = img
-				return nil
+			if cc.Driver == driver.Podman {
+				return fmt.Errorf("not yet implemented, see issue #8426")
+			}
+			if driver.IsDocker(cc.Driver) {
+				klog.Infof("Loading %s from local cache", img)
+				err = download.CacheToDaemon(img)
+				if err == nil {
+					klog.Infof("successfully loaded %s from cached tarball", img)
+					finalImg = img
+					return nil
+				}
 			}
 
 			if driver.IsDocker(cc.Driver) {

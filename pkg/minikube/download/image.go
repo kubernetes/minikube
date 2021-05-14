@@ -17,6 +17,7 @@ limitations under the License.
 package download
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -43,8 +44,8 @@ var (
 	}
 )
 
-// ImagePathInCache returns path in local cache directory
-func ImagePathInCache(img string) string {
+// imagePathInCache returns path in local cache directory
+func imagePathInCache(img string) string {
 	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
 	return f
@@ -52,7 +53,7 @@ func ImagePathInCache(img string) string {
 
 // ImageExistsInCache if img exist in local cache directory
 func ImageExistsInCache(img string) bool {
-	f := ImagePathInCache(img)
+	f := imagePathInCache(img)
 
 	// Check if image exists locally
 	klog.Infof("Checking for %s in local cache directory", img)
@@ -87,7 +88,7 @@ var checkImageExistsInDaemon = ImageExistsInDaemon
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
 func ImageToCache(img string) error {
-	f := ImagePathInCache(img)
+	f := imagePathInCache(img)
 	fileLock := f + ".lock"
 
 	releaser, err := lockDownload(fileLock)
@@ -166,6 +167,37 @@ func ImageToCache(img string) error {
 			return nil
 		}
 	}
+}
+
+// tag returns just the image with the tag
+// eg image:tag@sha256:digest -> image:tag if there is an associated tag
+// if not possible, just return the initial img
+func tag(img string) string {
+	split := strings.Split(img, ":")
+	if len(split) == 3 {
+		tag := strings.Split(split[1], "@")[0]
+		return fmt.Sprintf("%s:%s", split[0], tag)
+	}
+	return img
+}
+
+// CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
+func CacheToDaemon(img string) error {
+	p := imagePathInCache(img)
+
+	tag, err := name.NewTag(tag(img))
+	if err != nil {
+		return errors.Wrap(err, "new tag")
+	}
+
+	i, err := tarball.ImageFromPath(p, &tag)
+	if err != nil {
+		return errors.Wrap(err, "tarball")
+	}
+
+	resp, err := daemon.Write(tag, i)
+	klog.V(2).Infof("response: %s", resp)
+	return err
 }
 
 // ImageToDaemon downloads img (if not present in daemon) and writes it to the local docker daemon
