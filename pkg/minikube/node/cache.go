@@ -211,7 +211,7 @@ func saveImagesToTarFromConfig() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return image.SaveToDir(images, constants.ImageCacheDir)
+	return image.SaveToDir(images, constants.ImageCacheDir, false)
 }
 
 // CacheAndLoadImagesInConfig loads the images currently in the config file
@@ -224,7 +224,7 @@ func CacheAndLoadImagesInConfig(profiles []*config.Profile) error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheAndLoadImages(images, profiles)
+	return machine.CacheAndLoadImages(images, profiles, false)
 }
 
 func imagesInConfigFile() ([]string, error) {
