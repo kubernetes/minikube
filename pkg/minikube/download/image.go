@@ -17,7 +17,6 @@ limitations under the License.
 package download
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -169,33 +168,22 @@ func ImageToCache(img string) error {
 	}
 }
 
-// tag returns just the image with the tag
-// eg image:tag@sha256:digest -> image:tag if there is an associated tag
-// if not possible, just return the initial img
-func tag(img string) string {
-	split := strings.Split(img, ":")
-	if len(split) == 3 {
-		tag := strings.Split(split[1], "@")[0]
-		return fmt.Sprintf("%s:%s", split[0], tag)
-	}
-	return img
-}
-
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
 func CacheToDaemon(img string) error {
 	p := imagePathInCache(img)
 
-	tag, err := name.NewTag(tag(img))
+	ref, err := name.NewDigest(img)
 	if err != nil {
-		return errors.Wrap(err, "new tag")
+		return errors.Wrap(err, "new ref")
 	}
 
+	tag := ref.Tag()
 	i, err := tarball.ImageFromPath(p, &tag)
 	if err != nil {
 		return errors.Wrap(err, "tarball")
 	}
 
-	resp, err := daemon.Write(tag, i)
+	resp, err := daemon.Write(ref, i)
 	klog.V(2).Infof("response: %s", resp)
 	return err
 }
