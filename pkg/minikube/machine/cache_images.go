@@ -269,13 +269,9 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 		return errors.Wrap(err, "runtime")
 	}
 
-	exists, err := imageExists(r, imgName)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		if err := r.RemoveImage(imgName); err != nil {
+	if err := r.RemoveImage(imgName); err != nil {
+		errStr := strings.ToLower(err.Error())
+		if !strings.Contains(errStr, "no such image") {
 			return errors.Wrap(err, "removing image")
 		}
 	}
@@ -305,20 +301,6 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 
 	klog.Infof("Transferred and loaded %s from cache", src)
 	return nil
-}
-
-func imageExists(r cruntime.Manager, image string) (bool, error) {
-	images, err := r.ListImages(cruntime.ListImagesOptions{})
-	if err != nil {
-		return false, errors.Wrap(err, "listing images")
-	}
-	for _, i := range images {
-		if i == image {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 // pullImages pulls images to the container run time
