@@ -46,13 +46,22 @@ func binaryWithChecksumURL(binaryName, version, osName, archName string) (string
 func Binary(binary, version, osName, archName string) (string, error) {
 	targetDir := localpath.MakeMiniPath("cache", osName, version)
 	targetFilepath := path.Join(targetDir, binary)
+	targetLock := targetFilepath + ".lock"
 
 	url, err := binaryWithChecksumURL(binary, version, osName, archName)
 	if err != nil {
 		return "", err
 	}
 
-	if _, err := os.Stat(targetFilepath); err == nil {
+	releaser, err := lockDownload(targetLock)
+	if releaser != nil {
+		defer releaser.Release()
+	}
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := checkCache(targetFilepath); err == nil {
 		klog.Infof("Not caching binary, using %s", url)
 		return targetFilepath, nil
 	}

@@ -127,23 +127,18 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
-			if image.ExistsImageInCache(img) {
-				klog.Infof("%s exists in cache, skipping pull", img)
+			klog.Infof("Downloading %s to local cache", img)
+			err = download.ImageToCache(img)
+			if err == nil {
+				klog.Infof("successfully saved %s as a tarball", img)
 				finalImg = img
-			} else {
-				klog.Infof("Downloading %s to local cache", img)
-				err = image.WriteImageToCache(img)
-				if err == nil {
-					klog.Infof("successfully saved %s as a tarball", img)
-					finalImg = img
-				}
 			}
 			if downloadOnly {
 				return err
 			}
 
 			if driver.IsDocker(cc.Driver) {
-				if image.ExistsImageInDaemon(img) {
+				if download.ImageExistsInDaemon(img) {
 					klog.Infof("%s exists in daemon, skipping load", img)
 					finalImg = img
 					return nil
@@ -160,7 +155,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 
 			if driver.IsDocker(cc.Driver) {
 				klog.Infof("Downloading %s to local daemon", img)
-				err = image.WriteImageToDaemon(img)
+				err = download.ImageToDaemon(img)
 				if err == nil {
 					klog.Infof("successfully downloaded %s", img)
 					finalImg = img
