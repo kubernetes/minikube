@@ -70,6 +70,8 @@ func TestNetworkPlugins(t *testing.T) {
 				}
 
 				if !DockerDriver() && tc.name == "kindnet" {
+					// CNI is disabled when --network-plugin=kubenet option is passed. See cni.New(..) function
+					// But for containerd/cri-o CNI has to be configured
 					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
 				}
 
