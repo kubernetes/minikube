@@ -26,6 +26,7 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -49,6 +50,7 @@ func TestMultiNode(t *testing.T) {
 			{"DeployApp2Nodes", validateDeployAppToMultiNode},
 			{"AddNode", validateAddNodeToMultiNode},
 			{"ProfileList", validateProfileListWithMultiNode},
+			{"CopyFile", validateCopyFileWithMultiNode},
 			{"StopNode", validateStopRunningNode},
 			{"StartAfterStop", validateStartNodeAfterStop},
 			{"DeleteNode", validateDeleteNodeFromMultiNode},
@@ -155,6 +157,31 @@ func validateProfileListWithMultiNode(ctx context.Context, t *testing.T, profile
 
 	}
 
+}
+
+// validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
+func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: cp is unsupported by none driver")
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--output", "json", "--alsologtostderr"))
+	if err != nil && rr.ExitCode != 7 {
+		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
+	}
+
+	var statuses []cmd.Status
+	if err = json.Unmarshal(rr.Stdout.Bytes(), &statuses); err != nil {
+		t.Errorf("failed to decode json from status: args %q: %v", rr.Command(), err)
+	}
+
+	for _, s := range statuses {
+		if s.Worker {
+			testCpCmd(ctx, t, profile, s.Name)
+		} else {
+			testCpCmd(ctx, t, profile, "")
+		}
+	}
 }
 
 // validateStopRunningNode tests the minikube node stop command

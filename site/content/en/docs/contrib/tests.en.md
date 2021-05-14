@@ -241,6 +241,9 @@ uses the minikube node add command to add a node to an existing cluster
 #### validateProfileListWithMultiNode
 make sure minikube profile list outputs correct with multinode clusters
 
+#### validateCopyFileWithMultiNode
+validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
+
 #### validateStopRunningNode
 tests the minikube node stop command
 

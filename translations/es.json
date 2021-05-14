@@ -100,7 +100,7 @@
 	"Consider increasing Docker Desktop's memory size.": "Considera incrementar la memoria asignada a Docker Desktop",
 	"Continuously listing/getting the status with optional interval duration.": "",
 	"Copy the specified file into minikube": "",
-	"Copy the specified file into minikube, it will be saved at path \u003ctarget file absolute path\u003e in your minikube.\\nExample Command : \\\"minikube cp a.txt /home/docker/b.txt\\\"\\n": "",
+	"Copy the specified file into minikube, it will be saved at path \u003ctarget file absolute path\u003e in your minikube.\\nExample Command : \\\"minikube cp a.txt /home/docker/b.txt\\\"\\n                  \\\"minikube cp a.txt minikube-m02:/home/docker/b.txt\\\"\\n": "",
 	"Could not determine a Google Cloud project, which might be ok.": "No se pudo determinar un proyecto de Google Cloud que podría estar bien.",
 	"Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.": "No se puedo encontrar ninguna credencial de GCP. Corre `gcloud auth application-default login` o establezca la variable de entorno GOOGLE_APPLICATION_CREDENTIALS en la ruta de su archivo de credentiales.",
 	"Could not process error from failed deletion": "No se pudo procesar el error de la eliminación fallida",
