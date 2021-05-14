@@ -55,7 +55,7 @@ Click on the buttons that describe your target platform:
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/x86-64" name="Installer type" %}}
-{{% quiz_button option="Homebrew" %}} {{% quiz_button option="Binary download" %}}
+{{% quiz_button option="Binary download" %}} {{% quiz_button option="Homebrew" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64" name="Installer type" %}}
@@ -67,7 +67,7 @@ Click on the buttons that describe your target platform:
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Windows/x86-64" name="Installer type" %}}
-{{% quiz_button option="Windows Package Manager" %}} {{% quiz_button option="Chocolatey" %}} {{% quiz_button option=".exe download" %}}
+{{% quiz_button option=".exe download" %}} {{% quiz_button option="Windows Package Manager" %}} {{% quiz_button option="Chocolatey" %}}
 {{% /quiz_row %}}
 
 {{% quiz_instruction id="/Linux/x86-64/Binary download" %}}

@@ -21,9 +21,9 @@ function selectQuizOption(selectedId) {
     $('.quiz-instruction[data-quiz-id=\'' + selectedId + '\']').removeClass('hide');
 
     const buttons = $('.option-row[data-quiz-id=\'' + selectedId + '\']').find('.option-button');
-    // if there is only one option, auto-select that option for the user
-    if (buttons.length === 1) {
-        const btn = $(buttons[0]);
+    // auto-select the first option for the user, to reduce the number of clicks
+    if (buttons.length > 0) {
+        const btn = buttons.first();
         btn.addClass('active');
         selectQuizOption(btn.attr('data-quiz-id'));
     }
@@ -39,15 +39,11 @@ function initQuiz() {
             selectQuizOption(dataContainerId);
         });
         const userOS = getQuizUserOS();
-        const buttons = $('.option-button[data-quiz-id=\'/' + userOS + '\']');
-        if (buttons.length === 1) {
-            const btn = $(buttons[0]);
-            btn.addClass('active');
-            selectQuizOption(btn.attr('data-quiz-id'));
-        }
-
+        // auto-select the OS for user
+        const btn = $('.option-button[data-quiz-id=\'/' + userOS + '\']').first();
+        btn.addClass('active');
+        selectQuizOption(btn.attr('data-quiz-id'));
     } catch(e) {
-        console.log(e);
         const elements = document.getElementsByClassName("quiz-instruction");
         for (let element of elements) {
             element.classList.remove("hide");
