@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -678,18 +679,44 @@ func prepareNone() {
 
 // addCoreDNSEntry adds host name and IP record to the DNS by updating CoreDNS's ConfigMap.
 // ref: https://coredns.io/plugins/hosts/
+// note: there can be only one 'hosts' block in CoreDNS's ConfigMap (avoid "plugin/hosts: this plugin can only be used once per Server Block" error)
 func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterConfig) error {
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	kubecfg := path.Join(vmpath.GuestPersistentDir, "kubeconfig")
-	// get current coredns configmap
-	cur := fmt.Sprintf("sudo %s --kubeconfig=%s -n kube-system get configmap coredns -o yaml", kubectl, kubecfg)
-	// inject hosts record into coredns configmap
-	sed := fmt.Sprintf("sed '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
-	// replace coredns configmap
-	new := fmt.Sprintf("sudo %s --kubeconfig=%s replace -f -", kubectl, kubecfg)
-	_, err := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s | %s", cur, sed, new)))
-	if err == nil {
-		klog.Infof("{%q: %s} record injected into CoreDNS", name, ip)
+
+	// get current coredns configmap via kubectl
+	get := fmt.Sprintf("sudo %s --kubeconfig=%s -n kube-system get configmap coredns -o yaml", kubectl, kubecfg)
+	out, err := runner.RunCmd(exec.Command("/bin/bash", "-c", get))
+	if err != nil {
+		klog.Errorf("failed to get current CoreDNS ConfigMap: %v", err)
+		return err
 	}
-	return err
+	cm := strings.TrimSpace(out.Stdout.String())
+
+	// check if this specific host entry already exists in coredns configmap, so not to duplicate/override it
+	host := regexp.MustCompile(fmt.Sprintf(`(?smU)^ *hosts {.*%s.*}`, name))
+	if host.MatchString(cm) {
+		klog.Infof("CoreDNS already contains %q host record, skipping...", name)
+		return nil
+	}
+
+	// inject hosts block with host record into coredns configmap
+	sed := fmt.Sprintf("sed '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
+	// check if hosts block already exists in coredns configmap
+	hosts := regexp.MustCompile(`(?smU)^ *hosts {.*}`)
+	if hosts.MatchString(cm) {
+		// inject host record into existing coredns configmap hosts block instead
+		klog.Info("CoreDNS already contains hosts block, will inject host record there...")
+		sed = fmt.Sprintf("sed '/^        hosts {.*/a \\           %s %s'", ip, name)
+	}
+
+	// replace coredns configmap via kubectl
+	replace := fmt.Sprintf("sudo %s --kubeconfig=%s replace -f -", kubectl, kubecfg)
+	if _, err := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s | %s", get, sed, replace))); err != nil {
+		klog.Errorf("failed to inject {%q: %s} host record into CoreDNS", name, ip)
+		return err
+	}
+	klog.Infof("{%q: %s} host record injected into CoreDNS", name, ip)
+
+	return nil
 }
