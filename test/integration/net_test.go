@@ -73,6 +73,7 @@ func TestNetworkPlugins(t *testing.T) {
 					// CNI is disabled when --network-plugin=kubenet option is passed. See cni.New(..) function
 					// But for containerd/crio CNI has to be configured
 					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
+					return
 				}
 
 				start := time.Now()
