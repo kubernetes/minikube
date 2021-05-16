@@ -17,11 +17,70 @@ limitations under the License.
 package images
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/blang/semver"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/version"
 )
+
+func TestEssentials(t *testing.T) {
+	var testCases = []struct {
+		version string
+		images  []string
+	}{
+		{"v1.18.0", strings.Split(strings.Trim(`
+k8s.gcr.io/kube-apiserver:v1.18.0
+k8s.gcr.io/kube-controller-manager:v1.18.0
+k8s.gcr.io/kube-scheduler:v1.18.0
+k8s.gcr.io/kube-proxy:v1.18.0
+k8s.gcr.io/pause:3.2
+k8s.gcr.io/etcd:3.4.3-0
+k8s.gcr.io/coredns:1.6.7
+`, "\n"), "\n")},
+		{"v1.19.0", strings.Split(strings.Trim(`
+k8s.gcr.io/kube-apiserver:v1.19.0
+k8s.gcr.io/kube-controller-manager:v1.19.0
+k8s.gcr.io/kube-scheduler:v1.19.0
+k8s.gcr.io/kube-proxy:v1.19.0
+k8s.gcr.io/pause:3.2
+k8s.gcr.io/etcd:3.4.9-1
+k8s.gcr.io/coredns:1.7.0
+`, "\n"), "\n")},
+		{"v1.20.0", strings.Split(strings.Trim(`
+k8s.gcr.io/kube-apiserver:v1.20.0
+k8s.gcr.io/kube-controller-manager:v1.20.0
+k8s.gcr.io/kube-scheduler:v1.20.0
+k8s.gcr.io/kube-proxy:v1.20.0
+k8s.gcr.io/pause:3.2
+k8s.gcr.io/etcd:3.4.13-0
+k8s.gcr.io/coredns:1.7.0
+`, "\n"), "\n")},
+		{"v1.21.0", strings.Split(strings.Trim(`
+k8s.gcr.io/kube-apiserver:v1.21.0
+k8s.gcr.io/kube-controller-manager:v1.21.0
+k8s.gcr.io/kube-scheduler:v1.21.0
+k8s.gcr.io/kube-proxy:v1.21.0
+k8s.gcr.io/pause:3.4.1
+k8s.gcr.io/etcd:3.4.13-0
+k8s.gcr.io/coredns/coredns:v1.8.0
+`, "\n"), "\n")},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.version, func(t *testing.T) {
+			v, err := semver.Make(strings.TrimPrefix(tc.version, "v"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := tc.images
+			got := essentials("k8s.gcr.io", v)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("images mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
 func TestAuxiliary(t *testing.T) {
 	want := []string{

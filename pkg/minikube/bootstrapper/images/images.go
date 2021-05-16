@@ -44,13 +44,14 @@ func Pause(v semver.Version, mirror string) string {
 // essentials returns images needed too bootstrap a Kubernetes
 func essentials(mirror string, v semver.Version) []string {
 	imgs := []string{
-		componentImage("kube-proxy", v, mirror),
-		componentImage("kube-scheduler", v, mirror),
-		componentImage("kube-controller-manager", v, mirror),
+		// use the same order as: `kubeadm config images list`
 		componentImage("kube-apiserver", v, mirror),
-		coreDNS(v, mirror),
-		etcd(v, mirror),
+		componentImage("kube-controller-manager", v, mirror),
+		componentImage("kube-scheduler", v, mirror),
+		componentImage("kube-proxy", v, mirror),
 		Pause(v, mirror),
+		etcd(v, mirror),
+		coreDNS(v, mirror),
 	}
 	return imgs
 }
