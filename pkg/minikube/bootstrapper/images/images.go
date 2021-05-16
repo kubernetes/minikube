@@ -29,8 +29,12 @@ import (
 // Pause returns the image name to pull for a given Kubernetes version
 func Pause(v semver.Version, mirror string) string {
 	// Should match `PauseVersion` in:
+	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
+	pv := "3.4.1"
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
-	pv := "3.2"
+	if semver.MustParseRange("<1.21.0-alpha.3")(v) {
+		pv = "3.2"
+	}
 	if semver.MustParseRange("<1.18.0-alpha.0")(v) {
 		pv = "3.1"
 	}
@@ -58,13 +62,15 @@ func componentImage(name string, v semver.Version, mirror string) string {
 
 // coreDNS returns the images used for CoreDNS
 func coreDNS(v semver.Version, mirror string) string {
-	// Should match `CoreDNSVersion` in
+	// Should match `CoreDNSImageName` and `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	cv := "1.7.0"
+	in := "coredns/coredns"
+	if semver.MustParseRange("<1.21.0-alpha.1")(v) {
+		in = "coredns"
+	}
+	cv := "v1.8.0"
 	switch v.Minor {
-	case 22:
-		cv = "1.8.0"
-	case 10, 20, 21:
+	case 20, 19:
 		cv = "1.7.0"
 	case 18:
 		cv = "1.6.7"
@@ -81,16 +87,18 @@ func coreDNS(v semver.Version, mirror string) string {
 	case 11:
 		cv = "1.1.3"
 	}
-	return path.Join(kubernetesRepo(mirror), "coredns:"+cv)
+	return path.Join(kubernetesRepo(mirror), in+":"+cv)
 }
 
 // etcd returns the image used for etcd
 func etcd(v semver.Version, mirror string) string {
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	ev := "3.4.13-0"
+	ev := "3.4.13-3"
 
 	switch v.Minor {
+	case 19, 20, 21:
+		ev = "3.4.13-0"
 	case 17, 18:
 		ev = "3.4.3-0"
 	case 16:
