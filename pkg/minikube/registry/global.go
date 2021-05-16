@@ -66,11 +66,16 @@ var (
 
 // DriverState is metadata relating to a driver and status
 type DriverState struct {
-	Name       string
-	Default    bool
+	// Name is the name of the driver used internally
+	Name string
+	// Default drivers are selected automatically
+	Default bool
+	// Preference is the original priority from driver
 	Preference Priority
-	Priority   Priority
-	State      State
+	// Priority is the effective priority with health
+	Priority Priority
+	// State is the state of driver and dependencies
+	State State
 	// Rejection is why we chose not to use this driver
 	Rejection string
 	// Suggestion is how the user could improve health
