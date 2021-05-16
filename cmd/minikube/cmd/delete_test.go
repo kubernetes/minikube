@@ -17,15 +17,18 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/google/go-cmp/cmp"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -154,6 +157,17 @@ func TestDeleteProfile(t *testing.T) {
 	}
 }
 
+var DeleteHostAndDirectoriesMock = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
+	return deleteContextTest()
+}
+
+func deleteContextTest() error {
+	if err := cmdcfg.Unset(config.ProfileName); err != nil {
+		return DeletionError{Err: fmt.Errorf("unset minikube profile: %v", err), Errtype: Fatal}
+	}
+	return nil
+}
+
 func TestDeleteAllProfiles(t *testing.T) {
 	td, err := ioutil.TempDir("", "all")
 	if err != nil {
@@ -207,6 +221,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	}
 
 	profiles := append(validProfiles, inValidProfiles...)
+	DeleteHostAndDirectoriesGetter = DeleteHostAndDirectoriesMock
 	errs := DeleteProfiles(profiles)
 
 	if errs != nil {

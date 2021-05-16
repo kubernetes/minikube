@@ -87,6 +87,24 @@ func (error DeletionError) Error() string {
 	return error.Err.Error()
 }
 
+var DeleteHostAndDirectoriesGetter = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
+	if err := killMountProcess(); err != nil {
+		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
+	}
+
+	deleteHosts(api, cc)
+
+	// In case DeleteHost didn't complete the job.
+	deleteProfileDirectory(profileName)
+	deleteMachineDirectories(cc)
+
+	if err := deleteConfig(profileName); err != nil {
+		return err
+	}
+
+	return deleteContext(profileName)
+}
+
 func init() {
 	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
 	deleteCmd.Flags().BoolVar(&purge, "purge", false, "Set this flag to delete the '.minikube' folder from your user directory.")
@@ -282,23 +300,10 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 		}
 	}
 
-	if err := killMountProcess(); err != nil {
-		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
-	}
-
-	deleteHosts(api, cc)
-
-	// In case DeleteHost didn't complete the job.
-	deleteProfileDirectory(profile.Name)
-	deleteMachineDirectories(cc)
-
-	if err := deleteConfig(profile.Name); err != nil {
+	if err := DeleteHostAndDirectoriesGetter(api, cc, profile.Name); err != nil {
 		return err
 	}
 
-	if err := deleteContext(profile.Name); err != nil {
-		return err
-	}
 	out.Step(style.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
 	return nil
 }
