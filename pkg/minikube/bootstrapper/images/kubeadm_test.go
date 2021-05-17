@@ -106,18 +106,7 @@ func TestKubeadmImages(t *testing.T) {
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
-		{"v1.11.0", "", false, []string{
-			"k8s.gcr.io/kube-proxy:v1.11.0",
-			"k8s.gcr.io/kube-scheduler:v1.11.0",
-			"k8s.gcr.io/kube-controller-manager:v1.11.0",
-			"k8s.gcr.io/kube-apiserver:v1.11.0",
-			"k8s.gcr.io/coredns:1.1.3",
-			"k8s.gcr.io/etcd:3.2.18",
-			"k8s.gcr.io/pause:3.1",
-			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"docker.io/kubernetesui/dashboard:v2.1.0",
-			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
-		}},
+		{"v1.11.0", "", true, nil},
 		{"v1.10.0", "", true, nil},
 	}
 	for _, tc := range tests {

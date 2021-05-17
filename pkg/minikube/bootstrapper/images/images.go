@@ -85,8 +85,6 @@ func coreDNS(v semver.Version, mirror string) string {
 		cv = "1.2.6"
 	case 12:
 		cv = "1.2.2"
-	case 11:
-		cv = "1.1.3"
 	}
 	return path.Join(kubernetesRepo(mirror), in+":"+cv)
 }
@@ -108,8 +106,6 @@ func etcd(v semver.Version, mirror string) string {
 		ev = "3.3.10"
 	case 12, 13:
 		ev = "3.2.24"
-	case 11:
-		ev = "3.2.18"
 	}
 
 	// An awkward special case for v1.19.0 - do not imitate unless necessary

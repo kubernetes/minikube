@@ -33,7 +33,7 @@ func Kubeadm(mirror string, version string) ([]string, error) {
 	if v.Major > 1 {
 		return nil, fmt.Errorf("version too new: %v", v)
 	}
-	if semver.MustParseRange("<1.11.0-alpha.0")(v) {
+	if semver.MustParseRange("<1.12.0-alpha.0")(v) {
 		return nil, fmt.Errorf("version too old: %v", v)
 	}
 	imgs := essentials(mirror, v)
