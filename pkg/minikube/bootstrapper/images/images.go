@@ -28,6 +28,7 @@ import (
 
 // Pause returns the image name to pull for a given Kubernetes version
 func Pause(v semver.Version, mirror string) string {
+	// Note: changing this logic requires bumping the preload version
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	pv := "3.4.1"
@@ -63,6 +64,7 @@ func componentImage(name string, v semver.Version, mirror string) string {
 
 // coreDNS returns the images used for CoreDNS
 func coreDNS(v semver.Version, mirror string) string {
+	// Note: changing this logic requires bumping the preload version
 	// Should match `CoreDNSImageName` and `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	in := "coredns/coredns"
@@ -91,6 +93,7 @@ func coreDNS(v semver.Version, mirror string) string {
 
 // etcd returns the image used for etcd
 func etcd(v semver.Version, mirror string) string {
+	// Note: changing this logic requires bumping the preload version
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	ev := "3.4.13-3"
@@ -118,6 +121,7 @@ func etcd(v semver.Version, mirror string) string {
 
 // auxiliary returns images that are helpful for running minikube
 func auxiliary(mirror string) []string {
+	// Note: changing this list requires bumping the preload version
 	return []string{
 		storageProvisioner(mirror),
 		dashboardFrontend(mirror),
