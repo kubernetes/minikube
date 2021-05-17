@@ -365,4 +365,4 @@ upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 115
+TEST COUNT: 116
