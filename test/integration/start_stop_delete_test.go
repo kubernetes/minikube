@@ -107,6 +107,7 @@ func TestStartStop(t *testing.T) {
 					}{
 						{"FirstStart", validateFirstStart},
 						{"DeployApp", validateDeploying},
+						{"EnableAddonWhileActive", validateEnableAddonWhileActive},
 						{"Stop", validateStop},
 						{"EnableAddonAfterStop", validateEnableAddonAfterStop},
 						{"SecondStart", validateSecondStart},
@@ -169,6 +170,30 @@ func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName
 	}
 }
 
+func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+	defer PostMortemLogs(t, profile)
+
+	// Enable an addon to assert it requests the correct image.
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile, "--images=MetricsServer=k8s.gcr.io/echoserver:1.4", "--registries=MetricsServer=fake.domain"))
+	if err != nil {
+		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
+	}
+
+	if strings.Contains(tcName, "cni") {
+		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+		return
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "deploy/metrics-server", "-n", "kube-system"))
+	if err != nil {
+		t.Errorf("failed to get info on auto-pause deployments. args %q: %v", rr.Command(), err)
+	}
+	deploymentInfo := rr.Stdout.String()
+	if !strings.Contains(deploymentInfo, " fake.domain/k8s.gcr.io/echoserver:1.4") {
+		t.Errorf("addon did not load correct image. Expected to contain \" fake.domain/k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
+	}
+}
+
 // validateStop tests minikube stop
 func validateStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
@@ -190,7 +215,7 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 	}
 
 	// Enable an addon to assert it comes up afterwards
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile, "--images=MetricsScraper=k8s.gcr.io/echoserver:1.4"))
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
@@ -229,8 +254,19 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 	defer PostMortemLogs(t, profile)
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-	} else if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
+		return
+	}
+	if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
 		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "deploy/dashboard-metrics-scraper", "-n", "kubernetes-dashboard"))
+	if err != nil {
+		t.Errorf("failed to get info on kubernetes-dashboard deployments. args %q: %v", rr.Command(), err)
+	}
+	deploymentInfo := rr.Stdout.String()
+	if !strings.Contains(deploymentInfo, " k8s.gcr.io/echoserver:1.4") {
+		t.Errorf("addon did not load correct image. Expected to contain \" k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
 	}
 }
 
