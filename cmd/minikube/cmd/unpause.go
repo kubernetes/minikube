@@ -40,6 +40,7 @@ import (
 // unpauseCmd represents the docker-pause command
 var unpauseCmd = &cobra.Command{
 	Use:   "unpause",
+	Aliases: []string{"resume"},
 	Short: "unpause Kubernetes",
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
