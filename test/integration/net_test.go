@@ -102,9 +102,9 @@ func TestNetworkPlugins(t *testing.T) {
 						var rr *RunResult
 						var err error
 						if NoneDriver() {
+							// none does not support 'minikube ssh'
 							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
 						} else {
-							// none does not support 'minikube ssh'
 							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
 						}
 						if err != nil {
