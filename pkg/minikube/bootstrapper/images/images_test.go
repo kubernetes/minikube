@@ -105,3 +105,23 @@ func TestAuxiliaryMirror(t *testing.T) {
 		t.Errorf("images mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestCNI(t *testing.T) {
+	// images used by k8s.io/minikube/pkg/minikube/cni
+	var testCases = []struct {
+		name     string
+		function func(string) string
+	}{
+		{"kindnet", KindNet},
+		{"calico-deployment", CalicoDeployment},
+		{"calico-daemonset", CalicoDaemonSet},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			img := tc.function("")
+			if img == "" {
+				t.Errorf("no image")
+			}
+		})
+	}
+}
