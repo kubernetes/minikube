@@ -118,12 +118,6 @@ func TestErrorSpam(t *testing.T) {
 		}
 	}
 
-	logsToBeRemoved, err := filepath.Glob(filepath.Join(logDir, "minikube_*"))
-	if err != nil {
-		t.Error("failed to clean old log files", err)
-	}
-	cleanupLogFiles(t, logsToBeRemoved)
-
 	logTests := []struct {
 		command          string
 		args             []string
@@ -166,18 +160,6 @@ func TestErrorSpam(t *testing.T) {
 			logFiles, err := filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
 			if err != nil {
 				t.Errorf("failed to get old log files for command %s : %v", test.command, err)
-			}
-			cleanupLogFiles(t, logFiles)
-
-			singleRun, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-			if err != nil {
-				t.Errorf("%q failed: %v", singleRun.Command(), err)
-			}
-
-			// get log files generated above for a single run
-			logFiles, err = filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
-			if err != nil {
-				t.Errorf("failed to get new log files for command %s : %v", test.command, err)
 			}
 			cleanupLogFiles(t, logFiles)
 
