@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -129,5 +130,38 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 				t.Fatalf("Expected error but got %v", err)
 			}
 		})
+	}
+}
+
+func TestExcludedBinariesNotDownloaded(t *testing.T) {
+	clusterBootstrapper := bootstrapper.Kubeadm
+	binaryList := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
+	binaryToExclude := binaryList[0]
+
+	download.DownloadMock = func(src, dst string) error {
+		if strings.Contains(src, binaryToExclude) {
+			t.Errorf("Excluded binary was downloaded! Binary to exclude: %s", binaryToExclude)
+		}
+		return download.CreateDstDownloadMock(src, dst)
+	}
+
+	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
+	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
+
+	minikubeHome, err := ioutil.TempDir("/tmp", "")
+	if err != nil {
+		t.Fatalf("error during creating tmp dir: %v", err)
+	}
+	os.Setenv("MINIKUBE_HOME", minikubeHome)
+
+	defer func() { // clean up tempdir
+		err := os.RemoveAll(minikubeHome)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", minikubeHome)
+		}
+	}()
+
+	if err := CacheBinariesForBootstrapper("v1.16.0", clusterBootstrapper, []string{binaryToExclude}); err != nil {
+		t.Errorf("Failed to cache binaries: %v", err)
 	}
 }
