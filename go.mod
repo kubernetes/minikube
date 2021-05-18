@@ -11,6 +11,7 @@ require (
 	github.com/Microsoft/hcsshim v0.8.15 // indirect
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21
+	github.com/amenzhinsky/go-polkit v0.0.0-20161115135426-96bc0a16d0e4 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/briandowns/spinner v1.11.1
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect

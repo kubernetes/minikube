@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/amenzhinsky/go-polkit"
 	"github.com/docker/machine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -135,14 +136,28 @@ func status() registry.State {
 		}
 	}
 	if !member {
-		return registry.State{
-			Installed: true,
-			Running:   true,
-			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-			Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
-			Reason: "PR_KVM_USER_PERMISSION",
-			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-			Doc:    docURL,
+		permitted, err := hasPolkitPermissions()
+		if err != nil {
+			return registry.State{
+				Installed: true,
+				Running:   true,
+				// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+				Error:  fmt.Errorf("polkit org.libvirt.unix.manage permitted check failed:\n%v", err.Error()),
+				Reason: "PR_KVM_POLKIT_PERMISSION",
+				Fix:    "Check that libvirtd is properly installed and that you have polkit permissions on the org.libvirt.unix.manage action",
+				Doc:    docURL,
+			}
+		}
+		if !permitted {
+			return registry.State{
+				Installed: true,
+				Running:   true,
+				// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+				Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
+				Reason: "PR_KVM_USER_PERMISSION",
+				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+				Doc:    docURL,
+			}
 		}
 	}
 
@@ -203,6 +218,29 @@ func isCurrentUserLibvirtGroupMember() (bool, error) {
 		if strings.HasPrefix(grp.Name, "libvirt") {
 			return true, nil
 		}
+	}
+	return false, nil
+}
+
+// hasPolkitPermissions returns if the current user is allowed to perform the org.libvirt.unix.manage polkit action
+func hasPolkitPermissions() (bool, error) {
+	authority, err := polkit.NewAuthority()
+	if err != nil {
+		return false, fmt.Errorf("error getting current polkit authority: %w", err)
+	}
+
+	result, err := authority.CheckAuthorization(
+		"org.libvirt.unix.manage",
+		nil,
+		polkit.CheckAuthorizationAllowUserInteraction, "",
+	)
+
+	if err != nil {
+		return false, fmt.Errorf("error checking polkit org.libvirt.unix.manage action permissiony: %w", err)
+	}
+
+	if result.IsAuthorized {
+		return true, nil
 	}
 	return false, nil
 }
