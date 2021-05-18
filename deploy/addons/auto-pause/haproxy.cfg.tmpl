@@ -33,5 +33,5 @@ backend k8s-api-https
     option tcplog
     option tcp-check
     default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
-    server k8s-api-1 {{.NetworkInfo.ControlPlaneNodeIP}}:8443 check
+    server k8s-api-1 {{.NetworkInfo.ControlPlaneNodeIP}}:{{.NetworkInfo.ControlPlaneNodePort}} check
 
