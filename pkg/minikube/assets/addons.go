@@ -88,13 +88,13 @@ var Addons = map[string]*Addon{
 			"auto-pause-hook.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/auto-pause/haproxy.cfg",
-			"/var/lib/minikube/",
+			"deploy/addons/auto-pause/haproxy.cfg.tmpl",
+			vmpath.GuestPersistentDir,
 			"haproxy.cfg",
 			"0640"),
 		MustBinAsset(
 			"deploy/addons/auto-pause/unpause.lua",
-			"/var/lib/minikube/",
+			vmpath.GuestPersistentDir,
 			"unpause.lua",
 			"0640"),
 		MustBinAsset(
