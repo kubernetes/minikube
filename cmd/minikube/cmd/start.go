@@ -28,6 +28,7 @@ import (
 	"os/user"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -589,7 +590,16 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
 		out.Step(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
+		sort.Slice(rejects, func(i, j int) bool {
+			if rejects[i].Priority == rejects[j].Priority {
+				return rejects[i].Preference > rejects[j].Preference
+			}
+			return rejects[i].Priority > rejects[j].Priority
+		})
 		for _, r := range rejects {
+			if !r.Default {
+				continue
+			}
 			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
 			if r.Suggestion != "" {
 				out.Infof("{{ .name }}: Suggestion: {{ .suggestion}}", out.V{"name": r.Name, "suggestion": r.Suggestion})
