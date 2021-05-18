@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 	"testing"
@@ -48,6 +49,7 @@ func TestMultiNode(t *testing.T) {
 		}{
 			{"FreshStart2Nodes", validateMultiNodeStart},
 			{"DeployApp2Nodes", validateDeployAppToMultiNode},
+			{"PingHostFrom2Pods", validatePodsPingHost},
 			{"AddNode", validateAddNodeToMultiNode},
 			{"ProfileList", validateProfileListWithMultiNode},
 			{"CopyFile", validateCopyFileWithMultiNode},
@@ -154,9 +156,7 @@ func validateProfileListWithMultiNode(ctx context.Context, t *testing.T, profile
 				t.Errorf("expected the json of 'profile list' to not include profile or node in invalid profile but got *%q*. args: %q", rr.Stdout.String(), rr.Command())
 			}
 		}
-
 	}
-
 }
 
 // validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
@@ -464,6 +464,7 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 			t.Errorf("Pod %s could not resolve 'kubernetes.io': %v", name, err)
 		}
 	}
+
 	// verify both Pods could resolve "kubernetes.default"
 	// this one is also checked by k8s e2e node conformance tests:
 	// https://github.com/kubernetes/kubernetes/blob/f137c4777095b3972e2dd71a01365d47be459389/test/e2e_node/environment/conformance.go#L125-L179
@@ -473,11 +474,42 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 			t.Errorf("Pod %s could not resolve 'kubernetes.default': %v", name, err)
 		}
 	}
+
 	// verify both pods could resolve to a local service.
 	for _, name := range podNames {
 		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default.svc.cluster.local"))
 		if err != nil {
 			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
+		}
+	}
+}
+
+// validatePodsPingHost uses app previously deplyed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
+func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
+	// get Pod names
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
+	if err != nil {
+		t.Errorf("failed get Pod names")
+	}
+	podNames := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
+
+	for _, name := range podNames {
+		// get host.minikube.internal ip as resolved by nslookup
+		if out, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3")); err != nil {
+			t.Errorf("Pod %s could not resolve 'host.minikube.internal': %v", name, err)
+		} else {
+			hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
+			// get node's eth0 network
+			if out, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "ip -4 -br -o a s eth0 | tr -s ' ' | cut -d' ' -f3")); err != nil {
+				t.Errorf("Error getting eth0 IP of node %s: %v", profile, err)
+			} else {
+				if _, nodeNet, err := net.ParseCIDR(strings.TrimSpace(out.Stdout.String())); err != nil {
+					t.Errorf("Error parsing eth0 IP of node %s: %v", profile, err)
+					// check if host ip belongs to node's eth0 network
+				} else if !nodeNet.Contains(hostIP) {
+					t.Errorf("Pod %s resolved 'host.minikube.internal' to %s while node's eth0 network is %s", name, hostIP, nodeNet)
+				}
+			}
 		}
 	}
 }
