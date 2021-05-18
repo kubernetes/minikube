@@ -42,7 +42,8 @@ type Addon struct {
 
 // NetworkInfo contains control plane node IP address used for add on template
 type NetworkInfo struct {
-	ControlPlaneNodeIP string
+	ControlPlaneNodeIP   string
+	ControlPlaneNodePort int
 }
 
 // NewAddon creates a new Addon
@@ -88,13 +89,13 @@ var Addons = map[string]*Addon{
 			"auto-pause-hook.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/auto-pause/haproxy.cfg",
-			"/var/lib/minikube/",
+			"deploy/addons/auto-pause/haproxy.cfg.tmpl",
+			vmpath.GuestPersistentDir,
 			"haproxy.cfg",
 			"0640"),
 		MustBinAsset(
 			"deploy/addons/auto-pause/unpause.lua",
-			"/var/lib/minikube/",
+			vmpath.GuestPersistentDir,
 			"unpause.lua",
 			"0640"),
 		MustBinAsset(
@@ -660,7 +661,7 @@ var Addons = map[string]*Addon{
 }
 
 // GenerateTemplateData generates template data for template assets
-func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo NetworkInfo) interface{} {
+func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo) interface{} {
 
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
@@ -697,7 +698,8 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo
 	}
 
 	// Network info for generating template
-	opts.NetworkInfo["ControlPlaneNodeIP"] = networkInfo.ControlPlaneNodeIP
+	opts.NetworkInfo["ControlPlaneNodeIP"] = netInfo.ControlPlaneNodeIP
+	opts.NetworkInfo["ControlPlaneNodePort"] = fmt.Sprint(netInfo.ControlPlaneNodePort)
 
 	if opts.Images == nil {
 		opts.Images = make(map[string]string) // Avoid nil access when rendering
