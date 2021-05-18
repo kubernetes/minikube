@@ -38,7 +38,10 @@ function initQuiz() {
 
             selectQuizOption(dataContainerId);
         });
-        const userOS = getQuizUserOS();
+        let userOS = getUserOS();
+        if (userOS === 'Mac') {
+            userOS = 'macOS';
+        }
         // auto-select the OS for user
         const btn = $('.option-button[data-quiz-id=\'/' + userOS + '\']').first();
         btn.addClass('active');
@@ -49,19 +52,4 @@ function initQuiz() {
             element.classList.remove("hide");
         }
     }
-}
-
-const getQuizUserOS = () => {
-    let os = ['Linux', 'Mac', 'Windows'];
-    let userAgent = navigator.userAgent;
-    for (let currentOS of os) {
-        if (userAgent.indexOf(currentOS) !== -1) {
-            if (currentOS === 'Mac') {
-                // return the official OS name "macOS" instead
-                return 'macOS';
-            }
-            return currentOS;
-        }
-    }
-    return 'Linux';
 }
