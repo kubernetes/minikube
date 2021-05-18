@@ -121,6 +121,12 @@ If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use t
 ```shell
 choco install minikube
 ```
+### Scoop
+If the [Scoop Package Manager](https://scoop.sh/) is installed, use the following command:
+
+```shell
+scoop install minikube
+```
 
 ### Stand-alone Windows Installer
 Otherwise, download and run the [Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
