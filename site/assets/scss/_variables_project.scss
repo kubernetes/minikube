@@ -229,10 +229,6 @@ div.code-toolbar > .toolbar {
     top: -.3em !important;
 }
 
-.option-row {
-    margin-bottom: 0.5rem;
-}
-
 .option-button {
     border-radius: 0.2rem !important;
     margin-right: 0.2rem;
@@ -240,4 +236,8 @@ div.code-toolbar > .toolbar {
 
 .hide {
     display: none !important;
+}
+
+.card-body-blue {
+    background: #f3f9fa;
 }

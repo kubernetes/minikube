@@ -20,6 +20,8 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
+{{% card %}}
+
 Click on the buttons that describe your target platform:
 
 {{% quiz_row base="" name="Operating system" %}}
@@ -211,6 +213,8 @@ Download and run the stand-alone [minikube Windows installer](https://storage.go
 
 _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
 {{% /quiz_instruction %}}
+
+{{% /card %}}
 
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>Start your cluster</h2>
