@@ -40,8 +40,10 @@ function initQuiz() {
         });
         let userOS = getUserOS();
         if (userOS === 'Mac') {
+            // use the name "macOS" to match the button
             userOS = 'macOS';
         }
+        $('.option-row[data-level=0]').removeClass('hide');
         // auto-select the OS for user
         const btn = $('.option-button[data-quiz-id=\'/' + userOS + '\']').first();
         btn.addClass('active');

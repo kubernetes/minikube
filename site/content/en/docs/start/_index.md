@@ -22,7 +22,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 {{% card %}}
 
-Click on the buttons that describe your target platform:
+Click on the buttons that describe your target platform. For other architectures, see [the release page](https://github.com/kubernetes/minikube/releases/latest) for a complete list of minikube binaries.
 
 {{% quiz_row base="" name="Operating system" %}}
 {{% quiz_button option="Linux" %}} {{% quiz_button option="macOS" %}} {{% quiz_button option="Windows" %}}
