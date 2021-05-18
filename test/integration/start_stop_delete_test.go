@@ -170,6 +170,7 @@ func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName
 	}
 }
 
+// validateEnableAddonWhileActive makes sure addons can be enabled while cluster is active.
 func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 

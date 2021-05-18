@@ -332,6 +332,9 @@ runs the initial minikube start
 #### validateDeploying
 deploys an app the minikube cluster
 
+#### validateEnableAddonWhileActive
+makes sure addons can be enabled while cluster is active.
+
 #### validateStop
 tests minikube stop
 
