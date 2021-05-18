@@ -863,6 +863,30 @@ jobs:
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     steps:
+      - name: Install tools
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y jq docker git cron
+          sudo usermod -aG docker $USER
+
+      - name: Init
+        shell: bash
+        run: |
+          sudo touch /var/run/job.in.progress
+          [[ -f /var/run/reboot.in.progress ]] && (echo "reboot in progress"; exit 1)
+          # fix cleanup scripts URL after merge
+          wget https://raw.githubusercontent.com/ilya-zuyev/minikube/ilyaz/gh_actions_cleanup/hack/gh_actions/cleanup.sh
+          wget https://raw.githubusercontent.com/ilya-zuyev/minikube/ilyaz/gh_actions_cleanup/hack/gh_actions/install_cleanup.sh
+          chmod +x cleanup.sh install_cleanup.sh
+          sudo install_cleanup.sh
+
+      - name: Update cron
+        shell: bash
+        run: |
+          sudo touch /var/run/job.in.progress
+          [[ -f /var/run/reboot.in.progress ]] && (echo "reboot in progress"; exit 1)
+
       - name: Install kubectl
         shell: bash
         run: |
@@ -875,12 +899,6 @@ jobs:
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-arm64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
-
-      - name: Install tools
-        shell: bash
-        run: |
-          sudo apt update
-          sudo apt install -y jq docker
 
       - name: Docker Info
         shell: bash
@@ -973,6 +991,10 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 0 ];then echo "*** Failed to pass at least 20! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+
+      - name: finalize
+        shell: bash
+        run: sudo rm -rf /var/run/job.in.progress
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
