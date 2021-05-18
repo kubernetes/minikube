@@ -220,8 +220,6 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	if len(cc.Nodes) >= 1 {
 		networkInfo.ControlPlaneNodeIP = cc.Nodes[0].IP
 		networkInfo.ControlPlaneNodePort = cc.Nodes[0].Port
-		fmt.Printf("+%v", networkInfo)
-		fmt.Println(cc.Nodes[0].Port)
 	} else {
 		out.WarningT("At least needs control plane nodes to enable addon")
 	}
