@@ -49,7 +49,8 @@ func TestNetworkPlugins(t *testing.T) {
 			podLabel      string
 			hairpin       bool
 		}{
-			{"auto", []string{}, "", "", false},
+			// for containerd and crio runtimes kindnet CNI is used by default and hairpin is enabled
+			{"auto", []string{}, "", "", ContainerRuntime() != "docker"},
 			{"kubenet", []string{"--network-plugin=kubenet"}, "kubenet", "", true},
 			{"bridge", []string{"--cni=bridge"}, "cni", "", true},
 			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", true},
@@ -71,6 +72,12 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if ContainerRuntime() != "docker" && tc.name == "false" {
 					t.Skipf("skipping the test as CNI is required for container runtime %s", ContainerRuntime())
+				}
+
+				if ContainerRuntime() != "docker" && tc.name == "kubenet" {
+					// CNI is disabled when --network-plugin=kubenet option is passed. See cni.New(..) function
+					// But for containerd/crio CNI has to be configured
+					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
 				}
 
 				start := time.Now()
@@ -179,20 +186,7 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() {
 					t.Run("HairPin", func(t *testing.T) {
-						tryHairPin := func() error {
-							_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
-							return err
-						}
-
-						if tc.hairpin {
-							if err := retry.Expo(tryHairPin, 1*time.Second, Seconds(60)); err != nil {
-								t.Errorf("failed to connect via pod host: %v", err)
-							}
-						} else {
-							if tryHairPin() == nil {
-								t.Fatalf("hairpin connection unexpectedly succeeded - misconfigured test?")
-							}
-						}
+						validateHairpinMode(ctx, t, profile, tc.hairpin)
 					})
 				}
 
@@ -200,6 +194,25 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
+}
+
+// validateHairpinMode makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
+// try to access deployment/netcat pod using external, obtained from 'netcat' service dns resolution, IP address
+// should fail if hairpinMode is off
+func validateHairpinMode(ctx context.Context, t *testing.T, profile string, hairpin bool) {
+	tryHairPin := func() error {
+		_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
+		return err
+	}
+	if hairpin {
+		if err := retry.Expo(tryHairPin, 1*time.Second, Seconds(60)); err != nil {
+			t.Errorf("failed to connect via pod host: %v", err)
+		}
+	} else {
+		if tryHairPin() == nil {
+			t.Fatalf("hairpin connection unexpectedly succeeded - misconfigured test?")
+		}
+	}
 }
 
 func verifyKubeletFlagsOutput(t *testing.T, kubeletPlugin, out string) {

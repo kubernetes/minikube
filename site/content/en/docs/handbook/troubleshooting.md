@@ -7,7 +7,7 @@ description: >
 
 ## Enabling debug logs
 
-Pass `--alsologtostderr` to minikube commands to see detailed log output output. To increase the log verbosity, you can use:
+Pass `--alsologtostderr` to minikube commands to see detailed log output. To increase the log verbosity, you can use:
 
 * `-v=1`: verbose messages
 * `-v=2`: really verbose messages

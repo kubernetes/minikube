@@ -36,4 +36,5 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [Hyper-V]({{<ref "hyperv.md">}}) - VM (preferred)
 * [Docker]({{<ref "docker.md">}}) - VM + Container (preferred)
 * [VirtualBox]({{<ref "virtualbox.md">}}) - VM
+* [VMware]({{<ref "vmware.md">}}) - VM
 * [SSH]({{<ref "ssh.md">}}) - remote ssh

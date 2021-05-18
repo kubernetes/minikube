@@ -75,7 +75,7 @@ func TestCreateHost(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 
-	download.EnableMock(true)
+	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -123,7 +123,7 @@ func TestStartHostExists(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 
-	download.EnableMock(true)
+	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -163,7 +163,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 
-	download.EnableMock(true)
+	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -213,7 +213,7 @@ func TestStartStoppedHost(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 
-	download.EnableMock(true)
+	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -253,7 +253,7 @@ func TestStartHost(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 
-	download.EnableMock(true)
+	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -286,7 +286,7 @@ func TestStartHostConfig(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 
-	download.EnableMock(true)
+	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)

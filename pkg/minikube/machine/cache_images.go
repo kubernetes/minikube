@@ -55,7 +55,7 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 		return errors.Wrap(err, "cached images list")
 	}
 
-	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
+	if err := image.SaveToDir(images, constants.ImageCacheDir, false); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
 
@@ -63,14 +63,14 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 }
 
 // LoadCachedImages loads previously cached images into the container runtime
-func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
+func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string, overwrite bool) error {
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
 
 	// Skip loading images if images already exist
-	if cr.ImagesPreloaded(images) {
+	if !overwrite && cr.ImagesPreloaded(images) {
 		klog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
@@ -165,7 +165,7 @@ func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []s
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
-			return transferAndLoadImage(runner, cc.KubernetesConfig, image)
+			return transferAndLoadImage(runner, cc.KubernetesConfig, image, image)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -176,21 +176,21 @@ func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []s
 }
 
 // CacheAndLoadImages caches and loads images to all profiles
-func CacheAndLoadImages(images []string, profiles []*config.Profile) error {
+func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite bool) error {
 	if len(images) == 0 {
 		return nil
 	}
 
 	// This is the most important thing
-	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
+	if err := image.SaveToDir(images, constants.ImageCacheDir, overwrite); err != nil {
 		return errors.Wrap(err, "save to dir")
 	}
 
-	return DoLoadImages(images, profiles, constants.ImageCacheDir)
+	return DoLoadImages(images, profiles, constants.ImageCacheDir, overwrite)
 }
 
 // DoLoadImages loads images to all profiles
-func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string) error {
+func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, overwrite bool) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "api")
@@ -234,7 +234,7 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string) 
 				}
 				if cacheDir != "" {
 					// loading image names, from cache
-					err = LoadCachedImages(c, cr, images, cacheDir)
+					err = LoadCachedImages(c, cr, images, cacheDir, overwrite)
 				} else {
 					// loading image files
 					err = LoadLocalImages(c, cr, images)
@@ -259,20 +259,29 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string) 
 func transferAndLoadCachedImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
 	src := filepath.Join(cacheDir, imgName)
 	src = localpath.SanitizeCacheDir(src)
-	return transferAndLoadImage(cr, k8s, src)
+	return transferAndLoadImage(cr, k8s, src, imgName)
 }
 
 // transferAndLoadImage transfers and loads a single image
-func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string) error {
+func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string, imgName string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
+
+	if err := r.RemoveImage(imgName); err != nil {
+		errStr := strings.ToLower(err.Error())
+		if !strings.Contains(errStr, "no such image") {
+			return errors.Wrap(err, "removing image")
+		}
+	}
+
 	klog.Infof("Loading image from: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
 		return err
 	}
+
 	dst := path.Join(loadRoot, filename)
 	f, err := assets.NewFileAsset(src, loadRoot, filename, "0644")
 	if err != nil {

@@ -591,6 +591,9 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		out.Step(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
 		for _, r := range rejects {
 			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+			if r.Suggestion != "" {
+				out.Infof("{{ .name }}: Suggestion: {{ .suggestion}}", out.V{"name": r.Name, "suggestion": r.Suggestion})
+			}
 		}
 		exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
 	}
