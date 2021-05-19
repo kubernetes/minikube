@@ -43,7 +43,7 @@ tests the csi hostpath driver by creating a persistent volume, snapshotting it a
 tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 
 #### validateAutoPause
-validateAutoPause tests the auto-pause addon
+tests the auto-pause addon
 
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
@@ -644,4 +644,3 @@ upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 112

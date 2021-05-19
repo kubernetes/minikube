@@ -96,7 +96,11 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
+<<<<<<< HEAD
 			{"AutoPause", validateAutoPause},
+=======
+			{"GCPAuth", validateGCPAuthAddon},
+>>>>>>> 306eef026 (run auto-pause addon as a seperate test)
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -110,6 +114,7 @@ func TestAddons(t *testing.T) {
 		}
 	})
 
+<<<<<<< HEAD
 	// Run other tests after to avoid collision
 	t.Run("serial", func(t *testing.T) {
 		tests := []struct {
@@ -144,6 +149,26 @@ func TestAddons(t *testing.T) {
 			t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
 		}
 	})
+=======
+	// AutoPause addon test
+	t.Run("AutoPause", func(t *testing.T) {
+		validateAutoPause(ctx, t, profile)
+	})
+
+	// Assert that disable/enable works offline
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to stop minikube. args %q : %v", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
+	}
+>>>>>>> 306eef026 (run auto-pause addon as a seperate test)
 }
 
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
