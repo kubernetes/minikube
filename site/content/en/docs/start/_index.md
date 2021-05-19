@@ -88,8 +88,8 @@ sudo dpkg -i minikube_latest_amd64.deb
 
 {{% quiz_instruction id="/Linux/x86-64/RPM package" %}}
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86-64.rpm
-sudo rpm -Uvh minikube-latest.x86-64.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
+sudo rpm -Uvh minikube-latest.x86_64.rpm
 ```
 {{% /quiz_instruction %}}
 
