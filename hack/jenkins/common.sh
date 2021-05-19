@@ -76,7 +76,7 @@ function retry_github_status() {
 }
 
 if [ "$(uname)" = "Darwin" ]; then
-  ./setup_docker_desktop_macos.sh
+  bash setup_docker_desktop_macos.sh
   ec=$?
   if [ $ec -gt 0 ]; then
     retry_github_status "${COMMIT}" "${JOB_NAME}" "failure" "${access_token}" "${public_log_url}" "Jenkins: docker failed to start"
