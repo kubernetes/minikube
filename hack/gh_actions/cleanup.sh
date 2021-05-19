@@ -19,6 +19,8 @@ REBOOT_MARK=/var/run/reboot.in.progress
 
 timeout=900 # 15 minutes
 
+# $PROGRESS_MARK file is touched when a new GitHub Actions job is started
+# check that no job was started in the last 15 minutes
 function check_running_job() {
   if [[ -f "$PROGRESS_MARK" ]]; then
     started=$(date -r "$PROGRESS_MARK" +%s)
@@ -35,6 +37,7 @@ function check_running_job() {
 
 check_running_job
 sudo touch "$REBOOT_MARK"
+# avoid race if a job was started between two lines above and recheck
 check_running_job
 
 echo "cleanup docker..."

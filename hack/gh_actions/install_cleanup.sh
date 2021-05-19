@@ -19,10 +19,12 @@ if [[ ! -f cleanup.sh ]]; then
   exit 1
 fi
 
+# update cron to run the cleanup script every hour
 if [ ! -f /etc/cron.hourly/cleanup.sh ]; then
-  sudo install cleanup.sh /etc/cron.hourly/cleanup || echo "FAILED TO INSTALL CLEANUP"
+  sudo install cleanup.sh /etc/cron.hourly/cleanup.sh || echo "FAILED TO INSTALL CLEANUP"
 fi
 
+# install a cron rule to remove /var/run/reboot.in.progress file immediately after reboot
 if (crontab -l 2>/dev/null | grep '@reboot rm -rf /var/run/reboot.in.progress'); then
   echo "reboot cron rule already installed"
   exit 0

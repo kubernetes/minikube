@@ -879,6 +879,7 @@ jobs:
           fi
           sudo touch /var/run/job.in.progress
           rm -rf cleanup.sh install_cleanup.sh
+          # after this PR is merged, update URLs to get the scripts from github master
           wget https://storage.googleapis.com/minikube-ci-utils/cleanup.sh
           wget https://storage.googleapis.com/minikube-ci-utils/install_cleanup.sh
           chmod +x cleanup.sh install_cleanup.sh
