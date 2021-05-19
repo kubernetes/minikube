@@ -873,8 +873,11 @@ jobs:
       - name: Init
         shell: bash
         run: |
+          if [[ -f /var/run/reboot.in.progress ]]; then
+            echo "reboot in progress"
+            exit 1
+          fi
           sudo touch /var/run/job.in.progress
-          [[ -f /var/run/reboot.in.progress ]] && (echo "reboot in progress"; exit 1)
           # fix cleanup scripts URL after merge
           wget https://raw.githubusercontent.com/ilya-zuyev/minikube/ilyaz/gh_actions_cleanup/hack/gh_actions/cleanup.sh
           wget https://raw.githubusercontent.com/ilya-zuyev/minikube/ilyaz/gh_actions_cleanup/hack/gh_actions/install_cleanup.sh
