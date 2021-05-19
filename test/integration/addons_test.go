@@ -113,7 +113,6 @@ func TestAddons(t *testing.T) {
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
 			{"GCPAuth", validateGCPAuthAddon},
-			{"AutoPause", validateAutoPause},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -125,6 +124,11 @@ func TestAddons(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
 		}
+	})
+
+	// AutoPause addon test
+	t.Run("AutoPause", func(t *testing.T) {
+		validateAutoPause(ctx, t, profile)
 	})
 
 	// Assert that disable/enable works offline
