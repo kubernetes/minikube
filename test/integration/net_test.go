@@ -38,23 +38,51 @@ import (
 func TestCNIFalse(t *testing.T) {
 
 	for _, cr := range []string{"containerd", "cri-o"} {
+		t.Run("TestCNIFalse-"+cr, func(t *testing.T) {
+			profile := UniqueProfileName("no-cni-" + cr)
+			ctx, cancel := context.WithTimeout(context.Background(), Minutes(1))
+			defer CleanupWithLogs(t, profile, cancel)
 
-		profile := UniqueProfileName("no-cni-" + cr)
-		ctx, cancel := context.WithTimeout(context.Background(), Minutes(1))
-		defer CleanupWithLogs(t, profile, cancel)
+			startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false", "--container-runtime=" + cr}
+			startArgs = append(startArgs, StartArgs()...)
+			mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
+			rr, err := Run(t, mkCmd)
+			if err == nil {
+				t.Errorf("%s expected to fail", mkCmd)
+				continue
+			}
+			expectedMsg := fmt.Sprintf("The %q container runtime requires CNI", cr)
+			if !strings.Contains(rr.Output(), expectedMsg) {
+				t.Errorf("Expected %q line not found in ouput %s", expectedMsg, rr.Output())
+			}
+		})
+	}
+}
 
-		startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false", "--container-runtime=" + cr}
-		startArgs = append(startArgs, StartArgs()...)
-		mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
-		rr, err := Run(t, mkCmd)
-		if err == nil {
-			t.Errorf("%s expected to fail", mkCmd)
-			continue
-		}
-		expectedMsg := fmt.Sprintf("The %s container runtime requires CNI", cr)
-		if !strings.Contains(rr.Output(), expectedMsg) {
-			t.Errorf("Expected %q line not found in ouput %s", expectedMsg, rr.Output())
-		}
+// TestCNIFalseForce checks that minikube returns not error
+// if container runtime is "containerd" or "crio"
+// and --cni=false, but --force=true
+func TestCNIFalseForce(t *testing.T) {
+
+	for _, cr := range []string{"containerd", "cri-o"} {
+		t.Run("TestCNIFalseForce-"+cr, func(t *testing.T) {
+			profile := UniqueProfileName("no-cni-" + cr)
+			ctx, cancel := context.WithTimeout(context.Background(), Minutes(1))
+			defer CleanupWithLogs(t, profile, cancel)
+
+			startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false", "--container-runtime=" + cr}
+			startArgs = append(startArgs, StartArgs()...)
+			mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
+			rr, err := Run(t, mkCmd)
+			if err == nil {
+				t.Errorf("%s expected to fail", mkCmd)
+				continue
+			}
+			expectedMsg := fmt.Sprintf("You have chosen to disable the CNI but the %q container runtime requires CNI", cr)
+			if !strings.Contains(rr.Output(), expectedMsg) {
+				t.Errorf("Expected %q line not found in ouput %s", expectedMsg, rr.Output())
+			}
+		})
 	}
 }
 
