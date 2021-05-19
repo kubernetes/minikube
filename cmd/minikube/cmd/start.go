@@ -1193,9 +1193,9 @@ func validateCNI(cmd *cobra.Command, runtime string) {
 	}
 	if cmd.Flags().Changed(cniFlag) && strings.ToLower(viper.GetString(cniFlag)) == "false" {
 		if viper.GetBool(force) {
-			out.WarnReason(reason.Usage, "The '{{.name}} container runtime requires CNI", out.V{"name": runtime})
+			out.WarnReason(reason.Usage, "The {{.name}} container runtime requires CNI", out.V{"name": runtime})
 		} else {
-			exit.Message(reason.Usage, "The '{{.name}} container runtime requires CNI", out.V{"name": runtime})
+			exit.Message(reason.Usage, "The {{.name}} container runtime requires CNI", out.V{"name": runtime})
 		}
 	}
 }

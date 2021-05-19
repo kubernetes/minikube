@@ -32,6 +32,32 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// TestCNIFalse checks that minikube returns and error
+// if container runtime is "containerd" or "crio"
+// and --cni=false
+func TestCNIFalse(t *testing.T) {
+
+	for _, cr := range []string{"containerd", "cri-o"} {
+
+		profile := UniqueProfileName("no-cni-" + cr)
+		ctx, cancel := context.WithTimeout(context.Background(), Minutes(1))
+		defer CleanupWithLogs(t, profile, cancel)
+
+		startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false", "--container-runtime=" + cr}
+		startArgs = append(startArgs, StartArgs()...)
+		mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
+		rr, err := Run(t, mkCmd)
+		if err == nil {
+			t.Errorf("%s expected to fail", mkCmd)
+			continue
+		}
+		expectedMsg := fmt.Sprintf("The %s container runtime requires CNI", cr)
+		if !strings.Contains(rr.Output(), expectedMsg) {
+			t.Errorf("Expected %q line not found in ouput %s", expectedMsg, rr.Output())
+		}
+	}
+}
+
 // TestNetworkPlugins tests all supported CNI options
 // Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
 // Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
