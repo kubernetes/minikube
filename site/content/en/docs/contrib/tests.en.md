@@ -265,6 +265,16 @@ tests that the node name verification works as expected
 #### validateDeployAppToMultiNode
 deploys an app to a multinode cluster and makes sure all nodes can serve traffic
 
+## TestCNIFalse
+checks that minikube returns and error
+if container runtime is "containerd" or "crio"
+and --cni=false
+
+## TestCNIFalseForce
+checks that minikube returns not error
+if container runtime is "containerd" or "crio"
+and --cni=false, but --force=true
+
 ## TestNetworkPlugins
 tests all supported CNI options
 Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
@@ -365,4 +375,3 @@ upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 116
