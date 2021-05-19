@@ -1035,7 +1035,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
 		{[]string{"set", "cpus", "2"}, "", "! These changes will take effect upon a minikube delete and then a minikube start"},
-		{[]string{"-p", profile, "set", "cpus", "2"}, "", "X Exiting due to MK_USAGE: Persistent config is global. Setting a specific profile name is not allowed."},
+		{[]string{"-p", profile, "set", "cpus", "2"}, "", "Persistent config is global. Setting a specific profile name for global config is ignored."},
 		{[]string{"get", "cpus"}, "2", ""},
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
@@ -1049,11 +1049,11 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		got := strings.TrimSpace(rr.Stdout.String())
-		if got != tc.wantOut {
+		if !strings.Contains(got, tc.wantOut) {
 			t.Errorf("expected config output for %q to be -%q- but got *%q*", rr.Command(), tc.wantOut, got)
 		}
 		got = strings.TrimSpace(rr.Stderr.String())
-		if got != tc.wantErr {
+		if !strings.Contains(got, tc.wantErr) {
 			t.Errorf("expected config error for %q to be -%q- but got *%q*", rr.Command(), tc.wantErr, got)
 		}
 	}

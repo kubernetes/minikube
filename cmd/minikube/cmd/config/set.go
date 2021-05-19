@@ -40,7 +40,7 @@ These values can be overwritten by flags or environment variables at runtime.`,
 			exit.Message(reason.Usage, "too many arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
 		if cmd.Flags().Lookup(config.ProfileName).Changed {
-			exit.Message(reason.Usage, "Persistent config is global. Setting a specific profile name is not allowed.")
+			out.BoxedErr("Persistent config is global. Setting a specific profile name for global config is ignored.")
 		}
 		err := Set(args[0], args[1])
 		if err != nil {
