@@ -19,5 +19,12 @@ if [[ ! -f cleanup.sh ]]; then
   exit 1
 fi
 
-sudo install cleanup.sh /etc/cron.hourly/cleanup || echo "FAILED TO INSTALL CLEANUP"
+if [ ! -f /etc/cron.hourly/cleanup.sh ]; then
+  sudo install cleanup.sh /etc/cron.hourly/cleanup || echo "FAILED TO INSTALL CLEANUP"
+fi
+
+if (crontab -l 2>/dev/null | grep '@reboot rm -rf /var/run/reboot.in.progress'); then
+  echo "reboot cron rule already installed"
+  exit 0
+fi
 (crontab -l 2>/dev/null; echo '@reboot rm -rf /var/run/reboot.in.progress') | crontab -
