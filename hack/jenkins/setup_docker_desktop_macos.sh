@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -x
+
 # kill docker first
 osascript -e 'quit app "Docker"'
 
@@ -34,4 +36,3 @@ do
 done
 
 echo "Docker Desktop started!"
-exit 0
