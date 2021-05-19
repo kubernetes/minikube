@@ -885,12 +885,6 @@ jobs:
           chmod +x cleanup.sh install_cleanup.sh
           ./install_cleanup.sh
 
-      - name: Update cron
-        shell: bash
-        run: |
-          sudo touch /var/run/job.in.progress
-          [[ -f /var/run/reboot.in.progress ]] && (echo "reboot in progress"; exit 1)
-
       - name: Install kubectl
         shell: bash
         run: |
