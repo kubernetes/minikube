@@ -287,7 +287,7 @@ jobs:
       JOB_NAME: functional_podman_ubuntu
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: [ubuntu-20.04, !arm64]
+    runs-on: [ubuntu-20.04, ! arm64]
     steps:
       - name: Install kubectl
         shell: bash
