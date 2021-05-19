@@ -34,7 +34,7 @@ function current_arch() {
     echo "arm64"
   ;;
   *)
-    echo "unexpected arch: $(arch)" 1>&2
+    echo "unexpected arch: $(arch). use amd64" 1>&2
     echo "amd64"
   ;;
   esac
