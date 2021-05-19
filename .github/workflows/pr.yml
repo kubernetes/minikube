@@ -879,7 +879,7 @@ jobs:
           wget https://raw.githubusercontent.com/ilya-zuyev/minikube/ilyaz/gh_actions_cleanup/hack/gh_actions/cleanup.sh
           wget https://raw.githubusercontent.com/ilya-zuyev/minikube/ilyaz/gh_actions_cleanup/hack/gh_actions/install_cleanup.sh
           chmod +x cleanup.sh install_cleanup.sh
-          sudo install_cleanup.sh
+          sudo ./install_cleanup.sh
 
       - name: Update cron
         shell: bash
