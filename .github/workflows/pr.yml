@@ -878,10 +878,9 @@ jobs:
             exit 1
           fi
           sudo touch /var/run/job.in.progress
-          # fix cleanup scripts URL after merge
           rm -rf cleanup.sh install_cleanup.sh
-          wget https://raw.githubusercontent.com/ilya-zuyev/minikube/ilyaz/gh_actions_cleanup/hack/gh_actions/cleanup.sh
-          wget https://raw.githubusercontent.com/ilya-zuyev/minikube/ilyaz/gh_actions_cleanup/hack/gh_actions/install_cleanup.sh
+          wget https://storage.googleapis.com/minikube-ci-utils/cleanup.sh
+          wget https://storage.googleapis.com/minikube-ci-utils/install_cleanup.sh
           chmod +x cleanup.sh install_cleanup.sh
           ./install_cleanup.sh
 
