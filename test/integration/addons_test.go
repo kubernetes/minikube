@@ -711,6 +711,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateAutoPause tests the auto-pause addon
 func validateAutoPause(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -729,64 +730,32 @@ func validateAutoPause(ctx context.Context, t *testing.T, profile string) {
 	if _, err := PodWait(ctx, t, profile, "auto-pause", "app=auto-pause-proxy", Minutes(6)); err != nil {
 		t.Fatalf("failed waiting for app=auto-pause pod: %v", err)
 	}
-	// check for kubernetes status to be running
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.APIServer}}"))
-	if err != nil {
-		t.Fatalf("failed to get minikube status: %v", err)
-	}
-	want := "Running"
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("expected api-server status be %q, but got *%s*", want, rr.Stdout.String())
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.Kubelet}}"))
-	if err != nil {
-		t.Fatalf("failed to get minikube status: %v", err)
-	}
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("expected kubelet status be %q, but got *%s*", want, rr.Stdout.String())
-	}
+
+	// make sure minikube api-server status is "Running"
+	ensureMinikubeStatus(ctx, t, profile, "APIServer", state.Running.String())
+	// make sure minikube kubelet status is "Running"
+	ensureMinikubeStatus(ctx, t, profile, "Kubelet", state.Running.String())
+
 	// wait to get kubernetes to get paused
 	time.Sleep(70 * time.Second)
-	// check for kubernetes to be stopped
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.APIServer}}"))
-	if err != nil {
-		t.Fatalf("failed to get minikube status: %v", err)
-	}
-	want = "Paused"
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("expected api-server status be %q, but got *%s*", want, rr.Stdout.String())
-	}
-	want = "Stopped"
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.Kubelet}}"))
-	if err != nil {
-		t.Fatalf("failed to get minikube status: %v", err)
-	}
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("expected kubelet status be %q, but got *%s*", want, rr.Stdout.String())
-	}
+
+	// make sure minikube api-server status is "Paused"
+	ensureMinikubeStatus(ctx, t, profile, "APIServer", state.Paused.String())
+	// make sure minikube kubelet status is "Stopped"
+	ensureMinikubeStatus(ctx, t, profile, "Kubelet", state.Stopped.String())
+
 	// do some operation in kubernetes
 	_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "ns"))
 	if err != nil {
 		t.Fatalf("get namespace: %v", err)
 	}
-	// check for kubernetes to be running
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.APIServer}}"))
-	if err != nil {
-		t.Fatalf("failed to get minikube status: %v", err)
-	}
-	want = "Running"
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("expected api-server status be %q, but got *%s*", want, rr.Stdout.String())
-	}
-	want = "Running"
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--format={{.Kubelet}}"))
-	if err != nil {
-		t.Fatalf("failed to get minikube status: %v", err)
-	}
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("expected kubelet status be %q, but got *%s*", want, rr.Stdout.String())
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "auto-pause", "--alsologtostderr", "-v=1"))
+
+	// make sure minikube api-server status is "Running"
+	ensureMinikubeStatus(ctx, t, profile, "APIServer", state.Running.String())
+	// make sure minikube kubelet status is "Running"
+	ensureMinikubeStatus(ctx, t, profile, "Kubelet", state.Running.String())
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "auto-pause", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed to disable auto-pause addon: args %q: %v", rr.Command(), err)
 	}
