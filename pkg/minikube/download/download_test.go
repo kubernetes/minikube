@@ -85,7 +85,8 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 		return nil, nil
 	}
 	checkPreloadExists = func(k8sVersion, containerRuntime string, forcePreload ...bool) bool { return true }
-	compareChecksum = func(k8sVersion, containerRuntime, path string) error { return nil }
+	getChecksum = func(k8sVersion, containerRuntime string) (string, error) { return "check", nil }
+	ensureChecksumValid = func(k8sVersion, containerRuntime, path string) error { return nil }
 
 	var group sync.WaitGroup
 	group.Add(2)
