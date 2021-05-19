@@ -42,7 +42,8 @@ type Addon struct {
 
 // NetworkInfo contains control plane node IP address used for add on template
 type NetworkInfo struct {
-	ControlPlaneNodeIP string
+	ControlPlaneNodeIP   string
+	ControlPlaneNodePort int
 }
 
 // NewAddon creates a new Addon
@@ -88,13 +89,13 @@ var Addons = map[string]*Addon{
 			"auto-pause-hook.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/auto-pause/haproxy.cfg",
-			"/var/lib/minikube/",
+			"deploy/addons/auto-pause/haproxy.cfg.tmpl",
+			vmpath.GuestPersistentDir,
 			"haproxy.cfg",
 			"0640"),
 		MustBinAsset(
 			"deploy/addons/auto-pause/unpause.lua",
-			"/var/lib/minikube/",
+			vmpath.GuestPersistentDir,
 			"unpause.lua",
 			"0640"),
 		MustBinAsset(
@@ -486,8 +487,8 @@ var Addons = map[string]*Addon{
 			"metallb-config.yaml",
 			"0640"),
 	}, false, "metallb", map[string]string{
-		"Speaker":    "metallb/speaker:v0.8.2@sha256:f1941498a28cdb332429e25d18233683da6949ecfc4f6dacf12b1416d7d38263",
-		"Controller": "metallb/controller:v0.8.2@sha256:5c050e59074e152711737d2bb9ede96dff67016c80cf25cdf5fc46109718a583",
+		"Speaker":    "metallb/speaker:v0.9.6@sha256:c66585a805bed1a3b829d8fb4a4aab9d87233497244ebff96f1b88f1e7f8f991",
+		"Controller": "metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502",
 	}, nil),
 	"ambassador": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -660,7 +661,7 @@ var Addons = map[string]*Addon{
 }
 
 // GenerateTemplateData generates template data for template assets
-func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo NetworkInfo) interface{} {
+func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo) interface{} {
 
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
@@ -697,7 +698,8 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo
 	}
 
 	// Network info for generating template
-	opts.NetworkInfo["ControlPlaneNodeIP"] = networkInfo.ControlPlaneNodeIP
+	opts.NetworkInfo["ControlPlaneNodeIP"] = netInfo.ControlPlaneNodeIP
+	opts.NetworkInfo["ControlPlaneNodePort"] = fmt.Sprint(netInfo.ControlPlaneNodePort)
 
 	if opts.Images == nil {
 		opts.Images = make(map[string]string) // Avoid nil access when rendering

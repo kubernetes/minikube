@@ -103,11 +103,6 @@ func TestDocs(docPath string, pathToCheck string) error {
 		return err
 	}
 
-	_, err = buf.WriteString(fmt.Sprintf("TEST COUNT: %d", counter))
-	if err != nil {
-		return err
-	}
-
 	err = ioutil.WriteFile(docPath, buf.Bytes(), 0o644)
 	return err
 }

@@ -41,15 +41,21 @@ const dockerDefaultBridge = "bridge"
 // name of the default bridge network
 const podmanDefaultBridge = "podman"
 
+func defaultBridgeName(ociBin string) string {
+	switch ociBin {
+	case Docker:
+		return dockerDefaultBridge
+	case Podman:
+		return podmanDefaultBridge
+	default:
+		klog.Warningf("Unexpected oci:  %v", ociBin)
+		return dockerDefaultBridge
+	}
+}
+
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
 func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
-	var defaultBridgeName string
-	if ociBin == Docker {
-		defaultBridgeName = dockerDefaultBridge
-	}
-	if ociBin == Podman {
-		defaultBridgeName = podmanDefaultBridge
-	}
+	defaultBridgeName := defaultBridgeName(ociBin)
 	if networkName == defaultBridgeName {
 		klog.Infof("skipping creating network since default network %s was specified", networkName)
 		return nil, nil

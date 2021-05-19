@@ -70,6 +70,12 @@ func TestNetworkPlugins(t *testing.T) {
 					t.Skipf("flannel is not yet compatible with Docker driver: iptables v1.8.3 (legacy): Couldn't load target `CNI-x': No such file or directory")
 				}
 
+				if ContainerRuntime() != "docker" && tc.name == "kubenet" {
+					// CNI is disabled when --network-plugin=kubenet option is passed. See cni.New(..) function
+					// But for containerd/crio CNI has to be configured
+					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
+				}
+
 				start := time.Now()
 				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)

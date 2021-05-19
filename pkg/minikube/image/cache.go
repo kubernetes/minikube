@@ -64,14 +64,14 @@ func DeleteFromCacheDir(images []string) error {
 // The cache directory currently caches images using the imagename_tag
 // For example, k8s.gcr.io/kube-addon-manager:v6.5 would be
 // stored at $CACHE_DIR/k8s.gcr.io/kube-addon-manager_v6.5
-func SaveToDir(images []string, cacheDir string) error {
+func SaveToDir(images []string, cacheDir string, overwrite bool) error {
 	var g errgroup.Group
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
 			dst := filepath.Join(cacheDir, image)
 			dst = localpath.SanitizeCacheDir(dst)
-			if err := saveToTarFile(image, dst); err != nil {
+			if err := saveToTarFile(image, dst, overwrite); err != nil {
 				if err == errCacheImageDoesntExist {
 					out.WarningT("The image you are trying to add {{.imageName}} doesn't exist!", out.V{"imageName": image})
 				} else {
@@ -90,7 +90,7 @@ func SaveToDir(images []string, cacheDir string) error {
 }
 
 // saveToTarFile caches an image
-func saveToTarFile(iname, rawDest string) error {
+func saveToTarFile(iname, rawDest string, overwrite bool) error {
 	iname = normalizeTagName(iname)
 	start := time.Now()
 	defer func() {
@@ -112,7 +112,7 @@ func saveToTarFile(iname, rawDest string) error {
 	}
 	defer releaser.Release()
 
-	if _, err := os.Stat(dst); err == nil {
+	if _, err := os.Stat(dst); !overwrite && err == nil {
 		klog.Infof("%s exists", dst)
 		return nil
 	}

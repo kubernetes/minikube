@@ -28,10 +28,10 @@ backend k8s-api-https
     #tcp-request inspect-delay 10s
     #tcp-request content lua.foo_action
     tcp-request inspect-delay 10s
-    tcp-request content lua.unpause 192.168.49.2 8080
+    tcp-request content lua.unpause {{.NetworkInfo.ControlPlaneNodeIP}} 8080
     tcp-request content reject if { var(req.blocked) -m bool }
     option tcplog
     option tcp-check
     default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
-    server k8s-api-1 192.168.49.2:8443 check
+    server k8s-api-1 {{.NetworkInfo.ControlPlaneNodeIP}}:{{.NetworkInfo.ControlPlaneNodePort}} check
 

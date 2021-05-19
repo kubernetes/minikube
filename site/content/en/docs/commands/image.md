@@ -142,9 +142,10 @@ minikube image load image.tar
 ### Options
 
 ```
-      --daemon   Cache image from docker daemon
-      --pull     Pull the remote image (no caching)
-      --remote   Cache image from remote registry
+      --daemon      Cache image from docker daemon
+      --overwrite   Overwrite image even if same image:tag name exists (default true)
+      --pull        Pull the remote image (no caching)
+      --remote      Cache image from remote registry
 ```
 
 ### Options inherited from parent commands

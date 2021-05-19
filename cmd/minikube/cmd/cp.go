@@ -25,8 +25,11 @@ import (
 	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 )
@@ -35,14 +38,16 @@ import (
 var (
 	srcPath string
 	dstPath string
+	dstNode string
 )
 
 // cpCmd represents the cp command, similar to docker cp
 var cpCmd = &cobra.Command{
-	Use:   "cp <source file path> <target file absolute path>",
+	Use:   "cp <source file path> <target node name>:<target file absolute path>",
 	Short: "Copy the specified file into minikube",
 	Long: "Copy the specified file into minikube, it will be saved at path <target file absolute path> in your minikube.\n" +
-		"Example Command : \"minikube cp a.txt /home/docker/b.txt\"\n",
+		"Example Command : \"minikube cp a.txt /home/docker/b.txt\"\n" +
+		"                  \"minikube cp a.txt minikube-m02:/home/docker/b.txt\"\n",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
 			exit.Message(reason.Usage, `Please specify the path to copy: 
@@ -51,16 +56,47 @@ var cpCmd = &cobra.Command{
 
 		srcPath = args[0]
 		dstPath = args[1]
+
+		// if destination path is not a absolute path, trying to parse with <node>:<abs path> format
+		if !strings.HasPrefix(dstPath, "/") {
+			if sp := strings.SplitN(dstPath, ":", 2); len(sp) == 2 {
+				dstNode = sp[0]
+				dstPath = sp[1]
+			}
+		}
+
 		validateArgs(srcPath, dstPath)
 
-		co := mustload.Running(ClusterFlagValue())
 		fa, err := assets.NewFileAsset(srcPath, pt.Dir(dstPath), pt.Base(dstPath), "0644")
 		if err != nil {
 			out.ErrLn("%v", errors.Wrap(err, "getting file asset"))
 			os.Exit(1)
 		}
 
-		if err = co.CP.Runner.Copy(fa); err != nil {
+		co := mustload.Running(ClusterFlagValue())
+		var runner command.Runner
+		if dstNode == "" {
+			runner = co.CP.Runner
+		} else {
+			n, _, err := node.Retrieve(*co.Config, dstNode)
+			if err != nil {
+				exit.Message(reason.GuestNodeRetrieve, "Node {{.nodeName}} does not exist.", out.V{"nodeName": dstNode})
+			}
+
+			h, err := machine.GetHost(co.API, *co.Config, *n)
+			if err != nil {
+				out.ErrLn("%v", errors.Wrap(err, "getting host"))
+				os.Exit(1)
+			}
+
+			runner, err = machine.CommandRunner(h)
+			if err != nil {
+				out.ErrLn("%v", errors.Wrap(err, "getting command runner"))
+				os.Exit(1)
+			}
+		}
+
+		if err = runner.Copy(fa); err != nil {
 			out.ErrLn("%v", errors.Wrap(err, "copying file"))
 			os.Exit(1)
 		}

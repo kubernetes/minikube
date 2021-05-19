@@ -42,7 +42,7 @@ const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v10"
+	PreloadVersion = "v11"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
@@ -102,7 +102,7 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
-	if _, err := os.Stat(targetPath); err == nil {
+	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found local preload: %s", targetPath)
 		return true
 	}
@@ -124,17 +124,28 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 	return true
 }
 
+var checkPreloadExists = PreloadExists
+
 // Preload caches the preloaded images tarball on the host machine
 func Preload(k8sVersion, containerRuntime string) error {
 	targetPath := TarballPath(k8sVersion, containerRuntime)
+	targetLock := targetPath + ".lock"
 
-	if _, err := os.Stat(targetPath); err == nil {
+	releaser, err := lockDownload(targetLock)
+	if releaser != nil {
+		defer releaser.Release()
+	}
+	if err != nil {
+		return err
+	}
+
+	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found %s in cache, skipping download", targetPath)
 		return nil
 	}
 
 	// Make sure we support this k8s version
-	if !PreloadExists(k8sVersion, containerRuntime) {
+	if !checkPreloadExists(k8sVersion, containerRuntime) {
 		klog.Infof("Preloaded tarball for k8s version %s does not exist", k8sVersion)
 		return nil
 	}
@@ -160,12 +171,8 @@ func Preload(k8sVersion, containerRuntime string) error {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
 
-	if err := saveChecksumFile(k8sVersion, containerRuntime); err != nil {
-		return errors.Wrap(err, "saving checksum file")
-	}
-
-	if err := verifyChecksum(k8sVersion, containerRuntime, targetPath); err != nil {
-		return errors.Wrap(err, "verify")
+	if err := ensureChecksumValid(k8sVersion, containerRuntime, targetPath); err != nil {
+		return err
 	}
 
 	if realPath != "" {
@@ -192,7 +199,7 @@ func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 	return attrs, nil
 }
 
-func getChecksum(k8sVersion, containerRuntime string) (string, error) {
+var getChecksum = func(k8sVersion, containerRuntime string) (string, error) {
 	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
 	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
 	if err != nil {
@@ -232,5 +239,18 @@ func verifyChecksum(k8sVersion, containerRuntime, path string) error {
 	if string(remoteChecksum) != string(checksum[:]) {
 		return fmt.Errorf("checksum of %s does not match remote checksum (%s != %s)", path, string(remoteChecksum), string(checksum[:]))
 	}
+	return nil
+}
+
+// ensureChecksumValid saves and verifies local binary checksum matches remote binary checksum
+var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string) error {
+	if err := saveChecksumFile(k8sVersion, containerRuntime); err != nil {
+		return errors.Wrap(err, "saving checksum file")
+	}
+
+	if err := verifyChecksum(k8sVersion, containerRuntime, targetPath); err != nil {
+		return errors.Wrap(err, "verify")
+	}
+
 	return nil
 }

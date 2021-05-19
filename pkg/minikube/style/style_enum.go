@@ -100,6 +100,7 @@ const (
 	Verifying
 	VerifyingNoLine
 	Waiting
+	WaitingWithSpinner
 	WaitingPods
 	Warning
 	Workaround
