@@ -49,11 +49,10 @@ func TestCNIFalse(t *testing.T) {
 			rr, err := Run(t, mkCmd)
 			if err == nil {
 				t.Errorf("%s expected to fail", mkCmd)
-				continue
 			}
 			expectedMsg := fmt.Sprintf("The %q container runtime requires CNI", cr)
 			if !strings.Contains(rr.Output(), expectedMsg) {
-				t.Errorf("Expected %q line not found in ouput %s", expectedMsg, rr.Output())
+				t.Errorf("Expected %q line not found in output %s", expectedMsg, rr.Output())
 			}
 		})
 	}
@@ -76,11 +75,10 @@ func TestCNIFalseForce(t *testing.T) {
 			rr, err := Run(t, mkCmd)
 			if err == nil {
 				t.Errorf("%s expected to fail", mkCmd)
-				continue
 			}
 			expectedMsg := fmt.Sprintf("You have chosen to disable the CNI but the %q container runtime requires CNI", cr)
 			if !strings.Contains(rr.Output(), expectedMsg) {
-				t.Errorf("Expected %q line not found in ouput %s", expectedMsg, rr.Output())
+				t.Errorf("Expected %q line not found in output %s", expectedMsg, rr.Output())
 			}
 		})
 	}
