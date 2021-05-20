@@ -605,7 +605,18 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 				out.Infof("{{ .name }}: Suggestion: {{ .suggestion}}", out.V{"name": r.Name, "suggestion": r.Suggestion})
 			}
 		}
-		exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		foundUnhealthy := false
+		for _, reject := range rejects {
+			if reject.State.Installed && !reject.State.Healthy {
+				foundUnhealthy = true
+				break
+			}
+		}
+		if foundUnhealthy {
+			exit.Message(reason.DrvNotHealthy, "Found driver(s) but none were healthy. See above for suggestions how to fix installed drivers.")
+		} else {
+			exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		}
 	}
 
 	if len(alts) > 1 {
