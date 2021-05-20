@@ -16,6 +16,11 @@
 
 set -x
 
+if docker system info > /dev/null 2>&1; then
+  echo "Docker is already running, exiting"
+  exit 0
+fi
+
 # kill docker first
 osascript -e 'quit app "Docker"'
 
