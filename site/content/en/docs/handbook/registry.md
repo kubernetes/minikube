@@ -42,7 +42,7 @@ You can use the `--insecure-registry` flag on the
 
 One nifty hack is to allow the kubelet running in minikube to talk to registries deployed inside a pod in the cluster without backing them
 with TLS certificates. Because the default service cluster IP is known to be available at 10.0.0.1, users can pull images from registries
-deployed inside the cluster by creating the cluster with `minikube start --insecure-registry "10.0.0.0/24"`. If using macOS, ensure the cluster
+deployed inside the cluster by creating the cluster with `minikube start --insecure-registry "10.0.0.0/24"`. Ensure the cluster
 is deleted using `minikube delete` before starting with the `--insecure-registry` flag.
 
 ### docker on macOS
