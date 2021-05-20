@@ -32,50 +32,6 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// TestCNIFalse checks that minikube returns and error
-// if container runtime is "containerd" or "crio"
-// and --cni=false
-func TestCNIFalse(t *testing.T) {
-	cr := ContainerRuntime()
-	profile := UniqueProfileName("no-cni-" + cr)
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(1))
-	defer CleanupWithLogs(t, profile, cancel)
-
-	startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false", "--container-runtime=" + cr}
-	startArgs = append(startArgs, StartArgs()...)
-	mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
-	rr, err := Run(t, mkCmd)
-	if err == nil {
-		t.Errorf("%s expected to fail", mkCmd)
-	}
-	expectedMsg := fmt.Sprintf("The %q container runtime requires CNI", cr)
-	if !strings.Contains(rr.Output(), expectedMsg) {
-		t.Errorf("Expected %q line not found in output %s", expectedMsg, rr.Output())
-	}
-}
-
-// TestCNIFalseForce checks that minikube returns not error
-// if container runtime is "containerd" or "crio"
-// and --cni=false, but --force=true
-func TestCNIFalseForce(t *testing.T) {
-	cr := ContainerRuntime()
-	profile := UniqueProfileName("no-cni-" + cr)
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(1))
-	defer CleanupWithLogs(t, profile, cancel)
-
-	startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false", "--container-runtime=" + cr}
-	startArgs = append(startArgs, StartArgs()...)
-	mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
-	rr, err := Run(t, mkCmd)
-	if err == nil {
-		t.Errorf("%s expected to fail", mkCmd)
-	}
-	expectedMsg := fmt.Sprintf("You have chosen to disable the CNI but the %q container runtime requires CNI", cr)
-	if !strings.Contains(rr.Output(), expectedMsg) {
-		t.Errorf("Expected %q line not found in output %s", expectedMsg, rr.Output())
-	}
-}
-
 // TestNetworkPlugins tests all supported CNI options
 // Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
 // Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
@@ -110,12 +66,19 @@ func TestNetworkPlugins(t *testing.T) {
 			tc := tc
 
 			t.Run(tc.name, func(t *testing.T) {
+				profile := UniqueProfileName(tc.name)
+
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+				defer CleanupWithLogs(t, profile, cancel)
+
 				if DockerDriver() && strings.Contains(tc.name, "flannel") {
 					t.Skipf("flannel is not yet compatible with Docker driver: iptables v1.8.3 (legacy): Couldn't load target `CNI-x': No such file or directory")
 				}
 
 				if ContainerRuntime() != "docker" && tc.name == "false" {
-					t.Skipf("skipping the test as CNI is required for container runtime %s", ContainerRuntime())
+					// CNI is required for current container runtime
+					validateFalseCNI(ctx, t, profile)
+					return
 				}
 
 				if ContainerRuntime() != "docker" && tc.name == "kubenet" {
@@ -126,10 +89,6 @@ func TestNetworkPlugins(t *testing.T) {
 
 				start := time.Now()
 				MaybeParallel(t)
-				profile := UniqueProfileName(tc.name)
-
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer CleanupWithLogs(t, profile, cancel)
 
 				startArgs := append([]string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
@@ -238,6 +197,26 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
+}
+
+// validateFalseCNI checks that minikube returns and error
+// if container runtime is "containerd" or "crio"
+// and --cni=false
+func validateFalseCNI(ctx context.Context, t *testing.T, profile string) {
+	cr := ContainerRuntime()
+
+	startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false"}
+	startArgs = append(startArgs, StartArgs()...)
+
+	mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
+	rr, err := Run(t, mkCmd)
+	if err == nil {
+		t.Errorf("%s expected to fail", mkCmd)
+	}
+	expectedMsg := fmt.Sprintf("The %q container runtime requires CNI", cr)
+	if !strings.Contains(rr.Output(), expectedMsg) {
+		t.Errorf("Expected %q line not found in output %s", expectedMsg, rr.Output())
+	}
 }
 
 // validateHairpinMode makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
