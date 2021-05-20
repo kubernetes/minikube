@@ -171,12 +171,13 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}()
 
 	// enable addons, both old and new!
+	addonList := viper.GetStringSlice(config.AddonListName)
 	if starter.ExistingAddons != nil {
 		if viper.GetBool("force") {
 			addons.Force = true
 		}
 		wg.Add(1)
-		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
+		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, addonList)
 	}
 
 	if apiServer {

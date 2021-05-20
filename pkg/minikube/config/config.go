@@ -56,6 +56,8 @@ const (
 	AddonImages = "addon-images"
 	// AddonRegistries stores custom addon images config
 	AddonRegistries = "addon-registries"
+	// AddonListName represents the key for addons parameter
+	AddonListName = "addons"
 )
 
 var (
@@ -67,8 +69,6 @@ var (
 	DockerOpt []string
 	// ExtraOptions contains extra options (if any)
 	ExtraOptions ExtraOptionSlice
-	// AddonList contains the list of addons
-	AddonList []string
 )
 
 // ErrNotExist is the error returned when a config does not exist
