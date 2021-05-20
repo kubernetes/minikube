@@ -216,7 +216,6 @@ func validateFalseCNI(ctx context.Context, t *testing.T, profile string) {
 	}
 	if rr.ExitCode != reason.Usage.ExitCode {
 		t.Errorf("Expected %d exit code, got %d", reason.Usage.ExitCode, rr.ExitCode)
-
 	}
 	expectedMsg := fmt.Sprintf("The %q container runtime requires CNI", cr)
 	if !strings.Contains(rr.Output(), expectedMsg) {
