@@ -45,6 +45,15 @@ const (
 	PreloadVersion = "v11"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
+
+	// Enumeration for preload existence cache.
+	preloadExistsUNKNOWN = 0
+	preloadExistsMISSING = 1
+	preloadExistsEXISTS  = 2
+)
+
+var (
+	preloadExistsState int = preloadExistsUNKNOWN
 )
 
 // TarballName returns name of the tarball
@@ -100,10 +109,16 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 		return false
 	}
 
+	// If the preload existence is cached, just return that value.
+	if preloadExistsState != preloadExistsUNKNOWN {
+		return preloadExistsState == preloadExistsEXISTS
+	}
+
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found local preload: %s", targetPath)
+		preloadExistsState = preloadExistsEXISTS
 		return true
 	}
 
@@ -111,16 +126,19 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 	resp, err := http.Head(url)
 	if err != nil {
 		klog.Warningf("%s fetch error: %v", url, err)
+		preloadExistsState = preloadExistsMISSING
 		return false
 	}
 
 	// note: err won't be set if it's a 404
 	if resp.StatusCode != 200 {
 		klog.Warningf("%s status code: %d", url, resp.StatusCode)
+		preloadExistsState = preloadExistsMISSING
 		return false
 	}
 
 	klog.Infof("Found remote preload: %s", url)
+	preloadExistsState = preloadExistsEXISTS
 	return true
 }
 
@@ -183,6 +201,8 @@ func Preload(k8sVersion, containerRuntime string) error {
 		}
 	}
 
+	// If the download was successful, mark off that the preload exists in the cache.
+	preloadExistsState = preloadExistsEXISTS
 	return nil
 }
 
