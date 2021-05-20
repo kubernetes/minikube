@@ -273,6 +273,11 @@ tests all supported CNI options
 Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
 Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
 
+#### validateFalseCNI
+checks that minikube returns and error
+if container runtime is "containerd" or "crio"
+and --cni=false
+
 #### validateHairpinMode
 makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
 try to access deployment/netcat pod using external, obtained from 'netcat' service dns resolution, IP address
