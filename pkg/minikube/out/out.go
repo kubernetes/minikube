@@ -32,7 +32,7 @@ import (
 
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/briandowns/spinner"
-	isatty "github.com/mattn/go-isatty"
+	"github.com/mattn/go-isatty"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -452,5 +452,8 @@ func applyTmpl(format string, a ...V) string {
 // Fmt applies formatting and translation
 func Fmt(format string, a ...V) string {
 	format = translate.T(format)
+	if len(a) == 0 {
+		return format
+	}
 	return applyTmpl(format, a...)
 }

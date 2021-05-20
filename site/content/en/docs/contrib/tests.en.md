@@ -265,15 +265,8 @@ tests that the node name verification works as expected
 #### validateDeployAppToMultiNode
 deploys an app to a multinode cluster and makes sure all nodes can serve traffic
 
-## TestCNIFalse
-checks that minikube returns and error
-if container runtime is "containerd" or "crio"
-and --cni=false
-
-## TestCNIFalseForce
-checks that minikube returns not error
-if container runtime is "containerd" or "crio"
-and --cni=false, but --force=true
+#### validatePodsPingHost
+uses app previously deplyed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
 
 ## TestNetworkPlugins
 tests all supported CNI options
@@ -338,6 +331,9 @@ runs the initial minikube start
 
 #### validateDeploying
 deploys an app the minikube cluster
+
+#### validateEnableAddonWhileActive
+makes sure addons can be enabled while cluster is active.
 
 #### validateStop
 tests minikube stop
