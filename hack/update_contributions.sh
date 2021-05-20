@@ -49,10 +49,11 @@ tags_to_generate=${1:-1}
 # 4) Sort by ascending version numbers.
 # 5) Reform tag name from version numbers.
 # 6) Pair up current and previous tags. Format: (previous tag, current tag)
-# 7) Get dates of previous and current tag. Format: (current tag, prev date, current date)
-# 8) Add negative line numbers to each tag. Format: (negative index, current tag, prev date, current date)
+# 7) Format command to get tag dates.
+# 8) Execute command to get dates of previous and current tag. Format: (current tag, prev date, current date)
+# 9) Add negative line numbers to each tag. Format: (negative index, current tag, prev date, current date)
 #   - Negative line numbers are used since entries are sorted in descending order.
-# 9) Take most recent $tags_to_generate tags.
+# 10) Take most recent $tags_to_generate tags.
 tags_with_range=$(
   git --no-pager tag \
   | grep -v -e "beta" \
@@ -60,7 +61,8 @@ tags_with_range=$(
   | sort -k1n -k2n -k3n \
   | sed -r "s/([0-9]*) ([0-9]*) ([0-9]*)/v\1.\2.\3/" \
   | sed -n -r "x; G; s/\n/ /; p"\
-  | sed -n -r "s/([v.0-9]+) ([v.0-9]+)/sh -c '{ echo -n \2; git log -1 --pretty=format:\" %as \" \1; git log -1 --pretty=format:\"%as\" \2;}'/ep" \
+  | sed -n -r "s/([v.0-9]+) ([v.0-9]+)/-c '{ echo -n \2; git log -1 --pretty=format:\" %as \" \1; git log -1 --pretty=format:\"%as\" \2; echo;}'/p" \
+  | xargs -L 1 bash \
   | sed "=" | sed -r "N;s/\n/ /;s/^/-/" \
   | tail -n "$tags_to_generate")
 
