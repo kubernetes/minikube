@@ -66,8 +66,19 @@ func TestNetworkPlugins(t *testing.T) {
 			tc := tc
 
 			t.Run(tc.name, func(t *testing.T) {
+				profile := UniqueProfileName(tc.name)
+
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+				defer CleanupWithLogs(t, profile, cancel)
+
 				if DockerDriver() && strings.Contains(tc.name, "flannel") {
 					t.Skipf("flannel is not yet compatible with Docker driver: iptables v1.8.3 (legacy): Couldn't load target `CNI-x': No such file or directory")
+				}
+
+				if ContainerRuntime() != "docker" && tc.name == "false" {
+					// CNI is required for current container runtime
+					validateFalseCNI(ctx, t, profile)
+					return
 				}
 
 				if ContainerRuntime() != "docker" && tc.name == "kubenet" {
@@ -78,10 +89,6 @@ func TestNetworkPlugins(t *testing.T) {
 
 				start := time.Now()
 				MaybeParallel(t)
-				profile := UniqueProfileName(tc.name)
-
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer CleanupWithLogs(t, profile, cancel)
 
 				startArgs := append([]string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
@@ -102,10 +109,13 @@ func TestNetworkPlugins(t *testing.T) {
 				}
 				if !t.Failed() {
 					t.Run("KubeletFlags", func(t *testing.T) {
-						// none does not support 'minikube ssh'
-						rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
+						var rr *RunResult
+						var err error
 						if NoneDriver() {
+							// none does not support 'minikube ssh'
 							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
+						} else {
+							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
 						}
 						if err != nil {
 							t.Fatalf("ssh failed: %v", err)
@@ -187,6 +197,26 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
+}
+
+// validateFalseCNI checks that minikube returns and error
+// if container runtime is "containerd" or "crio"
+// and --cni=false
+func validateFalseCNI(ctx context.Context, t *testing.T, profile string) {
+	cr := ContainerRuntime()
+
+	startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false"}
+	startArgs = append(startArgs, StartArgs()...)
+
+	mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
+	rr, err := Run(t, mkCmd)
+	if err == nil {
+		t.Errorf("%s expected to fail", mkCmd)
+	}
+	expectedMsg := fmt.Sprintf("The %q container runtime requires CNI", cr)
+	if !strings.Contains(rr.Output(), expectedMsg) {
+		t.Errorf("Expected %q line not found in output %s", expectedMsg, rr.Output())
+	}
 }
 
 // validateHairpinMode makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI

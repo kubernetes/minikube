@@ -1130,6 +1130,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		if !validRuntime {
 			exit.Message(reason.Usage, `Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
 		}
+
+		validateCNI(cmd, runtime)
 	}
 
 	if driver.BareMetal(drvName) {
@@ -1192,7 +1194,20 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	validateRegistryMirror()
 	validateInsecureRegistry()
+}
 
+// if container runtime is not docker, check that cni is not disabled
+func validateCNI(cmd *cobra.Command, runtime string) {
+	if runtime == "docker" {
+		return
+	}
+	if cmd.Flags().Changed(cniFlag) && strings.ToLower(viper.GetString(cniFlag)) == "false" {
+		if viper.GetBool(force) {
+			out.WarnReason(reason.Usage, "You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI", out.V{"name": runtime})
+		} else {
+			exit.Message(reason.Usage, "The \"{{.name}}\" container runtime requires CNI", out.V{"name": runtime})
+		}
+	}
 }
 
 // validateChangedMemoryFlags validates memory related flags.
