@@ -65,6 +65,28 @@ func TestAddons(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 		}
+<<<<<<< HEAD
+=======
+	}
+
+	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
+	if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none driver and macos docker driver does not support ingress
+		args = append(args, "--addons=ingress")
+	}
+	if !arm64Platform() {
+		args = append(args, "--addons=helm-tiller")
+	}
+	if ContainerRuntime() == "docker" && !arm64Platform() {
+		args = append(args, "--addons=auto-pause")
+	}
+	if !detect.IsOnGCE() {
+		args = append(args, "--addons=gcp-auth")
+	}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+>>>>>>> 422ca5475 (add auto-pause addon only for docker cri)
 
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
