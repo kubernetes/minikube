@@ -82,7 +82,8 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 
 					// This is the numeric code of the error, e.g. 80 for ExGuest Error
 					code := s.Value
-					buf.WriteString(fmt.Sprintf("%s: %s\n\n", code, currentError))
+					buf.WriteString(fmt.Sprintf("%s: %s", code, currentError))
+					buf.WriteString("\n\n")
 				}
 				return true
 			})
@@ -92,26 +93,26 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 		if strings.Contains(pathToCheck, "reason.go") {
 			buf.WriteString("## Error Strings\n\n")
 			currentNode := ""
-			currentId := ""
+			currentID := ""
 			currentComment := ""
 			ast.Inspect(file, func(x ast.Node) bool {
 				if id, ok := x.(*ast.Ident); ok {
 					currentNode = id.Name
 					if strings.HasPrefix(currentNode, "Ex") && currentNode != "ExitCode" {
 						// We have all the info we're going to get on this error, print it out
-						buf.WriteString(fmt.Sprintf("%s (Exit code %v)\n\n", currentId, currentNode))
+						buf.WriteString(fmt.Sprintf("%s (Exit code %v)\n\n", currentID, currentNode))
 						if currentComment != "" {
 							buf.WriteString(currentComment + "\n")
 						}
 						buf.WriteString("\n")
 						currentComment = ""
-						currentId = ""
+						currentID = ""
 						currentNode = ""
 					}
 				}
 				if s, ok := x.(*ast.BasicLit); ok {
 					if currentNode == "ID" {
-						currentId = s.Value
+						currentID = s.Value
 					}
 				}
 				if c, ok := x.(*ast.Comment); ok {
