@@ -174,7 +174,11 @@ func TestAddons(t *testing.T) {
 =======
 	// AutoPause addon test
 	t.Run("AutoPause", func(t *testing.T) {
-		validateAutoPause(ctx, t, profile)
+		if ContainerRuntime() != "docker" {
+			t.Skip("not supported on non-docker runtime yet")
+		} else {
+			validateAutoPause(ctx, t, profile)
+		}
 	})
 
 	// Assert that disable/enable works offline
