@@ -1,0 +1,497 @@
+---
+title: "v1.17.0 - 2021-01-22"
+linkTitle: "v1.17.0 - 2021-01-22"
+weight: -91
+---
+<html>
+<head>
+    <title>kubernetes/minikube - Leaderboard</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load("current", {packages:["corechart"]});
+    </script>
+    <style>
+    body {
+       font-family: 'Open Sans', sans-serif;
+       background-color: #f7f7fa;
+       padding: 1em;
+    }
+
+    h1 {
+      color: rgba(66,133,244);
+      margin-bottom: 0em;
+    }
+
+    .subtitle {
+      color: rgba(23,90,201);
+      font-size: small;
+    }
+
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: #666;
+        font-size: small;
+    }
+
+    h2.cli {
+       color: #666;
+    }
+
+    h2 {
+        color: #333;
+    }
+
+    .board p {
+        font-size: small;
+        color: #999;
+        text-align: center;
+    }
+
+
+    .board {
+        clear: right;
+        display: inline-block;
+        padding: 0.5em;
+        margin: 0.5em;
+        background-color: #fff;
+    }
+    .board:nth-child(4n+3) {
+        border: 2px solid rgba(66,133,244,0.25);
+        color: rgba(66,133,244);
+    }
+
+    .board:nth-child(4n+2) {
+        border: 2px solid rgba(219,68,55,0.25);
+        color: rgba rgba(219,68,55);
+    }
+
+    .board:nth-child(4n+1) {
+        border: 2px solid rgba(244,160,0,0.25);
+        color: rgba(244,160,0);
+    }
+
+    .board:nth-child(4n) {
+        border: 2px solid rgba(15,157,88,0.25);
+        color: rgba(15,157,88);
+    }
+
+    h3 {
+        text-align: center;
+    }
+
+    </style>
+</head>
+<body>
+    <h1>kubernetes/minikube</h1>
+    <div class="subtitle">2020-12-17 &mdash; 2021-01-22</div>
+
+
+    
+        <h2>Reviewers</h2>
+
+        
+            <div class="board">
+            <h3>Most Influential</h3>
+            <p># of Merged PRs reviewed</p>
+            <div id="chart_reviewCounts" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawreviewCounts);
+
+                function drawreviewCounts() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', '# of Merged PRs reviewed', { role: 'annotation' }],
+                    ["medyagh", 25, "25"],
+                    ["tstromberg", 11, "11"],
+                    ["priyawadhwa", 3, "3"],
+                    ["bl-ue", 2, "2"],
+                    ["briandealwis", 1, "1"],
+                    ["sharifelgamal", 1, "1"],
+                    ["spowelljr", 1, "1"],
+                    ["afbjorklund", 1, "1"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_reviewCounts'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Most Helpful</h3>
+            <p># of words written in merged PRs</p>
+            <div id="chart_reviewWords" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawreviewWords);
+
+                function drawreviewWords() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', '# of words written in merged PRs', { role: 'annotation' }],
+                    ["medyagh", 1420, "1420"],
+                    ["tstromberg", 418, "418"],
+                    ["afbjorklund", 197, "197"],
+                    ["priyawadhwa", 95, "95"],
+                    ["briandealwis", 85, "85"],
+                    ["sharifelgamal", 48, "48"],
+                    ["bl-ue", 43, "43"],
+                    ["spowelljr", 11, "11"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_reviewWords'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Most Demanding</h3>
+            <p># of Review Comments in merged PRs</p>
+            <div id="chart_reviewComments" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawreviewComments);
+
+                function drawreviewComments() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', '# of Review Comments in merged PRs', { role: 'annotation' }],
+                    ["medyagh", 60, "60"],
+                    ["tstromberg", 12, "12"],
+                    ["priyawadhwa", 5, "5"],
+                    ["briandealwis", 2, "2"],
+                    ["bl-ue", 1, "1"],
+                    ["sharifelgamal", 1, "1"],
+                    ["spowelljr", 1, "1"],
+                    ["afbjorklund", 0, "0"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_reviewComments'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+    
+        <h2>Pull Requests</h2>
+
+        
+            <div class="board">
+            <h3>Most Active</h3>
+            <p># of Pull Requests Merged</p>
+            <div id="chart_prCounts" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawprCounts);
+
+                function drawprCounts() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', '# of Pull Requests Merged', { role: 'annotation' }],
+                    ["afbjorklund", 12, "12"],
+                    ["azhao155", 6, "6"],
+                    ["tstromberg", 6, "6"],
+                    ["medyagh", 5, "5"],
+                    ["lingsamuel", 4, "4"],
+                    ["spowelljr", 4, "4"],
+                    ["priyawadhwa", 4, "4"],
+                    ["sharifelgamal", 4, "4"],
+                    ["ilya-zuyev", 3, "3"],
+                    ["daehyeok", 3, "3"],
+                    ["alonyb", 3, "3"],
+                    ["Hellcatlk", 2, "2"],
+                    ["blueelvis", 2, "2"],
+                    ["imilchev", 1, "1"],
+                    ["sadlil", 1, "1"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_prCounts'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Big Movers</h3>
+            <p>Lines of code (delta)</p>
+            <div id="chart_prDeltas" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawprDeltas);
+
+                function drawprDeltas() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', 'Lines of code (delta)', { role: 'annotation' }],
+                    ["afbjorklund", 857, "857"],
+                    ["ilya-zuyev", 414, "414"],
+                    ["daehyeok", 263, "263"],
+                    ["priyawadhwa", 232, "232"],
+                    ["medyagh", 202, "202"],
+                    ["azhao155", 180, "180"],
+                    ["lingsamuel", 143, "143"],
+                    ["cxsu", 129, "129"],
+                    ["tstromberg", 120, "120"],
+                    ["sharifelgamal", 67, "67"],
+                    ["anencore94", 53, "53"],
+                    ["sadlil", 48, "48"],
+                    ["spowelljr", 42, "42"],
+                    ["kadern0", 33, "33"],
+                    ["blueelvis", 23, "23"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_prDeltas'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Most difficult to review</h3>
+            <p>Average PR size (added+changed)</p>
+            <div id="chart_prSize" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawprSize);
+
+                function drawprSize() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', 'Average PR size (added+changed)', { role: 'annotation' }],
+                    ["ilya-zuyev", 122, "122"],
+                    ["afbjorklund", 67, "67"],
+                    ["priyawadhwa", 53, "53"],
+                    ["anencore94", 47, "47"],
+                    ["daehyeok", 45, "45"],
+                    ["medyagh", 37, "37"],
+                    ["lingsamuel", 35, "35"],
+                    ["kadern0", 33, "33"],
+                    ["cxsu", 31, "31"],
+                    ["azhao155", 28, "28"],
+                    ["sadlil", 24, "24"],
+                    ["Aut0R3V", 15, "15"],
+                    ["lvjp", 12, "12"],
+                    ["blueelvis", 10, "10"],
+                    ["spowelljr", 9, "9"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_prSize'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+    
+        <h2>Issues</h2>
+
+        
+            <div class="board">
+            <h3>Most Active</h3>
+            <p># of comments</p>
+            <div id="chart_comments" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawcomments);
+
+                function drawcomments() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', '# of comments', { role: 'annotation' }],
+                    ["medyagh", 18, "18"],
+                    ["afbjorklund", 13, "13"],
+                    ["priyawadhwa", 6, "6"],
+                    ["tstromberg", 5, "5"],
+                    ["lingsamuel", 4, "4"],
+                    ["jonjohnsonjr", 3, "3"],
+                    ["Aut0R3V", 3, "3"],
+                    ["rnantes", 2, "2"],
+                    ["ioef", 2, "2"],
+                    ["du86796922", 2, "2"],
+                    ["spowelljr", 2, "2"],
+                    ["vrybas", 2, "2"],
+                    ["blueelvis", 1, "1"],
+                    ["korpx-z", 1, "1"],
+                    ["http403", 1, "1"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_comments'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Most Helpful</h3>
+            <p># of words (excludes authored)</p>
+            <div id="chart_commentWords" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawcommentWords);
+
+                function drawcommentWords() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', '# of words (excludes authored)', { role: 'annotation' }],
+                    ["afbjorklund", 693, "693"],
+                    ["medyagh", 636, "636"],
+                    ["jonjohnsonjr", 534, "534"],
+                    ["parasit", 375, "375"],
+                    ["priyawadhwa", 337, "337"],
+                    ["tstromberg", 244, "244"],
+                    ["lingsamuel", 208, "208"],
+                    ["cr1st1p", 146, "146"],
+                    ["korpx-z", 129, "129"],
+                    ["ioef", 112, "112"],
+                    ["http403", 106, "106"],
+                    ["spowelljr", 99, "99"],
+                    ["MansM", 88, "88"],
+                    ["davidmnoriega", 71, "71"],
+                    ["vrybas", 69, "69"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_commentWords'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Top Closers</h3>
+            <p># of issues closed (excludes authored)</p>
+            <div id="chart_issueCloser" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawissueCloser);
+
+                function drawissueCloser() {
+                    var data = new google.visualization.arrayToDataTable([
+                    ['', '# of issues closed (excludes authored)', { role: 'annotation' }],
+                    ["medyagh", 20, "20"],
+                    ["priyawadhwa", 9, "9"],
+                    ["tstromberg", 9, "9"],
+                    ["sharifelgamal", 6, "6"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_issueCloser'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+    
+</body>
+</html>
