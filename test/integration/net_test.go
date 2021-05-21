@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -212,6 +213,9 @@ func validateFalseCNI(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, mkCmd)
 	if err == nil {
 		t.Errorf("%s expected to fail", mkCmd)
+	}
+	if rr.ExitCode != reason.Usage.ExitCode {
+		t.Errorf("Expected %d exit code, got %d", reason.Usage.ExitCode, rr.ExitCode)
 	}
 	expectedMsg := fmt.Sprintf("The %q container runtime requires CNI", cr)
 	if !strings.Contains(rr.Output(), expectedMsg) {
