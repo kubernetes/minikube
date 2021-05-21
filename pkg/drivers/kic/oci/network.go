@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // RoutableHostIPFromInside returns the ip/dns of the host that container lives on
@@ -150,6 +151,14 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	} else {
 		rr, err = runCmd(exec.Command(ociBin, "container", "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID))
 		if err != nil {
+
+			// Error: "Template parsing error: template: :1:3: executing "" at <index (index .NetworkSettings.Ports "22/tcp") 0>: error calling index: index of untyped nil"
+			if strings.Contains(rr.Output(), `<index (index .NetworkSettings.Ports "22/tcp") 0>: error calling index: index of untyped nil`) && contPort == constants.SSHPort {
+				return 0, ErrGetSSHPortContainerNotRunning
+			}
+			if strings.Contains(rr.Output(), "error calling index: index of untyped nil") {
+				return 0, ErrGetPortContainerNotRunning
+			}
 			return 0, errors.Wrapf(err, "get port %d for %q", contPort, ociID)
 		}
 	}
