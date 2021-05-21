@@ -30,59 +30,97 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-func ErrorCodes(docPath string, pathToCheck string) error {
+func ErrorCodes(docPath string, pathsToCheck []string) error {
 	buf := bytes.NewBuffer([]byte{})
 	date := time.Now().Format("2006-01-02")
-	title := out.Fmt(title, out.V{"Command": "Error Codes", "Description": "minikube error codes and advice", "Date": date})
+	title := out.Fmt(title, out.V{"Command": "Error Codes", "Description": "minikube error codes and strings", "Date": date})
 	_, err := buf.Write([]byte(title))
 	if err != nil {
 		return err
 	}
 
 	fset := token.NewFileSet()
-	r, err := ioutil.ReadFile(pathToCheck)
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("error reading file %s", pathToCheck))
-	}
-	file, err := parser.ParseFile(fset, "", r, parser.ParseComments)
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("error parsing file %s", pathToCheck))
-	}
-
-	currentGroup := ""
-	currentError := ""
-	ast.Inspect(file, func(x ast.Node) bool {
-		switch x.(type) {
-		case *ast.Comment:
-			// Start a new group of errors
-			comment := x.(*ast.Comment).Text
-			if !strings.HasPrefix(comment, "// Error codes specific") {
-				return true
-			}
-			currentGroup = strings.Replace(comment, "//", "##", 1)
-			buf.WriteString("\n" + currentGroup + "\n")
-		case *ast.Ident:
-			// This is the name of the error, e.g. ExGuestError
-			currentError = x.(*ast.Ident).Name
-		case *ast.BasicLit:
-			// Filter out random strings that aren't error codes
-			if currentError == "" {
-				return true
-			}
-
-			// No specific group means generic errors
-			if currentGroup == "" {
-				currentGroup = "## Generic Errors"
-				buf.WriteString("\n" + currentGroup + "\n")
-			}
-
-			// This is the numeric code of the error, e.g. 80 for ExGuest Error
-			code := x.(*ast.BasicLit).Value
-			buf.WriteString(fmt.Sprintf("%s: %s\n", code, currentError))
-		default:
+	for _, pathToCheck := range pathsToCheck {
+		r, err := ioutil.ReadFile(pathToCheck)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("error reading file %s", pathToCheck))
 		}
-		return true
-	})
+		file, err := parser.ParseFile(fset, "", r, parser.ParseComments)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("error parsing file %s", pathToCheck))
+		}
+
+		if strings.Contains(pathToCheck, "exitcodes.go") {
+			buf.WriteString("# Error Codes\n\n")
+			currentGroup := ""
+			currentError := ""
+			ast.Inspect(file, func(x ast.Node) bool {
+				if c, ok := x.(*ast.Comment); ok {
+					// Start a new group of errors
+					comment := c.Text
+					if !strings.HasPrefix(comment, "// Error codes specific") {
+						return true
+					}
+					currentGroup = strings.Replace(comment, "//", "##", 1)
+					buf.WriteString("\n" + currentGroup + "\n")
+				}
+				if id, ok := x.(*ast.Ident); ok {
+					// This is the name of the error, e.g. ExGuestError
+					currentError = id.Name
+				}
+				if s, ok := x.(*ast.BasicLit); ok {
+					// Filter out random strings that aren't error codes
+					if currentError == "" {
+						return true
+					}
+
+					// No specific group means generic errors
+					if currentGroup == "" {
+						currentGroup = "## Generic Errors"
+						buf.WriteString("\n" + currentGroup + "\n")
+					}
+
+					// This is the numeric code of the error, e.g. 80 for ExGuest Error
+					code := s.Value
+					buf.WriteString(fmt.Sprintf("%s: %s\n", code, currentError))
+				}
+				return true
+			})
+			buf.WriteString("\n\n")
+		}
+
+		if strings.Contains(pathToCheck, "reason.go") {
+			buf.WriteString("# Error Strings\n\n")
+			currentNode := ""
+			currentId := ""
+			currentComment := ""
+			ast.Inspect(file, func(x ast.Node) bool {
+				if id, ok := x.(*ast.Ident); ok {
+					currentNode = id.Name
+					if strings.HasPrefix(currentNode, "Ex") && currentNode != "ExitCode" {
+						// We have all the info we're going to get on this error, print it out
+						buf.WriteString(fmt.Sprintf("%s (Exit code %v)\n", currentId, currentNode))
+						if currentComment != "" {
+							buf.WriteString(currentComment + "\n")
+						}
+						buf.WriteString("\n")
+						currentComment = ""
+						currentId = ""
+						currentNode = ""
+					}
+				}
+				if s, ok := x.(*ast.BasicLit); ok {
+					if currentNode == "ID" {
+						currentId = s.Value
+					}
+				}
+				if c, ok := x.(*ast.Comment); ok {
+					currentComment = c.Text[3:]
+				}
+				return true
+			})
+		}
+	}
 
 	return ioutil.WriteFile(docPath, buf.Bytes(), 0o644)
 }

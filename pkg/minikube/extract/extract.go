@@ -299,7 +299,6 @@ func checkIdentForStringValue(i *ast.Ident) string {
 		if rhs, ok := as.Rhs[0].(*ast.BasicLit); ok {
 			s = rhs.Value
 		}
-
 	}
 
 	// This Identifier is part of the const or var declaration
