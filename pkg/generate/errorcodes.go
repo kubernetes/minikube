@@ -51,7 +51,7 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 		}
 
 		if strings.Contains(pathToCheck, "exitcodes.go") {
-			buf.WriteString("# Error Codes\n\n")
+			buf.WriteString("## Error Codes\n\n")
 			currentGroup := ""
 			currentError := ""
 			ast.Inspect(file, func(x ast.Node) bool {
@@ -61,7 +61,7 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 					if !strings.HasPrefix(comment, "// Error codes specific") {
 						return true
 					}
-					currentGroup = strings.Replace(comment, "//", "##", 1)
+					currentGroup = strings.Replace(comment, "//", "###", 1)
 					buf.WriteString("\n" + currentGroup + "\n")
 				}
 				if id, ok := x.(*ast.Ident); ok {
@@ -76,13 +76,13 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 
 					// No specific group means generic errors
 					if currentGroup == "" {
-						currentGroup = "## Generic Errors"
+						currentGroup = "### Generic Errors"
 						buf.WriteString("\n" + currentGroup + "\n")
 					}
 
 					// This is the numeric code of the error, e.g. 80 for ExGuest Error
 					code := s.Value
-					buf.WriteString(fmt.Sprintf("%s: %s\n", code, currentError))
+					buf.WriteString(fmt.Sprintf("%s: %s\n\n", code, currentError))
 				}
 				return true
 			})
@@ -90,7 +90,7 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 		}
 
 		if strings.Contains(pathToCheck, "reason.go") {
-			buf.WriteString("# Error Strings\n\n")
+			buf.WriteString("## Error Strings\n\n")
 			currentNode := ""
 			currentId := ""
 			currentComment := ""
@@ -99,7 +99,7 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 					currentNode = id.Name
 					if strings.HasPrefix(currentNode, "Ex") && currentNode != "ExitCode" {
 						// We have all the info we're going to get on this error, print it out
-						buf.WriteString(fmt.Sprintf("%s (Exit code %v)\n", currentId, currentNode))
+						buf.WriteString(fmt.Sprintf("%s (Exit code %v)\n\n", currentId, currentNode))
 						if currentComment != "" {
 							buf.WriteString(currentComment + "\n")
 						}
