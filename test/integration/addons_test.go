@@ -68,7 +68,10 @@ func TestAddons(t *testing.T) {
 		args = append(args, "--addons=ingress")
 	}
 	if !arm64Platform() {
-		args = append(args, "--addons=helm-tiller", "--addons=auto-pause")
+		args = append(args, "--addons=helm-tiller")
+	}
+	if ContainerRuntime() == "docker" && !arm64Platform() {
+		args = append(args, "--addons=auto-pause")
 	}
 	if !detect.IsOnGCE() {
 		args = append(args, "--addons=gcp-auth")
