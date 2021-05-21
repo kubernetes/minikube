@@ -17,6 +17,7 @@ limitations under the License.
 package drivers
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -39,6 +40,12 @@ import (
 // GetDiskPath returns the path of the machine disk image
 func GetDiskPath(d *drivers.BaseDriver) string {
 	return filepath.Join(d.ResolveStorePath("."), d.GetMachineName()+".rawdisk")
+}
+
+// ExtraDiskPath returns the path of an additional disk suffixed with an ID.
+func ExtraDiskPath(d *drivers.BaseDriver, diskID int) string {
+	file := fmt.Sprintf("%s-%d.rawdisk", d.GetMachineName(), diskID)
+	return filepath.Join(d.ResolveStorePath("."), file)
 }
 
 // CommonDriver is the common driver base class
