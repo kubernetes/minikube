@@ -863,6 +863,28 @@ jobs:
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     steps:
+      - name: Install tools
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y jq docker git cron
+          sudo usermod -aG docker $USER
+
+      - name: Init
+        shell: bash
+        run: |
+          if [[ -f /var/run/reboot.in.progress ]]; then
+            echo "reboot in progress"
+            exit 1
+          fi
+          sudo touch /var/run/job.in.progress
+          rm -rf cleanup.sh install_cleanup.sh
+          # after this PR is merged, update URLs to get the scripts from github master
+          wget https://storage.googleapis.com/minikube-ci-utils/cleanup.sh
+          wget https://storage.googleapis.com/minikube-ci-utils/install_cleanup.sh
+          chmod +x cleanup.sh install_cleanup.sh
+          ./install_cleanup.sh
+
       - name: Install kubectl
         shell: bash
         run: |
@@ -875,12 +897,6 @@ jobs:
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-arm64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
-
-      - name: Install tools
-        shell: bash
-        run: |
-          sudo apt update
-          sudo apt install -y jq docker
 
       - name: Docker Info
         shell: bash
@@ -973,6 +989,10 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 0 ];then echo "*** Failed to pass at least 20! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+
+      - name: finalize
+        shell: bash
+        run: sudo rm -rf /var/run/job.in.progress
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
