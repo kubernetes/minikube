@@ -9,9 +9,15 @@ MAGIC="boot2docker, please format-me"
 # If there is a partition with `boot2docker-data` as its label, use it and be
 # very happy. Thus, you can come along if you feel like a room without a roof.
 BOOT2DOCKER_DATA=`blkid -o device -l -t LABEL=$LABEL`
-UNPARTITIONED_HD="/dev/$(lsblk | grep disk | cut -f1 -d' ')"
+DISKS="$(lsblk | grep disk | cut -f1 -d' ')"
 echo $BOOT2DOCKER_DATA
-if [ ! -n "$BOOT2DOCKER_DATA" ]; then
+for DISK in $DISKS; do
+    if [ -n "$BOOT2DOCKER_DATA" ]; then
+        # The primary minikube disk has been found or provisioned; stop provisioning other disks
+        break
+    fi
+
+    UNPARTITIONED_HD="/dev/$DISK"
     echo "Is the disk unpartitioned?, test for the 'boot2docker format-me' string"
 
     # Is the disk unpartitioned?, test for the 'boot2docker format-me' string
@@ -61,10 +67,10 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
                     BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
                     mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA
                 else
-                    echo "Disk unpartitioned but something is there... not doing anything"
+                    echo "Disk ($UNPARTITIONED_HD) unpartitioned but something is there... not doing anything"
                 fi
             else
-                echo "Partition table found on disk, not doing anything"
+                echo "Partition table found on disk ($UNPARTITIONED_HD), not doing anything"
             fi
         fi
     else
@@ -72,7 +78,7 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
         # TODO: mount all Linux partitions and look for a /var/lib/docker...
         BOOT2DOCKER_DATA=`blkid | grep -e 'TYPE="btrfs"'  -e 'TYPE="ext4"' | head -n 1 | sed 's/:.*//'`
     fi
-fi
+done
 
 echo $BOOT2DOCKER_DATA
 
