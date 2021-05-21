@@ -64,7 +64,7 @@ func IsVolumesnapshotsEnabled(cc *config.ClusterConfig, _, value string) error {
 	isCsiDriverEnabled, _ := strconv.ParseBool(value)
 	// assets.Addons[].IsEnabled() returns the current status of the addon or default value.
 	// config.AddonList contains list of addons to be enabled.
-	addonList := viper.GetStringSlice(config.AddonList)
+	addonList := viper.GetStringSlice(config.AddonListFlag)
 	isVolumesnapshotsEnabled := assets.Addons[volumesnapshotsAddon].IsEnabled(cc) || contains(addonList, volumesnapshotsAddon)
 	if isCsiDriverEnabled && !isVolumesnapshotsEnabled {
 		// just print out a warning directly, we don't want to return any errors since

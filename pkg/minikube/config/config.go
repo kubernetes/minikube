@@ -56,8 +56,8 @@ const (
 	AddonImages = "addon-images"
 	// AddonRegistries stores custom addon images config
 	AddonRegistries = "addon-registries"
-	// AddonList represents the key for addons parameter
-	AddonList = "addons"
+	// AddonListFlag represents the key for addons parameter
+	AddonListFlag = "addons"
 )
 
 var (
