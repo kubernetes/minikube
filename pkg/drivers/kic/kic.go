@@ -217,6 +217,12 @@ func (d *Driver) prepareSSH() error {
 	if err != nil {
 		return errors.Wrap(err, "create pubkey assetfile ")
 	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+		}
+	}()
+
 	if err := cmder.Copy(f); err != nil {
 		return errors.Wrap(err, "copying pub key")
 	}
