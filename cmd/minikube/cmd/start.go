@@ -1511,7 +1511,7 @@ func exitGuestProvision(err error) {
 		exit.Message(reason.RsrcInsufficientDockerStorage, "preload extraction failed: \"No space left on device\"")
 	}
 	if errors.Cause(err) == oci.ErrGetSSHPortContainerNotRunning {
-		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited permaturely after it was created, consider investigating Docker's performance/health.")
+		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited prematurely after it was created, consider investigating Docker's performance/health.")
 	}
 	exit.Error(reason.GuestProvision, "error provisioning host", err)
 }
