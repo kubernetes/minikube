@@ -224,6 +224,7 @@ var (
 	DrvNotFound           = Kind{ID: "DRV_NOT_FOUND", ExitCode: ExDriverNotFound}
 	DrvNotDetected        = Kind{ID: "DRV_NOT_DETECTED", ExitCode: ExDriverNotFound}
 	DrvNotHealthy         = Kind{ID: "DRV_NOT_HEALTHY", ExitCode: ExDriverNotFound}
+	DrvDockerNotRunning   = Kind{ID: "DRV_DOCKER_NOT_RUNNING", ExitCode: ExDriverNotFound}
 	DrvAsRoot             = Kind{ID: "DRV_AS_ROOT", ExitCode: ExDriverPermission}
 	DrvNeedsRoot          = Kind{ID: "DRV_NEEDS_ROOT", ExitCode: ExDriverPermission}
 	DrvNeedsAdministrator = Kind{ID: "DRV_NEEDS_ADMINISTRATOR", ExitCode: ExDriverPermission}
