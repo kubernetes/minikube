@@ -48,6 +48,7 @@ var exclude = []string{
 	"- {{.profile}}",
 	"    - {{.profile}}",
 	"test/integration",
+	"pkg/minikube/reason/exitcodes.go",
 }
 
 // ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.

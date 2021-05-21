@@ -23,7 +23,7 @@ import (
 	"go/parser"
 	"go/token"
 	"io/ioutil"
-	"reflect"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -49,12 +49,40 @@ func ErrorCodes(docPath string, pathToCheck string) error {
 		return errors.Wrap(err, fmt.Sprintf("error parsing file %s", pathToCheck))
 	}
 
+	currentGroup := ""
+	currentError := ""
 	ast.Inspect(file, func(x ast.Node) bool {
-		val := reflect.ValueOf(x)
-		if !val.IsZero() {
-			fmt.Print(val.Elem().Type().Name())
+		switch x.(type) {
+		case *ast.Comment:
+			// Start a new group of errors
+			comment := x.(*ast.Comment).Text
+			if !strings.HasPrefix(comment, "// Error codes specific") {
+				return true
+			}
+			currentGroup = strings.Replace(comment, "//", "##", 1)
+			buf.WriteString("\n" + currentGroup + "\n")
+		case *ast.Ident:
+			// This is the name of the error, e.g. ExGuestError
+			currentError = x.(*ast.Ident).Name
+		case *ast.BasicLit:
+			// Filter out random strings that aren't error codes
+			if currentError == "" {
+				return true
+			}
+
+			// No specific group means generic errors
+			if currentGroup == "" {
+				currentGroup = "## Generic Errors"
+				buf.WriteString("\n" + currentGroup + "\n")
+			}
+
+			// This is the numeric code of the error, e.g. 80 for ExGuest Error
+			code := x.(*ast.BasicLit).Value
+			buf.WriteString(fmt.Sprintf("%s: %s\n", code, currentError))
+		default:
 		}
 		return true
 	})
-	return nil
+
+	return ioutil.WriteFile(docPath, buf.Bytes(), 0o644)
 }

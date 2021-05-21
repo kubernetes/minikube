@@ -32,8 +32,8 @@ import (
 )
 
 // Docs generates docs for minikube command
-func Docs(root *cobra.Command, path string, testPath string) error {
-	/*cmds := root.Commands()
+func Docs(root *cobra.Command, path string, testPath string, codePath string) error {
+	cmds := root.Commands()
 	for _, c := range cmds {
 		if c.Hidden {
 			klog.Infof("Skipping generating doc for %s as it's a hidden command", c.Name())
@@ -50,9 +50,9 @@ func Docs(root *cobra.Command, path string, testPath string) error {
 	err := TestDocs(testPath, "test/integration")
 	if err != nil {
 		return errors.Wrap(err, "failed to generate test docs")
-	}*/
+	}
 
-	return ErrorCodes("./site/content/en/docs/contrib/errorcodes.en.md", "pkg/minikube/reason/known_issues.go")
+	return ErrorCodes(codePath, "pkg/minikube/reason/exitcodes.go")
 }
 
 // DocForCommand returns the specific doc for that command
