@@ -32,6 +32,8 @@ func TestDownload(t *testing.T) {
 	t.Run("PreloadDownloadPreventsMultipleDownload", testPreloadDownloadPreventsMultipleDownload)
 	t.Run("ImageToCache", testImageToCache)
 	t.Run("ImageToDaemon", testImageToDaemon)
+	t.Run("PreloadNotExists", testPreloadNotExists)
+	t.Run("PreloadChecksumMismatch", testPreloadChecksumMismatch)
 }
 
 // Returns a mock function that sleeps before incrementing `downloadsCounter` and creates the requested file.
@@ -85,8 +87,8 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 		return nil, nil
 	}
 	checkPreloadExists = func(k8sVersion, containerRuntime string, forcePreload ...bool) bool { return true }
-	getChecksum = func(k8sVersion, containerRuntime string) (string, error) { return "check", nil }
-	ensureChecksumValid = func(k8sVersion, containerRuntime, path string) error { return nil }
+	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
+	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error { return nil }
 
 	var group sync.WaitGroup
 	group.Add(2)
@@ -104,6 +106,45 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 
 	if downloadNum != 1 {
 		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
+	}
+}
+
+func testPreloadNotExists(t *testing.T) {
+	downloadNum := 0
+	DownloadMock = mockSleepDownload(&downloadNum)
+
+	checkCache = func(file string) (fs.FileInfo, error) { return nil, fmt.Errorf("cache not found") }
+	checkPreloadExists = func(k8sVersion, containerRuntime string, forcePreload ...bool) bool { return false }
+	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
+	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error { return nil }
+
+	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime)
+	if err != nil {
+		t.Errorf("Expected no error when preload exists")
+	}
+
+	if downloadNum != 0 {
+		t.Errorf("Expected no download attempt but got %v!", downloadNum)
+	}
+}
+
+func testPreloadChecksumMismatch(t *testing.T) {
+	downloadNum := 0
+	DownloadMock = mockSleepDownload(&downloadNum)
+
+	checkCache = func(file string) (fs.FileInfo, error) { return nil, fmt.Errorf("cache not found") }
+	checkPreloadExists = func(k8sVersion, containerRuntime string, forcePreload ...bool) bool { return true }
+	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
+	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error {
+		return fmt.Errorf("checksum mismatch")
+	}
+
+	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime)
+	expectedErrMsg := "checksum mismatch"
+	if err == nil {
+		t.Errorf("Expected error when checksum mismatches")
+	} else if err.Error() != expectedErrMsg {
+		t.Errorf("Expected error to be %s, got %s", expectedErrMsg, err.Error())
 	}
 }
 
