@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	cloud.google.com/go/storage v1.15.0
-	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.6
 	github.com/Azure/azure-sdk-for-go v43.3.0+incompatible
 	github.com/Delta456/box-cli-maker/v2 v2.2.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
