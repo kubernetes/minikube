@@ -56,7 +56,9 @@ func (k *Kind) IssueURLs() []string {
 
 // Sections are ordered roughly by stack dependencies
 var (
-	Usage                 = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
+	// minikube has been passed an incorrect parameter
+	Usage = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
+	// minikube has no current cluster running
 	UsageNoProfileRunning = Kind{ID: "MK_USAGE_NO_PROFILE", ExitCode: ExProgramUsage,
 		Advice: `You can create one using 'minikube start'.
 		`,
