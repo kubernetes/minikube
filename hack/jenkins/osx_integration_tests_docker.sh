@@ -28,11 +28,11 @@ set -e
 
 ARCH="amd64"
 OS="darwin"
-VM_DRIVER="docker"
+DRIVER="docker"
 JOB_NAME="Docker_macOS"
 EXTRA_TEST_ARGS=""
 EXPECTED_DEFAULT_DRIVER="docker"
-
+EXTERNAL="yes"
 
 # fix mac os as a service on mac os
 # https://github.com/docker/for-mac/issues/882#issuecomment-506372814
@@ -59,4 +59,4 @@ install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "F
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
-source run_tests.sh
+source common.sh

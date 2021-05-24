@@ -47,18 +47,18 @@ import (
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) ([]assets.CopyableFile, error) {
+func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) error {
 	localPath := localpath.Profile(k8s.ClusterName)
 	klog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
 
 	ccs, err := generateSharedCACerts()
 	if err != nil {
-		return nil, errors.Wrap(err, "shared CA certs")
+		return errors.Wrap(err, "shared CA certs")
 	}
 
 	xfer, err := generateProfileCerts(k8s, n, ccs)
 	if err != nil {
-		return nil, errors.Wrap(err, "profile certs")
+		return errors.Wrap(err, "profile certs")
 	}
 
 	xfer = append(xfer, ccs.caCert)
@@ -67,6 +67,14 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	xfer = append(xfer, ccs.proxyKey)
 
 	copyableFiles := []assets.CopyableFile{}
+	defer func() {
+		for _, f := range copyableFiles {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}
+	}()
+
 	for _, p := range xfer {
 		cert := filepath.Base(p)
 		perms := "0644"
@@ -75,19 +83,19 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		}
 		certFile, err := assets.NewFileAsset(p, vmpath.GuestKubernetesCertsDir, cert, perms)
 		if err != nil {
-			return nil, errors.Wrapf(err, "key asset %s", cert)
+			return errors.Wrapf(err, "key asset %s", cert)
 		}
 		copyableFiles = append(copyableFiles, certFile)
 	}
 
 	caCerts, err := collectCACerts()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for src, dst := range caCerts {
 		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
 		if err != nil {
-			return nil, errors.Wrapf(err, "ca asset %s", src)
+			return errors.Wrapf(err, "ca asset %s", src)
 		}
 
 		copyableFiles = append(copyableFiles, certFile)
@@ -107,11 +115,11 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	kubeCfg := api.NewConfig()
 	err = kubeconfig.PopulateFromSettings(kcs, kubeCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "populating kubeconfig")
+		return errors.Wrap(err, "populating kubeconfig")
 	}
 	data, err := runtime.Encode(latest.Codec, kubeCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "encoding kubeconfig")
+		return errors.Wrap(err, "encoding kubeconfig")
 	}
 
 	if n.ControlPlane {
@@ -121,14 +129,14 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 
 	for _, f := range copyableFiles {
 		if err := cmd.Copy(f); err != nil {
-			return nil, errors.Wrapf(err, "Copy %s", f.GetSourcePath())
+			return errors.Wrapf(err, "Copy %s", f.GetSourcePath())
 		}
 	}
 
 	if err := installCertSymlinks(cmd, caCerts); err != nil {
-		return nil, errors.Wrapf(err, "certificate symlinks")
+		return errors.Wrapf(err, "certificate symlinks")
 	}
-	return copyableFiles, nil
+	return nil
 }
 
 // CACerts has cert and key for CA (and Proxy)

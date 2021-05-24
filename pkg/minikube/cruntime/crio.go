@@ -349,6 +349,12 @@ func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "getting file asset")
 	}
+	defer func() {
+		if err := fa.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", fa.GetSourcePath(), err)
+		}
+	}()
+
 	t := time.Now()
 	if err := r.Runner.Copy(fa); err != nil {
 		return errors.Wrap(err, "copying file")

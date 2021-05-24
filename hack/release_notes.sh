@@ -56,8 +56,19 @@ git log "$recent".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\
 echo ""
 echo "Thank you to our PR reviewers for this release!"
 echo ""
-"${DIR}/pullsheet" reviews --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt | awk -F ',' 'function cmp_value_order(i1,v1,i2,v2){ return v1 < v2 } NR>1{arr[$4] += $6 + $7}END{PROCINFO["sorted_in"] = "cmp_value_order"; for (a in arr) printf "- %s (%d comments)\n", a, arr[a]}'
+AWK_FORMAT_ITEM='{printf "- %s (%d comments)\n", $2, $1}'
+AWK_REVIEW_COMMENTS='NR>1{arr[$4] += $6 + $7}END{for (a in arr) printf "%d %s\n", arr[a], a}'
+"${DIR}/pullsheet" reviews --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_REVIEW_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM"
 echo ""
 echo "Thank you to our triage members for this release!"
 echo ""
-"${DIR}/pullsheet" issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt | awk -F ',' 'function cmp_value_order(i1,v1,i2,v2){ return v1 < v2 } NR>1{arr[$4] += $7}END{PROCINFO["sorted_in"] = "cmp_value_order"; for (a in arr) printf "- %s (%d comments)\n", a, arr[a]}' | head -n 5
+AWK_ISSUE_COMMENTS='NR>1{arr[$4] += $7}END{for (a in arr) printf "%d %s\n", arr[a], a}'
+"${DIR}/pullsheet" issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_ISSUE_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM" | head -n 5
+
+if [[ "$recent" != *"beta"* ]]; then
+  echo ""
+  echo "Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/$recent/) for this release!"
+fi
+
+echo ""
+echo "Don't forget to run \"make update-leaderboard\"!"

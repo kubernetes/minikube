@@ -32,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.16.1
+GO_VERSION ?= 1.16.4
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -207,6 +207,10 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
+out/minikube-linux-i686: out/minikube-linux-386
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
 out/minikube-linux-x86_64: out/minikube-linux-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
@@ -248,6 +252,10 @@ else
 	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" $(if $(call eq,$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*))),arm),GOARM=$(GOARM)) \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
+
+out/minikube-linux-armv6: $(SOURCE_GENERATED) $(SOURCE_FILES)
+	$(Q)GOOS=linux GOARCH=arm GOARM=6 \
+	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 
 .PHONY: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.exe
 e2e-linux-amd64: out/e2e-linux-amd64 ## build end2end binary for Linux x86 64bit
@@ -310,7 +318,7 @@ test-pkg/%: $(SOURCE_GENERATED) ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross cross-tars exotic out/gvisor-addon ## Build all different minikube components
+all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
 
 .PHONY: drivers
 drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2 ## Build Hyperkit and KVM2 drivers
@@ -360,8 +368,8 @@ test: $(SOURCE_GENERATED) ## Trigger minikube test
 	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
 .PHONY: generate-docs
-generate-docs: out/minikube ## Automatically generate commands documentation.
-	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md
+generate-docs: extract out/minikube ## Automatically generate commands documentation.
+	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md --code-path ./site/content/en/docs/contrib/errorcodes.en.md
 
 .PHONY: gotest
 gotest: $(SOURCE_GENERATED) ## Trigger minikube test
@@ -385,8 +393,8 @@ out/coverage.html: out/coverage.out
 	$(if $(quiet),@echo "  COVER    $@")
 	$(Q)go tool cover -html=$< -o $@
 
-.PHONY: extract
-extract: ## Compile extract tool
+.PHONY: extract 
+extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
 
 # Regenerates assets.go when template files have been updated
@@ -421,6 +429,9 @@ cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## 
 
 .PHONY: exotic
 exotic: out/minikube-linux-arm out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x ## Build minikube for non-amd64 linux
+
+.PHONY: retro
+retro: out/minikube-linux-386 out/minikube-linux-armv6 ## Build minikube for legacy 32-bit linux
 
 .PHONY: windows
 windows: minikube-windows-amd64.exe ## Build minikube for Windows 64bit
@@ -595,7 +606,9 @@ out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
 
 .SECONDEXPANSION:
 TAR_TARGETS_linux-amd64   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
+TAR_TARGETS_linux-arm64   := out/minikube-linux-arm64 #out/docker-machine-driver-kvm2
 TAR_TARGETS_darwin-amd64  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
+TAR_TARGETS_darwin-arm64  := out/minikube-darwin-arm64 #out/docker-machine-driver-hyperkit
 TAR_TARGETS_windows-amd64 := out/minikube-windows-amd64.exe
 out/minikube-%.tar.gz: $$(TAR_TARGETS_$$*)
 	$(if $(quiet),@echo "  TAR      $@")
@@ -723,11 +736,13 @@ TAG = $(STORAGE_PROVISIONER_TAG)
 
 .PHONY: push-storage-provisioner-manifest
 push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~storage\-provisioner\-image\-&~g") ## Push multi-arch storage-provisioner image
+ifndef CIBUILD
 	docker login gcr.io/k8s-minikube
+endif
 	set -x; for arch in $(ALL_ARCH); do docker push ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	set -x; for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
+	$(X_BUILD_ENV) docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	set -x; for arch in $(ALL_ARCH); do $(X_BUILD_ENV) docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
+	$(X_BUILD_ENV) docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable (used internally by other targets)
@@ -760,6 +775,14 @@ release-iso: minikube_iso checksum  ## Build and release .iso file
 release-minikube: out/minikube checksum ## Minikube release
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
+
+.PHONY: release-notes
+release-notes:
+	hack/release_notes.sh
+
+.PHONY: update-leaderboard
+update-leaderboard:
+	hack/update_contributions.sh
 
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-amd64
 	$(if $(quiet),@echo "  CP       $@")

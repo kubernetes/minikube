@@ -11,7 +11,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: 1.16.1
+  GO_VERSION: 1.16.4
 jobs:
   build_minikube:
     runs-on: ubuntu-18.04

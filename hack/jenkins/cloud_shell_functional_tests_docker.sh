@@ -25,8 +25,9 @@
 set -ex
 
 gcloud cloud-shell ssh --authorize-session << EOF
- OS_ARCH="linux-amd64"
- VM_DRIVER="docker"
+ OS="linux"
+ ARCH="amd64"
+ DRIVER="docker"
  JOB_NAME="Docker_Cloud_Shell"
  CONTAINER_RUNTIME="docker"
  EXTRA_TEST_ARGS="-test.run (TestFunctional|TestAddons)"

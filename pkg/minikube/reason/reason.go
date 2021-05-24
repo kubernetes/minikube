@@ -56,7 +56,9 @@ func (k *Kind) IssueURLs() []string {
 
 // Sections are ordered roughly by stack dependencies
 var (
-	Usage                 = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
+	// minikube has been passed an incorrect parameter
+	Usage = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
+	// minikube has no current cluster running
 	UsageNoProfileRunning = Kind{ID: "MK_USAGE_NO_PROFILE", ExitCode: ExProgramUsage,
 		Advice: `You can create one using 'minikube start'.
 		`,
@@ -223,6 +225,8 @@ var (
 	DrvUnsupportedProfile = Kind{ID: "DRV_UNSUPPORTED_PROFILE", ExitCode: ExDriverUnsupported}
 	DrvNotFound           = Kind{ID: "DRV_NOT_FOUND", ExitCode: ExDriverNotFound}
 	DrvNotDetected        = Kind{ID: "DRV_NOT_DETECTED", ExitCode: ExDriverNotFound}
+	DrvNotHealthy         = Kind{ID: "DRV_NOT_HEALTHY", ExitCode: ExDriverNotFound}
+	DrvDockerNotRunning   = Kind{ID: "DRV_DOCKER_NOT_RUNNING", ExitCode: ExDriverNotFound}
 	DrvAsRoot             = Kind{ID: "DRV_AS_ROOT", ExitCode: ExDriverPermission}
 	DrvNeedsRoot          = Kind{ID: "DRV_NEEDS_ROOT", ExitCode: ExDriverPermission}
 	DrvNeedsAdministrator = Kind{ID: "DRV_NEEDS_ADMINISTRATOR", ExitCode: ExDriverPermission}

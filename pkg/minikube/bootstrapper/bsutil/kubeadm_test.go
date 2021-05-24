@@ -123,22 +123,13 @@ func recentReleases(n int) ([]string, error) {
 }
 
 /**
-Need a separate test function to test the DNS server IP
-as v1.11 yaml file is very different compared to v1.12+.
 This test case has only 1 thing to test and that is the
 networking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
-	// test all testdata releases greater than v1.11
 	versions, err := recentReleases(0)
 	if err != nil {
 		t.Errorf("versions: %v", err)
-	}
-	for i, v := range versions {
-		if semver.Compare(v, "v1.11") <= 0 {
-			versions = versions[0:i]
-			break
-		}
 	}
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{

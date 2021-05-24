@@ -160,7 +160,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
-	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use sytemd as cgroup manager. Defaults to false.")
+	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use systemd as cgroup manager. Defaults to false.")
 	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
@@ -290,10 +290,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	return createNode(cc, kubeNodeName, existing)
 }
 
-// generateNewConfigFromFlags generate a config.ClusterConfig based on flags
-func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) config.ClusterConfig {
-	var cc config.ClusterConfig
-
+func getMemorySize(cmd *cobra.Command, drvName string) int {
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
 		klog.Warningf("Unable to query memory limits: %+v", err)
@@ -314,11 +311,19 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		klog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 	}
 
+	return mem
+}
+
+func getDiskSize() int {
 	diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 	if err != nil {
 		exit.Message(reason.Usage, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 	}
 
+	return diskSize
+}
+
+func getRepository(cmd *cobra.Command, k8sVersion string) string {
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || (mirrorCountry != "" && repository == "") {
@@ -342,12 +347,23 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		out.Styled(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
+	return repository
+}
+
+func getCNIConfig(cmd *cobra.Command) string {
 	// Backwards compatibility with --enable-default-cni
 	chosenCNI := viper.GetString(cniFlag)
 	if viper.GetBool(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
 		klog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
 		chosenCNI = "bridge"
 	}
+	return chosenCNI
+}
+
+// generateNewConfigFromFlags generate a config.ClusterConfig based on flags
+func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) config.ClusterConfig {
+	var cc config.ClusterConfig
+
 	// networkPlugin cni deprecation warning
 	chosenNetworkPlugin := viper.GetString(networkPlugin)
 	if chosenNetworkPlugin == "cni" {
@@ -367,9 +383,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
-		Memory:                  mem,
+		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    viper.GetInt(cpus),
-		DiskSize:                diskSize,
+		DiskSize:                getDiskSize(),
 		Driver:                  drvName,
 		ListenAddress:           viper.GetString(listenAddress),
 		HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
@@ -415,10 +431,10 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
-			ImageRepository:        repository,
+			ImageRepository:        getRepository(cmd, k8sVersion),
 			ExtraOptions:           config.ExtraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
-			CNI:                    chosenCNI,
+			CNI:                    getCNIConfig(cmd),
 			NodePort:               viper.GetInt(apiServerPort),
 		},
 		MultiNodeRequested: viper.GetInt(nodes) > 1,
@@ -448,7 +464,7 @@ func checkNumaCount(k8sVersion string) {
 }
 
 // upgradeExistingConfig upgrades legacy configuration files
-func upgradeExistingConfig(cc *config.ClusterConfig) {
+func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 	if cc == nil {
 		return
 	}
@@ -468,6 +484,26 @@ func upgradeExistingConfig(cc *config.ClusterConfig) {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
 		klog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
 	}
+
+	if cc.CPUs == 0 {
+		klog.Info("Existing config file was missing cpu. (could be an old minikube config), will use the default value")
+		cc.CPUs = viper.GetInt(cpus)
+	}
+
+	if cc.Memory == 0 {
+		klog.Info("Existing config file was missing memory. (could be an old minikube config), will use the default value")
+		memInMB := getMemorySize(cmd, cc.Driver)
+		cc.Memory = memInMB
+	}
+
+	// pre minikube 1.9.2 cc.KubernetesConfig.NodePort was not populated.
+	// in minikube config there were two fields for api server port.
+	// one in cc.KubernetesConfig.NodePort and one in cc.Nodes.Port
+	// this makes sure api server port not be set as 0!
+	if cc.KubernetesConfig.NodePort == 0 {
+		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
+	}
+
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
@@ -478,222 +514,74 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	cc := *existing
 
-	if cmd.Flags().Changed(containerRuntime) {
-		cc.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
+	if cmd.Flags().Changed(memory) && getMemorySize(cmd, cc.Driver) != cc.Memory {
+		out.WarningT("You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.")
 	}
 
-	if cmd.Flags().Changed(keepContext) {
-		cc.KeepContext = viper.GetBool(keepContext)
-	}
-
-	if cmd.Flags().Changed(embedCerts) {
-		cc.EmbedCerts = viper.GetBool(embedCerts)
-	}
-
-	if cmd.Flags().Changed(isoURL) {
-		cc.MinikubeISO = viper.GetString(isoURL)
-	}
-
-	if cc.Memory == 0 {
-		klog.Info("Existing config file was missing memory. (could be an old minikube config), will use the default value")
-		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
-		if err != nil {
-			klog.Warningf("error calculate memory size in mb : %v", err)
-		}
-		cc.Memory = memInMB
-	}
-
-	if cmd.Flags().Changed(memory) {
-		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
-		if err != nil {
-			klog.Warningf("error calculate memory size in mb : %v", err)
-		}
-		if memInMB != cc.Memory {
-			out.WarningT("You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.")
-		}
+	if cmd.Flags().Changed(cpus) && viper.GetInt(cpus) != cc.CPUs {
+		out.WarningT("You cannot change the CPUs for an existing minikube cluster. Please first delete the cluster.")
 	}
 
 	// validate the memory size in case user changed their system memory limits (example change docker desktop or upgraded memory.)
 	validateRequestedMemorySize(cc.Memory, cc.Driver)
 
-	if cc.CPUs == 0 {
-		klog.Info("Existing config file was missing cpu. (could be an old minikube config), will use the default value")
-		cc.CPUs = viper.GetInt(cpus)
-	}
-	if cmd.Flags().Changed(cpus) {
-		if viper.GetInt(cpus) != cc.CPUs {
-			out.WarningT("You cannot change the CPUs for an existing minikube cluster. Please first delete the cluster.")
-		}
+	if cmd.Flags().Changed(humanReadableDiskSize) && getDiskSize() != existing.DiskSize {
+		out.WarningT("You cannot change the disk size for an existing minikube cluster. Please first delete the cluster.")
 	}
 
-	if cmd.Flags().Changed(humanReadableDiskSize) {
-		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
-		if err != nil {
-			klog.Warningf("error calculate disk size in mb : %v", err)
-		}
-
-		if memInMB != existing.DiskSize {
-			out.WarningT("You cannot change the Disk size for an exiting minikube cluster. Please first delete the cluster.")
-		}
-	}
-
-	if cmd.Flags().Changed(vpnkitSock) {
-		cc.HyperkitVpnKitSock = viper.GetString(vpnkitSock)
-	}
-
-	if cmd.Flags().Changed(vsockPorts) {
-		cc.HyperkitVSockPorts = viper.GetStringSlice(vsockPorts)
-	}
-
-	if cmd.Flags().Changed(nfsShare) {
-		cc.NFSShare = viper.GetStringSlice(nfsShare)
-	}
-
-	if cmd.Flags().Changed(nfsSharesRoot) {
-		cc.NFSSharesRoot = viper.GetString(nfsSharesRoot)
-	}
-
-	if cmd.Flags().Changed(hostOnlyCIDR) {
-		cc.HostOnlyCIDR = viper.GetString(hostOnlyCIDR)
-	}
-
-	if cmd.Flags().Changed(hypervVirtualSwitch) {
-		cc.HypervVirtualSwitch = viper.GetString(hypervVirtualSwitch)
-	}
-
-	if cmd.Flags().Changed(hypervUseExternalSwitch) {
-		cc.HypervUseExternalSwitch = viper.GetBool(hypervUseExternalSwitch)
-	}
-
-	if cmd.Flags().Changed(hypervExternalAdapter) {
-		cc.HypervExternalAdapter = viper.GetString(hypervExternalAdapter)
-	}
-
-	if cmd.Flags().Changed(kvmNetwork) {
-		cc.KVMNetwork = viper.GetString(kvmNetwork)
-	}
-
-	if cmd.Flags().Changed(kvmQemuURI) {
-		cc.KVMQemuURI = viper.GetString(kvmQemuURI)
-	}
-
-	if cmd.Flags().Changed(kvmGPU) {
-		cc.KVMGPU = viper.GetBool(kvmGPU)
-	}
-
-	if cmd.Flags().Changed(kvmHidden) {
-		cc.KVMHidden = viper.GetBool(kvmHidden)
-	}
-
-	if cmd.Flags().Changed(kvmNUMACount) {
-		cc.KVMNUMACount = viper.GetInt(kvmNUMACount)
-	}
-
-	if cmd.Flags().Changed(disableDriverMounts) {
-		cc.DisableDriverMounts = viper.GetBool(disableDriverMounts)
-	}
-
-	if cmd.Flags().Changed(uuid) {
-		cc.UUID = viper.GetString(uuid)
-	}
-
-	if cmd.Flags().Changed(noVTXCheck) {
-		cc.NoVTXCheck = viper.GetBool(noVTXCheck)
-	}
-
-	if cmd.Flags().Changed(dnsProxy) {
-		cc.DNSProxy = viper.GetBool(dnsProxy)
-	}
-
-	if cmd.Flags().Changed(hostDNSResolver) {
-		cc.HostDNSResolver = viper.GetBool(hostDNSResolver)
-	}
-
-	if cmd.Flags().Changed(hostOnlyNicType) {
-		cc.HostOnlyNicType = viper.GetString(hostOnlyNicType)
-	}
-
-	if cmd.Flags().Changed(natNicType) {
-		cc.NatNicType = viper.GetString(natNicType)
-	}
+	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
+	updateBoolFromFlag(cmd, &cc.KeepContext, keepContext)
+	updateBoolFromFlag(cmd, &cc.EmbedCerts, embedCerts)
+	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
+	updateStringFromFlag(cmd, &cc.KicBaseImage, kicBaseImage)
+	updateStringFromFlag(cmd, &cc.Network, network)
+	updateStringFromFlag(cmd, &cc.HyperkitVpnKitSock, vpnkitSock)
+	updateStringSliceFromFlag(cmd, &cc.HyperkitVSockPorts, vsockPorts)
+	updateStringSliceFromFlag(cmd, &cc.NFSShare, nfsShare)
+	updateStringFromFlag(cmd, &cc.NFSSharesRoot, nfsSharesRoot)
+	updateStringFromFlag(cmd, &cc.HostOnlyCIDR, hostOnlyCIDR)
+	updateStringFromFlag(cmd, &cc.HypervVirtualSwitch, hypervVirtualSwitch)
+	updateBoolFromFlag(cmd, &cc.HypervUseExternalSwitch, hypervUseExternalSwitch)
+	updateStringFromFlag(cmd, &cc.HypervExternalAdapter, hypervExternalAdapter)
+	updateStringFromFlag(cmd, &cc.KVMNetwork, kvmNetwork)
+	updateStringFromFlag(cmd, &cc.KVMQemuURI, kvmQemuURI)
+	updateBoolFromFlag(cmd, &cc.KVMGPU, kvmGPU)
+	updateBoolFromFlag(cmd, &cc.KVMHidden, kvmHidden)
+	updateBoolFromFlag(cmd, &cc.DisableDriverMounts, disableDriverMounts)
+	updateStringFromFlag(cmd, &cc.UUID, uuid)
+	updateBoolFromFlag(cmd, &cc.NoVTXCheck, noVTXCheck)
+	updateBoolFromFlag(cmd, &cc.DNSProxy, dnsProxy)
+	updateBoolFromFlag(cmd, &cc.HostDNSResolver, hostDNSResolver)
+	updateStringFromFlag(cmd, &cc.HostOnlyNicType, hostOnlyNicType)
+	updateStringFromFlag(cmd, &cc.NatNicType, natNicType)
+	updateDurationFromFlag(cmd, &cc.StartHostTimeout, waitTimeout)
+	updateStringSliceFromFlag(cmd, &cc.ExposedPorts, ports)
+	updateStringFromFlag(cmd, &cc.SSHIPAddress, sshIPAddress)
+	updateStringFromFlag(cmd, &cc.SSHUser, sshSSHUser)
+	updateStringFromFlag(cmd, &cc.SSHKey, sshSSHKey)
+	updateIntFromFlag(cmd, &cc.SSHPort, sshSSHPort)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.Namespace, startNamespace)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.APIServerName, apiServerName)
+	updateStringSliceFromFlag(cmd, &cc.KubernetesConfig.APIServerNames, "apiserver-names")
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.DNSDomain, dnsDomain)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.FeatureGates, featureGates)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.ContainerRuntime, containerRuntime)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.CRISocket, criSocket)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.NetworkPlugin, networkPlugin)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
+	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
+	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
-	}
-
-	if cmd.Flags().Changed(startNamespace) {
-		cc.KubernetesConfig.Namespace = viper.GetString(startNamespace)
-	}
-
-	if cmd.Flags().Changed(apiServerName) {
-		cc.KubernetesConfig.APIServerName = viper.GetString(apiServerName)
-	}
-
-	if cmd.Flags().Changed("apiserver-names") {
-		cc.KubernetesConfig.APIServerNames = viper.GetStringSlice("apiserver-names")
-	}
-
-	if cmd.Flags().Changed(apiServerPort) {
-		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
-	}
-
-	if cmd.Flags().Changed(vsockPorts) {
-		cc.ExposedPorts = viper.GetStringSlice(ports)
-	}
-
-	// pre minikube 1.9.2 cc.KubernetesConfig.NodePort was not populated.
-	// in minikube config there were two fields for api server port.
-	// one in cc.KubernetesConfig.NodePort and one in cc.Nodes.Port
-	// this makes sure api server port not be set as 0!
-	if existing.KubernetesConfig.NodePort == 0 {
-		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
-	}
-
-	if cmd.Flags().Changed(dnsDomain) {
-		cc.KubernetesConfig.DNSDomain = viper.GetString(dnsDomain)
-	}
-
-	if cmd.Flags().Changed(featureGates) {
-		cc.KubernetesConfig.FeatureGates = viper.GetString(featureGates)
-	}
-
-	if cmd.Flags().Changed(containerRuntime) {
-		cc.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
-	}
-
-	if cmd.Flags().Changed(criSocket) {
-		cc.KubernetesConfig.CRISocket = viper.GetString(criSocket)
-	}
-
-	if cmd.Flags().Changed(networkPlugin) {
-		cc.KubernetesConfig.NetworkPlugin = viper.GetString(networkPlugin)
-	}
-
-	if cmd.Flags().Changed(serviceCIDR) {
-		cc.KubernetesConfig.ServiceCIDR = viper.GetString(serviceCIDR)
-	}
-
-	if cmd.Flags().Changed(cacheImages) {
-		cc.KubernetesConfig.ShouldLoadCachedImages = viper.GetBool(cacheImages)
-	}
-
-	if cmd.Flags().Changed(imageRepository) {
-		cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 	}
 
 	if cmd.Flags().Changed("extra-config") {
 		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
 	}
 
-	if cmd.Flags().Changed(enableDefaultCNI) && !cmd.Flags().Changed(cniFlag) {
-		if viper.GetBool(enableDefaultCNI) {
-			klog.Errorf("Found deprecated --enable-default-cni flag, setting --cni=bridge")
-			cc.KubernetesConfig.CNI = "bridge"
-		}
-	}
-
-	if cmd.Flags().Changed(cniFlag) {
-		cc.KubernetesConfig.CNI = viper.GetString(cniFlag)
+	if cmd.Flags().Changed(cniFlag) || cmd.Flags().Changed(enableDefaultCNI) {
+		cc.KubernetesConfig.CNI = getCNIConfig(cmd)
 	}
 
 	if cmd.Flags().Changed(waitComponents) {
@@ -706,6 +594,41 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	return cc
+}
+
+// updateStringFromFlag will update the existing string from the flag.
+func updateStringFromFlag(cmd *cobra.Command, v *string, key string) {
+	if cmd.Flags().Changed(key) {
+		*v = viper.GetString(key)
+	}
+}
+
+// updateBoolFromFlag will update the existing bool from the flag.
+func updateBoolFromFlag(cmd *cobra.Command, v *bool, key string) {
+	if cmd.Flags().Changed(key) {
+		*v = viper.GetBool(key)
+	}
+}
+
+// updateStringSliceFromFlag will update the existing []string from the flag.
+func updateStringSliceFromFlag(cmd *cobra.Command, v *[]string, key string) {
+	if cmd.Flags().Changed(key) {
+		*v = viper.GetStringSlice(key)
+	}
+}
+
+// updateIntFromFlag will update the existing int from the flag.
+func updateIntFromFlag(cmd *cobra.Command, v *int, key string) {
+	if cmd.Flags().Changed(key) {
+		*v = viper.GetInt(key)
+	}
+}
+
+// updateDurationFromFlag will update the existing duration from the flag.
+func updateDurationFromFlag(cmd *cobra.Command, v *time.Duration, key string) {
+	if cmd.Flags().Changed(key) {
+		*v = viper.GetDuration(key)
+	}
 }
 
 // interpretWaitFlag interprets the wait flag and respects the legacy minikube users

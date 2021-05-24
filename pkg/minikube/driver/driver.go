@@ -26,6 +26,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -71,13 +72,20 @@ var (
 
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
-	return supportedDrivers
+	arch := detect.RuntimeArch()
+	for _, a := range constants.SupportedArchitectures {
+		if arch == a {
+			return supportedDrivers
+		}
+	}
+	// remote cluster only
+	return []string{SSH}
 }
 
 // DisplaySupportedDrivers returns a string with a list of supported drivers
 func DisplaySupportedDrivers() string {
 	var sd []string
-	for _, d := range supportedDrivers {
+	for _, d := range SupportedDrivers() {
 		if registry.Driver(d).Priority == registry.Experimental {
 			sd = append(sd, d+" (experimental)")
 			continue
@@ -89,7 +97,7 @@ func DisplaySupportedDrivers() string {
 
 // Supported returns if the driver is supported on this host.
 func Supported(name string) bool {
-	for _, d := range supportedDrivers {
+	for _, d := range SupportedDrivers() {
 		if name == d {
 			return true
 		}
@@ -281,6 +289,7 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 
 			if !ds.State.Healthy {
 				ds.Rejection = fmt.Sprintf("Not healthy: %v", ds.State.Error)
+				ds.Suggestion = fmt.Sprintf("%s <%s>", ds.State.Fix, ds.State.Doc)
 				rejects = append(rejects, ds)
 				continue
 			}

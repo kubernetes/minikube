@@ -21,14 +21,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/cheggaaa/pb/v3"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -107,38 +104,6 @@ func DigestByGoLib(imgName string) string {
 	return cf.Hex
 }
 
-// ExistsImageInCache if img exist in local cache directory
-func ExistsImageInCache(img string) bool {
-	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
-	f = localpath.SanitizeCacheDir(f)
-
-	// Check if image exists locally
-	klog.Infof("Checking for %s in local cache directory", img)
-	if st, err := os.Stat(f); err == nil {
-		if st.Size() > 0 {
-			klog.Infof("Found %s in local cache directory, skipping pull", img)
-			return true
-		}
-	}
-	// Else, pull it
-	return false
-}
-
-// ExistsImageInDaemon if img exist in local docker daemon
-func ExistsImageInDaemon(img string) bool {
-	// Check if image exists locally
-	klog.Infof("Checking for %s in local docker daemon", img)
-	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
-	if output, err := cmd.Output(); err == nil {
-		if strings.Contains(string(output), img) {
-			klog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return true
-		}
-	}
-	// Else, pull it
-	return false
-}
-
 // LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
 // TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
 func LoadFromTarball(binary, img string) error {
@@ -175,129 +140,6 @@ func Tag(img string) string {
 		return fmt.Sprintf("%s:%s", split[0], tag)
 	}
 	return img
-}
-
-// WriteImageToCache write img to the local cache directory
-func WriteImageToCache(img string) error {
-	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
-	f = localpath.SanitizeCacheDir(f)
-
-	if err := os.MkdirAll(filepath.Dir(f), 0777); err != nil {
-		return errors.Wrapf(err, "making cache image directory: %s", f)
-	}
-
-	// buffered channel
-	c := make(chan v1.Update, 200)
-
-	klog.Infof("Writing %s to local cache", img)
-	ref, err := name.ParseReference(img)
-	if err != nil {
-		return errors.Wrap(err, "parsing reference")
-	}
-	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
-	if err != nil {
-		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
-			ErrGithubNeedsLogin = errors.New(err.Error())
-			return ErrGithubNeedsLogin
-		} else if strings.Contains(err.Error(), "UNAUTHORIZED") {
-			ErrNeedsLogin = errors.New(err.Error())
-			return ErrNeedsLogin
-		}
-
-		return errors.Wrap(err, "getting remote image")
-	}
-	klog.V(3).Infof("Writing image %v", ref)
-	errchan := make(chan error)
-	p := pb.Full.Start64(0)
-	fn := strings.Split(ref.Name(), "@")[0]
-	// abbreviate filename for progress
-	maxwidth := 30 - len("...")
-	if len(fn) > maxwidth {
-		fn = fn[0:maxwidth] + "..."
-	}
-	p.Set("prefix", "    > "+fn+": ")
-	p.Set(pb.Bytes, true)
-
-	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
-	p.SetWidth(79)
-
-	go func() {
-		err = tarball.WriteToFile(f, ref, i, tarball.WithProgress(c))
-		errchan <- err
-	}()
-	var update v1.Update
-	for {
-		select {
-		case update = <-c:
-			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
-		case err = <-errchan:
-			p.Finish()
-			if err != nil {
-				return errors.Wrap(err, "writing tarball image")
-			}
-			return nil
-		}
-	}
-}
-
-// WriteImageToDaemon write img to the local docker daemon
-func WriteImageToDaemon(img string) error {
-	// buffered channel
-	c := make(chan v1.Update, 200)
-
-	klog.Infof("Writing %s to local daemon", img)
-	ref, err := name.ParseReference(img)
-	if err != nil {
-		return errors.Wrap(err, "parsing reference")
-	}
-	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
-	if err != nil {
-		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
-			ErrGithubNeedsLogin = errors.New(err.Error())
-			return ErrGithubNeedsLogin
-		} else if strings.Contains(err.Error(), "UNAUTHORIZED") {
-			ErrNeedsLogin = errors.New(err.Error())
-			return ErrNeedsLogin
-		}
-
-		return errors.Wrap(err, "getting remote image")
-	}
-	klog.V(3).Infof("Writing image %v", ref)
-	errchan := make(chan error)
-	p := pb.Full.Start64(0)
-	fn := strings.Split(ref.Name(), "@")[0]
-	// abbreviate filename for progress
-	maxwidth := 30 - len("...")
-	if len(fn) > maxwidth {
-		fn = fn[0:maxwidth] + "..."
-	}
-	p.Set("prefix", "    > "+fn+": ")
-	p.Set(pb.Bytes, true)
-
-	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
-	p.SetWidth(79)
-
-	go func() {
-		_, err = daemon.Write(ref, i, tarball.WithProgress(c))
-		errchan <- err
-	}()
-	var update v1.Update
-	for {
-		select {
-		case update = <-c:
-			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
-		case err = <-errchan:
-			p.Finish()
-			if err != nil {
-				return errors.Wrap(err, "writing daemon image")
-			}
-			return nil
-		}
-	}
 }
 
 func canonicalName(ref name.Reference) string {
