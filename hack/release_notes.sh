@@ -71,4 +71,4 @@ if [[ "$recent" != *"beta"* ]]; then
 fi
 
 echo ""
-echo "Don't forget to run \"hack/update_contributions.sh\"!"
+echo "Don't forget to run \"make update-leaderboard\"!"
