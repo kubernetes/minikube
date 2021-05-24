@@ -21,7 +21,7 @@ require (
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/docker/cli v0.0.0-20200303162255-7d407207c304 // indirect
-	github.com/docker/docker v17.12.0-ce-rc1.0.20210128214336-420b1d36250f+incompatible
+	github.com/docker/docker v20.10.2+incompatible
 	github.com/docker/go-units v0.4.0
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
@@ -79,8 +79,8 @@ require (
 	go.opentelemetry.io/otel/sdk v0.16.0
 	go.opentelemetry.io/otel/trace v0.17.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
-	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
-	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6
+	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/exp v0.0.0-20210220032938-85be41e4509f
 	golang.org/x/mod v0.4.2
 	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
@@ -91,13 +91,12 @@ require (
 	google.golang.org/api v0.46.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	gotest.tools/v3 v3.0.3 // indirect
 	k8s.io/api v0.20.5
 	k8s.io/apimachinery v0.20.5
 	k8s.io/client-go v0.20.5
 	k8s.io/klog/v2 v2.8.0
 	k8s.io/kubectl v0.0.0
-	k8s.io/kubernetes v1.20.5
+	k8s.io/kubernetes v1.21.1
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
@@ -132,6 +131,4 @@ replace (
 	k8s.io/metrics => k8s.io/metrics v0.20.5
 	k8s.io/mount-utils => k8s.io/mount-utils v0.20.5
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.5
-	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.20.5
-	k8s.io/sample-controller => k8s.io/sample-controller v0.20.5
 )
