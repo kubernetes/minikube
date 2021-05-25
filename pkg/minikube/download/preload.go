@@ -47,9 +47,9 @@ const (
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 
 	// Enumeration for preload existence cache.
-	preloadExistsUNKNOWN = 0
-	preloadExistsMISSING = 1
-	preloadExistsEXISTS  = 2
+	preloadExistsUNKNOWN = 0 // Value when preload status has not been checked.
+	preloadExistsMISSING = 1 // Value when preload has been checked and is missing.
+	preloadExistsEXISTS  = 2 // Value when preload has been checked and is present.
 )
 
 var (
