@@ -480,7 +480,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists, err = startHost(m, cfg, node, delOnFail)
+	host, preExists, err = startHostInternal(m, cfg, node, delOnFail)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
 	}
@@ -503,8 +503,8 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	return runner, preExists, m, host, err
 }
 
-// startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
+// startHostInternal starts a new minikube host using a VM or None
+func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
 		return host, exists, nil
