@@ -34,20 +34,18 @@ const testStatus = {
   SKIPPED: "Skipped"
 }
 
-async function init() {
+async function loadTestData() {
   const response = await fetch("data.csv");
   if (!response.ok) {
     const responseText = await response.text();
-    displayError(`Failed to fetch data from GCS bucket. Error: ${responseText}`);
-    return;
+    throw `Failed to fetch data from GCS bucket. Error: ${responseText}`;
   }
 
   const lines = bodyByLinesIterator(response);
   // Consume the header to ensure the data has the right number of fields.
   const header = (await lines.next()).value;
   if (header.split(",").length != 5) {
-    displayError(`Fetched CSV data contains wrong number of fields. Expected: 5. Actual Header: "${header}"`);
-    return;
+    throw `Fetched CSV data contains wrong number of fields. Expected: 5. Actual Header: "${header}"`;
   }
 
   const testData = [];
@@ -70,10 +68,25 @@ async function init() {
     });
   }
   if (testData.length == 0) {
-    displayError("Fetched CSV data is empty or poorly formatted.");
+    throw "Fetched CSV data is empty or poorly formatted.";
+  }
+  return testData;
+}
+
+async function init() {
+  google.charts.load('current', {'packages': ['corechart']});
+  let testData;
+  try {
+    // Wait for Google Charts to load, and for test data to load.
+    // Only store the test data (at index 1) into `testData`.
+    testData = (await Promise.all([
+      new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
+      loadTestData()
+    ]))[1];
+  } catch(err) {
+    displayError(err);
     return;
   }
-
   console.log(testData);
 }
 
