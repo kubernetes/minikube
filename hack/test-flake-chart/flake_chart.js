@@ -74,7 +74,7 @@ async function loadTestData() {
 }
 
 async function init() {
-  google.charts.load('current', {'packages': ['corechart']});
+  google.charts.load('current', { 'packages': ['corechart'] });
   let testData;
   try {
     // Wait for Google Charts to load, and for test data to load.
@@ -83,11 +83,76 @@ async function init() {
       new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
       loadTestData()
     ]))[1];
-  } catch(err) {
+  } catch (err) {
     displayError(err);
     return;
   }
-  console.log(testData);
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('date', 'Date');
+  data.addColumn('number', 'Flake Percentage');
+  data.addColumn({ type: 'string', label: 'Commit Hash', role: 'tooltip', 'p': { 'html': true } });
+
+  const desiredTest = "TestFunctional/parallel/LogsCmd", desiredEnvironment = "Docker_Linux_containerd";
+
+  const average = arr => {
+    return arr.length === 0 ? 0 : arr.reduce((sum, value) => sum + value, 0) / arr.length;
+  };
+
+  const groups =
+    Array.from(testData
+      // Filter to only contain unskipped runs of the requested test and requested environment.
+      .filter(test => test.name === desiredTest && test.environment === desiredEnvironment && test.status !== testStatus.SKIPPED)
+      // Group by run date.
+      .reduce((groups, test) => {
+        // Convert Date to time number since hashing by Date does not work.
+        const dateValue = test.date.getTime();
+        if (groups.has(dateValue)) {
+          groups.get(dateValue).push(test);
+        } else {
+          groups.set(dateValue, [test]);
+        }
+        return groups
+      }, new Map())
+      // Get all entries (type of [[time number, [test]]]).
+      .entries()
+    )
+      // Turn time number back to the corresponding Date.
+      .map(([dateValue, tests]) => ({ date: new Date(dateValue), tests }));
+
+  data.addRows(
+    groups
+      // Sort by run date, past to future.
+      .sort((a, b) => a.date - b.date)
+      // Map each group to all variables need to format the rows.
+      .map(({ date, tests }) => ({
+        date, // Turn time number back to corresponding date.
+        flakeRate: average(tests.map(test => test.status === testStatus.FAILED ? 100 : 0)), // Compute average of runs where FAILED counts as 100%.
+        commitHashes: tests.map(test => ({ hash: test.commit, status: test.status })) // Take all hashes and status' of tests in this group.
+      }))
+      .map(groupData => [
+        groupData.date,
+        groupData.flakeRate,
+        `<div class="py-2 ps-2">
+          <b>${groupData.date.toString()}</b><br>
+          <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
+          <b>Hashes:</b><br>
+          ${groupData.commitHashes.map(({ hash, status }) => `  - ${hash} (${status})`).join("<br>")}
+        </div>`
+      ])
+  );
+
+  const options = {
+    title: `Flake Rate by day of ${desiredTest} on ${desiredEnvironment}`,
+    width: 900,
+    height: 500,
+    pointSize: 10,
+    pointShape: "circle",
+    vAxis: { minValue: 0, maxValue: 1 },
+    tooltip: { trigger: "selection", isHtml: true }
+  };
+  const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+  chart.draw(data, options);
 }
 
 init();
