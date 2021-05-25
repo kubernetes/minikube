@@ -328,7 +328,7 @@ func checkIfPaused(profile *config.Profile) error {
 		return err
 	}
 	if paused {
-		out.Step(style.Unpause, `Unpause cluster "{{.name}}".`, out.V{"name": profile.Name})
+		klog.Infof(`Unpause cluster %q.`, profile.Name)
 		ids, err := cluster.Unpause(cr, r, nil)
 		if err != nil {
 			return err
