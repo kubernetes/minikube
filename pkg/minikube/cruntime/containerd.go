@@ -86,8 +86,6 @@ oom_score = 0
       snapshotter = "overlayfs"
       [plugins.cri.containerd.default_runtime]
         runtime_type = "io.containerd.runc.v2"
-        [plugins.cri.containerd.default_runtime.options]
-          NoPivotRoot = true
       [plugins.cri.containerd.untrusted_workload_runtime]
         runtime_type = ""
         runtime_engine = ""
