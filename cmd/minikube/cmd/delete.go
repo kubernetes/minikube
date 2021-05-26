@@ -340,7 +340,7 @@ func unpauseIfNeeded(profile *config.Profile) error {
 		return nil
 	}
 
-	klog.Infof(`Unpause cluster %q.`, profile.Name)
+	klog.Infof("Unpause cluster %q", profile.Name)
 	_, err = cluster.Unpause(cr, r, nil)
 	return err
 }
