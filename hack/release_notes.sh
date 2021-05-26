@@ -64,3 +64,11 @@ echo "Thank you to our triage members for this release!"
 echo ""
 AWK_ISSUE_COMMENTS='NR>1{arr[$4] += $7}END{for (a in arr) printf "%d %s\n", arr[a], a}'
 "${DIR}/pullsheet" issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_ISSUE_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM" | head -n 5
+
+if [[ "$recent" != *"beta"* ]]; then
+  echo ""
+  echo "Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/$recent/) for this release!"
+fi
+
+echo ""
+echo "Don't forget to run \"make update-leaderboard\"!"

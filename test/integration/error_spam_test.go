@@ -151,7 +151,9 @@ func TestErrorSpam(t *testing.T) {
 
 	for _, test := range logTests {
 		t.Run(test.command, func(t *testing.T) {
-			args := []string{test.command, "-p", profile, "--log_dir", logDir}
+
+			// flags can be before subcommand
+			args := []string{"-p", profile, "--log_dir", logDir, test.command}
 			args = append(args, test.args...)
 
 			// before starting the test, ensure no other logs from the current command are written

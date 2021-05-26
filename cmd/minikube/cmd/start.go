@@ -605,7 +605,24 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 				out.Infof("{{ .name }}: Suggestion: {{ .suggestion}}", out.V{"name": r.Name, "suggestion": r.Suggestion})
 			}
 		}
-		exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		foundStoppedDocker := false
+		foundUnhealthy := false
+		for _, reject := range rejects {
+			if reject.Name == driver.Docker && reject.State.Installed && !reject.State.Running {
+				foundStoppedDocker = true
+				break
+			} else if reject.State.Installed && !reject.State.Healthy {
+				foundUnhealthy = true
+				break
+			}
+		}
+		if foundStoppedDocker {
+			exit.Message(reason.DrvDockerNotRunning, "Found docker, but the docker service isn't running. Try restarting the docker service.")
+		} else if foundUnhealthy {
+			exit.Message(reason.DrvNotHealthy, "Found driver(s) but none were healthy. See above for suggestions how to fix installed drivers.")
+		} else {
+			exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		}
 	}
 
 	if len(alts) > 1 {
@@ -1130,6 +1147,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		if !validRuntime {
 			exit.Message(reason.Usage, `Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
 		}
+
+		validateCNI(cmd, runtime)
 	}
 
 	if driver.BareMetal(drvName) {
@@ -1192,7 +1211,20 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	validateRegistryMirror()
 	validateInsecureRegistry()
+}
 
+// if container runtime is not docker, check that cni is not disabled
+func validateCNI(cmd *cobra.Command, runtime string) {
+	if runtime == "docker" {
+		return
+	}
+	if cmd.Flags().Changed(cniFlag) && strings.ToLower(viper.GetString(cniFlag)) == "false" {
+		if viper.GetBool(force) {
+			out.WarnReason(reason.Usage, "You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI", out.V{"name": runtime})
+		} else {
+			exit.Message(reason.Usage, "The \"{{.name}}\" container runtime requires CNI", out.V{"name": runtime})
+		}
+	}
 }
 
 // validateChangedMemoryFlags validates memory related flags.
@@ -1477,6 +1509,9 @@ func exitIfNotForced(r reason.Kind, message string, v ...out.V) {
 func exitGuestProvision(err error) {
 	if errors.Cause(err) == oci.ErrInsufficientDockerStorage {
 		exit.Message(reason.RsrcInsufficientDockerStorage, "preload extraction failed: \"No space left on device\"")
+	}
+	if errors.Cause(err) == oci.ErrGetSSHPortContainerNotRunning {
+		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited prematurely after it was created, consider investigating Docker's performance/health.")
 	}
 	exit.Error(reason.GuestProvision, "error provisioning host", err)
 }

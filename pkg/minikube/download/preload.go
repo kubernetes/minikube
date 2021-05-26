@@ -163,15 +163,16 @@ func Preload(k8sVersion, containerRuntime string) error {
 			return errors.Wrap(err, "tempfile")
 		}
 		targetPath = tmp.Name()
-	} else if checksum != "" {
-		url += "?checksum=" + checksum
+	} else if checksum != nil {
+		// add URL parameter for go-getter to automatically verify the checksum
+		url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
 	}
 
 	if err := download(url, targetPath); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
 
-	if err := ensureChecksumValid(k8sVersion, containerRuntime, targetPath); err != nil {
+	if err := ensureChecksumValid(k8sVersion, containerRuntime, targetPath, checksum); err != nil {
 		return err
 	}
 
@@ -199,23 +200,19 @@ func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 	return attrs, nil
 }
 
-var getChecksum = func(k8sVersion, containerRuntime string) (string, error) {
+// getChecksum returns the MD5 checksum of the preload tarball
+var getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
 	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	md5 := hex.EncodeToString(attrs.MD5)
-	return fmt.Sprintf("md5:%s", md5), nil
+	return attrs.MD5, nil
 }
 
-func saveChecksumFile(k8sVersion, containerRuntime string) error {
+// saveChecksumFile saves the checksum to a local file for later verification
+func saveChecksumFile(k8sVersion, containerRuntime string, checksum []byte) error {
 	klog.Infof("saving checksum for %s ...", TarballName(k8sVersion, containerRuntime))
-	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
-	if err != nil {
-		return err
-	}
-	checksum := attrs.MD5
 	return ioutil.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
 }
 
@@ -243,8 +240,8 @@ func verifyChecksum(k8sVersion, containerRuntime, path string) error {
 }
 
 // ensureChecksumValid saves and verifies local binary checksum matches remote binary checksum
-var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string) error {
-	if err := saveChecksumFile(k8sVersion, containerRuntime); err != nil {
+var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string, checksum []byte) error {
+	if err := saveChecksumFile(k8sVersion, containerRuntime, checksum); err != nil {
 		return errors.Wrap(err, "saving checksum file")
 	}
 

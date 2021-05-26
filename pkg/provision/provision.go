@@ -153,6 +153,12 @@ func copyHostCerts(authOptions auth.Options) error {
 		if err != nil {
 			return errors.Wrapf(err, "open cert file: %s", src)
 		}
+		defer func() {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}()
+
 		if err := execRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transferring file: %+v", f)
 		}
@@ -187,6 +193,12 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		if err != nil {
 			return errors.Wrapf(err, "error copying %s to %s", src, dst)
 		}
+		defer func() {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}()
+
 		if err := sshRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transferring file to machine %v", f)
 		}

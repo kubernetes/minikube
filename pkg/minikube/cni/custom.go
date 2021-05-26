@@ -21,6 +21,7 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 )
@@ -55,6 +56,11 @@ func (c Custom) Apply(r Runner) error {
 	if err != nil {
 		return errors.Wrap(err, "manifest")
 	}
+	defer func() {
+		if err := m.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", m.GetSourcePath(), err)
+		}
+	}()
 
 	return applyManifest(c.cc, r, m)
 }
