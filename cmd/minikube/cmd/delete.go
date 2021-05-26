@@ -244,7 +244,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 
 		// if driver is oci driver, delete containers and volumes
 		if driver.IsKIC(profile.Config.Driver) {
-			if err := checkIfPaused(profile); err != nil {
+			if err := unpauseIfNeeded(profile); err != nil {
 				klog.Warningf("failed to unpause %s : %v", profile.Name, err)
 			}
 			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
@@ -303,7 +303,14 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 	return nil
 }
 
-func checkIfPaused(profile *config.Profile) error {
+func unpauseIfNeeded(profile *config.Profile) error {
+	// there is a known issue with removing paused containerd kicbase container
+	// unpause it before we delete it
+
+	if profile.Config.KubernetesConfig.ContainerRuntime != "containerd" {
+		return nil
+	}
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return err
