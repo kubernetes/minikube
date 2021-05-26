@@ -15,15 +15,6 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-const (
-	cmdCSVIndex    = 8
-	apiCSVIndex    = 9
-	k8sCSVIndex    = 10
-	dnsSvcCSVIndex = 11
-	appCSVIndex    = 12
-	dnsAnsCSVIndex = 13
-)
-
 type run struct {
 	cmd    float64
 	api    float64
