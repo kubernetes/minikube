@@ -225,9 +225,9 @@ func disableOthers(me Manager, cr CommandRunner) error {
 			klog.Infof("skipping containerd shutdown because we are bound to it")
 			continue
 		}
-
-		// runtime is already disabled, nothing to do.
-		if !r.Active() {
+		// in case of docker, if other runtime are already not active we are sure it is disabled, nothing to do.
+		// because #11515 in base image we have other runtimes disabled by default.
+		if me.Name() == "Docker" && !r.Active() {
 			continue
 		}
 
