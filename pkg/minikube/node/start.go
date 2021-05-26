@@ -139,7 +139,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		go func() {
 			// inject {"host.minikube.internal": hostIP} record into CoreDNS
 			if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
-				klog.Errorf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
+				klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
 				out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
 			}
 		}()
