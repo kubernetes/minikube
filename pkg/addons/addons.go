@@ -50,6 +50,10 @@ import (
 // Force is used to override checks for addons
 var Force bool = false
 
+// Refresh is used to refresh pods in specific cases when an addon is enabled
+// Currently only used for gcp-auth
+var Refresh bool = false
+
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 	klog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)

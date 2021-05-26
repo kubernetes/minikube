@@ -297,7 +297,7 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 		return err
 	}
 
-	if Force {
+	if Refresh {
 		err = refreshExistingPods(cc)
 		if err != nil {
 			return err
@@ -308,7 +308,7 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 		out.Styled(style.Notice, "Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.", out.V{"name": cc.Name})
 		out.Styled(style.Notice, "If you don't want your credentials mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.")
 		if !Force {
-			out.Styled(style.Notice, "If you want existing pods to be mounted with credentials, either recreate them or rerun addons enable with --force.")
+			out.Styled(style.Notice, "If you want existing pods to be mounted with credentials, either recreate them or rerun addons enable with --refresh.")
 		}
 	}
 
