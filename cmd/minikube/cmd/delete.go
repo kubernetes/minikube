@@ -314,7 +314,6 @@ func checkIfPaused(profile *config.Profile) error {
 	if err != nil {
 		return err
 	}
-
 	r, err := machine.CommandRunner(host)
 	if err != nil {
 		exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
