@@ -95,24 +95,14 @@ func readInCSV(csvPath string, apps map[string]runs) error {
 }
 
 func values(apps map[string]runs) ([]plotter.Values, []float64, []string) {
-	cmdValues := plotter.Values{}
-	apiValues := plotter.Values{}
-	k8sValues := plotter.Values{}
-	dnsSvcValues := plotter.Values{}
-	appValues := plotter.Values{}
-	dnsAnsValues := plotter.Values{}
+	var cmdValues, apiValues, k8sValues, dnsSvcValues, appValues, dnsAnsValues plotter.Values
 	names := []string{}
 	totals := []float64{}
 
 	// for each app, calculate the average for all the runs, and append them to the charting values
 	for _, name := range []string{"minikube", "kind", "k3d"} {
 		app := apps[name]
-		cmd := 0.0
-		api := 0.0
-		k8s := 0.0
-		dnsSvc := 0.0
-		appRun := 0.0
-		dnsAns := 0.0
+		var cmd, api, k8s, dnsSvc, appRun, dnsAns float64
 		names = append(names, app.version)
 
 		for _, l := range app.runs {
