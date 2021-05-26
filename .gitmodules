@@ -3,4 +3,4 @@
 	url = https://github.com/google/docsy.git
 [submodule "hack/benchmark/time-to-k8s/time-to-k8s"]
 	path = hack/benchmark/time-to-k8s/time-to-k8s
-	url = git@github.com:tstromberg/time-to-k8s.git
+	url = https://github.com/tstromberg/time-to-k8s.git
