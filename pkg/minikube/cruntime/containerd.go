@@ -79,15 +79,13 @@ oom_score = 0
     enable_selinux = false
     sandbox_image = "{{ .PodInfraContainerImage }}"
     stats_collect_period = 10
-    systemd_cgroup = {{ .SystemdCgroup }}
+    systemd_cgroup = true
     enable_tls_streaming = false
     max_container_log_line_size = 16384
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
       [plugins.cri.containerd.default_runtime]
         runtime_type = "io.containerd.runc.v2"
-        [plugins.cri.containerd.default_runtime.options]
-          NoPivotRoot = true
       [plugins.cri.containerd.untrusted_workload_runtime]
         runtime_type = ""
         runtime_engine = ""
