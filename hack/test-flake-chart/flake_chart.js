@@ -73,6 +73,24 @@ async function loadTestData() {
   return testData;
 }
 
+// Computes the average of an array of numbers.
+Array.prototype.average = function () {
+  return this.length === 0 ? 0 : this.reduce((sum, value) => sum + value, 0) / this.length;
+};
+
+// Groups array elements by keys obtained through `keyGetter`.
+Array.prototype.groupBy = function (keyGetter) {
+  return Array.from(this.reduce((mapCollection, element) => {
+    const key = keyGetter(element);
+    if (mapCollection.has(key)) {
+      mapCollection.get(key).push(element);
+    } else {
+      mapCollection.set(key, [element]);
+    }
+    return mapCollection;
+  }, new Map()).values());
+};
+
 async function init() {
   google.charts.load('current', { 'packages': ['corechart'] });
   let testData;
@@ -95,39 +113,19 @@ async function init() {
 
   const desiredTest = "TestFunctional/parallel/LogsCmd", desiredEnvironment = "Docker_Linux_containerd";
 
-  const average = arr => {
-    return arr.length === 0 ? 0 : arr.reduce((sum, value) => sum + value, 0) / arr.length;
-  };
-
-  const groups =
-    Array.from(testData
-      // Filter to only contain unskipped runs of the requested test and requested environment.
-      .filter(test => test.name === desiredTest && test.environment === desiredEnvironment && test.status !== testStatus.SKIPPED)
-      // Group by run date.
-      .reduce((groups, test) => {
-        // Convert Date to time number since hashing by Date does not work.
-        const dateValue = test.date.getTime();
-        if (groups.has(dateValue)) {
-          groups.get(dateValue).push(test);
-        } else {
-          groups.set(dateValue, [test]);
-        }
-        return groups
-      }, new Map())
-      // Get all entries (type of [[time number, [test]]]).
-      .entries()
-    )
-      // Turn time number back to the corresponding Date.
-      .map(([dateValue, tests]) => ({ date: new Date(dateValue), tests }));
+  const groups = testData
+    // Filter to only contain unskipped runs of the requested test and requested environment.
+    .filter(test => test.name === desiredTest && test.environment === desiredEnvironment && test.status !== testStatus.SKIPPED)
+    .groupBy(test => test.date.getTime());
 
   data.addRows(
     groups
       // Sort by run date, past to future.
-      .sort((a, b) => a.date - b.date)
+      .sort((a, b) => a[0].date - b[0].date)
       // Map each group to all variables need to format the rows.
-      .map(({ date, tests }) => ({
-        date, // Turn time number back to corresponding date.
-        flakeRate: average(tests.map(test => test.status === testStatus.FAILED ? 100 : 0)), // Compute average of runs where FAILED counts as 100%.
+      .map(tests => ({
+        date: tests[0].date, // Get one of the dates from the tests (which will all be the same).
+        flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
         commitHashes: tests.map(test => ({ hash: test.commit, status: test.status })) // Take all hashes and status' of tests in this group.
       }))
       .map(groupData => [
