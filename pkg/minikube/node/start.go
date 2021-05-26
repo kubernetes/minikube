@@ -404,7 +404,7 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 		args := []string{"crictl", "version"}
 		cmd := exec.Command("sudo", args...)
 		rr, err := runner.RunCmd(cmd)
-		if err != nil && !os.IsNotExist(err) {
+		if err != nil && !os.IsNotExist(err) && !strings.Contains(rr.Output(), "unknown service runtime.v1alpha2.RuntimeService") {
 			return &retry.RetriableError{Err: err}
 		}
 		klog.Info(rr.Stdout.String())
