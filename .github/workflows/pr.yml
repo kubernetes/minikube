@@ -9,6 +9,11 @@ on:
       - "Makefile"
       - "!deploy/kicbase/**"
       - "!deploy/iso/**"
+  label:
+    types:
+      - created
+      - edited
+      - deleted
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: 1.16.4
@@ -488,6 +493,7 @@ jobs:
       GOPOGH_RESULT: ""
       STAT: ""
     runs-on: [self-hosted, windows-10-ent, 8CPUs]
+    if: contains(github.event.pull_request.labels.*.name, 'pr_verified')
     steps:
       - name: Clean up
         continue-on-error: true
@@ -629,6 +635,7 @@ jobs:
       JOB_NAME: "functional_hyperv_windows"
       GOPOGH_RESULT: ""
     runs-on: [self-hosted, windows-10-ent, Standard_D16s_v3, hyperv]
+    if: contains(github.event.pull_request.labels.*.name, 'pr_verified')
     steps:
       - name: Clean up
         continue-on-error: true
@@ -857,6 +864,7 @@ jobs:
   functional_docker_ubuntu_arm64:
     needs: [ build_minikube ]
     runs-on: [ self-hosted, arm64 ]
+    if: contains(github.event.pull_request.labels.*.name, 'pr_verified')
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_docker_ubuntu_arm64"
