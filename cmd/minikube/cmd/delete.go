@@ -304,9 +304,8 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 }
 
 func unpauseIfNeeded(profile *config.Profile) error {
-	// there is a known issue with removing paused containerd kicbase container
+	// there is a known issue with removing kicbase container with paused containerd containers inside
 	// unpause it before we delete it
-
 	if profile.Config.KubernetesConfig.ContainerRuntime != "containerd" {
 		return nil
 	}
@@ -321,27 +320,29 @@ func unpauseIfNeeded(profile *config.Profile) error {
 	if err != nil {
 		return err
 	}
+
 	r, err := machine.CommandRunner(host)
 	if err != nil {
 		exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
 	}
+
 	cr, err := cruntime.New(cruntime.Config{Type: profile.Config.KubernetesConfig.ContainerRuntime, Runner: r})
 	if err != nil {
 		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 	}
+
 	paused, err := cluster.CheckIfPaused(cr, nil)
 	if err != nil {
 		return err
 	}
-	if paused {
-		klog.Infof(`Unpause cluster %q.`, profile.Name)
-		ids, err := cluster.Unpause(cr, r, nil)
-		if err != nil {
-			return err
-		}
-		klog.Infof("Unpaused %v", ids)
+
+	if !paused {
+		return nil
 	}
-	return nil
+
+	klog.Infof(`Unpause cluster %q.`, profile.Name)
+	_, err = cluster.Unpause(cr, r, nil)
+	return err
 }
 
 func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
