@@ -50,8 +50,8 @@ const (
 // Enumeration for preload existence cache.
 const (
 	preloadUnknown = iota // Value when preload status has not been checked.
-	preloadMissing = iota // Value when preload has been checked and is missing.
-	preloadPresent = iota // Value when preload has been checked and is present.
+	preloadMissing        // Value when preload has been checked and is missing.
+	preloadPresent        // Value when preload has been checked and is present.
 )
 
 var (
