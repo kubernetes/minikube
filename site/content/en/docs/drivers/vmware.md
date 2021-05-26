@@ -21,6 +21,12 @@ No documentation is available yet.
 {{% /windowstab %}}
 {{% /tabs %}}
 
+## Special features
+
+minikube start supports some VMWare specific flags:
+
+* **`--vmware-network-type`**: Network connection type to use. One of 'nat', 'bridged', 'hostonly', 'custom'. This affects the "Network Adapter" settings inside the VMWare VM.
+
 ## Issues
 
 * [Full list of open 'vmware-driver' issues](https://github.com/kubernetes/minikube/labels/co%2Fvmware-driver)
