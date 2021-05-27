@@ -815,7 +815,6 @@
 	"Your host does not support virtualization. If you are running minikube within a VM, try '--driver=docker'. Otherwise, enable virtualization in your BIOS": "",
 	"Your host does not support virtualization. If you are running minikube within a VM, try '--driver=none'. Otherwise, enable virtualization in your BIOS": "호스트가 가상화를 지원하지 않습니다. 가상 머신 안에서 minikube 를 실행 중인 경우, '--driver=none' 로 시도하세요. 그렇지 않다면, BIOS 에서 가상화를 활성화하세요",
 	"Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.": "",
-	"Your minikube certs likely expired, as a workaround, clear your minikube home dir `minikube delete --all --purge`": "",
 	"Your minikube config refers to an unsupported driver. Erase ~/.minikube, and try again.": "minikube config 가 미지원 드라이버를 참조하고 있습니다. ~/.minikube 를 제거한 후, 다시 시도하세요",
 	"Your minikube vm is not running, try minikube start.": "minikube 가상 머신이 실행 중이 아닙니다, minikube start 를 시도하세요",
 	"[WARNING] For full functionality, the 'csi-hostpath-driver' addon requires the 'volumesnapshots' addon to be enabled.\n\nYou can enable 'volumesnapshots' addon by running: 'minikube addons enable volumesnapshots'\n": "",

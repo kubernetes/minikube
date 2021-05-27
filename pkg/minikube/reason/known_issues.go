@@ -1017,15 +1017,6 @@ var guestIssues = []match{
 	},
 	{
 		Kind: Kind{
-			ID:       "GUEST_CERTS_EXPIRED",
-			ExitCode: ExGuestError,
-			Advice:   "Your minikube certs likely expired, as a workaround, clear your minikube home dir `minikube delete --all --purge`",
-			Issues:   []int{10948},
-		},
-		Regexp: re(`wait 6m0s for node: wait for healthy API server: controlPlane never updated to`),
-	},
-	{
-		Kind: Kind{
 			ID:       "GUEST_CNI_INCOMPATIBLE",
 			ExitCode: ExGuestUnsupported,
 			Advice:   "Bridge CNI is incompatible with multi-node clusters, use a different CNI",

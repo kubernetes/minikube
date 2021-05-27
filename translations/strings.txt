@@ -751,7 +751,6 @@
 	"Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem": "",
 	"Your host does not support virtualization. If you are running minikube within a VM, try '--driver=docker'. Otherwise, enable virtualization in your BIOS": "",
 	"Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.": "",
-	"Your minikube certs likely expired, as a workaround, clear your minikube home dir `minikube delete --all --purge`": "",
 	"Your minikube config refers to an unsupported driver. Erase ~/.minikube, and try again.": "",
 	"Your minikube vm is not running, try minikube start.": "",
 	"[WARNING] For full functionality, the 'csi-hostpath-driver' addon requires the 'volumesnapshots' addon to be enabled.\n\nYou can enable 'volumesnapshots' addon by running: 'minikube addons enable volumesnapshots'\n": "",
