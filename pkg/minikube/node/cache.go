@@ -103,7 +103,7 @@ func CacheKubectlBinary(k8sVersion string) (string, error) {
 // doCacheBinaries caches Kubernetes binaries in the foreground
 func doCacheBinaries(k8sVersion, containerRuntime string) error {
 	existingBinaries := constants.KubernetesReleaseBinaries
-	if !download.PreloadExists(k8sVersion, containerRuntime) {
+	if _, err := os.Stat(download.TarballPath(k8sVersion, containerRuntime)); err != nil {
 		existingBinaries = nil
 	}
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), existingBinaries)
