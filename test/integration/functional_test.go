@@ -138,7 +138,7 @@ func TestFunctional(t *testing.T) {
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
-			{"ExtraRuntimeDisabled", validateExtraRuntimeDisabled},
+			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -1664,8 +1664,8 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateExtraRuntimeDisabled asserts that for a given runtime, the other runtimes disabled, for example for containerd runtime, docker and crio needs to be not running
-func validateExtraRuntimeDisabled(ctx context.Context, t *testing.T, profile string) {
+// validateNotActiveRuntimeDisabled asserts that for a given runtime, the other runtimes disabled, for example for containerd runtime, docker and crio needs to be not running
+func validateNotActiveRuntimeDisabled(ctx context.Context, t *testing.T, profile string) {
 	disableMap := map[string][]string{
 		"docker":     []string{"crio"},
 		"containerd": []string{"docker", "crio"},
