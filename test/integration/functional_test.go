@@ -138,6 +138,7 @@ func TestFunctional(t *testing.T) {
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
+			{"ExtraRuntimeDisabled", validateExtraRuntimeDisabled},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -1660,6 +1661,29 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		if diff := cmp.Diff(string(want), got); diff != "" {
 			t.Errorf("failed verify pem file. minikube_test.pem -> %s mismatch (-want +got):\n%s", vp, diff)
 		}
+	}
+}
+
+// validateExtraRuntimeDisabled asserts that for a given runtime, the other runtimes disabled, for example for containerd runtime, docker and crio needs to be not running
+func validateExtraRuntimeDisabled(ctx context.Context, t *testing.T, profile string) {
+	disableMap := map[string][]string{
+		"docker":     []string{"crio"},
+		"containerd": []string{"docker", "crio"},
+		"crio":       []string{"docker", "containerd"},
+	}
+
+	expectDisable := disableMap[ContainerRuntime()]
+	for _, cr := range expectDisable {
+		// for example: minikube sudo systemctl is-active docker
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo systemctl is-active %s", cr)))
+		if err != nil {
+			t.Logf("output of %s: %v", rr.Output(), err)
+		}
+		got := rr.Stdout.String()
+		if !strings.Contains(got, "inactive") {
+			t.Errorf("For runtime %q: expected %q to be inactive but got %q ", ContainerRuntime(), cr, got)
+		}
+
 	}
 }
 
