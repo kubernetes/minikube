@@ -449,15 +449,15 @@ func (r *Docker) forceSystemd() error {
 // 1. Copy over the preloaded tarball into the VM
 // 2. Extract the preloaded tarball to the correct directory
 // 3. Remove the tarball within the VM
-func (r *Docker) Preload(cfg config.KubernetesConfig) error {
-	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
+func (r *Docker) Preload(cc config.ClusterConfig) error {
+	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
 		return nil
 	}
-	k8sVersion := cfg.KubernetesVersion
-	cRuntime := cfg.ContainerRuntime
+	k8sVersion := cc.KubernetesConfig.KubernetesVersion
+	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
 	// If images already exist, return
-	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
+	images, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}

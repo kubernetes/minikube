@@ -125,7 +125,7 @@ type Manager interface {
 	// SystemLogCmd returns the command to return the system logs
 	SystemLogCmd(int) string
 	// Preload preloads the container runtime with k8s images
-	Preload(config.KubernetesConfig) error
+	Preload(config.ClusterConfig) error
 	// ImagesPreloaded returns true if all images have been preloaded
 	ImagesPreloaded([]string) bool
 }
