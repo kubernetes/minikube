@@ -87,7 +87,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Create a registry secret in every namespace we can find
 	err = createPullSecret(cfg, creds)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create pull secret")
 	}
 
 	// First check if the project env var is explicitly set
