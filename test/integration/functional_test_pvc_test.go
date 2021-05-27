@@ -37,6 +37,7 @@ import (
 // validatePersistentVolumeClaim makes sure PVCs work properly
 func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+
 	ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 	defer cancel()
 
