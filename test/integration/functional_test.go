@@ -1667,9 +1667,9 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 // validateNotActiveRuntimeDisabled asserts that for a given runtime, the other runtimes disabled, for example for containerd runtime, docker and crio needs to be not running
 func validateNotActiveRuntimeDisabled(ctx context.Context, t *testing.T, profile string) {
 	disableMap := map[string][]string{
-		"docker":     []string{"crio"},
-		"containerd": []string{"docker", "crio"},
-		"crio":       []string{"docker", "containerd"},
+		"docker":     {"crio"},
+		"containerd": {"docker", "crio"},
+		"crio":       {"docker", "containerd"},
 	}
 
 	expectDisable := disableMap[ContainerRuntime()]
