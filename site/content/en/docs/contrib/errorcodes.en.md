@@ -285,6 +285,10 @@ minikube has no current cluster running
 
 "DRV_NOT_DETECTED" (Exit code ExDriverNotFound)  
 
+"DRV_NOT_HEALTHY" (Exit code ExDriverNotFound)  
+
+"DRV_DOCKER_NOT_RUNNING" (Exit code ExDriverNotFound)  
+
 "DRV_AS_ROOT" (Exit code ExDriverPermission)  
 
 "DRV_NEEDS_ROOT" (Exit code ExDriverPermission)  
@@ -328,6 +332,8 @@ minikube has no current cluster running
 "GUEST_PROFILE_DELETION" (Exit code ExGuestError)  
 
 "GUEST_PROVISION" (Exit code ExGuestError)  
+
+"GUEST_PROVISION_CONTAINER_EXITED" (Exit code ExGuestError)  
 
 "GUEST_START" (Exit code ExGuestError)  
 
