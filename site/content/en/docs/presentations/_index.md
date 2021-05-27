@@ -99,6 +99,12 @@ Presentations about the minikube project, mostly from the Kubernetes blog and th
 
 * _No results found for minikube_
 
+### KubeCon EU 2021 (Online, Europe) - Virtual
+
+* <http://www.youtube.com/watch?v=nqKYgeUtk8s> (32:48)
+  * "Minikube and Three Different Local Kubernetes Learning Environments"
+  * Anders Björklund & Predrag Rogic
+
 ## Other conferences
 
 ### Helm Summit EU 2019 (Amsterdam, The Netherlands)

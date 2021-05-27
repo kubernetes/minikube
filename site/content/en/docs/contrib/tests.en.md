@@ -241,6 +241,9 @@ uses the minikube node add command to add a node to an existing cluster
 #### validateProfileListWithMultiNode
 make sure minikube profile list outputs correct with multinode clusters
 
+#### validateCopyFileWithMultiNode
+validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
+
 #### validateStopRunningNode
 tests the minikube node stop command
 
@@ -262,10 +265,18 @@ tests that the node name verification works as expected
 #### validateDeployAppToMultiNode
 deploys an app to a multinode cluster and makes sure all nodes can serve traffic
 
+#### validatePodsPingHost
+uses app previously deplyed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
+
 ## TestNetworkPlugins
 tests all supported CNI options
 Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
 Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
+
+#### validateFalseCNI
+checks that minikube returns and error
+if container runtime is "containerd" or "crio"
+and --cni=false
 
 #### validateHairpinMode
 makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
@@ -326,6 +337,9 @@ runs the initial minikube start
 #### validateDeploying
 deploys an app the minikube cluster
 
+#### validateEnableAddonWhileActive
+makes sure addons can be enabled while cluster is active.
+
 #### validateStop
 tests minikube stop
 
@@ -362,4 +376,3 @@ upgrades Kubernetes from oldest to newest
 ## TestMissingContainerUpgrade
 tests a Docker upgrade where the underlying container is missing
 
-TEST COUNT: 115

@@ -369,7 +369,7 @@ test: $(SOURCE_GENERATED) ## Trigger minikube test
 
 .PHONY: generate-docs
 generate-docs: extract out/minikube ## Automatically generate commands documentation.
-	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md
+	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md --code-path ./site/content/en/docs/contrib/errorcodes.en.md
 
 .PHONY: gotest
 gotest: $(SOURCE_GENERATED) ## Trigger minikube test
@@ -736,11 +736,13 @@ TAG = $(STORAGE_PROVISIONER_TAG)
 
 .PHONY: push-storage-provisioner-manifest
 push-storage-provisioner-manifest: $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~storage\-provisioner\-image\-&~g") ## Push multi-arch storage-provisioner image
+ifndef CIBUILD
 	docker login gcr.io/k8s-minikube
+endif
 	set -x; for arch in $(ALL_ARCH); do docker push ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	set -x; for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
+	$(X_BUILD_ENV) docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	set -x; for arch in $(ALL_ARCH); do $(X_BUILD_ENV) docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
+	$(X_BUILD_ENV) docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable (used internally by other targets)
@@ -773,6 +775,14 @@ release-iso: minikube_iso checksum  ## Build and release .iso file
 release-minikube: out/minikube checksum ## Minikube release
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
+
+.PHONY: release-notes
+release-notes:
+	hack/release_notes.sh
+
+.PHONY: update-leaderboard
+update-leaderboard:
+	hack/update_contributions.sh
 
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-amd64
 	$(if $(quiet),@echo "  CP       $@")
@@ -956,6 +966,10 @@ cpu-benchmark-idle: ## run the cpu usage 5 minutes idle benchmark
 .PHONY: cpu-benchmark-autopause
 cpu-benchmark-autopause: ## run the cpu usage auto-pause benchmark
 	./hack/benchmark/cpu_usage/auto_pause/benchmark_local_k8s.sh
+
+.PHONY: time-to-k8s-benchmark
+time-to-k8s-benchmark:
+	./hack/benchmark/time-to-k8s/time-to-k8s.sh
 
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version

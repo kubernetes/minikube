@@ -93,16 +93,18 @@ func TestGlobalAvailable(t *testing.T) {
 
 	expected := []DriverState{
 		{
-			Name:     "healthy-bar",
-			Default:  true,
-			Priority: Default,
-			State:    State{Healthy: true},
+			Name:       "healthy-bar",
+			Default:    true,
+			Preference: Default,
+			Priority:   Default,
+			State:      State{Healthy: true},
 		},
 		{
-			Name:     "unhealthy-foo",
-			Default:  true,
-			Priority: Unhealthy,
-			State:    State{Healthy: false},
+			Name:       "unhealthy-foo",
+			Default:    true,
+			Preference: Default,
+			Priority:   Unhealthy,
+			State:      State{Healthy: false},
 		},
 	}
 

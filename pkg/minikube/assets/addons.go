@@ -42,7 +42,8 @@ type Addon struct {
 
 // NetworkInfo contains control plane node IP address used for add on template
 type NetworkInfo struct {
-	ControlPlaneNodeIP string
+	ControlPlaneNodeIP   string
+	ControlPlaneNodePort int
 }
 
 // NewAddon creates a new Addon
@@ -88,13 +89,13 @@ var Addons = map[string]*Addon{
 			"auto-pause-hook.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/auto-pause/haproxy.cfg",
-			"/var/lib/minikube/",
+			"deploy/addons/auto-pause/haproxy.cfg.tmpl",
+			vmpath.GuestPersistentDir,
 			"haproxy.cfg",
 			"0640"),
 		MustBinAsset(
 			"deploy/addons/auto-pause/unpause.lua",
-			"/var/lib/minikube/",
+			vmpath.GuestPersistentDir,
 			"unpause.lua",
 			"0640"),
 		MustBinAsset(
@@ -486,8 +487,8 @@ var Addons = map[string]*Addon{
 			"metallb-config.yaml",
 			"0640"),
 	}, false, "metallb", map[string]string{
-		"Speaker":    "metallb/speaker:v0.8.2@sha256:f1941498a28cdb332429e25d18233683da6949ecfc4f6dacf12b1416d7d38263",
-		"Controller": "metallb/controller:v0.8.2@sha256:5c050e59074e152711737d2bb9ede96dff67016c80cf25cdf5fc46109718a583",
+		"Speaker":    "metallb/speaker:v0.9.6@sha256:c66585a805bed1a3b829d8fb4a4aab9d87233497244ebff96f1b88f1e7f8f991",
+		"Controller": "metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502",
 	}, nil),
 	"ambassador": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -659,8 +660,110 @@ var Addons = map[string]*Addon{
 	}),
 }
 
+// parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
+func parseMapString(str string) map[string]string {
+	mapResult := make(map[string]string)
+	if str == "" {
+		return mapResult
+	}
+	for _, pairText := range strings.Split(str, ",") {
+		vals := strings.Split(pairText, "=")
+		if len(vals) != 2 {
+			out.WarningT("Ignoring invalid pair entry {{.pair}}", out.V{"pair": pairText})
+			continue
+		}
+		mapResult[vals[0]] = vals[1]
+	}
+	return mapResult
+}
+
+// mergeMaps creates a map with the union of `sourceMap` and `overrideMap` where collisions take the value of `overrideMap`.
+func mergeMaps(sourceMap, overrideMap map[string]string) map[string]string {
+	result := make(map[string]string)
+	for name, value := range sourceMap {
+		result[name] = value
+	}
+	for name, value := range overrideMap {
+		result[name] = value
+	}
+	return result
+}
+
+// filterKeySpace creates a map of the values in `targetMap` where the keys are also in `keySpace`.
+func filterKeySpace(keySpace map[string]string, targetMap map[string]string) map[string]string {
+	result := make(map[string]string)
+	for name := range keySpace {
+		if value, ok := targetMap[name]; ok {
+			result[name] = value
+		}
+	}
+	return result
+}
+
+// overrideDefaults creates a copy of `defaultMap` where `overrideMap` replaces any of its values that `overrideMap` contains.
+func overrideDefaults(defaultMap, overrideMap map[string]string) map[string]string {
+	return mergeMaps(defaultMap, filterKeySpace(defaultMap, overrideMap))
+}
+
+// SelectAndPersistImages selects which images to use based on addon default images, previously persisted images, and newly requested images - which are then persisted for future enables.
+func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, customRegistries map[string]string, err error) {
+	addonDefaultImages := addon.Images
+	if addonDefaultImages == nil {
+		addonDefaultImages = make(map[string]string)
+	}
+
+	// Use previously configured custom images.
+	images = overrideDefaults(addonDefaultImages, cc.CustomAddonImages)
+	if viper.IsSet(config.AddonImages) {
+		// Parse the AddonImages flag if present.
+		newImages := parseMapString(viper.GetString(config.AddonImages))
+		for name, image := range newImages {
+			if image == "" {
+				out.WarningT("Ignoring empty custom image {{.name}}", out.V{"name": name})
+				delete(newImages, name)
+				continue
+			}
+			if _, ok := addonDefaultImages[name]; !ok {
+				out.WarningT("Ignoring unknown custom image {{.name}}", out.V{"name": name})
+			}
+		}
+		// Use newly configured custom images.
+		images = overrideDefaults(addonDefaultImages, newImages)
+		// Store custom addon images to be written.
+		cc.CustomAddonImages = mergeMaps(cc.CustomAddonImages, images)
+	}
+
+	// Use previously configured custom registries.
+	customRegistries = filterKeySpace(addonDefaultImages, cc.CustomAddonRegistries) // filter by images map because registry map may omit default registry.
+	if viper.IsSet(config.AddonRegistries) {
+		// Parse the AddonRegistries flag if present.
+		customRegistries = parseMapString(viper.GetString(config.AddonRegistries))
+		for name := range customRegistries {
+			if _, ok := addonDefaultImages[name]; !ok { // check images map because registry map may omitted default registry
+				out.WarningT("Ignoring unknown custom registry {{.name}}", out.V{"name": name})
+				delete(customRegistries, name)
+			}
+		}
+		// Since registry map may omit default registry, any previously set custom registries for these images must be cleared.
+		for name := range addonDefaultImages {
+			delete(cc.CustomAddonRegistries, name)
+		}
+		// Merge newly set registries into custom addon registries to be written.
+		cc.CustomAddonRegistries = mergeMaps(cc.CustomAddonRegistries, customRegistries)
+	}
+
+	err = nil
+	// If images or registries were specified, save the config afterward.
+	if viper.IsSet(config.AddonImages) || viper.IsSet(config.AddonRegistries) {
+		// Since these values are only set when a user enables an addon, it is safe to refer to the profile name.
+		err = config.Write(viper.GetString(config.ProfileName), cc)
+		// Whether err is nil or not we still return here.
+	}
+	return images, customRegistries, err
+}
+
 // GenerateTemplateData generates template data for template assets
-func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo NetworkInfo) interface{} {
+func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo, images, customRegistries map[string]string) interface{} {
 
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
@@ -669,6 +772,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo
 	if runtime.GOARCH != "amd64" {
 		ea = "-" + runtime.GOARCH
 	}
+
 	opts := struct {
 		Arch                string
 		ExoticArch          string
@@ -687,57 +791,21 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, networkInfo
 		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
 		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
 		CustomIngressCert:   cfg.CustomIngressCert,
-		Images:              addon.Images,
+		Images:              images,
 		Registries:          addon.Registries,
-		CustomRegistries:    make(map[string]string),
+		CustomRegistries:    customRegistries,
 		NetworkInfo:         make(map[string]string),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
 	}
-
-	// Network info for generating template
-	opts.NetworkInfo["ControlPlaneNodeIP"] = networkInfo.ControlPlaneNodeIP
-
-	if opts.Images == nil {
-		opts.Images = make(map[string]string) // Avoid nil access when rendering
-	}
-
-	images := viper.GetString(config.AddonImages)
-	if images != "" {
-		for _, image := range strings.Split(images, ",") {
-			vals := strings.Split(image, "=")
-			if len(vals) != 2 || vals[1] == "" {
-				out.WarningT("Ignoring invalid custom image {{.conf}}", out.V{"conf": image})
-				continue
-			}
-			if _, ok := opts.Images[vals[0]]; ok {
-				opts.Images[vals[0]] = vals[1]
-			} else {
-				out.WarningT("Ignoring unknown custom image {{.name}}", out.V{"name": vals[0]})
-			}
-		}
-	}
-
 	if opts.Registries == nil {
 		opts.Registries = make(map[string]string)
 	}
 
-	registries := viper.GetString(config.AddonRegistries)
-	if registries != "" {
-		for _, registry := range strings.Split(registries, ",") {
-			vals := strings.Split(registry, "=")
-			if len(vals) != 2 {
-				out.WarningT("Ignoring invalid custom registry {{.conf}}", out.V{"conf": registry})
-				continue
-			}
-			if _, ok := opts.Images[vals[0]]; ok { // check images map because registry map may omitted default registry
-				opts.CustomRegistries[vals[0]] = vals[1]
-			} else {
-				out.WarningT("Ignoring unknown custom registry {{.name}}", out.V{"name": vals[0]})
-			}
-		}
-	}
+	// Network info for generating template
+	opts.NetworkInfo["ControlPlaneNodeIP"] = netInfo.ControlPlaneNodeIP
+	opts.NetworkInfo["ControlPlaneNodePort"] = fmt.Sprint(netInfo.ControlPlaneNodePort)
 
 	// Append postfix "/" to registries
 	for k, v := range opts.Registries {

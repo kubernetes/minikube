@@ -69,6 +69,12 @@ var ErrNetworkGatewayTaken = errors.New("network gateway is taken")
 // ErrNetworkInUse is when trying to delete a network which is attached to another container
 var ErrNetworkInUse = errors.New("unable to delete a network that is attached to a running container")
 
+// ErrGetSSHPortContainerNotRunning happens when you try to inspect a container (in order to get SSH port) that "exists" but is no longer running
+var ErrGetSSHPortContainerNotRunning = errors.New("unable to inspect a not running container to get SSH port")
+
+// ErrGetPortContainerNotRunning happens when you try to inspect a container (in order to get Port) that "exists" but is no longer running
+var ErrGetPortContainerNotRunning = errors.New("unable to inspect a not running container to get port")
+
 // LogContainerDebug will print relevant docker/podman infos after a container fails
 func LogContainerDebug(ociBin string, name string) string {
 	rr, err := containerInspect(ociBin, name)
