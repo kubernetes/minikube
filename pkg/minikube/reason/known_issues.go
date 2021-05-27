@@ -269,7 +269,7 @@ var providerIssues = []match{
 	},
 	{
 		Kind: Kind{
-			ID:       "PR_DOCKER_UNSUPPORTED",
+			ID:       "PR_DOCKER_VER_UNSUPPORTED",
 			ExitCode: ExProviderError,
 			Advice:   "Update Docker to the latest minor version, this version is unsupported",
 			Issues:   []int{10362},
@@ -1022,7 +1022,7 @@ var guestIssues = []match{
 			Advice:   "Your minikube certs likely expired, as a workaround, clear your minikube home dir `minikube delete --all --purge`",
 			Issues:   []int{10948},
 		},
-		Regexp: re(`controlPlane never updated to`),
+		Regexp: re(`wait 6m0s for node: wait for healthy API server: controlPlane never updated to`),
 	},
 	{
 		Kind: Kind{
