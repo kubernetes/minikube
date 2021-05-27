@@ -132,6 +132,9 @@ func TestDownloadOnly(t *testing.T) {
 			})
 
 			t.Run("binaries", func(t *testing.T) {
+				if preloadExists {
+					t.Skip("Preload exists, binaries are present within.")
+				}
 				// checking binaries downloaded (kubelet,kubeadm)
 				for _, bin := range constants.KubernetesReleaseBinaries {
 					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)

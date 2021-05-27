@@ -289,7 +289,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
 	}
 
-	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
+	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
 	waitDownloadKicBaseImage(&kicGroup)
 
 	return startMachine(cc, n, delOnFail)
