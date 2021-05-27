@@ -304,9 +304,10 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 }
 
 func unpauseIfNeeded(profile *config.Profile) error {
-	// there is a known issue with removing kicbase container with paused containerd containers inside
+	// there is a known issue with removing kicbase container with paused containerd/crio containers inside
 	// unpause it before we delete it
-	if profile.Config.KubernetesConfig.ContainerRuntime != "containerd" {
+	crName := profile.Config.KubernetesConfig.ContainerRuntime
+	if crName == "docker" {
 		return nil
 	}
 
@@ -326,7 +327,7 @@ func unpauseIfNeeded(profile *config.Profile) error {
 		exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
 	}
 
-	cr, err := cruntime.New(cruntime.Config{Type: profile.Config.KubernetesConfig.ContainerRuntime, Runner: r})
+	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: r})
 	if err != nil {
 		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 	}
