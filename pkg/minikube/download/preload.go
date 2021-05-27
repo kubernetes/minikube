@@ -47,6 +47,17 @@ const (
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
 
+// Enumeration for preload existence cache.
+const (
+	preloadUnknown = iota // Value when preload status has not been checked.
+	preloadMissing        // Value when preload has been checked and is missing.
+	preloadPresent        // Value when preload has been checked and is present.
+)
+
+var (
+	preloadState int = preloadUnknown
+)
+
 // TarballName returns name of the tarball
 func TarballName(k8sVersion, containerRuntime string) string {
 	if containerRuntime == "crio" {
@@ -100,10 +111,16 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 		return false
 	}
 
+	// If the preload existence is cached, just return that value.
+	if preloadState != preloadUnknown {
+		return preloadState == preloadPresent
+	}
+
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found local preload: %s", targetPath)
+		preloadState = preloadPresent
 		return true
 	}
 
@@ -111,16 +128,19 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 	resp, err := http.Head(url)
 	if err != nil {
 		klog.Warningf("%s fetch error: %v", url, err)
+		preloadState = preloadMissing
 		return false
 	}
 
 	// note: err won't be set if it's a 404
 	if resp.StatusCode != 200 {
 		klog.Warningf("%s status code: %d", url, resp.StatusCode)
+		preloadState = preloadMissing
 		return false
 	}
 
 	klog.Infof("Found remote preload: %s", url)
+	preloadState = preloadPresent
 	return true
 }
 
@@ -163,15 +183,16 @@ func Preload(k8sVersion, containerRuntime string) error {
 			return errors.Wrap(err, "tempfile")
 		}
 		targetPath = tmp.Name()
-	} else if checksum != "" {
-		url += "?checksum=" + checksum
+	} else if checksum != nil {
+		// add URL parameter for go-getter to automatically verify the checksum
+		url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
 	}
 
 	if err := download(url, targetPath); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
 
-	if err := ensureChecksumValid(k8sVersion, containerRuntime, targetPath); err != nil {
+	if err := ensureChecksumValid(k8sVersion, containerRuntime, targetPath, checksum); err != nil {
 		return err
 	}
 
@@ -183,6 +204,8 @@ func Preload(k8sVersion, containerRuntime string) error {
 		}
 	}
 
+	// If the download was successful, mark off that the preload exists in the cache.
+	preloadState = preloadPresent
 	return nil
 }
 
@@ -199,23 +222,19 @@ func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 	return attrs, nil
 }
 
-var getChecksum = func(k8sVersion, containerRuntime string) (string, error) {
+// getChecksum returns the MD5 checksum of the preload tarball
+var getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
 	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	md5 := hex.EncodeToString(attrs.MD5)
-	return fmt.Sprintf("md5:%s", md5), nil
+	return attrs.MD5, nil
 }
 
-func saveChecksumFile(k8sVersion, containerRuntime string) error {
+// saveChecksumFile saves the checksum to a local file for later verification
+func saveChecksumFile(k8sVersion, containerRuntime string, checksum []byte) error {
 	klog.Infof("saving checksum for %s ...", TarballName(k8sVersion, containerRuntime))
-	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
-	if err != nil {
-		return err
-	}
-	checksum := attrs.MD5
 	return ioutil.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
 }
 
@@ -243,8 +262,8 @@ func verifyChecksum(k8sVersion, containerRuntime, path string) error {
 }
 
 // ensureChecksumValid saves and verifies local binary checksum matches remote binary checksum
-var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string) error {
-	if err := saveChecksumFile(k8sVersion, containerRuntime); err != nil {
+var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string, checksum []byte) error {
+	if err := saveChecksumFile(k8sVersion, containerRuntime, checksum); err != nil {
 		return errors.Wrap(err, "saving checksum file")
 	}
 

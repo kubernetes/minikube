@@ -967,6 +967,10 @@ cpu-benchmark-idle: ## run the cpu usage 5 minutes idle benchmark
 cpu-benchmark-autopause: ## run the cpu usage auto-pause benchmark
 	./hack/benchmark/cpu_usage/auto_pause/benchmark_local_k8s.sh
 
+.PHONY: time-to-k8s-benchmark
+time-to-k8s-benchmark:
+	./hack/benchmark/time-to-k8s/time-to-k8s.sh
+
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version
 	(cd hack/update/gopogh_version && \

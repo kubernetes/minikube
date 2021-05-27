@@ -69,13 +69,13 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 	})
 }
 
-// HandleDownloadOnly caches appropariate binaries and images
-func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string) {
+// handleDownloadOnly caches appropariate binaries and images
+func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
 		return
 	}
-	if err := doCacheBinaries(k8sVersion); err != nil {
+	if err := doCacheBinaries(k8sVersion, containerRuntime); err != nil {
 		exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
 	}
 	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
@@ -101,8 +101,12 @@ func CacheKubectlBinary(k8sVersion string) (string, error) {
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
-func doCacheBinaries(k8sVersion string) error {
-	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+func doCacheBinaries(k8sVersion, containerRuntime string) error {
+	existingBinaries := constants.KubernetesReleaseBinaries
+	if !download.PreloadExists(k8sVersion, containerRuntime) {
+		existingBinaries = nil
+	}
+	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), existingBinaries)
 }
 
 // beginDownloadKicBaseImage downloads the kic image
@@ -145,15 +149,22 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				}
 			}
 
-			if err := image.LoadFromTarball(cc.Driver, img); err == nil {
-				klog.Infof("successfully loaded %s from cached tarball", img)
-				// strip the digest from the img before saving it in the config
-				// because loading an image from tarball to daemon doesn't load the digest
-				finalImg = img
-				return nil
+			if cc.Driver == driver.Podman {
+				return fmt.Errorf("not yet implemented, see issue #8426")
+			}
+			if driver.IsDocker(cc.Driver) {
+				klog.Infof("Loading %s from local cache", img)
+				err = download.CacheToDaemon(img)
+				if err == nil {
+					klog.Infof("successfully loaded %s from cached tarball", img)
+					finalImg = img
+					return nil
+				}
 			}
 
 			if driver.IsDocker(cc.Driver) {
+				klog.Infof("failed to load %s, will try remote image if available: %v", img, err)
+
 				klog.Infof("Downloading %s to local daemon", img)
 				err = download.ImageToDaemon(img)
 				if err == nil {
@@ -191,7 +202,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 	klog.Info("Successfully downloaded all kic artifacts")
 }
 
-// WaitCacheRequiredImages blocks until the required images are all cached.
+// waitCacheRequiredImages blocks until the required images are all cached.
 func waitCacheRequiredImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return

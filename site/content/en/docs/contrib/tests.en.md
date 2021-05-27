@@ -166,6 +166,9 @@ to check existence of the test file
 #### validateCertSync
 to check existence of the test certificate
 
+#### validateNotActiveRuntimeDisabled
+asserts that for a given runtime, the other runtimes disabled, for example for containerd runtime, docker and crio needs to be not running
+
 #### validateUpdateContextCmd
 asserts basic "update-context" command functionality
 

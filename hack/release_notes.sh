@@ -71,4 +71,4 @@ if [[ "$recent" != *"beta"* ]]; then
 fi
 
 echo ""
-echo "Don't forget to run \"make update-leaderboard\"!"
+echo "Don't forget to run `make update-leaderboard` & `make time-to-k8s-benchmark`!"
