@@ -130,6 +130,7 @@ minikube addons enable dashboard
 ```
       --force               If true, will perform potentially dangerous operations. Use with discretion.
       --images string       Images used by this addon. Separated by commas.
+      --refresh             If true, pods might get deleted and restarted on addon enable
       --registries string   Registries used by this addon. Separated by commas.
 ```
 
