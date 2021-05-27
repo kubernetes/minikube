@@ -98,6 +98,10 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", PreloadBucket, TarballName(k8sVersion, containerRuntime))
 }
 
+func driverAllowsPreload(driverName string) bool {
+	return !driver.BareMetal(driverName) && !driver.IsSSH(driverName)
+}
+
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool {
 	// TODO (#8166): Get rid of the need for this and viper at all
@@ -110,7 +114,7 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 	klog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
 	// If `driverName` is BareMetal, there is no preload. Note: some uses of
 	// `PreloadExists` assume that the driver is irrelevant unless BareMetal.
-	if driver.BareMetal(driverName) || !viper.GetBool("preload") && !force {
+	if !driverAllowsPreload(driverName) || !viper.GetBool("preload") && !force {
 		return false
 	}
 
