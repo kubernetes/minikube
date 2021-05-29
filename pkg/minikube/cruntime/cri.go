@@ -40,8 +40,20 @@ type container struct {
 func crictlList(cr CommandRunner, root string, o ListContainersOptions) (*command.RunResult, error) {
 	klog.Infof("listing CRI containers in root %s: %+v", root, o)
 
+	var filter string
+	switch o.State {
+	case All:
+		filter = "-a"
+	case Running, Paused:
+		// crictl does not understand paused containers
+		// we have to list all the running ones and later filter out paused ones by runc
+		filter = fmt.Sprintf("--state=%s", Running)
+	default:
+		filter = fmt.Sprintf("--state=%s", o.State)
+	}
+
 	// Use -a because otherwise paused containers are missed
-	baseCmd := []string{"crictl", "ps", "-a", "--quiet"}
+	baseCmd := []string{"crictl", "ps", filter, "--quiet"}
 
 	if o.Name != "" {
 		baseCmd = append(baseCmd, fmt.Sprintf("--name=%s", o.Name))
@@ -83,11 +95,12 @@ func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	if o.State == All {
+	// crictl does not understand paused pods,
+	// if we are looking for Running or Paused containers, we need to further filter by runc status
+	if o.State != Running && o.State != Paused {
 		return ids, nil
 	}
 
-	// crictl does not understand paused pods
 	cs := []container{}
 	args := []string{"runc"}
 	if root != "" {
@@ -267,7 +280,7 @@ func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
 	return jsonMap, nil
 }
 
-// criContainerLogCmd returns the command to retrieve the log for a container based on ID
+// criContainerLogCmd returns the command to retrieve the log for a runcContainer based on ID
 func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) string {
 	crictl := getCrictlPath(cr)
 	var cmd strings.Builder

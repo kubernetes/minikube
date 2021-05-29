@@ -340,6 +340,8 @@ func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 		args = append(args, "--filter", "status=running")
 	case Paused:
 		args = append(args, "--filter", "status=paused")
+	case Created:
+		args = append(args, "--filter", "status=created")
 	}
 
 	nameFilter := KubernetesContainerPrefix + o.Name

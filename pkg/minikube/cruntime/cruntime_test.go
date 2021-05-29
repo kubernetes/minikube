@@ -263,6 +263,11 @@ func (f *FakeRunner) dockerPs(args []string) (string, error) {
 		f.t.Logf("fake docker: Found containers: %v", ids)
 		return strings.Join(ids, "\n"), nil
 	}
+	// ps --filter status=created --filter=name=k8s_ --format={{.ID}}
+	if args[1] == "--filter" && args[2] == "status=created" {
+		ids := []string{"xyz2"}
+		return strings.Join(ids, "\n"), nil
+	}
 	return "", nil
 }
 
@@ -407,7 +412,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 		}`, nil
 	case "ps":
 		fmt.Printf("args %d: %v\n", len(args), args)
-		if len(args) != 4 {
+		if len(args) == 3 && args[1] == "-a" && args[2] == "--quiet" {
 			f.t.Logf("crictl all")
 			ids := []string{}
 			for id := range f.containers {
@@ -428,6 +433,13 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 					ids = append(ids, id)
 				}
 			}
+			f.t.Logf("fake crictl: Found containers: %v", ids)
+			return strings.Join(ids, "\n"), nil
+		}
+
+		if args[1] == "--state=created" {
+			f.t.Logf("crictl filter for created containers")
+			ids := []string{"xyz2"}
 			f.t.Logf("fake crictl: Found containers: %v", ids)
 			return strings.Join(ids, "\n"), nil
 		}
@@ -756,6 +768,16 @@ func TestContainerFunctions(t *testing.T) {
 			}
 			if len(got) > 0 {
 				t.Errorf("ListContainers(apiserver) = %v, want 0 items", got)
+			}
+
+			// Get the list of everything else.
+			got, err = cr.ListContainers(ListContainersOptions{State: Created})
+			if err != nil {
+				t.Fatalf("ListContainers: %v", err)
+			}
+			want = []string{"xyz2"}
+			if diff := cmp.Diff(got, want, sortSlices); diff != "" {
+				t.Errorf("ListContainers(apiserver) unexpected results, diff (-got + want): %s", diff)
 			}
 
 			// Remove a image
