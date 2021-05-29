@@ -258,11 +258,38 @@ func OutputOffline(lines int, logOutput *os.File) {
 	out.Styled(style.Empty, "")
 }
 
+// listLoggableContainers lists all containers of a pod except the ones with CREATED status that has no logs
+func listLoggableContainers(r cruntime.Manager, pod string) ([]string, error) {
+	ids, err := r.ListContainers(cruntime.ListContainersOptions{Name: pod})
+	if err != nil {
+		return nil, err
+	}
+
+	createdIDs, err := r.ListContainers(cruntime.ListContainersOptions{Name: pod, State: cruntime.Created})
+	if err != nil {
+		return nil, err
+	}
+	createdIDMap := make(map[string]bool)
+	for _, id := range createdIDs {
+		createdIDMap[id] = true
+	}
+
+	loggableIDs := make([]string, 0)
+	for _, id := range ids {
+		ok := createdIDMap[id]
+		if ok {
+			continue
+		}
+		loggableIDs = append(loggableIDs, id)
+	}
+	return loggableIDs, nil
+}
+
 // logCommands returns a list of commands that would be run to receive the anticipated logs
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
 	for _, pod := range importantPods {
-		ids, err := r.ListContainers(cruntime.ListContainersOptions{Name: pod})
+		ids, err := listLoggableContainers(r, pod)
 		if err != nil {
 			klog.Errorf("Failed to list containers for %q: %v", pod, err)
 			continue

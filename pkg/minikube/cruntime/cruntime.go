@@ -41,10 +41,12 @@ const (
 	Running
 	// Paused is only paused
 	Paused
+	// Created is the containers just created
+	Created
 )
 
 func (cs ContainerState) String() string {
-	return [...]string{"all", "running", "paused"}[cs]
+	return [...]string{"all", "running", "paused", "created"}[cs]
 }
 
 // ValidRuntimes lists the supported container runtimes
