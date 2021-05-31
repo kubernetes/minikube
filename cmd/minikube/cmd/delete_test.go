@@ -117,6 +117,7 @@ func TestDeleteProfile(t *testing.T) {
 				t.Logf("load failure: %v", err)
 			}
 
+			DeleteHostAndDirectoriesGetter = DeleteHostAndDirectoriesMock
 			errs := DeleteProfiles([]*config.Profile{profile})
 			if len(errs) > 0 {
 				HandleDeletionErrors(errs)
