@@ -49,12 +49,15 @@ async function loadTestData() {
   }
 
   const testData = [];
+  let lineData = ["", "", "", "", "", ""];
   for await (const line of lines) {
-    const splitLine = line.split(",");
+    let splitLine = line.split(",");
     if (splitLine.length != 6) {
       console.warn(`Found line with wrong number of fields. Actual: ${splitLine.length} Expected: 6. Line: "${line}"`);
       continue;
     }
+    splitLine = splitLine.map((value, index) => value === "" ? lineData[index] : value);
+    lineData = splitLine;
     if (!isValidEnumValue(testStatus, splitLine[4])) {
       console.warn(`Invalid test status provided. Actual: ${splitLine[4]} Expected: One of ${Object.values(testStatus).join(", ")}`);
       continue;
