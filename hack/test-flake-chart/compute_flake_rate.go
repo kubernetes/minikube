@@ -42,14 +42,11 @@ func main() {
 
 	testEntries := ReadData(file)
 	splitEntries := SplitData(testEntries)
-	for environment, environmentSplit := range splitEntries {
+	flakeRates := ComputeFlakeRates(splitEntries)
+	for environment, environmentSplit := range flakeRates {
 		fmt.Printf("%s {\n", environment)
-		for test, testSplit := range environmentSplit {
-			fmt.Printf("  %s {\n", test)
-			for _, entry := range testSplit {
-				fmt.Printf("    Date: %v, Status: %s\n", entry.date, entry.status)
-			}
-			fmt.Printf("  }\n")
+		for test, flakeRate := range environmentSplit {
+			fmt.Printf("  %s: %f\n", test, flakeRate)
 		}
 		fmt.Printf("}\n")
 	}
@@ -140,6 +137,35 @@ func AppendEntry(splitEntries map[string]map[string][]TestEntry, environment, te
 		// The slice is not inserted, since it will be replaced anyway.
 	}
 	environmentSplit[test] = append(testSplit, entry)
+}
+
+// Computes the flake rates over each entry in `splitEntries`.
+func ComputeFlakeRates(splitEntries map[string]map[string][]TestEntry) map[string]map[string]float32 {
+	flakeRates := make(map[string]map[string]float32)
+	for environment, environmentSplit := range splitEntries {
+		for test, testSplit := range environmentSplit {
+			failures := 0
+			for _, entry := range testSplit {
+				if entry.status == "Failed" {
+					failures++
+				}
+			}
+			SetValue(flakeRates, environment, test, float32(failures)/float32(len(testSplit)))
+		}
+	}
+	return flakeRates
+}
+
+// Sets the `value` of keys `environment` and `test` in `flakeRates`.
+func SetValue(flakeRates map[string]map[string]float32, environment, test string, value float32) {
+	// Lookup the environment.
+	environmentRates, ok := flakeRates[environment]
+	if !ok {
+		// If the environment map is missing, make a map for this environment and store it.
+		environmentRates = make(map[string]float32)
+		flakeRates[environment] = environmentRates
+	}
+	environmentRates[test] = value
 }
 
 // exit will exit and clean up minikube
