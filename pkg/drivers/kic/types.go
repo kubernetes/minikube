@@ -43,8 +43,8 @@ var (
 		// same image is push to https://github.com/kicbase/stable
 		fmt.Sprintf("%s:%s@sha256:%s", dockerhubRepo, Version, baseImageSHA),
 		// try without sha because #11068
-		fmt.Sprintf("%s:%s", dockerhubRepo, Version),
 		fmt.Sprintf("%s:%s", gcrRepo, Version),
+		fmt.Sprintf("%s:%s", dockerhubRepo, Version),
 	}
 )
 
