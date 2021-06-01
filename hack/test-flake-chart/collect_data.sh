@@ -6,7 +6,7 @@ PARTIAL_DATA_PATH=$(mktemp)
 echo "Partial path: $PARTIAL_DATA_PATH" 1>&2
 
 # Print header.
-printf "Commit Hash,Commit Date,Environment,Test,Status\n"
+printf "Commit Hash,Commit Date,Environment,Test,Status,Duration\n"
 
 # 1) "cat" together all summary files.
 # 2) Turn each test in each summary file to a CSV line containing its commit hash, environment, test, and status.
@@ -17,7 +17,10 @@ printf "Commit Hash,Commit Date,Environment,Test,Status\n"
 # 6) Execute git log for each commit to get the date of each.
 # 7) Join dates with test data.
 gsutil cat gs://minikube-builds/logs/master/*/*_summary.json \
-| jq -r '({commit: .Detail.Details, environment: .Detail.Name, test: .PassedTests[]?, status: "Passed"},{commit: .Detail.Details, environment: .Detail.Name, test: .FailedTests[]?, status: "Failed"},{commit: .Detail.Details, environment: .Detail.Name, test: .SkippedTests[]?, status: "Skipped"}) | .commit + "," + .environment + "," + .test + "," + .status' \
+| jq -r '((.PassedTests[]? as $name | {commit: .Detail.Details, environment: .Detail.Name, test: $name, duration: .Durations[$name], status: "Passed"}),
+          (.FailedTests[]? as $name | {commit: .Detail.Details, environment: .Detail.Name, test: $name, duration: .Durations[$name], status: "Failed"}),
+          (.SkippedTests[]? as $name | {commit: .Detail.Details, environment: .Detail.Name, test: $name, duration: 0, status: "Skipped"}))
+          | .commit + "," + .environment + "," + .test + "," + .status + "," + (.duration | tostring)' \
 | tee $PARTIAL_DATA_PATH \
 | sed -r -n 's/^([^,]+),.*/\1/p' \
 | stdbuf -oL -eL uniq \
