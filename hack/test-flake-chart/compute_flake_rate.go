@@ -41,8 +41,17 @@ func main() {
 	}
 
 	testEntries := ReadData(file)
-	for _, entry := range testEntries {
-		fmt.Printf("Name: \"%s\", Environment: \"%s\", Date: \"%v\", Status: \"%s\"\n", entry.name, entry.environment, entry.date, entry.status)
+	splitEntries := SplitData(testEntries)
+	for environment, environmentSplit := range splitEntries {
+		fmt.Printf("%s {\n", environment)
+		for test, testSplit := range environmentSplit {
+			fmt.Printf("  %s {\n", test)
+			for _, entry := range testSplit {
+				fmt.Printf("    Date: %v, Status: %s\n", entry.date, entry.status)
+			}
+			fmt.Printf("  }\n")
+		}
+		fmt.Printf("}\n")
 	}
 }
 
@@ -100,6 +109,37 @@ func ReadData(file *os.File) []TestEntry {
 		}
 	}
 	return testEntries
+}
+
+// Splits `testEntries` up into maps indexed first by environment and then by test.
+func SplitData(testEntries []TestEntry) map[string]map[string][]TestEntry {
+	splitEntries := make(map[string]map[string][]TestEntry)
+
+	for _, entry := range testEntries {
+		AppendEntry(splitEntries, entry.environment, entry.name, entry)
+	}
+
+	return splitEntries
+}
+
+// Appends `entry` to `splitEntries` at the `environment` and `test`.
+func AppendEntry(splitEntries map[string]map[string][]TestEntry, environment, test string, entry TestEntry) {
+	// Lookup the environment.
+	environmentSplit, ok := splitEntries[environment]
+	if !ok {
+		// If the environment map is missing, make a map for this environment and store it.
+		environmentSplit = make(map[string][]TestEntry)
+		splitEntries[environment] = environmentSplit
+	}
+
+	// Lookup the test.
+	testSplit, ok := environmentSplit[test]
+	if !ok {
+		// If the test is missing, make a slice for this test.
+		testSplit = make([]TestEntry, 0)
+		// The slice is not inserted, since it will be replaced anyway.
+	}
+	environmentSplit[test] = append(testSplit, entry)
 }
 
 // exit will exit and clean up minikube
