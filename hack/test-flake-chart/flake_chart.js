@@ -121,7 +121,9 @@ async function init() {
   const data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
   data.addColumn('number', 'Flake Percentage');
-  data.addColumn({ type: 'string', label: 'Commit Hash', role: 'tooltip', 'p': { 'html': true } });
+  data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+  data.addColumn('number', 'Duration');
+  data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
 
   const query = parseUrlQuery(window.location.search);
   const desiredTest = query.test || "", desiredEnvironment = query.env || "";
@@ -139,7 +141,12 @@ async function init() {
       .map(tests => ({
         date: tests[0].date, // Get one of the dates from the tests (which will all be the same).
         flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
-        commitHashes: tests.map(test => ({ hash: test.commit, status: test.status })) // Take all hashes and status' of tests in this group.
+        duration: tests.map(test => test.duration).average(), // Compute average duration of runs.
+        commitHashes: tests.map(test => ({ // Take all hashes, statuses, and durations of tests in this group.
+          hash: test.commit,
+          status: test.status,
+          duration: test.duration
+        }))
       }))
       .map(groupData => [
         groupData.date,
@@ -149,17 +156,31 @@ async function init() {
           <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
           <b>Hashes:</b><br>
           ${groupData.commitHashes.map(({ hash, status }) => `  - ${hash} (${status})`).join("<br>")}
-        </div>`
+        </div>`,
+        groupData.duration,
+        `<div class="py-2 ps-2">
+          <b>${groupData.date.toString()}</b><br>
+          <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
+          <b>Hashes:</b><br>
+          ${groupData.commitHashes.map(({ hash, duration }) => `  - ${hash} (${duration}s)`).join("<br>")}
+        </div>`,
       ])
   );
 
   const options = {
-    title: `Flake Rate by day of ${desiredTest} on ${desiredEnvironment}`,
-    width: 900,
-    height: 500,
+    title: `Flake rate and duration by day of ${desiredTest} on ${desiredEnvironment}`,
+    width: window.innerWidth,
+    height: window.innerHeight,
     pointSize: 10,
     pointShape: "circle",
-    vAxis: { minValue: 0, maxValue: 1 },
+    series: {
+      0: { targetAxisIndex: 0 },
+      1: { targetAxisIndex: 1 },
+    },
+    vAxes: {
+      0: { title: "Flake rate", minValue: 0, maxValue: 100 },
+      1: { title: "Duration (seconds)" },
+    },
     tooltip: { trigger: "selection", isHtml: true }
   };
   const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
