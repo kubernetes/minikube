@@ -92,6 +92,17 @@ Array.prototype.groupBy = function (keyGetter) {
   }, new Map()).values());
 };
 
+// Parse URL search `query` into [{key, value}].
+function parseUrlQuery(query) {
+  if (query[0] === '?') {
+    query = query.substring(1);
+  }
+  return Object.fromEntries((query === "" ? [] : query.split("&")).map(element => {
+    const keyValue = element.split("=");
+    return [unescape(keyValue[0]), unescape(keyValue[1])];
+  }));
+}
+
 async function init() {
   google.charts.load('current', { 'packages': ['corechart'] });
   let testData;
@@ -112,7 +123,8 @@ async function init() {
   data.addColumn('number', 'Flake Percentage');
   data.addColumn({ type: 'string', label: 'Commit Hash', role: 'tooltip', 'p': { 'html': true } });
 
-  const desiredTest = "TestFunctional/parallel/LogsCmd", desiredEnvironment = "Docker_Linux_containerd";
+  const query = parseUrlQuery(window.location.search);
+  const desiredTest = query.test || "", desiredEnvironment = query.env || "";
 
   const groups = testData
     // Filter to only contain unskipped runs of the requested test and requested environment.
