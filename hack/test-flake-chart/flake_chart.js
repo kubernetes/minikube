@@ -44,15 +44,15 @@ async function loadTestData() {
   const lines = bodyByLinesIterator(response);
   // Consume the header to ensure the data has the right number of fields.
   const header = (await lines.next()).value;
-  if (header.split(",").length != 5) {
-    throw `Fetched CSV data contains wrong number of fields. Expected: 5. Actual Header: "${header}"`;
+  if (header.split(",").length != 6) {
+    throw `Fetched CSV data contains wrong number of fields. Expected: 6. Actual Header: "${header}"`;
   }
 
   const testData = [];
   for await (const line of lines) {
     const splitLine = line.split(",");
-    if (splitLine.length != 5) {
-      console.warn(`Found line with wrong number of fields. Actual: ${splitLine.length} Expected: 5. Line: "${line}"`);
+    if (splitLine.length != 6) {
+      console.warn(`Found line with wrong number of fields. Actual: ${splitLine.length} Expected: 6. Line: "${line}"`);
       continue;
     }
     if (!isValidEnumValue(testStatus, splitLine[4])) {
@@ -64,7 +64,8 @@ async function loadTestData() {
       date: new Date(splitLine[1]),
       environment: splitLine[2],
       name: splitLine[3],
-      status: splitLine[4]
+      status: splitLine[4],
+      duration: Number(splitLine[5]),
     });
   }
   if (testData.length == 0) {
