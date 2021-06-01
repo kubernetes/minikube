@@ -215,6 +215,7 @@
 	"Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'": "",
 	"Exiting": "Wird beendet",
 	"Exiting due to {{.fatal_code}}: {{.fatal_msg}}": "",
+	"Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.": "",
 	"External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)": "",
 	"Fail check if container paused": "",
 	"Failed runtime": "",

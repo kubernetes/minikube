@@ -20,7 +20,8 @@ minikube dashboard [flags]
 ### Options
 
 ```
-      --url   Display dashboard URL instead of opening a browser
+      --port int   Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.
+      --url        Display dashboard URL instead of opening a browser
 ```
 
 ### Options inherited from parent commands
