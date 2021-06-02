@@ -18,6 +18,7 @@ package extract
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -83,4 +84,13 @@ func TestExtract(t *testing.T) {
 		t.Fatalf("Translation JSON not equal: expected %v, got %v", expected, got)
 	}
 
+}
+
+func TestExtractShouldReturnErrorOnFunctionWithoutPackage(t *testing.T) {
+	expected := errors.New("Initializing: invalid function string missing_package. Needs package name as well")
+	funcs := []string{"missing_package"}
+	err := TranslatableStrings([]string{}, funcs, "")
+	if err == nil || err.Error() != expected.Error() {
+		t.Fatalf("expected %v, got %v", expected, err)
+	}
 }
