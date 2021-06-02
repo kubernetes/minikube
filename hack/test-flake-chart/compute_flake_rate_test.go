@@ -94,9 +94,81 @@ func TestReadData(t *testing.T) {
 	compareEntrySlices(t, actualData, expectedData, "")
 }
 
-	if len(actualData) < len(expectedData) {
-		for i := len(actualData); i < len(expectedData); i++ {
-			t.Errorf("Missing unmatched expected element at index %d. Expected: %v", i, expectedData[i])
+func compareSplitData(t *testing.T, actual, expected map[string]map[string][]TestEntry) {
+	for environment, actualTests := range actual {
+		expectedTests, environmentOk := expected[environment]
+		if !environmentOk {
+			t.Errorf("Unexpected environment %s in actual", environment)
+			continue
+		}
+
+		for test, actualEntries := range actualTests {
+			expectedEntries, testOk := expectedTests[test]
+			if !testOk {
+				t.Errorf("Unexpected test %s (in environment %s) in actual", test, environment)
+				continue
+			}
+
+			compareEntrySlices(t, actualEntries, expectedEntries, fmt.Sprintf("environment %s, test %s", environment, test))
+		}
+
+		for test := range expectedTests {
+			_, testOk := actualTests[test]
+			if !testOk {
+				t.Errorf("Missing expected test %s (in environment %s) in actual", test, environment)
+			}
 		}
 	}
+
+	for environment := range expected {
+		_, environmentOk := actual[environment]
+		if !environmentOk {
+			t.Errorf("Missing expected environment %s in actual", environment)
+		}
+	}
+}
+
+func TestSplitData(t *testing.T) {
+	entry_e1_t1_1, entry_e1_t1_2 := TestEntry{
+		name:        "test1",
+		environment: "env1",
+		date:        simpleDate(2000, time.January, 1),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test1",
+		environment: "env1",
+		date:        simpleDate(2000, time.January, 2),
+		status:      "Passed",
+	}
+	entry_e1_t2 := TestEntry{
+		name:        "test2",
+		environment: "env1",
+		date:        simpleDate(2000, time.January, 1),
+		status:      "Passed",
+	}
+	entry_e2_t1 := TestEntry{
+		name:        "test1",
+		environment: "env2",
+		date:        simpleDate(2000, time.January, 1),
+		status:      "Passed",
+	}
+	entry_e2_t2 := TestEntry{
+		name:        "test2",
+		environment: "env2",
+		date:        simpleDate(2000, time.January, 1),
+		status:      "Passed",
+	}
+	actual := SplitData([]TestEntry{entry_e1_t1_1, entry_e1_t1_2, entry_e1_t2, entry_e2_t1, entry_e2_t2})
+	expected := map[string]map[string][]TestEntry{
+		"env1": {
+			"test1": {entry_e1_t1_1, entry_e1_t1_2},
+			"test2": {entry_e1_t2},
+		},
+		"env2": {
+			"test1": {entry_e2_t1},
+			"test2": {entry_e2_t2},
+		},
+	}
+
+	compareSplitData(t, actual, expected)
 }
