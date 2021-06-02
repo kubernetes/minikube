@@ -71,8 +71,6 @@ Thank you to our triage members for this release!
 - dinever (13 comments)
 - ilya-zuyev (11 comments)
 
-Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.20.0/) for this release!
-
 
 ## Version 1.20.0 - 2021-05-06
 
