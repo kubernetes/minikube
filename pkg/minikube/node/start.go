@@ -134,10 +134,15 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
 			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 		}
-		// inject {"host.minikube.internal": hostIP} record into CoreDNS
-		if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
-			klog.Errorf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
-		}
+
+		// not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds
+		go func() {
+			// inject {"host.minikube.internal": hostIP} record into CoreDNS
+			if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
+				klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
+				out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
+			}
+		}()
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
