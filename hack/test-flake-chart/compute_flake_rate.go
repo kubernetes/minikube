@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"sort"
 	"strings"
 	"time"
 )
@@ -42,7 +43,8 @@ func main() {
 
 	testEntries := ReadData(file)
 	splitEntries := SplitData(testEntries)
-	flakeRates := ComputeFlakeRates(splitEntries)
+	filteredEntries := FilterRecentEntries(splitEntries, *dateRange)
+	flakeRates := ComputeFlakeRates(filteredEntries)
 	for environment, environmentSplit := range flakeRates {
 		fmt.Printf("%s {\n", environment)
 		for test, flakeRate := range environmentSplit {
@@ -137,6 +139,54 @@ func AppendEntry(splitEntries map[string]map[string][]TestEntry, environment, te
 		// The slice is not inserted, since it will be replaced anyway.
 	}
 	environmentSplit[test] = append(testSplit, entry)
+}
+
+// Filters `splitEntries` to include only the most recent `date_range` dates.
+func FilterRecentEntries(splitEntries map[string]map[string][]TestEntry, dateRange uint) map[string]map[string][]TestEntry {
+	filteredEntries := make(map[string]map[string][]TestEntry)
+
+	for environment, environmentSplit := range splitEntries {
+		for test, testSplit := range environmentSplit {
+			dates := make([]time.Time, len(testSplit))
+			for _, entry := range testSplit {
+				dates = append(dates, entry.date)
+			}
+			// Sort dates from future to past.
+			sort.Slice(dates, func(i, j int) bool {
+				return dates[j].Before(dates[i])
+			})
+			datesInRange := make([]time.Time, 0, dateRange)
+			var lastDate time.Time = time.Date(0, 0, 0, 0, 0, 0, 0, time.Local)
+			// Go through each date.
+			for _, date := range dates {
+				// If date is the same as last date, ignore it.
+				if date.Equal(lastDate) {
+					continue
+				}
+
+				// Add the date.
+				datesInRange = append(datesInRange, date)
+				lastDate = date
+				// If the date_range has been hit, break out.
+				if uint(len(datesInRange)) == dateRange {
+					break
+				}
+			}
+
+			for _, entry := range testSplit {
+				// Look for the first element <= entry.date
+				index := sort.Search(len(datesInRange), func(i int) bool {
+					return datesInRange[i].Before(entry.date) || datesInRange[i].Equal(entry.date)
+				})
+				// If no date is <= entry.date, or the found date does not equal entry.date.
+				if index == len(datesInRange) || !datesInRange[index].Equal(entry.date) {
+					continue
+				}
+				AppendEntry(filteredEntries, environment, test, entry)
+			}
+		}
+	}
+	return filteredEntries
 }
 
 // Computes the flake rates over each entry in `splitEntries`.
