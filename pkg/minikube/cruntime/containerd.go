@@ -79,9 +79,17 @@ oom_score = 0
     enable_selinux = false
     sandbox_image = "{{ .PodInfraContainerImage }}"
     stats_collect_period = 10
-    systemd_cgroup = {{ .SystemdCgroup }}
     enable_tls_streaming = false
     max_container_log_line_size = 16384
+
+	[plugins."io.containerd.grpc.v1.cri"]
+		[plugins."io.containerd.grpc.v1.cri".containerd]
+		  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+			[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+			  runtime_type = "io.containerd.runc.v2"
+			  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+				SystemdCgroup = {{ .SystemdCgroup }}
+
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
       [plugins.cri.containerd.default_runtime]
