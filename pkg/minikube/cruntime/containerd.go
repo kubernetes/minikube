@@ -83,12 +83,12 @@ oom_score = 0
     max_container_log_line_size = 16384
 
 	[plugins."io.containerd.grpc.v1.cri"]
-		[plugins."io.containerd.grpc.v1.cri".containerd]
-		  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-			[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-			  runtime_type = "io.containerd.runc.v2"
-			  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-				SystemdCgroup = {{ .SystemdCgroup }}
+      [plugins."io.containerd.grpc.v1.cri".containerd]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+            runtime_type = "io.containerd.runc.v2"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+              SystemdCgroup = {{ .SystemdCgroup }}
 
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
