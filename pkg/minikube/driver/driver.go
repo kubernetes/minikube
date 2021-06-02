@@ -172,6 +172,10 @@ func IsSSH(name string) bool {
 	return name == SSH
 }
 
+func AllowsPreload(driverName string) bool {
+	return !BareMetal(driverName) && !IsSSH(driverName)
+}
+
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
 	if !IsKIC(name) {

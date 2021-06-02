@@ -28,7 +28,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/tools/apidiff/ioext"
 	"github.com/blang/semver"
 
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
@@ -98,7 +98,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = driver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
+		err = auxdriver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
@@ -171,7 +171,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 			t.Skipf("password required to execute 'sudo', skipping remaining test")
 		}
 
-		err = driver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
+		err = auxdriver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
