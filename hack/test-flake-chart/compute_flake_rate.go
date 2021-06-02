@@ -62,7 +62,7 @@ type TestEntry struct {
 }
 
 // Reads CSV `file` and consumes each line to be a single TestEntry.
-func ReadData(file *os.File) []TestEntry {
+func ReadData(file io.Reader) []TestEntry {
 	testEntries := []TestEntry{}
 
 	fileReader := bufio.NewReaderSize(file, 256)
