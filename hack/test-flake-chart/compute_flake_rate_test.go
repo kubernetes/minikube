@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -24,6 +25,28 @@ import (
 
 func simpleDate(year int, month time.Month, day int) time.Time {
 	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+}
+
+func compareEntrySlices(t *testing.T, actualData, expectedData []TestEntry, extra string) {
+	if extra != "" {
+		extra = fmt.Sprintf(" (%s)", extra)
+	}
+	for i, actual := range actualData {
+		if len(expectedData) <= i {
+			t.Errorf("Received unmatched actual element at index %d%s. Actual: %v", i, extra, actual)
+			continue
+		}
+		expected := expectedData[i]
+		if actual != expected {
+			t.Errorf("Elements differ at index %d%s. Expected: %v, Actual: %v", i, extra, expected, actual)
+		}
+	}
+
+	if len(actualData) < len(expectedData) {
+		for i := len(actualData); i < len(expectedData); i++ {
+			t.Errorf("Missing unmatched expected element at index %d%s. Expected: %v", i, extra, expectedData[i])
+		}
+	}
 }
 
 func TestReadData(t *testing.T) {
@@ -68,16 +91,8 @@ func TestReadData(t *testing.T) {
 		},
 	}
 
-	for i, actual := range actualData {
-		if len(expectedData) <= i {
-			t.Errorf("Received unmatched actual element at index %d. Actual: %v", i, actual)
-			continue
-		}
-		expected := expectedData[i]
-		if actual != expected {
-			t.Errorf("Elements differ at index %d. Expected: %v, Actual: %v", i, expected, actual)
-		}
-	}
+	compareEntrySlices(t, actualData, expectedData, "")
+}
 
 	if len(actualData) < len(expectedData) {
 		for i := len(actualData); i < len(expectedData); i++ {
