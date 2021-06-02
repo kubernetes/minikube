@@ -84,11 +84,8 @@ oom_score = 0
     max_container_log_line_size = 16384
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
-      no_pivot = true
       [plugins.cri.containerd.default_runtime]
-        runtime_type = "io.containerd.runtime.v1.linux"
-        runtime_engine = ""
-        runtime_root = ""
+        runtime_type = "io.containerd.runc.v2"
       [plugins.cri.containerd.untrusted_workload_runtime]
         runtime_type = ""
         runtime_engine = ""
@@ -107,12 +104,6 @@ oom_score = 0
         {{ end -}}
   [plugins.diff-service]
     default = ["walking"]
-  [plugins.linux]
-    shim = "containerd-shim"
-    runtime = "runc"
-    runtime_root = ""
-    no_shim = false
-    shim_debug = false
   [plugins.scheduler]
     pause_threshold = 0.02
     deletion_threshold = 0
