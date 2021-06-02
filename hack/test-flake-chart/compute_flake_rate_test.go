@@ -279,3 +279,115 @@ func TestFilterRecentEntries(t *testing.T) {
 
 	compareSplitData(t, actualData, expectedData)
 }
+
+func TestComputeFlakeRates(t *testing.T) {
+	actualData := ComputeFlakeRates(map[string]map[string][]TestEntry{
+		"env1": {
+			"test1": {
+				{
+					name:        "test1",
+					environment: "env1",
+					date:        simpleDate(2000, time.January, 4),
+					status:      "Passed",
+				}, {
+					name:        "test1",
+					environment: "env1",
+					date:        simpleDate(2000, time.January, 3),
+					status:      "Passed",
+				}, {
+					name:        "test1",
+					environment: "env1",
+					date:        simpleDate(2000, time.January, 3),
+					status:      "Passed",
+				}, {
+					name:        "test1",
+					environment: "env1",
+					date:        simpleDate(2000, time.January, 2),
+					status:      "Passed",
+				}, {
+					name:        "test1",
+					environment: "env1",
+					date:        simpleDate(2000, time.January, 1),
+					status:      "Failed",
+				},
+			},
+			"test2": {
+				{
+					name:        "test2",
+					environment: "env1",
+					date:        simpleDate(2001, time.January, 3),
+					status:      "Failed",
+				}, {
+					name:        "test2",
+					environment: "env1",
+					date:        simpleDate(2001, time.January, 2),
+					status:      "Failed",
+				}, {
+					name:        "test2",
+					environment: "env1",
+					date:        simpleDate(2001, time.January, 1),
+					status:      "Failed",
+				},
+			},
+		},
+		"env2": {
+			"test2": {
+				{
+					name:        "test2",
+					environment: "env2",
+					date:        simpleDate(2003, time.January, 3),
+					status:      "Passed",
+				}, TestEntry{
+					name:        "test2",
+					environment: "env2",
+					date:        simpleDate(2003, time.January, 2),
+					status:      "Failed",
+				},
+			},
+		},
+	})
+
+	expectedData := map[string]map[string]float32{
+		"env1": {
+			"test1": 0.2,
+			"test2": 1,
+		},
+		"env2": {
+			"test2": 0.5,
+		},
+	}
+
+	for environment, actualTests := range actualData {
+		expectedTests, environmentOk := expectedData[environment]
+		if !environmentOk {
+			t.Errorf("Unexpected environment %s in actual", environment)
+			continue
+		}
+
+		for test, actualFlakeRate := range actualTests {
+			expectedFlakeRate, testOk := expectedTests[test]
+			if !testOk {
+				t.Errorf("Unexpected test %s (in environment %s) in actual", test, environment)
+				continue
+			}
+
+			if actualFlakeRate != expectedFlakeRate {
+				t.Errorf("Wrong flake rate. Expected: %v, Actual: %v", expectedFlakeRate, actualFlakeRate)
+			}
+		}
+
+		for test := range expectedTests {
+			_, testOk := actualTests[test]
+			if !testOk {
+				t.Errorf("Missing expected test %s (in environment %s) in actual", test, environment)
+			}
+		}
+	}
+
+	for environment := range expectedData {
+		_, environmentOk := actualData[environment]
+		if !environmentOk {
+			t.Errorf("Missing expected environment %s in actual", environment)
+		}
+	}
+}
