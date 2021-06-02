@@ -115,14 +115,14 @@ func SplitData(testEntries []TestEntry) map[string]map[string][]TestEntry {
 	splitEntries := make(map[string]map[string][]TestEntry)
 
 	for _, entry := range testEntries {
-		AppendEntry(splitEntries, entry.environment, entry.name, entry)
+		appendEntry(splitEntries, entry.environment, entry.name, entry)
 	}
 
 	return splitEntries
 }
 
 // Appends `entry` to `splitEntries` at the `environment` and `test`.
-func AppendEntry(splitEntries map[string]map[string][]TestEntry, environment, test string, entry TestEntry) {
+func appendEntry(splitEntries map[string]map[string][]TestEntry, environment, test string, entry TestEntry) {
 	// Lookup the environment.
 	environmentSplit, ok := splitEntries[environment]
 	if !ok {
@@ -182,7 +182,7 @@ func FilterRecentEntries(splitEntries map[string]map[string][]TestEntry, dateRan
 				if index == len(datesInRange) || !datesInRange[index].Equal(entry.date) {
 					continue
 				}
-				AppendEntry(filteredEntries, environment, test, entry)
+				appendEntry(filteredEntries, environment, test, entry)
 			}
 		}
 	}
@@ -200,14 +200,14 @@ func ComputeFlakeRates(splitEntries map[string]map[string][]TestEntry) map[strin
 					failures++
 				}
 			}
-			SetValue(flakeRates, environment, test, float32(failures)/float32(len(testSplit)))
+			setValue(flakeRates, environment, test, float32(failures)/float32(len(testSplit)))
 		}
 	}
 	return flakeRates
 }
 
 // Sets the `value` of keys `environment` and `test` in `flakeRates`.
-func SetValue(flakeRates map[string]map[string]float32, environment, test string, value float32) {
+func setValue(flakeRates map[string]map[string]float32, environment, test string, value float32) {
 	// Lookup the environment.
 	environmentRates, ok := flakeRates[environment]
 	if !ok {

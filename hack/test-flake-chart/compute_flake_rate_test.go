@@ -172,3 +172,110 @@ func TestSplitData(t *testing.T) {
 
 	compareSplitData(t, actual, expected)
 }
+
+func TestFilterRecentEntries(t *testing.T) {
+	entry_e1_t1_r1, entry_e1_t1_r2, entry_e1_t1_r3, entry_e1_t1_o1, entry_e1_t1_o2 := TestEntry{
+		name:        "test1",
+		environment: "env1",
+		date:        simpleDate(2000, time.January, 4),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test1",
+		environment: "env1",
+		date:        simpleDate(2000, time.January, 3),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test1",
+		environment: "env1",
+		date:        simpleDate(2000, time.January, 3),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test1",
+		environment: "env1",
+		date:        simpleDate(2000, time.January, 2),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test1",
+		environment: "env1",
+		date:        simpleDate(2000, time.January, 1),
+		status:      "Passed",
+	}
+	entry_e1_t2_r1, entry_e1_t2_r2, entry_e1_t2_o1 := TestEntry{
+		name:        "test2",
+		environment: "env1",
+		date:        simpleDate(2001, time.January, 3),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test2",
+		environment: "env1",
+		date:        simpleDate(2001, time.January, 2),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test2",
+		environment: "env1",
+		date:        simpleDate(2001, time.January, 1),
+		status:      "Passed",
+	}
+	entry_e2_t2_r1, entry_e2_t2_r2, entry_e2_t2_o1 := TestEntry{
+		name:        "test2",
+		environment: "env2",
+		date:        simpleDate(2003, time.January, 3),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test2",
+		environment: "env2",
+		date:        simpleDate(2003, time.January, 2),
+		status:      "Passed",
+	}, TestEntry{
+		name:        "test2",
+		environment: "env2",
+		date:        simpleDate(2003, time.January, 1),
+		status:      "Passed",
+	}
+
+	actualData := FilterRecentEntries(map[string]map[string][]TestEntry{
+		"env1": {
+			"test1": {
+				entry_e1_t1_r1,
+				entry_e1_t1_r2,
+				entry_e1_t1_r3,
+				entry_e1_t1_o1,
+				entry_e1_t1_o2,
+			},
+			"test2": {
+				entry_e1_t2_r1,
+				entry_e1_t2_r2,
+				entry_e1_t2_o1,
+			},
+		},
+		"env2": {
+			"test2": {
+				entry_e2_t2_r1,
+				entry_e2_t2_r2,
+				entry_e2_t2_o1,
+			},
+		},
+	}, 2)
+
+	expectedData := map[string]map[string][]TestEntry{
+		"env1": {
+			"test1": {
+				entry_e1_t1_r1,
+				entry_e1_t1_r2,
+				entry_e1_t1_r3,
+			},
+			"test2": {
+				entry_e1_t2_r1,
+				entry_e1_t2_r2,
+			},
+		},
+		"env2": {
+			"test2": {
+				entry_e2_t2_r1,
+				entry_e2_t2_r2,
+			},
+		},
+	}
+
+	compareSplitData(t, actualData, expectedData)
+}
