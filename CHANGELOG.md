@@ -4,7 +4,7 @@
 Features:
 * Support setting addons from environmental variables [#11469](https://github.com/kubernetes/minikube/pull/11469)
 * Add "resume" as an alias for "unpause" [#11431](https://github.com/kubernetes/minikube/pull/11431)
-* Implement target node option for `cp` command [#11304](https://github.com/kubernetes/minikube/pull/11304)
+* Implement target node option for cp command [#11304](https://github.com/kubernetes/minikube/pull/11304)
 
 Bugs:
 * Fix delete command for paused kic driver with containerd/crio runtime [#11504](https://github.com/kubernetes/minikube/pull/11504)
@@ -71,7 +71,7 @@ Thank you to our triage members for this release!
 - dinever (13 comments)
 - ilya-zuyev (11 comments)
 
-Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.21.0-beta.0/) for this release!
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.20.0/) for this release!
 
 
 ## Version 1.20.0 - 2021-05-06
