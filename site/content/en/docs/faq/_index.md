@@ -75,3 +75,10 @@ minikube start --cpus 6 --memory 8000
 ## Do I need to install kubectl locally?
 
 No, minikube comes with built-in kubectl [see minikube's kubectl documentation]({{< ref "docs/handbook/kubectl.md" >}}).
+
+## How to opt-in to beta notifications?
+
+Simply run the following command to be enrolled into beta notifications.
+```
+minikube config set WantBetaUpdateNotification true
+```
