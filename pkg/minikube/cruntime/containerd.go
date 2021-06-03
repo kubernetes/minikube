@@ -49,7 +49,6 @@ const (
 	containerdConfigTemplate = `root = "/var/lib/containerd"
 state = "/run/containerd"
 oom_score = 0
-
 [grpc]
   address = "/run/containerd/containerd.sock"
   uid = 0
