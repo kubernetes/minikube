@@ -45,12 +45,11 @@ func main() {
 	splitEntries := SplitData(testEntries)
 	filteredEntries := FilterRecentEntries(splitEntries, *dateRange)
 	flakeRates := ComputeFlakeRates(filteredEntries)
+	fmt.Println("Environment,Test,Flake Rate")
 	for environment, environmentSplit := range flakeRates {
-		fmt.Printf("%s {\n", environment)
 		for test, flakeRate := range environmentSplit {
-			fmt.Printf("  %s: %f\n", test, flakeRate)
+			fmt.Printf("%s,%s,%f\n", environment, test, flakeRate)
 		}
-		fmt.Printf("}\n")
 	}
 }
 
