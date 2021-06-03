@@ -87,7 +87,7 @@ func (error DeletionError) Error() string {
 	return error.Err.Error()
 }
 
-var DeleteHostAndDirectoriesGetter = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
+var hostAndDirsDeleter = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
 	if err := killMountProcess(); err != nil {
 		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
@@ -300,7 +300,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 		}
 	}
 
-	if err := DeleteHostAndDirectoriesGetter(api, cc, profile.Name); err != nil {
+	if err := hostAndDirsDeleter(api, cc, profile.Name); err != nil {
 		return err
 	}
 

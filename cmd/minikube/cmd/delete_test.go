@@ -117,7 +117,7 @@ func TestDeleteProfile(t *testing.T) {
 				t.Logf("load failure: %v", err)
 			}
 
-			DeleteHostAndDirectoriesGetter = DeleteHostAndDirectoriesMock
+			hostAndDirsDeleter = hostAndDirsDeleterMock
 			errs := DeleteProfiles([]*config.Profile{profile})
 			if len(errs) > 0 {
 				HandleDeletionErrors(errs)
@@ -158,7 +158,7 @@ func TestDeleteProfile(t *testing.T) {
 	}
 }
 
-var DeleteHostAndDirectoriesMock = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
+var hostAndDirsDeleterMock = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
 	return deleteContextTest()
 }
 
@@ -222,7 +222,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	}
 
 	profiles := append(validProfiles, inValidProfiles...)
-	DeleteHostAndDirectoriesGetter = DeleteHostAndDirectoriesMock
+	hostAndDirsDeleter = hostAndDirsDeleterMock
 	errs := DeleteProfiles(profiles)
 
 	if errs != nil {
