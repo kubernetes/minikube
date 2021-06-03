@@ -419,7 +419,7 @@ fi
 
 touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
-gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d)") || true
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
 test_num=$(echo $gopogh_status | jq '.NumberOfTests')
 pessimistic_status="${fail_num} / ${test_num} failures"
@@ -441,6 +441,9 @@ if [ -z "${EXTERNAL}" ]; then
   gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
   echo ">> uploading ${SUMMARY_OUT}"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
+  if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
+    ./test-flake-chart/jenkins_upload_tests.sh "${SUMMARY_OUT}"
+  fi
 else 
   # Otherwise, put the results in a predictable spot so the upload job can find them
   REPORTS_PATH=test_reports
