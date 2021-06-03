@@ -67,6 +67,10 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
+		if dashboardExposedPort < 0 || dashboardExposedPort > 65535 {
+			exit.Message(reason.HostKubectlProxy, "Invalid port")
+		}
+
 		kubectlVersion := co.Config.KubernetesConfig.KubernetesVersion
 		var err error
 
