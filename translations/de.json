@@ -229,6 +229,7 @@
 	"Failed to check main repository and mirrors for images": "",
 	"Failed to configure metallb IP {{.profile}}": "",
 	"Failed to create file": "",
+	"Failed to create runtime": "",
 	"Failed to delete cluster {{.name}}, proceeding with retry anyway.": "",
 	"Failed to delete cluster {{.name}}.": "",
 	"Failed to delete cluster: {{.error}}": "Fehler beim Löschen des Clusters: {{.error}}",

@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package driver
+package auxdriver
 
 import (
 	"github.com/blang/semver"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 // minHyperkitVersion is the minimum version of the minikube hyperkit driver compatible with the current minikube code
@@ -36,17 +37,17 @@ func init() {
 }
 
 // minAcceptableDriverVersion is the minimum version of driver supported by current version of minikube
-func minAcceptableDriverVersion(driver string, mkVer semver.Version) semver.Version {
-	switch driver {
-	case HyperKit:
+func minAcceptableDriverVersion(driverName string, mkVer semver.Version) semver.Version {
+	switch driverName {
+	case driver.HyperKit:
 		if minHyperkitVersion != nil {
 			return *minHyperkitVersion
 		}
 		return mkVer
-	case KVM2:
+	case driver.KVM2:
 		return mkVer
 	default:
-		klog.Warningf("Unexpected driver: %v", driver)
+		klog.Warningf("Unexpected driver: %v", driverName)
 		return mkVer
 	}
 }

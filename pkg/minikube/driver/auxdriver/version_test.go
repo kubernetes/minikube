@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package driver
+package auxdriver
 
 import (
 	"testing"
 
 	"github.com/blang/semver"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 func Test_minDriverVersion(t *testing.T) {
@@ -30,9 +31,9 @@ func Test_minDriverVersion(t *testing.T) {
 		mkV    string
 		want   semver.Version
 	}{
-		{"Hyperkit", HyperKit, "1.1.1", *minHyperkitVersion},
+		{"Hyperkit", driver.HyperKit, "1.1.1", *minHyperkitVersion},
 		{"Invalid", "_invalid_", "1.1.1", v("1.1.1")},
-		{"KVM2", KVM2, "1.1.1", v("1.1.1")},
+		{"KVM2", driver.KVM2, "1.1.1", v("1.1.1")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
