@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -98,7 +99,7 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 }
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
-func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bool {
+func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool {
 	// TODO (#8166): Get rid of the need for this and viper at all
 	force := false
 	if len(forcePreload) > 0 {
@@ -107,7 +108,9 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 
 	// TODO: debug why this func is being called two times
 	klog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
-	if !viper.GetBool("preload") && !force {
+	// If `driverName` is BareMetal, there is no preload. Note: some uses of
+	// `PreloadExists` assume that the driver is irrelevant unless BareMetal.
+	if !driver.AllowsPreload(driverName) || !viper.GetBool("preload") && !force {
 		return false
 	}
 
@@ -147,7 +150,7 @@ func PreloadExists(k8sVersion, containerRuntime string, forcePreload ...bool) bo
 var checkPreloadExists = PreloadExists
 
 // Preload caches the preloaded images tarball on the host machine
-func Preload(k8sVersion, containerRuntime string) error {
+func Preload(k8sVersion, containerRuntime, driverName string) error {
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 	targetLock := targetPath + ".lock"
 
@@ -165,7 +168,7 @@ func Preload(k8sVersion, containerRuntime string) error {
 	}
 
 	// Make sure we support this k8s version
-	if !checkPreloadExists(k8sVersion, containerRuntime) {
+	if !checkPreloadExists(k8sVersion, containerRuntime, driverName) {
 		klog.Infof("Preloaded tarball for k8s version %s does not exist", k8sVersion)
 		return nil
 	}

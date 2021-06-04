@@ -86,7 +86,8 @@ out:
 			if *limit > 0 && i >= *limit {
 				break out
 			}
-			if !download.PreloadExists(kv, cr) {
+			// Since none/mock are the only exceptions, it does not matter what driver we choose.
+			if !download.PreloadExists(kv, cr, "docker") {
 				toGenerate = append(toGenerate, preloadCfg{kv, cr})
 				i++
 				fmt.Printf("[%d] A preloaded tarball for k8s version %s - runtime %q does not exist.\n", i, kv, cr)

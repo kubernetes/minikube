@@ -462,16 +462,16 @@ func (r *Containerd) SystemLogCmd(len int) string {
 }
 
 // Preload preloads the container runtime with k8s images
-func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
-	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
+func (r *Containerd) Preload(cc config.ClusterConfig) error {
+	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
 		return nil
 	}
 
-	k8sVersion := cfg.KubernetesVersion
-	cRuntime := cfg.ContainerRuntime
+	k8sVersion := cc.KubernetesConfig.KubernetesVersion
+	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
 	// If images already exist, return
-	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
+	images, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}

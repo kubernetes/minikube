@@ -408,7 +408,7 @@ echo ">> Installing jq"
 fi
 
 echo ">> Installing gopogh"
-curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-${OS_ARCH}"
+curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.8.0/gopogh-${OS_ARCH}"
 sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
 
 

@@ -14,7 +14,7 @@
 
 mkdir -p out
 
-(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
+(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.8.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
 (New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/v1.20.0/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
 
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
