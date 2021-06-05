@@ -320,40 +320,44 @@ func TestBaseImageFlagDriverCombo(t *testing.T) {
 func TestValidateImageRepository(t *testing.T) {
 	var tests = []struct {
 		imageRepository      string
-		vaildImageRepository string
+		validImageRepository string
 	}{
 		{
 			imageRepository:      "auto",
-			vaildImageRepository: "auto",
+			validImageRepository: "auto",
 		},
 		{
 			imageRepository:      "http://registry.test.com/google_containers/",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
 		},
 		{
 			imageRepository:      "https://registry.test.com/google_containers/",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
 		},
 		{
 			imageRepository:      "registry.test.com/google_containers/",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
 		},
 		{
 			imageRepository:      "http://registry.test.com/google_containers",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
 		},
 		{
 			imageRepository:      "https://registry.test.com/google_containers",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
+		},
+		{
+			imageRepository:      "https://registry.test.com:6666/google_containers",
+			validImageRepository: "registry.test.com:6666/google_containers",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.imageRepository, func(t *testing.T) {
-			vaildImageRepository := validateImageRepository(test.imageRepository)
-			if vaildImageRepository != test.vaildImageRepository {
+			validImageRepository := validateImageRepository(test.imageRepository)
+			if validImageRepository != test.validImageRepository {
 				t.Errorf("validateImageRepository(imageRepo=%v): got %v, expected %v",
-					test.imageRepository, vaildImageRepository, test.vaildImageRepository)
+					test.imageRepository, validImageRepository, test.validImageRepository)
 			}
 		})
 	}
