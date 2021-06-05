@@ -172,7 +172,7 @@ var settings = []Setting{
 		setMap: SetMap,
 	},
 	{
-		name: "embed-certs",
+		name: config.EmbedCerts,
 		set:  SetBool,
 	},
 	{

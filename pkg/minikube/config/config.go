@@ -58,6 +58,8 @@ const (
 	AddonRegistries = "addon-registries"
 	// AddonListFlag represents the key for addons parameter
 	AddonListFlag = "addons"
+	// EmbedCerts represents the config for embedding certificates in kubeconfig
+	EmbedCerts = "EmbedCerts"
 )
 
 var (

@@ -34,7 +34,7 @@ type Profile struct {
 type ClusterConfig struct {
 	Name                    string
 	KeepContext             bool   // used by start and profile command to or not to switch kubectl's current context
-	EmbedCerts              bool   `json:"embed-certs"` // used by kubeconfig.Setup
+	EmbedCerts              bool   // used by kubeconfig.Setup
 	MinikubeISO             string // ISO used for VM-drivers.
 	KicBaseImage            string // base-image used for docker/podman drivers.
 	Memory                  int
