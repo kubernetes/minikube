@@ -1286,7 +1286,7 @@ func validateImageRepository(imageRepo string) (validImageRepo string) {
 	if strings.HasSuffix(imageRepo, "/") {
 		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
 	}
-	// tips when imageRepo started with scheme "http(s)".
+	// tips when imageRepo started with scheme such as http(s).
 	if URL.Scheme != "" {
 		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, which will be removed automatically", out.V{"scheme": URL.Scheme})
 	}
