@@ -168,17 +168,34 @@ func ImageToCache(img string) error {
 	}
 }
 
+func parseImage(img string) (*name.Tag, name.Reference, error) {
+	digest, err := name.NewDigest(img)
+	if err == nil {
+		tag := digest.Tag()
+		return &tag, digest, nil
+	}
+
+	_, ok := err.(*name.ErrBadName)
+	if !ok {
+		return nil, nil, errors.Wrap(err, "new ref")
+	}
+	tag, err := name.NewTag(img)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "new ref")
+	}
+	return &tag, tag, nil
+}
+
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
 func CacheToDaemon(img string) error {
 	p := imagePathInCache(img)
 
-	ref, err := name.NewDigest(img)
+	tag, ref, err := parseImage(img)
 	if err != nil {
-		return errors.Wrap(err, "new ref")
+		return nil
 	}
 
-	tag := ref.Tag()
-	i, err := tarball.ImageFromPath(p, &tag)
+	i, err := tarball.ImageFromPath(p, tag)
 	if err != nil {
 		return errors.Wrap(err, "tarball")
 	}
