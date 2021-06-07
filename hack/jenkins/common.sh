@@ -443,6 +443,8 @@ if [ -z "${EXTERNAL}" ]; then
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
   if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
     ./test-flake-chart/upload_tests.sh "${SUMMARY_OUT}"
+  elif [[ "${JOB_NAME}" == "Docker_Linux" ]]; then
+    ./test-flake-chart/report_flakes.sh "${MINIKUBE_LOCATION}" "${SUMMARY_OUT}" "${JOB_NAME}"
   fi
 else 
   # Otherwise, put the results in a predictable spot so the upload job can find them
