@@ -442,7 +442,7 @@ if [ -z "${EXTERNAL}" ]; then
   echo ">> uploading ${SUMMARY_OUT}"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
   if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
-    ./test-flake-chart/jenkins_upload_tests.sh "${SUMMARY_OUT}"
+    ./test-flake-chart/upload_tests.sh "${SUMMARY_OUT}"
   fi
 else 
   # Otherwise, put the results in a predictable spot so the upload job can find them
