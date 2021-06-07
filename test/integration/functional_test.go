@@ -325,21 +325,24 @@ func listImages(ctx context.Context, t *testing.T, profile string) (*RunResult, 
 
 // validateBuildImage makes sures that `minikube image build` works as expected
 func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
+	// docs(skip): Skips on non driver since load image is not available on none driver
 	if NoneDriver() {
 		t.Skip("load image not available on none driver")
 	}
+	// docs(skip): Skips on GitHub Actions and macOS as this test case requires a running docker daemon
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
 	}
 	defer PostMortemLogs(t, profile)
 
 	newImage := fmt.Sprintf("localhost/my-image:%s", profile)
+	// docs(special): For containerd runtime it starts the buildkit inside minikube first
 	if ContainerRuntime() == "containerd" {
 		startBuildkit(ctx, t, profile)
 		// unix:///run/buildkit/buildkitd.sock
 	}
 
-	// try to build the new image with minikube
+	// docs: Builds an image with `minikube image build`, using the Dockerfile located at `test/integration/testdata/build/Dockerfile`
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
 	if err != nil {
 		t.Fatalf("building image with minikube: %v\n%s", err, rr.Output())
@@ -351,7 +354,7 @@ func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("(dbg) Stderr: %s:\n%s", rr.Command(), rr.Stderr)
 	}
 
-	// make sure the image was correctly built
+	// docs: Makes sure the image was correctly built using image inspect inside the minikube container
 	rr, err = inspectImage(ctx, t, profile, newImage)
 	if err != nil {
 		ll, _ := listImages(ctx, t, profile)

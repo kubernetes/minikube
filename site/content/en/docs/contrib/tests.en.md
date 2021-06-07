@@ -84,6 +84,17 @@ makes sures that `minikube image rm` works as expected
 #### validateBuildImage
 makes sures that `minikube image build` works as expected
 
+Steps:
+- Builds an image with `minikube image build`, using the Dockerfile located at `test/integration/testdata/build/Dockerfile`
+- Makes sure the image was correctly built using image inspect inside the minikube container
+
+Special cases:
+- For containerd runtime it starts the buildkit inside minikube first
+
+Skips:
+- Skips on non driver since load image is not available on none driver
+- Skips on GitHub Actions and macOS as this test case requires a running docker daemon
+
 #### validateListImages
 makes sures that `minikube image ls` works as expected
 
