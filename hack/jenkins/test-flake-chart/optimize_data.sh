@@ -14,5 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -eu -o pipefail
+
 # Take input CSV. For each field, if it is the same as the previous row, replace it with an empty string.
 awk -F, 'BEGIN {OFS = FS} { for(i=1; i<=NF; i++) { if($i == j[i]) { $i = ""; } else { j[i] = $i; } } printf "%s\n",$0 }'

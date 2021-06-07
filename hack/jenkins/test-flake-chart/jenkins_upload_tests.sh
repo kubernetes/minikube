@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x -o pipefail
+set -eu -o pipefail
 
 if [ "$#" -ne 1 ]; then
   echo "Wrong number of arguments. Usage: jenkins_upload_tests.sh <gopogh_summary.json>" 1>&2
