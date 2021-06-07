@@ -48,7 +48,7 @@ func main() {
 	fmt.Println("Environment,Test,Flake Rate")
 	for environment, environmentSplit := range flakeRates {
 		for test, flakeRate := range environmentSplit {
-			fmt.Printf("%s,%s,%f\n", environment, test, flakeRate)
+			fmt.Printf("%s,%s,%.2f\n", environment, test, flakeRate*100)
 		}
 	}
 }
