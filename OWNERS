@@ -10,12 +10,14 @@ reviewers:
   - prasadkatti
   - ilya-zuyev
   - prezha	
+  - spowelljr
 approvers:
   - tstromberg
   - afbjorklund
   - sharifelgamal
   - medyagh
   - ilya-zuyev
+  - spowelljr
 emeritus_approvers:
   - dlorenc
   - luxas
