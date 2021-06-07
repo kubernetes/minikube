@@ -21,3 +21,6 @@ var ErrNeedsLogin error
 
 // ErrGithubNeedsLogin is thrown when user needs to login specifically to github packages)
 var ErrGithubNeedsLogin error
+
+// ErrFailedDownloadKICImages is thrown when user
+var ErrFailedDownloadKICImages error

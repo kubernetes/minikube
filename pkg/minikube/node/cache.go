@@ -173,7 +173,9 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 					return nil
 				}
 			}
-			klog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
+			infoStr := fmt.Sprintf("failed to download %s, will try fallback image if available: %v", img, err)
+			image.ErrFailedDownloadKICImages = errors.New(infoStr)
+			klog.Infof(infoStr)
 		}
 		return fmt.Errorf("failed to download kic base image or any fallback image")
 	})
@@ -193,6 +195,8 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 			}
 			if errors.Is(err, image.ErrGithubNeedsLogin) || errors.Is(err, image.ErrNeedsLogin) {
 				exit.Message(reason.Usage, `Please either authenticate to the registry or use --base-image flag to use a different registry.`)
+			} else if errors.Is(err, image.ErrFailedDownloadKICImages) {
+				exit.Message(reason.Usage, "Failed to download KIC base image or any fallback image.")
 			} else {
 				klog.Errorln("Error downloading kic artifacts: ", err)
 			}
