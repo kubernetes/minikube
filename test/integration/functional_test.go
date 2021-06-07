@@ -210,6 +210,9 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 
 // loadAndInspect loads the image and then inspects that it was correctly loaded.
 func loadAndInspect(ctx context.Context, t *testing.T, profile string, newImage string) {
+	var rr *RunResult
+	var err error
+
 	// try to load the new image into minikube
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", newImage))
 	if err != nil {

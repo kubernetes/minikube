@@ -78,6 +78,9 @@ checks if minikube cluster is created with correct kubernetes's node label
 #### validateLoadImage
 makes sure that `minikube image load` works as expected
 
+#### validateLoadImageAndUpdateTag
+loads image inspects, then updates tag and checks correctness.
+
 #### validateRemoveImage
 makes sures that `minikube image rm` works as expected
 
