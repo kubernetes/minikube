@@ -180,9 +180,11 @@ RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 # https://github.com/kubernetes/minikube/issues/10520
 RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/containers/storage.conf
 
+RUN systemctl disable docker
+
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
-RUN adduser --ingroup docker --disabled-password --gecos '' docker 
+RUN adduser --ingroup docker --disabled-password --gecos '' docker
 RUN adduser docker sudo
 RUN adduser docker podman
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
@@ -196,5 +198,5 @@ RUN mkdir -p /kind
 RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
-  /usr/share/local/* 
+  /usr/share/local/*
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
