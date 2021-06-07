@@ -79,7 +79,7 @@ func ReadData(file io.Reader) []TestEntry {
 		fields := strings.Split(line, ",")
 		if firstLine {
 			if len(fields) != 6 {
-				exit(fmt.Sprintf("Data CSV in incorrect format. Expected 6 columns, but got %d", len(fields)), fmt.Errorf("Bad CSV format"))
+				exit(fmt.Sprintf("Data CSV in incorrect format. Expected 6 columns, but got %d", len(fields)), fmt.Errorf("bad CSV format"))
 			}
 			firstLine = false
 		}
