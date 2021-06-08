@@ -70,53 +70,55 @@ func TestErrorSpam(t *testing.T) {
 	}
 	defer os.RemoveAll(logDir)
 
-	// This should likely use multi-node once it's ready
-	// use `--log_dir` flag to run isolated and avoid race condition - ie, failing to clean up (locked) log files created by other concurently-run tests, or counting them in results
-	args := append([]string{"start", "-p", profile, "-n=1", "--memory=2250", "--wait=false", fmt.Sprintf("--log_dir=%s", logDir)}, StartArgs()...)
+	t.Run("setup", func(t *testing.T) {
+		// This should likely use multi-node once it's ready
+		// use `--log_dir` flag to run isolated and avoid race condition - ie, failing to clean up (locked) log files created by other concurently-run tests, or counting them in results
+		args := append([]string{"start", "-p", profile, "-n=1", "--memory=2250", "--wait=false", fmt.Sprintf("--log_dir=%s", logDir)}, StartArgs()...)
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Errorf("%q failed: %v", rr.Command(), err)
-	}
-
-	stdout := rr.Stdout.String()
-	stderr := rr.Stderr.String()
-
-	for _, line := range strings.Split(stderr, "\n") {
-		if stderrAllowRe.MatchString(line) {
-			t.Logf("acceptable stderr: %q", line)
-			continue
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Errorf("%q failed: %v", rr.Command(), err)
 		}
 
-		if len(strings.TrimSpace(line)) > 0 {
-			t.Errorf("unexpected stderr: %q", line)
-		}
-	}
+		stdout := rr.Stdout.String()
+		stderr := rr.Stderr.String()
 
-	for _, line := range strings.Split(stdout, "\n") {
-		keywords := []string{"error", "fail", "warning", "conflict"}
-		for _, keyword := range keywords {
-			if strings.Contains(line, keyword) {
-				t.Errorf("unexpected %q in stdout: %q", keyword, line)
+		for _, line := range strings.Split(stderr, "\n") {
+			if stderrAllowRe.MatchString(line) {
+				t.Logf("acceptable stderr: %q", line)
+				continue
+			}
+
+			if len(strings.TrimSpace(line)) > 0 {
+				t.Errorf("unexpected stderr: %q", line)
 			}
 		}
-	}
 
-	if t.Failed() {
-		t.Logf("minikube stdout:\n%s", stdout)
-		t.Logf("minikube stderr:\n%s", stderr)
-	}
-
-	steps := []string{
-		"Generating certificates and keys ...",
-		"Booting up control plane ...",
-		"Configuring RBAC rules ...",
-	}
-	for _, step := range steps {
-		if !strings.Contains(stdout, step) {
-			t.Errorf("missing kubeadm init sub-step %q", step)
+		for _, line := range strings.Split(stdout, "\n") {
+			keywords := []string{"error", "fail", "warning", "conflict"}
+			for _, keyword := range keywords {
+				if strings.Contains(line, keyword) {
+					t.Errorf("unexpected %q in stdout: %q", keyword, line)
+				}
+			}
 		}
-	}
+
+		if t.Failed() {
+			t.Logf("minikube stdout:\n%s", stdout)
+			t.Logf("minikube stderr:\n%s", stderr)
+		}
+
+		steps := []string{
+			"Generating certificates and keys ...",
+			"Booting up control plane ...",
+			"Configuring RBAC rules ...",
+		}
+		for _, step := range steps {
+			if !strings.Contains(stdout, step) {
+				t.Errorf("missing kubeadm init sub-step %q", step)
+			}
+		}
+	})
 
 	logTests := []struct {
 		command string
