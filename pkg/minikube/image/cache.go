@@ -73,7 +73,7 @@ func SaveToDir(images []string, cacheDir string, overwrite bool) error {
 			dst = localpath.SanitizeCacheDir(dst)
 			if err := saveToTarFile(image, dst, overwrite); err != nil {
 				if err == errCacheImageDoesntExist {
-					out.WarningT("The image you are trying to add {{.imageName}} doesn't exist!", out.V{"imageName": image})
+					out.WarningT("The image '{{.imageName}}' was not found; unable to add it to cache.", out.V{"imageName": image})
 					return nil
 				}
 				return errors.Wrapf(err, "caching image %q", dst)
