@@ -180,7 +180,7 @@ func TestErrorSpam(t *testing.T) {
 				t.Fatalf("failed to close log file: %v", err)
 			}
 
-			// run commmand again
+			// run command again
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 			if err != nil {
 				t.Errorf("%q failed: %v", rr.Command(), err)
