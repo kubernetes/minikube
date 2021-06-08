@@ -16,7 +16,7 @@
 
 set -eu -o pipefail
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
   echo "Wrong number of arguments. Usage: report_flakes.sh <PR number> <gopogh_summary.json> <environment>" 1>&2
   exit 1
 fi
