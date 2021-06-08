@@ -119,90 +119,94 @@ func TestErrorSpam(t *testing.T) {
 	}
 
 	logTests := []struct {
-		command          string
-		args             []string
-		runCount         int // number of times to run command
-		expectedLogFiles int // number of logfiles expected after running command runCount times
+		command string
+		args    []string
 	}{
 		{
-			command:          "start",
-			args:             []string{"--dry-run"},
-			runCount:         175, // calling this 175 times should create 2 files with 1 greater than 1M
-			expectedLogFiles: 2,
+			command: "start",
+			args:    []string{"--dry-run"},
 		},
 		{
-			command:          "status",
-			runCount:         100,
-			expectedLogFiles: 1,
+			command: "status",
 		}, {
-			command:          "pause",
-			runCount:         5,
-			expectedLogFiles: 1,
+			command: "pause",
 		}, {
-			command:          "unpause",
-			runCount:         1,
-			expectedLogFiles: 1,
+			command: "unpause",
 		}, {
-			command:          "stop",
-			runCount:         1,
-			expectedLogFiles: 1,
+			command: "stop",
 		},
 	}
 
 	for _, test := range logTests {
 		t.Run(test.command, func(t *testing.T) {
-
-			// flags can be before subcommand
-			args := []string{"-p", profile, "--log_dir", logDir, test.command}
-			args = append(args, test.args...)
-
 			// before starting the test, ensure no other logs from the current command are written
 			logFiles, err := filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
 			if err != nil {
-				t.Errorf("failed to get old log files for command %s : %v", test.command, err)
+				t.Fatalf("failed to get old log files for command %s : %v", test.command, err)
 			}
 			cleanupLogFiles(t, logFiles)
 
-			// run command runCount times
-			for i := 0; i < test.runCount; i++ {
+			args := []string{"-p", profile, "--log_dir", logDir, test.command}
+			args = append(args, test.args...)
+
+			// run command twice
+			for i := 0; i < 2; i++ {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 				if err != nil {
 					t.Errorf("%q failed: %v", rr.Command(), err)
 				}
 			}
 
-			// get log files generated above
+			// check if one log file exists
+			if err := checkLogFileCount(test.command, logDir, 1); err != nil {
+				t.Fatal(err)
+			}
+
+			// get log file generated above
 			logFiles, err = filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
 			if err != nil {
-				t.Errorf("failed to get new log files for command %s : %v", test.command, err)
+				t.Fatalf("failed to get new log files for command %s : %v", test.command, err)
 			}
 
-			// if not the expected number of files, throw err
-			if len(logFiles) != test.expectedLogFiles {
-				t.Errorf("failed to find expected number of log files: cmd %s: expected: %d got %d", test.command, test.expectedLogFiles, len(logFiles))
+			// make file at least 1024 KB in size
+			f, err := os.OpenFile(logFiles[0], os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				t.Fatalf("failed to open newly created log file: %v", err)
+			}
+			if err := f.Truncate(2e7); err != nil {
+				t.Fatalf("failed to increase file size to 1024KB: %v", err)
+			}
+			if err := f.Close(); err != nil {
+				t.Fatalf("failed to close log file: %v", err)
 			}
 
-			// if more than 1 logfile is expected, only one file should be less than 1M
-			if test.expectedLogFiles > 1 {
-				foundSmall := false
-				var maxSize int64 = 1024 * 1024 // 1M
-				for _, logFile := range logFiles {
-					finfo, err := os.Stat(logFile)
-					if err != nil {
-						t.Logf("logfile %q for command %q not found:", logFile, test.command)
-						continue
-					}
-					isSmall := finfo.Size() < maxSize
-					if isSmall && !foundSmall {
-						foundSmall = true
-					} else if isSmall && foundSmall {
-						t.Errorf("expected to find only one file less than 1MB: cmd %s:", test.command)
-					}
-				}
+			// run commmand again
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+			if err != nil {
+				t.Errorf("%q failed: %v", rr.Command(), err)
+			}
+
+			// check if two log files exist now
+			if err := checkLogFileCount(test.command, logDir, 2); err != nil {
+				t.Fatal(err)
 			}
 		})
 
 	}
+}
+
+func checkLogFileCount(command string, logDir string, expectedNumberOfLogFiles int) error {
+	// get log files generated above
+	logFiles, err := filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", command)))
+	if err != nil {
+		return fmt.Errorf("failed to get new log files for command %s : %v", command, err)
+	}
+
+	if len(logFiles) != expectedNumberOfLogFiles {
+		return fmt.Errorf("Running cmd %q resulted in %d log file(s); expected: %d", command, len(logFiles), expectedNumberOfLogFiles)
+	}
+
+	return nil
 }
 
 // cleanupLogFiles removes logfiles generated during testing
