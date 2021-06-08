@@ -140,7 +140,7 @@ func TestErrorSpam(t *testing.T) {
 	for _, test := range logTests {
 		t.Run(test.command, func(t *testing.T) {
 			// before starting the test, ensure no other logs from the current command are written
-			logFiles, err := filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
+			logFiles, err := getLogFiles(logDir, test.command)
 			if err != nil {
 				t.Fatalf("failed to get old log files for command %s : %v", test.command, err)
 			}
@@ -163,7 +163,7 @@ func TestErrorSpam(t *testing.T) {
 			}
 
 			// get log file generated above
-			logFiles, err = filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", test.command)))
+			logFiles, err = getLogFiles(logDir, test.command)
 			if err != nil {
 				t.Fatalf("failed to get new log files for command %s : %v", test.command, err)
 			}
@@ -195,9 +195,13 @@ func TestErrorSpam(t *testing.T) {
 	}
 }
 
+func getLogFiles(logDir string, command string) ([]string, error) {
+	return filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", command)))
+}
+
 func checkLogFileCount(command string, logDir string, expectedNumberOfLogFiles int) error {
 	// get log files generated above
-	logFiles, err := filepath.Glob(filepath.Join(logDir, fmt.Sprintf("minikube_%s*", command)))
+	logFiles, err := getLogFiles(logDir, command)
 	if err != nil {
 		return fmt.Errorf("failed to get new log files for command %s : %v", command, err)
 	}
