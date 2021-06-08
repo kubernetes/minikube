@@ -155,7 +155,7 @@ func FilterRecentEntries(splitEntries map[string]map[string][]TestEntry, dateRan
 				return dates[j].Before(dates[i])
 			})
 			datesInRange := make([]time.Time, 0, dateRange)
-			var lastDate time.Time = time.Date(0, 0, 0, 0, 0, 0, 0, time.Local)
+			var lastDate time.Time
 			// Go through each date.
 			for _, date := range dates {
 				// If date is the same as last date, ignore it.
@@ -175,7 +175,7 @@ func FilterRecentEntries(splitEntries map[string]map[string][]TestEntry, dateRan
 			for _, entry := range testSplit {
 				// Look for the first element <= entry.date
 				index := sort.Search(len(datesInRange), func(i int) bool {
-					return datesInRange[i].Before(entry.date) || datesInRange[i].Equal(entry.date)
+					return !datesInRange[i].After(entry.date)
 				})
 				// If no date is <= entry.date, or the found date does not equal entry.date.
 				if index == len(datesInRange) || !datesInRange[index].Equal(entry.date) {
