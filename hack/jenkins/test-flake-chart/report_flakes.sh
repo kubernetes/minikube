@@ -71,4 +71,7 @@ if [[ $(wc -l < "$TMP_FAILED_RATES") -gt 30 ]]; then
   printf "|More tests...|Continued...|\n\nToo many tests failed - See test logs for more details." >> "$TMP_COMMENT"
 fi
 
+# install gh if not present
+sudo $DIR/../installers/check_install_gh.sh || true
+
 gh issue comment "https://github.com/kubernetes/minikube/pull/$PR_NUMBER" --body "$(cat $TMP_COMMENT)"
