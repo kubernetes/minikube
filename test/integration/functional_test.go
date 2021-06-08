@@ -1782,6 +1782,43 @@ users:
 	}
 }
 
+func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile string) {
+	if !GithubActionRunner() {
+		t.Skip("Only run mitmproxy test on github actions")
+	}
+
+	// Pull down the mitmproxy docker image
+	dockercmd := exec.CommandContext(ctx, "docker", "pull", "mitmproxy/mitmproxy")
+	_, err := Run(t, dockercmd)
+	if err != nil {
+		t.Fatalf("Failed to download mitmproxy docker image: %v", err)
+	}
+
+	certDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("creating temp dir failed: %v", err)
+	}
+
+	// Start an interactive session (since mitmproxy requires it) asyncronously
+	// This will create the necessary .mitmproxy directory with its certs
+	mitmCmd := exec.CommandContext(ctx, "docker", "run", "-it", "--rm", "--name", "mitmproxy", "-v", certDir, ":/home/mitmproxy/.mitmproxy", "-p", "8080:8080", "mitmproxy/mitmproxy")
+	go Run(t, mitmCmd)
+
+	// Make sure the container is running and grab the containerid for future use
+	containerID := ""
+	for containerID == "" {
+		rr, err := Run(t, exec.CommandContext(ctx, "docker", "ps", "--filter", "name=mitmproxy", "-q"))
+		if err != nil {
+			t.Fatalf("docker failure: %v", err)
+		}
+		containerID = string(rr.Stdout.Bytes())
+	}
+	defer Run(t, exec.CommandContext(ctx, "docker", "stop", containerID))
+
+	certFile := path.Join(certDir, "mitmproxy-ca-cert.pem")
+
+}
+
 // startHTTPProxy runs a local http proxy and sets the env vars for it.
 func startHTTPProxy(t *testing.T) (*http.Server, error) {
 	port, err := freeport.GetFreePort()
