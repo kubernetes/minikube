@@ -17,6 +17,7 @@ limitations under the License.
 package download
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -192,7 +193,13 @@ func CacheToDaemon(img string) error {
 
 	tag, ref, err := parseImage(img)
 	if err != nil {
-		return nil
+		return err
+	}
+	// do not use cache if image is set in format <name>:latest
+	if _, ok := ref.(name.Tag); ok {
+		if tag.Name() == "latest" {
+			return fmt.Errorf("can't cache 'latest' tag")
+		}
 	}
 
 	i, err := tarball.ImageFromPath(p, tag)
