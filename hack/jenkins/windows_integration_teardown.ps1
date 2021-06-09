@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$test_root="$env:HOMEDRIVE$env:HOMEPATH\minikube-integration"
-$test_home="$test_root\$env:COMMIT"
+$test_home="$env:HOMEDRIVE$env:HOMEPATH\minikube-integration"
 
 rm -r $test_home
