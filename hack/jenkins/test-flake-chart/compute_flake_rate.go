@@ -60,6 +60,9 @@ type TestEntry struct {
 	status      string
 }
 
+// A map with keys of (environment, test_name) to values of slcies of TestEntry.
+type SplitEntryMap map[string]map[string][]TestEntry
+
 // Reads CSV `file` and consumes each line to be a single TestEntry.
 func ReadData(file io.Reader) []TestEntry {
 	testEntries := []TestEntry{}
@@ -110,8 +113,8 @@ func ReadData(file io.Reader) []TestEntry {
 }
 
 // Splits `testEntries` up into maps indexed first by environment and then by test.
-func SplitData(testEntries []TestEntry) map[string]map[string][]TestEntry {
-	splitEntries := make(map[string]map[string][]TestEntry)
+func SplitData(testEntries []TestEntry) SplitEntryMap {
+	splitEntries := make(SplitEntryMap)
 
 	for _, entry := range testEntries {
 		appendEntry(splitEntries, entry.environment, entry.name, entry)
@@ -121,7 +124,7 @@ func SplitData(testEntries []TestEntry) map[string]map[string][]TestEntry {
 }
 
 // Appends `entry` to `splitEntries` at the `environment` and `test`.
-func appendEntry(splitEntries map[string]map[string][]TestEntry, environment, test string, entry TestEntry) {
+func appendEntry(splitEntries SplitEntryMap, environment, test string, entry TestEntry) {
 	// Lookup the environment.
 	environmentSplit, ok := splitEntries[environment]
 	if !ok {
@@ -141,8 +144,8 @@ func appendEntry(splitEntries map[string]map[string][]TestEntry, environment, te
 }
 
 // Filters `splitEntries` to include only the most recent `date_range` dates.
-func FilterRecentEntries(splitEntries map[string]map[string][]TestEntry, dateRange uint) map[string]map[string][]TestEntry {
-	filteredEntries := make(map[string]map[string][]TestEntry)
+func FilterRecentEntries(splitEntries SplitEntryMap, dateRange uint) SplitEntryMap {
+	filteredEntries := make(SplitEntryMap)
 
 	for environment, environmentSplit := range splitEntries {
 		for test, testSplit := range environmentSplit {
@@ -189,7 +192,7 @@ func FilterRecentEntries(splitEntries map[string]map[string][]TestEntry, dateRan
 }
 
 // Computes the flake rates over each entry in `splitEntries`.
-func ComputeFlakeRates(splitEntries map[string]map[string][]TestEntry) map[string]map[string]float32 {
+func ComputeFlakeRates(splitEntries SplitEntryMap) map[string]map[string]float32 {
 	flakeRates := make(map[string]map[string]float32)
 	for environment, environmentSplit := range splitEntries {
 		for test, testSplit := range environmentSplit {

@@ -94,7 +94,7 @@ func TestReadData(t *testing.T) {
 	compareEntrySlices(t, actualData, expectedData, "")
 }
 
-func compareSplitData(t *testing.T, actual, expected map[string]map[string][]TestEntry) {
+func compareSplitData(t *testing.T, actual, expected SplitEntryMap) {
 	for environment, actualTests := range actual {
 		expectedTests, environmentOk := expected[environment]
 		if !environmentOk {
@@ -159,7 +159,7 @@ func TestSplitData(t *testing.T) {
 		status:      "Passed",
 	}
 	actual := SplitData([]TestEntry{entryE1T1_1, entryE1T1_2, entryE1T2, entryE2T1, entryE2T2})
-	expected := map[string]map[string][]TestEntry{
+	expected := SplitEntryMap{
 		"env1": {
 			"test1": {entryE1T1_1, entryE1T1_2},
 			"test2": {entryE1T2},
@@ -233,7 +233,7 @@ func TestFilterRecentEntries(t *testing.T) {
 		status:      "Passed",
 	}
 
-	actualData := FilterRecentEntries(map[string]map[string][]TestEntry{
+	actualData := FilterRecentEntries(SplitEntryMap{
 		"env1": {
 			"test1": {
 				entryE1T1R1,
@@ -257,7 +257,7 @@ func TestFilterRecentEntries(t *testing.T) {
 		},
 	}, 2)
 
-	expectedData := map[string]map[string][]TestEntry{
+	expectedData := SplitEntryMap{
 		"env1": {
 			"test1": {
 				entryE1T1R1,
@@ -281,7 +281,7 @@ func TestFilterRecentEntries(t *testing.T) {
 }
 
 func TestComputeFlakeRates(t *testing.T) {
-	actualData := ComputeFlakeRates(map[string]map[string][]TestEntry{
+	actualData := ComputeFlakeRates(SplitEntryMap{
 		"env1": {
 			"test1": {
 				{
