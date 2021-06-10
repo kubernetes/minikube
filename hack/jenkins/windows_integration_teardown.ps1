@@ -14,4 +14,4 @@
 
 $test_home="$env:HOMEDRIVE$env:HOMEPATH\minikube-integration"
 
-rm -r $test_home
+rm -r -Force $test_home

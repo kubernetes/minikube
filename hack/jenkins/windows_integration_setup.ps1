@@ -17,5 +17,5 @@ $env:KUBECONFIG="$test_home\kubeconfig"
 $env:MINIKUBE_HOME="$test_home\.minikube"
 
 # delete in case previous test was unexpectedly ended and teardown wasn't run
-rm -r $test_home
+rm -r -Force $test_home
 mkdir -p $test_home
