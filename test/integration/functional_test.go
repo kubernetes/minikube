@@ -93,7 +93,6 @@ func TestFunctional(t *testing.T) {
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
 			{"ComponentHealth", validateComponentHealth},
-			{"StartWithCorpProxy", validateStartWithCorpProxy},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -518,8 +517,17 @@ func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateStartWithProxy makes sure minikube start respects the HTTP_PROXY environment variable
+// validateStartWithProxy either calls validateStartWithRegularProxy or validateStartWithCorpProxy depending on the test environment
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
+	if GithubActionRunner() {
+		validateStartWithCorpProxy(ctx, t, profile)
+	} else {
+		validateStartWithRegularProxy(ctx, t, profile)
+	}
+}
+
+// validateStartWithRegularProxy makes sure minikube start respects the HTTP_PROXY environment variable
+func validateStartWithRegularProxy(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	srv, err := startHTTPProxy(t)
@@ -1783,9 +1791,14 @@ users:
 	}
 }
 
+// validateStartWithCorpProxy ensures that minikube can run behind a custom proxy
 func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile string) {
 	if !GithubActionRunner() {
 		t.Skip("Only run mitmproxy test on github actions")
+	}
+
+	if runtime.GOOS != "linux" {
+		t.Skip("Only run mitmproxy test on linux")
 	}
 
 	defer PostMortemLogs(t, profile)
@@ -1805,7 +1818,10 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	// Start an interactive session (since mitmproxy requires it) asyncronously
 	// This will create the necessary .mitmproxy directory with its certs
 	mitmCmd := exec.CommandContext(ctx, "docker", "run", "-it", "--rm", "--name", "mitmproxy", "-v", certDir, ":/home/mitmproxy/.mitmproxy", "-p", "8080:8080", "mitmproxy/mitmproxy")
-	go Run(t, mitmCmd)
+	_, err = Start(t, mitmCmd)
+	if err != nil {
+		t.Fatalf("starting mitmproxy failed: %v", err)
+	}
 
 	// Make sure the container is running and grab the containerid for future use
 	containerID := ""
@@ -1814,9 +1830,14 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 		if err != nil {
 			t.Fatalf("docker failure: %v", err)
 		}
-		containerID = string(rr.Stdout.Bytes())
+		containerID = rr.Stdout.String()
 	}
-	defer Run(t, exec.CommandContext(ctx, "docker", "stop", containerID))
+	defer func() {
+		_, err := Run(t, exec.CommandContext(ctx, "docker", "stop", containerID))
+		if err != nil {
+			t.Logf("failed to stop docker: %v", err)
+		}
+	}()
 
 	// Add a symlink from the cert to the correct directory
 	certFile := path.Join(certDir, "mitmproxy-ca-cert.pem")
