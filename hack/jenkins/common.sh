@@ -443,7 +443,7 @@ if [ -z "${EXTERNAL}" ]; then
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
   if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
     ./test-flake-chart/upload_tests.sh "${SUMMARY_OUT}"
-  elif [[ "${JOB_NAME}" == "Docker_Linux" ]]; then
+  elif [[ "${JOB_NAME}" == "Docker_Linux" || "${JOB_NAME}" == "Docker_Linux_containerd" || "${JOB_NAME}" == "KVM_Linux" || "${JOB_NAME}" == "KVM_Linux_containerd" ]]; then
     ./test-flake-chart/report_flakes.sh "${MINIKUBE_LOCATION}" "${SUMMARY_OUT}" "${JOB_NAME}"
   fi
 else 
