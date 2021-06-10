@@ -60,6 +60,12 @@ TMP_FAILED_RATES="$TMP_FLAKE_RATES\_filtered"
   | sort -g -t, -k2,2 \
   > "$TMP_FAILED_RATES"
 
+FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES")
+if [[ "$FAILED_RATES_LINES" -gt 30 ]]; then
+  echo "No failed tests! Aborting without commenting..." 1>&2
+  exit 0
+fi
+
 # Create the comment template.
 TMP_COMMENT=$(mktemp)
 printf "These are the flake rates of all failed tests on %s.\n|Failed Tests|Flake Rate (%%)|\n|---|---|\n" "$ENVIRONMENT" > "$TMP_COMMENT"
@@ -71,7 +77,7 @@ printf "These are the flake rates of all failed tests on %s.\n|Failed Tests|Flak
   >> "$TMP_COMMENT"
 
 # If there are too many failing tests, add an extra row explaining this, and a message after the table.
-if [[ $(wc -l < "$TMP_FAILED_RATES") -gt 30 ]]; then
+if [[ "$FAILED_RATES_LINES" -gt 30 ]]; then
   printf "|More tests...|Continued...|\n\nToo many tests failed - See test logs for more details." >> "$TMP_COMMENT"
 fi
 
