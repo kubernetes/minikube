@@ -91,6 +91,10 @@ This is because minikube VM is stuck behind a proxy that rewrites HTTPS response
 
 Ask your IT department for the appropriate PEM file, and add it to:
 
+`~/.minikube/certs` since version v1.20.0
+
+or
+
 `~/.minikube/files/etc/ssl/certs`
 
 Then run `minikube delete` and `minikube start`.
