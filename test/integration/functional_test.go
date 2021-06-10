@@ -1815,8 +1815,34 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	}
 	defer Run(t, exec.CommandContext(ctx, "docker", "stop", containerID))
 
+	// Add a symlink from the cert to the correct directory
 	certFile := path.Join(certDir, "mitmproxy-ca-cert.pem")
+	destCertPath := path.Join("/etc/ssl/certs", "mitmproxy-ca-cert.pem")
+	symLinkCmd := fmt.Sprintf("test -s %s && ln -fs %s %s", certFile, certFile, destCertPath)
+	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", symLinkCmd)); err != nil {
+		t.Fatalf("cert symlink failure: %v", err)
+	}
 
+	// Add a symlink of the form {hash}.0
+	rr, err := Run(t, exec.CommandContext(ctx, "openssl", "x509", "-hash", "-noout", "-in", certFile))
+	if err != nil {
+		t.Fatalf("cert hashing failure: %v", err)
+	}
+	stringHash := strings.TrimSpace(rr.Stdout.String())
+	hashLink := path.Join("/etc/ssl/certs", fmt.Sprintf("%s.0", stringHash))
+
+	hashCmd := fmt.Sprintf("test -L %s || ln -fs %s %s", hashLink, destCertPath, hashLink)
+	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", hashCmd)); err != nil {
+		t.Fatalf("cert hash symlink failure: %v", err)
+	}
+
+	// ok, now start minikube
+	startArgs := append([]string{"start", "-p", profile, "--wait=all"}, StartArgs()...)
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+	env := os.Environ()
+	env = append(env, "HTTPS_PROXY=127.0.0.1:8080")
+	env = append(env, "NO_PROXY=")
+	c.Env = env
 }
 
 // startHTTPProxy runs a local http proxy and sets the env vars for it.
