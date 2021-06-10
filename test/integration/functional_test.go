@@ -1842,8 +1842,14 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	if containerID == "" {
 		var stdout []byte
 		var stderr []byte
-		mitmRR.Stdout.Read(stdout)
-		mitmRR.Stdout.Read(stderr)
+		_, err := mitmRR.Stdout.Read(stdout)
+		if err != nil {
+			t.Logf("reading stdout failed: %s", err)
+		}
+		_, err = mitmRR.Stdout.Read(stderr)
+		if err != nil {
+			t.Logf("reading stderr failed: %s", err)
+		}
 		t.Fatalf("mitmproxy docker container never started\n stdout: %v\n stderr: %v", string(stdout), string(stderr))
 	}
 
