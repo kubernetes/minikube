@@ -7,6 +7,7 @@ description: >
 ---
 
 
+
 ## How to run an older Kubernetes version with minikube ?
 
 You do not need to download an older minikube to run an older kubernetes version.
@@ -81,4 +82,13 @@ No, minikube comes with built-in kubectl [see minikube's kubectl documentation](
 Simply run the following command to be enrolled into beta notifications.
 ```
 minikube config set WantBetaUpdateNotification true
+```
+
+## Can I remove/disable the emojis in minikube ?
+
+Yes ! if you reallly dislike the emoji :( you could set MINIKUBE_IN_STYLE envioronment variable to disable the emojis
+
+```
+MINIKUBE_IN_STYLE=0 minikube start
+
 ```
