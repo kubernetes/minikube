@@ -25,11 +25,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
@@ -42,9 +40,6 @@ func enableOrDisableAutoPause(cc *config.ClusterConfig, name string, val string)
 	out.Infof("auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.")
 	out.Infof("https://github.com/kubernetes/minikube/labels/co/auto-pause")
 
-	if cc.KubernetesConfig.ContainerRuntime != "docker" {
-		exit.Message(reason.Usage, `auto-pause currently is only supported on docker runtime. Track progress of others here: https://github.com/kubernetes/minikube/issues/10601`)
-	}
 	co := mustload.Running(cc.Name)
 	if enable {
 		if err := sysinit.New(co.CP.Runner).EnableNow("auto-pause"); err != nil {

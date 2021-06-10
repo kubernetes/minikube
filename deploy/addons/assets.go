@@ -21,7 +21,6 @@ import "embed"
 var (
 	// AutoPauseAssets assets for auto-pause addon
 	//go:embed auto-pause/*.tmpl
-	//go:embed auto-pause/auto-pause.service
 	//go:embed auto-pause/unpause.lua
 	AutoPauseAssets embed.FS
 
