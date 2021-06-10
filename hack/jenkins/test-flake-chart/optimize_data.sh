@@ -17,4 +17,12 @@
 set -eu -o pipefail
 
 # Take input CSV. For each field, if it is the same as the previous row, replace it with an empty string.
+# This is to compress the input CSV. Example:
+# Input: 
+# hash,2021-06-10,Docker_Linux,TestFunctional,Passed,0.5
+# hash,2021-06-10,Docker_Linux_containerd,TestFunctional,Failed,0.6
+# 
+# Output:
+# hash,2021-06-10,Docker_Linux,TestFunctional,Passed,0.5
+# ,,DockerLinux_containerd,,Failed,0.6
 awk -F, 'BEGIN {OFS = FS} { for(i=1; i<=NF; i++) { if($i == j[i]) { $i = ""; } else { j[i] = $i; } } printf "%s\n",$0 }'
