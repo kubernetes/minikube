@@ -1818,26 +1818,34 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	// Start an interactive session (since mitmproxy requires it) asyncronously
 	// This will create the necessary .mitmproxy directory with its certs
 	mitmCmd := exec.CommandContext(ctx, "docker", "run", "-it", "--rm", "--name", "mitmproxy", "-v", certDir, ":/home/mitmproxy/.mitmproxy", "-p", "8080:8080", "mitmproxy/mitmproxy")
-	_, err = Start(t, mitmCmd)
+	mitmRR, err := Start(t, mitmCmd)
 	if err != nil {
 		t.Fatalf("starting mitmproxy failed: %v", err)
 	}
 
 	// Make sure the container is running and grab the containerid for future use
+	// Timeout after 90 seconds
 	containerID := ""
+	tries := 0
 	for containerID == "" {
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "ps", "--filter", "name=mitmproxy", "-q"))
 		if err != nil {
 			t.Fatalf("docker failure: %v", err)
 		}
 		containerID = rr.Stdout.String()
-	}
-	defer func() {
-		_, err := Run(t, exec.CommandContext(ctx, "docker", "stop", containerID))
-		if err != nil {
-			t.Logf("failed to stop docker: %v", err)
+		time.Sleep(time.Second)
+		tries++
+		if tries > 90 {
+			break
 		}
-	}()
+	}
+	if containerID == "" {
+		var stdout []byte
+		var stderr []byte
+		mitmRR.Stdout.Read(stdout)
+		mitmRR.Stdout.Read(stderr)
+		t.Fatalf("mitmproxy docker container never started\n stdout: %v\n stderr: %v", string(stdout), string(stderr))
+	}
 
 	// Add a symlink from the cert to the correct directory
 	certFile := path.Join(certDir, "mitmproxy-ca-cert.pem")
