@@ -1843,6 +1843,15 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	env = append(env, "HTTPS_PROXY=127.0.0.1:8080")
 	env = append(env, "NO_PROXY=")
 	c.Env = env
+
+	rr, err = Run(t, c)
+	if err != nil {
+		t.Errorf("minikube start failed: %v", err)
+	}
+
+	if rr.Stderr.Len() > 0 {
+		t.Errorf("Unexpected output to std err: %s", rr.Stderr.String())
+	}
 }
 
 // startHTTPProxy runs a local http proxy and sets the env vars for it.
