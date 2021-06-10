@@ -93,6 +93,7 @@ func TestFunctional(t *testing.T) {
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
 			{"ComponentHealth", validateComponentHealth},
+			{"StartWithCorpProxy", validateStartWithCorpProxy},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -1786,6 +1787,8 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	if !GithubActionRunner() {
 		t.Skip("Only run mitmproxy test on github actions")
 	}
+
+	defer PostMortemLogs(t, profile)
 
 	// Pull down the mitmproxy docker image
 	dockercmd := exec.CommandContext(ctx, "docker", "pull", "mitmproxy/mitmproxy")
