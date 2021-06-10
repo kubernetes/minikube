@@ -17,7 +17,7 @@
 set -e
 
 install_kind() {
-        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-amd64
+	curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-amd64
 	chmod +x ./kind
 	sudo mv ./kind /usr/local
 }
@@ -45,17 +45,33 @@ create_page() {
 	printf -- "---\ntitle: \"%s Benchmark\"\nlinkTitle: \"%s Benchmark\"\nweight: 1\n---\n\n![time-to-k8s](/images/benchmarks/timeToK8s/%s.png)\n" "$1" "$1" "$1" > ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
 }
 
-commit_chart() {
-	git add ./site/static/images/benchmarks/timeToK8s/"$1".png ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
-	git commit -m 'update time-to-k8s chart'
+create_branch() {
+	branch=time-to-k8s-"$1"
+	git checkout -b "${branch}"
 }
+
+commit_changes() {
+	git add ./site/static/images/benchmarks/timeToK8s/"$1".png ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
+	git commit -m "Add time-to-k8s benchmark for $1"
+}
+
+create_pr() {
+	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
+	git push -f minikube-bot "${branch}"
+	gh pr create --fill --base master --head minikube-bot:"${branch}"
+}
+
+# Make sure gh is installed and configured
+./hack/jenkins/installers/check_install_gh.sh
 
 install_kind
 install_k3d
 install_minikube
 VERSION=$(minikube version --short)
 
+create_branch "$VERSION"
 run_benchmark
 generate_chart "$VERSION"
 create_page "$VERSION"
-commit_chart "$VERSION"
+commit_changes "$VERSION"
+create_pr "$VERSION"
