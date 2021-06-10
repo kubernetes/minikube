@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Takes a gopogh summary, extracts test data as a CSV and appends to the
+# existing CSV data in the GCS bucket.
+# Example usage: ./jenkins_upload_tests.sh gopogh_summary.json
+
 set -eu -o pipefail
 
 if [ "$#" -ne 1 ]; then

@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Creates a comment on the provided PR number, using the provided gopogh summary
+# to list out the flake rates of all failing tests.
+# Example usage: ./report_flakes.sh 11602 gopogh.json Docker_Linux
+
 set -eu -o pipefail
 
 if [ "$#" -ne 3 ]; then

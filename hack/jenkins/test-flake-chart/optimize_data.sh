@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Takes a CSV file through stdin, compresses it and writes it to stdout.
+# Example usage: < data.csv ./optimize_data.sh > data_optimized.csv
+
 set -eu -o pipefail
 
 # Take input CSV. For each field, if it is the same as the previous row, replace it with an empty string.

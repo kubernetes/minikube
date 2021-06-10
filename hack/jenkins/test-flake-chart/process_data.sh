@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Takes a series of gopogh summary jsons, and formats them into a CSV file with
+# a row for each test.
+# Example usage: cat gopogh_1.json gopogh_2.json gopogh_3.json | ./process_data.sh
+
 set -eu -o pipefail
 
 # Print header.

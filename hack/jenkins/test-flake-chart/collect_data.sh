@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Collects all test data manually, processes it, and uploads to GCS. This will
+# overwrite any existing data.
+# Example usage: ./collect_data.sh
+
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 # 1) "cat" together all summary files.
