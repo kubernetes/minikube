@@ -16,8 +16,6 @@
 
 set -e
 
-export access_token="$1"
-
 install_kind() {
 	curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-amd64
 	chmod +x ./kind
@@ -65,6 +63,10 @@ create_pr() {
 
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
+
+export access_token="$1"
+git config user.name "minikube-bot"
+git config user.email "minikube-bot@google.com"
 
 install_kind
 install_k3d
