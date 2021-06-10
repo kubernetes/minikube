@@ -48,11 +48,11 @@ const (
 )
 
 // BeginCacheKubernetesImages caches images required for Kubernetes version in the background
-func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
+func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string, driverName string) {
 	// TODO: remove imageRepository check once #7695 is fixed
-	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime) {
+	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime, driverName) {
 		klog.Info("Caching tarball of preloaded images")
-		err := download.Preload(k8sVersion, cRuntime)
+		err := download.Preload(k8sVersion, cRuntime, driverName)
 		if err == nil {
 			klog.Infof("Finished verifying existence of preloaded tar for  %s on %s", k8sVersion, cRuntime)
 			return // don't cache individual images if preload is successful.
@@ -70,12 +70,12 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 }
 
 // handleDownloadOnly caches appropariate binaries and images
-func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime string) {
+func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime, driverName string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
 		return
 	}
-	if err := doCacheBinaries(k8sVersion, containerRuntime); err != nil {
+	if err := doCacheBinaries(k8sVersion, containerRuntime, driverName); err != nil {
 		exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
 	}
 	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
@@ -101,9 +101,9 @@ func CacheKubectlBinary(k8sVersion string) (string, error) {
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
-func doCacheBinaries(k8sVersion, containerRuntime string) error {
+func doCacheBinaries(k8sVersion, containerRuntime, driverName string) error {
 	existingBinaries := constants.KubernetesReleaseBinaries
-	if !download.PreloadExists(k8sVersion, containerRuntime) {
+	if !download.PreloadExists(k8sVersion, containerRuntime, driverName) {
 		existingBinaries = nil
 	}
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), existingBinaries)

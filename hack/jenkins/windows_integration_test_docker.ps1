@@ -14,13 +14,15 @@
 
 mkdir -p out
 
-(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
+(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.8.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
 (New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/v1.20.0/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
 
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
 
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT"
@@ -42,6 +44,8 @@ docker system prune --all --force
 
 
 ./out/minikube-windows-amd64.exe delete --all
+
+./out/windows_integration_setup.ps1
 
 docker ps -aq | ForEach -Process {docker rm -fv $_}
 
@@ -95,5 +99,7 @@ docker system prune --all --force
 
 # Just shutdown Docker, it's safer than anything else
 Get-Process "*Docker Desktop*" | Stop-Process
+
+./out/windows_integration_teardown.ps1
 
 Exit $env:result

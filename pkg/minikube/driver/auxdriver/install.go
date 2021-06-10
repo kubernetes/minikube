@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package driver
+package auxdriver
 
 import (
 	"fmt"
@@ -32,6 +32,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
@@ -39,7 +40,7 @@ import (
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
 func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
-	if name != KVM2 && name != HyperKit {
+	if name != driver.KVM2 && name != driver.HyperKit {
 		return nil
 	}
 
@@ -69,7 +70,7 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 
 // fixDriverPermissions fixes the permissions on a driver
 func fixDriverPermissions(name string, path string, interactive bool) error {
-	if name != HyperKit {
+	if name != driver.HyperKit {
 		return nil
 	}
 

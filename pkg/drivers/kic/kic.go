@@ -172,7 +172,7 @@ func (d *Driver) Create() error {
 	go func() {
 		defer waitForPreload.Done()
 		// If preload doesn't exist, don't bother extracting tarball to volume
-		if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
+		if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime, d.DriverName()) {
 			return
 		}
 		t := time.Now()

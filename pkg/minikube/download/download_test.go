@@ -86,14 +86,14 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 		}
 		return nil, nil
 	}
-	checkPreloadExists = func(k8sVersion, containerRuntime string, forcePreload ...bool) bool { return true }
+	checkPreloadExists = func(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool { return true }
 	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error { return nil }
 
 	var group sync.WaitGroup
 	group.Add(2)
 	dlCall := func() {
-		if err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime); err != nil {
+		if err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker"); err != nil {
 			t.Logf("Failed to download preload: %+v (may be ok)", err)
 		}
 		group.Done()
@@ -114,11 +114,11 @@ func testPreloadNotExists(t *testing.T) {
 	DownloadMock = mockSleepDownload(&downloadNum)
 
 	checkCache = func(file string) (fs.FileInfo, error) { return nil, fmt.Errorf("cache not found") }
-	checkPreloadExists = func(k8sVersion, containerRuntime string, forcePreload ...bool) bool { return false }
+	checkPreloadExists = func(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool { return false }
 	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error { return nil }
 
-	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime)
+	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker")
 	if err != nil {
 		t.Errorf("Expected no error when preload exists")
 	}
@@ -133,13 +133,13 @@ func testPreloadChecksumMismatch(t *testing.T) {
 	DownloadMock = mockSleepDownload(&downloadNum)
 
 	checkCache = func(file string) (fs.FileInfo, error) { return nil, fmt.Errorf("cache not found") }
-	checkPreloadExists = func(k8sVersion, containerRuntime string, forcePreload ...bool) bool { return true }
+	checkPreloadExists = func(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool { return true }
 	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error {
 		return fmt.Errorf("checksum mismatch")
 	}
 
-	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime)
+	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker")
 	expectedErrMsg := "checksum mismatch"
 	if err == nil {
 		t.Errorf("Expected error when checksum mismatches")

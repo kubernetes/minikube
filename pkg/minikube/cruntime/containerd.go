@@ -49,7 +49,6 @@ const (
 	containerdConfigTemplate = `root = "/var/lib/containerd"
 state = "/run/containerd"
 oom_score = 0
-
 [grpc]
   address = "/run/containerd/containerd.sock"
   uid = 0
@@ -79,16 +78,21 @@ oom_score = 0
     enable_selinux = false
     sandbox_image = "{{ .PodInfraContainerImage }}"
     stats_collect_period = 10
-    systemd_cgroup = {{ .SystemdCgroup }}
     enable_tls_streaming = false
     max_container_log_line_size = 16384
+
+	[plugins."io.containerd.grpc.v1.cri"]
+      [plugins."io.containerd.grpc.v1.cri".containerd]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+            runtime_type = "io.containerd.runc.v2"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+              SystemdCgroup = {{ .SystemdCgroup }}
+
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
-      no_pivot = true
       [plugins.cri.containerd.default_runtime]
-        runtime_type = "io.containerd.runtime.v1.linux"
-        runtime_engine = ""
-        runtime_root = ""
+        runtime_type = "io.containerd.runc.v2"
       [plugins.cri.containerd.untrusted_workload_runtime]
         runtime_type = ""
         runtime_engine = ""
@@ -107,12 +111,6 @@ oom_score = 0
         {{ end -}}
   [plugins.diff-service]
     default = ["walking"]
-  [plugins.linux]
-    shim = "containerd-shim"
-    runtime = "runc"
-    runtime_root = ""
-    no_shim = false
-    shim_debug = false
   [plugins.scheduler]
     pause_threshold = 0.02
     deletion_threshold = 0
@@ -464,16 +462,16 @@ func (r *Containerd) SystemLogCmd(len int) string {
 }
 
 // Preload preloads the container runtime with k8s images
-func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
-	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
+func (r *Containerd) Preload(cc config.ClusterConfig) error {
+	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
 		return nil
 	}
 
-	k8sVersion := cfg.KubernetesVersion
-	cRuntime := cfg.ContainerRuntime
+	k8sVersion := cc.KubernetesConfig.KubernetesVersion
+	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
 	// If images already exist, return
-	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
+	images, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
