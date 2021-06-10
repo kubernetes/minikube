@@ -41,10 +41,10 @@ func main() {
 		exit("Unable to read data CSV", err)
 	}
 
-	testEntries := ReadData(file)
-	splitEntries := SplitData(testEntries)
-	filteredEntries := FilterRecentEntries(splitEntries, *dateRange)
-	flakeRates := ComputeFlakeRates(filteredEntries)
+	testEntries := readData(file)
+	splitEntries := splitData(testEntries)
+	filteredEntries := filterRecentEntries(splitEntries, *dateRange)
+	flakeRates := computeFlakeRates(filteredEntries)
 	fmt.Println("Environment,Test,Flake Rate")
 	for environment, environmentSplit := range flakeRates {
 		for test, flakeRate := range environmentSplit {
@@ -53,7 +53,7 @@ func main() {
 	}
 }
 
-type TestEntry struct {
+type testEntry struct {
 	name        string
 	environment string
 	date        time.Time
@@ -61,11 +61,11 @@ type TestEntry struct {
 }
 
 // A map with keys of (environment, test_name) to values of slcies of TestEntry.
-type SplitEntryMap map[string]map[string][]TestEntry
+type splitEntryMap map[string]map[string][]testEntry
 
 // Reads CSV `file` and consumes each line to be a single TestEntry.
-func ReadData(file io.Reader) []TestEntry {
-	testEntries := []TestEntry{}
+func readData(file io.Reader) []testEntry {
+	testEntries := []testEntry{}
 
 	fileReader := bufio.NewReaderSize(file, 256)
 	previousLine := []string{"", "", "", "", "", ""}
@@ -101,7 +101,7 @@ func ReadData(file io.Reader) []TestEntry {
 			if err != nil {
 				fmt.Printf("Failed to parse date: %v\n", err)
 			}
-			testEntries = append(testEntries, TestEntry{
+			testEntries = append(testEntries, testEntry{
 				name:        fields[3],
 				environment: fields[2],
 				date:        date,
@@ -113,8 +113,8 @@ func ReadData(file io.Reader) []TestEntry {
 }
 
 // Splits `testEntries` up into maps indexed first by environment and then by test.
-func SplitData(testEntries []TestEntry) SplitEntryMap {
-	splitEntries := make(SplitEntryMap)
+func splitData(testEntries []testEntry) splitEntryMap {
+	splitEntries := make(splitEntryMap)
 
 	for _, entry := range testEntries {
 		appendEntry(splitEntries, entry.environment, entry.name, entry)
@@ -124,12 +124,12 @@ func SplitData(testEntries []TestEntry) SplitEntryMap {
 }
 
 // Appends `entry` to `splitEntries` at the `environment` and `test`.
-func appendEntry(splitEntries SplitEntryMap, environment, test string, entry TestEntry) {
+func appendEntry(splitEntries splitEntryMap, environment, test string, entry testEntry) {
 	// Lookup the environment.
 	environmentSplit, ok := splitEntries[environment]
 	if !ok {
 		// If the environment map is missing, make a map for this environment and store it.
-		environmentSplit = make(map[string][]TestEntry)
+		environmentSplit = make(map[string][]testEntry)
 		splitEntries[environment] = environmentSplit
 	}
 
@@ -137,15 +137,15 @@ func appendEntry(splitEntries SplitEntryMap, environment, test string, entry Tes
 	testSplit, ok := environmentSplit[test]
 	if !ok {
 		// If the test is missing, make a slice for this test.
-		testSplit = make([]TestEntry, 0)
+		testSplit = make([]testEntry, 0)
 		// The slice is not inserted, since it will be replaced anyway.
 	}
 	environmentSplit[test] = append(testSplit, entry)
 }
 
 // Filters `splitEntries` to include only the most recent `date_range` dates.
-func FilterRecentEntries(splitEntries SplitEntryMap, dateRange uint) SplitEntryMap {
-	filteredEntries := make(SplitEntryMap)
+func filterRecentEntries(splitEntries splitEntryMap, dateRange uint) splitEntryMap {
+	filteredEntries := make(splitEntryMap)
 
 	for environment, environmentSplit := range splitEntries {
 		for test, testSplit := range environmentSplit {
@@ -192,7 +192,7 @@ func FilterRecentEntries(splitEntries SplitEntryMap, dateRange uint) SplitEntryM
 }
 
 // Computes the flake rates over each entry in `splitEntries`.
-func ComputeFlakeRates(splitEntries SplitEntryMap) map[string]map[string]float32 {
+func computeFlakeRates(splitEntries splitEntryMap) map[string]map[string]float32 {
 	flakeRates := make(map[string]map[string]float32)
 	for environment, environmentSplit := range splitEntries {
 		for test, testSplit := range environmentSplit {

@@ -27,7 +27,7 @@ func simpleDate(year int, day int) time.Time {
 	return time.Date(year, time.January, day, 0, 0, 0, 0, time.UTC)
 }
 
-func compareEntrySlices(t *testing.T, actualData, expectedData []TestEntry, extra string) {
+func compareEntrySlices(t *testing.T, actualData, expectedData []testEntry, extra string) {
 	if extra != "" {
 		extra = fmt.Sprintf(" (%s)", extra)
 	}
@@ -50,7 +50,7 @@ func compareEntrySlices(t *testing.T, actualData, expectedData []TestEntry, extr
 }
 
 func TestReadData(t *testing.T) {
-	actualData := ReadData(strings.NewReader(
+	actualData := readData(strings.NewReader(
 		`A,B,C,D,E,F
 		hash,2000-01-01,env1,test1,Passed,1
 		hash,2001-01-01,env2,test2,Failed,1
@@ -58,7 +58,7 @@ func TestReadData(t *testing.T) {
 		hash,2002-01-01,,,Passed,1
 		hash,2003-01-01,env3,test3,Passed,1`,
 	))
-	expectedData := []TestEntry{
+	expectedData := []testEntry{
 		{
 			name:        "test1",
 			environment: "env1",
@@ -94,7 +94,7 @@ func TestReadData(t *testing.T) {
 	compareEntrySlices(t, actualData, expectedData, "")
 }
 
-func compareSplitData(t *testing.T, actual, expected SplitEntryMap) {
+func compareSplitData(t *testing.T, actual, expected splitEntryMap) {
 	for environment, actualTests := range actual {
 		expectedTests, environmentOk := expected[environment]
 		if !environmentOk {
@@ -129,37 +129,37 @@ func compareSplitData(t *testing.T, actual, expected SplitEntryMap) {
 }
 
 func TestSplitData(t *testing.T) {
-	entryE1T1_1, entryE1T1_2 := TestEntry{
+	entryE1T1_1, entryE1T1_2 := testEntry{
 		name:        "test1",
 		environment: "env1",
 		date:        simpleDate(2000, 1),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test1",
 		environment: "env1",
 		date:        simpleDate(2000, 2),
 		status:      "Passed",
 	}
-	entryE1T2 := TestEntry{
+	entryE1T2 := testEntry{
 		name:        "test2",
 		environment: "env1",
 		date:        simpleDate(2000, 1),
 		status:      "Passed",
 	}
-	entryE2T1 := TestEntry{
+	entryE2T1 := testEntry{
 		name:        "test1",
 		environment: "env2",
 		date:        simpleDate(2000, 1),
 		status:      "Passed",
 	}
-	entryE2T2 := TestEntry{
+	entryE2T2 := testEntry{
 		name:        "test2",
 		environment: "env2",
 		date:        simpleDate(2000, 1),
 		status:      "Passed",
 	}
-	actual := SplitData([]TestEntry{entryE1T1_1, entryE1T1_2, entryE1T2, entryE2T1, entryE2T2})
-	expected := SplitEntryMap{
+	actual := splitData([]testEntry{entryE1T1_1, entryE1T1_2, entryE1T2, entryE2T1, entryE2T2})
+	expected := splitEntryMap{
 		"env1": {
 			"test1": {entryE1T1_1, entryE1T1_2},
 			"test2": {entryE1T2},
@@ -174,66 +174,66 @@ func TestSplitData(t *testing.T) {
 }
 
 func TestFilterRecentEntries(t *testing.T) {
-	entryE1T1R1, entryE1T1R2, entryE1T1R3, entryE1T1O1, entryE1T1O2 := TestEntry{
+	entryE1T1R1, entryE1T1R2, entryE1T1R3, entryE1T1O1, entryE1T1O2 := testEntry{
 		name:        "test1",
 		environment: "env1",
 		date:        simpleDate(2000, 4),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test1",
 		environment: "env1",
 		date:        simpleDate(2000, 3),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test1",
 		environment: "env1",
 		date:        simpleDate(2000, 3),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test1",
 		environment: "env1",
 		date:        simpleDate(2000, 2),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test1",
 		environment: "env1",
 		date:        simpleDate(2000, 1),
 		status:      "Passed",
 	}
-	entryE1T2R1, entryE1T2R2, entryE1T2O1 := TestEntry{
+	entryE1T2R1, entryE1T2R2, entryE1T2O1 := testEntry{
 		name:        "test2",
 		environment: "env1",
 		date:        simpleDate(2001, 3),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test2",
 		environment: "env1",
 		date:        simpleDate(2001, 2),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test2",
 		environment: "env1",
 		date:        simpleDate(2001, 1),
 		status:      "Passed",
 	}
-	entryE2T2R1, entryE2T2R2, entryE2T2O1 := TestEntry{
+	entryE2T2R1, entryE2T2R2, entryE2T2O1 := testEntry{
 		name:        "test2",
 		environment: "env2",
 		date:        simpleDate(2003, 3),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test2",
 		environment: "env2",
 		date:        simpleDate(2003, 2),
 		status:      "Passed",
-	}, TestEntry{
+	}, testEntry{
 		name:        "test2",
 		environment: "env2",
 		date:        simpleDate(2003, 1),
 		status:      "Passed",
 	}
 
-	actualData := FilterRecentEntries(SplitEntryMap{
+	actualData := filterRecentEntries(splitEntryMap{
 		"env1": {
 			"test1": {
 				entryE1T1R1,
@@ -257,7 +257,7 @@ func TestFilterRecentEntries(t *testing.T) {
 		},
 	}, 2)
 
-	expectedData := SplitEntryMap{
+	expectedData := splitEntryMap{
 		"env1": {
 			"test1": {
 				entryE1T1R1,
@@ -281,7 +281,7 @@ func TestFilterRecentEntries(t *testing.T) {
 }
 
 func TestComputeFlakeRates(t *testing.T) {
-	actualData := ComputeFlakeRates(SplitEntryMap{
+	actualData := computeFlakeRates(splitEntryMap{
 		"env1": {
 			"test1": {
 				{
@@ -337,7 +337,7 @@ func TestComputeFlakeRates(t *testing.T) {
 					environment: "env2",
 					date:        simpleDate(2003, 3),
 					status:      "Passed",
-				}, TestEntry{
+				}, testEntry{
 					name:        "test2",
 					environment: "env2",
 					date:        simpleDate(2003, 2),
