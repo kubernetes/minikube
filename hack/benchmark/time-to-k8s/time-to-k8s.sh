@@ -61,10 +61,11 @@ create_pr() {
 	gh pr create --fill --base master --head minikube-bot:"${branch}"
 }
 
+export access_token="$1"
+
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
-export access_token="$1"
 git config user.name "minikube-bot"
 git config user.email "minikube-bot@google.com"
 
