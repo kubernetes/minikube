@@ -30,6 +30,7 @@ Thank you to our triage members for this release!
 - JacekDuszenko (7 comments)
 - spowelljr (5 comments)
 
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.21.0/) for this release!
 
 ## Version 1.21.0-beta.0 - 2021-06-02
 Features:
