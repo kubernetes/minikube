@@ -1,7 +1,9 @@
 name: "time-to-k8s benchmark"
 on:
-  release:
-    types: [released]
+#  release:
+#    types: [released]
+  pull_request:
+    types: [opened]
 jobs:
   benchmark:
     runs-on: ubuntu-latest
@@ -13,4 +15,4 @@ jobs:
           stable: true
     - name: Benchmark
       run: |
-          ./hack/benchmark/time-to-k8s/time-to-k8s.sh
+          ./hack/benchmark/time-to-k8s/time-to-k8s.sh ${{ secrets.ACCESS_TOKEN }}

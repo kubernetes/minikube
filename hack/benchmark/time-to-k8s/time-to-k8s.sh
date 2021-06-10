@@ -16,6 +16,8 @@
 
 set -e
 
+export access_token="$1"
+
 install_kind() {
 	curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-amd64
 	chmod +x ./kind
@@ -34,7 +36,7 @@ install_minikube() {
 run_benchmark() {
 	( cd ./hack/benchmark/time-to-k8s/time-to-k8s/ &&
 		git submodule update --init &&
-		go run . --config local-kubernetes.yaml --iterations 5 --output output.csv )
+		go run . --config local-kubernetes.yaml --iterations 1 --output output.csv )
 }
 
 generate_chart() {
@@ -56,7 +58,7 @@ commit_changes() {
 }
 
 create_pr() {
-	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
+	git remote add minikube-bot git@github.com:spowelljr/minikube.git
 	git push -f minikube-bot "${branch}"
 	gh pr create --fill --base master --head minikube-bot:"${branch}"
 }
