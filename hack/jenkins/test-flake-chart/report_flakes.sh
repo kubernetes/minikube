@@ -54,7 +54,7 @@ TMP_FAILED_RATES="$TMP_FLAKE_RATES\_filtered"
 # 3) Join the flake rates with the failing tests to only get flake rates of failing tests.
 # 4) Sort failed test flake rates based on the flakiness of that test - stable tests should be first on the list.
 # 5) Store in file $TMP_FAILED_RATES.
-< "$TMP_FLAKE_RATES" sed -n -r -e "s/$ENVIRONMENT,([a-zA-Z\/_-]*),([.0-9]*)/\1,\2/p" \
+< "$TMP_FLAKE_RATES" sed -n -r -e "s/$ENVIRONMENT,([a-zA-Z\/_-]*),([.0-9]*),[.0-9]*/\1,\2/p" \
   | sort -t, -k1,1 \
   | join -t , -j 1 "$TMP_DATA" - \
   | sort -g -t, -k2,2 \

@@ -24,6 +24,7 @@ import (
 	"os"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -45,10 +46,12 @@ func main() {
 	splitEntries := splitData(testEntries)
 	filteredEntries := filterRecentEntries(splitEntries, *dateRange)
 	flakeRates := computeFlakeRates(filteredEntries)
-	fmt.Println("Environment,Test,Flake Rate")
+	averageDurations := computeAverageDurations(filteredEntries)
+	fmt.Println("Environment,Test,Flake Rate,Duration")
 	for environment, environmentSplit := range flakeRates {
 		for test, flakeRate := range environmentSplit {
-			fmt.Printf("%s,%s,%.2f\n", environment, test, flakeRate*100)
+			duration := averageDurations[environment][test]
+			fmt.Printf("%s,%s,%.2f,%.3f\n", environment, test, flakeRate*100, duration)
 		}
 	}
 }
@@ -59,12 +62,14 @@ func main() {
 //   environment: "Docker_Linux",
 //	 date: time.Now,
 //   status: "Passed",
+//   duration: 0.1,
 // }
 type testEntry struct {
 	name        string
 	environment string
 	date        time.Time
 	status      string
+	duration    float32
 }
 
 // A map with keys of (environment, test_name) to values of slcies of TestEntry.
@@ -107,12 +112,19 @@ func readData(file io.Reader) []testEntry {
 			date, err := time.Parse("2006-01-02", fields[1])
 			if err != nil {
 				fmt.Printf("Failed to parse date: %v\n", err)
+				continue
+			}
+			duration, err := strconv.ParseFloat(fields[5], 32)
+			if err != nil {
+				fmt.Printf("Failed to parse duration: %v\n", err)
+				continue
 			}
 			testEntries = append(testEntries, testEntry{
 				name:        fields[3],
 				environment: fields[2],
 				date:        date,
 				status:      fields[4],
+				duration:    float32(duration),
 			})
 		}
 	}
@@ -215,14 +227,32 @@ func computeFlakeRates(splitEntries splitEntryMap) map[string]map[string]float32
 	return flakeRates
 }
 
-// Sets the `value` of keys `environment` and `test` in `flakeRates`.
-func setValue(flakeRates map[string]map[string]float32, environment, test string, value float32) {
+// Computes the average durations over each entry in `splitEntries`.
+func computeAverageDurations(splitEntries splitEntryMap) map[string]map[string]float32 {
+	averageDurations := make(map[string]map[string]float32)
+	for environment, environmentSplit := range splitEntries {
+		for test, testSplit := range environmentSplit {
+			durationSum := float32(0)
+			for _, entry := range testSplit {
+				durationSum += entry.duration
+			}
+			if len(testSplit) != 0 {
+				durationSum /= float32(len(testSplit))
+			}
+			setValue(averageDurations, environment, test, durationSum)
+		}
+	}
+	return averageDurations
+}
+
+// Sets the `value` of keys `environment` and `test` in `mapEntries`.
+func setValue(mapEntries map[string]map[string]float32, environment, test string, value float32) {
 	// Lookup the environment.
-	environmentRates, ok := flakeRates[environment]
+	environmentRates, ok := mapEntries[environment]
 	if !ok {
 		// If the environment map is missing, make a map for this environment and store it.
 		environmentRates = make(map[string]float32)
-		flakeRates[environment] = environmentRates
+		mapEntries[environment] = environmentRates
 	}
 	environmentRates[test] = value
 }
