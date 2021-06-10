@@ -1,5 +1,36 @@
 # Release Notes
 
+## Version 1.21.0 - 2021-06-10
+* add more polish translations [#11587](https://github.com/kubernetes/minikube/pull/11587)
+* Modify MetricsServer to use v1 api version (instead of v1beta1). [#11584](https://github.com/kubernetes/minikube/pull/11584)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Andriy Dzikh
+- Ilya Zuyev
+- JacekDuszenko
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (11 comments)
+- medyagh (2 comments)
+- sharifelgamal (2 comments)
+- andriyDev (1 comments)
+
+Thank you to our triage members for this release!
+
+- RA489 (12 comments)
+- andriyDev (10 comments)
+- sharifelgamal (10 comments)
+- JacekDuszenko (7 comments)
+- spowelljr (5 comments)
+
+
 ## Version 1.21.0-beta.0 - 2021-06-02
 Features:
 * Support setting addons from environmental variables [#11469](https://github.com/kubernetes/minikube/pull/11469)
