@@ -15,8 +15,9 @@
 # limitations under the License.
 
 # Collects all test data manually, processes it, and uploads to GCS. This will
-# overwrite any existing data.
-# Example usage: ./collect_data.sh
+# overwrite any existing data. This should only be done for a dryrun, new data
+# should be handled exclusively through upload_tests.sh.
+# Example usage: ./collect_data_manual.sh
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
