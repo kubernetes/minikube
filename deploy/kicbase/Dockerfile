@@ -162,10 +162,10 @@ COPY scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/min
 COPY scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
-# disable non-docker runtimes by default
-RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
-# enable docker which is default
-RUN systemctl enable docker.service && systemctl enable podman.socket
+# disable runtimes by default
+RUN systemctl disable docker && systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
+RUN systemctl enable podman.socket
+
 # making SSH work for docker container 
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 RUN mkdir /var/run/sshd
@@ -179,8 +179,6 @@ RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 # metacopy breaks crio on certain OS and isn't necessary for minikube
 # https://github.com/kubernetes/minikube/issues/10520
 RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/containers/storage.conf
-
-RUN systemctl disable docker
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
