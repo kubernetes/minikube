@@ -82,3 +82,10 @@ Simply run the following command to be enrolled into beta notifications.
 ```
 minikube config set WantBetaUpdateNotification true
 ```
+
+Yes! If you prefer not having emoji in your minikube output 😔 , just set the MINIKUBE_IN_STYLE environment variable to 0 or false
+
+```
+MINIKUBE_IN_STYLE=0 minikube start
+
+```
