@@ -57,7 +57,7 @@ commit_changes() {
 create_pr() {
 	git remote add minikube-bot https://spowelljr:"$2"@github.com/spowelljr/minikube.git
 	git push -u minikube-bot addTimeToK8s"$1"
-	gh pr create --repo kubernetes/minikube --base master --head minikube-bot:addTimeToK8s"$1" --title "Add time-to-k8s benchmark for $1" --body "Updating time-to-k8s benchmark as part of the release process"
+	gh pr create --repo kubernetes/minikube --base master --title "Add time-to-k8s benchmark for $1" --body "Updating time-to-k8s benchmark as part of the release process"
 }
 
 export access_token="$1"
