@@ -20,7 +20,7 @@ jobs:
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.ACCESS_TOKEN }}
-        branch: updateTimeToK8s
+        branch: updateTimeToK8sExample
         repository: spowelljr/minikube
     - name: Create PR
       run: |

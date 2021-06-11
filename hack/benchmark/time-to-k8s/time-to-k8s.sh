@@ -46,7 +46,7 @@ create_page() {
 }
 
 create_branch() {
-	branch=updateTimeToK8s
+	branch=updateTimeToK8sExample
 	git checkout -b "${branch}"
 }
 
