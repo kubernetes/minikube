@@ -3,7 +3,7 @@ title: "FAQ"
 linkTitle: "FAQ"
 weight: 3
 description: >
-  Questions that come up regularly
+  Frequently Asked Questions
 ---
 
 
