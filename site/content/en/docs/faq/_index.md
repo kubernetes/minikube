@@ -47,7 +47,7 @@ minikube start -p p1 --driver=docker
 
 ## Does minikube support IPv6?
 
-minikube currently doesn't support IPv6. However, it is on the [roadmap]({{< ref "/docs/contrib/roadmap.en.md" >}}). You can also refer to the [open issue.](https://github.com/kubernetes/minikube/issues/8535)
+minikube currently doesn't support IPv6. However, it is on the [roadmap]({{< ref "/docs/contrib/roadmap.en.md" >}}). You can also refer to the [open issue](https://github.com/kubernetes/minikube/issues/8535).
 
 ## How can I prevent password prompts on Linux?
 
@@ -67,7 +67,7 @@ minikube start --extra-config kubeadm.ignore-preflight-errors=SystemVerification
 
 ## What is the minimum resource allocation necessary for a Knative setup using minikube?
 
-Please allocate sufficient resources for Knative setup using minikube, especially when you running minikube cluster on your local machine. We recommend allocating at least 6 CPUs and 8G memory:
+Please allocate sufficient resources for Knative setup using minikube, especially when running minikube cluster on your local machine. We recommend allocating at least 6 CPUs and 8G memory:
 
 ```shell
 minikube start --cpus 6 --memory 8000
@@ -75,7 +75,7 @@ minikube start --cpus 6 --memory 8000
 
 ## Do I need to install kubectl locally?
 
-No, minikube comes with a built-in kubectl installation. See [minikube's kubectl documentation.]({{< ref "docs/handbook/kubectl.md" >}}).
+No, minikube comes with a built-in kubectl installation. See [minikube's kubectl documentation]({{< ref "docs/handbook/kubectl.md" >}}).
 
 ## How can I opt-in to beta release notifications?
 
