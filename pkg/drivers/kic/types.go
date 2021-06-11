@@ -28,9 +28,9 @@ const (
 	// SHA of the kic base image
 	baseImageSHA = "ff21626ea409f6d231f161ef1df30b121fd9e3f54b0cc13f4a76cbcc620cdee1"
 	// The name of the GCR kicbase repository
-	gcrRepo = "gcr.io/k8s-minikube/kicbase-builds"
+	gcrRepo = "gcr.io/k8s-minikube/kicbase"
 	// The name of the Dockerhub kicbase repository
-	dockerhubRepo = "kicbase/build"
+	dockerhubRepo = "kicbase/stable"
 )
 
 var (

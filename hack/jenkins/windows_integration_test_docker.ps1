@@ -21,6 +21,8 @@ gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-am
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
 
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT"
@@ -42,6 +44,8 @@ docker system prune --all --force
 
 
 ./out/minikube-windows-amd64.exe delete --all
+
+./out/windows_integration_setup.ps1
 
 docker ps -aq | ForEach -Process {docker rm -fv $_}
 
@@ -95,5 +99,7 @@ docker system prune --all --force
 
 # Just shutdown Docker, it's safer than anything else
 Get-Process "*Docker Desktop*" | Stop-Process
+
+./out/windows_integration_teardown.ps1
 
 Exit $env:result
