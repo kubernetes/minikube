@@ -56,9 +56,9 @@ commit_changes() {
 }
 
 create_pr() {
-	git remote add minikube-bot git@github.com:spowelljr/minikube.git
-	git push -f minikube-bot "${branch}"
-	gh pr create --fill --base master --head minikube-bot:"${branch}"
+	git remote add minikube-bot https://spowelljr:"$1"@github.com/spowelljr/minikube.git #git@github.com:spowelljr/minikube.git
+	git push -f minikube-bot updateTimeToK8sExample
+	gh pr create --fill --base master --head minikube-bot:updateTimeToK8sExample
 }
 
 export access_token="$1"
@@ -84,4 +84,4 @@ git commit -m 'cats'
 #generate_chart "$VERSION"
 #create_page "$VERSION"
 #commit_changes "$VERSION"
-# create_pr "$VERSION"
+create_pr "$1"

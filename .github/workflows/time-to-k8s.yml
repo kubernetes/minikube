@@ -16,13 +16,3 @@ jobs:
     - name: Benchmark
       run: |
           ./hack/benchmark/time-to-k8s/time-to-k8s.sh ${{ secrets.ACCESS_TOKEN }}
-    - name: Push changes
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.ACCESS_TOKEN }}
-        branch: updateTimeToK8sExample
-        repository: spowelljr/minikube
-    - name: Create PR
-      run: |
-          ./hack/jenkins/installers/check_install_gh.sh
-          gh pr create --fill --base master --head minikube-bot:updateTimeToK8s
