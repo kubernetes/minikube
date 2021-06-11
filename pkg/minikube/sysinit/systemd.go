@@ -42,6 +42,8 @@ func (s *Systemd) daemonReload() error {
 
 // Active checks if a service is running
 func (s *Systemd) Active(svc string) bool {
+	_, _ = s.r.RunCmd(exec.Command("sudo", "systemctl", "is-enabled", svc))
+	_, _ = s.r.RunCmd(exec.Command("sudo", "systemctl", "status", svc))
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", svc))
 	return err == nil
 }
