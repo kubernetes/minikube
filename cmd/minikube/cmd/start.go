@@ -1406,6 +1406,10 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	if err != nil {
 		exit.Message(reason.InternalSemverParse, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
 	}
+	newestVersion, err := semver.Make(strings.TrimPrefix(constants.NewestKubernetesVersion, version.VersionPrefix))
+	if err != nil {
+		exit.Message(reason.InternalSemverParse, "Unable to parse newest Kubernetes version from constants: {{.error}}", out.V{"error": err})
+	}
 	defaultVersion, err := semver.Make(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
 	if err != nil {
 		exit.Message(reason.InternalSemverParse, "Unable to parse default Kubernetes version from constants: {{.error}}", out.V{"error": err})
@@ -1417,6 +1421,10 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}
 		exitIfNotForced(reason.KubernetesTooOld, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+	}
+
+	if nvs.GT(newestVersion) {
+		exit.Message(reason.KubernetesTooNew, "Specified Kubernetes version {{.specified}} is higher than newest supported version: {{.newest}}", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
 	}
 
 	// If the version of Kubernetes has a known issue, print a warning out to the screen
@@ -1469,7 +1477,6 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	} else if strings.EqualFold(paramVersion, "latest") {
 		paramVersion = constants.NewestKubernetesVersion
 	}
-
 	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
 	if err != nil {
 		exit.Message(reason.Usage, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
