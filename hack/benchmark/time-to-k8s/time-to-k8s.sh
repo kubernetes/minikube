@@ -69,14 +69,19 @@ export access_token="$1"
 git config user.name "minikube-bot"
 git config user.email "minikube-bot@google.com"
 
-install_kind
-install_k3d
-install_minikube
-VERSION=$(minikube version --short)
+#install_kind
+#install_k3d
+#install_minikube
+#VERSION=$(minikube version --short)
 
-create_branch "$VERSION"
-run_benchmark
-generate_chart "$VERSION"
-create_page "$VERSION"
-commit_changes "$VERSION"
+create_branch
+touch cats.txt
+git add .
+git commit -m 'cats'
+
+#create_branch
+#run_benchmark
+#generate_chart "$VERSION"
+#create_page "$VERSION"
+#commit_changes "$VERSION"
 # create_pr "$VERSION"

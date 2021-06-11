@@ -21,7 +21,7 @@ jobs:
       with:
         github_token: ${{ secrets.ACCESS_TOKEN }}
         branch: updateTimeToK8s
-        repository: git@github.com:spowelljr/minikube.git
+        repository: spowelljr/minikube
     - name: Create PR
       run: |
           ./hack/jenkins/installers/check_install_gh.sh
