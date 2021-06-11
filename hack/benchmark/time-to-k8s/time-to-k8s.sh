@@ -46,19 +46,18 @@ create_page() {
 }
 
 create_branch() {
-	branch=updateTimeToK8sExample
-	git checkout -b "${branch}"
+	git checkout -b addTimeToK8s"$1"
 }
 
 commit_changes() {
 	git add ./site/static/images/benchmarks/timeToK8s/"$1".png ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
-	git commit -m "Add time-to-k8s benchmark for $1"
+	git commit -m "add time-to-k8s benchmark for $1"
 }
 
 create_pr() {
-	git remote add minikube-bot https://spowelljr:"$1"@github.com/spowelljr/minikube.git #git@github.com:spowelljr/minikube.git
-	git push -f minikube-bot updateTimeToK8sExample
-	gh pr create --fill --base master --head minikube-bot:updateTimeToK8sExample
+	git remote add minikube-bot https://spowelljr:"$2"@github.com/spowelljr/minikube.git
+	git push -f minikube-bot addTimeToK8s"$1"
+	gh pr create --fill --base master --head minikube-bot:addTimeToK8s"$1" --title "Add time-to-k8s benchmark for $1" --body "Updating time-to-k8s benchmark as part of the release process"
 }
 
 export access_token="$1"
@@ -72,16 +71,15 @@ git config user.email "minikube-bot@google.com"
 #install_kind
 #install_k3d
 #install_minikube
-#VERSION=$(minikube version --short)
+VERSION=$(minikube version --short)
 
-create_branch
+create_branch "$VERSION"
 touch cats.txt
 git add .
-git commit -m 'cats'
+git commit -m 'cats123'
 
-#create_branch
 #run_benchmark
 #generate_chart "$VERSION"
 #create_page "$VERSION"
 #commit_changes "$VERSION"
-create_pr "$1"
+create_pr "$VERSION" "$1"
