@@ -1,0 +1,18 @@
+name: "time-to-k8s benchmark"
+on:
+#  release:
+#    types: [released]
+  pull_request:
+    types: [opened]
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+          go-version: 1.16.5
+          stable: true
+    - name: Benchmark
+      run: |
+          ./hack/benchmark/time-to-k8s/time-to-k8s.sh ${{ secrets.ACCESS_TOKEN }}
