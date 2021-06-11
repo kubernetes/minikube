@@ -191,3 +191,9 @@ func Seconds(n int) time.Duration {
 func TestingKicBaseImage() bool {
 	return strings.Contains(*startArgs, "base-image")
 }
+
+func runMinikubeCtx(ctx context.Context, t *testing.T, p string, args ...string) (*RunResult, error) {
+	cmd := fmt.Sprintf("bash -c \"%s -p %s %s 2>&1 \" >> test_%s.log",
+		Target(), p, strings.Join(args, " "), p)
+	return Run(t, exec.CommandContext(ctx, cmd))
+}
