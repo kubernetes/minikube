@@ -46,7 +46,7 @@ create_page() {
 }
 
 create_branch() {
-	branch=time-to-k8s-"$1"
+	branch=updateTimeToK8s
 	git checkout -b "${branch}"
 }
 
@@ -79,4 +79,4 @@ run_benchmark
 generate_chart "$VERSION"
 create_page "$VERSION"
 commit_changes "$VERSION"
-create_pr "$VERSION"
+# create_pr "$VERSION"
