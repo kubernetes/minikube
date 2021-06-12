@@ -193,7 +193,7 @@ func TestingKicBaseImage() bool {
 }
 
 func runMinikubeCtx(ctx context.Context, t *testing.T, p string, args ...string) (*RunResult, error) {
-	cmd := fmt.Sprintf("bash -c \"%s -p %s %s 2>&1 >> test_%s.log \"",
+	cmd := fmt.Sprintf("\"%s -p %s %s 2>&1 >> test_%s.log \"",
 		Target(), p, strings.Join(args, " "), p)
-	return Run(t, exec.CommandContext(ctx, cmd))
+	return Run(t, exec.CommandContext(ctx, "bash", "-c", cmd))
 }
