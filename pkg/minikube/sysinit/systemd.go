@@ -50,7 +50,9 @@ func (s *Systemd) Active(svc string) bool {
 
 // Disable disables a service
 func (s *Systemd) Disable(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "disable", svc))
+	cmd := exec.Command("sudo", "systemctl", "disable", svc)
+	cmd.Env = append(cmd.Env, "SYSTEMCTL_SKIP_SYSV=1")
+	_, err := s.r.RunCmd(cmd)
 	return err
 }
 
