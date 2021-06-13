@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors All rights reserved.
+Copyright 2021 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package github
 
 import (
 	"context"
 
 	"github.com/google/go-github/github"
-
-	"k8s.io/klog/v2"
 )
 
-// recentK8sVersions returns the most recent k8s version, usually around 30
-func recentK8sVersions() ([]string, error) {
+// RecentK8sVersions returns the most recent k8s version, usually around 30
+func RecentK8sVersions() ([]string, error) {
 	client := github.NewClient(nil)
 	k8s := "kubernetes"
 	list, _, err := client.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{})
@@ -36,6 +34,5 @@ func recentK8sVersions() ([]string, error) {
 	for _, r := range list {
 		releases = append(releases, r.GetTagName())
 	}
-	klog.InfoS("Got releases", "releases", releases)
 	return releases, nil
 }
