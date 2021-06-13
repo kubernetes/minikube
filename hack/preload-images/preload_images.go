@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/github"
 )
 
 const (
@@ -113,7 +114,7 @@ out:
 
 func collectK8sVers() ([]string, error) {
 	if k8sVersions == nil {
-		recent, err := recentK8sVersions()
+		recent, err := github.RecentK8sVersions()
 		if err != nil {
 			return nil, err
 		}

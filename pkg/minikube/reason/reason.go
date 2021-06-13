@@ -296,8 +296,10 @@ var (
 	KubernetesInstallFailed                  = Kind{ID: "K8S_INSTALL_FAILED", ExitCode: ExControlPlaneError}
 	KubernetesInstallFailedRuntimeNotRunning = Kind{ID: "K8S_INSTALL_FAILED_CONTAINER_RUNTIME_NOT_RUNNING", ExitCode: ExRuntimeNotRunning}
 	KubernetesTooOld                         = Kind{ID: "K8S_OLD_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
-	KubernetesTooNew                         = Kind{ID: "K8S_NEW_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
-	KubernetesDowngrade                      = Kind{
+	KubernetesReleaseFetchFailed             = Kind{ID: "K8S_RELEASE_FETCH_FAILED", ExitCode: ExControlPlaneUnsupported}
+	KubernetesVersionNotFound                = Kind{ID: "K8S_VERSION_NOT_FOUND", ExitCode: ExControlPlaneUnsupported}
+
+	KubernetesDowngrade = Kind{
 		ID:       "K8S_DOWNGRADE_UNSUPPORTED",
 		ExitCode: ExControlPlaneUnsupported,
 		Advice: `1) Recreate the cluster with Kubernetes {{.new}}, by running:

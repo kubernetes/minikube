@@ -411,6 +411,8 @@ minikube has no current cluster running
 
 "K8S_OLD_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 
-"K8S_NEW_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)
+"K8S_DOWNGRADE_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)
 
-"K8S_DOWNGRADE_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
+"K8S_RELEASE_FETCH_FAILED"  (Exit code ExControlPlaneUnsupported)
+
+"K8S_VERSION_NOT_FOUND"     (Exit code ExControlPlaneUnsupported)

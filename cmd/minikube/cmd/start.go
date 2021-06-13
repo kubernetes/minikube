@@ -32,6 +32,8 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/minikube/pkg/minikube/github"
+
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -1424,7 +1426,20 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	}
 
 	if nvs.GT(newestVersion) {
-		exit.Message(reason.KubernetesTooNew, "Specified Kubernetes version {{.specified}} is higher than newest supported version: {{.newest}}", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
+		k8sReleases, err := github.RecentK8sVersions()
+		if err != nil {
+			exit.Message(reason.KubernetesReleaseFetchFailed, "Failed fetching available Kubernetes releases from GitHub repository. Check your internet connection")
+		}
+		versionFound := false
+		nvsStr := nvs.String()
+		for _, release := range k8sReleases {
+			if strings.TrimPrefix(release, version.VersionPrefix) == nvsStr {
+				versionFound = true
+			}
+		}
+		if !versionFound {
+			exit.Message(reason.KubernetesVersionNotFound, "Specified Kubernetes version {{.specified}} was not found in Kubernetes releases", out.V{"specified": nvs})
+		}
 	}
 
 	// If the version of Kubernetes has a known issue, print a warning out to the screen
