@@ -55,7 +55,7 @@ run_benchmark() {
 }
 
 generate_chart() {
-	go run ./hack/benchmark/time-to-k8s/chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s/output.csv --output ./site/static/images/benchmarks/timeToK8s/"$1".png
+	go run ./hack/benchmark/time-to-k8s/chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --output ./site/static/images/benchmarks/timeToK8s/"$1".png
 }
 
 create_page() {
