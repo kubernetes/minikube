@@ -4,6 +4,3 @@
 [submodule "hack/benchmark/time-to-k8s/triage"]
 	path = hack/benchmark/time-to-k8s/triage
 	url = https://github.com/google/triage-party.git
-[submodule "hack/benchmark/time-to-k8s/time-to-k8s"]
-	path = hack/benchmark/time-to-k8s/time-to-k8s
-	url = https://github.com/tstromberg/time-to-k8s.git
