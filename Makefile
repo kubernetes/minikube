@@ -75,7 +75,7 @@ GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --enable gofmt,goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
-	  --skip-files "pkg/minikube/translate/translations.go|pkg/minikube/assets/assets.go"
+	  --skip-files "pkg/minikube/translate/translations.go"
 
 export GO111MODULE := on
 
@@ -134,9 +134,10 @@ CMD_SOURCE_DIRS = cmd pkg
 SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
-SOURCE_GENERATED = pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+SOURCE_GENERATED = pkg/minikube/translate/translations.go
 SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
 GOTEST_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep _test.go)
+ADDON_FILES = $(shell find "deploy/addons" -type f)
 
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
@@ -195,7 +196,7 @@ ifneq ($(TEST_FILES),)
 	INTEGRATION_TESTS_TO_RUN := $(addprefix ./test/integration/, $(TEST_HELPERS) $(TEST_FILES))
 endif
 
-out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) go.mod
+out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) $(ADDON_FILES) go.mod
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) /usr/bin/make $@)
 else
@@ -244,7 +245,7 @@ minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for
 
 eq = $(and $(findstring x$(1),x$(2)),$(findstring x$(2),x$(1)))
 
-out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
+out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES) $(ADDON_FILES)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -253,7 +254,7 @@ else
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
-out/minikube-linux-armv6: $(SOURCE_GENERATED) $(SOURCE_FILES)
+out/minikube-linux-armv6: $(SOURCE_GENERATED) $(SOURCE_FILES) $(ADDON_FILES)
 	$(Q)GOOS=linux GOARCH=arm GOARM=6 \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 
@@ -396,22 +397,6 @@ out/coverage.html: out/coverage.out
 .PHONY: extract 
 extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
-
-# Regenerates assets.go when template files have been updated
-pkg/minikube/assets/assets.go: $(shell find "deploy/addons" -type f)
-ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
-endif
-	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/go-bindata/go-bindata/...
-	$(if $(quiet),@echo "  GEN      $@")
-	$(Q)PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
-	$(Q)-gofmt -s -w $@
-	@#golint: Dns should be DNS (compat sed)
-	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
-	@#golint: Html should be HTML (compat sed)
-	@sed -i -e 's/Html/HTML/g' $@ && rm -f ./-e
-	@#golint: don't use underscores in Go names
-	@sed -i -e 's/SnapshotStorageK8sIo_volumesnapshot/SnapshotStorageK8sIoVolumesnapshot/g' $@ && rm -f ./-e
 
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -882,11 +867,11 @@ out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
 .PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work around for not passing the whole repo as docker context
-deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
+deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES) $(ADDON_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
 # auto pause binary to be used for ISO
-deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
+deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES) $(ADDON_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
 
