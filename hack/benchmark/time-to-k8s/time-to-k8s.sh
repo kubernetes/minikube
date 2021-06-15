@@ -51,7 +51,7 @@ run_benchmark() {
 	pwd
 	( cd ./hack/benchmark/time-to-k8s/time-to-k8s-repo/ &&
 		git submodule update --init &&
-		go run . --config local-kubernetes.yaml --iterations 1 --output output.csv )
+		go run . --config local-kubernetes.yaml --iterations 5 --output output.csv )
 }
 
 generate_chart() {
