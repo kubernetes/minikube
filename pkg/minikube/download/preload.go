@@ -17,17 +17,16 @@ limitations under the License.
 package download
 
 import (
+	"cloud.google.com/go/storage"
 	"context"
 	"crypto/md5"
 	"fmt"
+	"google.golang.org/api/option"
 	"io/ioutil"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
-
-	"cloud.google.com/go/storage"
-	"google.golang.org/api/option"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -57,7 +56,8 @@ func TarballName(k8sVersion, containerRuntime string) string {
 	} else {
 		storageDriver = "overlay2"
 	}
-	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, runtime.GOARCH)
+	arch := detect.EffectiveArch()
+	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, arch)
 }
 
 // returns the name of the checksum file

@@ -25,9 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/notify"
-	"k8s.io/minikube/pkg/version"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -95,11 +92,12 @@ func Execute() {
 			exit.Message(reason.WrongBinaryWSL, "You are trying to run windows .exe binary inside WSL, for better integration please use Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force")
 		}
 	}
-
-	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
-		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead (Download at {{.url}}.)",
-			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "amd64")})
-	}
+	/*
+		if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
+			exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead (Download at {{.url}}.)",
+				out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "amd64")})
+		}
+	*/
 
 	_, callingCmd := filepath.Split(os.Args[0])
 

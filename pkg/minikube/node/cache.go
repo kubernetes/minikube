@@ -18,6 +18,7 @@ package node
 
 import (
 	"fmt"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"os"
 	"runtime"
 	"strings"
@@ -97,7 +98,7 @@ func CacheKubectlBinary(k8sVersion string) (string, error) {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVersion, runtime.GOOS, runtime.GOARCH)
+	return download.Binary(binary, k8sVersion, runtime.GOOS, detect.EffectiveArch())
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
