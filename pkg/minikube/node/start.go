@@ -97,6 +97,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
+
+	// check if installed runtime is compatible with current minikube code
+	if err = validateRuntimeVersion(err, cr); err != nil {
+		return nil, err
+	}
+
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
 	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
@@ -221,6 +227,21 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+func validateRuntimeVersion(err error, cr cruntime.Manager) error {
+	v, err := cr.Version()
+	if err != nil {
+		return errors.Wrap(err, "Failed to check container runtime version")
+	}
+	ok, err := cruntime.CompatibleWithCurrent(cr.Name(), v)
+	if err != nil {
+		return errors.Wrap(err, "Failed to validate container runtime version")
+	}
+	if !ok {
+		return fmt.Errorf( "version %s of %s is not compatible with current", v, cr.Name())
+	}
+	return nil
 }
 
 // joinCluster adds new or prepares and then adds existing node to the cluster.
@@ -353,7 +374,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
-
 	return cr
 }
 

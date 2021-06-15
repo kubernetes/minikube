@@ -243,3 +243,19 @@ func disableOthers(me Manager, cr CommandRunner) error {
 	}
 	return nil
 }
+
+var requiredContainerdVersion = semver.MustParse("1.4.0")
+
+// CompatibleWithCurrent checks if current version of "runtime" is compatible with "v"
+func CompatibleWithCurrent(runtime, v string) (bool, error) {
+	vv, err := semver.Make(v)
+	if err != nil {
+		return false, err
+	}
+	switch runtime {
+	case "containerd":
+		return requiredContainerdVersion.LE(vv), nil
+	default:
+		return true, nil
+	}
+}
