@@ -125,7 +125,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 		t.Fatalf("legacy %s start failed: %v", legacyVersion, err)
 	}
 
-	args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", "--delete-on-failure=true", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("upgrade from %s to HEAD failed: %s: %v", legacyVersion, rr.Command(), err)
