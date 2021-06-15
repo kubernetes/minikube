@@ -72,6 +72,6 @@ func ExitIfFatal(err error) {
 			Style:    style.Unsupported,
 			Advice:   "Try to start minikube with '--delete-on-failure=true' option",
 		}, fmt.Sprintf("Your existing minikube instance has version %s of service %v which is too old. "+
-			"Please try to start minikube with --delete-on-failure=true", rtErr.Installed, rtErr.Service))
+			"Please try to start minikube with --delete-on-failure=true option", rtErr.Installed, rtErr.Service))
 	}
 }
