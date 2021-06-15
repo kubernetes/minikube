@@ -234,14 +234,7 @@ func validateRuntimeVersion(err error, cr cruntime.Manager) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to check container runtime version")
 	}
-	ok, err := cruntime.CompatibleWithCurrent(cr.Name(), v)
-	if err != nil {
-		return errors.Wrap(err, "Failed to validate container runtime version")
-	}
-	if !ok {
-		return fmt.Errorf( "version %s of %s is not compatible with current", v, cr.Name())
-	}
-	return nil
+	return cruntime.CompatibleWithVersion(cr.Name(), v)
 }
 
 // joinCluster adds new or prepares and then adds existing node to the cluster.

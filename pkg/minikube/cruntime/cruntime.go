@@ -163,6 +163,27 @@ type ListImagesOptions struct {
 // ErrContainerRuntimeNotRunning is thrown when container runtime is not running
 var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running")
 
+// ErrRuntimeVersion is the error returned when disk image has incompatible version of service
+type ErrRuntimeVersion struct {
+	service   string
+	installed string
+	required  string
+}
+
+// NewErrRuntimeVersion creates a new ErrRuntimeVersion
+func NewErrRuntimeVersion(svc, required, installed string) *ErrRuntimeVersion {
+	return &ErrRuntimeVersion{
+		service:   svc,
+		installed: installed,
+		required:  required,
+	}
+}
+
+func (e ErrRuntimeVersion) Error() string {
+	return fmt.Sprintf("service %q version is %v. Required: %v",
+		e.service, e.installed, e.required)
+}
+
 // New returns an appropriately configured runtime
 func New(c Config) (Manager, error) {
 	sm := sysinit.New(c.Runner)
@@ -246,16 +267,17 @@ func disableOthers(me Manager, cr CommandRunner) error {
 
 var requiredContainerdVersion = semver.MustParse("1.4.0")
 
-// CompatibleWithCurrent checks if current version of "runtime" is compatible with "v"
-func CompatibleWithCurrent(runtime, v string) (bool, error) {
+// CompatibleWithVersion checks if current version of "runtime" is compatible with version "v"
+func CompatibleWithVersion(runtime, v string) error {
 	vv, err := semver.Make(v)
 	if err != nil {
-		return false, err
+		return err
 	}
 	switch runtime {
 	case "containerd":
-		return requiredContainerdVersion.LE(vv), nil
-	default:
-		return true, nil
+		if requiredContainerdVersion.GT(vv) {
+			return NewErrRuntimeVersion(runtime, requiredContainerdVersion.String(), vv.String())
+		}
 	}
+	return nil
 }
