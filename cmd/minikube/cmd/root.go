@@ -97,7 +97,7 @@ func Execute() {
 
 	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
 		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead (Download at {{.url}}.)",
-			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "amd64")})
+			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "arm64")})
 	}
 
 	_, callingCmd := filepath.Split(os.Args[0])
