@@ -67,7 +67,7 @@ func ExitIfFatal(err error) {
 
 	if rtErr, ok := err.(*cruntime.ErrRuntimeVersion); ok {
 		exit.Message(reason.Kind{
-			ID:       "PROVIDER_DOCKER_NOEXEC",
+			ID:       "PROVIDER_INVALID_VERSION",
 			ExitCode: reason.ExGuestConfig,
 			Style:    style.Unsupported,
 			Advice:   "Try to start minikube with '--delete-on-failure=true' option",
