@@ -18,6 +18,7 @@ package assets
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"html/template"
 	"io"
@@ -207,6 +208,7 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 
 // BinAsset is a bindata (binary data) asset
 type BinAsset struct {
+	embed.FS
 	BaseAsset
 	reader   io.ReadSeeker
 	template *template.Template
@@ -214,8 +216,8 @@ type BinAsset struct {
 }
 
 // MustBinAsset creates a new BinAsset, or panics if invalid
-func MustBinAsset(name, targetDir, targetName, permissions string) *BinAsset {
-	asset, err := NewBinAsset(name, targetDir, targetName, permissions)
+func MustBinAsset(fs embed.FS, name, targetDir, targetName, permissions string) *BinAsset {
+	asset, err := NewBinAsset(fs, name, targetDir, targetName, permissions)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to define asset %s: %v", name, err))
 	}
@@ -223,8 +225,9 @@ func MustBinAsset(name, targetDir, targetName, permissions string) *BinAsset {
 }
 
 // NewBinAsset creates a new BinAsset
-func NewBinAsset(name, targetDir, targetName, permissions string) (*BinAsset, error) {
+func NewBinAsset(fs embed.FS, name, targetDir, targetName, permissions string) (*BinAsset, error) {
 	m := &BinAsset{
+		FS: fs,
 		BaseAsset: BaseAsset{
 			SourcePath:  name,
 			TargetDir:   targetDir,
@@ -249,7 +252,7 @@ func defaultValue(defValue string, val interface{}) string {
 }
 
 func (m *BinAsset) loadData() error {
-	contents, err := Asset(m.SourcePath)
+	contents, err := m.FS.ReadFile(m.SourcePath)
 	if err != nil {
 		return err
 	}

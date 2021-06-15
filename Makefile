@@ -130,14 +130,14 @@ MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 MINIKUBE_BUILD_TAGS :=
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 
-CMD_SOURCE_DIRS = cmd pkg
+CMD_SOURCE_DIRS = cmd pkg deploy/addons
 SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
-SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
+SOURCE_PACKAGES = ./cmd/... ./pkg/... ./deploy/addons/... ./test/...
 
 SOURCE_GENERATED = pkg/minikube/translate/translations.go
 SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
 GOTEST_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep _test.go)
-ADDON_FILES = $(shell find "deploy/addons" -type f)
+ADDON_FILES = $(shell find "deploy/addons" -type f | grep -v "\.go")
 
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)

@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+	"k8s.io/minikube/deploy/addons"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -79,27 +80,32 @@ func (a *Addon) IsEnabled(cc *config.ClusterConfig) bool {
 var Addons = map[string]*Addon{
 	"auto-pause": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/auto-pause/auto-pause.yaml.tmpl",
+			addons.AutoPauseAssets,
+			"auto-pause/auto-pause.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"auto-pause.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/auto-pause/auto-pause-hook.yaml.tmpl",
+			addons.AutoPauseAssets,
+			"auto-pause/auto-pause-hook.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"auto-pause-hook.yaml",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/auto-pause/haproxy.cfg.tmpl",
+			addons.AutoPauseAssets,
+			"auto-pause/haproxy.cfg.tmpl",
 			vmpath.GuestPersistentDir,
 			"haproxy.cfg",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/auto-pause/unpause.lua",
+			addons.AutoPauseAssets,
+			"auto-pause/unpause.lua",
 			vmpath.GuestPersistentDir,
 			"unpause.lua",
 			"0640"),
 		MustBinAsset(
-			"deploy/addons/auto-pause/auto-pause.service",
+			addons.AutoPauseAssets,
+			"auto-pause/auto-pause.service",
 			"/etc/systemd/system/",
 			"auto-pause.service",
 			"0640"),
@@ -112,37 +118,37 @@ var Addons = map[string]*Addon{
 	}),
 	"dashboard": NewAddon([]*BinAsset{
 		// We want to create the kubernetes-dashboard ns first so that every subsequent object can be created
-		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", vmpath.GuestAddonsDir, "dashboard-ns.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", vmpath.GuestAddonsDir, "dashboard-configmap.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml.tmpl", vmpath.GuestAddonsDir, "dashboard-dp.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", vmpath.GuestAddonsDir, "dashboard-role.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-rolebinding.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", vmpath.GuestAddonsDir, "dashboard-sa.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
-		MustBinAsset("deploy/addons/dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-ns.yaml", vmpath.GuestAddonsDir, "dashboard-ns.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-clusterrole.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-configmap.yaml", vmpath.GuestAddonsDir, "dashboard-configmap.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-dp.yaml.tmpl", vmpath.GuestAddonsDir, "dashboard-dp.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-role.yaml", vmpath.GuestAddonsDir, "dashboard-role.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-rolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-rolebinding.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-sa.yaml", vmpath.GuestAddonsDir, "dashboard-sa.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
+		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
 	}, false, "dashboard", map[string]string{
 		"Dashboard":      "kubernetesui/dashboard:v2.1.0@sha256:7f80b5ba141bead69c4fee8661464857af300d7d7ed0274cf7beecedc00322e6",
 		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.4@sha256:555981a24f184420f3be0c79d4efb6c948a85cfce84034f85a563f4151a81cbf",
 	}, nil),
 	"default-storageclass": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/storageclass/storageclass.yaml.tmpl",
+		MustBinAsset(addons.DefaultStorageClassAssets,
+			"storageclass/storageclass.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"storageclass.yaml",
 			"0640"),
 	}, true, "default-storageclass", nil, nil),
 	"pod-security-policy": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/pod-security-policy/pod-security-policy.yaml.tmpl",
+		MustBinAsset(addons.PodSecurityPolicyAssets,
+			"pod-security-policy/pod-security-policy.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"pod-security-policy.yaml",
 			"0640"),
 	}, false, "pod-security-policy", nil, nil),
 	"storage-provisioner": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/storage-provisioner/storage-provisioner.yaml.tmpl",
+		MustBinAsset(addons.StorageProvisionerAssets,
+			"storage-provisioner/storage-provisioner.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"storage-provisioner.yaml",
 			"0640"),
@@ -152,23 +158,23 @@ var Addons = map[string]*Addon{
 		"StorageProvisioner": "gcr.io",
 	}),
 	"storage-provisioner-gluster": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml.tmpl",
+		MustBinAsset(addons.StorageProvisionerGlusterAssets,
+			"storage-provisioner-gluster/storage-gluster-ns.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"storage-gluster-ns.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml.tmpl",
+		MustBinAsset(addons.StorageProvisionerGlusterAssets,
+			"storage-provisioner-gluster/glusterfs-daemonset.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"glusterfs-daemonset.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml.tmpl",
+		MustBinAsset(addons.StorageProvisionerGlusterAssets,
+			"storage-provisioner-gluster/heketi-deployment.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"heketi-deployment.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
+		MustBinAsset(addons.StorageProvisionerGlusterAssets,
+			"storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"storage-privisioner-glusterfile.yaml",
 			"0640"),
@@ -180,33 +186,33 @@ var Addons = map[string]*Addon{
 		"GlusterfsServer": "quay.io",
 	}),
 	"efk": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/efk/elasticsearch-rc.yaml.tmpl",
+		MustBinAsset(addons.EfkAssets,
+			"efk/elasticsearch-rc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"elasticsearch-rc.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/efk/elasticsearch-svc.yaml.tmpl",
+		MustBinAsset(addons.EfkAssets,
+			"efk/elasticsearch-svc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"elasticsearch-svc.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/efk/fluentd-es-rc.yaml.tmpl",
+		MustBinAsset(addons.EfkAssets,
+			"efk/fluentd-es-rc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"fluentd-es-rc.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/efk/fluentd-es-configmap.yaml.tmpl",
+		MustBinAsset(addons.EfkAssets,
+			"efk/fluentd-es-configmap.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"fluentd-es-configmap.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/efk/kibana-rc.yaml.tmpl",
+		MustBinAsset(addons.EfkAssets,
+			"efk/kibana-rc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"kibana-rc.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/efk/kibana-svc.yaml.tmpl",
+		MustBinAsset(addons.EfkAssets,
+			"efk/kibana-svc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"kibana-svc.yaml",
 			"0640"),
@@ -221,18 +227,18 @@ var Addons = map[string]*Addon{
 		"Kibana":               "docker.elastic.co",
 	}),
 	"ingress": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/ingress/ingress-configmap.yaml.tmpl",
+		MustBinAsset(addons.IngressAssets,
+			"ingress/ingress-configmap.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ingress-configmap.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/ingress/ingress-rbac.yaml.tmpl",
+		MustBinAsset(addons.IngressAssets,
+			"ingress/ingress-rbac.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ingress-rbac.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/ingress/ingress-dp.yaml.tmpl",
+		MustBinAsset(addons.IngressAssets,
+			"ingress/ingress-dp.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ingress-dp.yaml",
 			"0640"),
@@ -244,8 +250,8 @@ var Addons = map[string]*Addon{
 		"IngressController": "k8s.gcr.io",
 	}),
 	"istio-provisioner": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/istio-provisioner/istio-operator.yaml.tmpl",
+		MustBinAsset(addons.IstioProvisionerAssets,
+			"istio-provisioner/istio-operator.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"istio-operator.yaml",
 			"0640"),
@@ -253,15 +259,15 @@ var Addons = map[string]*Addon{
 		"IstioOperator": "istio/operator:1.5.0@sha256:25a6398ed4996a5313767ceb63768d503c266f63506ad3074b30eef6b5b5167e",
 	}, nil),
 	"istio": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/istio/istio-default-profile.yaml.tmpl",
+		MustBinAsset(addons.IstioAssets,
+			"istio/istio-default-profile.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"istio-default-profile.yaml",
 			"0640"),
 	}, false, "istio", nil, nil),
 	"kubevirt": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/kubevirt/pod.yaml.tmpl",
+		MustBinAsset(addons.KubevirtAssets,
+			"kubevirt/pod.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"pod.yaml",
 			"0640"),
@@ -269,23 +275,23 @@ var Addons = map[string]*Addon{
 		"Kubectl": "bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887",
 	}, nil),
 	"metrics-server": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
+		MustBinAsset(addons.MetricsServerAssets,
+			"metrics-server/metrics-apiservice.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"metrics-apiservice.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/metrics-server/metrics-server-deployment.yaml.tmpl",
+		MustBinAsset(addons.MetricsServerAssets,
+			"metrics-server/metrics-server-deployment.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"metrics-server-deployment.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/metrics-server/metrics-server-rbac.yaml.tmpl",
+		MustBinAsset(addons.MetricsServerAssets,
+			"metrics-server/metrics-server-rbac.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"metrics-server-rbac.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/metrics-server/metrics-server-service.yaml.tmpl",
+		MustBinAsset(addons.MetricsServerAssets,
+			"metrics-server/metrics-server-service.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"metrics-server-service.yaml",
 			"0640"),
@@ -295,13 +301,13 @@ var Addons = map[string]*Addon{
 		"MetricsServer": "k8s.gcr.io",
 	}),
 	"olm": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/olm/crds.yaml.tmpl",
+		MustBinAsset(addons.OlmAssets,
+			"olm/crds.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"crds.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/olm/olm.yaml.tmpl",
+		MustBinAsset(addons.OlmAssets,
+			"olm/olm.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"olm.yaml",
 			"0640"),
@@ -313,18 +319,18 @@ var Addons = map[string]*Addon{
 		"UpstreamCommunityOperators": "quay.io",
 	}),
 	"registry": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/registry/registry-rc.yaml.tmpl",
+		MustBinAsset(addons.RegistryAssets,
+			"registry/registry-rc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"registry-rc.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/registry/registry-svc.yaml.tmpl",
+		MustBinAsset(addons.RegistryAssets,
+			"registry/registry-svc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"registry-svc.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/registry/registry-proxy.yaml.tmpl",
+		MustBinAsset(addons.RegistryAssets,
+			"registry/registry-proxy.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"registry-proxy.yaml",
 			"0640"),
@@ -335,8 +341,8 @@ var Addons = map[string]*Addon{
 		"KubeRegistryProxy": "gcr.io",
 	}),
 	"registry-creds": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/registry-creds/registry-creds-rc.yaml.tmpl",
+		MustBinAsset(addons.RegistryCredsAssets,
+			"registry-creds/registry-creds-rc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"registry-creds-rc.yaml",
 			"0640"),
@@ -344,28 +350,28 @@ var Addons = map[string]*Addon{
 		"RegistryCreds": "upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605",
 	}, nil),
 	"registry-aliases": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/registry-aliases/registry-aliases-sa.tmpl",
+		MustBinAsset(addons.RegistryAliasesAssets,
+			"registry-aliases/registry-aliases-sa.tmpl",
 			vmpath.GuestAddonsDir,
 			"registry-aliases-sa.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/registry-aliases/registry-aliases-sa-crb.tmpl",
+		MustBinAsset(addons.RegistryAliasesAssets,
+			"registry-aliases/registry-aliases-sa-crb.tmpl",
 			vmpath.GuestAddonsDir,
 			"registry-aliases-sa-crb.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/registry-aliases/registry-aliases-config.tmpl",
+		MustBinAsset(addons.RegistryAliasesAssets,
+			"registry-aliases/registry-aliases-config.tmpl",
 			vmpath.GuestAddonsDir,
 			"registry-aliases-config.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/registry-aliases/node-etc-hosts-update.tmpl",
+		MustBinAsset(addons.RegistryAliasesAssets,
+			"registry-aliases/node-etc-hosts-update.tmpl",
 			vmpath.GuestAddonsDir,
 			"node-etc-hosts-update.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/registry-aliases/patch-coredns-job.tmpl",
+		MustBinAsset(addons.RegistryAliasesAssets,
+			"registry-aliases/patch-coredns-job.tmpl",
 			vmpath.GuestAddonsDir,
 			"patch-coredns-job.yaml",
 			"0640"),
@@ -378,8 +384,8 @@ var Addons = map[string]*Addon{
 		"Pause":          "gcr.io",
 	}),
 	"freshpod": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/freshpod/freshpod-rc.yaml.tmpl",
+		MustBinAsset(addons.FreshpodAssets,
+			"freshpod/freshpod-rc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"freshpod-rc.yaml",
 			"0640"),
@@ -389,8 +395,8 @@ var Addons = map[string]*Addon{
 		"FreshPod": "gcr.io",
 	}),
 	"nvidia-driver-installer": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/gpu/nvidia-driver-installer.yaml.tmpl",
+		MustBinAsset(addons.NvidiaDriverInstallerAssets,
+			"gpu/nvidia-driver-installer.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"nvidia-driver-installer.yaml",
 			"0640"),
@@ -402,8 +408,8 @@ var Addons = map[string]*Addon{
 		"Pause":                 "k8s.gcr.io",
 	}),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
+		MustBinAsset(addons.NvidiaGpuDevicePluginAssets,
+			"gpu/nvidia-gpu-device-plugin.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
@@ -411,13 +417,13 @@ var Addons = map[string]*Addon{
 		"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:1.0.0-beta4@sha256:94d46bf513cbc43c4d77a364e4bbd409d32d89c8e686e12551cc3eb27c259b90",
 	}, nil),
 	"logviewer": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml.tmpl",
+		MustBinAsset(addons.LogviewerAssets,
+			"logviewer/logviewer-dp-and-svc.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"logviewer-dp-and-svc.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/logviewer/logviewer-rbac.yaml.tmpl",
+		MustBinAsset(addons.LogviewerAssets,
+			"logviewer/logviewer-rbac.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"logviewer-rbac.yaml",
 			"0640"),
@@ -425,18 +431,18 @@ var Addons = map[string]*Addon{
 		"LogViewer": "ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
 	}, nil),
 	"gvisor": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/gvisor/gvisor-pod.yaml.tmpl",
+		MustBinAsset(addons.GvisorAssets,
+			"gvisor/gvisor-pod.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gvisor-pod.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/gvisor/gvisor-runtimeclass.yaml.tmpl",
+		MustBinAsset(addons.GvisorAssets,
+			"gvisor/gvisor-runtimeclass.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gvisor-runtimeclass.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/gvisor/gvisor-config.toml",
+		MustBinAsset(addons.GvisorAssets,
+			"gvisor/gvisor-config.toml",
 			vmpath.GuestGvisorDir,
 			constants.GvisorConfigTomlTargetName,
 			"0640"),
@@ -446,18 +452,18 @@ var Addons = map[string]*Addon{
 		"GvisorAddon": "gcr.io",
 	}),
 	"helm-tiller": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/helm-tiller/helm-tiller-dp.tmpl",
+		MustBinAsset(addons.HelmTillerAssets,
+			"helm-tiller/helm-tiller-dp.tmpl",
 			vmpath.GuestAddonsDir,
 			"helm-tiller-dp.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/helm-tiller/helm-tiller-rbac.tmpl",
+		MustBinAsset(addons.HelmTillerAssets,
+			"helm-tiller/helm-tiller-rbac.tmpl",
 			vmpath.GuestAddonsDir,
 			"helm-tiller-rbac.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/helm-tiller/helm-tiller-svc.tmpl",
+		MustBinAsset(addons.HelmTillerAssets,
+			"helm-tiller/helm-tiller-svc.tmpl",
 			vmpath.GuestAddonsDir,
 			"helm-tiller-svc.yaml",
 			"0640"),
@@ -467,8 +473,8 @@ var Addons = map[string]*Addon{
 		"Tiller": "gcr.io",
 	}),
 	"ingress-dns": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/ingress-dns/ingress-dns-pod.yaml.tmpl",
+		MustBinAsset(addons.IngressDNSAssets,
+			"ingress-dns/ingress-dns-pod.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ingress-dns-pod.yaml",
 			"0640"),
@@ -476,13 +482,13 @@ var Addons = map[string]*Addon{
 		"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
 	}, nil),
 	"metallb": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/metallb/metallb.yaml.tmpl",
+		MustBinAsset(addons.MetallbAssets,
+			"metallb/metallb.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"metallb.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/metallb/metallb-config.yaml.tmpl",
+		MustBinAsset(addons.MetallbAssets,
+			"metallb/metallb-config.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"metallb-config.yaml",
 			"0640"),
@@ -491,18 +497,18 @@ var Addons = map[string]*Addon{
 		"Controller": "metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502",
 	}, nil),
 	"ambassador": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/ambassador/ambassador-operator-crds.yaml.tmpl",
+		MustBinAsset(addons.AmbassadorAssets,
+			"ambassador/ambassador-operator-crds.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ambassador-operator-crds.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/ambassador/ambassador-operator.yaml.tmpl",
+		MustBinAsset(addons.AmbassadorAssets,
+			"ambassador/ambassador-operator.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ambassador-operator.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/ambassador/ambassadorinstallation.yaml.tmpl",
+		MustBinAsset(addons.AmbassadorAssets,
+			"ambassador/ambassadorinstallation.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"ambassadorinstallation.yaml",
 			"0640"),
@@ -512,18 +518,18 @@ var Addons = map[string]*Addon{
 		"AmbassadorOperator": "quay.io",
 	}),
 	"gcp-auth": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/gcp-auth/gcp-auth-ns.yaml.tmpl",
+		MustBinAsset(addons.GcpAuthAssets,
+			"gcp-auth/gcp-auth-ns.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-ns.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/gcp-auth/gcp-auth-service.yaml.tmpl",
+		MustBinAsset(addons.GcpAuthAssets,
+			"gcp-auth/gcp-auth-service.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-service.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/gcp-auth/gcp-auth-webhook.yaml.tmpl.tmpl",
+		MustBinAsset(addons.GcpAuthAssets,
+			"gcp-auth/gcp-auth-webhook.yaml.tmpl.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-webhook.yaml",
 			"0640"),
@@ -536,33 +542,33 @@ var Addons = map[string]*Addon{
 	"volumesnapshots": NewAddon([]*BinAsset{
 		// make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
 		// if user disable volumesnapshots addon and delete `csi-hostpath-snapshotclass` after `snapshot.storage.k8s.io_volumesnapshotclasses`, kubernetes will return the error
-		MustBinAsset(
-			"deploy/addons/volumesnapshots/csi-hostpath-snapshotclass.yaml.tmpl",
+		MustBinAsset(addons.VolumeSnapshotsAssets,
+			"volumesnapshots/csi-hostpath-snapshotclass.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-snapshotclass.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotclasses.yaml.tmpl",
+		MustBinAsset(addons.VolumeSnapshotsAssets,
+			"volumesnapshots/snapshot.storage.k8s.io_volumesnapshotclasses.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshotcontents.yaml.tmpl",
+		MustBinAsset(addons.VolumeSnapshotsAssets,
+			"volumesnapshots/snapshot.storage.k8s.io_volumesnapshotcontents.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/volumesnapshots/snapshot.storage.k8s.io_volumesnapshots.yaml.tmpl",
+		MustBinAsset(addons.VolumeSnapshotsAssets,
+			"volumesnapshots/snapshot.storage.k8s.io_volumesnapshots.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"snapshot.storage.k8s.io_volumesnapshots.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/volumesnapshots/rbac-volume-snapshot-controller.yaml.tmpl",
+		MustBinAsset(addons.VolumeSnapshotsAssets,
+			"volumesnapshots/rbac-volume-snapshot-controller.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-volume-snapshot-controller.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/volumesnapshots/volume-snapshot-controller-deployment.yaml.tmpl",
+		MustBinAsset(addons.VolumeSnapshotsAssets,
+			"volumesnapshots/volume-snapshot-controller-deployment.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"volume-snapshot-controller-deployment.yaml",
 			"0640"),
@@ -572,68 +578,68 @@ var Addons = map[string]*Addon{
 		"SnapshotController": "k8s.gcr.io",
 	}),
 	"csi-hostpath-driver": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-attacher.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/rbac/rbac-external-attacher.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-attacher.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-health-monitor-agent.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/rbac/rbac-external-health-monitor-agent.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-health-monitor-agent.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-health-monitor-controller.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/rbac/rbac-external-health-monitor-controller.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-health-monitor-controller.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-provisioner.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/rbac/rbac-external-provisioner.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-provisioner.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-resizer.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/rbac/rbac-external-resizer.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-resizer.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/rbac/rbac-external-snapshotter.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/rbac/rbac-external-snapshotter.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"rbac-external-snapshotter.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-attacher.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/deploy/csi-hostpath-attacher.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-attacher.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-driverinfo.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/deploy/csi-hostpath-driverinfo.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-driverinfo.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-plugin.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/deploy/csi-hostpath-plugin.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-plugin.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-provisioner.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/deploy/csi-hostpath-provisioner.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-provisioner.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-resizer.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/deploy/csi-hostpath-resizer.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-resizer.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-snapshotter.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/deploy/csi-hostpath-snapshotter.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-snapshotter.yaml",
 			"0640"),
-		MustBinAsset(
-			"deploy/addons/csi-hostpath-driver/deploy/csi-hostpath-storageclass.yaml.tmpl",
+		MustBinAsset(addons.CsiHostpathDriverAssets,
+			"csi-hostpath-driver/deploy/csi-hostpath-storageclass.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-storageclass.yaml",
 			"0640"),
