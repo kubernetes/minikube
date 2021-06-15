@@ -165,23 +165,23 @@ var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running
 
 // ErrRuntimeVersion is the error returned when disk image has incompatible version of service
 type ErrRuntimeVersion struct {
-	service   string
-	installed string
-	required  string
+	Service   string
+	Installed string
+	Required  string
 }
 
 // NewErrRuntimeVersion creates a new ErrRuntimeVersion
 func NewErrRuntimeVersion(svc, required, installed string) *ErrRuntimeVersion {
 	return &ErrRuntimeVersion{
-		service:   svc,
-		installed: installed,
-		required:  required,
+		Service:   svc,
+		Installed: installed,
+		Required:  required,
 	}
 }
 
 func (e ErrRuntimeVersion) Error() string {
 	return fmt.Sprintf("service %q version is %v. Required: %v",
-		e.service, e.installed, e.required)
+		e.Service, e.Installed, e.Required)
 }
 
 // New returns an appropriately configured runtime
@@ -273,8 +273,7 @@ func CompatibleWithVersion(runtime, v string) error {
 	if err != nil {
 		return err
 	}
-	switch runtime {
-	case "containerd":
+	if runtime == "containerd" {
 		if requiredContainerdVersion.GT(vv) {
 			return NewErrRuntimeVersion(runtime, requiredContainerdVersion.String(), vv.String())
 		}

@@ -161,12 +161,10 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 			// first release with non-experimental arm64 KIC
 			legacyVersion = "v1.17.0"
 		}
-	} else {
+	} else if ContainerRuntime() == "containerd" {
 		// the version containerd in ISO was upgraded to 1.4.2
 		// we need it to use runc.v2 plugin
-		if ContainerRuntime() == "containerd" {
-			legacyVersion = "v1.15.0"
-		}
+		legacyVersion = "v1.15.0"
 	}
 
 	tf, err := installRelease(legacyVersion)

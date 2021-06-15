@@ -65,12 +65,13 @@ func ExitIfFatal(err error) {
 		}, "The kubeadm binary within the Docker container is not executable")
 	}
 
-	if _, ok := err.(*cruntime.ErrRuntimeVersion); ok {
+	if rtErr, ok := err.(*cruntime.ErrRuntimeVersion); ok {
 		exit.Message(reason.Kind{
 			ID:       "PROVIDER_DOCKER_NOEXEC",
 			ExitCode: reason.ExGuestConfig,
 			Style:    style.Unsupported,
 			Advice:   "Try to start minikube with '--delete-on-failure=true' option",
-		}, fmt.Sprintf("Your exising minikube instance has version %s of service %v which is outdated"))
+		}, fmt.Sprintf("Your existing minikube instance has installed version %s of service %v which is too old."+
+			"Please try to start minikube with --delete-on-failure=true option", rtErr.Service, rtErr.Installed))
 	}
 }

@@ -99,7 +99,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
 
 	// check if installed runtime is compatible with current minikube code
-	if err = validateRuntimeVersion(err, cr); err != nil {
+	if err = validateRuntimeVersion(cr); err != nil {
 		return nil, err
 	}
 
@@ -229,7 +229,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 }
 
-func validateRuntimeVersion(err error, cr cruntime.Manager) error {
+func validateRuntimeVersion(cr cruntime.Manager) error {
 	v, err := cr.Version()
 	if err != nil {
 		return errors.Wrap(err, "Failed to check container runtime version")
