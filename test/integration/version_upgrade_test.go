@@ -77,14 +77,19 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Should be a version from the last 6 months
+	// for vm-based drivers, minikube versions before v1.16.0
+	// have containerd version <1.4.0 and failed to upgrade without vm recreation
 	legacyVersion := "v1.6.2"
 	if KicDriver() {
 		if arm64Platform() {
 			// arm64 KIC driver is supported starting from v1.17.0
 			legacyVersion = "v1.17.0"
-		} else {
-			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
-			legacyVersion = "v1.9.0"
+		}
+	} else {
+		// the version containerd in ISO was upgraded to 1.4.2
+		// we need it to use runc.v2 plugin
+		if ContainerRuntime() == "containerd" {
+			legacyVersion = "v1.15.0"
 		}
 	}
 
@@ -98,7 +103,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	rr := &RunResult{}
 	r := func() error {
 		c := exec.CommandContext(ctx, tf.Name(), args...)
-		legacyEnv := []string{}
+		var legacyEnv []string
 		// replace the global KUBECONFIG with a fresh kubeconfig
 		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
 		// see: https://github.com/kubernetes/minikube/issues/10210
@@ -125,7 +130,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 		t.Fatalf("legacy %s start failed: %v", legacyVersion, err)
 	}
 
-	args = append([]string{"start", "-p", profile, "--memory=2200", "--delete-on-failure=true", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("upgrade from %s to HEAD failed: %s: %v", legacyVersion, rr.Command(), err)
@@ -156,6 +161,12 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 			// first release with non-experimental arm64 KIC
 			legacyVersion = "v1.17.0"
 		}
+	} else {
+		// the version containerd in ISO was upgraded to 1.4.2
+		// we need it to use runc.v2 plugin
+		if ContainerRuntime() == "containerd" {
+			legacyVersion = "v1.15.0"
+		}
 	}
 
 	tf, err := installRelease(legacyVersion)
@@ -168,7 +179,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	rr := &RunResult{}
 	r := func() error {
 		c := exec.CommandContext(ctx, tf.Name(), args...)
-		legacyEnv := []string{}
+		var legacyEnv []string
 		// replace the global KUBECONFIG with a fresh kubeconfig
 		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
 		// see: https://github.com/kubernetes/minikube/issues/10210
