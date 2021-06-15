@@ -1,7 +1,7 @@
 name: "time-to-k8s benchmark"
 on:
-    release:
-      types: [released]
+  release:
+    types: [released]
 jobs:
   benchmark:
     runs-on: ubuntu-18.04
