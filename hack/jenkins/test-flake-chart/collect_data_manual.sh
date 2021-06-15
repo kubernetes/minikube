@@ -26,6 +26,6 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 # 3) Optimize the resulting data.
 # 4) Store in GCS bucket.
 gsutil cat gs://minikube-builds/logs/master/*/*_summary.json \
-| $DIR/process_data.sh
-| $DIR/optimize_data.sh
+| $DIR/process_data.sh \
+| $DIR/optimize_data.sh \
 | gsutil cp - gs://minikube-flake-rate/data.csv
