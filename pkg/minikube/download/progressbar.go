@@ -27,13 +27,41 @@ import (
 
 	"github.com/cheggaaa/pb"
 	"github.com/hashicorp/go-getter"
+	"k8s.io/klog/v2"
 )
 
 // DefaultProgressBar is the default cheggaaa progress bar
 var DefaultProgressBar getter.ProgressTracker = &progressBar{}
 
 type progressBar struct {
-	lock     sync.Mutex
+	lock sync.Mutex
+	pool *pb.Pool
+	pbs  int
+}
+
+// AddProgressBar add progress bar to the concurrent pool
+func (cpb *progressBar) AddProgressBar(p *pb.ProgressBar) error {
+	if cpb.pool == nil {
+		cpb.pool = pb.NewPool()
+		if err := cpb.pool.Start(); err != nil {
+			return err
+		}
+	}
+	cpb.pool.Add(p)
+	cpb.pbs++
+	return nil
+}
+
+// RemoveProgressBar removes progress bar from the concurrent pool
+func (cpb *progressBar) RemoveProgressBar(p *pb.ProgressBar) error {
+	cpb.pbs--
+	if cpb.pbs <= 0 {
+		if err := cpb.pool.Stop(); err != nil {
+			return err
+		}
+		cpb.pool = nil
+	}
+	return nil
 }
 
 // TrackProgress instantiates a new progress bar that will
@@ -61,12 +89,18 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 	p.Start()
 	barReader := p.NewProxyReader(stream)
 
+	if err := cpb.AddProgressBar(p); err != nil {
+		klog.Errorf("pool start: %v", err)
+	}
 	return &readCloser{
 		Reader: barReader,
 		close: func() error {
 			cpb.lock.Lock()
 			defer cpb.lock.Unlock()
 			p.Finish()
+			if err := cpb.RemoveProgressBar(p); err != nil {
+				klog.Errorf("pool stop: %v", err)
+			}
 			return nil
 		},
 	}
