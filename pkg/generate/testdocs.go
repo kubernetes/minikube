@@ -138,19 +138,16 @@ var docsRegex = regexp.MustCompile(`docs(?:\((.*?)\))?:\s*`)
 
 // parseFuncDocs parses the comments from a function starting with `docs`
 func parseFuncDocs(file *ast.File, fd *ast.FuncDecl) TestDoc {
-	fStart := fd.Pos()
-	fEnd := fd.End()
-
-	d := TestDoc{}
-	d.name = fd.Name.Name
-	d.description = strings.TrimPrefix(fd.Doc.Text(), d.name+" ")
-	if strings.HasPrefix(d.name, "valid") {
-		d.isSubTest = true
+	d := TestDoc{
+		name:        fd.Name.Name,
+		description: strings.TrimPrefix(fd.Doc.Text(), fd.Name.Name+" "),
+		isSubTest:   strings.HasPrefix(fd.Name.Name, "valid"),
 	}
 
 	for _, c := range file.Comments {
 		for _, ci := range c.List {
-			if ci.Pos() < fStart || ci.End() > fEnd {
+			if ci.Pos() < fd.Pos() || ci.End() > fd.End() {
+				// only generate docs for comments that are within the function scope
 				continue
 			}
 			text := strings.TrimPrefix(ci.Text, "// ")
