@@ -77,20 +77,17 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Should be a version from the last 6 months
-	// for vm-based drivers, minikube versions before v1.16.0
-	// have containerd version <1.4.0 and failed to upgrade without vm recreation
 	legacyVersion := "v1.6.2"
 	if KicDriver() {
 		if arm64Platform() {
 			// arm64 KIC driver is supported starting from v1.17.0
 			legacyVersion = "v1.17.0"
 		}
-	} else {
-		// the version containerd in ISO was upgraded to 1.4.2
-		// we need it to use runc.v2 plugin
-		if ContainerRuntime() == "containerd" {
-			legacyVersion = "v1.15.0"
-		}
+	}
+	// the version containerd in ISO was upgraded to 1.4.2
+	// we need it to use runc.v2 plugin
+	if ContainerRuntime() == "containerd" {
+		legacyVersion = "v1.16.0"
 	}
 
 	tf, err := installRelease(legacyVersion)
@@ -161,10 +158,11 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 			// first release with non-experimental arm64 KIC
 			legacyVersion = "v1.17.0"
 		}
-	} else if ContainerRuntime() == "containerd" {
+	}
+	if ContainerRuntime() == "containerd" {
 		// the version containerd in ISO was upgraded to 1.4.2
 		// we need it to use runc.v2 plugin
-		legacyVersion = "v1.15.0"
+		legacyVersion = "v1.16.0"
 	}
 
 	tf, err := installRelease(legacyVersion)
