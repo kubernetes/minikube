@@ -23,6 +23,7 @@ package download
 import (
 	"io"
 	"path/filepath"
+	"runtime"
 	"sync"
 
 	"github.com/cheggaaa/pb"
@@ -89,8 +90,10 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 	p.Start()
 	barReader := p.NewProxyReader(stream)
 
-	if err := cpb.AddProgressBar(p); err != nil {
-		klog.Errorf("pool start: %v", err)
+	if runtime.GOOS != "windows" {
+		if err := cpb.AddProgressBar(p); err != nil {
+			klog.Errorf("pool start: %v", err)
+		}
 	}
 	return &readCloser{
 		Reader: barReader,
@@ -98,8 +101,10 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 			cpb.lock.Lock()
 			defer cpb.lock.Unlock()
 			p.Finish()
-			if err := cpb.RemoveProgressBar(p); err != nil {
-				klog.Errorf("pool stop: %v", err)
+			if runtime.GOOS != "windows" {
+				if err := cpb.RemoveProgressBar(p); err != nil {
+					klog.Errorf("pool stop: %v", err)
+				}
 			}
 			return nil
 		},
