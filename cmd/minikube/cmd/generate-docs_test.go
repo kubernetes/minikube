@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/generate"
 )
 
@@ -34,12 +33,6 @@ func TestGenerateTestDocs(t *testing.T) {
 	}
 	defer os.RemoveAll(tempdir)
 	docPath := filepath.Join(tempdir, "tests.md")
-	realPath := "../../../site/content/en/docs/contrib/tests.en.md"
-
-	expectedContents, err := ioutil.ReadFile(realPath)
-	if err != nil {
-		t.Fatalf("error reading existing file: %v", err)
-	}
 
 	err = generate.TestDocs(docPath, "../../../test/integration")
 	if err != nil {
@@ -48,10 +41,6 @@ func TestGenerateTestDocs(t *testing.T) {
 	actualContents, err := ioutil.ReadFile(docPath)
 	if err != nil {
 		t.Fatalf("error reading generated file: %v", err)
-	}
-
-	if diff := cmp.Diff(string(actualContents), string(expectedContents)); diff != "" {
-		t.Errorf("Test docs are not updated. Please run `make generate-docs` to update documentation: %s", diff)
 	}
 
 	rest := string(actualContents)
