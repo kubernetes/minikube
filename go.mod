@@ -16,7 +16,7 @@ require (
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.1
-	github.com/cheggaaa/pb/v3 v3.0.8
+	github.com/cheggaaa/pb v1.0.29
 	github.com/cloudevents/sdk-go/v2 v2.3.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
@@ -26,6 +26,7 @@ require (
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
+	github.com/fatih/color v1.9.0 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-containerregistry v0.4.1

@@ -24,7 +24,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/cheggaaa/pb/v3"
+	"github.com/cheggaaa/pb"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
@@ -135,18 +135,22 @@ func ImageToCache(img string) error {
 	}
 	klog.V(3).Infof("Writing image %v", ref)
 	errchan := make(chan error)
-	p := pb.Full.Start64(0)
+	//p := pb.Full.Start64(0)
+	p := pb.New64(0)
+	p.ShowSpeed = true
+	p.ShowTimeLeft = true
 	fn := strings.Split(ref.Name(), "@")[0]
 	// abbreviate filename for progress
 	maxwidth := 30 - len("...")
 	if len(fn) > maxwidth {
 		fn = fn[0:maxwidth] + "..."
 	}
-	p.Set("prefix", "    > "+fn+": ")
-	p.Set(pb.Bytes, true)
+	p.Prefix("    > " + fn + ": ")
+	p.SetUnits(pb.U_BYTES)
 
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(79)
+	p.Start()
 
 	go func() {
 		err = tarball.WriteToFile(f, ref, i, tarball.WithProgress(c))
@@ -156,8 +160,8 @@ func ImageToCache(img string) error {
 	for {
 		select {
 		case update = <-c:
-			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
+			p.Set64(update.Complete)
+			p.SetTotal64(update.Total)
 		case err = <-errchan:
 			p.Finish()
 			if err != nil {
@@ -235,15 +239,19 @@ func ImageToDaemon(img string) error {
 
 	klog.V(3).Infof("Writing image %v", ref)
 	errchan := make(chan error)
-	p := pb.Full.Start64(0)
+	//p := pb.Full.Start64(0)
+	p := pb.New64(0)
+	p.ShowSpeed = true
+	p.ShowTimeLeft = true
+	p.Start()
 	fn := strings.Split(ref.Name(), "@")[0]
 	// abbreviate filename for progress
 	maxwidth := 30 - len("...")
 	if len(fn) > maxwidth {
 		fn = fn[0:maxwidth] + "..."
 	}
-	p.Set("prefix", "    > "+fn+": ")
-	p.Set(pb.Bytes, true)
+	p.Prefix("    > " + fn + ": ")
+	p.SetUnits(pb.U_BYTES)
 
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(79)
@@ -256,8 +264,8 @@ func ImageToDaemon(img string) error {
 	for {
 		select {
 		case update = <-c:
-			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
+			p.Set64(update.Complete)
+			p.SetTotal64(update.Total)
 		case err = <-errchan:
 			p.Finish()
 			if err != nil {

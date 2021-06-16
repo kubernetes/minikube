@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/cheggaaa/pb/v3"
+	"github.com/cheggaaa/pb"
 	"github.com/hashicorp/go-getter"
 )
 
@@ -34,7 +34,6 @@ var DefaultProgressBar getter.ProgressTracker = &progressBar{}
 
 type progressBar struct {
 	lock     sync.Mutex
-	progress *pb.ProgressBar
 }
 
 // TrackProgress instantiates a new progress bar that will
@@ -43,22 +42,23 @@ type progressBar struct {
 func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, stream io.ReadCloser) io.ReadCloser {
 	cpb.lock.Lock()
 	defer cpb.lock.Unlock()
-	if cpb.progress == nil {
-		cpb.progress = pb.New64(totalSize)
-	}
-	p := pb.Full.Start64(totalSize)
+	//p := pb.Full.Start64(totalSize)
+	p := pb.New64(totalSize)
+	p.ShowSpeed = true
+	p.ShowTimeLeft = true
 	fn := filepath.Base(src)
 	// abbreviate filename for progress
 	maxwidth := 30 - len("...")
 	if len(fn) > maxwidth {
 		fn = fn[0:maxwidth] + "..."
 	}
-	p.Set("prefix", "    > "+fn+": ")
-	p.SetCurrent(currentSize)
-	p.Set(pb.Bytes, true)
+	p.Prefix("    > " + fn + ": ")
+	p.Set64(currentSize)
+	p.SetUnits(pb.U_BYTES)
 
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(79)
+	p.Start()
 	barReader := p.NewProxyReader(stream)
 
 	return &readCloser{
