@@ -84,4 +84,4 @@ fi
 # install gh if not present
 $DIR/../installers/check_install_gh.sh
 
-gh issue comment "https://github.com/kubernetes/minikube/pull/$PR_NUMBER" --body "$(cat $TMP_COMMENT)"
+gh pr comment "https://github.com/kubernetes/minikube/pull/$PR_NUMBER" --body "$(cat $TMP_COMMENT)"
