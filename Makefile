@@ -278,8 +278,6 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 	fi;
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
-	mkdir -p $(BUILD_DIR)/buildroot/output/build
-	echo "module buildroot.org/go" > $(BUILD_DIR)/buildroot/output/build/go.mod
 	$(MAKE) -C $(BUILD_DIR)/buildroot host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
