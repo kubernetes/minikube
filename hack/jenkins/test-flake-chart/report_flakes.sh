@@ -61,7 +61,7 @@ TMP_FAILED_RATES="$TMP_FLAKE_RATES\_filtered"
   > "$TMP_FAILED_RATES"
 
 FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES")
-if [[ "$FAILED_RATES_LINES" -gt 30 ]]; then
+if [[ "$FAILED_RATES_LINES" -eq 0 ]]; then
   echo "No failed tests! Aborting without commenting..." 1>&2
   exit 0
 fi
