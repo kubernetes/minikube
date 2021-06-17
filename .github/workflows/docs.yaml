@@ -1,11 +1,11 @@
 name: "generate-docs"
 on:
-  pull_request:
-    types: [closed]
+  push:
+    branch:
+      - master  
 
 jobs:
   generate-docs:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/setup-go@v2

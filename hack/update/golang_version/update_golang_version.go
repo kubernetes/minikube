@@ -70,6 +70,11 @@ var (
 				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/docs.yml": {
+			Replace: map[string]string{
+				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
+			},
+		},
 		".travis.yml": {
 			Replace: map[string]string{
 				`go:\n  - .*`: `go:{{printf "\n  - %s" .StableVersion}}`,
