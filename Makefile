@@ -40,7 +40,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2020.02.12
-REGISTRY?=gcr.io/k8s-minikube
+REGISTRY ?= gcr.io/k8s-minikube
 
 # Get git commit id
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
@@ -704,6 +704,21 @@ KICBASE_ARCH = linux/arm64,linux/amd64
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
+
+.PHONY: local-kicbase
+local-kicbase: deploy/kicbase/auto-pause ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KICBASE_IMAGE_GCR) ./deploy/kicbase
+	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
+	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
+
+SED = sed -i
+ifeq ($(GOOS),darwin)
+	SED = sed -i ''
+endif
+
+.PHONY: local-kicbase-debug
+local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches source code to point to it
+	$(SED) 's|Version = .*|Version = \"$(KIC_VERSION)-$(COMMIT_SHORT)\"|;s|baseImageSHA = .*|baseImageSHA = \"\"|;s|gcrRepo = .*|gcrRepo = \"local/kicbase\"|;s|dockerhubRepo = .*|dockerhubRepo = \"local/kicbase\"|' pkg/drivers/kic/types.go
 
 .PHONY: push-kic-base-image 
 push-kic-base-image: deploy/kicbase/auto-pause docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
