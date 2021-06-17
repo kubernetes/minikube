@@ -1045,7 +1045,7 @@ func validateCPUCount(drvName string) {
 	}
 
 	if !driver.IsKIC(drvName) {
-		validateMeetsMinimumCPURequirements(cpuCount, minimumCPUS)
+		validateMeetsMinimumCPURequirements(cpuCount)
 		return
 	}
 
@@ -1064,7 +1064,7 @@ func validateCPUCount(drvName string) {
 		viper.Set(cpus, cpuCount)
 	}
 
-	validateMeetsMinimumCPURequirements(cpuCount, minimumCPUS)
+	validateMeetsMinimumCPURequirements(cpuCount)
 
 	if si.CPUs < cpuCount {
 
@@ -1096,7 +1096,7 @@ func validateCPUCount(drvName string) {
 	}
 }
 
-func validateMeetsMinimumCPURequirements(cpuCount int, minimumCPUs int) {
+func validateMeetsMinimumCPURequirements(cpuCount int) {
 	if cpuCount < minimumCPUS {
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
