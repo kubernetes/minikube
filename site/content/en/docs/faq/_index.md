@@ -93,13 +93,14 @@ MINIKUBE_IN_STYLE=0 minikube start
 
 ```
 
-## How to access minikube cluster from on a remote network ?
+## How can I access a minikube cluster from a remote network?
 
-minikube is primary goal is to quickly sets up a local Kubernetes clusters, and we strongly discourge from using minikube in production or to listen on remote traffic. therefore by design minikube networking only listens on local network.
+minikube's primary goal is to quickly set up local Kubernetes clusters, and therefore we strongly discourage using minikube in production or for listening to remote traffic. By design, minikube is meant to only listen on the local network.
 
-however it possible to configure minikube to listen on a remote network. Please be aware this opens your network open to outside world and it is not recommended, and if you are not fully sure of the security implications, please avoid using this option.
+However, it is possible to configure minikube to listen on a remote network. This will open your network to the outside world and is not recommended. If you are not fully aware of the security implications, please avoid using this.
 
-for docker/podman drivers you could use `--listen-address`
+For the docker and podman driver, use `--listen-address` flag:
+
 ```
 minikube start --listen-address=0.0.0.0
 ```
