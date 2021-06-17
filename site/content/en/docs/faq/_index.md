@@ -105,3 +105,9 @@ For the docker and podman driver, use `--listen-address` flag:
 minikube start --listen-address=0.0.0.0
 ```
 
+## How can I allocate maximum resources to minikube?
+
+Setting the `memory` and `cpus` flags on the start command to `nolimit` will use maximum available resources:
+```
+minikube start --memory=nolimit --cpus=nolimit
+```

@@ -114,6 +114,8 @@ const (
 
 	// TimeFormat is the format that should be used when outputting time
 	TimeFormat = time.RFC1123
+	// NoLimit is the value that can be passed into the memory and cpus flags to specifiy to use maximum resources
+	NoLimit = "nolimit"
 )
 
 var (

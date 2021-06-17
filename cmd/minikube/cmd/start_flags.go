@@ -135,8 +135,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
-	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to Kubernetes.")
-	startCmd.Flags().String(memory, "", "Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().String(cpus, "2", "Number of CPUs allocated to Kubernetes. Use 'nolimit' to use the maximum number of CPUs.")
+	startCmd.Flags().String(memory, "", "Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use 'nolimit' to use the maximum amount of memory.")
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
@@ -298,10 +298,15 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 
 	mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 	if cmd.Flags().Changed(memory) || viper.IsSet(memory) {
+		memString := viper.GetString(memory)
 		var err error
-		mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
-		if err != nil {
-			exit.Message(reason.Usage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		if memString == constants.NoLimit {
+			mem = noLimitMemory(sysLimit, containerLimit)
+		} else {
+			mem, err = pkgutil.CalculateSizeInMB(memString)
+			if err != nil {
+				exit.Message(reason.Usage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": memString, "error": err})
+			}
 		}
 		if driver.IsKIC(drvName) && mem > containerLimit {
 			exit.Message(reason.Usage, "{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
