@@ -184,6 +184,7 @@ async function init() {
       0: { title: "Flake rate", minValue: 0, maxValue: 100 },
       1: { title: "Duration (seconds)" },
     },
+    colors: ['#dc3912', '#3366cc'],
     tooltip: { trigger: "selection", isHtml: true }
   };
   const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
