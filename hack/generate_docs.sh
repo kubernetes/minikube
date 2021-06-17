@@ -16,6 +16,11 @@
 
 set -e
 
+if [ "$#" -ne 1 ]; then
+	# there's no secret and therefore no reason to run this script
+	exit 0
+fi
+
 install_gh() {
 	export access_token="$1"
 
