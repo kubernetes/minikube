@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/setup-go@v2
-      with:
+        with:
           go-version: 1.16.5
           stable: true
       - name: gendocs
