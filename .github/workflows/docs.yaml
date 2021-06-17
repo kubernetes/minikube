@@ -1,7 +1,7 @@
 name: "generate-docs"
 on:
   push:
-    branch:
+    branches:
       - master  
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.16.5
+          go-version: 1.16.4
           stable: true
       - name: gendocs
         run: |
