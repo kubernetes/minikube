@@ -36,7 +36,8 @@ config_git() {
 make generate-docs
 
 # If there are changes, open a PR
-if ! git diff-index --quiet HEAD --; then
+git diff-index --quiet HEAD --
+if [ $? -gt 0 ]; then
 	install_gh $1
 	config_git
 	
