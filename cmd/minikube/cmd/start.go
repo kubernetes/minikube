@@ -162,7 +162,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// can be configured as MINIKUBE_IMAGE_REPOSITORY and IMAGE_MIRROR_COUNTRY
 	// this should be updated to documentation
 	if len(registryMirror) == 0 {
-		registryMirror = viper.GetStringSlice("registry_mirror")
+		registryMirror = viper.GetStringSlice("registry-mirror")
 	}
 
 	if !config.ProfileNameValid(ClusterFlagValue()) {
