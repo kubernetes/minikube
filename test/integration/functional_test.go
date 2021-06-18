@@ -266,14 +266,14 @@ func validateLoadImageAndUpdateTag(ctx context.Context, t *testing.T, profile st
 	}
 	defer PostMortemLogs(t, profile)
 	// pull busybox
-	busyboxImage := "busybox:1.33"
+	busyboxImage := "k8s.gcr.io/coredns:1.2.6"
 	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
 	// tag busybox
-	newImage := fmt.Sprintf("docker.io/library/busybox:load-%s", profile)
+	newImage := fmt.Sprintf("docker.io/library/coredns:load-%s", profile)
 	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, newImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
@@ -282,7 +282,7 @@ func validateLoadImageAndUpdateTag(ctx context.Context, t *testing.T, profile st
 	loadAndInspect(ctx, t, profile, newImage)
 
 	// tag busybox with a different tag, reload, and check it works.
-	newImage = fmt.Sprintf("docker.io/library/busybox:load-new-%s", profile)
+	newImage = fmt.Sprintf("docker.io/library/coredns:load-new-%s", profile)
 	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, newImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
