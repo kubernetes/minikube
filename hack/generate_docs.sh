@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -x
 
 if [ "$#" -ne 1 ]; then
 	# there's no secret and therefore no reason to run this script
