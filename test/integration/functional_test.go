@@ -116,6 +116,7 @@ func TestFunctional(t *testing.T) {
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DryRun", validateDryRun},
+			{"InternationalLanguage", validateInternationalLanguage},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
 			{"LogsFileCmd", validateLogsFileCmd},
@@ -894,6 +895,32 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
 		}
 
+	}
+}
+
+// validateInternationalLanguage asserts that the language used can be changed with environment variables
+func validateInternationalLanguage(ctx context.Context, t *testing.T, profile string) {
+	// dry-run mode should always be able to finish quickly (<5s)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
+	defer cancel()
+
+	// Too little memory!
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgs()...)
+	c := exec.CommandContext(mctx, Target(), startArgs...)
+	c.Env = append(os.Environ(), "LC_ALL=fr")
+
+	rr, err := Run(t, c)
+
+	wantCode := reason.ExInsufficientMemory
+	if rr.ExitCode != wantCode {
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		}
+	}
+	if !strings.Contains(rr.Stdout.String(), "Utilisation du pilote") {
+		t.Errorf("dry-run output was expected to be in French. Expected \"Utilisation du pilote\", but not present in output:\n%s", rr.Stdout.String())
 	}
 }
 
