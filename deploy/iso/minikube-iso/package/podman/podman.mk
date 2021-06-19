@@ -47,8 +47,11 @@ endef
 
 define PODMAN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 $(@D)/bin/podman $(TARGET_DIR)/usr/bin/podman
-	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/cni/net.d/
-	$(INSTALL) -m 644 $(@D)/cni/87-podman-bridge.conflist $(TARGET_DIR)/etc/cni/net.d/87-podman-bridge.conflist
+	# Don't use kubernetes /etc/cni, but use podman /etc/containers
+	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/containers/
+	$(INSTALL) -m 644 $(PODMAN_PKGDIR)/containers.conf $(TARGET_DIR)/etc/containers/containers.conf
+	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/containers/net.d/
+	$(INSTALL) -m 644 $(@D)/cni/87-podman-bridge.conflist $(TARGET_DIR)/etc/containers/net.d/87-podman-bridge.conflist
 endef
 
 define PODMAN_INSTALL_INIT_SYSTEMD
