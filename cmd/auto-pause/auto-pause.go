@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -43,9 +44,6 @@ var version = "0.0.1"
 var runtime = "docker"
 
 func main() {
-	// TODO: #10595 make this configurable
-	const interval = time.Minute * 1
-
 	// Check current state
 	alreadyPaused()
 
@@ -55,7 +53,7 @@ func main() {
 			// On each iteration new timer is created
 			select {
 			// TODO: #10596 make it memory-leak proof
-			case <-time.After(interval):
+			case <-time.After(addons.AutoPauseTime):
 				runPause()
 			case <-unpauseRequests:
 				fmt.Printf("Got request\n")
