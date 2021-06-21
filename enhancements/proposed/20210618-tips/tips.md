@@ -69,18 +69,8 @@ The current `out.Boxed` has a hard-coded style (red). I propose to add another `
 output with customized style:
 
 ```go
-type BoxConfig struct {
-	// box.Config is the config struct of box-cli-maker
-	box.Config
-	// Title is a text that shows as a header of the box
-	Title string
-	// Icon is the optional emoji we want to show as a prefix for the title
-	Icon style.Enum
-}
-
 // BoxedWithConfig writes a templated message in a box with customized style config to stdout
-func BoxedWithConfig(cfg BoxConfig, format string, a ...V) {
-	boxedCommon(String, cfg, format, a...)
+func BoxedWithConfig(cfg box.Config, st style.Enum, title string, format string, a ...V) {
 }
 ```
 
@@ -207,9 +197,9 @@ I plan to open at least 4 PRs:
           ```
     ```
 
-   On the docs side we should both questions and answers. On the CLI side
+   On the docs side we can show both questions and answers. On the CLI side
    we can either show both questions and answers, or just show the answers
-   to make it more compact
+   to make it more compact.
 
    ![Screenshot from 2021-06-18 01-25-54](https://user-images.githubusercontent.com/1311594/122510785-2c689580-cfd4-11eb-9fd0-0a0ff344e3cc.png)
 
