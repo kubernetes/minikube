@@ -24,7 +24,6 @@ const domainTmpl = `
   <memory unit='MiB'>{{.Memory}}</memory>
   <vcpu>{{.CPU}}</vcpu>
   <features>
-    <acpi/>
     <apic/>
     <pae/>
     {{if .Hidden}}
