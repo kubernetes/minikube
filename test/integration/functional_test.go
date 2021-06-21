@@ -1850,7 +1850,8 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 		if err != nil {
 			t.Logf("reading stderr failed: %s", err)
 		}
-		t.Fatalf("mitmproxy docker container never started\n stdout: %v\n stderr: %v", string(stdout), string(stderr))
+		rr, _ := Run(t, exec.CommandContext(ctx, "docker", "ps"))
+		t.Fatalf("mitmproxy docker container never started\n stdout: %v\n stderr: %v", rr.Stdout.String(), string(stderr))
 	}
 
 	// Add a symlink from the cert to the correct directory
