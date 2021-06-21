@@ -19,6 +19,8 @@ package translate
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"runtime"
 	"strings"
 
 	"github.com/cloudfoundry-attic/jibber_jabber"
@@ -60,10 +62,20 @@ func T(s string) string {
 
 // DetermineLocale finds the system locale and sets the preferred language for output appropriately.
 func DetermineLocale() {
-	locale, err := jibber_jabber.DetectIETF()
-	if err != nil {
-		klog.V(1).Infof("Getting system locale failed: %v", err)
-		locale = ""
+	var locale string
+	// Allow windows users to overload the same env vars as unix users
+	if runtime.GOOS == "windows" {
+		if os.Getenv("LC_ALL") != "" {
+			locale = os.Getenv("LC_ALL")
+		}
+	}
+	if locale == "" {
+		var err error
+		locale, err = jibber_jabber.DetectIETF()
+		if err != nil {
+			klog.V(1).Infof("Getting system locale failed: %v", err)
+			locale = ""
+		}
 	}
 	SetPreferredLanguage(locale)
 
