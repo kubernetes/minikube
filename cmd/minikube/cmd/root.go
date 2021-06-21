@@ -97,7 +97,7 @@ func Execute() {
 
 	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
 		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead (Download at {{.url}}.)",
-			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "amd64")})
+			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "arm64")})
 	}
 
 	_, callingCmd := filepath.Split(os.Args[0])
@@ -301,14 +301,10 @@ func setupViper() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
+	viper.RegisterAlias(config.EmbedCerts, embedCerts)
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
-	viper.SetDefault(config.WantReportError, false)
-	viper.SetDefault(config.WantReportErrorPrompt, true)
-	viper.SetDefault(config.WantKubectlDownloadMsg, true)
 	viper.SetDefault(config.WantNoneDriverWarning, true)
-	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
-	viper.SetDefault(config.ShowBootstrapperDeprecationNotification, true)
 }
 
 func addToPath(dir string) {

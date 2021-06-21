@@ -248,7 +248,7 @@ func apiServerHealthzNow(hostname string, port int) (state.State, error) {
 		Proxy:           nil, // Avoid using a proxy to speak to a local host
 		TLSClientConfig: &tls.Config{RootCAs: pool},
 	}
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
 	resp, err := client.Get(url)
 	// Connection refused, usually.
 	if err != nil {
