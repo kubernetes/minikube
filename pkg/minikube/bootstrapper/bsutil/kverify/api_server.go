@@ -148,8 +148,7 @@ func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error 
 // by container runtime restart for example and there is a gap before it comes back
 func WaitForAPIServerStatus(cr command.Runner, to time.Duration, hostname string, port int) (state.State, error) {
 	var st state.State
-	var err error
-	err = wait.PollImmediate(200*time.Millisecond, to, func() (bool, error) {
+	err := wait.PollImmediate(200*time.Millisecond, to, func() (bool, error) {
 		st, err := APIServerStatus(cr, hostname, port)
 		if st == state.Stopped {
 			return false, nil
