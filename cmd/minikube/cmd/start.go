@@ -1059,7 +1059,7 @@ func validateCPUCount(drvName string) {
 
 	}
 
-	if viper.GetString(cpus) == constants.NoLimit {
+	if viper.GetString(cpus) == constants.MaxResources {
 		cpuCount = si.CPUs
 		viper.Set(cpus, cpuCount)
 	}
@@ -1249,7 +1249,7 @@ func validateChangedMemoryFlags(drvName string) {
 	var req int
 	var err error
 	memString := viper.GetString(memory)
-	if memString == constants.NoLimit {
+	if memString == constants.MaxResources {
 		sysLimit, containerLimit, err := memoryLimits(drvName)
 		if err != nil {
 			klog.Warningf("Unable to query memory limits: %+v", err)

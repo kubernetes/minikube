@@ -56,7 +56,7 @@ func IsValidDiskSize(name string, disksize string) error {
 
 // IsValidCPUs checks if a string is a valid number of CPUs
 func IsValidCPUs(name string, cpus string) error {
-	if cpus == constants.NoLimit {
+	if cpus == constants.MaxResources {
 		return nil
 	}
 	return IsPositive(name, cpus)
@@ -64,7 +64,7 @@ func IsValidCPUs(name string, cpus string) error {
 
 // IsValidMemory checks if a string is a valid memory size
 func IsValidMemory(name string, memsize string) error {
-	if memsize == constants.NoLimit {
+	if memsize == constants.MaxResources {
 		return nil
 	}
 	_, err := units.FromHumanSize(memsize)

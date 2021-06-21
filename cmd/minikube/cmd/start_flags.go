@@ -48,6 +48,7 @@ const (
 	isoURL                  = "iso-url"
 	memory                  = "memory"
 	cpus                    = "cpus"
+	defaultCPUs             = "2"
 	humanReadableDiskSize   = "disk-size"
 	nfsSharesRoot           = "nfs-shares-root"
 	nfsShare                = "nfs-share"
@@ -135,8 +136,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
-	startCmd.Flags().String(cpus, "2", "Number of CPUs allocated to Kubernetes. Use 'nolimit' to use the maximum number of CPUs.")
-	startCmd.Flags().String(memory, "", "Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use 'nolimit' to use the maximum amount of memory.")
+	startCmd.Flags().String(cpus, defaultCPUs, "Number of CPUs allocated to Kubernetes. Use 'max' to use the maximum number of CPUs.")
+	startCmd.Flags().String(memory, "", "Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use 'max' to use the maximum amount of memory.")
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
@@ -300,7 +301,7 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 	if cmd.Flags().Changed(memory) || viper.IsSet(memory) {
 		memString := viper.GetString(memory)
 		var err error
-		if memString == constants.NoLimit {
+		if memString == constants.MaxResources {
 			mem = noLimitMemory(sysLimit, containerLimit)
 		} else {
 			mem, err = pkgutil.CalculateSizeInMB(memString)
