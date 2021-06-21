@@ -36,7 +36,7 @@ Configurable fields:
  * hyperv-virtual-switch
  * disable-driver-mounts
  * cache
- * embed-certs
+ * EmbedCerts
  * native-ssh
 
 ```shell
