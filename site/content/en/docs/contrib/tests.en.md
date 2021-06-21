@@ -130,6 +130,9 @@ asserts that the dashboard command works
 #### validateDryRun
 asserts that the dry-run mode quickly exits with the right code
 
+#### validateInternationalLanguage
+asserts that the language used can be changed with environment variables
+
 #### validateCacheCmd
 tests functionality of cache command (cache add, delete, list)
 
