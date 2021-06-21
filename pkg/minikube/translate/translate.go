@@ -65,9 +65,7 @@ func DetermineLocale() {
 	var locale string
 	// Allow windows users to overload the same env vars as unix users
 	if runtime.GOOS == "windows" {
-		if os.Getenv("LC_ALL") != "" {
-			locale = os.Getenv("LC_ALL")
-		}
+		locale = os.Getenv("LC_ALL")
 	}
 	if locale == "" {
 		var err error
