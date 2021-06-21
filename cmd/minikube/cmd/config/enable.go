@@ -18,8 +18,6 @@ package config
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/addons"
@@ -79,7 +77,5 @@ func init() {
 	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Separated by commas.")
 	addonsEnableCmd.Flags().BoolVar(&addons.Force, "force", false, "If true, will perform potentially dangerous operations. Use with discretion.")
 	addonsEnableCmd.Flags().BoolVar(&addons.Refresh, "refresh", false, "If true, pods might get deleted and restarted on addon enable")
-	addonsEnableCmd.Flags().DurationVar(&addons.AutoPauseTime, "pausetime", 1*time.Minute,
-		"Interval of time to pause.")
 	AddonsCmd.AddCommand(addonsEnableCmd)
 }
