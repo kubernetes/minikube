@@ -240,7 +240,7 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 	// You must delete the existing Node or change the name of this new joining Node"
 	if starter.PreExists {
 		klog.Infof("removing existing worker node %q before attempting to rejoin cluster: %+v", starter.Node.Name, starter.Node)
-		if _, err := drainNode(*starter.Cfg, starter.Node.Name); err != nil {
+		if _, err := drainNode(starter.Cfg, starter.Node.Name); err != nil {
 			klog.Errorf("error removing existing worker node before rejoining cluster, will continue anyway: %v", err)
 		}
 		klog.Infof("successfully removed existing worker node %q from cluster: %+v", starter.Node.Name, starter.Node)
@@ -261,6 +261,7 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 
 			return err
 		}
+		starter.Cfg.Nodes = append(starter.Cfg.Nodes, *starter.Node)
 		return nil
 	}
 	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
