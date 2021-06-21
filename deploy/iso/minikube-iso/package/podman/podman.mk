@@ -1,5 +1,5 @@
-PODMAN_VERSION = v2.2.1
-PODMAN_COMMIT = a0d478edea7f775b7ce32f8eb1a01e75374486cb
+PODMAN_VERSION = v3.1.2
+PODMAN_COMMIT = 51b8ddbc22cf5b10dd76dd9243924aa66ad7db39
 PODMAN_SITE = https://github.com/containers/podman/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
@@ -47,8 +47,11 @@ endef
 
 define PODMAN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 $(@D)/bin/podman $(TARGET_DIR)/usr/bin/podman
-	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/cni/net.d/
-	$(INSTALL) -m 644 $(@D)/cni/87-podman-bridge.conflist $(TARGET_DIR)/etc/cni/net.d/87-podman-bridge.conflist
+	# Don't use kubernetes /etc/cni, but use podman /etc/containers
+	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/containers/
+	$(INSTALL) -m 644 $(PODMAN_PKGDIR)/containers.conf $(TARGET_DIR)/etc/containers/containers.conf
+	$(INSTALL) -d -m 755 $(TARGET_DIR)/etc/containers/net.d/
+	$(INSTALL) -m 644 $(@D)/cni/87-podman-bridge.conflist $(TARGET_DIR)/etc/containers/net.d/87-podman-bridge.conflist
 endef
 
 define PODMAN_INSTALL_INIT_SYSTEMD
