@@ -41,10 +41,16 @@ Here you can see that passing `--user=mary` overwrote the OS user with `mary` as
 
 ## Example use case
 
-A good use case for the `--user` flag is if you have an application that starts and stops minikube clusters.
-Assume the application will use an exsiting cluster if available, otherwise, it will start a new one.
-The problem comes when the application is finished using the cluster, you only want to stop the running cluster if the application started the cluster, not if it was already existing.
+- Embedded use of minikube by multiple users (IDEs, Plugins, etc.)
+- A machine shared by multiple users using the same home folder
 
-This is where the user flag comes into play.
-If the application was configured to pass a user flag on minikube commands (ex. `--user=app123`) then you could check to see what user executed the last `start` command looking at the audit log.
-If the last user was `app123` you're safe to stop the cluster, otherwise leave it running.
+## How do I use minikube in a script?
+
+If you are using minikube in a script or plugin it is recommeneded to add `--user=your_script_name` to all operations.
+
+Example:
+```
+minikube start --user=plugin_name
+minikube profile list --user=plugin_name
+minikube stop --user=plugin_name
+```
