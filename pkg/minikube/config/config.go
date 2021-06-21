@@ -36,20 +36,10 @@ const (
 	WantBetaUpdateNotification = "WantBetaUpdateNotification"
 	// ReminderWaitPeriodInHours is the key for ReminderWaitPeriodInHours
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
-	// WantReportError is the key for WantReportError
-	WantReportError = "WantReportError"
-	// WantReportErrorPrompt is the key for WantReportErrorPrompt
-	WantReportErrorPrompt = "WantReportErrorPrompt"
-	// WantKubectlDownloadMsg is the key for WantKubectlDownloadMsg
-	WantKubectlDownloadMsg = "WantKubectlDownloadMsg"
 	// WantNoneDriverWarning is the key for WantNoneDriverWarning
 	WantNoneDriverWarning = "WantNoneDriverWarning"
 	// ProfileName represents the key for the global profile parameter
 	ProfileName = "profile"
-	// ShowDriverDeprecationNotification is the key for ShowDriverDeprecationNotification
-	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
-	// ShowBootstrapperDeprecationNotification is the key for ShowBootstrapperDeprecationNotification
-	ShowBootstrapperDeprecationNotification = "ShowBootstrapperDeprecationNotification"
 	// UserFlag is the key for the global user flag (ex. --user=user1)
 	UserFlag = "user"
 	// AddonImages stores custom addon images config

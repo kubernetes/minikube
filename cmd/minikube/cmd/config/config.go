@@ -123,18 +123,6 @@ var settings = []Setting{
 		set:  SetInt,
 	},
 	{
-		name: config.WantReportError,
-		set:  SetBool,
-	},
-	{
-		name: config.WantReportErrorPrompt,
-		set:  SetBool,
-	},
-	{
-		name: config.WantKubectlDownloadMsg,
-		set:  SetBool,
-	},
-	{
 		name: config.WantNoneDriverWarning,
 		set:  SetBool,
 	},
@@ -145,14 +133,6 @@ var settings = []Setting{
 	{
 		name: Bootstrapper,
 		set:  SetString,
-	},
-	{
-		name: config.ShowDriverDeprecationNotification,
-		set:  SetBool,
-	},
-	{
-		name: config.ShowBootstrapperDeprecationNotification,
-		set:  SetBool,
 	},
 	{
 		name: "insecure-registry",

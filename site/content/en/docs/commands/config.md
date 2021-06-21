@@ -29,14 +29,9 @@ Configurable fields:
  * WantUpdateNotification
  * WantBetaUpdateNotification
  * ReminderWaitPeriodInHours
- * WantReportError
- * WantReportErrorPrompt
- * WantKubectlDownloadMsg
  * WantNoneDriverWarning
  * profile
  * bootstrapper
- * ShowDriverDeprecationNotification
- * ShowBootstrapperDeprecationNotification
  * insecure-registry
  * hyperv-virtual-switch
  * disable-driver-mounts
