@@ -30,7 +30,7 @@ minikube start [flags]
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
       --container-runtime string          The container runtime to be used (docker, cri-o, containerd). (default "docker")
-      --cpus string                       Number of CPUs allocated to Kubernetes. Use 'max' to use the maximum number of CPUs. (default "2")
+      --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. (default "2")
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
       --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors
@@ -73,7 +73,7 @@ minikube start [flags]
       --kvm-numa-count int                Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only) (default 1)
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
-      --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use 'max' to use the maximum amount of memory.
+      --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory.
       --mount                             This will start the mount daemon and automatically mount files into minikube.
       --mount-string string               The argument to pass the minikube mount command on start.
       --namespace string                  The named space to activate after start (default "default")
