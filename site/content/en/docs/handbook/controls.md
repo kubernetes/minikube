@@ -16,7 +16,7 @@ Start a cluster by running:
 minikube start
 ```
 
-Access the Kubernetes Dashboard running within the minikube cluster:
+Access the Kubernetes dashboard running within the minikube cluster:
 
 ```shell
 minikube dashboard

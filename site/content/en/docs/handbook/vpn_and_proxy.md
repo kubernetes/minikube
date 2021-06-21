@@ -93,6 +93,10 @@ Ask your IT department for the appropriate PEM file, and add it to:
 
 `~/.minikube/files/etc/ssl/certs`
 
+or
+
+`~/.minikube/certs`
+
 Then run `minikube delete` and `minikube start`.
 
 #### downloading binaries: proxyconnect tcp: tls: oversized record received with length 20527
