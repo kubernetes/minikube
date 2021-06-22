@@ -92,3 +92,16 @@ Yes! If you prefer not having emoji in your minikube output 😔 , just set the 
 MINIKUBE_IN_STYLE=0 minikube start
 
 ```
+
+## How can I access a minikube cluster from a remote network?
+
+minikube's primary goal is to quickly set up local Kubernetes clusters, and therefore we strongly discourage using minikube in production or for listening to remote traffic. By design, minikube is meant to only listen on the local network.
+
+However, it is possible to configure minikube to listen on a remote network. This will open your network to the outside world and is not recommended. If you are not fully aware of the security implications, please avoid using this.
+
+For the docker and podman driver, use `--listen-address` flag:
+
+```
+minikube start --listen-address=0.0.0.0
+```
+
