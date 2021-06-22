@@ -56,7 +56,9 @@ func (k *Kind) IssueURLs() []string {
 
 // Sections are ordered roughly by stack dependencies
 var (
-	Usage                 = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
+	// minikube has been passed an incorrect parameter
+	Usage = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
+	// minikube has no current cluster running
 	UsageNoProfileRunning = Kind{ID: "MK_USAGE_NO_PROFILE", ExitCode: ExProgramUsage,
 		Advice: `You can create one using 'minikube start'.
 		`,
@@ -223,36 +225,39 @@ var (
 	DrvUnsupportedProfile = Kind{ID: "DRV_UNSUPPORTED_PROFILE", ExitCode: ExDriverUnsupported}
 	DrvNotFound           = Kind{ID: "DRV_NOT_FOUND", ExitCode: ExDriverNotFound}
 	DrvNotDetected        = Kind{ID: "DRV_NOT_DETECTED", ExitCode: ExDriverNotFound}
+	DrvNotHealthy         = Kind{ID: "DRV_NOT_HEALTHY", ExitCode: ExDriverNotFound}
+	DrvDockerNotRunning   = Kind{ID: "DRV_DOCKER_NOT_RUNNING", ExitCode: ExDriverNotFound}
 	DrvAsRoot             = Kind{ID: "DRV_AS_ROOT", ExitCode: ExDriverPermission}
 	DrvNeedsRoot          = Kind{ID: "DRV_NEEDS_ROOT", ExitCode: ExDriverPermission}
 	DrvNeedsAdministrator = Kind{ID: "DRV_NEEDS_ADMINISTRATOR", ExitCode: ExDriverPermission}
 
-	GuestCacheLoad        = Kind{ID: "GUEST_CACHE_LOAD", ExitCode: ExGuestError}
-	GuestCert             = Kind{ID: "GUEST_CERT", ExitCode: ExGuestError}
-	GuestCpConfig         = Kind{ID: "GUEST_CP_CONFIG", ExitCode: ExGuestConfig}
-	GuestDeletion         = Kind{ID: "GUEST_DELETION", ExitCode: ExGuestError}
-	GuestImageList        = Kind{ID: "GUEST_IMAGE_LIST", ExitCode: ExGuestError}
-	GuestImageLoad        = Kind{ID: "GUEST_IMAGE_LOAD", ExitCode: ExGuestError}
-	GuestImageRemove      = Kind{ID: "GUEST_IMAGE_REMOVE", ExitCode: ExGuestError}
-	GuestImageBuild       = Kind{ID: "GUEST_IMAGE_BUILD", ExitCode: ExGuestError}
-	GuestLoadHost         = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
-	GuestMount            = Kind{ID: "GUEST_MOUNT", ExitCode: ExGuestError}
-	GuestMountConflict    = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}
-	GuestNodeAdd          = Kind{ID: "GUEST_NODE_ADD", ExitCode: ExGuestError}
-	GuestNodeDelete       = Kind{ID: "GUEST_NODE_DELETE", ExitCode: ExGuestError}
-	GuestNodeProvision    = Kind{ID: "GUEST_NODE_PROVISION", ExitCode: ExGuestError}
-	GuestNodeRetrieve     = Kind{ID: "GUEST_NODE_RETRIEVE", ExitCode: ExGuestNotFound}
-	GuestNodeStart        = Kind{ID: "GUEST_NODE_START", ExitCode: ExGuestError}
-	GuestPause            = Kind{ID: "GUEST_PAUSE", ExitCode: ExGuestError}
-	GuestProfileDeletion  = Kind{ID: "GUEST_PROFILE_DELETION", ExitCode: ExGuestError}
-	GuestProvision        = Kind{ID: "GUEST_PROVISION", ExitCode: ExGuestError}
-	GuestStart            = Kind{ID: "GUEST_START", ExitCode: ExGuestError}
-	GuestStatus           = Kind{ID: "GUEST_STATUS", ExitCode: ExGuestError}
-	GuestStopTimeout      = Kind{ID: "GUEST_STOP_TIMEOUT", ExitCode: ExGuestTimeout}
-	GuestUnpause          = Kind{ID: "GUEST_UNPAUSE", ExitCode: ExGuestError}
-	GuestCheckPaused      = Kind{ID: "GUEST_CHECK_PAUSED", ExitCode: ExGuestError}
-	GuestDrvMismatch      = Kind{ID: "GUEST_DRIVER_MISMATCH", ExitCode: ExGuestConflict, Style: style.Conflict}
-	GuestMissingConntrack = Kind{ID: "GUEST_MISSING_CONNTRACK", ExitCode: ExGuestUnsupported}
+	GuestCacheLoad                = Kind{ID: "GUEST_CACHE_LOAD", ExitCode: ExGuestError}
+	GuestCert                     = Kind{ID: "GUEST_CERT", ExitCode: ExGuestError}
+	GuestCpConfig                 = Kind{ID: "GUEST_CP_CONFIG", ExitCode: ExGuestConfig}
+	GuestDeletion                 = Kind{ID: "GUEST_DELETION", ExitCode: ExGuestError}
+	GuestImageList                = Kind{ID: "GUEST_IMAGE_LIST", ExitCode: ExGuestError}
+	GuestImageLoad                = Kind{ID: "GUEST_IMAGE_LOAD", ExitCode: ExGuestError}
+	GuestImageRemove              = Kind{ID: "GUEST_IMAGE_REMOVE", ExitCode: ExGuestError}
+	GuestImageBuild               = Kind{ID: "GUEST_IMAGE_BUILD", ExitCode: ExGuestError}
+	GuestLoadHost                 = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
+	GuestMount                    = Kind{ID: "GUEST_MOUNT", ExitCode: ExGuestError}
+	GuestMountConflict            = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}
+	GuestNodeAdd                  = Kind{ID: "GUEST_NODE_ADD", ExitCode: ExGuestError}
+	GuestNodeDelete               = Kind{ID: "GUEST_NODE_DELETE", ExitCode: ExGuestError}
+	GuestNodeProvision            = Kind{ID: "GUEST_NODE_PROVISION", ExitCode: ExGuestError}
+	GuestNodeRetrieve             = Kind{ID: "GUEST_NODE_RETRIEVE", ExitCode: ExGuestNotFound}
+	GuestNodeStart                = Kind{ID: "GUEST_NODE_START", ExitCode: ExGuestError}
+	GuestPause                    = Kind{ID: "GUEST_PAUSE", ExitCode: ExGuestError}
+	GuestProfileDeletion          = Kind{ID: "GUEST_PROFILE_DELETION", ExitCode: ExGuestError}
+	GuestProvision                = Kind{ID: "GUEST_PROVISION", ExitCode: ExGuestError}
+	GuestProvisionContainerExited = Kind{ID: "GUEST_PROVISION_CONTAINER_EXITED", ExitCode: ExGuestError}
+	GuestStart                    = Kind{ID: "GUEST_START", ExitCode: ExGuestError}
+	GuestStatus                   = Kind{ID: "GUEST_STATUS", ExitCode: ExGuestError}
+	GuestStopTimeout              = Kind{ID: "GUEST_STOP_TIMEOUT", ExitCode: ExGuestTimeout}
+	GuestUnpause                  = Kind{ID: "GUEST_UNPAUSE", ExitCode: ExGuestError}
+	GuestCheckPaused              = Kind{ID: "GUEST_CHECK_PAUSED", ExitCode: ExGuestError}
+	GuestDrvMismatch              = Kind{ID: "GUEST_DRIVER_MISMATCH", ExitCode: ExGuestConflict, Style: style.Conflict}
+	GuestMissingConntrack         = Kind{ID: "GUEST_MISSING_CONNTRACK", ExitCode: ExGuestUnsupported}
 
 	IfHostIP    = Kind{ID: "IF_HOST_IP", ExitCode: ExLocalNetworkError}
 	IfMountIP   = Kind{ID: "IF_MOUNT_IP", ExitCode: ExLocalNetworkError}

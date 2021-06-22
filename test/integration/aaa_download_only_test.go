@@ -97,7 +97,9 @@ func TestDownloadOnly(t *testing.T) {
 				if NoneDriver() {
 					t.Skip("None driver does not have preload")
 				}
-				if download.PreloadExists(v, containerRuntime, true) {
+				// Driver does not matter here, since the only exception is none driver,
+				// which cannot occur here.
+				if download.PreloadExists(v, containerRuntime, "docker", true) {
 					// Just make sure the tarball path exists
 					if _, err := os.Stat(download.TarballPath(v, containerRuntime)); err != nil {
 						t.Errorf("failed to verify preloaded tarball file exists: %v", err)
@@ -132,6 +134,9 @@ func TestDownloadOnly(t *testing.T) {
 			})
 
 			t.Run("binaries", func(t *testing.T) {
+				if preloadExists {
+					t.Skip("Preload exists, binaries are present within.")
+				}
 				// checking binaries downloaded (kubelet,kubeadm)
 				for _, bin := range constants.KubernetesReleaseBinaries {
 					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)

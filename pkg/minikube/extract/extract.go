@@ -48,6 +48,7 @@ var exclude = []string{
 	"- {{.profile}}",
 	"    - {{.profile}}",
 	"test/integration",
+	"pkg/minikube/reason/exitcodes.go",
 }
 
 // ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
@@ -91,7 +92,7 @@ func newExtractor(functionsToCheck []string) (*state, error) {
 		// Functions must be of the form "package.function"
 		t2 := strings.Split(t, ".")
 		if len(t2) < 2 {
-			return nil, errors.Wrap(nil, fmt.Sprintf("Invalid function string %s. Needs package name as well.", t))
+			return nil, errors.Errorf("invalid function string %s. Needs package name as well", t)
 		}
 		f := funcType{
 			pack: t2[0],
@@ -298,7 +299,6 @@ func checkIdentForStringValue(i *ast.Ident) string {
 		if rhs, ok := as.Rhs[0].(*ast.BasicLit); ok {
 			s = rhs.Value
 		}
-
 	}
 
 	// This Identifier is part of the const or var declaration

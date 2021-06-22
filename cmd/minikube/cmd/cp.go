@@ -20,10 +20,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"fmt"
 	"os"
 	pt "path"
 	"strings"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -72,6 +74,11 @@ var cpCmd = &cobra.Command{
 			out.ErrLn("%v", errors.Wrap(err, "getting file asset"))
 			os.Exit(1)
 		}
+		defer func() {
+			if err := fa.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", fa.GetSourcePath(), err)
+			}
+		}()
 
 		co := mustload.Running(ClusterFlagValue())
 		var runner command.Runner
@@ -85,20 +92,17 @@ var cpCmd = &cobra.Command{
 
 			h, err := machine.GetHost(co.API, *co.Config, *n)
 			if err != nil {
-				out.ErrLn("%v", errors.Wrap(err, "getting host"))
-				os.Exit(1)
+				exit.Error(reason.GuestLoadHost, "Error getting host", err)
 			}
 
 			runner, err = machine.CommandRunner(h)
 			if err != nil {
-				out.ErrLn("%v", errors.Wrap(err, "getting command runner"))
-				os.Exit(1)
+				exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
 			}
 		}
 
 		if err = runner.Copy(fa); err != nil {
-			out.ErrLn("%v", errors.Wrap(err, "copying file"))
-			os.Exit(1)
+			exit.Error(reason.InternalCommandRunner, fmt.Sprintf("Fail to copy file %s", fa.GetSourcePath()), err)
 		}
 	},
 }

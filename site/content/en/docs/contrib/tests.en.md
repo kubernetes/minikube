@@ -133,6 +133,9 @@ asserts that the dashboard command works
 #### validateDryRun
 asserts that the dry-run mode quickly exits with the right code
 
+#### validateInternationalLanguage
+asserts that the language used can be changed with environment variables
+
 #### validateCacheCmd
 tests functionality of cache command (cache add, delete, list)
 
@@ -168,6 +171,9 @@ to check existence of the test file
 
 #### validateCertSync
 to check existence of the test certificate
+
+#### validateNotActiveRuntimeDisabled
+asserts that for a given runtime, the other runtimes disabled, for example for containerd runtime, docker and crio needs to be not running
 
 #### validateUpdateContextCmd
 asserts basic "update-context" command functionality
@@ -276,6 +282,11 @@ tests all supported CNI options
 Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
 Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
 
+#### validateFalseCNI
+checks that minikube returns and error
+if container runtime is "containerd" or "crio"
+and --cni=false
+
 #### validateHairpinMode
 makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
 try to access deployment/netcat pod using external, obtained from 'netcat' service dns resolution, IP address
@@ -334,6 +345,9 @@ runs the initial minikube start
 
 #### validateDeploying
 deploys an app the minikube cluster
+
+#### validateEnableAddonWhileActive
+makes sure addons can be enabled while cluster is active.
 
 #### validateStop
 tests minikube stop

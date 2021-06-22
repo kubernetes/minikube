@@ -47,3 +47,7 @@ gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 SUMMARY_OUT="$ARTIFACTS/summary.txt"
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
+
+if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
+  ./test-flake-chart/jenkins_upload_tests.sh "${SUMMARY_OUT}"
+fi

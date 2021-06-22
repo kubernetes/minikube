@@ -32,7 +32,7 @@ import (
 )
 
 // Docs generates docs for minikube command
-func Docs(root *cobra.Command, path string, testPath string) error {
+func Docs(root *cobra.Command, path string, testPath string, codePath string) error {
 	cmds := root.Commands()
 	for _, c := range cmds {
 		if c.Hidden {
@@ -47,7 +47,12 @@ func Docs(root *cobra.Command, path string, testPath string) error {
 			return errors.Wrapf(err, "saving doc for %s", c.Name())
 		}
 	}
-	return TestDocs(testPath, "test/integration")
+	err := TestDocs(testPath, "test/integration")
+	if err != nil {
+		return errors.Wrap(err, "failed to generate test docs")
+	}
+
+	return ErrorCodes(codePath, []string{"pkg/minikube/reason/exitcodes.go", "pkg/minikube/reason/reason.go"})
 }
 
 // DocForCommand returns the specific doc for that command

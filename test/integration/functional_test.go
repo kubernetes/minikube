@@ -116,6 +116,7 @@ func TestFunctional(t *testing.T) {
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DryRun", validateDryRun},
+			{"InternationalLanguage", validateInternationalLanguage},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
 			{"LogsFileCmd", validateLogsFileCmd},
@@ -138,6 +139,7 @@ func TestFunctional(t *testing.T) {
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
+			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -893,6 +895,32 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
 		}
 
+	}
+}
+
+// validateInternationalLanguage asserts that the language used can be changed with environment variables
+func validateInternationalLanguage(ctx context.Context, t *testing.T, profile string) {
+	// dry-run mode should always be able to finish quickly (<5s)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
+	defer cancel()
+
+	// Too little memory!
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgs()...)
+	c := exec.CommandContext(mctx, Target(), startArgs...)
+	c.Env = append(os.Environ(), "LC_ALL=fr")
+
+	rr, err := Run(t, c)
+
+	wantCode := reason.ExInsufficientMemory
+	if rr.ExitCode != wantCode {
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		}
+	}
+	if !strings.Contains(rr.Stdout.String(), "Utilisation du pilote") {
+		t.Errorf("dry-run output was expected to be in French. Expected \"Utilisation du pilote\", but not present in output:\n%s", rr.Stdout.String())
 	}
 }
 
@@ -1660,6 +1688,32 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		if diff := cmp.Diff(string(want), got); diff != "" {
 			t.Errorf("failed verify pem file. minikube_test.pem -> %s mismatch (-want +got):\n%s", vp, diff)
 		}
+	}
+}
+
+// validateNotActiveRuntimeDisabled asserts that for a given runtime, the other runtimes disabled, for example for containerd runtime, docker and crio needs to be not running
+func validateNotActiveRuntimeDisabled(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("skipping on none driver, minikube does not control the runtime of user on the none driver.")
+	}
+	disableMap := map[string][]string{
+		"docker":     {"crio"},
+		"containerd": {"docker", "crio"},
+		"crio":       {"docker", "containerd"},
+	}
+
+	expectDisable := disableMap[ContainerRuntime()]
+	for _, cr := range expectDisable {
+		// for example: minikube sudo systemctl is-active docker
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo systemctl is-active %s", cr)))
+		got := rr.Stdout.String()
+		if err != nil && !strings.Contains(got, "inactive") {
+			t.Logf("output of %s: %v", rr.Output(), err)
+		}
+		if !strings.Contains(got, "inactive") {
+			t.Errorf("For runtime %q: expected %q to be inactive but got %q ", ContainerRuntime(), cr, got)
+		}
+
 	}
 }
 

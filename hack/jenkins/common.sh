@@ -36,6 +36,52 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 readonly TIMEOUT=${1:-120m}
 
+public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}.html"
+
+# retry_github_status provides reliable github status updates
+function retry_github_status() {
+  local commit=$1
+  local context=$2
+  local state=$3
+  local token=$4
+  local target=$5
+  local desc=$6
+
+   # Retry in case we hit our GitHub API quota or fail other ways.
+  local attempt=0
+  local timeout=2
+  local code=-1
+
+  echo "set GitHub status $context to $desc"
+
+  while [[ "${attempt}" -lt 8 ]]; do
+    local out=$(mktemp)
+    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L -u minikube-bot:${token} \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"state\": \"${state}\", \"description\": \"Jenkins: ${desc}\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
+
+    # 2xx HTTP codes
+    if [[ "${code}" =~ ^2 ]]; then
+      break
+    fi
+
+    cat "${out}" && rm -f "${out}"
+    echo "HTTP code ${code}! Retrying in ${timeout} .."
+    sleep "${timeout}"
+    attempt=$(( attempt + 1 ))
+    timeout=$(( timeout * 5 ))
+  done
+}
+
+if [ "$(uname)" = "Darwin" ]; then
+  if ! bash setup_docker_desktop_macos.sh; then
+    retry_github_status "${COMMIT}" "${JOB_NAME}" "failure" "${access_token}" "${public_log_url}" "Jenkins: docker failed to start"
+    exit 1
+  fi
+fi
+
 # We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
   sudo apt-get -y install lsof psmisc
@@ -362,7 +408,7 @@ echo ">> Installing jq"
 fi
 
 echo ">> Installing gopogh"
-curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-${OS_ARCH}"
+curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.8.0/gopogh-${OS_ARCH}"
 sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
 
 
@@ -373,7 +419,7 @@ fi
 
 touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
-gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d)") || true
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
 test_num=$(echo $gopogh_status | jq '.NumberOfTests')
 pessimistic_status="${fail_num} / ${test_num} failures"
@@ -395,6 +441,11 @@ if [ -z "${EXTERNAL}" ]; then
   gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
   echo ">> uploading ${SUMMARY_OUT}"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
+  if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
+    ./test-flake-chart/upload_tests.sh "${SUMMARY_OUT}"
+  elif [[ "${JOB_NAME}" == "Docker_Linux" || "${JOB_NAME}" == "Docker_Linux_containerd" || "${JOB_NAME}" == "KVM_Linux" || "${JOB_NAME}" == "KVM_Linux_containerd" ]]; then
+    ./test-flake-chart/report_flakes.sh "${MINIKUBE_LOCATION}" "${SUMMARY_OUT}" "${JOB_NAME}"
+  fi
 else 
   # Otherwise, put the results in a predictable spot so the upload job can find them
   REPORTS_PATH=test_reports
@@ -422,45 +473,6 @@ echo ">> ${TEST_HOME} completed at $(date)"
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   exit "$result"
 fi
-
-public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}.html"
-
-# retry_github_status provides reliable github status updates
-function retry_github_status() {
-  local commit=$1
-  local context=$2
-  local state=$3
-  local token=$4
-  local target=$5
-  local desc=$6
-
-   # Retry in case we hit our GitHub API quota or fail other ways.
-  local attempt=0
-  local timeout=2
-  local code=-1
-
-  echo "set GitHub status $context to $desc"
-
-  while [[ "${attempt}" -lt 8 ]]; do
-    local out=$(mktemp)
-    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L -u minikube-bot:${token} \
-      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}" \
-      -H "Content-Type: application/json" \
-      -X POST \
-      -d "{\"state\": \"${state}\", \"description\": \"Jenkins: ${desc}\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
-
-    # 2xx HTTP codes
-    if [[ "${code}" =~ ^2 ]]; then
-      break
-    fi
-
-    cat "${out}" && rm -f "${out}"
-    echo "HTTP code ${code}! Retrying in ${timeout} .."
-    sleep "${timeout}"
-    attempt=$(( attempt + 1 ))
-    timeout=$(( timeout * 5 ))
-  done
-}
 
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
 

@@ -287,6 +287,12 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+		}
+	}()
+
 	if err := cr.Copy(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}

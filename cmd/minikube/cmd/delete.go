@@ -87,6 +87,24 @@ func (error DeletionError) Error() string {
 	return error.Err.Error()
 }
 
+var hostAndDirsDeleter = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
+	if err := killMountProcess(); err != nil {
+		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
+	}
+
+	deleteHosts(api, cc)
+
+	// In case DeleteHost didn't complete the job.
+	deleteProfileDirectory(profileName)
+	deleteMachineDirectories(cc)
+
+	if err := deleteConfig(profileName); err != nil {
+		return err
+	}
+
+	return deleteContext(profileName)
+}
+
 func init() {
 	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
 	deleteCmd.Flags().BoolVar(&purge, "purge", false, "Set this flag to delete the '.minikube' folder from your user directory.")
@@ -210,23 +228,28 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	klog.Infof("DeleteProfiles")
 	var errs []error
 	for _, profile := range profiles {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		err := deleteProfile(ctx, profile)
-		if err != nil {
-			mm, loadErr := machine.LoadMachine(profile.Name)
-
-			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
-				invalidProfileDeletionErrs := deleteInvalidProfile(profile)
-				if len(invalidProfileDeletionErrs) > 0 {
-					errs = append(errs, invalidProfileDeletionErrs...)
-				}
-			} else {
-				errs = append(errs, err)
-			}
-		}
+		errs = append(errs, deleteProfileTimeout(profile)...)
 	}
 	return errs
+}
+
+func deleteProfileTimeout(profile *config.Profile) []error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	if err := deleteProfile(ctx, profile); err != nil {
+
+		mm, loadErr := machine.LoadMachine(profile.Name)
+		if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
+			invalidProfileDeletionErrs := deleteInvalidProfile(profile)
+			if len(invalidProfileDeletionErrs) > 0 {
+				return invalidProfileDeletionErrs
+			}
+		} else {
+			return []error{err}
+		}
+	}
+	return nil
 }
 
 func deleteProfile(ctx context.Context, profile *config.Profile) error {
@@ -239,6 +262,9 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 
 		// if driver is oci driver, delete containers and volumes
 		if driver.IsKIC(profile.Config.Driver) {
+			if err := unpauseIfNeeded(profile); err != nil {
+				klog.Warningf("failed to unpause %s : %v", profile.Name, err)
+			}
 			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
 			for _, n := range profile.Config.Nodes {
 				machineName := config.MachineName(*profile.Config, n)
@@ -274,25 +300,55 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 		}
 	}
 
-	if err := killMountProcess(); err != nil {
-		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
-	}
-
-	deleteHosts(api, cc)
-
-	// In case DeleteHost didn't complete the job.
-	deleteProfileDirectory(profile.Name)
-	deleteMachineDirectories(cc)
-
-	if err := deleteConfig(profile.Name); err != nil {
+	if err := hostAndDirsDeleter(api, cc, profile.Name); err != nil {
 		return err
 	}
 
-	if err := deleteContext(profile.Name); err != nil {
-		return err
-	}
 	out.Step(style.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
 	return nil
+}
+
+func unpauseIfNeeded(profile *config.Profile) error {
+	// there is a known issue with removing kicbase container with paused containerd/crio containers inside
+	// unpause it before we delete it
+	crName := profile.Config.KubernetesConfig.ContainerRuntime
+	if crName == "docker" {
+		return nil
+	}
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return err
+	}
+	defer api.Close()
+
+	host, err := machine.LoadHost(api, profile.Name)
+	if err != nil {
+		return err
+	}
+
+	r, err := machine.CommandRunner(host)
+	if err != nil {
+		exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
+	}
+
+	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: r})
+	if err != nil {
+		exit.Error(reason.InternalNewRuntime, "Failed to create runtime", err)
+	}
+
+	paused, err := cluster.CheckIfPaused(cr, nil)
+	if err != nil {
+		return err
+	}
+
+	if !paused {
+		return nil
+	}
+
+	klog.Infof("Unpause cluster %q", profile.Name)
+	_, err = cluster.Unpause(cr, r, nil)
+	return err
 }
 
 func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {

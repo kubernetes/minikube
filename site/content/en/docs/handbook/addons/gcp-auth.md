@@ -5,6 +5,8 @@ weight: 1
 date: 2020-07-15
 ---
 
+## Tutorial
+
 If you have a containerized GCP app with a Kubernetes yaml, you can automatically add your credentials to all your deployed pods dynamically with this minikube addon. You just need to have a credentials file, which can be generated with `gcloud auth application-default login`. If you already have a json credentials file you want specify, use the GOOGLE_APPLICATION_CREDENTIALS environment variable.
 
 - Start a cluster:
@@ -80,3 +82,12 @@ spec:
         ports:
           - containerPort: 80
 </pre>
+
+
+## Refreshing existing pods
+
+If you had already deployed pods to your minikube cluster before enabling the gcp-auth addon, then these pods will not have any GCP credentials. There are two ways to solve this issue.  
+
+1. If you use a Deployment to deploy your pods, just delete the existing pods with `kubectl delete pod <pod_name>`. The deployment will then automatically recreate the pod and it will have the correct credentials.
+
+2. minikube can delete and recreate your pods for you, by running `minikube addons enable gcp-auth --refresh`. It does not matter if you have already enabled the addon or not. 

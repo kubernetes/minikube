@@ -17,6 +17,10 @@ unpause Kubernetes
 minikube unpause [flags]
 ```
 
+### Aliases
+
+[resume]
+
 ### Options
 
 ```

@@ -134,10 +134,15 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
 			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 		}
-		// inject {"host.minikube.internal": hostIP} record into CoreDNS
-		if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
-			klog.Errorf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
-		}
+
+		// not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds
+		go func() {
+			// inject {"host.minikube.internal": hostIP} record into CoreDNS
+			if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
+				klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
+				out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
+			}
+		}()
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
@@ -171,12 +176,13 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}()
 
 	// enable addons, both old and new!
+	addonList := viper.GetStringSlice(config.AddonListFlag)
 	if starter.ExistingAddons != nil {
 		if viper.GetBool("force") {
 			addons.Force = true
 		}
 		wg.Add(1)
-		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
+		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, addonList)
 	}
 
 	if apiServer {
@@ -279,7 +285,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	}
 
 	if !driver.BareMetal(cc.Driver) {
-		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
+		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
 	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
@@ -288,7 +294,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
 	}
 
-	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
+	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
 	waitDownloadKicBaseImage(&kicGroup)
 
 	return startMachine(cc, n, delOnFail)
@@ -317,7 +323,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	// Preload is overly invasive for bare metal, and caching is not meaningful.
 	// KIC handles preload elsewhere.
 	if driver.IsVM(cc.Driver) {
-		if err := cr.Preload(cc.KubernetesConfig); err != nil {
+		if err := cr.Preload(cc); err != nil {
 			switch err.(type) {
 			case *cruntime.ErrISOFeature:
 				out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
@@ -480,7 +486,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists, err = startHost(m, cfg, node, delOnFail)
+	host, preExists, err = startHostInternal(m, cfg, node, delOnFail)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
 	}
@@ -503,8 +509,8 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	return runner, preExists, m, host, err
 }
 
-// startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
+// startHostInternal starts a new minikube host using a VM or None
+func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
 		return host, exists, nil

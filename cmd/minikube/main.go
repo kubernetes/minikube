@@ -152,7 +152,7 @@ func logFileName(dir string, logIdx int64) string {
 			klog.Warningf("Unable to add username %s to log filename hash: %v", user.Username, err)
 		}
 	}
-	for _, s := range os.Args {
+	for _, s := range pflag.Args() {
 		if _, err := h.Write([]byte(s)); err != nil {
 			klog.Warningf("Unable to add arg %s to log filename hash: %v", s, err)
 		}
@@ -160,10 +160,10 @@ func logFileName(dir string, logIdx int64) string {
 	hs := hex.EncodeToString(h.Sum(nil))
 	var logfilePath string
 	// check if subcommand specified
-	if len(os.Args) < 2 {
+	if len(pflag.Args()) < 1 {
 		logfilePath = filepath.Join(dir, fmt.Sprintf("minikube_%s_%d.log", hs, logIdx))
 	} else {
-		logfilePath = filepath.Join(dir, fmt.Sprintf("minikube_%s_%s_%d.log", os.Args[1], hs, logIdx))
+		logfilePath = filepath.Join(dir, fmt.Sprintf("minikube_%s_%s_%d.log", pflag.Arg(0), hs, logIdx))
 	}
 	// if log has reached max size 1M, generate new logfile name by incrementing count
 	if checkLogFileMaxSize(logfilePath, 1024) {

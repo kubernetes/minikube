@@ -125,7 +125,7 @@ type Manager interface {
 	// SystemLogCmd returns the command to return the system logs
 	SystemLogCmd(int) string
 	// Preload preloads the container runtime with k8s images
-	Preload(config.KubernetesConfig) error
+	Preload(config.ClusterConfig) error
 	// ImagesPreloaded returns true if all images have been preloaded
 	ImagesPreloaded([]string) bool
 }
@@ -225,9 +225,10 @@ func disableOthers(me Manager, cr CommandRunner) error {
 			klog.Infof("skipping containerd shutdown because we are bound to it")
 			continue
 		}
-
-		// runtime is already disabled, nothing to do.
-		if !r.Active() {
+		// in case of docker, if other runtime are already not active we are sure it is disabled, nothing to do.
+		// because #11515 for non-docker runtimes, we gotta ensure Docker is disabled and can not just check if it is not active
+		// since it is enabled by default in the current base image and it keeps coming back to life
+		if me.Name() == "Docker" && !r.Active() {
 			continue
 		}
 

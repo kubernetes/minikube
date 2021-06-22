@@ -848,8 +848,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // SetupCerts sets up certificates within the cluster.
 func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) error {
-	_, err := bootstrapper.SetupCerts(k.c, k8s, n)
-	return err
+	return bootstrapper.SetupCerts(k.c, k8s, n)
 }
 
 // UpdateCluster updates the control plane with cluster-level info.
@@ -867,7 +866,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "runtime")
 	}
 
-	if err := r.Preload(cfg.KubernetesConfig); err != nil {
+	if err := r.Preload(cfg); err != nil {
 		klog.Infof("preload failed, will try to load cached images: %v", err)
 	}
 
