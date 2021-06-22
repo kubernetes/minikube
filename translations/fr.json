@@ -76,7 +76,6 @@
 	"Cannot find directory {{.path}} for copy": "Impossible de trouver le répertoire {{.path}} pour la copie",
 	"Cannot find directory {{.path}} for mount": "Impossible de trouver le répertoire {{.path}} pour le montage",
 	"Cannot use both --output and --format options": "Impossible d'utiliser à la fois les options --output et --format",
-	"Check if you have unnecessary pods running by running 'kubectl get po -A": "",
 	"Check if you have unnecessary pods running by running 'kubectl get po -A'": "Vérifiez si vous avez des pods inutiles en cours d'exécution en exécutant 'kubectl get po -A'",
 	"Check output of 'journalctl -xeu kubelet', try passing --extra-config=kubelet.cgroup-driver=systemd to minikube start": "Vérifiez la sortie de 'journalctl -xeu kubelet', essayez de passer --extra-config=kubelet.cgroup-driver=systemd au démarrage de minikube",
 	"Check that libvirt is setup properly": "Vérifiez que libvirt est correctement configuré",
