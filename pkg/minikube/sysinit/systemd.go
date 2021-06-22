@@ -19,7 +19,9 @@ package sysinit
 
 import (
 	"errors"
+	"fmt"
 	"os/exec"
+	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 )
@@ -126,7 +128,14 @@ func (s *Systemd) Stop(svc string) error {
 
 // ForceStop terminates a service with prejudice
 func (s *Systemd) ForceStop(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "stop", "-f", svc))
+	rr, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "stop", "-f", svc))
+	if err == nil {
+		return nil
+	}
+	if strings.Contains(rr.Output(), fmt.Sprintf("Unit %s not loaded", svc)) {
+		// already stopped
+		return nil
+	}
 	return err
 }
 
