@@ -456,10 +456,10 @@ func (d *Driver) Stop() error {
 			klog.Infof("unable list containers : %v", err)
 		}
 		if len(containers) > 0 {
-			if err := runtime.StopContainers(containers); err != nil {
+			if err := runtime.StopContainers(containers.IDs()); err != nil {
 				klog.Infof("unable to stop containers : %v", err)
 			}
-			if err := runtime.KillContainers(containers); err != nil {
+			if err := runtime.KillContainers(containers.IDs()); err != nil {
 				klog.Errorf("unable to kill containers : %v", err)
 			}
 		}
