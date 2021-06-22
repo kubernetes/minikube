@@ -1835,14 +1835,16 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 		t.Fatalf("failed to download mitmproxy tar: %v", err)
 	}
 
-	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz"))
+	mitmDir, err := ioutil.TempDir("", "")
+
+	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz", "-C", mitmDir))
 	if err != nil {
 		t.Fatalf("failed untar mitmproxy tar: %v", err)
 	}
 
 	// Start mitmdump in the background, this will create the needed certs
 	// and provide the necessary proxy at 127.0.0.1:8080
-	mitmRR, err := Start(t, exec.CommandContext(ctx, "./mitmproxy-6.0.2-linux/mitmdump"))
+	mitmRR, err := Start(t, exec.CommandContext(ctx, path.Join(mitmDir, "mitmdump")))
 	if err != nil {
 		t.Fatalf("starting mitmproxy failed: %v", err)
 	}
