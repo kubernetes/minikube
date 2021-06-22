@@ -82,6 +82,9 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 		if arm64Platform() {
 			// arm64 KIC driver is supported starting from v1.17.0
 			legacyVersion = "v1.17.0"
+		} else {
+			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
+			legacyVersion = "v1.9.0"
 		}
 	}
 	// the version containerd in ISO was upgraded to 1.4.2
@@ -157,6 +160,9 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 		if arm64Platform() {
 			// first release with non-experimental arm64 KIC
 			legacyVersion = "v1.17.0"
+		} else {
+			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
+			legacyVersion = "v1.9.0"
 		}
 	}
 	if ContainerRuntime() == "containerd" {
