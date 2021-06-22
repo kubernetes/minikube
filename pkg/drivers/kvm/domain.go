@@ -74,6 +74,7 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 	}
 	defer conn.Close()
 
+	log.Infof("define libvirt domain using xml: %v", domainXML.String())
 	// define the domain in libvirt using the generated XML
 	dom, err := conn.DomainDefineXML(domainXML.String())
 	if err != nil {
