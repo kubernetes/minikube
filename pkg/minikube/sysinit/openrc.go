@@ -117,7 +117,7 @@ func (s *OpenRC) Disable(svc string) error {
 	return nil
 }
 
-// DisableNow not implemented for openRC
+// DisableNow does Disable + Stop
 func (s *OpenRC) DisableNow(svc string) error {
 	// supposed to do disable + stop
 	// disable does nothing for OpenRC, so just Stop here
@@ -134,7 +134,7 @@ func (s *OpenRC) Enable(svc string) error {
 	return nil
 }
 
-// EnableNow  not implemented for openRC
+// EnableNow does Enable + Start
 func (s *OpenRC) EnableNow(svc string) error {
 	// supposed to do enable + start
 	// enable does nothing for OpenRC, so just Start here
