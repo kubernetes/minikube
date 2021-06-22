@@ -119,7 +119,9 @@ func (s *OpenRC) Disable(svc string) error {
 
 // DisableNow not implemented for openRC
 func (s *OpenRC) DisableNow(svc string) error {
-	return fmt.Errorf("disable now is not implemented for OpenRC! PRs to fix are welcomed")
+	// supposed to do disable + stop
+	// disable does nothing for OpenRC, so just Stop here
+	return s.Stop(svc)
 }
 
 // Mask does nothing
