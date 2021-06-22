@@ -63,6 +63,7 @@ func (t *SSHTunnel) Start() error {
 			if err != nil {
 				klog.Errorf("error cleaning up: %v", err)
 			}
+			t.stopActiveConnections()
 			return err
 		default:
 		}
@@ -117,6 +118,15 @@ func (t *SSHTunnel) startConnection(svc v1.Service) {
 	err := t.LoadBalancerEmulator.PatchServiceIP(t.v1Core.RESTClient(), svc, "127.0.0.1")
 	if err != nil {
 		klog.Errorf("error patching service: %v", err)
+	}
+}
+
+func (t *SSHTunnel) stopActiveConnections() {
+	for _, conn := range t.conns {
+		err := conn.stop()
+		if err != nil {
+			klog.Errorf("error stopping ssh tunnel: %v", err)
+		}
 	}
 }
 
