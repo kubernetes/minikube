@@ -38,9 +38,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/translate"
+	"k8s.io/minikube/pkg/version"
 )
 
 var dirs = [...]string{
@@ -93,7 +95,7 @@ func Execute() {
 	}
 
 	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
-		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead (Download at {{.url}}.)",
+		out.Infof("You are trying to run amd64 binary on M1 system. Please consider running darwin/arm64 binary instead (Download at {{.url}}.)",
 			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "arm64")})
 	}
 
