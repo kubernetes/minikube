@@ -38,7 +38,7 @@ const domainTmpl = `
   {{end}}
   </cpu>
   <os>
-    <type machine='libvirt'>hvm</type>
+    <type machine='virt-4.2' arch='aarch64'>hvm</type>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
     <bootmenu enable='no'/>
