@@ -256,6 +256,9 @@ tests the minikube node stop command
 #### validateStartNodeAfterStop
 tests the minikube node start command on an existing stopped node
 
+#### validateRestartKeepsNodes
+restarts minikube cluster and checks if the reported node list is unchanged
+
 #### validateStopMultiNodeCluster
 runs minikube stop on a multinode cluster
 
