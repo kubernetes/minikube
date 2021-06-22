@@ -32,9 +32,9 @@ if [ "${ghprbPullId}" == "master" ]; then
 fi
 
 jobs=(
-     # 'HyperKit_Functional_macOS'
-     'Hyper-V_Windows'
-     'VirtualBox_Linux'
+     'Hyperkit_macOS'
+     # 'Hyper-V_Windows'
+     # 'VirtualBox_Linux'
      # 'VirtualBox_macOS'
      'VirtualBox_Windows'
      # 'KVM-GPU_Linux' - Disabled
@@ -48,7 +48,7 @@ jobs=(
      'Docker_Linux_crio_arm64'
      'Docker_Linux_containerd'
      'Docker_Linux_crio'
-     # 'Docker_macOS'
+     'Docker_macOS'
      'Docker_Windows'
      # 'Podman_Linux'
      'Docker_Cloud_Shell'
@@ -69,8 +69,8 @@ function retry_github_status() {
 
   while [[ "${attempt}" -lt 8 ]]; do
     local out=$(mktemp)
-    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L \
-      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}?access_token=${token}" \
+    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L  -u minikube-bot:$token \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}" \
       -H "Content-Type: application/json" \
       -X POST \
       -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)

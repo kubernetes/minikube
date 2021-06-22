@@ -1,5 +1,3 @@
-// +build darwin
-
 /*
 Copyright 2019 The Kubernetes Authors All rights reserved.
 
@@ -20,11 +18,15 @@ package docker
 
 import (
 	"fmt"
+	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 type testCase struct {
-	version, expect string
+	version, expect   string
+	expectFixContains string
 }
 
 func appendVersionVariations(tc []testCase, v []int, reason string) []testCase {
@@ -83,12 +85,41 @@ func TestCheckDockerVersion(t *testing.T) {
 		tc = appendVersionVariations(tc, v, "PROVIDER_DOCKER_VERSION_LOW")
 	}
 
+	tc = append(tc, []testCase{
+		{
+			// "dev" is set when Docker (Moby) was installed with `make binary && make install`
+			version: "linux-dev",
+			expect:  "",
+			expectFixContains: fmt.Sprintf("Install the official release of %s (Minimum recommended version is %02d.%02d.%d, current version is dev)",
+				driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+		},
+		{
+			// "library-import" is set when Docker (Moby) was installed with `go build github.com/docker/docker/cmd/dockerd` (unrecommended, but valid)
+			version: "linux-library-import",
+			expect:  "",
+			expectFixContains: fmt.Sprintf("Install the official release of %s (Minimum recommended version is %02d.%02d.%d, current version is library-import)",
+				driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+		},
+		{
+			// "foo.bar.baz" is a triplet that cannot be parsed as "%02d.%02d.%d"
+			version: "linux-foo.bar.baz",
+			expect:  "",
+			expectFixContains: fmt.Sprintf("Install the official release of %s (Minimum recommended version is %02d.%02d.%d, current version is foo.bar.baz)",
+				driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+		},
+	}...)
+
 	for _, c := range tc {
 		t.Run("checkDockerVersion test", func(t *testing.T) {
 			s := checkDockerVersion(c.version)
 			if s.Error != nil {
 				if c.expect != s.Reason {
 					t.Errorf("Error %v expected. but got %q. (version string : %s)", c.expect, s.Reason, c.version)
+				}
+			}
+			if c.expectFixContains != "" {
+				if !strings.Contains(s.Fix, c.expectFixContains) {
+					t.Errorf("Error expected Fix to contain %q, but got %q", c.expectFixContains, s.Fix)
 				}
 			}
 		})

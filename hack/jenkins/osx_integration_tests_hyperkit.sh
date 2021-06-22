@@ -24,14 +24,15 @@
 # access_token: The Github API access token. Injected by the Jenkins credential provider. 
 
 
-set -e
+set -ex
 
-OS_ARCH="darwin-amd64"
-VM_DRIVER="hyperkit"
-JOB_NAME="HyperKit_Functional_macOS"
-EXTRA_TEST_ARGS="-test.run TestFunctional"
+ARCH="amd64"
+OS="darwin"
+DRIVER="hyperkit"
+JOB_NAME="Hyperkit_macOS"
+EXTRA_TEST_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
-
+EXTERNAL="yes"
 
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "FAILED TO INSTALL CLEANUP"

@@ -25,7 +25,29 @@ import (
 	"strings"
 
 	"github.com/klauspost/cpuid"
+	"golang.org/x/sys/cpu"
 )
+
+// RuntimeOS returns the runtime operating system
+func RuntimeOS() string {
+	return runtime.GOOS
+}
+
+// RuntimeArch returns the runtime architecture
+func RuntimeArch() string {
+	arch := runtime.GOARCH
+	if arch == "arm" {
+		// runtime.GOARM
+		if !cpu.ARM.HasVFP {
+			return "arm/v5"
+		}
+		if !cpu.ARM.HasVFPv3 {
+			return "arm/v6"
+		}
+		// "arm" (== "arm/v7")
+	}
+	return arch
+}
 
 // IsMicrosoftWSL will return true if process is running in WSL in windows
 // checking for WSL env var based on this https://github.com/microsoft/WSL/issues/423#issuecomment-608237689

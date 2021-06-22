@@ -186,9 +186,9 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	ignore := []string{
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(bsutil.EtcdDataDir(), "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.ReplaceAll(vmpath.GuestManifestsDir, "/", "-")),
+		fmt.Sprintf("DirAvailable-%s", strings.ReplaceAll(vmpath.GuestPersistentDir, "/", "-")),
+		fmt.Sprintf("DirAvailable-%s", strings.ReplaceAll(bsutil.EtcdDataDir(), "/", "-")),
 		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
@@ -259,6 +259,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 	kw.Close()
 	wg.Wait()
+
 	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
@@ -296,13 +297,12 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 	type step struct {
 		logTag       string
 		registerStep register.RegStep
-		stepMessage  string
 	}
 
 	steps := []step{
-		{logTag: "certs", registerStep: register.PreparingKubernetesCerts, stepMessage: "Generating certificates and keys ..."},
-		{logTag: "control-plane", registerStep: register.PreparingKubernetesControlPlane, stepMessage: "Booting up control plane ..."},
-		{logTag: "bootstrap-token", registerStep: register.PreparingKubernetesBootstrapToken, stepMessage: "Configuring RBAC rules ..."},
+		{logTag: "certs", registerStep: register.PreparingKubernetesCerts},
+		{logTag: "control-plane", registerStep: register.PreparingKubernetesControlPlane},
+		{logTag: "bootstrap-token", registerStep: register.PreparingKubernetesBootstrapToken},
 	}
 	nextStepIndex := 0
 
@@ -317,7 +317,17 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 			continue
 		}
 		register.Reg.SetStep(nextStep.registerStep)
-		out.Step(style.SubStep, nextStep.stepMessage)
+		// because the translation extract (make extract) needs simple strings to be included in translations we have to pass simple strings
+		if nextStepIndex == 0 {
+			out.Step(style.SubStep, "Generating certificates and keys ...")
+		}
+		if nextStepIndex == 1 {
+			out.Step(style.SubStep, "Booting up control plane ...")
+		}
+		if nextStepIndex == 2 {
+			out.Step(style.SubStep, "Configuring RBAC rules ...")
+		}
+
 		nextStepIndex++
 	}
 	wg.Done()
@@ -330,7 +340,7 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 		regStep = registerStep[0]
 	}
 
-	cnm, err := cni.New(cfg)
+	cnm, err := cni.New(&cfg)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
 	}
@@ -349,12 +359,6 @@ func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) 
 
 	if err := cnm.Apply(k.c); err != nil {
 		return errors.Wrap(err, "cni apply")
-	}
-
-	if cfg.KubernetesConfig.ContainerRuntime == constants.CRIO {
-		if err := cruntime.UpdateCRIONet(k.c, cnm.CIDR()); err != nil {
-			return errors.Wrap(err, "update crio")
-		}
 	}
 
 	return nil
@@ -681,34 +685,6 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		}
 	}
 
-	if cfg.VerifyComponents[kverify.ExtraKey] {
-		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
-		// it appears as to be immediately Ready as well as all kube-system pods (last observed state),
-		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts,
-		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
-		klog.Info("waiting for restarted kubelet to initialise ...")
-		start := time.Now()
-		wait := func() error {
-			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{LabelSelector: "tier=control-plane"})
-			if err != nil {
-				return err
-			}
-			for _, pod := range pods.Items {
-				if ready, _ := kverify.IsPodReady(&pod); !ready {
-					return nil
-				}
-			}
-			return fmt.Errorf("kubelet not initialised")
-		}
-		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
-		klog.Infof("kubelet initialised")
-		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
-
-		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
-			return errors.Wrap(err, "extra")
-		}
-	}
-
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -746,6 +722,35 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "addons")
 	}
 
+	// must be called after applyCNI and `kubeadm phase addon all` (ie, coredns redeploy)
+	if cfg.VerifyComponents[kverify.ExtraKey] {
+		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
+		// it appears as to be immediately Ready as well as all kube-system pods (last observed state),
+		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts,
+		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
+		klog.Info("waiting for restarted kubelet to initialise ...")
+		start := time.Now()
+		wait := func() error {
+			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{LabelSelector: "tier=control-plane"})
+			if err != nil {
+				return err
+			}
+			for _, pod := range pods.Items {
+				if ready, _ := kverify.IsPodReady(&pod); !ready {
+					return nil
+				}
+			}
+			return fmt.Errorf("kubelet not initialised")
+		}
+		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
+		klog.Infof("kubelet initialised")
+		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
+
+		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
+			return errors.Wrap(err, "extra")
+		}
+	}
+
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		klog.Warningf("unable to adjust resource limits: %v", err)
 	}
@@ -781,9 +786,17 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
-	if cc.KubernetesConfig.CRISocket != "" {
-		joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, cc.KubernetesConfig.CRISocket)
+
+	// avoid "Found multiple CRI sockets, please use --cri-socket to select one: /var/run/dockershim.sock, /var/run/crio/crio.sock" error
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c, Socket: cc.KubernetesConfig.CRISocket})
+	if err != nil {
+		klog.Errorf("cruntime: %v", err)
 	}
+	sp := cr.SocketPath()
+	if sp == "" {
+		sp = kconst.DefaultDockerCRISocket
+	}
+	joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, sp)
 
 	return joinCmd, nil
 }
@@ -835,8 +848,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // SetupCerts sets up certificates within the cluster.
 func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) error {
-	_, err := bootstrapper.SetupCerts(k.c, k8s, n)
-	return err
+	return bootstrapper.SetupCerts(k.c, k8s, n)
 }
 
 // UpdateCluster updates the control plane with cluster-level info.
@@ -854,12 +866,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "runtime")
 	}
 
-	if err := r.Preload(cfg.KubernetesConfig); err != nil {
+	if err := r.Preload(cfg); err != nil {
 		klog.Infof("preload failed, will try to load cached images: %v", err)
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
-		if err := machine.LoadCachedImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
+		if err := machine.LoadCachedImages(&cfg, k.c, images, constants.ImageCacheDir, false); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}

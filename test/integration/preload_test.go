@@ -26,6 +26,7 @@ import (
 	"testing"
 )
 
+// TestPreload verifies the preload tarballs get pulled in properly by minikube
 func TestPreload(t *testing.T) {
 	if NoneDriver() {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())

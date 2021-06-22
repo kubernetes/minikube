@@ -1,5 +1,175 @@
 # Release Notes
 
+## Version 1.21.0 - 2021-06-10
+* add more polish translations [#11587](https://github.com/kubernetes/minikube/pull/11587)
+* Modify MetricsServer to use v1 api version (instead of v1beta1). [#11584](https://github.com/kubernetes/minikube/pull/11584)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Andriy Dzikh
+- Ilya Zuyev
+- JacekDuszenko
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (11 comments)
+- medyagh (2 comments)
+- sharifelgamal (2 comments)
+- andriyDev (1 comments)
+
+Thank you to our triage members for this release!
+
+- RA489 (12 comments)
+- andriyDev (10 comments)
+- sharifelgamal (10 comments)
+- JacekDuszenko (7 comments)
+- spowelljr (5 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.21.0/) for this release!
+
+## Version 1.21.0-beta.0 - 2021-06-02
+Features:
+* Support setting addons from environmental variables [#11469](https://github.com/kubernetes/minikube/pull/11469)
+* Add "resume" as an alias for "unpause" [#11431](https://github.com/kubernetes/minikube/pull/11431)
+* Implement target node option for `cp` command [#11304](https://github.com/kubernetes/minikube/pull/11304)
+
+Bugs:
+* Fix delete command for paused kic driver with containerd/crio runtime [#11504](https://github.com/kubernetes/minikube/pull/11504)
+* kicbase: try image without sha before failing [#11559](https://github.com/kubernetes/minikube/pull/11559)
+* bug: return error on invalid function name in extract.TranslatableStrings [#11454](https://github.com/kubernetes/minikube/pull/11454)
+* Prevent downloading duplicate binaries already present in preload [#11461](https://github.com/kubernetes/minikube/pull/11461)
+* gcp-auth addon: do not reapply gcp-auth yamls on minikube restart [#11486](https://github.com/kubernetes/minikube/pull/11486)
+* Disable Non-Active Containers Runtimes [#11516](https://github.com/kubernetes/minikube/pull/11516)
+* Persist custom addon image/registry settings. [#11432](https://github.com/kubernetes/minikube/pull/11432)
+* Fix auto-pause on VMs (detect right control-plane IP) [#11438](https://github.com/kubernetes/minikube/pull/11438)
+
+Version Upgrades:
+* bump default k8s version to v1.20.7 and newest to v1.22.0-alpha.2 [#11525](https://github.com/kubernetes/minikube/pull/11525)
+* containerd: upgrade `io.containerd.runtime.v1.linux` to `io.containerd.runc.v2` (suppot cgroup v2) [#11325](https://github.com/kubernetes/minikube/pull/11325)
+* metallb-addon: Update metallb from 0.8.2 to 0.9.6 [#11410](https://github.com/kubernetes/minikube/pull/11410)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Akihiro Suda
+- Alessandro Lenzen
+- Anders F Björklund
+- Andriy Dzikh
+- Brian de Alwis
+- Claudia J. Kang
+- Daehyeok Mun
+- Emma
+- Evan Anderson
+- Evan Baker
+- Garen Torikian
+- Ilya Zuyev
+- Jasmine Hegman
+- Kent Iso
+- KushagraIndurkhya
+- Li Zhijian
+- Medya Ghazizadeh
+- Peixuan Ding
+- Predrag Rogic
+- Sharif Elgamal
+- Steven Powell
+- TAKAHASHI Shuuji
+- Thomas Güttler
+- Tomasz Janiszewski
+- Utkarsh Srivastava
+- VigoTheHacker
+- hex0punk
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (129 comments)
+- ilya-zuyev (20 comments)
+- afbjorklund (10 comments)
+- spowelljr (9 comments)
+- sharifelgamal (5 comments)
+- AkihiroSuda (1 comments)
+- andriyDev (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (34 comments)
+- medyagh (32 comments)
+- andriyDev (14 comments)
+- dinever (13 comments)
+- ilya-zuyev (11 comments)
+
+
+## Version 1.20.0 - 2021-05-06
+
+Feature:
+* Add --file flag to 'minikube logs' to automatically put logs into a file. [#11240](https://github.com/kubernetes/minikube/pull/11240)
+
+Minor Improvements:
+* Batch logs output to speedup `minikube logs` command [#11274](https://github.com/kubernetes/minikube/pull/11274)
+* warn about performance for certain versions of kubernetes [#11217](https://github.com/kubernetes/minikube/pull/11217)
+
+Version Upgrades:
+* Update olm addon to v0.17.0 [#10947](https://github.com/kubernetes/minikube/pull/10947)
+* Update newest supported Kubernetes version to v1.22.0-alpha.1 [#11287](https://github.com/kubernetes/minikube/pull/11287)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andriy Dzikh
+- Daehyeok Mun
+- Ilya Zuyev
+- Medya Ghazizadeh
+- Predrag Rogic
+- Sharif Elgamal
+- Steven Powell
+- Tomas Kral
+- Yanshu
+- zhangshj
+
+
+## Version 1.20.0-beta.0 - 2021-04-30
+
+Features:
+
+* New command: `build` to build images using minikube [#11164](https://github.com/kubernetes/minikube/pull/11164)
+* New command 'image pull': allow to load remote images directly without cache [#11127](https://github.com/kubernetes/minikube/pull/11127)
+* Add feature to opt-in to get notifications for beta releases [#11169](https://github.com/kubernetes/minikube/pull/11169)
+* UI: Add log file to GitHub issue output [#11158](https://github.com/kubernetes/minikube/pull/11158)
+
+Bug Fixes:
+
+* Ingress Addon: fix bug which the networking.k8s.io/v1 ingress is always rejected [#11189](https://github.com/kubernetes/minikube/pull/11189)
+* Improve how cni and cruntimes work together [#11185, #11209](https://github.com/kubernetes/minikube/pull/11209, https://github.com/kubernetes/minikube/pull/11185)
+* Docker driverr: support docker installed by Snap Package Manager [#11088](https://github.com/kubernetes/minikube/pull/11088)
+* Change 'minikube version --short' to only print the version without a prompt. [#11167](https://github.com/kubernetes/minikube/pull/11167)
+
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andriy Dzikh
+- Ed Vinyard
+- Hu Shuai
+- Ilya Zuyev
+- Kenta Iso
+- Medya Ghazizadeh
+- Michael Captain
+- Predrag Rogic
+- Sharif Elgamal
+- Steven Powell
+- Tobias Klauser
+- csiepka
+- hiroygo
+- 李龙峰
+
+
 ## Version 1.19.0 - 2021-04-09
 
 * allow Auto-Pause addon on VMs [#11019](https://github.com/kubernetes/minikube/pull/11019)

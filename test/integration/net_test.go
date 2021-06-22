@@ -29,9 +29,13 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// TestNetworkPlugins tests all supported CNI options
+// Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
+// Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
 func TestNetworkPlugins(t *testing.T) {
 	MaybeParallel(t)
 	if NoneDriver() {
@@ -46,7 +50,8 @@ func TestNetworkPlugins(t *testing.T) {
 			podLabel      string
 			hairpin       bool
 		}{
-			{"auto", []string{}, "", "", false},
+			// for containerd and crio runtimes kindnet CNI is used by default and hairpin is enabled
+			{"auto", []string{}, "", "", ContainerRuntime() != "docker"},
 			{"kubenet", []string{"--network-plugin=kubenet"}, "kubenet", "", true},
 			{"bridge", []string{"--cni=bridge"}, "cni", "", true},
 			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", true},
@@ -62,18 +67,31 @@ func TestNetworkPlugins(t *testing.T) {
 			tc := tc
 
 			t.Run(tc.name, func(t *testing.T) {
-				if DockerDriver() && strings.Contains(tc.name, "flannel") {
-					t.Skipf("flannel is not yet compatible with Docker driver: iptables v1.8.3 (legacy): Couldn't load target `CNI-x': No such file or directory")
-				}
-
-				start := time.Now()
-				MaybeParallel(t)
 				profile := UniqueProfileName(tc.name)
 
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=1800", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
+				if DockerDriver() && strings.Contains(tc.name, "flannel") {
+					t.Skipf("flannel is not yet compatible with Docker driver: iptables v1.8.3 (legacy): Couldn't load target `CNI-x': No such file or directory")
+				}
+
+				if ContainerRuntime() != "docker" && tc.name == "false" {
+					// CNI is required for current container runtime
+					validateFalseCNI(ctx, t, profile)
+					return
+				}
+
+				if ContainerRuntime() != "docker" && tc.name == "kubenet" {
+					// CNI is disabled when --network-plugin=kubenet option is passed. See cni.New(..) function
+					// But for containerd/crio CNI has to be configured
+					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
+				}
+
+				start := time.Now()
+				MaybeParallel(t)
+
+				startArgs := append([]string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {
@@ -92,10 +110,13 @@ func TestNetworkPlugins(t *testing.T) {
 				}
 				if !t.Failed() {
 					t.Run("KubeletFlags", func(t *testing.T) {
-						// none does not support 'minikube ssh'
-						rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
+						var rr *RunResult
+						var err error
 						if NoneDriver() {
+							// none does not support 'minikube ssh'
 							rr, err = Run(t, exec.CommandContext(ctx, "pgrep", "-a", "kubelet"))
+						} else {
+							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
 						}
 						if err != nil {
 							t.Fatalf("ssh failed: %v", err)
@@ -169,20 +190,7 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() {
 					t.Run("HairPin", func(t *testing.T) {
-						tryHairPin := func() error {
-							_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
-							return err
-						}
-
-						if tc.hairpin {
-							if err := retry.Expo(tryHairPin, 1*time.Second, Seconds(60)); err != nil {
-								t.Errorf("failed to connect via pod host: %v", err)
-							}
-						} else {
-							if tryHairPin() == nil {
-								t.Fatalf("hairpin connection unexpectedly succeeded - misconfigured test?")
-							}
-						}
+						validateHairpinMode(ctx, t, profile, tc.hairpin)
 					})
 				}
 
@@ -190,6 +198,48 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
+}
+
+// validateFalseCNI checks that minikube returns and error
+// if container runtime is "containerd" or "crio"
+// and --cni=false
+func validateFalseCNI(ctx context.Context, t *testing.T, profile string) {
+	cr := ContainerRuntime()
+
+	startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false"}
+	startArgs = append(startArgs, StartArgs()...)
+
+	mkCmd := exec.CommandContext(ctx, Target(), startArgs...)
+	rr, err := Run(t, mkCmd)
+	if err == nil {
+		t.Errorf("%s expected to fail", mkCmd)
+	}
+	if rr.ExitCode != reason.Usage.ExitCode {
+		t.Errorf("Expected %d exit code, got %d", reason.Usage.ExitCode, rr.ExitCode)
+	}
+	expectedMsg := fmt.Sprintf("The %q container runtime requires CNI", cr)
+	if !strings.Contains(rr.Output(), expectedMsg) {
+		t.Errorf("Expected %q line not found in output %s", expectedMsg, rr.Output())
+	}
+}
+
+// validateHairpinMode makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
+// try to access deployment/netcat pod using external, obtained from 'netcat' service dns resolution, IP address
+// should fail if hairpinMode is off
+func validateHairpinMode(ctx context.Context, t *testing.T, profile string, hairpin bool) {
+	tryHairPin := func() error {
+		_, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", "deployment/netcat", "--", "/bin/sh", "-c", "nc -w 5 -i 5 -z netcat 8080"))
+		return err
+	}
+	if hairpin {
+		if err := retry.Expo(tryHairPin, 1*time.Second, Seconds(60)); err != nil {
+			t.Errorf("failed to connect via pod host: %v", err)
+		}
+	} else {
+		if tryHairPin() == nil {
+			t.Fatalf("hairpin connection unexpectedly succeeded - misconfigured test?")
+		}
+	}
 }
 
 func verifyKubeletFlagsOutput(t *testing.T, kubeletPlugin, out string) {

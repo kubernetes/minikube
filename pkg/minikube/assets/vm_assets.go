@@ -18,6 +18,7 @@ package assets
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"html/template"
 	"io"
@@ -44,6 +45,7 @@ type CopyableFile interface {
 	GetPermissions() string
 	GetModTime() (time.Time, error)
 	Seek(int64, int) (int64, error)
+	Close() error
 }
 
 // BaseAsset is the base asset class
@@ -84,6 +86,7 @@ func (b *BaseAsset) GetModTime() (time.Time, error) {
 type FileAsset struct {
 	BaseAsset
 	reader io.ReadSeeker
+	file   *os.File // Optional pointer to close file through FileAsset.Close()
 }
 
 // NewMemoryAssetTarget creates a new MemoryAsset, with target
@@ -95,11 +98,6 @@ func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset
 func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, error) {
 	klog.V(4).Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
 
-	f, err := os.Open(src)
-	if err != nil {
-		return nil, errors.Wrap(err, "open")
-	}
-
 	info, err := os.Stat(src)
 	if err != nil {
 		return nil, errors.Wrapf(err, "stat")
@@ -107,6 +105,11 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 
 	if info.Size() == 0 {
 		klog.Warningf("NewFileAsset: %s is an empty file!", src)
+	}
+
+	f, err := os.Open(src)
+	if err != nil {
+		return nil, errors.Wrap(err, "open")
 	}
 
 	return &FileAsset{
@@ -117,6 +120,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 			Permissions: permissions,
 		},
 		reader: io.NewSectionReader(f, 0, info.Size()),
+		file:   f,
 	}, nil
 }
 
@@ -153,6 +157,14 @@ func (f *FileAsset) Seek(offset int64, whence int) (int64, error) {
 	return f.reader.Seek(offset, whence)
 }
 
+// Close closes the opend file.
+func (f *FileAsset) Close() error {
+	if f.file == nil {
+		return nil
+	}
+	return f.file.Close()
+}
+
 // MemoryAsset is a memory-based asset
 type MemoryAsset struct {
 	BaseAsset
@@ -175,6 +187,11 @@ func (m *MemoryAsset) Seek(offset int64, whence int) (int64, error) {
 	return m.reader.Seek(offset, whence)
 }
 
+// Close implemented for CopyableFile interface. Always return nil.
+func (m *MemoryAsset) Close() error {
+	return nil
+}
+
 // NewMemoryAsset creates a new MemoryAsset
 func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *MemoryAsset {
 	return &MemoryAsset{
@@ -191,6 +208,7 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 
 // BinAsset is a bindata (binary data) asset
 type BinAsset struct {
+	embed.FS
 	BaseAsset
 	reader   io.ReadSeeker
 	template *template.Template
@@ -198,8 +216,8 @@ type BinAsset struct {
 }
 
 // MustBinAsset creates a new BinAsset, or panics if invalid
-func MustBinAsset(name, targetDir, targetName, permissions string) *BinAsset {
-	asset, err := NewBinAsset(name, targetDir, targetName, permissions)
+func MustBinAsset(fs embed.FS, name, targetDir, targetName, permissions string) *BinAsset {
+	asset, err := NewBinAsset(fs, name, targetDir, targetName, permissions)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to define asset %s: %v", name, err))
 	}
@@ -207,8 +225,9 @@ func MustBinAsset(name, targetDir, targetName, permissions string) *BinAsset {
 }
 
 // NewBinAsset creates a new BinAsset
-func NewBinAsset(name, targetDir, targetName, permissions string) (*BinAsset, error) {
+func NewBinAsset(fs embed.FS, name, targetDir, targetName, permissions string) (*BinAsset, error) {
 	m := &BinAsset{
+		FS: fs,
 		BaseAsset: BaseAsset{
 			SourcePath:  name,
 			TargetDir:   targetDir,
@@ -233,7 +252,7 @@ func defaultValue(defValue string, val interface{}) string {
 }
 
 func (m *BinAsset) loadData() error {
-	contents, err := Asset(m.SourcePath)
+	contents, err := m.FS.ReadFile(m.SourcePath)
 	if err != nil {
 		return err
 	}
@@ -290,4 +309,9 @@ func (m *BinAsset) Read(p []byte) (int, error) {
 // Seek resets the reader to offset
 func (m *BinAsset) Seek(offset int64, whence int) (int64, error) {
 	return m.reader.Seek(offset, whence)
+}
+
+// Close implemented for CopyableFile interface. Always return nil.
+func (m *BinAsset) Close() error {
+	return nil
 }

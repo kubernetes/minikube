@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -280,7 +280,7 @@ func (k *kicRunner) Remove(f assets.CopyableFile) error {
 // isTerminal returns true if the writer w is a terminal
 func isTerminal(w io.Writer) bool {
 	if v, ok := (w).(*os.File); ok {
-		return terminal.IsTerminal(int(v.Fd()))
+		return term.IsTerminal(int(v.Fd()))
 	}
 	return false
 }

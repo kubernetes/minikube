@@ -143,8 +143,8 @@ var Addons = []*Addon{
 		name:      "registry-aliases",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
-		//TODO - add other settings
-		//TODO check if registry addon is enabled
+		// TODO - add other settings
+		// TODO check if registry addon is enabled
 	},
 	{
 		name:      "storage-provisioner",

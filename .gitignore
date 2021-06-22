@@ -22,8 +22,6 @@ _cgo_export.*
 
 _testmain.go
 
-coverage.html
-
 *.exe
 *.test
 *.prof
@@ -37,10 +35,6 @@ coverage.html
 #iso version file
 deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 
-/pkg/minikube/assets/assets.go-e
-/pkg/minikube/assets/assets.go
-/pkg/minikube/translate/translations.go
-/pkg/minikube/translate/translations.go-e
 /minikube
 
 .DS_Store

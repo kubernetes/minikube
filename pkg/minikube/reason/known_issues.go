@@ -14,22 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Copyright 2019 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY matchND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package reason
 
 import (
@@ -282,6 +266,15 @@ var providerIssues = []match{
 		},
 		GOOS:   []string{"windows"},
 		Regexp: re(`docker:.*Mounts denied: EOF`),
+	},
+	{
+		Kind: Kind{
+			ID:       "PR_DOCKER_VER_UNSUPPORTED",
+			ExitCode: ExProviderError,
+			Advice:   "Update Docker to the latest minor version, this version is unsupported",
+			Issues:   []int{10362},
+		},
+		Regexp: re(`unexpected "=" in operand`),
 	},
 
 	// Hyperkit hypervisor
@@ -645,6 +638,15 @@ var driverIssues = []match{
 		GOOS:   []string{"windows"},
 	},
 
+	// HyperKit
+	{
+		Kind: Kind{
+			ID:       "DRV_HYPERKIT_RENEWAL",
+			ExitCode: ExDriverError,
+		},
+		Regexp: re(`new-ing Hyperkit`),
+	},
+
 	// KVM
 	{
 		Kind: Kind{
@@ -994,6 +996,56 @@ var guestIssues = []match{
 			Issues:   []int{9175},
 		},
 		Regexp: re(`configuration.*corrupt`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_STORAGE_DRIVER_BTRFS",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "This is a known issue with BTRFS storage driver, there is a workaround, please checkout the issue on GitHub",
+			Issues:   []int{11235},
+		},
+		Regexp: re(`'/var/lib/dpkg': No such file or directory`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_INCORRECT_ARCH",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "You might be using an amd64 version of minikube on a M1 Mac, use the arm64 version of minikube instead",
+			Issues:   []int{10243},
+		},
+		Regexp: re(`qemu: uncaught target signal 11 (Segmentation fault) - core dumped`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_CNI_INCOMPATIBLE",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "Bridge CNI is incompatible with multi-node clusters, use a different CNI",
+		},
+		Regexp: re(`bridge CNI is incompatible with multi-node clusters`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_PROVISION_ACQUIRE_LOCK",
+			ExitCode: ExGuestError,
+			Advice:   "Please try purging minikube using `minikube delete --all --purge`",
+			Issues:   []int{11022},
+		},
+		Regexp: re(`failed to acquire bootstrap client lock`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_PROVISION_CP_PUBKEY",
+			ExitCode: ExGuestError,
+		},
+		Regexp: re(`copying pub key`),
+	},
+	{
+		// This should be checked last
+		Kind: Kind{
+			ID:       "GUEST_PROVISION_EXIT_UNEXPECTED",
+			ExitCode: ExGuestError,
+		},
+		Regexp: re(`exited unexpectedly`),
 	},
 }
 

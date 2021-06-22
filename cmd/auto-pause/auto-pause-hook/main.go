@@ -87,7 +87,7 @@ func admissionError(err error) *v1.AdmissionResponse {
 	}
 }
 
-// Create the admission decision for the request
+// AdmissionDecision creates the admission decision for the request
 func AdmissionDecision(admReq *v1.AdmissionReview) *v1.AdmissionResponse {
 	req := admReq.Request
 	var pod corev1.Pod

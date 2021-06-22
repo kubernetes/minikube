@@ -113,8 +113,8 @@ func defaultURI() string {
 }
 
 func status() registry.State {
-	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// Allow no more than 6 seconds for querying state
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
 	path, err := exec.LookPath("virsh")
@@ -150,6 +150,15 @@ func status() registry.State {
 	cmd := exec.CommandContext(ctx, path, "domcapabilities", "--virttype", "kvm")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("LIBVIRT_DEFAULT_URI=%s", defaultURI()))
 	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return registry.State{
+			Installed: true,
+			Running:   false,
+			Error:     fmt.Errorf("%s timed out", strings.Join(cmd.Args, " ")),
+			Fix:       "Check that the libvirtd service is running and the socket is ready",
+			Doc:       docURL,
+		}
+	}
 	if err != nil {
 		return registry.State{
 			Installed: true,

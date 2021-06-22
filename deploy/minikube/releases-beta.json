@@ -1,0 +1,18 @@
+[
+{
+      "name": "v1.21.0-beta.0",
+      "checksums": {
+          "darwin": "69ab001eb4984d09ed731d5ac92afd8310e5c7672c2275b39d7a4c7e2dcfb4c6",
+          "linux": "41a26190c6774e1f3cc568986d4043431022d5dff4a619f131e9bb49d13e2874",
+          "windows": "e7d41c8c40e33633d47976047a48600ff23657c824db7e60fe5a4f2d2daeb135"
+      }
+  },
+  {
+      "name": "v1.20.0-beta.0",
+      "checksums": {
+          "darwin": "",
+          "linux": "",
+          "windows": ""
+      }
+  }
+]

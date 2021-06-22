@@ -28,11 +28,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/tools/apidiff/ioext"
 	"github.com/blang/semver"
 
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
 
+// TestKVMDriverInstallOrUpdate makes sure our docker-machine-driver-kvm2 binary can be installed properly
 func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("Skip none driver.")
@@ -53,7 +54,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		path string
 	}{
 		{name: "driver-without-version-support", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
-		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
+		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-older-version")},
 	}
 
 	originalPath := os.Getenv("PATH")
@@ -97,7 +98,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = driver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
+		err = auxdriver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
@@ -109,6 +110,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	}
 }
 
+// TestHyperKitDriverInstallOrUpdate makes sure our docker-machine-driver-hyperkit binary can be installed properly
 func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skip("Skip if not darwin.")
@@ -121,7 +123,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 		path string
 	}{
 		{name: "driver-without-version-support", path: filepath.Join(*testdataDir, "hyperkit-driver-without-version")},
-		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "hyperkit-driver-without-version")},
+		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "hyperkit-driver-older-version")},
 	}
 
 	originalPath := os.Getenv("PATH")
@@ -169,7 +171,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 			t.Skipf("password required to execute 'sudo', skipping remaining test")
 		}
 
-		err = driver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
+		err = auxdriver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
@@ -181,6 +183,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 	}
 }
 
+// TestHyperkitDriverSkipUpgrade makes sure our docker-machine-driver-hyperkit binary can be installed properly
 func TestHyperkitDriverSkipUpgrade(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skip("Skip if not darwin.")

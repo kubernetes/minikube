@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// TestInsufficientStorage makes sure minikube status displays the correct info if there is insufficient disk space on the machine
 func TestInsufficientStorage(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("only runs with docker driver")
@@ -40,7 +41,7 @@ func TestInsufficientStorage(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
 	defer Cleanup(t, profile, cancel)
 
-	startArgs := []string{"start", "-p", profile, "--memory=1900", "--output=json", "--wait=true"}
+	startArgs := []string{"start", "-p", profile, "--memory=2048", "--output=json", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	// artificially set /var to 100% capacity

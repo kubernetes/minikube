@@ -486,6 +486,7 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 	}
 
 	for _, svc := range svcs {
+		svc = strings.Replace(svc, ".service", "", 1)
 		state, ok := f.services[svc]
 		if !ok {
 			return out, fmt.Errorf("unknown fake service: %s", svc)
@@ -522,10 +523,15 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 				out += "[Unit]\n"
 				out += "Description=Docker Application Container Engine\n"
 				out += "Documentation=https://docs.docker.com\n"
-				//out += "BindsTo=containerd.service\n"
+				// out += "BindsTo=containerd.service\n"
 				return out, nil
 			}
 			return out, fmt.Errorf("%s cat unimplemented", svc)
+		case "enable":
+		case "disable":
+		case "mask":
+		case "unmask":
+			f.t.Logf("fake systemctl: %s %s: %v", svc, action, state)
 		default:
 			return out, fmt.Errorf("unimplemented fake action: %q", action)
 		}
@@ -587,7 +593,8 @@ func TestDisable(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"docker", []string{"sudo", "systemctl", "stop", "-f", "docker.socket", "sudo", "systemctl", "stop", "-f", "docker"}},
+		{"docker", []string{"sudo", "systemctl", "stop", "-f", "docker.socket", "sudo", "systemctl", "stop", "-f", "docker.service",
+			"sudo", "systemctl", "disable", "docker.socket", "sudo", "systemctl", "mask", "docker.service"}},
 		{"crio", []string{"sudo", "systemctl", "stop", "-f", "crio"}},
 		{"containerd", []string{"sudo", "systemctl", "stop", "-f", "containerd"}},
 	}

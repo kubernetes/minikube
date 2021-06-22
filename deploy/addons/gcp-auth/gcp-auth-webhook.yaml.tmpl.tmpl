@@ -164,7 +164,7 @@ webhooks:
       namespace: gcp-auth
       path: "/mutate"
   rules:
-  - operations: ["CREATE", "UPDATE"]
+  - operations: ["CREATE"]
     apiGroups: ["*"]
     apiVersions: ["*"]
     resources: ["pods"]

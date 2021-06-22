@@ -19,13 +19,13 @@ package translate
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 	"strings"
 
 	"github.com/cloudfoundry-attic/jibber_jabber"
 	"golang.org/x/text/language"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/translations"
 )
 
 var (
@@ -69,14 +69,12 @@ func DetermineLocale() {
 
 	// Load translations for preferred language into memory.
 	p := preferredLanguage.String()
-	translationFile := path.Join("translations", fmt.Sprintf("%s.json", p))
-	t, err := Asset(translationFile)
+	t, err := translations.Translations.ReadFile(fmt.Sprintf("%s.json", p))
 	if err != nil {
 		// Attempt to find a more broad locale, e.g. fr instead of fr-FR.
 		if strings.Contains(p, "-") {
 			p = strings.Split(p, "-")[0]
-			translationFile := path.Join("translations", fmt.Sprintf("%s.json", p))
-			t, err = Asset(translationFile)
+			t, err = translations.Translations.ReadFile(fmt.Sprintf("%s.json", p))
 			if err != nil {
 				klog.V(1).Infof("Failed to load translation file for %s: %v", p, err)
 				return

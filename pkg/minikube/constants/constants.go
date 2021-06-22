@@ -26,13 +26,18 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+var (
+	// SupportedArchitectures is the list of supported architectures
+	SupportedArchitectures = [5]string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+)
+
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
 	// dont update till #10545 is solved
-	DefaultKubernetesVersion = "v1.20.2"
+	DefaultKubernetesVersion = "v1.20.7"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.20.5-rc.0"
+	NewestKubernetesVersion = "v1.22.0-alpha.2"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.14.0"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -146,7 +151,12 @@ var (
 	// KubernetesReleaseBinaries are Kubernetes release binaries required for
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
 	KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
-	// ImageCacheDir is the path to the image cache directory
+
+	// ISOCacheDir is the path to the virtual machine image cache directory
+	ISOCacheDir = localpath.MakeMiniPath("cache", "iso")
+	// KICCacheDir is the path to the container node image cache directory
+	KICCacheDir = localpath.MakeMiniPath("cache", "kic")
+	// ImageCacheDir is the path to the container image cache directory
 	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
 	// DefaultNamespaces are Kubernetes namespaces used by minikube, including addons
