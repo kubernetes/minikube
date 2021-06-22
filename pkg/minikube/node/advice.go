@@ -65,7 +65,7 @@ func ExitIfFatal(err error) {
 		}, "The kubeadm binary within the Docker container is not executable")
 	}
 
-	if rtErr, ok := err.(*cruntime.ErrRuntimeVersion); ok {
+	if rtErr, ok := err.(*cruntime.ErrServiceVersion); ok {
 		exit.Message(reason.Kind{
 			ID:       "PROVIDER_INVALID_VERSION",
 			ExitCode: reason.ExGuestConfig,

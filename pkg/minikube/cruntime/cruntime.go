@@ -163,8 +163,8 @@ type ListImagesOptions struct {
 // ErrContainerRuntimeNotRunning is thrown when container runtime is not running
 var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running")
 
-// ErrRuntimeVersion is the error returned when disk image has incompatible version of service
-type ErrRuntimeVersion struct {
+// ErrServiceVersion is the error returned when disk image has incompatible version of service
+type ErrServiceVersion struct {
 	// Service is the name of the incompatible service
 	Service string
 	// Installed is the installed version of Service
@@ -173,16 +173,16 @@ type ErrRuntimeVersion struct {
 	Required string
 }
 
-// NewErrRuntimeVersion creates a new ErrRuntimeVersion
-func NewErrRuntimeVersion(svc, required, installed string) *ErrRuntimeVersion {
-	return &ErrRuntimeVersion{
+// NewErrServiceVersion creates a new ErrServiceVersion
+func NewErrServiceVersion(svc, required, installed string) *ErrServiceVersion {
+	return &ErrServiceVersion{
 		Service:   svc,
 		Installed: installed,
 		Required:  required,
 	}
 }
 
-func (e ErrRuntimeVersion) Error() string {
+func (e ErrServiceVersion) Error() string {
 	return fmt.Sprintf("service %q version is %v. Required: %v",
 		e.Service, e.Installed, e.Required)
 }
@@ -278,14 +278,14 @@ func compatibleWithVersion(runtime, v string) error {
 	}
 	if runtime == "containerd" {
 		if requiredContainerdVersion.GT(vv) {
-			return NewErrRuntimeVersion(runtime, requiredContainerdVersion.String(), vv.String())
+			return NewErrServiceVersion(runtime, requiredContainerdVersion.String(), vv.String())
 		}
 	}
 	return nil
 }
 
 // CheckCompatibility checks if the container runtime managed by "cr" is compatible with current minikube code
-// returns: NewErrRuntimeVersion if not
+// returns: NewErrServiceVersion if not
 func CheckCompatibility(cr Manager) error {
 	v, err := cr.Version()
 	if err != nil {
