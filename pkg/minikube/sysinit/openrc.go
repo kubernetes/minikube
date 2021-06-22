@@ -136,7 +136,9 @@ func (s *OpenRC) Enable(svc string) error {
 
 // EnableNow  not implemented for openRC
 func (s *OpenRC) EnableNow(svc string) error {
-	return fmt.Errorf("enable now is not implemented for OpenRC! PRs to fix are welcomed")
+	// supposed to do enable + start
+	// enable does nothing for OpenRC, so just Start here
+	return s.Start(svc)
 }
 
 // Unmask does nothing
