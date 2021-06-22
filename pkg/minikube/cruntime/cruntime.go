@@ -272,11 +272,11 @@ var requiredContainerdVersion = semver.MustParse("1.4.0")
 
 // compatibleWithVersion checks if current version of "runtime" is compatible with version "v"
 func compatibleWithVersion(runtime, v string) error {
-	vv, err := semver.Make(v)
-	if err != nil {
-		return err
-	}
 	if runtime == "containerd" {
+		vv, err := semver.Make(v)
+		if err != nil {
+			return err
+		}
 		if requiredContainerdVersion.GT(vv) {
 			return NewErrServiceVersion(runtime, requiredContainerdVersion.String(), vv.String())
 		}
