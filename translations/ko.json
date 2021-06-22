@@ -404,6 +404,7 @@
 	"NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",
 	"NOTE: This process must stay alive for the mount to be accessible ...": "",
+	"Network connection type to use. One of 'nat', 'bridged', 'hostonly', 'custom' (vmware driver only)": "",
 	"Networking and Connectivity Commands:": "",
 	"No IP address provided. Try specifying --ssh-ip-address, or see https://minikube.sigs.k8s.io/docs/drivers/ssh/": "",
 	"No changes required for the \"{{.context}}\" context": "",

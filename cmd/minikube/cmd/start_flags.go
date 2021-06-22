@@ -118,6 +118,7 @@ const (
 	defaultSSHUser          = "root"
 	defaultSSHPort          = 22
 	listenAddress           = "listen-address"
+	vmwareNetworkType       = "vmware-network-type"
 )
 
 var (
@@ -220,6 +221,9 @@ func initDriverFlags() {
 	// docker & podman
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
+
+	// vmware
+	startCmd.Flags().String(vmwareNetworkType, "nat", "Network connection type to use. One of 'nat', 'bridged', 'hostonly', 'custom' (vmware driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -418,6 +422,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		SSHUser:                 viper.GetString(sshSSHUser),
 		SSHKey:                  viper.GetString(sshSSHKey),
 		SSHPort:                 viper.GetInt(sshSSHPort),
+		VMWareNetworkType:       viper.GetString(vmwareNetworkType),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
