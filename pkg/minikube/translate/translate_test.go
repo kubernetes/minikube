@@ -17,6 +17,11 @@ limitations under the License.
 package translate
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"regexp"
+	"sort"
 	"testing"
 
 	"golang.org/x/text/language"
@@ -93,6 +98,62 @@ func TestT(t *testing.T) {
 			got := T(test.input)
 			if test.expected != got {
 				t.Errorf("T(%v) should return %v, but got: %v", test.input, test.expected, got)
+			}
+		})
+	}
+}
+
+func TestTranslationFilesValid(t *testing.T) {
+	languages := []string{"de", "es", "fr", "ja", "ko", "pl", "zh-CN"}
+	re := regexp.MustCompile(`{{\..+?}}`)
+	for _, lang := range languages {
+		t.Run(lang, func(t *testing.T) {
+			filename := fmt.Sprintf("../../../translations/%s.json", lang)
+			contents, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatalf("unable to read file %s: %v", filename, err)
+			}
+
+			// check if JSON is valid
+			if valid := json.Valid(contents); !valid {
+				t.Fatalf("%s does not contain valid json", filename)
+			}
+
+			// convert file into map
+			var entries map[string]string
+			if err := json.Unmarshal(contents, &entries); err != nil {
+				t.Fatalf("could not unmarshal file %s: %v", filename, err)
+			}
+
+			// for each line
+			for k, v := range entries {
+				// if no translation, skip
+				if v == "" {
+					continue
+				}
+
+				// get all variables (ex. {{.name}})
+				keyVariables := re.FindAllString(k, -1)
+				valueVariables := re.FindAllString(v, -1)
+
+				// check if number of original string and translated variables match
+				if len(keyVariables) != len(valueVariables) {
+					t.Errorf("line %q has mismatching number of variables; original string variables: %s; translated variables: %s", k, keyVariables, valueVariables)
+					continue
+				}
+
+				// sort so comparing variables is easier
+				sort.Strings(keyVariables)
+				sort.Strings(valueVariables)
+
+				// for each variable in the original string
+				for i, keyVar := range keyVariables {
+					// check if translated string has same variable
+					if keyVar != valueVariables[i] {
+						t.Errorf("line %q has mismatching variables; original string variables: %s do not match translated variables: %s", k, keyVariables, valueVariables)
+						break
+					}
+				}
 			}
 		})
 	}
