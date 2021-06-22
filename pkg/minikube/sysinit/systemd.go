@@ -129,7 +129,7 @@ func (s *Systemd) ForceStop(svc string) error {
 	if err == nil {
 		return nil
 	}
-	if strings.Contains(rr.Output(), fmt.Sprintf("Unit %s.service not loaded", svc)) {
+	if strings.Contains(rr.Output(), fmt.Sprintf("Unit %s not loaded", svc)) {
 		// already stopped
 		return nil
 	}
