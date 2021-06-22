@@ -1798,7 +1798,6 @@ users:
 				if err := ioutil.WriteFile(tf.Name(), tc.kubeconfig, 0644); err != nil {
 					t.Fatal(err)
 				}
-
 				t.Cleanup(func() {
 					os.Remove(tf.Name())
 				})
@@ -1830,56 +1829,31 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 
 	defer PostMortemLogs(t, profile)
 
-	// Pull down the mitmproxy docker image
-	dockercmd := exec.CommandContext(ctx, "docker", "pull", "mitmproxy/mitmproxy")
-	_, err := Run(t, dockercmd)
+	// Download the mitmproxy bundle for mitmdump
+	_, err := Run(t, exec.CommandContext(ctx, "curl", "-LO", "https://snapshots.mitmproxy.org/6.0.2/mitmproxy-6.0.2-linux.tar.gz"))
 	if err != nil {
-		t.Fatalf("Failed to download mitmproxy docker image: %v", err)
+		t.Fatalf("failed to download mitmproxy tar: %v", err)
 	}
 
-	certDir, err := ioutil.TempDir("", "")
+	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz"))
 	if err != nil {
-		t.Fatalf("creating temp dir failed: %v", err)
+		t.Fatalf("failed untar mitmproxy tar: %v", err)
 	}
 
-	// Start an interactive session (since mitmproxy requires it) asyncronously
-	// This will create the necessary .mitmproxy directory with its certs
-	mitmCmd := exec.CommandContext(ctx, "docker", "run", "-it", "--rm", "--name", "mitmproxy", "-v", certDir, ":/home/mitmproxy/.mitmproxy", "-p", "8080:8080", "mitmproxy/mitmproxy")
-	mitmRR, err := Start(t, mitmCmd)
+	// Start mitmdump in the background, this will create the needed certs
+	// and provide the necessary proxy at 127.0.0.1:8080
+	mitmRR, err := Start(t, exec.CommandContext(ctx, "./mitmproxy-6.0.2-linux/mitmdump"))
 	if err != nil {
 		t.Fatalf("starting mitmproxy failed: %v", err)
 	}
+	defer mitmRR.Stop(t)
 
-	// Make sure the container is running and grab the containerid for future use
-	// Timeout after 90 seconds
-	containerID := ""
-	tries := 0
-	for containerID == "" {
-		rr, err := Run(t, exec.CommandContext(ctx, "docker", "ps", "--filter", "name=mitmproxy", "-q"))
-		if err != nil {
-			t.Fatalf("docker failure: %v", err)
-		}
-		containerID = rr.Stdout.String()
-		time.Sleep(time.Second)
-		tries++
-		if tries > 90 {
-			break
-		}
+	// Find cert directory
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("failed to find user home dir: %v", err)
 	}
-	if containerID == "" {
-		var stdout []byte
-		var stderr []byte
-		_, err := mitmRR.Stdout.Read(stdout)
-		if err != nil {
-			t.Logf("reading stdout failed: %s", err)
-		}
-		_, err = mitmRR.Stdout.Read(stderr)
-		if err != nil {
-			t.Logf("reading stderr failed: %s", err)
-		}
-		rr, _ := Run(t, exec.CommandContext(ctx, "docker", "ps"))
-		t.Fatalf("mitmproxy docker container never started\n stdout: %v\n stderr: %v", rr.Stdout.String(), string(stderr))
-	}
+	certDir := path.Join(homeDir, ".mitmproxy")
 
 	// Add a symlink from the cert to the correct directory
 	certFile := path.Join(certDir, "mitmproxy-ca-cert.pem")
