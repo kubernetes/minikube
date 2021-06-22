@@ -30,114 +30,175 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 )
 
-// container maps to 'runc list -f json'
-type container struct {
+// runcContainer maps to 'runc list -f json'
+type runcContainer struct {
 	ID     string
 	Status string
 }
 
+// criOutput maps to the output of `crictl ps -a --output=json`
+type criOutput struct {
+	Containers []criContainer `json:"containers"`
+}
+
+// criMetadata maps to the metadata object of containers in crictl output
+type criMetadata struct {
+	Name string `json:"name"`
+}
+
+// criContainer maps to containers in criOutput
+type criContainer struct {
+	ID       string      `json:"id"`
+	Metadata criMetadata `json:"metadata"`
+	CriState string      `json:"state"`
+}
+
+// State maps the cri-o states into State enum
+// https://github.com/kubernetes/cri-api/blob/104a5b05531db3b886b68e0b91b6fdc3fe3c3738/pkg/apis/runtime/v1alpha2/api.proto#L889-L894
+func (cc *criContainer) State() ContainerState {
+	switch cc.CriState {
+	case "CONTAINER_CREATED":
+		return Created
+	case "CONTAINER_RUNNING":
+		return Running
+	case "CONTAINER_EXITED":
+		return Exited
+	default:
+		return Unknown
+	}
+}
+
 // crictlList returns the output of 'crictl ps' in an efficient manner
-func crictlList(cr CommandRunner, root string, o ListContainersOptions) (*command.RunResult, error) {
+func crictlList(cr CommandRunner, root string, o ListContainersOptions) (Containers, error) {
 	klog.Infof("listing CRI containers in root %s: %+v", root, o)
 
-	var filter string
-	switch o.State {
-	case All:
-		filter = "-a"
-	case Running, Paused:
-		// crictl does not understand paused containers
-		// we have to list all the running ones and later filter out paused ones by runc
-		filter = fmt.Sprintf("--state=%s", Running)
-	default:
-		filter = fmt.Sprintf("--state=%s", o.State)
-	}
-
 	// Use -a because otherwise paused containers are missed
-	baseCmd := []string{"crictl", "ps", filter, "--quiet"}
+	baseCmd := []string{"crictl", "ps", "-a", "--output=json"}
 
 	if o.Name != "" {
 		baseCmd = append(baseCmd, fmt.Sprintf("--name=%s", o.Name))
 	}
 
-	// shortcut for all namespaces
+	var (
+		rr  *command.RunResult
+		err error
+	)
 	if len(o.Namespaces) == 0 {
-		return cr.RunCmd(exec.Command("sudo", baseCmd...))
+		rr, err = cr.RunCmd(exec.Command("sudo", baseCmd...))
+	} else {
+		// Gather containers for all namespaces into one command without causing extraneous shells to be launched
+		cmds := []string{}
+		for _, ns := range o.Namespaces {
+			cmd := fmt.Sprintf("%s --label io.kubernetes.pod.namespace=%s", strings.Join(baseCmd, " "), ns)
+			cmds = append(cmds, cmd)
+		}
+
+		rr, err = cr.RunCmd(exec.Command("sudo", "-s", "eval", strings.Join(cmds, "; ")))
 	}
-
-	// Gather containers for all namespaces without causing extraneous shells to be launched
-	cmds := []string{}
-	for _, ns := range o.Namespaces {
-		cmd := fmt.Sprintf("%s --label io.kubernetes.pod.namespace=%s", strings.Join(baseCmd, " "), ns)
-		cmds = append(cmds, cmd)
-	}
-
-	return cr.RunCmd(exec.Command("sudo", "-s", "eval", strings.Join(cmds, "; ")))
-}
-
-// listCRIContainers returns a list of containers
-func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) ([]string, error) {
-	rr, err := crictlList(cr, root, o)
 	if err != nil {
 		return nil, errors.Wrap(err, "crictl list")
 	}
 
-	// Avoid an id named ""
-	var ids []string
-	seen := map[string]bool{}
-	for _, id := range strings.Split(rr.Stdout.String(), "\n") {
-		klog.Infof("found id: %q", id)
-		if id != "" && !seen[id] {
-			ids = append(ids, id)
-			seen[id] = true
+	var containers Containers
+	// Since we may run multiple crictl within the same shell, multiple JSON objects need to be parsed from the buffer
+	dec := json.NewDecoder(&rr.Stdout)
+	for dec.More() {
+		criOut := criOutput{}
+		err := dec.Decode(&criOut)
+		if err != nil {
+			return nil, errors.Wrap(err, "crictl list JSON decoding")
+		}
+		for _, cc := range criOut.Containers {
+			// avoid an ID ""
+			if cc.ID == "" {
+				continue
+			}
+			c := Container{
+				ID:    cc.ID,
+				Name:  cc.Metadata.Name,
+				State: cc.State(),
+			}
+			containers = append(containers, c)
 		}
 	}
+	return containers, nil
+}
 
-	if len(ids) == 0 {
-		return nil, nil
-	}
-	// crictl does not understand paused pods,
-	// if we are looking for Running or Paused containers, we need to further filter by runc status
-	if o.State != Running && o.State != Paused {
-		return ids, nil
-	}
-
-	cs := []container{}
+// listCRIPausedContainerIDs lists the paused container IDs with runc
+// crictl don't understand paused containers so we need runc to tell use what containers are paused
+func listCRIPausedContainerIDs(cr CommandRunner, root string) ([]string, error) {
+	runcs := make([]runcContainer, 0)
 	args := []string{"runc"}
 	if root != "" {
 		args = append(args, "--root", root)
 	}
 
 	args = append(args, "list", "-f", "json")
-	rr, err = cr.RunCmd(exec.Command("sudo", args...))
+	rr, err := cr.RunCmd(exec.Command("sudo", args...))
 	if err != nil {
 		return nil, errors.Wrap(err, "runc")
 	}
 	content := rr.Stdout.Bytes()
 	klog.Infof("JSON = %s", content)
 	d := json.NewDecoder(bytes.NewReader(content))
-	if err := d.Decode(&cs); err != nil {
+	if err := d.Decode(&runcs); err != nil {
 		return nil, err
 	}
 
-	if len(cs) == 0 {
-		return nil, fmt.Errorf("list returned 0 containers, but ps returned %d", len(ids))
+	if len(runcs) == 0 {
+		return nil, nil
 	}
 
-	klog.Infof("list returned %d containers", len(cs))
-	var fids []string
-	for _, c := range cs {
-		klog.Infof("container: %+v", c)
-		if !seen[c.ID] {
-			klog.Infof("skipping %s - not in ps", c.ID)
-			continue
+	klog.Infof("runc list returned %d containers", len(runcs))
+
+	pausedIDs := make([]string, 0)
+	for _, rc := range runcs {
+		if rc.Status == "paused" {
+			pausedIDs = append(pausedIDs, rc.ID)
 		}
-		if o.State != All && o.State.String() != c.Status {
-			klog.Infof("skipping %s: state = %q, want %q", c, c.Status, o.State)
-			continue
-		}
-		fids = append(fids, c.ID)
 	}
-	return fids, nil
+	return pausedIDs, nil
+}
+
+// listCRIContainers returns a list of containers
+func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (Containers, error) {
+	containers, err := crictlList(cr, root, o)
+	if err != nil {
+		return nil, errors.Wrap(err, "crictl list")
+	}
+
+	if len(containers) == 0 {
+		return nil, nil
+	}
+
+	// mark the paused containers for later filtering
+	pausedIDs, err := listCRIPausedContainerIDs(cr, root)
+	if err != nil {
+		return nil, errors.Wrap(err, "runc list")
+	}
+	pausedIDMap := make(map[string]bool)
+	for _, id := range pausedIDs {
+		pausedIDMap[id] = true
+	}
+	for _, ctr := range containers {
+		if _, ok := pausedIDMap[ctr.ID]; ok {
+			ctr.State = Paused
+		}
+	}
+
+	if o.State == All {
+		return containers, nil
+	}
+
+	filtered := make([]Container, 0)
+	for _, ctr := range containers {
+		if o.State != ctr.State {
+			klog.Infof("skipping %s: state = %q, want %q", ctr.ID, ctr.State, o.State)
+			continue
+		}
+		filtered = append(filtered, ctr)
+	}
+	return filtered, nil
 }
 
 // pauseContainers pauses a list of containers

@@ -160,7 +160,7 @@ func (d *Driver) Kill() error {
 		return nil
 	}
 	// Try to be graceful before sending SIGKILL everywhere.
-	if err := d.runtime.StopContainers(containers); err != nil {
+	if err := d.runtime.StopContainers(containers.IDs()); err != nil {
 		return errors.Wrap(err, "stop")
 	}
 
@@ -171,7 +171,7 @@ func (d *Driver) Kill() error {
 	if len(containers) == 0 {
 		return nil
 	}
-	if err := d.runtime.KillContainers(containers); err != nil {
+	if err := d.runtime.KillContainers(containers.IDs()); err != nil {
 		return errors.Wrap(err, "kill")
 	}
 	return nil
@@ -222,7 +222,7 @@ func (d *Driver) Stop() error {
 		return errors.Wrap(err, "containers")
 	}
 	if len(containers) > 0 {
-		if err := d.runtime.StopContainers(containers); err != nil {
+		if err := d.runtime.StopContainers(containers.IDs()); err != nil {
 			return errors.Wrap(err, "stop containers")
 		}
 	}

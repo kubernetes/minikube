@@ -369,13 +369,13 @@ func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
 		return err
 	}
 
-	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: []string{"kube-system"}})
+	containers, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: []string{"kube-system"}})
 	if err != nil {
 		return errors.Wrap(err, "list paused")
 	}
 
-	if len(ids) > 0 {
-		if err := cr.UnpauseContainers(ids); err != nil {
+	if len(containers) > 0 {
+		if err := cr.UnpauseContainers(containers.IDs()); err != nil {
 			return err
 		}
 	}
@@ -684,7 +684,7 @@ func StopKubernetes(runner command.Runner, cr cruntime.Manager) {
 	}
 	if len(containers) > 0 {
 		klog.Warningf("found %d kube-system containers to stop", len(containers))
-		if err := cr.StopContainers(containers); err != nil {
+		if err := cr.StopContainers(containers.IDs()); err != nil {
 			klog.Warningf("error stopping containers: %v", err)
 		}
 	}

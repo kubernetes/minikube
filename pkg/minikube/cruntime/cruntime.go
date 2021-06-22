@@ -43,10 +43,36 @@ const (
 	Paused
 	// Created is the containers just created
 	Created
+	// Exited is the containers has exited
+	Exited
+	// Unknown is the container state is unknown
+	Unknown
 )
 
 func (cs ContainerState) String() string {
-	return [...]string{"all", "running", "paused", "created"}[cs]
+	return [...]string{"all", "running", "paused", "created", "exited", "unknown"}[cs]
+}
+
+// Container holds the information of a container
+type Container struct {
+	// ID is the ID of the container
+	ID string
+	// Name is the name of the container, e.g. `kube-apiserver`
+	Name string
+	// State is the container state
+	State ContainerState
+}
+
+// Containers is a slice of Container structs
+type Containers []Container
+
+// IDs is a convenient function to converts Containers to a slice of container IDs
+func (c Containers) IDs() []string {
+	ids := make([]string, len(c))
+	for i, c := range c {
+		ids[i] = c.ID
+	}
+	return ids
 }
 
 // ValidRuntimes lists the supported container runtimes
@@ -121,7 +147,7 @@ type Manager interface {
 	RemoveImage(string) error
 
 	// ListContainers returns a list of containers managed by this container runtime
-	ListContainers(ListContainersOptions) ([]string, error)
+	ListContainers(ListContainersOptions) (Containers, error)
 	// KillContainers removes containers based on ID
 	KillContainers([]string) error
 	// StopContainers stops containers based on ID

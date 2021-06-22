@@ -364,7 +364,7 @@ func (r *CRIO) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *CRIO) ListContainers(o ListContainersOptions) ([]string, error) {
+func (r *CRIO) ListContainers(o ListContainersOptions) (Containers, error) {
 	return listCRIContainers(r.Runner, "", o)
 }
 

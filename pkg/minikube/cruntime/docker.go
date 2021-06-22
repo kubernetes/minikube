@@ -327,8 +327,24 @@ func (r *Docker) KubeletOptions() map[string]string {
 	}
 }
 
+// dockerContainerState parses a docker container state string into an enum
+func dockerContainerState(s string) ContainerState {
+	switch s {
+	case "running":
+		return Running
+	case "paused":
+		return Paused
+	case "created":
+		return Created
+	case "exited":
+		return Exited
+	default:
+		return Unknown
+	}
+}
+
 // ListContainers returns a list of containers
-func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
+func (r *Docker) ListContainers(o ListContainersOptions) (Containers, error) {
 	if r.UseCRI {
 		return listCRIContainers(r.Runner, "", o)
 	}
@@ -336,12 +352,8 @@ func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 	switch o.State {
 	case All:
 		args = append(args, "-a")
-	case Running:
-		args = append(args, "--filter", "status=running")
-	case Paused:
-		args = append(args, "--filter", "status=paused")
-	case Created:
-		args = append(args, "--filter", "status=created")
+	default:
+		args = append(args, "--filter", "status="+o.State.String())
 	}
 
 	nameFilter := KubernetesContainerPrefix + o.Name
@@ -350,18 +362,29 @@ func (r *Docker) ListContainers(o ListContainersOptions) ([]string, error) {
 		nameFilter = fmt.Sprintf("%s.*_(%s)_", nameFilter, strings.Join(o.Namespaces, "|"))
 	}
 
-	args = append(args, fmt.Sprintf("--filter=name=%s", nameFilter), "--format={{.ID}}")
+	args = append(args, fmt.Sprintf("--filter=name=%s", nameFilter), "--format={{.ID}} {{.State}} {{.Names}}")
 	rr, err := r.Runner.RunCmd(exec.Command("docker", args...))
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker")
 	}
-	var ids []string
+	var ctrs []Container
 	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
-		if line != "" {
-			ids = append(ids, line)
+		if line == "" {
+			continue
 		}
+		parts := strings.Split(line, " ")
+		if len(parts) != 3 {
+			klog.Warning("Expecting 3 parts in each line but got %d: %v", len(parts), parts)
+			continue
+		}
+		names := strings.Split(parts[2], "_")
+		if len(names) < 2 {
+			klog.Warning("Expecting container name to be \"k8s_..._\": got %v", names)
+			continue
+		}
+		ctrs = append(ctrs, Container{ID: parts[0], Name: names[1], State: dockerContainerState(parts[1])})
 	}
-	return ids, nil
+	return ctrs, nil
 }
 
 // KillContainers forcibly removes a running container based on ID
