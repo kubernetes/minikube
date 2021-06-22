@@ -165,8 +165,11 @@ var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running
 
 // ErrRuntimeVersion is the error returned when disk image has incompatible version of service
 type ErrRuntimeVersion struct {
+	// Service is the name of the incompatible service
 	Service   string
+	// Installed is the installed version of Service
 	Installed string
+	// Required is the minimum required version of Service
 	Required  string
 }
 
