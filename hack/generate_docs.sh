@@ -36,8 +36,8 @@ config_git() {
 make generate-docs
 
 # If there are changes, open a PR
-git diff-index --quiet HEAD --
-if [ $? -gt 0 ]; then
+changes=$(git status --porcelain)
+if [ "$changes" != "" ]; then
 	install_gh $1
 	config_git
 	
@@ -47,7 +47,7 @@ if [ $? -gt 0 ]; then
 	git add .
 	git commit -m "Update generate-docs"
 
-	git remote add minikube-bot https://minikube-bot:$1@github.com/minikube-bot/minikube.git
+	git remote add minikube-bot https://minikube-bot:$access_token@github.com/minikube-bot/minikube.git
 	git push -u minikube-bot $branch
-	gh pr create --repo kubernetes/minukube --base master --title "Update generate-docs" --body "Committing changes resulting from \`make generate-docs\`"
+	gh pr create --base master --head minikube-bot:$branch --title "Update generate-docs" --body "Committing changes resulting from \`make generate-docs\`"
 fi
