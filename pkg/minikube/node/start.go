@@ -99,7 +99,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
 
 	// check if installed runtime is compatible with current minikube code
-	if err = validateRuntimeVersion(cr); err != nil {
+	if err = cruntime.CheckCompatibility(cr); err != nil {
 		return nil, err
 	}
 
@@ -227,14 +227,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
-}
-
-func validateRuntimeVersion(cr cruntime.Manager) error {
-	v, err := cr.Version()
-	if err != nil {
-		return errors.Wrap(err, "Failed to check container runtime version")
-	}
-	return cruntime.CompatibleWithVersion(cr.Name(), v)
 }
 
 // joinCluster adds new or prepares and then adds existing node to the cluster.

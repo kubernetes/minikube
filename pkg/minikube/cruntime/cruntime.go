@@ -166,11 +166,11 @@ var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running
 // ErrRuntimeVersion is the error returned when disk image has incompatible version of service
 type ErrRuntimeVersion struct {
 	// Service is the name of the incompatible service
-	Service   string
+	Service string
 	// Installed is the installed version of Service
 	Installed string
 	// Required is the minimum required version of Service
-	Required  string
+	Required string
 }
 
 // NewErrRuntimeVersion creates a new ErrRuntimeVersion
@@ -270,8 +270,8 @@ func disableOthers(me Manager, cr CommandRunner) error {
 
 var requiredContainerdVersion = semver.MustParse("1.4.0")
 
-// CompatibleWithVersion checks if current version of "runtime" is compatible with version "v"
-func CompatibleWithVersion(runtime, v string) error {
+// compatibleWithVersion checks if current version of "runtime" is compatible with version "v"
+func compatibleWithVersion(runtime, v string) error {
 	vv, err := semver.Make(v)
 	if err != nil {
 		return err
@@ -282,4 +282,14 @@ func CompatibleWithVersion(runtime, v string) error {
 		}
 	}
 	return nil
+}
+
+// CheckCompatibility checks if the container runtime managed by "cr" is compatible with current minikube code
+// returns: NewErrRuntimeVersion if not
+func CheckCompatibility(cr Manager) error {
+	v, err := cr.Version()
+	if err != nil {
+		return errors.Wrap(err, "Failed to check container runtime version")
+	}
+	return compatibleWithVersion(cr.Name(), v)
 }
