@@ -61,12 +61,14 @@ var versionCmd = &cobra.Command{
 			// sudo podman version
 
 			versionCMDS := map[string]*exec.Cmd{
-				"docker":   exec.Command("docker", "version", "--format={{.Client.Version}}"),
-				"crictl":   exec.Command("sudo", "crictl", "version"),
-				"crio":     exec.Command("crio", "version"),
-				"runc":     exec.Command("runc", "--version"),
-				"buildctl": exec.Command("buildctl", "--version"),
-				"ctr":      exec.Command("sudo", "ctr", "version"),
+				"docker":     exec.Command("docker", "version", "--format={{.Client.Version}}"),
+				"containerd": exec.Command("containerd", "--version"),
+				"crio":       exec.Command("crio", "version"),
+				"podman":     exec.Command("sudo", "podman", "version"),
+				"crictl":     exec.Command("sudo", "crictl", "version"),
+				"buildctl":   exec.Command("buildctl", "--version"),
+				"ctr":        exec.Command("sudo", "ctr", "version"),
+				"runc":       exec.Command("runc", "--version"),
 			}
 			for k, v := range versionCMDS {
 				rr, err := runner.RunCmd(v)
