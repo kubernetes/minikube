@@ -149,7 +149,8 @@ func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error 
 func WaitForAPIServerStatus(cr command.Runner, to time.Duration, hostname string, port int) (state.State, error) {
 	var st state.State
 	err := wait.PollImmediate(200*time.Millisecond, to, func() (bool, error) {
-		st, err := APIServerStatus(cr, hostname, port)
+		var err error
+		st, err = APIServerStatus(cr, hostname, port)
 		if st == state.Stopped {
 			return false, nil
 		}
@@ -222,8 +223,7 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 		return nil
 	}
 
-	// revert this !!
-	err = retry.Local(check, 15*time.Second)
+	err = retry.Local(check, 5*time.Second)
 
 	// Don't propagate 'Stopped' upwards as an error message, as clients may interpret the err
 	// as an inability to get status. We need it for retry.Local, however.
