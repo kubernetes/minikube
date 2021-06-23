@@ -1836,6 +1836,9 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	}
 
 	mitmDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
 
 	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz", "-C", mitmDir))
 	if err != nil {
