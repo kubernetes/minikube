@@ -549,7 +549,7 @@
 	"Show only log entries which point to known problems": "Pokaż logi które wskazują na znane problemy",
 	"Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.": "",
 	"Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only)": "",
-	"Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.": "Zignorowano zmianę kontekstu kubectl {{.profile_name}} ponieważ --keep-context zostało przekazane",
+	"Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.": "Zignorowano zmianę kontekstu kubectl dla {{.profile_name}} ponieważ --keep-context zostało przekazane",
 	"Some dashboard features require the metrics-server addon. To enable all features please run:\n\n\tminikube{{.profileArg}} addons enable metrics-server\t\n\n": "",
 	"Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path": "",
 	"Sorry, completion support is not yet implemented for {{.name}}": "",
