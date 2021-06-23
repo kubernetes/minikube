@@ -96,7 +96,7 @@ var versionCmd = &cobra.Command{
 						continue
 					}
 					if v != "" {
-						out.Ln("\n%s: %s\n", k, v)
+						out.Ln("\n%s:\n%s", k, v)
 					}
 				}
 			} else {
