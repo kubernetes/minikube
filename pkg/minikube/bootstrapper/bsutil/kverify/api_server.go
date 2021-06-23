@@ -222,7 +222,8 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 		return nil
 	}
 
-	err = retry.Local(check, 5*time.Second)
+	// revert this !!
+	err = retry.Local(check, 15*time.Second)
 
 	// Don't propagate 'Stopped' upwards as an error message, as clients may interpret the err
 	// as an inability to get status. We need it for retry.Local, however.
