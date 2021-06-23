@@ -61,7 +61,7 @@ var versionCmd = &cobra.Command{
 			// sudo podman version
 
 			versionCMDS := map[string]*exec.Cmd{
-				"docker":   exec.Command("docker", "version", "--format={{.Client.Version}}min"),
+				"docker":   exec.Command("docker", "version", "--format={{.Client.Version}}"),
 				"crictl":   exec.Command("sudo", "crictl", "version"),
 				"crio":     exec.Command("crio", "version"),
 				"runc":     exec.Command("runc", "--version"),
