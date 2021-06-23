@@ -876,6 +876,15 @@ var internetIssues = []match{
 var guestIssues = []match{
 	{
 		Kind: Kind{
+			ID:       "GUEST_PROVISION_NOSPACE_DOCKER",
+			ExitCode: ExInsufficientStorage,
+			Advice:   "Ensure you have at least 20GB of free disk space accessible to Docker Desktop",
+		},
+		// https://github.com/kubernetes/minikube/issues/11452
+		Regexp: re(`docker: failed to register layer: ApplyLayer exit status 1`),
+	},
+	{
+		Kind: Kind{
 			ID:       "GUEST_PROVISION_NOSPACE",
 			ExitCode: ExInsufficientStorage,
 			Advice:   "Ensure you have at least 20GB of free disk space.",
