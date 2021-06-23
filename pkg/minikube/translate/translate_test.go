@@ -18,8 +18,8 @@ package translate
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"testing"
@@ -104,11 +104,14 @@ func TestT(t *testing.T) {
 }
 
 func TestTranslationFilesValid(t *testing.T) {
-	languages := []string{"de", "es", "fr", "ja", "ko", "pl", "zh-CN"}
+	languageFiles, err := filepath.Glob("../../../translations/*.json")
+	if err != nil {
+		t.Fatalf("failed to get translation files: %v", err)
+	}
 	re := regexp.MustCompile(`{{\..+?}}`)
-	for _, lang := range languages {
+	for _, filename := range languageFiles {
+		lang := filepath.Base(filename)
 		t.Run(lang, func(t *testing.T) {
-			filename := fmt.Sprintf("../../../translations/%s.json", lang)
 			contents, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatalf("unable to read file %s: %v", filename, err)
@@ -150,7 +153,7 @@ func TestTranslationFilesValid(t *testing.T) {
 				for i, keyVar := range keyVariables {
 					// check if translated string has same variable
 					if keyVar != valueVariables[i] {
-						t.Errorf("line %q has mismatching variables; original string variables: %s do not match translated variables: %s", k, keyVariables, valueVariables)
+						t.Errorf("line %q: %q has mismatching variables\noriginal string variables: %s do not match translated variables: %s", k, v, keyVariables, valueVariables)
 						break
 					}
 				}
