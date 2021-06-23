@@ -108,7 +108,6 @@ func TestTranslationFilesValid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get translation files: %v", err)
 	}
-	re := regexp.MustCompile(`{{\..+?}}`)
 	for _, filename := range languageFiles {
 		lang := filepath.Base(filename)
 		t.Run(lang, func(t *testing.T) {
@@ -136,18 +135,14 @@ func TestTranslationFilesValid(t *testing.T) {
 				}
 
 				// get all variables (ex. {{.name}})
-				keyVariables := re.FindAllString(k, -1)
-				valueVariables := re.FindAllString(v, -1)
+				keyVariables := distinctVariables(k)
+				valueVariables := distinctVariables(v)
 
 				// check if number of original string and translated variables match
 				if len(keyVariables) != len(valueVariables) {
-					t.Errorf("line %q has mismatching number of variables; original string variables: %s; translated variables: %s", k, keyVariables, valueVariables)
+					t.Errorf("line %q: %q has mismatching number of variables\noriginal string variables: %s; translated variables: %s", k, v, keyVariables, valueVariables)
 					continue
 				}
-
-				// sort so comparing variables is easier
-				sort.Strings(keyVariables)
-				sort.Strings(valueVariables)
 
 				// for each variable in the original string
 				for i, keyVar := range keyVariables {
@@ -160,4 +155,28 @@ func TestTranslationFilesValid(t *testing.T) {
 			}
 		})
 	}
+}
+
+func distinctVariables(line string) []string {
+	re := regexp.MustCompile(`{{\..+?}}`)
+
+	// get all the variables from the string (possiible duplicates)
+	variables := re.FindAllString(line, -1)
+	distinctMap := make(map[string]bool)
+
+	// add them to a map to get distinct list of variables
+	for _, variable := range variables {
+		distinctMap[variable] = true
+	}
+	distinct := []string{}
+
+	// convert map into slice
+	for k := range distinctMap {
+		distinct = append(distinct, k)
+	}
+
+	// sort the slice to make the comparison easier
+	sort.Strings(distinct)
+
+	return distinct
 }

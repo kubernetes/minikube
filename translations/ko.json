@@ -114,7 +114,7 @@
 	"Could not process errors from failed deletion": "",
 	"Could not resolve IP address": "",
 	"Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn.": "",
-	"Creating Kubernetes in {{.driver_name}} {{.machine_type}} with (CPUs={{.number_of_cpus}}) ({{.number_of_host_cpus}} available), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...": "{{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}} ({{.number_of_host_cpus}}MB 유효한), Memory={{.memory_size}}MB ({{.host_memory_size}} MB 유효한) ...",
+	"Creating Kubernetes in {{.driver_name}} {{.machine_type}} with (CPUs={{.number_of_cpus}}) ({{.number_of_host_cpus}} available), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...": "{{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}} ({{.number_of_host_cpus}}MB 유효한), Memory={{.memory_size}}MB ({{.host_memory_size}}MB 유효한) ...",
 	"Creating mount {{.name}} ...": "",
 	"Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...": "{{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) 를 생성하는 중 ...",
 	"Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...": "",
