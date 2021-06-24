@@ -139,6 +139,8 @@ async function init() {
     // Filter to only contain unskipped runs of the requested test and requested environment.
     .filter(test => test.name === desiredTest && test.environment === desiredEnvironment && test.status !== testStatus.SKIPPED)
     .groupBy(test => test.date.getTime());
+  
+  const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
 
   data.addRows(
     groups
@@ -167,14 +169,14 @@ async function init() {
           <b>${groupData.date.toString()}</b><br>
           <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
           <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - ${hash} (Failures: ${failures}/${runs})`).join("<br>")}
+          ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, desiredEnvironment)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
         </div>`,
         groupData.duration,
         `<div style="padding: 1rem">
           <b>${groupData.date.toString()}</b><br>
           <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
           <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - ${hash} (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
+          ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, desiredEnvironment)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
         </div>`,
       ])
   );
