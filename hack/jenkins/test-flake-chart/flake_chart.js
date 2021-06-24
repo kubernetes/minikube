@@ -135,21 +135,7 @@ function aggregateRuns(testRuns) {
     }));
 }
 
-async function init() {
-  google.charts.load('current', { 'packages': ['corechart'] });
-  let testData;
-  try {
-    // Wait for Google Charts to load, and for test data to load.
-    // Only store the test data (at index 1) into `testData`.
-    testData = (await Promise.all([
-      new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
-      loadTestData()
-    ]))[1];
-  } catch (err) {
-    displayError(err);
-    return;
-  }
-
+function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   const data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
   data.addColumn('number', 'Flake Percentage');
@@ -157,12 +143,9 @@ async function init() {
   data.addColumn('number', 'Duration');
   data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
 
-  const query = parseUrlQuery(window.location.search);
-  const desiredTest = query.test || "", desiredEnvironment = query.env || "";
-
   const testRuns = testData
     // Filter to only contain unskipped runs of the requested test and requested environment.
-    .filter(test => test.name === desiredTest && test.environment === desiredEnvironment && test.status !== testStatus.SKIPPED);
+    .filter(test => test.name === testName && test.environment === environmentName && test.status !== testStatus.SKIPPED);
 
   const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
 
@@ -175,20 +158,20 @@ async function init() {
           <b>${groupData.date.toString()}</b><br>
           <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
           <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, desiredEnvironment)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+          ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
         </div>`,
         groupData.duration,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${groupData.date.toString()}</b><br>
           <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
           <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, desiredEnvironment)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
+          ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
         </div>`,
       ])
   );
 
   const options = {
-    title: `Flake rate and duration by day of ${desiredTest} on ${desiredEnvironment}`,
+    title: `Flake rate and duration by day of ${testName} on ${environmentName}`,
     width: window.innerWidth,
     height: window.innerHeight,
     pointSize: 10,
@@ -206,6 +189,27 @@ async function init() {
   };
   const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
   chart.draw(data, options);
+}
+
+async function init() {
+  google.charts.load('current', { 'packages': ['corechart'] });
+  let testData;
+  try {
+    // Wait for Google Charts to load, and for test data to load.
+    // Only store the test data (at index 1) into `testData`.
+    testData = (await Promise.all([
+      new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
+      loadTestData()
+    ]))[1];
+  } catch (err) {
+    displayError(err);
+    return;
+  }
+
+  const query = parseUrlQuery(window.location.search);
+  const desiredTest = query.test || "", desiredEnvironment = query.env || "";
+
+  displayTestAndEnvironmentChart(testData, desiredTest, desiredEnvironment);
 }
 
 init();
