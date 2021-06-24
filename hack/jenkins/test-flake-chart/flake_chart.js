@@ -191,7 +191,7 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   chart.draw(data, options);
 }
 
-function createRecentFlakePercentageTable(recentFlakePercentage) {
+function createRecentFlakePercentageTable(recentFlakePercentage, environmentName) {
   const createCell = (elementType, text) => {
     const element = document.createElement(elementType);
     element.innerHTML = text;
@@ -205,7 +205,7 @@ function createRecentFlakePercentageTable(recentFlakePercentage) {
   table.appendChild(tableHeaderRow);
   for (const {testName, flakeRate} of recentFlakePercentage){
     const row = document.createElement("tr");
-    row.appendChild(createCell("td", testName));
+    row.appendChild(createCell("td", `<a href="${window.location.pathname}?env=${environmentName}&test=${testName}">${testName}</a>`));
     row.appendChild(createCell("td", `${flakeRate.toFixed(2)}%`)).style.textAlign = "right";
     table.appendChild(row);
   }
@@ -292,7 +292,7 @@ function displayEnvironmentChart(testData, environmentName) {
   const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
   chart.draw(data, options);
 
-  document.body.appendChild(createRecentFlakePercentageTable(recentFlakePercentage));
+  document.body.appendChild(createRecentFlakePercentageTable(recentFlakePercentage, environmentName));
 }
 
 async function init() {
