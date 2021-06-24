@@ -1044,11 +1044,6 @@ func validateCPUCount(drvName string) {
 		cpuCount = viper.GetInt(cpus)
 	}
 
-	if !driver.IsKIC(drvName) {
-		validateMeetsMinimumCPURequirements(cpuCount)
-		return
-	}
-
 	si, err := oci.CachedDaemonInfo(drvName)
 	if err != nil {
 		out.Styled(style.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
