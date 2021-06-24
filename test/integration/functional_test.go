@@ -62,6 +62,8 @@ var apiPortTest = 8441
 // Store the proxy session so we can clean it up at the end
 var mitm *StartSession
 
+var runCorpProxy = GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
+
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
 
@@ -102,6 +104,10 @@ func TestFunctional(t *testing.T) {
 			if ctx.Err() == context.DeadlineExceeded {
 				t.Fatalf("Unable to run more tests (deadline exceeded)")
 			}
+			if tc.name == "StartWithProxy" && runCorpProxy {
+				tc.name = "StartWithCorpProxy"
+				tc.validator = validateStartWithCorpProxy
+			}
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
@@ -110,7 +116,7 @@ func TestFunctional(t *testing.T) {
 
 	defer func() {
 		cleanupUnwantedImages(ctx, t, profile)
-		if GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform() {
+		if runCorpProxy {
 			mitm.Stop(t)
 		}
 	}()
@@ -526,58 +532,27 @@ func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateStartWithProxy makes sure minikube start respects the HTTP_PROXY (or HTTPS_PROXY) environment variable
+// validateStartWithProxy makes sure minikube start respects the HTTP_PROXY environment variable
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
-	https := GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
-
-	var addr string
-	proxyEnv := "HTTP_PROXY"
-	// If we're in the correct environment, mimic a corp proxy and use HTTPS_PROXY
-	if https {
-		err := startCorpProxy(ctx, t)
-		if err != nil {
-			t.Fatalf("failed to set up the test proxy: %s", err)
-		}
-		addr = "127.0.0.1:8080"
-		proxyEnv = "HTTPS_PROXY"
-	} else {
-		srv, err := startHTTPProxy(t)
-		if err != nil {
-			t.Fatalf("failed to set up the test proxy: %s", err)
-		}
-		addr = srv.Addr
-	}
-
-	// Use more memory so that we may reliably fit MySQL and nginx
-	memoryFlag := "--memory=4000"
-	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
-	if GithubActionRunner() && VirtualboxDriver() {
-		memoryFlag = "--memory=6000"
-	}
-	// passing --api-server-port so later verify it didn't change in soft start.
-	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
-	c := exec.CommandContext(ctx, Target(), startArgs...)
-	env := os.Environ()
-	env = append(env, fmt.Sprintf("%s=%s", proxyEnv, addr))
-	env = append(env, "NO_PROXY=")
-	c.Env = env
-	rr, err := Run(t, c)
+	srv, err := startHTTPProxy(t)
 	if err != nil {
-		t.Errorf("failed minikube start. args %q: %v", rr.Command(), err)
+		t.Fatalf("failed to set up the test proxy: %s", err)
 	}
 
-	want := "Found network options:"
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("start stdout=%s, want: *%s*", rr.Stdout.String(), want)
+	startMinikubeWithProxy(ctx, t, profile, "HTTP_PROXY", srv.Addr)
+}
+
+// validateStartWithCorpProxy makes sure minikube start respects the HTTPS_PROXY environment variable
+// only runs on Github Actions for amd64 linux
+func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+	err := startCorpProxy(ctx, t)
+	if err != nil {
+		t.Fatalf("failed to set up the test proxy: %s", err)
 	}
 
-	want = "You appear to be using a proxy"
-	if !strings.Contains(rr.Stderr.String(), want) {
-		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
-	}
-
+	startMinikubeWithProxy(ctx, t, profile, "HTTPS_PROXY", "127.0.0.1:8080")
 }
 
 // validateAuditAfterStart makes sure the audit log contains the correct logging after minikube start
@@ -1920,4 +1895,34 @@ func startHTTPProxy(t *testing.T) (*http.Server, error) {
 		}
 	}(srv, t)
 	return srv, nil
+}
+
+func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, proxyEnv string, addr string) {
+	// Use more memory so that we may reliably fit MySQL and nginx
+	memoryFlag := "--memory=4000"
+	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
+	if GithubActionRunner() && VirtualboxDriver() {
+		memoryFlag = "--memory=6000"
+	}
+	// passing --api-server-port so later verify it didn't change in soft start.
+	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("%s=%s", proxyEnv, addr))
+	env = append(env, "NO_PROXY=")
+	c.Env = env
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Errorf("failed minikube start. args %q: %v", rr.Command(), err)
+	}
+
+	want := "Found network options:"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("start stdout=%s, want: *%s*", rr.Stdout.String(), want)
+	}
+
+	want = "You appear to be using a proxy"
+	if !strings.Contains(rr.Stderr.String(), want) {
+		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
+	}
 }
