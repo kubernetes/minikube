@@ -1905,8 +1905,15 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 		t.Fatalf("cert hash symlink failure: %v", err)
 	}
 
+	// Use more memory so that we may reliably fit MySQL and nginx
+	memoryFlag := "--memory=4000"
+	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
+	if GithubActionRunner() && VirtualboxDriver() {
+		memoryFlag = "--memory=6000"
+	}
+
 	// ok, now start minikube
-	startArgs := append([]string{"start", "-p", profile, "--wait=all"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, "HTTPS_PROXY=127.0.0.1:8080")
