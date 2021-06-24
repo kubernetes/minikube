@@ -107,7 +107,7 @@ minikube start --listen-address=0.0.0.0
 
 ## How can I allocate maximum resources to minikube?
 
-Setting the `memory` and `cpus` flags on the start command to `nolimit` will use maximum available resources:
+Setting the `memory` and `cpus` flags on the start command to `max` will use maximum available resources:
 ```
-minikube start --memory=nolimit --cpus=nolimit
+minikube start --memory=max --cpus=max
 ```
