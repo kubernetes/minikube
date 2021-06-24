@@ -1718,22 +1718,18 @@ func validateNotActiveRuntimeDisabled(ctx context.Context, t *testing.T, profile
 	}
 }
 
-
 // validateVersionCmd asserts minikuve version command works fine
-func validateVersionCmd(ctx context.Context, t *testing.T, profile string) { 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version","-o=json","--packages"))
-	if err !=nil {
-		t.Errorf("error version: %v" ,err)
+func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--packages"))
+	if err != nil {
+		t.Errorf("error version: %v", err)
 	}
 	got := rr.Stdout.String()
 	if !strings.Contains(got, "containerd") {
 		t.Error("expected to see containerd in the minikube version --packages")
 	}
-	
-
 
 }
-
 
 // validateUpdateContextCmd asserts basic "update-context" command functionality
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
@@ -1844,4 +1840,3 @@ func startHTTPProxy(t *testing.T) (*http.Server, error) {
 	}(srv, t)
 	return srv, nil
 }
-
