@@ -110,6 +110,31 @@ function parseUrlQuery(query) {
   }));
 }
 
+// Takes a set of test runs (all of the same test), and aggregates them into one element per date.
+function aggregateRuns(testRuns) {
+  return testRuns
+    // Group runs by the date it ran.
+    .groupBy(run => run.date.getTime())
+    // Sort by run date, past to future.
+    .sort((a, b) => a[0].date - b[0].date)
+    // Map each group to all variables need to format the rows.
+    .map(tests => ({
+      date: tests[0].date, // Get one of the dates from the tests (which will all be the same).
+      flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
+      duration: tests.map(test => test.duration).average(), // Compute average duration of runs.
+      commitHashes: tests.map(test => ({ // Take all hashes, statuses, and durations of tests in this group.
+        hash: test.commit,
+        status: test.status,
+        duration: test.duration
+      })).groupBy(run => run.hash).map(runsWithSameHash => ({
+        hash: runsWithSameHash[0].hash,
+        failures: runsWithSameHash.map(run => run.status === testStatus.FAILED ? 1 : 0).sum(),
+        runs: runsWithSameHash.length,
+        duration: runsWithSameHash.map(run => run.duration).average(),
+      }))
+    }));
+}
+
 async function init() {
   google.charts.load('current', { 'packages': ['corechart'] });
   let testData;
@@ -135,33 +160,14 @@ async function init() {
   const query = parseUrlQuery(window.location.search);
   const desiredTest = query.test || "", desiredEnvironment = query.env || "";
 
-  const groups = testData
+  const testRuns = testData
     // Filter to only contain unskipped runs of the requested test and requested environment.
-    .filter(test => test.name === desiredTest && test.environment === desiredEnvironment && test.status !== testStatus.SKIPPED)
-    .groupBy(test => test.date.getTime());
-  
+    .filter(test => test.name === desiredTest && test.environment === desiredEnvironment && test.status !== testStatus.SKIPPED);
+
   const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
 
   data.addRows(
-    groups
-      // Sort by run date, past to future.
-      .sort((a, b) => a[0].date - b[0].date)
-      // Map each group to all variables need to format the rows.
-      .map(tests => ({
-        date: tests[0].date, // Get one of the dates from the tests (which will all be the same).
-        flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
-        duration: tests.map(test => test.duration).average(), // Compute average duration of runs.
-        commitHashes: tests.map(test => ({ // Take all hashes, statuses, and durations of tests in this group.
-          hash: test.commit,
-          status: test.status,
-          duration: test.duration
-        })).groupBy(run => run.hash).map(runsWithSameHash => ({
-          hash: runsWithSameHash[0].hash,
-          failures: runsWithSameHash.map(run => run.status === testStatus.FAILED ? 1 : 0).sum(),
-          runs: runsWithSameHash.length,
-          duration: runsWithSameHash.map(run => run.duration).average(),
-        }))
-      }))
+    aggregateRuns(testRuns)
       .map(groupData => [
         groupData.date,
         groupData.flakeRate,
