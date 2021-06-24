@@ -1721,7 +1721,7 @@ func validateNotActiveRuntimeDisabled(ctx context.Context, t *testing.T, profile
 
 // validateVersionCmd asserts minikuve version command works fine
 func validateVersionCmd(ctx context.Context, t *testing.T, profile string) { 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version","-o=json","--packages")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version","-o=json","--packages"))
 	if err !=nil {
 		t.Errorf("error version: %v" ,err)
 	}
