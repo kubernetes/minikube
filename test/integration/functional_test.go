@@ -110,7 +110,7 @@ func TestFunctional(t *testing.T) {
 
 	defer func() {
 		cleanupUnwantedImages(ctx, t, profile)
-		if GithubActionRunner() && runtime.GOOS == "linux" {
+		if GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform() {
 			mitm.Stop(t)
 		}
 	}()
@@ -528,7 +528,7 @@ func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 
 // validateStartWithProxy either calls validateStartWithRegularProxy or validateStartWithCorpProxy depending on the test environment
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "linux" {
+	if GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform() {
 		validateStartWithCorpProxy(ctx, t, profile)
 	} else {
 		validateStartWithRegularProxy(ctx, t, profile)
