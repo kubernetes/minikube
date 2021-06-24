@@ -32,9 +32,9 @@ import (
 )
 
 var (
-	versionOutput        string
-	shortVersion         bool
-	listPackagesVersions bool
+	versionOutput          string
+	shortVersion           bool
+	listComponentsVersions bool
 )
 
 var versionCmd = &cobra.Command{
@@ -49,17 +49,9 @@ var versionCmd = &cobra.Command{
 			"commit":          gitCommitID,
 		}
 
-		if listPackagesVersions {
+		if listComponentsVersions && !shortVersion {
 			co := mustload.Running(ClusterFlagValue())
 			runner := co.CP.Runner
-			// docker version --format='{{.Client.Version}}'
-			// sudo crictl version
-			// runc --version
-			// crio version
-			// buildctl --version
-			// sudo ctr version
-			// sudo podman version
-
 			versionCMDS := map[string]*exec.Cmd{
 				"docker":     exec.Command("docker", "version", "--format={{.Client.Version}}"),
 				"containerd": exec.Command("containerd", "--version"),
@@ -91,7 +83,7 @@ var versionCmd = &cobra.Command{
 					out.Ln("commit: %v", gitCommitID)
 				}
 				for k, v := range data {
-					// for backward compatibility we keep the old ways separate
+					// for backward compatibility we keep displaying the old way for these two
 					if k == "minikubeVersion" || k == "commit" {
 						continue
 					}
@@ -123,5 +115,5 @@ var versionCmd = &cobra.Command{
 func init() {
 	versionCmd.Flags().StringVarP(&versionOutput, "output", "o", "", "One of 'yaml' or 'json'.")
 	versionCmd.Flags().BoolVar(&shortVersion, "short", false, "Print just the version number.")
-	versionCmd.Flags().BoolVar(&listPackagesVersions, "packages", false, "list versions of all packages included with minikube. (cluster must be running)")
+	versionCmd.Flags().BoolVar(&listComponentsVersions, "components", false, "list versions of all components included with minikube. (the cluster must be running)")
 }
