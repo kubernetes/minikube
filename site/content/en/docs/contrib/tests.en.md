@@ -94,10 +94,7 @@ check functionality of minikube after evaluating docker-env
 check functionality of minikube after evaluating podman-env
 
 #### validateStartWithProxy
-either calls validateStartWithRegularProxy or validateStartWithCorpProxy depending on the test environment
-
-#### validateStartWithRegularProxy
-makes sure minikube start respects the HTTP_PROXY environment variable
+makes sure minikube start respects the HTTP_PROXY (or HTTPS_PROXY) environment variable
 
 #### validateAuditAfterStart
 makes sure the audit log contains the correct logging after minikube start
@@ -177,9 +174,6 @@ asserts that for a given runtime, the other runtimes disabled, for example for c
 
 #### validateUpdateContextCmd
 asserts basic "update-context" command functionality
-
-#### validateStartWithCorpProxy
-ensures that minikube can run behind a custom proxy
 
 #### validateMountCmd
 verifies the minikube mount command works properly
