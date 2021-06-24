@@ -97,6 +97,8 @@ func inspect(addr string) (*Parameters, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed listing network interfaces: %w", err)
 	}
+
+ifLoop:
 	for _, iface := range ifaces {
 		ifAddrs, err := iface.Addrs()
 		if err != nil {
@@ -114,7 +116,7 @@ func inspect(addr string) (*Parameters, error) {
 				n.IfaceMAC = iface.HardwareAddr.String()
 				n.Gateway = n.IfaceIPv4
 				network = lan
-				break
+				break ifLoop
 			}
 		}
 	}
