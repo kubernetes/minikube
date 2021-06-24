@@ -165,14 +165,14 @@ async function init() {
       .map(groupData => [
         groupData.date,
         groupData.flakeRate,
-        `<div style="padding: 1rem">
+        `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${groupData.date.toString()}</b><br>
           <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
           <b>Hashes:</b><br>
           ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, desiredEnvironment)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
         </div>`,
         groupData.duration,
-        `<div style="padding: 1rem">
+        `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${groupData.date.toString()}</b><br>
           <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
           <b>Hashes:</b><br>
