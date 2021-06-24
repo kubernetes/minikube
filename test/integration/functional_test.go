@@ -59,6 +59,9 @@ type validateFunc func(context.Context, *testing.T, string)
 // used in validateStartWithProxy and validateSoftStart
 var apiPortTest = 8441
 
+// Store the proxy session so we can clean it up at the end
+var mitm *StartSession
+
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
 
@@ -105,7 +108,12 @@ func TestFunctional(t *testing.T) {
 		}
 	})
 
-	defer cleanupUnwantedImages(ctx, t, profile)
+	defer func() {
+		cleanupUnwantedImages(ctx, t, profile)
+		if GithubActionRunner() {
+			mitm.Stop(t)
+		}
+	}()
 
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
@@ -1834,6 +1842,12 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	if err != nil {
 		t.Fatalf("failed to download mitmproxy tar: %v", err)
 	}
+	defer func() {
+		err := os.Remove("mitmproxy-6.0.2-linux.tar.gz")
+		if err != nil {
+			t.Logf("failed to remove tarball: %v", err)
+		}
+	}()
 
 	mitmDir, err := ioutil.TempDir("", "")
 	if err != nil {
@@ -1851,7 +1865,9 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 	if err != nil {
 		t.Fatalf("starting mitmproxy failed: %v", err)
 	}
-	defer mitmRR.Stop(t)
+
+	// Store it for cleanup later
+	mitm = mitmRR
 
 	// Add a symlink from the cert to the correct directory
 	certFile := path.Join(mitmDir, "mitmproxy-ca-cert.pem")
