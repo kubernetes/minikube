@@ -29,12 +29,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/v3/process"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -499,5 +501,59 @@ func killProcessFamily(t *testing.T, pid int) {
 			t.Logf("unable to kill pid %d: %v", p.Pid, err)
 			continue
 		}
+	}
+}
+
+// cpTestMinikubePath is where the test file will be located in the Minikube instance
+func cpTestMinikubePath() string {
+	return "/home/docker/cp-test.txt"
+}
+
+// cpTestLocalPath is where the test file located in host os
+func cpTestLocalPath() string {
+	return filepath.Join(*testdataDir, "cp-test.txt")
+}
+
+// testCpCmd ensures copy functionality into minikube instance.
+func testCpCmd(ctx context.Context, t *testing.T, profile string, node string) {
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	cpArgv := []string{"-p", profile, "cp", srcPath}
+	if node == "" {
+		cpArgv = append(cpArgv, dstPath)
+	} else {
+		cpArgv = append(cpArgv, fmt.Sprintf("%s:%s", node, dstPath))
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), cpArgv...))
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+	if err != nil {
+		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
+	}
+
+	sshArgv := []string{"-p", profile, "ssh"}
+	if node != "" {
+		sshArgv = append(sshArgv, "-n", node)
+	}
+	sshArgv = append(sshArgv, fmt.Sprintf("sudo cat %s", dstPath))
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), sshArgv...))
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+	if err != nil {
+		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
+	}
+
+	expected, err := ioutil.ReadFile(srcPath)
+	if err != nil {
+		t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
+	}
+
+	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
+		t.Errorf("/testdata/cp-test.txt content mismatch (-want +got):\n%s", diff)
 	}
 }
