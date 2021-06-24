@@ -1917,8 +1917,14 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 		t.Errorf("minikube start failed: %v", err)
 	}
 
-	if rr.Stderr.Len() > 0 {
-		t.Errorf("Unexpected output to std err: %s", rr.Stderr.String())
+	want := "Found network options:"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("start stdout=%s, want: *%s*", rr.Stdout.String(), want)
+	}
+
+	want = "You appear to be using a proxy"
+	if !strings.Contains(rr.Stderr.String(), want) {
+		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
 }
 
