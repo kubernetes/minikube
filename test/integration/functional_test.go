@@ -526,22 +526,28 @@ func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateStartWithProxy either calls validateStartWithRegularProxy or validateStartWithCorpProxy depending on the test environment
+// validateStartWithProxy makes sure minikube start respects the HTTP_PROXY (or HTTPS_PROXY) environment variable
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform() {
-		validateStartWithCorpProxy(ctx, t, profile)
-	} else {
-		validateStartWithRegularProxy(ctx, t, profile)
-	}
-}
-
-// validateStartWithRegularProxy makes sure minikube start respects the HTTP_PROXY environment variable
-func validateStartWithRegularProxy(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	srv, err := startHTTPProxy(t)
-	if err != nil {
-		t.Fatalf("failed to set up the test proxy: %s", err)
+	https := GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
+
+	var addr string
+	proxyEnv := "HTTP_PROXY"
+	// If we're in the correct environemnt, mimic a corp proxy and use HTTPS_PROXY
+	if https {
+		err := startCorpProxy(ctx, t)
+		if err != nil {
+			t.Fatalf("failed to set up the test proxy: %s", err)
+		}
+		addr = "127.0.0.1:8080"
+		proxyEnv = "HTTPS_PROXY"
+	} else {
+		srv, err := startHTTPProxy(t)
+		if err != nil {
+			t.Fatalf("failed to set up the test proxy: %s", err)
+		}
+		addr = srv.Addr
 	}
 
 	// Use more memory so that we may reliably fit MySQL and nginx
@@ -554,7 +560,7 @@ func validateStartWithRegularProxy(ctx context.Context, t *testing.T, profile st
 	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
-	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
+	env = append(env, fmt.Sprintf("%s=%s", proxyEnv, addr))
 	env = append(env, "NO_PROXY=")
 	c.Env = env
 	rr, err := Run(t, c)
@@ -1825,37 +1831,35 @@ users:
 	}
 }
 
-// validateStartWithCorpProxy ensures that minikube can run behind a custom proxy
-func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile string) {
-	defer PostMortemLogs(t, profile)
-
+// startCorpProxy mimics starting a corp proxy by using mitmproxy and installing its certs
+func startCorpProxy(ctx context.Context, t *testing.T) error {
 	// Download the mitmproxy bundle for mitmdump
 	_, err := Run(t, exec.CommandContext(ctx, "curl", "-LO", "https://snapshots.mitmproxy.org/6.0.2/mitmproxy-6.0.2-linux.tar.gz"))
 	if err != nil {
-		t.Fatalf("failed to download mitmproxy tar: %v", err)
+		return errors.Wrap(err, "download mitmproxy tar")
 	}
 	defer func() {
 		err := os.Remove("mitmproxy-6.0.2-linux.tar.gz")
 		if err != nil {
-			t.Logf("failed to remove tarball: %v", err)
+			t.Logf("remove tarball: %v", err)
 		}
 	}()
 
 	mitmDir, err := ioutil.TempDir("", "")
 	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
+		return errors.Wrap(err, "create temp dir: %v")
 	}
 
 	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz", "-C", mitmDir))
 	if err != nil {
-		t.Fatalf("failed to untar mitmproxy tar: %v", err)
+		return errors.Wrap(err, "untar mitmproxy tar")
 	}
 
 	// Start mitmdump in the background, this will create the needed certs
 	// and provide the necessary proxy at 127.0.0.1:8080
 	mitmRR, err := Start(t, exec.CommandContext(ctx, path.Join(mitmDir, "mitmdump"), "--set", fmt.Sprintf("confdir=%s", mitmDir)))
 	if err != nil {
-		t.Fatalf("starting mitmproxy failed: %v", err)
+		return errors.Wrap(err, "starting mitmproxy")
 	}
 
 	// Store it for cleanup later
@@ -1875,57 +1879,29 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 		_, err = os.Stat(certFile)
 	}
 	if os.IsNotExist(err) {
-		t.Fatalf("cert files never showed up: %v", err)
+		return errors.Wrap(err, "cert files never showed up")
 	}
 
 	destCertPath := path.Join("/etc/ssl/certs", "mitmproxy-ca-cert.pem")
 	symLinkCmd := fmt.Sprintf("ln -fs %s %s", certFile, destCertPath)
 	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", symLinkCmd)); err != nil {
-		t.Fatalf("cert symlink failure: %v", err)
+		return errors.Wrap(err, "cert symlink")
 	}
 
 	// Add a symlink of the form {hash}.0
 	rr, err := Run(t, exec.CommandContext(ctx, "openssl", "x509", "-hash", "-noout", "-in", certFile))
 	if err != nil {
-		t.Fatalf("cert hashing failure: %v", err)
+		return errors.Wrap(err, "cert hashing")
 	}
 	stringHash := strings.TrimSpace(rr.Stdout.String())
 	hashLink := path.Join("/etc/ssl/certs", fmt.Sprintf("%s.0", stringHash))
 
 	hashCmd := fmt.Sprintf("test -L %s || ln -fs %s %s", hashLink, destCertPath, hashLink)
 	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", hashCmd)); err != nil {
-		t.Fatalf("cert hash symlink failure: %v", err)
+		return errors.Wrap(err, "cert hash symlink failure: %v")
 	}
 
-	// Use more memory so that we may reliably fit MySQL and nginx
-	memoryFlag := "--memory=4000"
-	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
-	if GithubActionRunner() && VirtualboxDriver() {
-		memoryFlag = "--memory=6000"
-	}
-
-	// ok, now start minikube
-	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
-	c := exec.CommandContext(ctx, Target(), startArgs...)
-	env := os.Environ()
-	env = append(env, "HTTPS_PROXY=127.0.0.1:8080")
-	env = append(env, "NO_PROXY=")
-	c.Env = env
-
-	rr, err = Run(t, c)
-	if err != nil {
-		t.Errorf("minikube start failed: %v", err)
-	}
-
-	want := "Found network options:"
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("start stdout=%s, want: *%s*", rr.Stdout.String(), want)
-	}
-
-	want = "You appear to be using a proxy"
-	if !strings.Contains(rr.Stderr.String(), want) {
-		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
-	}
+	return nil
 }
 
 // startHTTPProxy runs a local http proxy and sets the env vars for it.
