@@ -192,19 +192,15 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
 }
 
 function displayEnvironmentChart(testData, environmentName) {
+  // Number of days to use to look for "flaky-est" tests.
+  const dateRange = 15;
+  // Number of tests to display in chart.
+  const topFlakes = 10;
+
   const testRuns = testData
     // Filter to only contain unskipped runs of the requested test and requested environment.
     .filter(test => test.environment === environmentName && test.status !== testStatus.SKIPPED)
     .groupBy(test => test.name);
-
-  const testNames = testRuns.map(test => test[0].name);
-
-  const data = new google.visualization.DataTable();
-  data.addColumn('date', 'Date');
-  for (const name of testNames) {
-    data.addColumn('number', `Flake Percentage - ${name}`);
-    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
-  }
 
   const aggregatedRuns = new Map(testRuns.map(test => [
     test[0].name,
@@ -217,8 +213,39 @@ function displayEnvironmentChart(testData, environmentName) {
     }
   }
   const orderedDates = Array.from(uniqueDates).sort();
+  const recentDates = orderedDates.slice(-dateRange);
+  
+  const recentFlakePercentage = Array.from(aggregatedRuns).map(([testName, data]) => {
+    const {flakeCount, totalCount} = recentDates.map(date => {
+      const dateInfo = data.get(date);
+      return dateInfo === undefined ? null : {
+        flakeRate: dateInfo.flakeRate,
+        runs: dateInfo.commitHashes.length
+      };
+    }).filter(dateInfo => dateInfo != null)
+      .reduce(({flakeCount, totalCount}, {flakeRate, runs}) => ({
+        flakeCount: flakeRate * runs + flakeCount,
+        totalCount: runs + totalCount
+      }), {flakeCount: 0, totalCount: 0});
+    return {
+      testName,
+      flakeRate: totalCount === 0 ? 0 : flakeCount / totalCount,
+    };
+  });
+
+  const recentTopFlakes = recentFlakePercentage
+    .sort((a, b) => b.flakeRate - a.flakeRate)
+    .slice(0, topFlakes)
+    .map(({testName}) => testName);
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('date', 'Date');
+  for (const name of recentTopFlakes) {
+    data.addColumn('number', `Flake Percentage - ${name}`);
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+  }
   data.addRows(
-    orderedDates.map(dateTime => [new Date(dateTime)].concat(testNames.map(name => {
+    orderedDates.map(dateTime => [new Date(dateTime)].concat(recentTopFlakes.map(name => {
       const data = aggregatedRuns.get(name).get(dateTime);
       return data !== undefined ? [
         data.flakeRate,
@@ -232,7 +259,7 @@ function displayEnvironmentChart(testData, environmentName) {
     })).flat())
   );
   const options = {
-    title: `Flake rate by day of all tests on ${environmentName}`,
+    title: `Flake rate by day of top ${topFlakes} of recent test flakiness (past ${dateRange} days) on ${environmentName}`,
     width: window.innerWidth,
     height: window.innerHeight,
     pointSize: 10,
