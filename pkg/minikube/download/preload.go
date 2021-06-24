@@ -17,17 +17,18 @@ limitations under the License.
 package download
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"google.golang.org/api/option"
 	"io/ioutil"
-	"k8s.io/minikube/pkg/minikube/detect"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/option"
+	"k8s.io/minikube/pkg/minikube/detect"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"

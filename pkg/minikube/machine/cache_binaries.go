@@ -17,6 +17,8 @@ limitations under the License.
 package machine
 
 import (
+	"path"
+
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
@@ -25,7 +27,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
-	"path"
 )
 
 // isExcluded returns whether `binary` is expected to be excluded, based on `excludedBinaries`.

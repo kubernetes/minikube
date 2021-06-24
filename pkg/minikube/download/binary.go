@@ -18,10 +18,11 @@ package download
 
 import (
 	"fmt"
-	"k8s.io/minikube/pkg/minikube/detect"
 	"os"
 	"path"
 	"runtime"
+
+	"k8s.io/minikube/pkg/minikube/detect"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"

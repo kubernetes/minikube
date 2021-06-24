@@ -18,10 +18,11 @@ package node
 
 import (
 	"fmt"
-	"k8s.io/minikube/pkg/minikube/detect"
 	"os"
 	"runtime"
 	"strings"
+
+	"k8s.io/minikube/pkg/minikube/detect"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
