@@ -135,6 +135,8 @@ function aggregateRuns(testRuns) {
     }));
 }
 
+const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
+
 function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   const data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
@@ -146,8 +148,6 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   const testRuns = testData
     // Filter to only contain unskipped runs of the requested test and requested environment.
     .filter(test => test.name === testName && test.environment === environmentName && test.status !== testStatus.SKIPPED);
-
-  const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
 
   data.addRows(
     aggregateRuns(testRuns)
@@ -191,6 +191,61 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   chart.draw(data, options);
 }
 
+function displayEnvironmentChart(testData, environmentName) {
+  const testRuns = testData
+    // Filter to only contain unskipped runs of the requested test and requested environment.
+    .filter(test => test.environment === environmentName && test.status !== testStatus.SKIPPED)
+    .groupBy(test => test.name);
+
+  const testNames = testRuns.map(test => test[0].name);
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('date', 'Date');
+  for (const name of testNames) {
+    data.addColumn('number', `Flake Percentage - ${name}`);
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+  }
+
+  const aggregatedRuns = new Map(testRuns.map(test => [
+    test[0].name,
+    new Map(aggregateRuns(test)
+      .map(runDate => [ runDate.date.getTime(), runDate ]))]));
+  const uniqueDates = new Set();
+  for (const [_, runDateMap] of aggregatedRuns) {
+    for (const [dateTime, _] of runDateMap) {
+      uniqueDates.add(dateTime);
+    }
+  }
+  const orderedDates = Array.from(uniqueDates).sort();
+  data.addRows(
+    orderedDates.map(dateTime => [new Date(dateTime)].concat(testNames.map(name => {
+      const data = aggregatedRuns.get(name).get(dateTime);
+      return data !== undefined ? [
+        data.flakeRate,
+        `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+          <b>${data.date.toString()}</b><br>
+          <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
+          <b>Hashes:</b><br>
+          ${data.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+        </div>`
+      ] : [null, null];
+    })).flat())
+  );
+  const options = {
+    title: `Flake rate by day of all tests on ${environmentName}`,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    pointSize: 10,
+    pointShape: "circle",
+    vAxes: {
+      0: { title: "Flake rate", minValue: 0, maxValue: 100 },
+    },
+    tooltip: { trigger: "selection", isHtml: true }
+  };
+  const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+  chart.draw(data, options);
+}
+
 async function init() {
   google.charts.load('current', { 'packages': ['corechart'] });
   let testData;
@@ -207,9 +262,13 @@ async function init() {
   }
 
   const query = parseUrlQuery(window.location.search);
-  const desiredTest = query.test || "", desiredEnvironment = query.env || "";
+  const desiredTest = query.test, desiredEnvironment = query.env || "";
 
-  displayTestAndEnvironmentChart(testData, desiredTest, desiredEnvironment);
+  if (desiredTest === undefined) {
+    displayEnvironmentChart(testData, desiredEnvironment);
+  } else {
+    displayTestAndEnvironmentChart(testData, desiredTest, desiredEnvironment);
+  }
 }
 
 init();
