@@ -1847,7 +1847,7 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 
 	// Start mitmdump in the background, this will create the needed certs
 	// and provide the necessary proxy at 127.0.0.1:8080
-	mitmRR, err := Start(t, exec.CommandContext(ctx, path.Join(mitmDir, "mitmdump", "--set", "confdir", mitmDir)))
+	mitmRR, err := Start(t, exec.CommandContext(ctx, path.Join(mitmDir, "mitmdump"), "--set", fmt.Sprintf("confdir=%s", mitmDir)))
 	if err != nil {
 		t.Fatalf("starting mitmproxy failed: %v", err)
 	}
@@ -1855,8 +1855,23 @@ func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile strin
 
 	// Add a symlink from the cert to the correct directory
 	certFile := path.Join(mitmDir, "mitmproxy-ca-cert.pem")
+	// wait 15 seconds for the certs to show up
+	_, err = os.Stat(certFile)
+	tries := 1
+	for os.IsNotExist(err) {
+		time.Sleep(1 * time.Second)
+		tries++
+		if tries > 15 {
+			break
+		}
+		_, err = os.Stat(certFile)
+	}
+	if os.IsNotExist(err) {
+		t.Fatalf("cert files never showed up: %v", err)
+	}
+
 	destCertPath := path.Join("/etc/ssl/certs", "mitmproxy-ca-cert.pem")
-	symLinkCmd := fmt.Sprintf("test -s %s && ln -fs %s %s", certFile, certFile, destCertPath)
+	symLinkCmd := fmt.Sprintf("ln -fs %s %s", certFile, destCertPath)
 	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", symLinkCmd)); err != nil {
 		t.Fatalf("cert symlink failure: %v", err)
 	}
