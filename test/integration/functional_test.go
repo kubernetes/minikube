@@ -110,7 +110,7 @@ func TestFunctional(t *testing.T) {
 
 	defer func() {
 		cleanupUnwantedImages(ctx, t, profile)
-		if GithubActionRunner() {
+		if GithubActionRunner() && runtime.GOOS == "linux" {
 			mitm.Stop(t)
 		}
 	}()
@@ -528,7 +528,7 @@ func validatePodmanEnv(ctx context.Context, t *testing.T, profile string) {
 
 // validateStartWithProxy either calls validateStartWithRegularProxy or validateStartWithCorpProxy depending on the test environment
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() {
+	if GithubActionRunner() && runtime.GOOS == "linux" {
 		validateStartWithCorpProxy(ctx, t, profile)
 	} else {
 		validateStartWithRegularProxy(ctx, t, profile)
@@ -1827,14 +1827,6 @@ users:
 
 // validateStartWithCorpProxy ensures that minikube can run behind a custom proxy
 func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile string) {
-	if !GithubActionRunner() {
-		t.Skip("Only run mitmproxy test on github actions")
-	}
-
-	if runtime.GOOS != "linux" {
-		t.Skip("Only run mitmproxy test on linux")
-	}
-
 	defer PostMortemLogs(t, profile)
 
 	// Download the mitmproxy bundle for mitmdump
