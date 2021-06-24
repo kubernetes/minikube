@@ -534,7 +534,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	var addr string
 	proxyEnv := "HTTP_PROXY"
-	// If we're in the correct environemnt, mimic a corp proxy and use HTTPS_PROXY
+	// If we're in the correct environment, mimic a corp proxy and use HTTPS_PROXY
 	if https {
 		err := startCorpProxy(ctx, t)
 		if err != nil {
