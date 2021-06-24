@@ -191,6 +191,27 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   chart.draw(data, options);
 }
 
+function createRecentFlakePercentageTable(recentFlakePercentage) {
+  const createCell = (elementType, text) => {
+    const element = document.createElement(elementType);
+    element.innerHTML = text;
+    return element;
+  }
+
+  const table = document.createElement("table");
+  const tableHeaderRow = document.createElement("tr");
+  tableHeaderRow.appendChild(createCell("th", "Test Name")).style.textAlign = "left";
+  tableHeaderRow.appendChild(createCell("th", "Recent Flake Percentage"));
+  table.appendChild(tableHeaderRow);
+  for (const {testName, flakeRate} of recentFlakePercentage){
+    const row = document.createElement("tr");
+    row.appendChild(createCell("td", testName));
+    row.appendChild(createCell("td", `${flakeRate.toFixed(2)}%`)).style.textAlign = "right";
+    table.appendChild(row);
+  }
+  return table;
+}
+
 function displayEnvironmentChart(testData, environmentName) {
   // Number of days to use to look for "flaky-est" tests.
   const dateRange = 15;
@@ -231,10 +252,9 @@ function displayEnvironmentChart(testData, environmentName) {
       testName,
       flakeRate: totalCount === 0 ? 0 : flakeCount / totalCount,
     };
-  });
+  }).sort((a, b) => b.flakeRate - a.flakeRate);
 
   const recentTopFlakes = recentFlakePercentage
-    .sort((a, b) => b.flakeRate - a.flakeRate)
     .slice(0, topFlakes)
     .map(({testName}) => testName);
 
@@ -271,6 +291,8 @@ function displayEnvironmentChart(testData, environmentName) {
   };
   const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
   chart.draw(data, options);
+
+  document.body.appendChild(createRecentFlakePercentageTable(recentFlakePercentage));
 }
 
 async function init() {
