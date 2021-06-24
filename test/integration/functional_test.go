@@ -1847,7 +1847,7 @@ func startCorpProxy(ctx context.Context, t *testing.T) error {
 
 	mitmDir, err := ioutil.TempDir("", "")
 	if err != nil {
-		return errors.Wrap(err, "create temp dir: %v")
+		return errors.Wrap(err, "create temp dir")
 	}
 
 	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz", "-C", mitmDir))
@@ -1898,7 +1898,7 @@ func startCorpProxy(ctx context.Context, t *testing.T) error {
 
 	hashCmd := fmt.Sprintf("test -L %s || ln -fs %s %s", hashLink, destCertPath, hashLink)
 	if _, err := Run(t, exec.CommandContext(ctx, "sudo", "/bin/bash", "-c", hashCmd)); err != nil {
-		return errors.Wrap(err, "cert hash symlink failure: %v")
+		return errors.Wrap(err, "cert hash symlink")
 	}
 
 	return nil
