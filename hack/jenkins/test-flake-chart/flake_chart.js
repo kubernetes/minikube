@@ -77,9 +77,13 @@ async function loadTestData() {
   return testData;
 }
 
+Array.prototype.sum = function() {
+  return this.reduce((sum, value) => sum + value, 0);
+};
+
 // Computes the average of an array of numbers.
 Array.prototype.average = function () {
-  return this.length === 0 ? 0 : this.reduce((sum, value) => sum + value, 0) / this.length;
+  return this.length === 0 ? 0 : (this.sum() / this.length);
 };
 
 // Groups array elements by keys obtained through `keyGetter`.
@@ -149,23 +153,28 @@ async function init() {
           hash: test.commit,
           status: test.status,
           duration: test.duration
+        })).groupBy(run => run.hash).map(runsWithSameHash => ({
+          hash: runsWithSameHash[0].hash,
+          failures: runsWithSameHash.map(run => run.status === testStatus.FAILED ? 1 : 0).sum(),
+          runs: runsWithSameHash.length,
+          duration: runsWithSameHash.map(run => run.duration).average(),
         }))
       }))
       .map(groupData => [
         groupData.date,
         groupData.flakeRate,
-        `<div class="py-2 ps-2">
+        `<div style="padding: 1rem">
           <b>${groupData.date.toString()}</b><br>
           <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
           <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, status }) => `  - ${hash} (${status})`).join("<br>")}
+          ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - ${hash} (Failures: ${failures}/${runs})`).join("<br>")}
         </div>`,
         groupData.duration,
-        `<div class="py-2 ps-2">
+        `<div style="padding: 1rem">
           <b>${groupData.date.toString()}</b><br>
           <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
           <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, duration }) => `  - ${hash} (${duration}s)`).join("<br>")}
+          ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - ${hash} (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
         </div>`,
       ])
   );
