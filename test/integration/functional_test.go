@@ -1728,7 +1728,8 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 		if err != nil {
 			t.Errorf("failed to get version --short: %v", err)
 		}
-		_, err = semver.Make(rr.Stdout.String())
+
+		_, err = semver.Make(strings.Trim(rr.Stdout.String(), "v"))
 		if err != nil {
 			t.Errorf("failed to get a valid semver for minikube version --short:%s %v", rr.Output(), err)
 		}
