@@ -1720,13 +1720,27 @@ func validateNotActiveRuntimeDisabled(ctx context.Context, t *testing.T, profile
 
 // validateVersionCmd asserts minikuve version command works fine
 func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--packages"))
-	if err != nil {
-		t.Errorf("error version: %v", err)
+
+	t.Run("short", func(t *testing.T) { 
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--short"))
+		if err != nil {
+			t.Errorf("failed to get version --short: %v", err)
+		}
+		_ , err := semver.Make(rr.Stdout.String())
+		if err != nil {
+			t.Errorf("failed to get a valid semver for minikube version --short:%s %v",rr.Output(),err)
+		}
+	
 	}
-	got := rr.Stdout.String()
-	if !strings.Contains(got, "containerd") {
-		t.Error("expected to see containerd in the minikube version --packages")
+	t.Run("components", func(t *testing.T) { 
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--components"))
+		if err != nil {
+			t.Errorf("error version: %v", err)
+		}
+		got := rr.Stdout.String()
+		if !strings.Contains(got, "containerd") {
+			t.Error("expected to see containerd in the minikube version --packages")
+		}	
 	}
 
 }
