@@ -1,7 +1,17 @@
 
 // Displays an error message to the UI. Any previous message will be erased.
 function displayError(message) {
-  console.error(message);
+  // Clear the body of all children.
+  while (document.body.firstChild) {
+    document.body.removeChild(document.body.firstChild);
+  }
+  const element = document.createElement("p");
+  element.innerText = "Error: " + message;
+  element.style.color = "red";
+  element.style.fontFamily = "Arial";
+  element.style.fontWeight = "bold";
+  element.style.margin = "5rem";
+  document.body.appendChild(element);
 }
 
 // Creates a generator that reads the response body one line at a time.
