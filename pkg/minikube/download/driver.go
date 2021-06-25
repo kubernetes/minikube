@@ -41,8 +41,8 @@ func driverWithArchAndChecksumURL(name string, v semver.Version) string {
 func Driver(name string, destination string, v semver.Version) error {
 	out.Step(style.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": name})
 
-	archUrl := driverWithArchAndChecksumURL(name, v)
-	if err := download(archUrl, destination); err != nil {
+	archURL := driverWithArchAndChecksumURL(name, v)
+	if err := download(archURL, destination); err != nil {
 		klog.Infof("failed to download arch specific driver: %v. trying to get the common version", err)
 		if err := download(driverWithChecksumURL(name, v), destination); err != nil {
 			return errors.Wrap(err, "download")
