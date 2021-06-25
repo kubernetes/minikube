@@ -322,7 +322,10 @@ test-pkg/%: ## Trigger packaging test
 all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
 
 .PHONY: drivers
-drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2 ## Build Hyperkit and KVM2 drivers
+drivers: docker-machine-driver-hyperkit \
+		 docker-machine-driver-kvm2 \
+		 out/docker-machine-driver-kvm2-amd64 \
+		 out/docker-machine-driver-kvm2-arm64 ## Build Hyperkit and KVM2 drivers
 
 .PHONY: docker-machine-driver-hyperkit
 docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hyperkit driver
