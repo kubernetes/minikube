@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"text/template"
 
+	"github.com/docker/machine/libmachine/log"
 	"github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 )
