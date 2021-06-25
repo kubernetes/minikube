@@ -185,7 +185,7 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 	// In this case we want to give it a second chance and try to parse it one more time using name.NewTag(img)
 	tag, err := name.NewTag(img)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "new ref")
+		return nil, nil, errors.Wrap(err, "failed to parse image reference")
 	}
 	return &tag, tag, nil
 }
