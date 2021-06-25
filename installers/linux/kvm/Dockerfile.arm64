@@ -14,22 +14,27 @@
 
 FROM ubuntu:21.04
 
-RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports hirsute main universe restricted multiverse" >> /etc/apt/sources.list
+ARG GO_VERSION
 
-RUN apt update && apt install -y \
+RUN apt update
+
+RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports hirsute main universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports hirsute-updates main universe restricted multiverse" >> /etc/apt/sources.list && \
+    dpkg --add-architecture arm64 && \
+    (apt update || true)
+
+RUN apt install -y \
     gcc-aarch64-linux-gnu \
     make \
     pkg-config \
-    curl
+    curl \
+    libvirt-dev:arm64
 
-RUN apt install -y libvirt-dev:arm64
-
-ARG GO_VERSION
 RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf -
 
 ENV GOPATH /go
 
-# CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 make out/docker-machine-driver-kvm2-arm64
 ENV CC=aarch64-linux-gnu-gcc
 ENV CGO_ENABLED=1
+ENV PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/go/bin

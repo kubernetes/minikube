@@ -837,7 +837,7 @@ kvm-image-amd64: installers/linux/kvm/Dockerfile.amd64  ## Convenient alias to b
 
 .PHONY: kvm-image-arm64
 kvm-image-arm64: installers/linux/kvm/Dockerfile.arm64  ## Convenient alias to build the docker container
-	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_AMD64) -f $< $(dir $<)
+	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
@@ -852,7 +852,21 @@ install-kvm-driver: out/docker-machine-driver-kvm2  ## Install KVM Driver
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
 
-out/docker-machine-driver-kvm2-aarch64: kvm-image-arm64
+out/docker-machine-driver-kvm2-arm64:
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_ARM64) || $(MAKE) kvm-image-arm64
+	$(call DOCKER,$(KVM_BUILD_IMAGE_ARM64),/usr/bin/make $@ COMMIT=$(COMMIT))
+else
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOARCH=arm64 \
+	go build \
+		-installsuffix "static" \
+		-ldflags="$(KVM2_LDFLAGS)" \
+		-tags "libvirt.1.3.1 without_lxc" \
+		-o $@ \
+		k8s.io/minikube/cmd/drivers/kvm
+endif
+	chmod +X $@
 
 out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
