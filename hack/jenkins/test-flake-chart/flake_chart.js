@@ -270,6 +270,7 @@ function displayEnvironmentChart(testData, environmentName) {
       return data !== undefined ? [
         data.flakeRate,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+          <b style="display: block">${name}</b><br>
           <b>${data.date.toString()}</b><br>
           <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
           <b>Hashes:</b><br>
