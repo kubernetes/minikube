@@ -45,6 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
 
+	"github.com/blang/semver"
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
@@ -1721,18 +1722,20 @@ func validateNotActiveRuntimeDisabled(ctx context.Context, t *testing.T, profile
 // validateVersionCmd asserts minikuve version command works fine
 func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 
-	t.Run("short", func(t *testing.T) { 
+	t.Run("short", func(t *testing.T) {
+		MaybeParallel(t)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--short"))
 		if err != nil {
 			t.Errorf("failed to get version --short: %v", err)
 		}
-		_ , err := semver.Make(rr.Stdout.String())
+		_, err = semver.Make(rr.Stdout.String())
 		if err != nil {
-			t.Errorf("failed to get a valid semver for minikube version --short:%s %v",rr.Output(),err)
+			t.Errorf("failed to get a valid semver for minikube version --short:%s %v", rr.Output(), err)
 		}
-	
-	}
-	t.Run("components", func(t *testing.T) { 
+	})
+
+	t.Run("components", func(t *testing.T) {
+		MaybeParallel(t)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--components"))
 		if err != nil {
 			t.Errorf("error version: %v", err)
@@ -1740,8 +1743,8 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 		got := rr.Stdout.String()
 		if !strings.Contains(got, "containerd") {
 			t.Error("expected to see containerd in the minikube version --packages")
-		}	
-	}
+		}
+	})
 
 }
 
