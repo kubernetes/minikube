@@ -48,6 +48,6 @@ if [ "$changes" != "" ]; then
 	git commit -m "Update generate-docs"
 
 	git remote add minikube-bot https://minikube-bot:"$1"@github.com/minikube-bot/minikube.git
-	git push -u minikube-bot $branch
-	gh pr create --base master --head minikube-bot:$branch --title "Update auto-generated docs and translations" --body "Committing changes resulting from \`make generate-docs\`"
+	git push -f minikube-bot $branch
+	gh pr create --base master --head minikube-bot:$branch --title "Update auto-generated docs and translations" --body "Committing changes resulting from \`make generate-docs\`\n\n${changes}"
 fi
