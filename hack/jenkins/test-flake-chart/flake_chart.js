@@ -1,19 +1,59 @@
 
 // Displays an error message to the UI. Any previous message will be erased.
 function displayError(message) {
-  console.error(message);
+  // Clear the body of all children.
+  while (document.body.firstChild) {
+    document.body.removeChild(document.body.firstChild);
+  }
+  const element = document.createElement("p");
+  element.innerText = "Error: " + message;
+  element.style.color = "red";
+  element.style.fontFamily = "Arial";
+  element.style.fontWeight = "bold";
+  element.style.margin = "5rem";
+  document.body.appendChild(element);
 }
 
 // Creates a generator that reads the response body one line at a time.
-async function* bodyByLinesIterator(response) {
-  // TODO: Replace this with something that actually reads the body line by line
-  // (since the file can be big).
-  const lines = (await response.text()).split("\n");
-  for (let line of lines) {
-    // Skip any empty lines (most likely at the end).
-    if (line !== "") {
-      yield line;
+async function* bodyByLinesIterator(response, updateProgress) {
+  const utf8Decoder = new TextDecoder('utf-8');
+  const reader = response.body.getReader();
+
+  const re = /\n|\r|\r\n/gm;
+  let pendingText = "";
+
+  let readerDone = false;
+  while (!readerDone) {
+    // Read a chunk.
+    const { value: chunk, done } = await reader.read();
+    readerDone = done;
+    if (!chunk) {
+      continue;
     }
+    // Notify the listener of progress.
+    updateProgress(chunk.length);
+    const decodedChunk = utf8Decoder.decode(chunk);
+
+    let startIndex = 0;
+    let result;
+    // Keep processing until there are no more new lines.
+    while ((result = re.exec(decodedChunk)) !== null) {
+      const text = decodedChunk.substring(startIndex, result.index);
+      startIndex = re.lastIndex;
+
+      const line = pendingText + text;
+      pendingText = "";
+      if (line !== "") {
+        yield line;
+      }
+    }
+    // Any text after the last new line is appended to any pending text.
+    pendingText += decodedChunk.substring(startIndex);
+  }
+
+  // If there is any text remaining, return it.
+  if (pendingText !== "") {
+    yield pendingText;
   }
 }
 
@@ -41,10 +81,31 @@ async function loadTestData() {
     throw `Failed to fetch data from GCS bucket. Error: ${responseText}`;
   }
 
-  const lines = bodyByLinesIterator(response);
+  const box = document.createElement("div");
+  box.style.width = "100%";
+  const innerBox = document.createElement("div");
+  innerBox.style.margin = "5rem";
+  box.appendChild(innerBox);
+  const progressBarPrompt = document.createElement("h1");
+  progressBarPrompt.style.fontFamily = "Arial";
+  progressBarPrompt.style.textAlign = "center";
+  progressBarPrompt.innerText = "Downloading data...";
+  innerBox.appendChild(progressBarPrompt);
+  const progressBar = document.createElement("progress");
+  progressBar.setAttribute("max", Number(response.headers.get('Content-Length')));
+  progressBar.style.width = "100%";
+  innerBox.appendChild(progressBar);
+  document.body.appendChild(box);
+
+  let readBytes = 0;
+  const lines = bodyByLinesIterator(response, value => {
+    readBytes += value;
+    progressBar.setAttribute("value", readBytes);
+  });
   // Consume the header to ensure the data has the right number of fields.
   const header = (await lines.next()).value;
   if (header.split(",").length != 6) {
+    document.body.removeChild(box);
     throw `Fetched CSV data contains wrong number of fields. Expected: 6. Actual Header: "${header}"`;
   }
 
@@ -71,6 +132,7 @@ async function loadTestData() {
       duration: Number(splitLine[5]),
     });
   }
+  document.body.removeChild(box);
   if (testData.length == 0) {
     throw "Fetched CSV data is empty or poorly formatted.";
   }
