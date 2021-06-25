@@ -1724,7 +1724,7 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 
 	t.Run("short", func(t *testing.T) {
 		MaybeParallel(t)
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--short"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "--short"))
 		if err != nil {
 			t.Errorf("failed to get version --short: %v", err)
 		}
