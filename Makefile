@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 21
-VERSION_BUILD ?= 0-beta.0
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.21.0
+ISO_VERSION ?= v1.21.0-1623378770-11632
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -41,7 +41,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2020.02.12
-REGISTRY?=gcr.io/k8s-minikube
+REGISTRY ?= gcr.io/k8s-minikube
 
 # Get git commit id
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
@@ -75,8 +75,7 @@ GOLINT_GOGC ?= 100
 GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --enable gofmt,goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
-	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
-	  --skip-files "pkg/minikube/translate/translations.go|pkg/minikube/assets/assets.go"
+	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
 export GO111MODULE := on
 
@@ -131,13 +130,15 @@ MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 MINIKUBE_BUILD_TAGS :=
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 
-CMD_SOURCE_DIRS = cmd pkg
+CMD_SOURCE_DIRS = cmd pkg deploy/addons translations
 SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
-SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
+SOURCE_PACKAGES = ./cmd/... ./pkg/... ./deploy/addons/... ./translations/... ./test/...
 
-SOURCE_GENERATED = pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
 GOTEST_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep _test.go)
+ADDON_FILES = $(shell find "deploy/addons" -type f | grep -v "\.go")
+TRANSLATION_FILES = $(shell find "translations" -type f | grep -v "\.go")
+ASSET_FILES = $(ADDON_FILES) $(TRANSLATION_FILES)
 
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
@@ -196,7 +197,7 @@ ifneq ($(TEST_FILES),)
 	INTEGRATION_TESTS_TO_RUN := $(addprefix ./test/integration/, $(TEST_HELPERS) $(TEST_FILES))
 endif
 
-out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) go.mod
+out/minikube$(IS_EXE): $(SOURCE_FILES) $(ASSET_FILES) go.mod
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) /usr/bin/make $@)
 else
@@ -245,7 +246,7 @@ minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for
 
 eq = $(and $(findstring x$(1),x$(2)),$(findstring x$(2),x$(1)))
 
-out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
+out/minikube-%: $(SOURCE_FILES) $(ASSET_FILES)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -254,7 +255,7 @@ else
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
-out/minikube-linux-armv6: $(SOURCE_GENERATED) $(SOURCE_FILES)
+out/minikube-linux-armv6: $(SOURCE_FILES) $(ASSET_FILES)
 	$(Q)GOOS=linux GOARCH=arm GOARM=6 \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 
@@ -311,11 +312,11 @@ iso_in_docker:
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
-test-iso: $(SOURCE_GENERATED)
+test-iso:
 	go test -v $(INTEGRATION_TESTS_TO_RUN) --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
-test-pkg/%: $(SOURCE_GENERATED) ## Trigger packaging test
+test-pkg/%: ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
@@ -365,7 +366,7 @@ else
 endif
 
 .PHONY: test
-test: $(SOURCE_GENERATED) ## Trigger minikube test
+test: ## Trigger minikube test
 	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
 .PHONY: generate-docs
@@ -373,7 +374,7 @@ generate-docs: extract out/minikube ## Automatically generate commands documenta
 	out/minikube generate-docs --path ./site/content/en/docs/commands/ --test-path ./site/content/en/docs/contrib/tests.en.md --code-path ./site/content/en/docs/contrib/errorcodes.en.md
 
 .PHONY: gotest
-gotest: $(SOURCE_GENERATED) ## Trigger minikube test
+gotest: ## Trigger minikube test
 	$(if $(quiet),@echo "  TEST     $@")
 	$(Q)go test -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" $(MINIKUBE_TEST_FILES)
 
@@ -397,33 +398,6 @@ out/coverage.html: out/coverage.out
 .PHONY: extract 
 extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
-
-# Regenerates assets.go when template files have been updated
-pkg/minikube/assets/assets.go: $(shell find "deploy/addons" -type f)
-ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
-endif
-	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/go-bindata/go-bindata/...
-	$(if $(quiet),@echo "  GEN      $@")
-	$(Q)PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
-	$(Q)-gofmt -s -w $@
-	@#golint: Dns should be DNS (compat sed)
-	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
-	@#golint: Html should be HTML (compat sed)
-	@sed -i -e 's/Html/HTML/g' $@ && rm -f ./-e
-	@#golint: don't use underscores in Go names
-	@sed -i -e 's/SnapshotStorageK8sIo_volumesnapshot/SnapshotStorageK8sIoVolumesnapshot/g' $@ && rm -f ./-e
-
-pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
-ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
-endif
-	@which go-bindata >/dev/null 2>&1 || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/go-bindata/go-bindata/...
-	$(if $(quiet),@echo "  GEN      $@")
-	$(Q)PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
-	$(Q)-gofmt -s -w $@
-	@#golint: Json should be JSON (compat sed)
-	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
 cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
@@ -491,7 +465,7 @@ goimports: ## Run goimports and list the files differs from goimport's
 	@test -z "`goimports -l $(SOURCE_DIRS)`"
 
 .PHONY: golint
-golint: $(SOURCE_GENERATED) ## Run golint
+golint: ## Run golint
 	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: gocyclo
@@ -506,17 +480,17 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 # this one is meant for local use
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-lint: $(SOURCE_GENERATED)
+lint:
 	docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
 	golangci-lint run ${GOLINT_OPTIONS} --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" ./...
 else
-lint: $(SOURCE_GENERATED) out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
+lint: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
 endif
 
 # lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
-lint-ci: $(SOURCE_GENERATED) out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
+lint-ci: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
 	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
 	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
 
@@ -534,7 +508,7 @@ mdlint:
 verify-iso: # Make sure the current ISO exists in the expected bucket
 	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 
-out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") $(SOURCE_GENERATED)
+out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
 
@@ -663,7 +637,7 @@ release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
 
 .PHONY: check-release
-check-release: $(SOURCE_GENERATED) ## Execute go test
+check-release: ## Execute go test
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
@@ -705,6 +679,21 @@ KICBASE_ARCH = linux/arm64,linux/amd64
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
+
+.PHONY: local-kicbase
+local-kicbase: deploy/kicbase/auto-pause ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KICBASE_IMAGE_GCR) ./deploy/kicbase
+	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
+	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
+
+SED = sed -i
+ifeq ($(GOOS),darwin)
+	SED = sed -i ''
+endif
+
+.PHONY: local-kicbase-debug
+local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches source code to point to it
+	$(SED) 's|Version = .*|Version = \"$(KIC_VERSION)-$(COMMIT_SHORT)\"|;s|baseImageSHA = .*|baseImageSHA = \"\"|;s|gcrRepo = .*|gcrRepo = \"local/kicbase\"|;s|dockerhubRepo = .*|dockerhubRepo = \"local/kicbase\"|' pkg/drivers/kic/types.go
 
 .PHONY: push-kic-base-image 
 push-kic-base-image: deploy/kicbase/auto-pause docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
@@ -754,7 +743,7 @@ endif
 	docker push $(IMAGE)
 
 .PHONY: out/gvisor-addon
-out/gvisor-addon: $(SOURCE_GENERATED) ## Build gvisor addon
+out/gvisor-addon: ## Build gvisor addon
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
@@ -867,8 +856,7 @@ site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docs
 out/hugo/hugo:
 	mkdir -p out
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
-	go get golang.org/dl/go1.16 && go1.16 download
-	(cd out/hugo && go1.16 build --tags extended)
+	(cd out/hugo && go build --tags extended)
 
 .PHONY: site
 site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serve the documentation site to localhost
@@ -883,16 +871,16 @@ out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
 .PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work around for not passing the whole repo as docker context
-deploy/kicbase/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
+deploy/kicbase/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
 # auto pause binary to be used for ISO
-deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_GENERATED) $(SOURCE_FILES)
+deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
 
 .PHONY: deploy/addons/auto-pause/auto-pause-hook
-deploy/addons/auto-pause/auto-pause-hook: $(SOURCE_GENERATED) ## Build auto-pause hook addon
+deploy/addons/auto-pause/auto-pause-hook: ## Build auto-pause hook addon
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOOS=linux CGO_ENABLED=0 go build -a --ldflags '-extldflags "-static"' -tags netgo -installsuffix netgo -o $@ cmd/auto-pause/auto-pause-hook/main.go cmd/auto-pause/auto-pause-hook/config.go cmd/auto-pause/auto-pause-hook/certs.go
 

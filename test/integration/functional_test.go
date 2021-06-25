@@ -116,6 +116,7 @@ func TestFunctional(t *testing.T) {
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DryRun", validateDryRun},
+			{"InternationalLanguage", validateInternationalLanguage},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
 			{"LogsFileCmd", validateLogsFileCmd},
@@ -897,6 +898,32 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateInternationalLanguage asserts that the language used can be changed with environment variables
+func validateInternationalLanguage(ctx context.Context, t *testing.T, profile string) {
+	// dry-run mode should always be able to finish quickly (<5s)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
+	defer cancel()
+
+	// Too little memory!
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgs()...)
+	c := exec.CommandContext(mctx, Target(), startArgs...)
+	c.Env = append(os.Environ(), "LC_ALL=fr")
+
+	rr, err := Run(t, c)
+
+	wantCode := reason.ExInsufficientMemory
+	if rr.ExitCode != wantCode {
+		if HyperVDriver() {
+			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
+		} else {
+			t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+		}
+	}
+	if !strings.Contains(rr.Stdout.String(), "Utilisation du pilote") {
+		t.Errorf("dry-run output was expected to be in French. Expected \"Utilisation du pilote\", but not present in output:\n%s", rr.Stdout.String())
+	}
+}
+
 // validateCacheCmd tests functionality of cache command (cache add, delete, list)
 func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
@@ -1440,59 +1467,6 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	// trailing whitespace differs between native and external SSH clients, so let's trim it and call it a day
 	if strings.TrimSpace(rr.Stdout.String()) != want {
 		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
-	}
-}
-
-// cpTestMinikubePath is where the test file will be located in the Minikube instance
-func cpTestMinikubePath() string {
-	return "/home/docker/cp-test.txt"
-}
-
-// cpTestLocalPath is where the test file located in host os
-func cpTestLocalPath() string {
-	return filepath.Join(*testdataDir, "cp-test.txt")
-}
-
-func testCpCmd(ctx context.Context, t *testing.T, profile string, node string) {
-	srcPath := cpTestLocalPath()
-	dstPath := cpTestMinikubePath()
-
-	cpArgv := []string{"-p", profile, "cp", srcPath}
-	if node == "" {
-		cpArgv = append(cpArgv, dstPath)
-	} else {
-		cpArgv = append(cpArgv, fmt.Sprintf("%s:%s", node, dstPath))
-	}
-
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), cpArgv...))
-	if ctx.Err() == context.DeadlineExceeded {
-		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
-	}
-	if err != nil {
-		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
-	}
-
-	sshArgv := []string{"-p", profile, "ssh"}
-	if node != "" {
-		sshArgv = append(sshArgv, "-n", node)
-	}
-	sshArgv = append(sshArgv, fmt.Sprintf("sudo cat %s", dstPath))
-
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), sshArgv...))
-	if ctx.Err() == context.DeadlineExceeded {
-		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
-	}
-	if err != nil {
-		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
-	}
-
-	expected, err := ioutil.ReadFile(srcPath)
-	if err != nil {
-		t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
-	}
-
-	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
-		t.Errorf("/testdata/cp-test.txt content mismatch (-want +got):\n%s", diff)
 	}
 }
 

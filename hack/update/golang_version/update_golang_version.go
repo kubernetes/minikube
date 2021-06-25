@@ -45,29 +45,39 @@ const (
 
 var (
 	schema = map[string]update.Item{
-		".github/workflows/iso.yml": {
-			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/kic_image.yml": {
-			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
-			},
-		},
 		".github/workflows/build.yml": {
 			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/docs.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/time-to-k8s.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/translations.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/pr_verified.yaml": {
+			Replace: map[string]string{
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".travis.yml": {

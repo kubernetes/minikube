@@ -1,0 +1,20 @@
+name: "generate-docs"
+on:
+  push:
+    branches:
+      - master  
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: 1.16.4
+jobs:
+  generate-docs:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{env.GO_VERSION}}
+          stable: true
+      - name: gendocs
+        run: |
+          ./hack/generate_docs.sh ${{ secrets.MINIKUBE_BOT_PAT }}

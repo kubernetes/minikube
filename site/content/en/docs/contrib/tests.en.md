@@ -130,6 +130,9 @@ asserts that the dashboard command works
 #### validateDryRun
 asserts that the dry-run mode quickly exits with the right code
 
+#### validateInternationalLanguage
+asserts that the language used can be changed with environment variables
+
 #### validateCacheCmd
 tests functionality of cache command (cache add, delete, list)
 
@@ -252,6 +255,9 @@ tests the minikube node stop command
 
 #### validateStartNodeAfterStop
 tests the minikube node start command on an existing stopped node
+
+#### validateRestartKeepsNodes
+restarts minikube cluster and checks if the reported node list is unchanged
 
 #### validateStopMultiNodeCluster
 runs minikube stop on a multinode cluster

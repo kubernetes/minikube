@@ -55,6 +55,7 @@ func TestMultiNode(t *testing.T) {
 			{"CopyFile", validateCopyFileWithMultiNode},
 			{"StopNode", validateStopRunningNode},
 			{"StartAfterStop", validateStartNodeAfterStop},
+			{"RestartKeepsNodes", validateRestartKeepsNodes},
 			{"DeleteNode", validateDeleteNodeFromMultiNode},
 			{"StopMultiNode", validateStopMultiNodeCluster},
 			{"RestartMultiNode", validateRestartMultiNodeCluster},
@@ -255,6 +256,36 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
 	if err != nil {
 		t.Fatalf("failed to kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
+}
+
+// validateRestartKeepsNodes restarts minikube cluster and checks if the reported node list is unchanged
+func validateRestartKeepsNodes(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
+	}
+
+	nodeList := rr.Stdout.String()
+
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to run minikube stop. args %q : %v", rr.Command(), err)
+	}
+
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "start", "-p", profile, "--wait=true", "-v=8", "--alsologtostderr"))
+	if err != nil {
+		t.Errorf("failed to run minikube start. args %q : %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
+	}
+
+	restartedNodeList := rr.Stdout.String()
+	if nodeList != restartedNodeList {
+		t.Fatalf("reported node list is not the same after restart. Before restart: %s\nAfter restart: %s", nodeList, restartedNodeList)
 	}
 }
 

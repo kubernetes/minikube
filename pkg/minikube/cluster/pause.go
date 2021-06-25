@@ -47,12 +47,10 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 
 	// Disable the kubelet so it does not attempt to restart paused pods
 	sm := sysinit.New(r)
-	if err := sm.Disable("kubelet"); err != nil {
-		return ids, errors.Wrap(err, "kubelet disable")
-	}
+	klog.Info("kubelet running: ", sm.Active("kubelet"))
 
-	if err := sm.Stop("kubelet"); err != nil {
-		return ids, errors.Wrap(err, "kubelet stop")
+	if err := sm.DisableNow("kubelet"); err != nil {
+		return ids, errors.Wrap(err, "kubelet disable --now")
 	}
 
 	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Running, Namespaces: namespaces})
