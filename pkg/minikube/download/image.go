@@ -180,6 +180,9 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 	if !ok {
 		return nil, nil, errors.Wrap(err, "new ref")
 	}
+	// ErrBadName means img contains no digest
+	// It happens if its value is name:tag for example.
+	// In this case we want to give it a second chance and try to parse it one more time using name.NewTag(img)
 	tag, err := name.NewTag(img)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "new ref")
