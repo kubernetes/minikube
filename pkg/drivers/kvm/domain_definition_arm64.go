@@ -24,8 +24,8 @@ const domainTmpl = `
   <memory unit='MiB'>{{.Memory}}</memory>
   <vcpu>{{.CPU}}</vcpu>
   <features>
-    <apic/>
-    <pae/>
+	<acpi/>                                                                        
+    <gic version='3'/>   
     {{if .Hidden}}
     <kvm>
       <hidden state='on'/>
@@ -37,7 +37,10 @@ const domainTmpl = `
   {{.NUMANodeXML}}
   {{end}}
   </cpu>
+
   <os>
+ 	<loader readonly='yes' type='pflash'>/usr/share/AAVMF/AAVMF_CODE.fd</loader>
+    <nvram>/var/lib/libvirt/qemu/nvram/ubuntu_VARS.fd</nvram>  
     <type machine='virt-4.2' arch='aarch64'>hvm</type>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
