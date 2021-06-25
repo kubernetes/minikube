@@ -23,10 +23,12 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cni"
@@ -290,6 +292,30 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	return createNode(cc, kubeNodeName, existing)
 }
 
+func getCPUCount(drvName string) int {
+	if viper.GetString(cpus) != constants.MaxResources {
+		return viper.GetInt(cpus)
+	}
+
+	if !driver.IsKIC(drvName) {
+		ci, err := cpu.Counts(true)
+		if err != nil {
+			exit.Message(reason.Usage, "Unable to get CPU info: {{.err}}", out.V{"err": err})
+		}
+		return ci
+	}
+
+	si, err := oci.CachedDaemonInfo(drvName)
+	if err != nil {
+		si, err = oci.DaemonInfo(drvName)
+		if err != nil {
+			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+		}
+	}
+
+	return si.CPUs
+}
+
 func getMemorySize(cmd *cobra.Command, drvName string) int {
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
@@ -389,7 +415,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
 		Memory:                  getMemorySize(cmd, drvName),
-		CPUs:                    viper.GetInt(cpus),
+		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),
 		Driver:                  drvName,
 		ListenAddress:           viper.GetString(listenAddress),

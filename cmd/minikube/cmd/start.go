@@ -1030,39 +1030,33 @@ func validateRequestedMemorySize(req int, drvName string) {
 
 // validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
 func validateCPUCount(drvName string) {
-	var cpuCount int
-	if driver.BareMetal(drvName) {
+	var availableCPUs int
 
-		// Uses the gopsutil cpu package to count the number of logical cpu cores
+	cpuCount := getCPUCount(drvName)
+	isKIC := driver.IsKIC(drvName)
+
+	if isKIC {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			si, err = oci.DaemonInfo(drvName)
+			if err != nil {
+				exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+			}
+		}
+		availableCPUs = si.CPUs
+	} else {
 		ci, err := cpu.Counts(true)
 		if err != nil {
-			klog.Warningf("Unable to get CPU info: %v", err)
-		} else {
-			cpuCount = ci
+			exit.Message(reason.Usage, "Unable to get CPU info: {{.err}}", out.V{"err": err})
 		}
-	} else {
-		cpuCount = viper.GetInt(cpus)
+		availableCPUs = ci
 	}
 
-	si, err := oci.CachedDaemonInfo(drvName)
-	if err != nil {
-		out.Styled(style.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
-		si, err = oci.DaemonInfo(drvName)
-		if err != nil {
-			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
-		}
-
+	if cpuCount < minimumCPUS {
+		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
-	if viper.GetString(cpus) == constants.MaxResources {
-		cpuCount = si.CPUs
-		viper.Set(cpus, cpuCount)
-	}
-
-	validateMeetsMinimumCPURequirements(cpuCount)
-
-	if si.CPUs < cpuCount {
-
+	if availableCPUs < cpuCount {
 		if driver.IsDockerDesktop(drvName) {
 			out.Styled(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
 			if runtime.GOOS == "darwin" {
@@ -1074,11 +1068,11 @@ func validateCPUCount(drvName string) {
 			}
 		}
 
-		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": si.CPUs})
+		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": availableCPUs})
 	}
 
 	// looks good
-	if si.CPUs >= 2 {
+	if availableCPUs >= 2 {
 		return
 	}
 
@@ -1088,12 +1082,6 @@ func validateCPUCount(drvName string) {
 		exitIfNotForced(reason.RsrcInsufficientWindowsDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
 	} else {
 		exitIfNotForced(reason.RsrcInsufficientCores, "{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
-	}
-}
-
-func validateMeetsMinimumCPURequirements(cpuCount int) {
-	if cpuCount < minimumCPUS {
-		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 }
 
