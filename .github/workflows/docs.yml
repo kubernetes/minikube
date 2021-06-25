@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - master  
+  pull_request:
+    paths:
+      - "hack/generate_docs.sh"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: 1.16.4
