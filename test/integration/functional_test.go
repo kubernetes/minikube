@@ -105,8 +105,8 @@ func TestFunctional(t *testing.T) {
 				t.Fatalf("Unable to run more tests (deadline exceeded)")
 			}
 			if tc.name == "StartWithProxy" && runCorpProxy {
-				tc.name = "StartWithCorpProxy"
-				tc.validator = validateStartWithCorpProxy
+				tc.name = "StartWithCustomCerts"
+				tc.validator = validateStartWithCustomCerts
 			}
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
@@ -543,9 +543,9 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	startMinikubeWithProxy(ctx, t, profile, "HTTP_PROXY", srv.Addr)
 }
 
-// validateStartWithCorpProxy makes sure minikube start respects the HTTPS_PROXY environment variable
+// validateStartWithCustomCerts makes sure minikube start respects the HTTPS_PROXY environment variable
 // only runs on Github Actions for amd64 linux
-func validateStartWithCorpProxy(ctx context.Context, t *testing.T, profile string) {
+func validateStartWithCustomCerts(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	err := startCorpProxy(ctx, t)
 	if err != nil {
