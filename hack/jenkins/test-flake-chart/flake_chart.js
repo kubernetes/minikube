@@ -71,10 +71,31 @@ async function loadTestData() {
     throw `Failed to fetch data from GCS bucket. Error: ${responseText}`;
   }
 
-  const lines = bodyByLinesIterator(response, value => {});
+  const box = document.createElement("div");
+  box.style.width = "100%";
+  const innerBox = document.createElement("div");
+  innerBox.style.margin = "5rem";
+  box.appendChild(innerBox);
+  const progressBarPrompt = document.createElement("h1");
+  progressBarPrompt.style.fontFamily = "Arial";
+  progressBarPrompt.style.textAlign = "center";
+  progressBarPrompt.innerText = "Downloading data...";
+  innerBox.appendChild(progressBarPrompt);
+  const progressBar = document.createElement("progress");
+  progressBar.setAttribute("max", Number(response.headers.get('Content-Length')));
+  progressBar.style.width = "100%";
+  innerBox.appendChild(progressBar);
+  document.body.appendChild(box);
+
+  let readBytes = 0;
+  const lines = bodyByLinesIterator(response, value => {
+    readBytes += value;
+    progressBar.setAttribute("value", readBytes);
+  });
   // Consume the header to ensure the data has the right number of fields.
   const header = (await lines.next()).value;
   if (header.split(",").length != 6) {
+    document.body.removeChild(box);
     throw `Fetched CSV data contains wrong number of fields. Expected: 6. Actual Header: "${header}"`;
   }
 
@@ -101,6 +122,7 @@ async function loadTestData() {
       duration: Number(splitLine[5]),
     });
   }
+  document.body.removeChild(box);
   if (testData.length == 0) {
     throw "Fetched CSV data is empty or poorly formatted.";
   }
