@@ -96,7 +96,7 @@ check functionality of minikube after evaluating podman-env
 #### validateStartWithProxy
 makes sure minikube start respects the HTTP_PROXY environment variable
 
-#### validateStartWithCorpProxy
+#### validateStartWithCustomCerts
 makes sure minikube start respects the HTTPS_PROXY environment variable
 only runs on Github Actions for amd64 linux
 
