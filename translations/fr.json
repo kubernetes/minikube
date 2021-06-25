@@ -702,6 +702,7 @@
 	"Unable to find control plane": "Impossible de trouver le plan de contrôle",
 	"Unable to generate docs": "Impossible de générer des documents",
 	"Unable to generate the documentation. Please ensure that the path specified is a directory, exists \u0026 you have permission to write to it.": "Impossible de générer la documentation. Veuillez vous assurer que le chemin spécifié est un répertoire, existe \u0026 vous avez la permission d'y écrire.",
+	"Unable to get CPU info: {{.err}}": "",
 	"Unable to get bootstrapper: {{.error}}": "Impossible d'obtenir l'amorceur : {{.error}}",
 	"Unable to get command runner": "Impossible d'obtenir le lanceur de commandes",
 	"Unable to get control plane status: {{.error}}": "Impossible d'obtenir l'état du plan de contrôle : {{.error}}",
