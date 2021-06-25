@@ -5,15 +5,45 @@ function displayError(message) {
 }
 
 // Creates a generator that reads the response body one line at a time.
-async function* bodyByLinesIterator(response) {
-  // TODO: Replace this with something that actually reads the body line by line
-  // (since the file can be big).
-  const lines = (await response.text()).split("\n");
-  for (let line of lines) {
-    // Skip any empty lines (most likely at the end).
-    if (line !== "") {
-      yield line;
+async function* bodyByLinesIterator(response, updateProgress) {
+  const utf8Decoder = new TextDecoder('utf-8');
+  const reader = response.body.getReader();
+
+  const re = /\n|\r|\r\n/gm;
+  let pendingText = "";
+
+  let readerDone = false;
+  while (!readerDone) {
+    // Read a chunk.
+    const { value: chunk, done } = await reader.read();
+    readerDone = done;
+    if (!chunk) {
+      continue;
     }
+    // Notify the listener of progress.
+    updateProgress(chunk.length);
+    const decodedChunk = utf8Decoder.decode(chunk);
+
+    let startIndex = 0;
+    let result;
+    // Keep processing until there are no more new lines.
+    while ((result = re.exec(decodedChunk)) !== null) {
+      const text = decodedChunk.substring(startIndex, result.index);
+      startIndex = re.lastIndex;
+
+      const line = pendingText + text;
+      pendingText = "";
+      if (line !== "") {
+        yield line;
+      }
+    }
+    // Any text after the last new line is appended to any pending text.
+    pendingText += decodedChunk.substring(startIndex);
+  }
+
+  // If there is any text remaining, return it.
+  if (pendingText !== "") {
+    yield pendingText;
   }
 }
 
@@ -41,7 +71,7 @@ async function loadTestData() {
     throw `Failed to fetch data from GCS bucket. Error: ${responseText}`;
   }
 
-  const lines = bodyByLinesIterator(response);
+  const lines = bodyByLinesIterator(response, value => {});
   // Consume the header to ensure the data has the right number of fields.
   const header = (await lines.next()).value;
   if (header.split(",").length != 6) {
