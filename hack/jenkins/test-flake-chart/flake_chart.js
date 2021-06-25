@@ -172,21 +172,34 @@ function parseUrlQuery(query) {
   }));
 }
 
-async function init() {
-  google.charts.load('current', { 'packages': ['corechart'] });
-  let testData;
-  try {
-    // Wait for Google Charts to load, and for test data to load.
-    // Only store the test data (at index 1) into `testData`.
-    testData = (await Promise.all([
-      new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
-      loadTestData()
-    ]))[1];
-  } catch (err) {
-    displayError(err);
-    return;
-  }
+// Takes a set of test runs (all of the same test), and aggregates them into one element per date.
+function aggregateRuns(testRuns) {
+  return testRuns
+    // Group runs by the date it ran.
+    .groupBy(run => run.date.getTime())
+    // Sort by run date, past to future.
+    .sort((a, b) => a[0].date - b[0].date)
+    // Map each group to all variables need to format the rows.
+    .map(tests => ({
+      date: tests[0].date, // Get one of the dates from the tests (which will all be the same).
+      flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
+      duration: tests.map(test => test.duration).average(), // Compute average duration of runs.
+      commitHashes: tests.map(test => ({ // Take all hashes, statuses, and durations of tests in this group.
+        hash: test.commit,
+        status: test.status,
+        duration: test.duration
+      })).groupBy(run => run.hash).map(runsWithSameHash => ({
+        hash: runsWithSameHash[0].hash,
+        failures: runsWithSameHash.map(run => run.status === testStatus.FAILED ? 1 : 0).sum(),
+        runs: runsWithSameHash.length,
+        duration: runsWithSameHash.map(run => run.duration).average(),
+      }))
+    }));
+}
 
+const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
+
+function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   const data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
   data.addColumn('number', 'Flake Percentage');
@@ -194,36 +207,12 @@ async function init() {
   data.addColumn('number', 'Duration');
   data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
 
-  const query = parseUrlQuery(window.location.search);
-  const desiredTest = query.test || "", desiredEnvironment = query.env || "";
-
-  const groups = testData
+  const testRuns = testData
     // Filter to only contain unskipped runs of the requested test and requested environment.
-    .filter(test => test.name === desiredTest && test.environment === desiredEnvironment && test.status !== testStatus.SKIPPED)
-    .groupBy(test => test.date.getTime());
-  
-  const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
+    .filter(test => test.name === testName && test.environment === environmentName && test.status !== testStatus.SKIPPED);
 
   data.addRows(
-    groups
-      // Sort by run date, past to future.
-      .sort((a, b) => a[0].date - b[0].date)
-      // Map each group to all variables need to format the rows.
-      .map(tests => ({
-        date: tests[0].date, // Get one of the dates from the tests (which will all be the same).
-        flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
-        duration: tests.map(test => test.duration).average(), // Compute average duration of runs.
-        commitHashes: tests.map(test => ({ // Take all hashes, statuses, and durations of tests in this group.
-          hash: test.commit,
-          status: test.status,
-          duration: test.duration
-        })).groupBy(run => run.hash).map(runsWithSameHash => ({
-          hash: runsWithSameHash[0].hash,
-          failures: runsWithSameHash.map(run => run.status === testStatus.FAILED ? 1 : 0).sum(),
-          runs: runsWithSameHash.length,
-          duration: runsWithSameHash.map(run => run.duration).average(),
-        }))
-      }))
+    aggregateRuns(testRuns)
       .map(groupData => [
         groupData.date,
         groupData.flakeRate,
@@ -231,20 +220,20 @@ async function init() {
           <b>${groupData.date.toString()}</b><br>
           <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
           <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, desiredEnvironment)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+          ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
         </div>`,
         groupData.duration,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${groupData.date.toString()}</b><br>
           <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
           <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, desiredEnvironment)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
+          ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
         </div>`,
       ])
   );
 
   const options = {
-    title: `Flake rate and duration by day of ${desiredTest} on ${desiredEnvironment}`,
+    title: `Flake rate and duration by day of ${testName} on ${environmentName}`,
     width: window.innerWidth,
     height: window.innerHeight,
     pointSize: 10,
@@ -262,6 +251,136 @@ async function init() {
   };
   const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
   chart.draw(data, options);
+}
+
+function createRecentFlakePercentageTable(recentFlakePercentage, environmentName) {
+  const createCell = (elementType, text) => {
+    const element = document.createElement(elementType);
+    element.innerHTML = text;
+    return element;
+  }
+
+  const table = document.createElement("table");
+  const tableHeaderRow = document.createElement("tr");
+  tableHeaderRow.appendChild(createCell("th", "Test Name")).style.textAlign = "left";
+  tableHeaderRow.appendChild(createCell("th", "Recent Flake Percentage"));
+  table.appendChild(tableHeaderRow);
+  for (const {testName, flakeRate} of recentFlakePercentage){
+    const row = document.createElement("tr");
+    row.appendChild(createCell("td", `<a href="${window.location.pathname}?env=${environmentName}&test=${testName}">${testName}</a>`));
+    row.appendChild(createCell("td", `${flakeRate.toFixed(2)}%`)).style.textAlign = "right";
+    table.appendChild(row);
+  }
+  return table;
+}
+
+function displayEnvironmentChart(testData, environmentName) {
+  // Number of days to use to look for "flaky-est" tests.
+  const dateRange = 15;
+  // Number of tests to display in chart.
+  const topFlakes = 10;
+
+  const testRuns = testData
+    // Filter to only contain unskipped runs of the requested test and requested environment.
+    .filter(test => test.environment === environmentName && test.status !== testStatus.SKIPPED)
+    .groupBy(test => test.name);
+
+  const aggregatedRuns = new Map(testRuns.map(test => [
+    test[0].name,
+    new Map(aggregateRuns(test)
+      .map(runDate => [ runDate.date.getTime(), runDate ]))]));
+  const uniqueDates = new Set();
+  for (const [_, runDateMap] of aggregatedRuns) {
+    for (const [dateTime, _] of runDateMap) {
+      uniqueDates.add(dateTime);
+    }
+  }
+  const orderedDates = Array.from(uniqueDates).sort();
+  const recentDates = orderedDates.slice(-dateRange);
+  
+  const recentFlakePercentage = Array.from(aggregatedRuns).map(([testName, data]) => {
+    const {flakeCount, totalCount} = recentDates.map(date => {
+      const dateInfo = data.get(date);
+      return dateInfo === undefined ? null : {
+        flakeRate: dateInfo.flakeRate,
+        runs: dateInfo.commitHashes.length
+      };
+    }).filter(dateInfo => dateInfo != null)
+      .reduce(({flakeCount, totalCount}, {flakeRate, runs}) => ({
+        flakeCount: flakeRate * runs + flakeCount,
+        totalCount: runs + totalCount
+      }), {flakeCount: 0, totalCount: 0});
+    return {
+      testName,
+      flakeRate: totalCount === 0 ? 0 : flakeCount / totalCount,
+    };
+  }).sort((a, b) => b.flakeRate - a.flakeRate);
+
+  const recentTopFlakes = recentFlakePercentage
+    .slice(0, topFlakes)
+    .map(({testName}) => testName);
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('date', 'Date');
+  for (const name of recentTopFlakes) {
+    data.addColumn('number', `Flake Percentage - ${name}`);
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+  }
+  data.addRows(
+    orderedDates.map(dateTime => [new Date(dateTime)].concat(recentTopFlakes.map(name => {
+      const data = aggregatedRuns.get(name).get(dateTime);
+      return data !== undefined ? [
+        data.flakeRate,
+        `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+          <b style="display: block">${name}</b><br>
+          <b>${data.date.toString()}</b><br>
+          <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
+          <b>Hashes:</b><br>
+          ${data.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+        </div>`
+      ] : [null, null];
+    })).flat())
+  );
+  const options = {
+    title: `Flake rate by day of top ${topFlakes} of recent test flakiness (past ${dateRange} days) on ${environmentName}`,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    pointSize: 10,
+    pointShape: "circle",
+    vAxes: {
+      0: { title: "Flake rate", minValue: 0, maxValue: 100 },
+    },
+    tooltip: { trigger: "selection", isHtml: true }
+  };
+  const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+  chart.draw(data, options);
+
+  document.body.appendChild(createRecentFlakePercentageTable(recentFlakePercentage, environmentName));
+}
+
+async function init() {
+  google.charts.load('current', { 'packages': ['corechart'] });
+  let testData;
+  try {
+    // Wait for Google Charts to load, and for test data to load.
+    // Only store the test data (at index 1) into `testData`.
+    testData = (await Promise.all([
+      new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
+      loadTestData()
+    ]))[1];
+  } catch (err) {
+    displayError(err);
+    return;
+  }
+
+  const query = parseUrlQuery(window.location.search);
+  const desiredTest = query.test, desiredEnvironment = query.env || "";
+
+  if (desiredTest === undefined) {
+    displayEnvironmentChart(testData, desiredEnvironment);
+  } else {
+    displayTestAndEnvironmentChart(testData, desiredTest, desiredEnvironment);
+  }
 }
 
 init();
