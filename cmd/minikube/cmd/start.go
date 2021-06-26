@@ -1513,5 +1513,5 @@ func exitGuestProvision(err error) {
 	if errors.Cause(err) == oci.ErrGetSSHPortContainerNotRunning {
 		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited prematurely after it was created, consider investigating Docker's performance/health.")
 	}
-	exit.Error(reason.GuestProvision, "error provisioning host", err)
+	exit.Error(reason.GuestProvision, "error provisioning guest", err)
 }
