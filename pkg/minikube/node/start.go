@@ -105,12 +105,19 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
-	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
+	// there is no external "host", if running locally or on a remote VM
+	addHostAlias := !driver.BareMetal(starter.Cfg.Driver) && !driver.IsSSH(starter.Cfg.Driver)
+
 	hostIP, err := cluster.HostIP(starter.Host, starter.Cfg.Name)
 	if err != nil {
 		klog.Errorf("Unable to get host IP: %v", err)
-	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
-		klog.Errorf("Unable to add host alias: %v", err)
+	}
+
+	if addHostAlias {
+		// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
+		if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
+			klog.Errorf("Unable to add host alias: %v", err)
+		}
 	}
 
 	var bs bootstrapper.Bootstrapper
@@ -141,14 +148,16 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 		}
 
-		// not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds
-		go func() {
-			// inject {"host.minikube.internal": hostIP} record into CoreDNS
-			if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
-				klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
-				out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
-			}
-		}()
+		if addHostAlias {
+			// not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds
+			go func() {
+				// inject {"host.minikube.internal": hostIP} record into CoreDNS
+				if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
+					klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
+					out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
+				}
+			}()
+		}
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
