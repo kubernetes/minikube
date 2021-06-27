@@ -215,39 +215,25 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
 
-	memcgSwap := HasMemorySwapCgroup()
-	memcg := HasMemoryCgroup()
-
-	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
-	var virtualization string
 	if p.OCIBinary == Podman { // enable execing in /var
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
-
-		if memcgSwap {
-			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-		}
-
-		if memcg {
-			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		}
-
-		virtualization = "podman" // VIRTUALIZATION_PODMAN
 	}
 	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
+	}
 
-		if memcg {
-			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		}
-		if memcgSwap {
-			// Disable swap by setting the value to match
-			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-		}
+	memcgSwap := HasMemorySwapCgroup()
+	memcg := HasMemoryCgroup()
 
-		virtualization = "docker" // VIRTUALIZATION_DOCKER
+	if memcg {
+		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+	}
+	if memcgSwap {
+		// Disable swap by setting the value to match
+		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 	}
 
 	cpuCfsPeriod := HasCPUCFSPeriod()
@@ -255,6 +241,15 @@ func CreateContainerNode(p CreateParams) error {
 
 	if cpuCfsPeriod && cpuCfsQuota {
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
+	}
+
+	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+	var virtualization string
+	if p.OCIBinary == Podman {
+		virtualization = "podman" // VIRTUALIZATION_PODMAN
+	}
+	if p.OCIBinary == Docker {
+		virtualization = "docker" // VIRTUALIZATION_DOCKER
 	}
 
 	runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", "container", virtualization))
