@@ -70,20 +70,21 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}
 
 	return kic.NewDriver(kic.Config{
-		ClusterName:       cc.Name,
-		MachineName:       config.MachineName(cc, n),
-		StorePath:         localpath.MiniPath(),
-		ImageDigest:       cc.KicBaseImage,
-		Mounts:            mounts,
-		CPU:               cc.CPUs,
-		Memory:            cc.Memory,
-		OCIBinary:         oci.Docker,
-		APIServerPort:     cc.Nodes[0].Port,
-		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
-		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
-		ExtraArgs:         extraArgs,
-		Network:           cc.Network,
-		ListenAddress:     cc.ListenAddress,
+		ClusterName:         cc.Name,
+		MachineName:         config.MachineName(cc, n),
+		StorePath:           localpath.MiniPath(),
+		ImageDigest:         cc.KicBaseImage,
+		Mounts:              mounts,
+		CPU:                 cc.CPUs,
+		Memory:              cc.Memory,
+		OCIBinary:           oci.Docker,
+		APIServerPort:       cc.Nodes[0].Port,
+		KubernetesVersion:   cc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:    cc.KubernetesConfig.ContainerRuntime,
+		ExtraArgs:           extraArgs,
+		Network:             cc.Network,
+		ListenAddress:       cc.ListenAddress,
+		ListenAPIServerPort: cc.ListenAPIServerPort,
 	}), nil
 }
 
