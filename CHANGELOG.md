@@ -1,5 +1,76 @@
 # Release Notes
 
+## Version 1.22.0-beta.0 - 2021-06-28
+
+Features:
+
+* Add auto pause on arm64 image [#11743](https://github.com/kubernetes/minikube/pull/11743)
+* Addon list: Add info on each addon's maintainer  [#11753](https://github.com/kubernetes/minikube/pull/11753)
+* Add ability to pass 'max' value to memory and cpus flags [#11692](https://github.com/kubernetes/minikube/pull/11692)
+
+Bugs:
+
+* Fix --base-image caching for images specified by name:tag [#11603](https://github.com/kubernetes/minikube/pull/11603)
+* Fix embed-certs global config [#11576](https://github.com/kubernetes/minikube/pull/11576)
+* Fix a download link to use arm64 instead of amd64 [#11653](https://github.com/kubernetes/minikube/pull/11653)
+* Move daemon cache check before file cache check [#11690](https://github.com/kubernetes/minikube/pull/11690)
+* Move node config deletion out of drainNode and into Delete [#11731](https://github.com/kubernetes/minikube/pull/11731)
+* gcp-auth: do not override existing environment variables in pods [#11665](https://github.com/kubernetes/minikube/pull/11665)
+
+Minor improvements:
+
+* Allow running amd64 binary on M1 [#11674](https://github.com/kubernetes/minikube/pull/11674)
+* Upgrade containerd config [#11632](https://github.com/kubernetes/minikube/pull/11632)
+* Improve French locale [#11728](https://github.com/kubernetes/minikube/pull/11728)
+* Do not return an error from Systemd.ForceStop(svc) if svc is already stopped [#11667](https://github.com/kubernetes/minikube/pull/11667)
+* Let windows users use the LC_ALL env var to set locale [#11721](https://github.com/kubernetes/minikube/pull/11721)
+* Remove unused config options [#11668](https://github.com/kubernetes/minikube/pull/11668)
+* Fix intersected log boxes when running with --alsologtostderr [#11694](https://github.com/kubernetes/minikube/pull/11694)
+* Change registery_mirror to registery-mirror [#11678](https://github.com/kubernetes/minikube/pull/11678)
+
+Version Upgrades:
+
+* lib: Upgrade docker go module from 19.03 to 20.10 [#11726](https://github.com/kubernetes/minikube/pull/11726)
+* bump k8s lib to v1.21.2 [#11720](https://github.com/kubernetes/minikube/pull/11720)
+* ISO: Upgrade podman to 3.1.2 [#11704](https://github.com/kubernetes/minikube/pull/11704)
+* Bump google.golang.org/api from 0.47.0 to 0.48.0 [#11646](https://github.com/kubernetes/minikube/pull/11646)
+* Bump github.com/hashicorp/go-getter from 1.5.2 to 1.5.4 [#11719](https://github.com/kubernetes/minikube/pull/11719)
+* Bump github.com/spf13/viper from 1.7.1 to 1.8.0 [#11714](https://github.com/kubernetes/minikube/pull/11714)
+* Upgrade Buildroot to 2021.02 LTS with Linux 4.19 [#11688](https://github.com/kubernetes/minikube/pull/11688)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andriy Dzikh
+- Daehyeok Mun
+- Dongjoon Hyun
+- Felipe Crescencio de Oliveira
+- Ilya Zuyev
+- JacekDuszenko
+- Jeff MAURY
+- Medya Ghazizadeh
+- Peixuan Ding
+- RA489
+- Sharif Elgamal
+- Steven Powell
+- Vishal Jain
+- zhangdb-git
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (63 comments)
+- sharifelgamal (9 comments)
+- ilya-zuyev (6 comments)
+- andriyDev (3 comments)
+- spowelljr (3 comments)
+- afbjorklund (1 comments)
+- prezha (1 comments)
+- tharun208 (1 comments)
+
+Thank you to our triage members for this release!
+
 ## Version 1.21.0 - 2021-06-10
 * add more polish translations [#11587](https://github.com/kubernetes/minikube/pull/11587)
 * Modify MetricsServer to use v1 api version (instead of v1beta1). [#11584](https://github.com/kubernetes/minikube/pull/11584)
