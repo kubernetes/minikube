@@ -22,6 +22,8 @@ import (
 	"path"
 	"runtime"
 
+	"k8s.io/minikube/pkg/minikube/detect"
+
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -70,7 +72,7 @@ func Binary(binary, version, osName, archName string) (string, error) {
 		return "", errors.Wrapf(err, "download failed: %s", url)
 	}
 
-	if osName == runtime.GOOS && archName == runtime.GOARCH {
+	if osName == runtime.GOOS && archName == detect.EffectiveArch() {
 		if err = os.Chmod(targetFilepath, 0755); err != nil {
 			return "", errors.Wrapf(err, "chmod +x %s", targetFilepath)
 		}
