@@ -1030,56 +1030,49 @@ func validateRequestedMemorySize(req int, drvName string) {
 
 // validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
 func validateCPUCount(drvName string) {
-	var cpuCount int
-	if driver.BareMetal(drvName) {
+	var availableCPUs int
 
-		// Uses the gopsutil cpu package to count the number of logical cpu cores
+	cpuCount := getCPUCount(drvName)
+	isKIC := driver.IsKIC(drvName)
+
+	if isKIC {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			si, err = oci.DaemonInfo(drvName)
+			if err != nil {
+				exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+			}
+		}
+		availableCPUs = si.CPUs
+	} else {
 		ci, err := cpu.Counts(true)
 		if err != nil {
-			klog.Warningf("Unable to get CPU info: %v", err)
-		} else {
-			cpuCount = ci
+			exit.Message(reason.Usage, "Unable to get CPU info: {{.err}}", out.V{"err": err})
 		}
-	} else {
-		cpuCount = viper.GetInt(cpus)
+		availableCPUs = ci
 	}
 
 	if cpuCount < minimumCPUS {
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
-	if !driver.IsKIC((drvName)) {
-		return
-	}
-
-	si, err := oci.CachedDaemonInfo(drvName)
-	if err != nil {
-		out.Styled(style.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
-		si, err = oci.DaemonInfo(drvName)
-		if err != nil {
-			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
-		}
-
-	}
-
-	if si.CPUs < cpuCount {
-
+	if availableCPUs < cpuCount {
 		if driver.IsDockerDesktop(drvName) {
 			out.Styled(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
 			if runtime.GOOS == "darwin" {
-				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`, out.V{"driver_name": drvName})
+				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`)
 			}
 			if runtime.GOOS == "windows" {
 				out.String("\n\t")
-				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`, out.V{"driver_name": drvName})
+				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`)
 			}
 		}
 
-		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": si.CPUs})
+		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": availableCPUs})
 	}
 
 	// looks good
-	if si.CPUs >= 2 {
+	if availableCPUs >= 2 {
 		return
 	}
 
@@ -1236,11 +1229,30 @@ func validateChangedMemoryFlags(drvName string) {
 	if !driver.HasResourceLimits(drvName) {
 		out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 	}
-	req, err := util.CalculateSizeInMB(viper.GetString(memory))
-	if err != nil {
-		exitIfNotForced(reason.Usage, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+	var req int
+	var err error
+	memString := viper.GetString(memory)
+	if memString == constants.MaxResources {
+		sysLimit, containerLimit, err := memoryLimits(drvName)
+		if err != nil {
+			klog.Warningf("Unable to query memory limits: %+v", err)
+		}
+		req = noLimitMemory(sysLimit, containerLimit)
+	} else {
+		req, err = util.CalculateSizeInMB(memString)
+		if err != nil {
+			exitIfNotForced(reason.Usage, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": memString, "error": err})
+		}
 	}
 	validateRequestedMemorySize(req, drvName)
+}
+
+func noLimitMemory(sysLimit int, containerLimit int) int {
+	if containerLimit != 0 {
+		return containerLimit
+	}
+	// Recommend 1GB to handle OS/VM overhead
+	return sysLimit - 1024
 }
 
 // This function validates if the --registry-mirror
