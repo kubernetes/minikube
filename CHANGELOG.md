@@ -30,12 +30,7 @@ Minor improvements:
 
 Version Upgrades:
 
-* lib: Upgrade docker go module from 19.03 to 20.10 [#11726](https://github.com/kubernetes/minikube/pull/11726)
-* bump k8s lib to v1.21.2 [#11720](https://github.com/kubernetes/minikube/pull/11720)
 * ISO: Upgrade podman to 3.1.2 [#11704](https://github.com/kubernetes/minikube/pull/11704)
-* Bump google.golang.org/api from 0.47.0 to 0.48.0 [#11646](https://github.com/kubernetes/minikube/pull/11646)
-* Bump github.com/hashicorp/go-getter from 1.5.2 to 1.5.4 [#11719](https://github.com/kubernetes/minikube/pull/11719)
-* Bump github.com/spf13/viper from 1.7.1 to 1.8.0 [#11714](https://github.com/kubernetes/minikube/pull/11714)
 * Upgrade Buildroot to 2021.02 LTS with Linux 4.19 [#11688](https://github.com/kubernetes/minikube/pull/11688)
 
 For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
