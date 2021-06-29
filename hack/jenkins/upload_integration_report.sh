@@ -48,6 +48,13 @@ SUMMARY_OUT="$ARTIFACTS/summary.txt"
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
 
-if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
-  ./test-flake-chart/upload_tests.sh "${SUMMARY_OUT}"
-fi
+FINISHED_ENVIRONMENTS="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/finished_environments_${ROOT_JOB_ID}.txt"
+# Ensure STARTED_ENVIRONMENTS exists (but don't clobber)
+< /dev/null gsutil cp -n - "${STARTED_ENVIRONMENTS}"
+# Copy the job name to APPEND_TMP
+APPEND_TMP="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/$(basename $(mktemp))"
+echo "${JOB_NAME}"\
+  | gsutil cp - "${APPEND_TMP}"
+# Append
+gsutil compose "${STARTED_ENVIRONMENTS}" "${APPEND_TMP}" "${STARTED_ENVIRONMENTS}"
+gsutil rm "${APPEND_TMP}"

@@ -142,6 +142,17 @@ fi
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
 
+STARTED_ENVIRONMENTS="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/started_environments_${ROOT_JOB_ID}.txt"
+# Ensure STARTED_ENVIRONMENTS exists (but don't clobber)
+< /dev/null gsutil cp -n - "${STARTED_ENVIRONMENTS}"
+# Copy the job name to APPEND_TMP
+APPEND_TMP="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/$(basename $(mktemp))"
+echo "${JOB_NAME}"\
+  | gsutil cp - "${APPEND_TMP}"
+# Append
+gsutil compose "${STARTED_ENVIRONMENTS}" "${APPEND_TMP}" "${STARTED_ENVIRONMENTS}"
+gsutil rm "${APPEND_TMP}"
+
 echo
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
@@ -441,11 +452,17 @@ if [ -z "${EXTERNAL}" ]; then
   gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
   echo ">> uploading ${SUMMARY_OUT}"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-  if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
-    ./test-flake-chart/upload_tests.sh "${SUMMARY_OUT}"
-  elif [[ "${JOB_NAME}" == "Docker_Linux" || "${JOB_NAME}" == "Docker_Linux_containerd" || "${JOB_NAME}" == "KVM_Linux" || "${JOB_NAME}" == "KVM_Linux_containerd" ]]; then
-    ./test-flake-chart/report_flakes.sh "${MINIKUBE_LOCATION}" "${SUMMARY_OUT}" "${JOB_NAME}"
-  fi
+
+  FINISHED_ENVIRONMENTS="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/finished_environments_${ROOT_JOB_ID}.txt"
+  # Ensure STARTED_ENVIRONMENTS exists (but don't clobber)
+  < /dev/null gsutil cp -n - "${STARTED_ENVIRONMENTS}"
+  # Copy the job name to APPEND_TMP
+  APPEND_TMP="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/$(basename $(mktemp))"
+  echo "${JOB_NAME}"\
+    | gsutil cp - "${APPEND_TMP}"
+  # Append
+  gsutil compose "${STARTED_ENVIRONMENTS}" "${APPEND_TMP}" "${STARTED_ENVIRONMENTS}"
+  gsutil rm "${APPEND_TMP}"
 else 
   # Otherwise, put the results in a predictable spot so the upload job can find them
   REPORTS_PATH=test_reports
