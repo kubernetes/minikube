@@ -74,7 +74,9 @@ var (
 
 	// minikube failed to create a new Docker Machine api client
 	NewAPIClient = Kind{ID: "MK_NEW_APICLIENT", ExitCode: ExProgramError}
-	// minikube could not enable an addon, e.g dashboard addon
+	// minikube could not disable an addon, e.g. dashboard addon
+	InternalAddonDisable = Kind{ID: "MK_ADDON_DISABLE", ExitCode: ExProgramError}
+	// minikube could not enable an addon, e.g. dashboard addon
 	InternalAddonEnable = Kind{ID: "MK_ADDON_ENABLE", ExitCode: ExProgramError}
 	// minikube failed to update internal configuration, such as the cached images config map
 	InternalAddConfig = Kind{ID: "MK_ADD_CONFIG", ExitCode: ExProgramError}
@@ -96,12 +98,8 @@ var (
 	InternalConfigView = Kind{ID: "MK_CONFIG_VIEW", ExitCode: ExProgramError}
 	// minikybe failed to delete an internal configuration, such as a cached image
 	InternalDelConfig = Kind{ID: "MK_DEL_CONFIG", ExitCode: ExProgramError}
-	// minikube failed to disable a minikube addon
-	InternalDisable = Kind{ID: "MK_DISABLE", ExitCode: ExProgramError}
 	// minikube failed to generate script to activate minikube docker-env
 	InternalDockerScript = Kind{ID: "MK_DOCKER_SCRIPT", ExitCode: ExProgramError}
-	// minkube failed to enable a minikube addon
-	InternalEnable = Kind{ID: "MK_ENABLE", ExitCode: ExProgramError}
 	// an error occurred when viper attempted to bind flags to configuration
 	InternalBindFlags = Kind{ID: "MK_BIND_FLAGS", ExitCode: ExProgramError}
 	// an error occurred when setting cofniguration flags (currently not in use)
