@@ -97,6 +97,11 @@ func setMaxParallelism() {
 	// Each "minikube start" consumes up to 2 cores, though the average usage is somewhat lower
 	limit := int(math.Floor(float64(maxp) / 1.75))
 
+	// Windows tests were failing from timeouts due to too much parallelization
+	if runtime.GOOS == "windows" {
+		limit = int(limit / 2)
+	}
+
 	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", maxp, limit)
 	if err := flag.Set("test.parallel", strconv.Itoa(limit)); err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to set test.parallel: %v\n", err)
