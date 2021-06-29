@@ -12,6 +12,8 @@ env:
 jobs:
   generate-docs:
     runs-on: ubuntu-18.04
+    env:
+      BRANCH: gendocs$(date +%s%N)
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -20,4 +22,15 @@ jobs:
           stable: true
       - name: gendocs
         run: |
-          ./hack/generate_docs.sh ${{ secrets.MINIKUBE_BOT_PAT }}
+          make generate-docs
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          commit-message: Update auto-generated docs and translations
+          committer: minikube-bot <minikube-bot@google.com>
+          author: minikube-bot <minikube-bot@google.com>
+          branch: gendocs
+          delete-branch: true
+          title: 'Update auto-generated docs and translations'
+          body: 'Committing changes resulting from `make generate-docs`'
