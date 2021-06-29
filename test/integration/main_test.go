@@ -97,8 +97,8 @@ func setMaxParallelism() {
 	// Each "minikube start" consumes up to 2 cores, though the average usage is somewhat lower
 	limit := int(math.Floor(float64(maxp) / 1.75))
 
-	// cut the number of parallel tests in half for macOS
-	if runtime.GOOS == "darwin" && limit > 2 {
+	// Windows and MacOS tests were failing from timeouts due to too much parallelism
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		limit /= 2
 	}
 
