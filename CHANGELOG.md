@@ -4,27 +4,26 @@
 
 Features:
 
-* Add auto pause on arm64 image [#11743](https://github.com/kubernetes/minikube/pull/11743)
-* Addon list: Add info on each addon's maintainer  [#11753](https://github.com/kubernetes/minikube/pull/11753)
-* Add ability to pass 'max' value to memory and cpus flags [#11692](https://github.com/kubernetes/minikube/pull/11692)
+* auto-pause addon: add support for arm64 [#11743](https://github.com/kubernetes/minikube/pull/11743)
+* addon list: add info on each addon's maintainer  [#11753](https://github.com/kubernetes/minikube/pull/11753)
+* add ability to pass max to --cpu and --memory flags [#11692](https://github.com/kubernetes/minikube/pull/11692)
 
 Bugs:
 
 * Fix --base-image caching for images specified by name:tag [#11603](https://github.com/kubernetes/minikube/pull/11603)
 * Fix embed-certs global config [#11576](https://github.com/kubernetes/minikube/pull/11576)
 * Fix a download link to use arm64 instead of amd64 [#11653](https://github.com/kubernetes/minikube/pull/11653)
-* Move daemon cache check before file cache check [#11690](https://github.com/kubernetes/minikube/pull/11690)
-* Move node config deletion out of drainNode and into Delete [#11731](https://github.com/kubernetes/minikube/pull/11731)
+* fix downloading duplicate base image [#11690](https://github.com/kubernetes/minikube/pull/11690)
+* fix multi-node loosing track of nodes after second restart [#11731](https://github.com/kubernetes/minikube/pull/11731)
 * gcp-auth: do not override existing environment variables in pods [#11665](https://github.com/kubernetes/minikube/pull/11665)
 
 Minor improvements:
 
 * Allow running amd64 binary on M1 [#11674](https://github.com/kubernetes/minikube/pull/11674)
-* Upgrade containerd config [#11632](https://github.com/kubernetes/minikube/pull/11632)
+* improve containerd experience on cgroup v2 [#11632](https://github.com/kubernetes/minikube/pull/11632)
 * Improve French locale [#11728](https://github.com/kubernetes/minikube/pull/11728)
-* Do not return an error from Systemd.ForceStop(svc) if svc is already stopped [#11667](https://github.com/kubernetes/minikube/pull/11667)
-* Let windows users use the LC_ALL env var to set locale [#11721](https://github.com/kubernetes/minikube/pull/11721)
-* Remove unused config options [#11668](https://github.com/kubernetes/minikube/pull/11668)
+* Fix UI error for stoppping systemd service [#11667](https://github.com/kubernetes/minikube/pull/11667)
+* international languages: allow using LC_ALL env to set local language for windows [#11721](https://github.com/kubernetes/minikube/pull/11721)
 * Fix intersected log boxes when running with --alsologtostderr [#11694](https://github.com/kubernetes/minikube/pull/11694)
 * Change registery_mirror to registery-mirror [#11678](https://github.com/kubernetes/minikube/pull/11678)
 
