@@ -46,7 +46,7 @@ make verify-iso
 
 # Build and upload
 env BUILD_IN_DOCKER=y \
-  make -j 16 \
+  make  \
   all \
   out/minikube-linux-arm64 \
   out/minikube-linux-arm64.tar.gz \
