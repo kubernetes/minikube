@@ -36,7 +36,7 @@ COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.c
 COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
-COPY --from=0 /src/cmd/auto-pause /bin/auto-pause
+COPY --from=0 /src/cmd/auto-pause/auto-pause /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
