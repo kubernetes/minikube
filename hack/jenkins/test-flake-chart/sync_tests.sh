@@ -1,5 +1,29 @@
 #!/bin/bash
 
+# Copyright 2021 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This script is called once per integration test. If all integration tests that
+# have registered themselves in the started environment list have also
+# registered themselves in the finished environment list, this script reports
+# flakes or uploads flakes to flake data.
+# 
+# This script expects the following env variables:
+# MINIKUBE_LOCATION: The Github location being run on (e.g. master, 11000).
+# COMMIT: Commit hash the tests ran on.
+# ROOT_JOB_ID: Job ID to use for synchronization.
+
 set -o pipefail
 
 BUCKET_PATH="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}"
