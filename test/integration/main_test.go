@@ -99,7 +99,7 @@ func setMaxParallelism() {
 
 	// Windows tests were failing from timeouts due to too much parallelism
 	if runtime.GOOS == "windows" {
-		limit = int(limit / 2)
+		limit /= 2
 	}
 
 	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", maxp, limit)
