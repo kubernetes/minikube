@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/tools/internal/ioext"
+	"github.com/Azure/azure-sdk-for-go/tools/apidiff/ioext"
 	"github.com/blang/semver/v4"
 
 	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
@@ -290,6 +290,7 @@ func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, stri
 	}
 	// copy driver to temp bin
 	testDriverPath := filepath.Join(mkBinDir, "docker-machine-driver-hyperkit")
+
 	if err = ioext.CopyFile(testDataDriverPath, testDriverPath, false); err != nil {
 		return "", "", fmt.Errorf("failed to setup current hyperkit driver: %v", err)
 	}
