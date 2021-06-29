@@ -45,7 +45,7 @@ func getSHAFromURL(url string) (string, error) {
 	return hex.EncodeToString(b[:]), nil
 }
 
-// TestBetaReleasesJSON checks if all *GA* releases
+// TestReleasesJSON checks if all *GA* releases
 // 	enlisted in https://storage.googleapis.com/minikube/releases.json
 //	are available to download and have correct hashsum
 func TestReleasesJSON(t *testing.T) {
