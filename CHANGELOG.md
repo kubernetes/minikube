@@ -5,12 +5,12 @@
 Features:
 
 * auto-pause addon: add support for arm64 [#11743](https://github.com/kubernetes/minikube/pull/11743)
-* addon list: add info on each addon's maintainer  [#11753](https://github.com/kubernetes/minikube/pull/11753)
-* add ability to pass max to --cpu and --memory flags [#11692](https://github.com/kubernetes/minikube/pull/11692)
+* `addon list`: add info on each addon's maintainer  [#11753](https://github.com/kubernetes/minikube/pull/11753)
+* add ability to pass max to `--cpu` and `--memory` flags [#11692](https://github.com/kubernetes/minikube/pull/11692)
 
 Bugs:
 
-* Fix --base-image caching for images specified by name:tag [#11603](https://github.com/kubernetes/minikube/pull/11603)
+* Fix `--base-image` caching for images specified by name:tag [#11603](https://github.com/kubernetes/minikube/pull/11603)
 * Fix embed-certs global config [#11576](https://github.com/kubernetes/minikube/pull/11576)
 * Fix a download link to use arm64 instead of amd64 [#11653](https://github.com/kubernetes/minikube/pull/11653)
 * fix downloading duplicate base image [#11690](https://github.com/kubernetes/minikube/pull/11690)
