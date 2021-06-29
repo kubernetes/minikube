@@ -59,7 +59,10 @@ func (s *Systemd) Disable(svc string) error {
 
 // DisableNow disables a service and stops it too (not waiting for next restart)
 func (s *Systemd) DisableNow(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "disable", "--now", svc))
+	cmd := exec.Command("sudo", "systemctl", "disable", "--now", svc)
+	// See https://github.com/kubernetes/minikube/issues/11615#issuecomment-861794258
+	cmd.Env = append(cmd.Env, "SYSTEMCTL_SKIP_SYSV=1")
+	_, err := s.r.RunCmd(cmd)
 	return err
 }
 
