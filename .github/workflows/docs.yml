@@ -3,9 +3,6 @@ on:
   push:
     branches:
       - master  
-  pull_request:
-    paths:
-      - ".github/workflows/docs.yml"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: 1.16.4
