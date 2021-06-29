@@ -24,7 +24,6 @@ Minor improvements:
 * Improve French locale [#11728](https://github.com/kubernetes/minikube/pull/11728)
 * Fix UI error for stoppping systemd service [#11667](https://github.com/kubernetes/minikube/pull/11667)
 * international languages: allow using LC_ALL env to set local language for windows [#11721](https://github.com/kubernetes/minikube/pull/11721)
-* Fix intersected log boxes when running with --alsologtostderr [#11694](https://github.com/kubernetes/minikube/pull/11694)
 * Change registery_mirror to registery-mirror [#11678](https://github.com/kubernetes/minikube/pull/11678)
 
 Version Upgrades:
