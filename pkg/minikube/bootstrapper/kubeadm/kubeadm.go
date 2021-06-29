@@ -32,7 +32,7 @@ import (
 
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"

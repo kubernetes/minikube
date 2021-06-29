@@ -5,16 +5,15 @@ go 1.16
 require (
 	cloud.google.com/go/storage v1.15.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
-	github.com/Azure/azure-sdk-for-go v43.3.0+incompatible
+	github.com/Azure/azure-sdk-for-go/tools/internal v0.1.0
 	github.com/Delta456/box-cli-maker/v2 v2.2.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
-	github.com/Microsoft/hcsshim v0.8.15 // indirect
+	github.com/Microsoft/hcsshim v0.8.17 // indirect
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
-	github.com/VividCortex/godaemon v0.0.0-20201030160542-15e3f4925a21
-	github.com/blang/semver v3.5.1+incompatible
+	github.com/VividCortex/godaemon v1.0.0
+	github.com/blang/semver/v4 v4.0.0
 	github.com/briandowns/spinner v1.11.1
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
-	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/cheggaaa/pb/v3 v3.0.8
 	github.com/cloudevents/sdk-go/v2 v2.3.1
@@ -31,7 +30,7 @@ require (
 	github.com/google/go-containerregistry v0.4.1
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v32 v32.1.0
-	github.com/google/slowjam v0.0.0-20200530021616-df27e642fe7b
+	github.com/google/slowjam v1.0.0
 	github.com/google/uuid v1.2.0
 	github.com/hashicorp/go-getter v1.5.4
 	github.com/hashicorp/go-retryablehttp v0.7.0
@@ -80,7 +79,7 @@ require (
 	go.opentelemetry.io/otel/sdk v0.16.0
 	go.opentelemetry.io/otel/trace v0.17.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/exp v0.0.0-20210220032938-85be41e4509f
 	golang.org/x/mod v0.4.2
 	golang.org/x/oauth2 v0.0.0-20210615190721-d04028783cf1

@@ -25,8 +25,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/tools/apidiff/ioext"
-	"github.com/blang/semver"
+	"github.com/Azure/azure-sdk-for-go/tools/internal/ioext"
+	"github.com/blang/semver/v4"
 
 	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/localpath"
