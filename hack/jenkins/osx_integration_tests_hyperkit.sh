@@ -30,7 +30,7 @@ ARCH="amd64"
 OS="darwin"
 DRIVER="hyperkit"
 JOB_NAME="Hyperkit_macOS"
-EXTRA_TEST_ARGS="-test.parallel=2"
+EXTRA_TEST_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 EXTERNAL="yes"
 
