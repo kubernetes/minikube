@@ -31,6 +31,7 @@ jobs:
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: gendocs
+          push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
           title: 'Update auto-generated docs and translations'
