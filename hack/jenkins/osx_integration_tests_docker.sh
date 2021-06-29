@@ -30,16 +30,9 @@ ARCH="amd64"
 OS="darwin"
 DRIVER="docker"
 JOB_NAME="Docker_macOS"
-EXTRA_TEST_ARGS=""
+EXTRA_TEST_ARGS="-test.parallel=2"
 EXPECTED_DEFAULT_DRIVER="docker"
 EXTERNAL="yes"
-
-# fix mac os as a service on mac os
-# https://github.com/docker/for-mac/issues/882#issuecomment-506372814
-#osascript -e 'quit app "Docker"'
-#/Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
-#osascript -e 'quit app "Docker"'
-#/Applications/Docker.app/Contents/MacOS/Docker --unattended &
 
 begin=$(date +%s)
 while [ -z "$(docker info 2> /dev/null )" ];
