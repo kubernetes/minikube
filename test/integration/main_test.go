@@ -98,8 +98,13 @@ func setMaxParallelism() {
 	limit := int(math.Floor(float64(maxp) / 1.75))
 
 	// Windows and MacOS tests were failing from timeouts due to too much parallelism
-	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+	if runtime.GOOS == "windows" {
 		limit /= 2
+	}
+
+	// Hardcode limit to 2 for macOS
+	if runtime.GOOS == "darwin" {
+		limit = 2
 	}
 
 	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", maxp, limit)
