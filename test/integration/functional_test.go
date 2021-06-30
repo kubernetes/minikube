@@ -45,6 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
 
+	"github.com/blang/semver/v4"
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
