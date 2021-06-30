@@ -48,11 +48,10 @@ echo "Docker_Windows" | gsutil cp - "$append_tmp"
 gsutil compose "$started_environments" "$append_tmp" "$started_environments"
 gsutil rm "$append_tmp"
 
-# Remove unused images and containers
-docker system prune --all --force
-
-
 ./out/minikube-windows-amd64.exe delete --all
+
+# Remove unused images and containers
+docker system prune --all --force --volumes
 
 ./out/windows_integration_setup.ps1
 
