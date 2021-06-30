@@ -16,12 +16,12 @@
 
 # Takes a gopogh summary, extracts test data as a CSV and appends to the
 # existing CSV data in the GCS bucket.
-# Example usage: ./jenkins_upload_tests.sh gopogh_summary.json
+# Example usage: ./upload_tests.sh gopogh_summary.json
 
 set -eu -o pipefail
 
 if [ "$#" -ne 1 ]; then
-  echo "Wrong number of arguments. Usage: jenkins_upload_tests.sh <gopogh_summary.json>" 1>&2
+  echo "Wrong number of arguments. Usage: upload_tests.sh <gopogh_summary.json>" 1>&2
   exit 1
 fi
 
