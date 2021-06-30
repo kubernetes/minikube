@@ -126,5 +126,8 @@ else
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
 
-	gh pr create --fill --base master --head minikube-bot:${branch}
+	pr=$(gh pr create --fill --base master --head minikube-bot:${branch} \
+	      | grep -o -E "github.com/kubernetes/minikube/pull/[0-9]+" \
+	      | grep -o -E '[0-9]+')
+	gh pr comment "$pr" --body "/ok-to-test"
 fi
