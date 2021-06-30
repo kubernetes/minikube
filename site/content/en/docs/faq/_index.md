@@ -18,6 +18,20 @@ Example:
 minikube start --kubernetes-version=v1.15.0
 ```
 
+## How to create an multiple clusters using minikube ?
+
+By default `minikube start` creates a cluster named minikube, if you would like to create another cluster or change the name.
+you could use the `-p` or `--profile` flag. which will create a clustter with the specific name.
+
+minikube profiles are meant to be isolated from each other, and each one could have their own settings or driver. if you want to create one cluster with multiple nodes the multi-node feature. instead
+
+To see list of your current clisters, try 
+```
+minikube profile list
+```
+
+
+
 
 ## Docker Driver: How can I set minikube's cgroup manager?
 
