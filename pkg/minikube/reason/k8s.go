@@ -16,7 +16,7 @@ limitations under the License.
 
 package reason
 
-import "github.com/blang/semver"
+import "github.com/blang/semver/v4"
 
 // K8sIssue represents a known issue with a particular version of Kubernetes
 type K8sIssue struct {
