@@ -547,7 +547,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 // only runs on Github Actions for amd64 linux
 func validateStartWithCustomCerts(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-	err := startCorpProxy(ctx, t)
+	err := startProxyWithCustomCerts(ctx, t)
 	if err != nil {
 		t.Fatalf("failed to set up the test proxy: %s", err)
 	}
@@ -1753,8 +1753,8 @@ users:
 	}
 }
 
-// startCorpProxy mimics starting a corp proxy by using mitmproxy and installing its certs
-func startCorpProxy(ctx context.Context, t *testing.T) error {
+// startProxyWithCustomCerts mimics starts a proxy with custom certs by using mitmproxy and installing its certs
+func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 	// Download the mitmproxy bundle for mitmdump
 	_, err := Run(t, exec.CommandContext(ctx, "curl", "-LO", "https://snapshots.mitmproxy.org/6.0.2/mitmproxy-6.0.2-linux.tar.gz"))
 	if err != nil {
