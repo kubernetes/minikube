@@ -154,6 +154,7 @@ func TestFunctional(t *testing.T) {
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
 			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
+			{"Version", validateVersionCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -1849,6 +1850,7 @@ func startHTTPProxy(t *testing.T) (*http.Server, error) {
 	}(srv, t)
 	return srv, nil
 }
+<<<<<<< HEAD
 
 func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, proxyEnv string, addr string) {
 	// Use more memory so that we may reliably fit MySQL and nginx
@@ -1879,3 +1881,36 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
 }
+||||||| parent of 730473887 (add --components flag for verion command)
+=======
+
+// validateVersionCmd asserts `minikube version` command works fine for both --short and --components
+func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
+
+	t.Run("short", func(t *testing.T) {
+		MaybeParallel(t)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "--short"))
+		if err != nil {
+			t.Errorf("failed to get version --short: %v", err)
+		}
+
+		_, err = semver.Make(strings.TrimSpace(strings.Trim(rr.Stdout.String(), "v")))
+		if err != nil {
+			t.Errorf("failed to get a valid semver for minikube version --short:%s %v", rr.Output(), err)
+		}
+	})
+
+	t.Run("components", func(t *testing.T) {
+		MaybeParallel(t)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--components"))
+		if err != nil {
+			t.Errorf("error version: %v", err)
+		}
+		got := rr.Stdout.String()
+		if !strings.Contains(got, "containerd") {
+			t.Error("expected to see containerd in the minikube version --packages")
+		}
+	})
+
+}
+>>>>>>> 730473887 (add --components flag for verion command)
