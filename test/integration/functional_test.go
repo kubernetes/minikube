@@ -645,7 +645,11 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	dir := filepath.Dir(Target())
-	dstfn := filepath.Join(dir, "kubectl")
+	newName := "kubectl"
+	if runtime.GOOS == "windows" {
+		newName += ".exe"
+	}
+	dstfn := filepath.Join(dir, newName)
 	err := os.Link(Target(), dstfn)
 
 	if err != nil {
