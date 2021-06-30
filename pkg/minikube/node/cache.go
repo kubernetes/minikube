@@ -22,6 +22,8 @@ import (
 	"runtime"
 	"strings"
 
+	"k8s.io/minikube/pkg/minikube/detect"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -97,7 +99,7 @@ func CacheKubectlBinary(k8sVersion string) (string, error) {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVersion, runtime.GOOS, runtime.GOARCH)
+	return download.Binary(binary, k8sVersion, runtime.GOOS, detect.EffectiveArch())
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground

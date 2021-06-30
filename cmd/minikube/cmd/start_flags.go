@@ -23,10 +23,12 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cni"
@@ -135,8 +137,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
-	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to Kubernetes.")
-	startCmd.Flags().String(memory, "", "Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().String(cpus, "2", fmt.Sprintf("Number of CPUs allocated to Kubernetes. Use %q to use the maximum number of CPUs.", constants.MaxResources))
+	startCmd.Flags().String(memory, "", fmt.Sprintf("Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use %q to use the maximum amount of memory.", constants.MaxResources))
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
@@ -290,6 +292,30 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	return createNode(cc, kubeNodeName, existing)
 }
 
+func getCPUCount(drvName string) int {
+	if viper.GetString(cpus) != constants.MaxResources {
+		return viper.GetInt(cpus)
+	}
+
+	if !driver.IsKIC(drvName) {
+		ci, err := cpu.Counts(true)
+		if err != nil {
+			exit.Message(reason.Usage, "Unable to get CPU info: {{.err}}", out.V{"err": err})
+		}
+		return ci
+	}
+
+	si, err := oci.CachedDaemonInfo(drvName)
+	if err != nil {
+		si, err = oci.DaemonInfo(drvName)
+		if err != nil {
+			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+		}
+	}
+
+	return si.CPUs
+}
+
 func getMemorySize(cmd *cobra.Command, drvName string) int {
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
@@ -298,10 +324,15 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 
 	mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 	if cmd.Flags().Changed(memory) || viper.IsSet(memory) {
+		memString := viper.GetString(memory)
 		var err error
-		mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
-		if err != nil {
-			exit.Message(reason.Usage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		if memString == constants.MaxResources {
+			mem = noLimitMemory(sysLimit, containerLimit)
+		} else {
+			mem, err = pkgutil.CalculateSizeInMB(memString)
+			if err != nil {
+				exit.Message(reason.Usage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": memString, "error": err})
+			}
 		}
 		if driver.IsKIC(drvName) && mem > containerLimit {
 			exit.Message(reason.Usage, "{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
@@ -384,7 +415,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
 		Memory:                  getMemorySize(cmd, drvName),
-		CPUs:                    viper.GetInt(cpus),
+		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),
 		Driver:                  drvName,
 		ListenAddress:           viper.GetString(listenAddress),

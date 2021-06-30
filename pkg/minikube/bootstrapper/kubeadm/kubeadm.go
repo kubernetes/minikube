@@ -568,13 +568,13 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 		klog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
 		return true
 	}
-
-	st, err := kverify.APIServerStatus(k.c, hostname, port)
+	// cruntime.Enable() may restart kube-apiserver but does not wait for it to return back
+	apiStatusTimeout := 3000 * time.Millisecond
+	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)
 	if err != nil {
 		klog.Infof("needs reconfigure: apiserver error: %v", err)
 		return true
 	}
-
 	if st != state.Running {
 		klog.Infof("needs reconfigure: apiserver in state %s", st)
 		return true

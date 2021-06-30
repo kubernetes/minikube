@@ -17,11 +17,13 @@ limitations under the License.
 package node
 
 import (
+	"fmt"
 	"runtime"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -61,5 +63,15 @@ func ExitIfFatal(err error) {
 			Issues:   []int{8327},
 			Advice:   "Ensure that your Docker mountpoints do not have the 'noexec' flag set",
 		}, "The kubeadm binary within the Docker container is not executable")
+	}
+
+	if rtErr, ok := err.(*cruntime.ErrServiceVersion); ok {
+		exit.Message(reason.Kind{
+			ID:       "PROVIDER_INVALID_VERSION",
+			ExitCode: reason.ExGuestConfig,
+			Style:    style.Unsupported,
+			Advice:   "Try to start minikube with '--delete-on-failure=true' option",
+		}, fmt.Sprintf("Your existing minikube instance has version %s of service %v which is too old. "+
+			"Please try to start minikube with --delete-on-failure=true option", rtErr.Installed, rtErr.Service))
 	}
 }

@@ -143,6 +143,22 @@ func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error 
 	return nil
 }
 
+// WaitForAPIServerStatus waits for 'to' duration to get apiserver pod running or stopped
+// this functions is intended to use in situations where apiserver process can be recreated
+// by container runtime restart for example and there is a gap before it comes back
+func WaitForAPIServerStatus(cr command.Runner, to time.Duration, hostname string, port int) (state.State, error) {
+	var st state.State
+	err := wait.PollImmediate(200*time.Millisecond, to, func() (bool, error) {
+		var err error
+		st, err = APIServerStatus(cr, hostname, port)
+		if st == state.Stopped {
+			return false, nil
+		}
+		return true, err
+	})
+	return st, err
+}
+
 // APIServerStatus returns apiserver status in libmachine style state.State
 func APIServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
 	klog.Infof("Checking apiserver status ...")
@@ -207,7 +223,7 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 		return nil
 	}
 
-	err = retry.Local(check, 5*time.Second)
+	err = retry.Local(check, 15*time.Second)
 
 	// Don't propagate 'Stopped' upwards as an error message, as clients may interpret the err
 	// as an inability to get status. We need it for retry.Local, however.
