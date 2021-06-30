@@ -81,6 +81,8 @@ if [[ "$FAILED_RATES_LINES" -gt 30 ]]; then
   printf "|More tests...|Continued...|\n\nToo many tests failed - See test logs for more details." >> "$TMP_COMMENT"
 fi
 
+printf "\n\nTo see the flake rates of all tests on $ENVIRONMENT, click [here](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=$ENVIRONMENT)." >> "$TMP_COMMENT"
+
 # install gh if not present
 $DIR/../installers/check_install_gh.sh
 
