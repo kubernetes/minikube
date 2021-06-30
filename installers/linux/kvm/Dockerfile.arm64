@@ -12,23 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:21.04
+FROM ubuntu:20.04
 
 ARG GO_VERSION
 
 RUN apt update
 
-RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports hirsute main universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports hirsute-updates main universe restricted multiverse" >> /etc/apt/sources.list && \
+RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal main universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-updates main universe restricted multiverse" >> /etc/apt/sources.list && \
     dpkg --add-architecture arm64 && \
     (apt update || true)
 
-RUN apt install -y \
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt install \
+    -o APT::Immediate-Configure=false -y \
     gcc-aarch64-linux-gnu \
     make \
     pkg-config \
     curl \
-    libvirt-dev:arm64
+    libvirt-dev:arm64 \
+    dpkg --configure -a
 
 RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf -
 
