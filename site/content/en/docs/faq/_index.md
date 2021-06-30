@@ -27,7 +27,7 @@ To see the list of your current clusters, run:
 minikube profile list
 ```
 
-minikube profiles are meant to be isolated from one another, with their own settings and drivers. If you want to create a single cluster with multiple nodes, try the [multi-node feature]({{< ref "/docs/tutorials/multi_node/" >}}) instead.
+minikube profiles are meant to be isolated from one another, with their own settings and drivers. If you want to create a single cluster with multiple nodes, try the [multi-node feature]({{< ref "/docs/tutorials/multi_node" >}}) instead.
 
 
 ## Docker Driver: How can I set minikube's cgroup manager?
