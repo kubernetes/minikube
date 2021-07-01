@@ -39,11 +39,19 @@ If ($lastexitcode -gt 0) {
 	Exit $lastexitcode
 }
 
-# Remove unused images and containers
-docker system prune --all --force
-
+$started_environments="gs://$gcs_bucket/started_environments_$env:ROOT_JOB_ID.txt"
+$append_tmp="gs://$gcs_bucket/tmp$(-join ((65..90) + (97..122) | Get-Random -Count 10 | % {[char]$_}))"
+# Ensure started_environments exists so we can append (but don't erase any existing entries in started_environments)
+$null | gsutil cp -n - "$started_environments"
+# Copy the Docker_Windows to append_tmp
+echo "Docker_Windows" | gsutil cp - "$append_tmp"
+gsutil compose "$started_environments" "$append_tmp" "$started_environments"
+gsutil rm "$append_tmp"
 
 ./out/minikube-windows-amd64.exe delete --all
+
+# Remove unused images and containers
+docker system prune --all --force --volumes
 
 ./out/windows_integration_setup.ps1
 
@@ -89,6 +97,14 @@ gsutil -qm cp testout.json gs://$gcs_bucket/Docker_Windows.json
 gsutil -qm cp testout.html gs://$gcs_bucket/Docker_Windows.html
 gsutil -qm cp testout_summary.json gs://$gcs_bucket/Docker_Windows_summary.json
 
+$finished_environments="gs://$gcs_bucket/finished_environments_$env:ROOT_JOB_ID.txt"
+$append_tmp="gs://$gcs_bucket/tmp$(-join ((65..90) + (97..122) | Get-Random -Count 10 | % {[char]$_}))"
+# Ensure finished_environments exists so we can append (but don't erase any existing entries in finished_environments)
+$null | gsutil cp -n - "$finished_environments"
+# Copy the Docker_Windows to append_tmp
+echo "Docker_Windows" | gsutil cp - "$append_tmp"
+gsutil compose "$started_environments" "$append_tmp" "$started_environments"
+gsutil rm "$append_tmp"
 
 # Update the PR with the new info
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"Docker_Windows`"}"
