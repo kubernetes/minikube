@@ -262,11 +262,14 @@ function createRecentFlakePercentageTable(recentFlakePercentage, environmentName
 
   const table = document.createElement("table");
   const tableHeaderRow = document.createElement("tr");
+  tableHeaderRow.appendChild(createCell("th", "Rank"));
   tableHeaderRow.appendChild(createCell("th", "Test Name")).style.textAlign = "left";
   tableHeaderRow.appendChild(createCell("th", "Recent Flake Percentage"));
   table.appendChild(tableHeaderRow);
-  for (const {testName, flakeRate} of recentFlakePercentage){
+  for (let i = 0; i < recentFlakePercentage.length; i++) {
+    const {testName, flakeRate} = recentFlakePercentage[i];
     const row = document.createElement("tr");
+    row.appendChild(createCell("td", "" + (i + 1))).style.textAlign = "center";
     row.appendChild(createCell("td", `<a href="${window.location.pathname}?env=${environmentName}&test=${testName}">${testName}</a>`));
     row.appendChild(createCell("td", `${flakeRate.toFixed(2)}%`)).style.textAlign = "right";
     table.appendChild(row);
