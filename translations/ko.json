@@ -869,6 +869,7 @@
 	"kubectl proxy": "kubectl 프록시",
 	"libmachine failed": "",
 	"list displays all valid default settings for PROPERTY_NAME\nAcceptable fields: \\n\\n": "",
+	"list versions of all components included with minikube. (the cluster must be running)": "",
 	"loading config": "컨피그 로딩 중",
 	"loading profile": "",
 	"logdir set failed": "logdir 설정이 실패하였습니다",
