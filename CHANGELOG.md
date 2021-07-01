@@ -3459,3 +3459,4 @@ Huge Thank You for this release to our contributors:
 ## Version 0.1.0 - 5/29/2016
 
 * Initial minikube release.
+1
