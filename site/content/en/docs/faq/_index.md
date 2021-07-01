@@ -122,3 +122,17 @@ Setting the `memory` and `cpus` flags on the start command to `max` will use max
 ```
 minikube start --memory=max --cpus=max
 ```
+
+## How can I run minikube on a different hard drive?
+
+Set the `MINIKUBE_HOME` env to a path on the drive you want minikube to run, then run `minikube start`.
+
+```
+# Unix
+export MINIKUBE_HOME=/otherdrive/.minikube
+
+# Windows
+$env:MINIKUBE_HOME = "D:\.minikube"
+
+minikube start
+```
