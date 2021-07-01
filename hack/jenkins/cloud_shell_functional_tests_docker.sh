@@ -36,6 +36,7 @@ gcloud cloud-shell ssh --authorize-session << EOF
  MINIKUBE_LOCATION=$MINIKUBE_LOCATION
  COMMIT=$COMMIT
  EXTRA_BUILD_ARGS=$EXTRA_BUILD_ARGS
+ ROOT_JOB_ID=$ROOT_JOB_ID
  access_token=$access_token
 
  # Prevent cloud-shell is ephemeral warnings on apt-get
