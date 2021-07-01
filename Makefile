@@ -797,9 +797,6 @@ out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
 out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_amd64.deb
 	cp $< $@
 
-out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_x86_64.deb
-	cp $< $@
-
 out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_aarch64.deb
 	cp $< $@
 
