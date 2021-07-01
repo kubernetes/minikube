@@ -1,30 +1,29 @@
 ---
-title: "minikube start"
-linkTitle: "Get Started!"
-weight: 1
-aliases:
+Titre: "Commencer Minikube"
+Titre lié: "Commencer"
+Poids: 1
+alias:
   - /docs/start
 ---
+Minikube est un Kubernetes local, qui vise à faciliter l'apprentissage et le développement pour Kubernetes.
 
-minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes.
+Tout ce dont vous avez besoin est un conteneur Docker (ou similaire) ou un environnement de machine virtuelle, et Kubernetes est accessible via  une seule commande: `minikube start`
 
-All you need is Docker (or similarly compatible) container or a Virtual Machine environment, and Kubernetes is a single command away: `minikube start`
+## Ce dont vous aurez besoin
 
-## What you’ll need
-
-* 2 CPUs or more
-* 2GB of free memory
-* 20GB of free disk space
-* Internet connection
-* Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMWare]({{<ref "/docs/drivers/vmware">}})
+* 2 processeurs ou plus
+* 2 Go de mémoire libre
+* 20 Go d'espace de disque libre
+* Une connection internet
+* Un Gestionnaire de conteneur ou de machine virtuelle, tel que: [Docker]({{<ref "/docs/drivers/docker">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMWare]({{<ref "/docs/drivers/vmware">}})
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
 {{% card %}}
 
-Click on the buttons that describe your target platform. For other architectures, see [the release page](https://github.com/kubernetes/minikube/releases/latest) for a complete list of minikube binaries.
+Cliquez sur les boutons qui correspondent à votre plateforme cible. Pour d'autres architectures, voir [la page de publication] (https://github.com/kubernetes/minikube/releases/latest) pour une liste complète des binaires minikube.
 
-{{% quiz_row base="" name="Operating system" %}}
+{{% quiz_row base="" name="Système opérateur" %}}
 {{% quiz_button option="Linux" %}} {{% quiz_button option="macOS" %}} {{% quiz_button option="Windows" %}}
 {{% /quiz_row %}}
 
@@ -32,23 +31,23 @@ Click on the buttons that describe your target platform. For other architectures
 {{% quiz_button option="x86-64" %}} {{% quiz_button option="ARM64" %}} {{% quiz_button option="ARMv7" %}} {{% quiz_button option="ppc64" %}} {{% quiz_button option="S390x" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/Linux/x86-64" name="Installer type" %}}
+{{% quiz_row base="/Linux/x86-64" name="Type d'installation" %}}
 {{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/Linux/ARM64" name="Installer type" %}}
+{{% quiz_row base="/Linux/ARM64" name="Type d'installation" %}}
 {{% quiz_button option="Binary download" %}} {{% quiz_button option="Debian package" %}} {{% quiz_button option="RPM package" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/Linux/ppc64" name="Installer type" %}}
+{{% quiz_row base="/Linux/ppc64" name="Type d'installation" %}}
 {{% quiz_button option="Binary download" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/Linux/S390x" name="Installer type" %}}
+{{% quiz_row base="/Linux/S390x" name="Type d'installation" %}}
 {{% quiz_button option="Binary download" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/Linux/ARMv7" name="Installer type" %}}
+{{% quiz_row base="/Linux/ARMv7" name="Type d'installation" %}}
 {{% quiz_button option="Binary download" %}}
 {{% /quiz_row %}}
 
@@ -56,11 +55,11 @@ Click on the buttons that describe your target platform. For other architectures
 {{% quiz_button option="x86-64" %}} {{% quiz_button option="ARM64" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/macOS/x86-64" name="Installer type" %}}
+{{% quiz_row base="/macOS/x86-64" name="Type d'installation" %}}
 {{% quiz_button option="Binary download" %}} {{% quiz_button option="Homebrew" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/macOS/ARM64" name="Installer type" %}}
+{{% quiz_row base="/macOS/ARM64" name="Type d'installation" %}}
 {{% quiz_button option="Binary download" %}}
 {{% /quiz_row %}}
 
@@ -68,7 +67,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% quiz_button option="x86-64" %}}
 {{% /quiz_row %}}
 
-{{% quiz_row base="/Windows/x86-64" name="Installer type" %}}
+{{% quiz_row base="/Windows/x86-64" name="Type d'installation" %}}
 {{% quiz_button option=".exe download" %}} {{% quiz_button option="Windows Package Manager" %}} {{% quiz_button option="Chocolatey" %}}
 {{% /quiz_row %}}
 
@@ -164,13 +163,14 @@ sudo install minikube-linux-arm /usr/local/bin/minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/macOS/x86-64/Homebrew" %}}
-If the [Brew Package Manager](https://brew.sh/) is installed:
+Si le [Brew Package Manager] (https://brew.sh/) est installé:
 
 ```shell
 brew install minikube
 ```
 
-If `which minikube` fails after installation via brew, you may have to remove the old minikube links and link the newly installed binary:
+
+Si `which minikube` échoue après l'installation via brew, vous devrez peut-être supprimer les anciens liens minikube et lier le binaire nouvellement installé:
 
 ```shell
 brew unlink minikube
@@ -193,7 +193,7 @@ sudo install minikube-darwin-arm64 /usr/local/bin/minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Windows Package Manager" %}}
-If the [Windows Package Manager](https://docs.microsoft.com/en-us/windows/package-manager/) is installed, use the following command to install minikube:
+Si le [Gestionnaire de packages Windows] (https://docs.microsoft.com/en-us/windows/package-manager/) est installé, utilisez la commande suivante pour installer minikube:
 
 ```shell
 winget install minikube
@@ -201,7 +201,7 @@ winget install minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Chocolatey" %}}
-If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use the following command:
+Si le [Chocolatey Package Manager] (https://chocolatey.org/) est installé, utilisez la commande suivante:
 
 ```shell
 choco install minikube
@@ -209,9 +209,9 @@ choco install minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/.exe download" %}}
-Download and run the stand-alone [minikube Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
+Téléchargez et exécutez le [programme d'installation Windows minikube] (https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
 
-_If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+_Si vous avez utilisé une CLI pour effectuer l'installation, vous devrez fermer cette CLI et en ouvrir une nouvelle avant de continuer ._
 {{% /quiz_instruction %}}
 
 {{% /card %}}
@@ -219,128 +219,129 @@ _If you used a CLI to perform the installation, you will need to close that CLI 
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>Start your cluster</h2>
 
-From a terminal with administrator access (but not logged in as root), run:
+Depuis un terminal avec un accès administrateur (mais non connecté en tant que root), exécutez:
 
 ```shell
 minikube start
 ```
 
-If minikube fails to start, see the [drivers page]({{<ref "/docs/drivers">}}) for help setting up a compatible container or virtual-machine manager.
+Si minikube ne démarre pas, consultez la [page des pilotes] ({{<ref "/ docs / drivers">}}) pour obtenir de l'aide sur la configuration d'un conteneur compatible ou d'un gestionnaire de machine virtuelle.
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Interact with your cluster</h2>
 
-If you already have kubectl installed, you can now use it to access your shiny new cluster:
+Si vous avez déjà installé kubectl, vous pouvez maintenant l'utiliser pour accéder à votre nouveau cluster :
 
 ```shell
 kubectl get po -A
 ```
 
-Alternatively, minikube can download the appropriate version of kubectl, if you don't mind the double-dashes in the command-line:
+Sinon, minikube peut télécharger la version appropriée de kubectl, si cela ne vous dérange pas d'utiliser des doubles tirets dans la ligne de commande:
 
 ```shell
 minikube kubectl -- get po -A
 ```
 
-Initially, some services such as the storage-provisioner, may not yet be in a Running state. This is a normal condition during cluster bring-up, and will resolve itself momentarily. For additional insight into your cluster state, minikube bundles the Kubernetes Dashboard, allowing you to get easily acclimated to your new environment:
+Au départ, certains services tels que le fournisseur de stockage ne sont peut-être pas encore en cours d'exécution. Il s'agit d'une condition normale lors de la mise en place du cluster et se résoudra d'elle-même momentanément. Pour plus d'informations sur l'état de votre cluster, minikube possède le tableau de bord Kubernetes, vous permettant de vous acclimater facilement à votre nouvel environnement:
 
 ```shell
 minikube dashboard
 ```
 
-<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>Deploy applications</h2>
+<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>Déployer une application</h2>
 
-Create a sample deployment and expose it on port 8080:
+Créez un exemple de déploiement et exposez-le sur le port 8080:
 
 ```shell
 kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
-It may take a moment, but your deployment will soon show up when you run:
+Cela peut prendre un moment, mais votre déploiement apparaîtra bientôt lorsque vous exécuterez:
 
 ```shell
 kubectl get services hello-minikube
 ```
 
-The easiest way to access this service is to let minikube launch a web browser for you:
+Le moyen le plus simple d'accéder à ce service est de laisser minikube lancer un navigateur Web pour vous:
 
 ```shell
 minikube service hello-minikube
 ```
 
-Alternatively, use kubectl to forward the port:
+
+Vous pouvez également utiliser kubectl pour transférer le port:
 
 ```shell
 kubectl port-forward service/hello-minikube 7080:8080
 ```
 
-Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/)
+Tada! Votre application est désormais disponible à l'adresse [http://localhost:7080/] (http://localhost:7080/)
 
-### LoadBalancer deployments
+### Déploiements de charge équilibrée
 
-To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
+Pour accéder à un déploiement de charge équilibrée, utilisez la commande "minikube tunnel". Voici un exemple de déploiement:
 
 ```shell
 kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4  
 kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 
-In another window, start the tunnel to create a routable IP for the 'balanced' deployment:
+Dans une autre fenêtre, démarrez le tunnel pour créer une IP routable pour le déploiement ``équilibré'':
 
 ```shell
 minikube tunnel
 ```
 
-To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
+Pour trouver l'adresse IP routable, exécutez cette commande et examinez la colonne `EXTERNAL-IP`:
 
 ```shell
 kubectl get services balanced
 ```
 
-Your deployment is now available at &lt;EXTERNAL-IP&gt;:8080
+Votre déploiement est désormais disponible à l'adresse  &lt;EXTERNAL-IP&gt;:8080
 
-<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
+<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Gérer votre cluster</h2>
 
-Pause Kubernetes without impacting deployed applications:
+Suspendez Kubernetes sans affecter les applications déployées:
 
 ```shell
 minikube pause
 ```
 
-Halt the cluster:
+Arrêtez le cluster:
 
 ```shell
 minikube stop
 ```
 
-Increase the default memory limit (requires a restart):
+Augmentez la limite de mémoire par défaut (nécessite un redémarrage):
 
 ```shell
 minikube config set memory 16384
 ```
 
-Browse the catalog of easily installed Kubernetes services:
+Parcourez le catalogue de services Kubernetes faciles à installer:
 
 ```shell
 minikube addons list
 ```
 
-Create a second cluster running an older Kubernetes release:
+Créez un deuxième cluster exécutant une ancienne version de Kubernetes:
 
 ```shell
 minikube start -p aged --kubernetes-version=v1.16.1
 ```
 
-Delete all of the minikube clusters:
+Supprimez tous les clusters de minikube:
 
 ```shell
 minikube delete --all
 ```
 
-## Take the next step
+## Passez à l'étape suivante
 
-* [The minikube handbook]({{<ref "/docs/handbook">}})
-* [Community-contributed tutorials]({{<ref "/docs/tutorials">}})
-* [minikube command reference]({{<ref "/docs/commands">}})
-* [Contributors guide]({{<ref "/docs/contrib">}})
-* Take our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A) to share your thoughts 🙏
+* [Le manuel du minikube]({{<ref "/docs/handbook">}})
+* [Tutoriels fournis par la communauté]({{<ref "/docs/tutorials">}})
+* [Référence pour la commande minikube]({{<ref "/docs/commands">}})
+* [Guide des contributeurs]({{<ref "/docs/contrib">}})
+* Remplissez notre [enquête rapide en 5 questions](https://forms.gle/Gg3hG5ZySw8c1C24A) pour partager vos ressentis 🙏
