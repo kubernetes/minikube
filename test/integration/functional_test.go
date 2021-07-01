@@ -45,6 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
 
+	"github.com/blang/semver/v4"
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/otiai10/copy"
@@ -154,6 +155,7 @@ func TestFunctional(t *testing.T) {
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
 			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
+			{"Version", validateVersionCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -1878,4 +1880,37 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 	if !strings.Contains(rr.Stderr.String(), want) {
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
+}
+
+// validateVersionCmd asserts `minikube version` command works fine for both --short and --components
+func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
+
+	t.Run("short", func(t *testing.T) {
+		MaybeParallel(t)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "--short"))
+		if err != nil {
+			t.Errorf("failed to get version --short: %v", err)
+		}
+
+		_, err = semver.Make(strings.TrimSpace(strings.Trim(rr.Stdout.String(), "v")))
+		if err != nil {
+			t.Errorf("failed to get a valid semver for minikube version --short:%s %v", rr.Output(), err)
+		}
+	})
+
+	t.Run("components", func(t *testing.T) {
+		MaybeParallel(t)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "version", "-o=json", "--components"))
+		if err != nil {
+			t.Errorf("error version: %v", err)
+		}
+		got := rr.Stdout.String()
+		for _, c := range []string{"buildctl", "commit", "containerd", "crictl", "crio", "ctr", "docker", "minikubeVersion", "podman", "run"} {
+			if !strings.Contains(got, c) {
+				t.Errorf("expected to see %q in the minikube version --components but got:\n%s", c, got)
+			}
+
+		}
+	})
+
 }
