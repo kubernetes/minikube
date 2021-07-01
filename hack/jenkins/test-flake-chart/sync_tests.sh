@@ -74,7 +74,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   for ENVIRONMENT in ${STARTED_LIST}; do
     SUMMARY="${BUCKET_PATH}/${ENVIRONMENT}_summary.json"
-    "${DIR}/upload_tests.sh" "${SUMMARY}"
+    "${DIR}/upload_tests.sh" "${SUMMARY}" || true
   done
 else
   "${DIR}/report_flakes.sh" "${MINIKUBE_LOCATION}" "${COMMIT:0:7}" "${FINISHED_LIST}"
