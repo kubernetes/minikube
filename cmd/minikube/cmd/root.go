@@ -100,6 +100,7 @@ func Execute() {
 	}
 
 	_, callingCmd := filepath.Split(os.Args[0])
+	callingCmd = strings.TrimSuffix(callingCmd, ".exe")
 
 	if callingCmd == "kubectl" {
 		// If the user is using the minikube binary as kubectl, allow them to specify the kubectl context without also specifying minikube profile
