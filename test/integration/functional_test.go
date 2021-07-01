@@ -1851,7 +1851,6 @@ func startHTTPProxy(t *testing.T) (*http.Server, error) {
 	}(srv, t)
 	return srv, nil
 }
-<<<<<<< HEAD
 
 func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, proxyEnv string, addr string) {
 	// Use more memory so that we may reliably fit MySQL and nginx
@@ -1882,8 +1881,6 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
 }
-||||||| parent of 730473887 (add --components flag for verion command)
-=======
 
 // validateVersionCmd asserts `minikube version` command works fine for both --short and --components
 func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
@@ -1917,4 +1914,3 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 	})
 
 }
->>>>>>> 730473887 (add --components flag for verion command)
