@@ -181,6 +181,9 @@ asserts that for a given runtime, the other runtimes disabled, for example for c
 #### validateUpdateContextCmd
 asserts basic "update-context" command functionality
 
+#### validateVersionCmd
+asserts `minikube version` command works fine for both --short and --components
+
 #### validateMountCmd
 verifies the minikube mount command works properly
 

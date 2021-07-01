@@ -20,6 +20,7 @@ minikube version [flags]
 ### Options
 
 ```
+      --components      list versions of all components included with minikube. (the cluster must be running)
   -o, --output string   One of 'yaml' or 'json'.
       --short           Print just the version number.
 ```

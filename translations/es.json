@@ -862,6 +862,7 @@
 	"kubectl proxy": "",
 	"libmachine failed": "",
 	"list displays all valid default settings for PROPERTY_NAME\nAcceptable fields: \\n\\n": "",
+	"list versions of all components included with minikube. (the cluster must be running)": "",
 	"loading profile": "",
 	"max time to wait per Kubernetes or host to be healthy.": "",
 	"minikube addons list --output OUTPUT. json, list": "",

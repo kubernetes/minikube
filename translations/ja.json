@@ -865,6 +865,7 @@
 	"kubectl proxy": "kubectl proxy",
 	"libmachine failed": "libmachine が失敗しました",
 	"list displays all valid default settings for PROPERTY_NAME\nAcceptable fields: \\n\\n": "",
+	"list versions of all components included with minikube. (the cluster must be running)": "",
 	"loading profile": "",
 	"logdir set failed": "logdir の値を設定するのに失敗しました",
 	"max time to wait per Kubernetes core services to be healthy.": "Kubernetes の core サービスが正常に稼働するまで待つ最大時間",
