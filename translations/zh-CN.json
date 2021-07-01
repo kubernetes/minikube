@@ -937,7 +937,6 @@
 	"addon enable failed": "启用插件失败",
 	"addons modifies minikube addons files using subcommands like \"minikube addons enable dashboard\"": "插件使用诸如 \"minikube addons enable dashboard\" 的子命令修改 minikube 的插件文件",
 	"auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.": "",
-	"auto-pause currently is only supported on docker runtime. Track progress of others here: https://github.com/kubernetes/minikube/issues/10601": "",
 	"bash completion failed": "",
 	"bash completion.": "",
 	"call with cleanup=true to remove old tunnels": "",

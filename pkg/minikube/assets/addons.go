@@ -107,7 +107,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 		MustBinAsset(
 			addons.AutoPauseAssets,
-			"auto-pause/auto-pause.service",
+			"auto-pause/auto-pause.service.tmpl",
 			"/etc/systemd/system/",
 			"auto-pause.service",
 			"0640"),
@@ -788,6 +788,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		LoadBalancerStartIP string
 		LoadBalancerEndIP   string
 		CustomIngressCert   string
+		ContainerRuntime    string
 		Images              map[string]string
 		Registries          map[string]string
 		CustomRegistries    map[string]string
@@ -799,6 +800,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
 		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
 		CustomIngressCert:   cfg.CustomIngressCert,
+		ContainerRuntime:    cfg.ContainerRuntime,
 		Images:              images,
 		Registries:          addon.Registries,
 		CustomRegistries:    customRegistries,
