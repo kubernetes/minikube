@@ -815,7 +815,6 @@
 	"addon '{{.name}}' is not a valid addon packaged with minikube.\nTo see the list of available addons run:\nminikube addons list": "",
 	"addons modifies minikube addons files using subcommands like \"minikube addons enable dashboard\"": "",
 	"auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.": "",
-	"auto-pause currently is only supported on docker runtime. Track progress of others here: https://github.com/kubernetes/minikube/issues/10601": "",
 	"bash completion failed": "",
 	"bash completion.": "",
 	"call with cleanup=true to remove old tunnels": "",
