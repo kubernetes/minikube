@@ -47,14 +47,3 @@ gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 SUMMARY_OUT="$ARTIFACTS/summary.txt"
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-
-FINISHED_ENVIRONMENTS="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/finished_environments_${ROOT_JOB_ID}.txt"
-# Ensure FINISHED_ENVIRONMENTS exists so we can append (but don't erase any existing entries in FINISHED_ENVIRONMENTS)
-< /dev/null gsutil cp -n - "${FINISHED_ENVIRONMENTS}"
-# Copy the job name to APPEND_TMP
-APPEND_TMP="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/$(basename $(mktemp))"
-echo "${JOB_NAME}"\
-  | gsutil cp - "${APPEND_TMP}"
-# Append
-gsutil compose "${FINISHED_ENVIRONMENTS}" "${APPEND_TMP}" "${FINISHED_ENVIRONMENTS}"
-gsutil rm "${APPEND_TMP}"
