@@ -1,8 +1,8 @@
 name: "update-kubernetes-versions"
 on:
   schedule:
-    # every day at around 1 am pacific/8 am UTC
-    - cron: "0 8 * * *"
+    # every Monday at around 1 am pacific/8 am UTC
+    - cron: "0 8 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: 1.16.4
