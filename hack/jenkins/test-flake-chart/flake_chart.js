@@ -287,9 +287,11 @@ function displayEnvironmentChart(testData, environmentName) {
   // Number of tests to display in chart.
   const topFlakes = 10;
 
+  testData = testData
+    // Filter to only contain unskipped runs of the requested environment.
+    .filter(test => test.environment === environmentName && test.status !== testStatus.SKIPPED);
+
   const testRuns = testData
-    // Filter to only contain unskipped runs of the requested test and requested environment.
-    .filter(test => test.environment === environmentName && test.status !== testStatus.SKIPPED)
     .groupBy(test => test.name);
 
   const aggregatedRuns = new Map(testRuns.map(test => [
@@ -348,12 +350,12 @@ function displayEnvironmentChart(testData, environmentName) {
         return data !== undefined ? [
           data.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-          <b style="display: block">${name}</b><br>
-          <b>${data.date.toString()}</b><br>
-          <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
-          <b>Hashes:</b><br>
-          ${data.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
-        </div>`
+            <b style="display: block">${name}</b><br>
+            <b>${data.date.toString()}</b><br>
+            <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
+            <b>Hashes:</b><br>
+            ${data.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+          </div>`
         ] : [null, null];
       })).flat())
     );
@@ -388,12 +390,12 @@ function displayEnvironmentChart(testData, environmentName) {
         return data !== undefined ? [
           data.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-          <b style="display: block">${name}</b><br>
-          <b>${data.date.toString()}</b><br>
-          <b>Average Duration:</b> ${data.duration.toFixed(2)}s<br>
-          <b>Hashes:</b><br>
-          ${data.commitHashes.map(({ hash, duration, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average Duration: ${duration.toFixed(2)}s [${runs} runs])`).join("<br>")}
-        </div>`
+            <b style="display: block">${name}</b><br>
+            <b>${data.date.toString()}</b><br>
+            <b>Average Duration:</b> ${data.duration.toFixed(2)}s<br>
+            <b>Hashes:</b><br>
+            ${data.commitHashes.map(({ hash, duration, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average Duration: ${duration.toFixed(2)}s [${runs} runs])`).join("<br>")}
+          </div>`
         ] : [null, null];
       })).flat())
     );
@@ -413,6 +415,87 @@ function displayEnvironmentChart(testData, environmentName) {
     durationContainer.style.height = "100vh";
     chartsContainer.appendChild(durationContainer);
     const chart = new google.visualization.LineChart(durationContainer);
+    chart.draw(data, options);
+  }
+  {
+    // Group test runs by their date, then by their commit, and finally by test names.
+    const testCountData = testData
+      // Group by date.
+      .groupBy(run => run.date.getTime())
+      .map(runDate => ({
+        date: runDate[0].date,
+        commits: runDate
+          // Group by commit
+          .groupBy(run => run.commit)
+          .map(commitRuns => commitRuns
+            // Group by test name.
+            .groupBy(commitRun => commitRun.name)
+            // Consolidate tests of a single name into a single object.
+            .reduce((accum, commitTestRuns) => ({
+              commit: commitTestRuns[0].commit,
+              // The total number of times any test ran.
+              sumTestCount: accum.sumTestCount + commitTestRuns.length,
+              // The total number of times any test failed.
+              sumFailCount: accum.sumFailCount + commitTestRuns.filter(run => run.status === testStatus.FAILED).length,
+              // The most number of times any test name ran (this will be a proxy for the number of integration jobs were triggered).
+              maxRunCount: Math.max(accum.maxRunCount, commitTestRuns.length),
+            }), {
+              sumTestCount: 0,
+              sumFailCount: 0,
+              maxRunCount: 0
+            }))
+      }))
+      .map(dateInfo => ({
+        ...dateInfo,
+        // Use the commit data of each date to compute the average test count and average fail count for the day.
+        testCount: dateInfo.commits.reduce(
+          (accum, commitInfo) => accum + (commitInfo.sumTestCount / commitInfo.maxRunCount), 0) / dateInfo.commits.length,
+        failCount: dateInfo.commits.reduce(
+          (accum, commitInfo) => accum + (commitInfo.sumFailCount / commitInfo.maxRunCount), 0) / dateInfo.commits.length,
+      }))
+      .sort((a, b) => a.date - b.date);
+
+    const data = new google.visualization.DataTable();
+    data.addColumn('date', 'Date');
+    data.addColumn('number', 'Test Count');
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+    data.addColumn('number', 'Failed Tests');
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+    data.addRows(
+      testCountData.map(dateInfo => [
+        dateInfo.date,
+        dateInfo.testCount,
+        `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+          <b>${dateInfo.date.toString()}</b><br>
+          <b>Test Count (averaged): </b> ${+dateInfo.testCount.toFixed(2)}<br>
+          <b>Hashes:</b><br>
+          ${dateInfo.commits.map(commit => `  - <a href="${hashToLink(commit.commit, environmentName)}">${commit.commit}</a> (Test count (averaged): ${+(commit.sumTestCount / commit.maxRunCount).toFixed(2)} [${commit.sumTestCount} tests / ${commit.maxRunCount} runs])`).join("<br>")}
+        </div>`,
+        dateInfo.failCount,
+        `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+          <b>${dateInfo.date.toString()}</b><br>
+          <b>Fail Count (averaged): </b> ${+dateInfo.failCount.toFixed(2)}<br>
+          <b>Hashes:</b><br>
+          ${dateInfo.commits.map(commit => `  - <a href="${hashToLink(commit.commit, environmentName)}">${commit.commit}</a> (Fail count (averaged): ${+(commit.sumFailCount / commit.maxRunCount).toFixed(2)} [${commit.sumFailCount} fails / ${commit.maxRunCount} runs])`).join("<br>")}
+        </div>`,
+      ]));
+    const options = {
+      title: `Test count by day on ${environmentName}`,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      pointSize: 10,
+      pointShape: "circle",
+      vAxes: {
+        0: { title: "Test Count" },
+        1: { title: "Failed Tests" },
+      },
+      tooltip: { trigger: "selection", isHtml: true }
+    };
+    const testCountContainer = document.createElement("div");
+    testCountContainer.style.width = "100vw";
+    testCountContainer.style.height = "100vh";
+    chartsContainer.appendChild(testCountContainer);
+    const chart = new google.visualization.LineChart(testCountContainer);
     chart.draw(data, options);
   }
 
