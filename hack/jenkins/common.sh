@@ -142,17 +142,6 @@ fi
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
 
-STARTED_ENVIRONMENTS="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/started_environments_${ROOT_JOB_ID}.txt"
-# Ensure STARTED_ENVIRONMENTS exists so we can append (but don't erase any existing entries in STARTED_ENVIRONMENTS)
-< /dev/null gsutil cp -n - "${STARTED_ENVIRONMENTS}"
-# Copy the job name to APPEND_TMP
-APPEND_TMP="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/$(basename $(mktemp))"
-echo "${JOB_NAME}"\
-  | gsutil cp - "${APPEND_TMP}"
-# Append
-gsutil compose "${STARTED_ENVIRONMENTS}" "${APPEND_TMP}" "${STARTED_ENVIRONMENTS}"
-gsutil rm "${APPEND_TMP}"
-
 echo
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
