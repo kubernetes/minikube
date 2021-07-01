@@ -1908,8 +1908,11 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("error version: %v", err)
 		}
 		got := rr.Stdout.String()
-		if !strings.Contains(got, "containerd") {
-			t.Error("expected to see containerd in the minikube version --packages")
+		for _, c := range []string{"buildctl", "commit", "containerd", "crictl", "crio", "ctr", "docker", "minikubeVersion", "podman", "run"} {
+			if !strings.Contains(got, c) {
+				t.Errorf("expected to see %q in the minikube version --components but got:\n%s", c, got)
+			}
+
 		}
 	})
 
