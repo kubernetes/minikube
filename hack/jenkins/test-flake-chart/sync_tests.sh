@@ -36,8 +36,19 @@ fi
 
 set -eu -o pipefail
 
+FINISHED_LIST_REMOTE="${BUCKET_PATH}/finished_environments_${ROOT_JOB_ID}.txt"
+# Ensure FINISHED_LIST_REMOTE exists so we can append (but don't erase any existing entries in FINISHED_LIST_REMOTE)
+< /dev/null gsutil cp -n - "${FINISHED_LIST_REMOTE}"
+# Copy the job name to APPEND_TMP
+APPEND_TMP="${BUCKET_PATH}/$(basename $(mktemp))"
+echo "${UPSTREAM_JOB}"\
+  | gsutil cp - "${APPEND_TMP}"
+# Append job name to remote finished list.
+gsutil compose "${FINISHED_LIST_REMOTE}" "${APPEND_TMP}" "${FINISHED_LIST_REMOTE}"
+gsutil rm "${APPEND_TMP}"
+
 FINISHED_LIST=$(mktemp)
-gsutil cat "${BUCKET_PATH}/finished_environments_${ROOT_JOB_ID}.txt"\
+gsutil cat "${FINISHED_LIST_REMOTE}"\
   | sort\
   | uniq > "${FINISHED_LIST}"
 
@@ -63,7 +74,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   for ENVIRONMENT in ${STARTED_LIST}; do
     SUMMARY="${BUCKET_PATH}/${ENVIRONMENT}_summary.json"
-    "${DIR}/upload_tests.sh" "${SUMMARY}"
+    "${DIR}/upload_tests.sh" "${SUMMARY}" || true
   done
 else
   "${DIR}/report_flakes.sh" "${MINIKUBE_LOCATION}" "${COMMIT:0:7}" "${FINISHED_LIST}"
