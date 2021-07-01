@@ -157,6 +157,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableStorageClasses},
 	},
 	{
+		name:      "autopausetime",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:      "metallb",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
