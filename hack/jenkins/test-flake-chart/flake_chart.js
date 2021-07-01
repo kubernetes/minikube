@@ -253,7 +253,7 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   chart.draw(data, options);
 }
 
-function createRecentFlakePercentageTable(recentFlakePercentage, environmentName) {
+function createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePercentageMap, environmentName) {
   const createCell = (elementType, text) => {
     const element = document.createElement(elementType);
     element.innerHTML = text;
@@ -265,6 +265,7 @@ function createRecentFlakePercentageTable(recentFlakePercentage, environmentName
   tableHeaderRow.appendChild(createCell("th", "Rank"));
   tableHeaderRow.appendChild(createCell("th", "Test Name")).style.textAlign = "left";
   tableHeaderRow.appendChild(createCell("th", "Recent Flake Percentage"));
+  tableHeaderRow.appendChild(createCell("th", "Growth (since last 15 days)"));
   table.appendChild(tableHeaderRow);
   for (let i = 0; i < recentFlakePercentage.length; i++) {
     const {testName, flakeRate} = recentFlakePercentage[i];
@@ -272,6 +273,9 @@ function createRecentFlakePercentageTable(recentFlakePercentage, environmentName
     row.appendChild(createCell("td", "" + (i + 1))).style.textAlign = "center";
     row.appendChild(createCell("td", `<a href="${window.location.pathname}?env=${environmentName}&test=${testName}">${testName}</a>`));
     row.appendChild(createCell("td", `${flakeRate.toFixed(2)}%`)).style.textAlign = "right";
+    const growth = previousFlakePercentageMap.has(testName) ?
+      flakeRate - previousFlakePercentageMap.get(testName) : 0;
+    row.appendChild(createCell("td", `<span style="color: ${growth === 0 ? "black" : (growth > 0 ? "red" : "green")}">${growth > 0 ? '+' + growth.toFixed(2) : growth.toFixed(2)}%</span>`));
     table.appendChild(row);
   }
   return table;
@@ -300,9 +304,10 @@ function displayEnvironmentChart(testData, environmentName) {
   }
   const orderedDates = Array.from(uniqueDates).sort();
   const recentDates = orderedDates.slice(-dateRange);
-  
-  const recentFlakePercentage = Array.from(aggregatedRuns).map(([testName, data]) => {
-    const {flakeCount, totalCount} = recentDates.map(date => {
+  const previousDates = orderedDates.slice(-2 * dateRange, -dateRange);
+
+  const computeFlakePercentage = (runs, dates) => Array.from(runs).map(([testName, data]) => {
+    const {flakeCount, totalCount} = dates.map(date => {
       const dateInfo = data.get(date);
       return dateInfo === undefined ? null : {
         flakeRate: dateInfo.flakeRate,
@@ -317,7 +322,13 @@ function displayEnvironmentChart(testData, environmentName) {
       testName,
       flakeRate: totalCount === 0 ? 0 : flakeCount / totalCount,
     };
-  }).sort((a, b) => b.flakeRate - a.flakeRate);
+  });
+  
+  const recentFlakePercentage = computeFlakePercentage(aggregatedRuns, recentDates)
+    .sort((a, b) => b.flakeRate - a.flakeRate);
+  const previousFlakePercentageMap = new Map(
+    computeFlakePercentage(aggregatedRuns, previousDates)
+      .map(({testName, flakeRate}) => [testName, flakeRate]));
 
   const recentTopFlakes = recentFlakePercentage
     .slice(0, topFlakes)
@@ -358,7 +369,7 @@ function displayEnvironmentChart(testData, environmentName) {
   const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
   chart.draw(data, options);
 
-  document.body.appendChild(createRecentFlakePercentageTable(recentFlakePercentage, environmentName));
+  document.body.appendChild(createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePercentageMap, environmentName));
 }
 
 async function init() {
