@@ -423,15 +423,34 @@ choco install minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
-Download and run the stand-alone [minikube Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
+1. Download the latest release.  
+<br>
+If you have `curl` installed:
+    ```shell
+    curl -Lo minikube.exe https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe
+    Move-Item .\minikube.exe C:\something-in-path\minikube.exe
+    ```
+    Or you can download the stand-alone [minikube Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
 
-_If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+
+2. Add the binary in to your `PATH`.
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
-Download and run the stand-alone minikube Windows installer from [the release page](https://github.com/kubernetes/minikube/releases).
+1. Download the latest beta release.  
+<br>
+If you have `curl` installed:
+    ```shell
+    r=https://api.github.com/repos/kubernetes/minikube/releases
+    curl -Lo minikube.exe $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-windows-amd64.exe' | head -n1)
+    Move-Item .\minikube.exe C:\something-in-path\minikube.exe
+    ```
+    Or you can download the stand-alone minikube Windows installer from [the release page](https://github.com/kubernetes/minikube/releases).
 
-_If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+
+2. Add the binary in to your `PATH`.
 {{% /quiz_instruction %}}
 
 {{% /card %}}
