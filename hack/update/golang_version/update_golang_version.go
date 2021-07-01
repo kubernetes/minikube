@@ -75,6 +75,11 @@ var (
 				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/update_k8s_versions.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/pr_verified.yaml": {
 			Replace: map[string]string{
 				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
