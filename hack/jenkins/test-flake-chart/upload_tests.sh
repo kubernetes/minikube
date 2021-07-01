@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Takes a gopogh summary, extracts test data as a CSV and appends to the
-# existing CSV data in the GCS bucket.
-# Example usage: ./upload_tests.sh gopogh_summary.json
+# Takes a gopogh summary in a GCS bucket, extracts test data as a CSV and
+# appends to the existing CSV data in the flake rate GCS bucket.
+# Example usage: ./upload_tests.sh gs://some-bucket/gopogh_summary.json
 
 set -eu -o pipefail
 
@@ -28,7 +28,8 @@ fi
 TMP_DATA=$(mktemp)
 
 # Use the gopogh summary, process it, optimize the data, remove the header, and store.
-<"$1" ./test-flake-chart/process_data.sh \
+gsutil cat "$1" \
+  | ./test-flake-chart/process_data.sh \
   | ./test-flake-chart/optimize_data.sh \
   | sed "1d" > $TMP_DATA
 
