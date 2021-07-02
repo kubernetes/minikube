@@ -645,7 +645,7 @@ release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using
 
 .PHONY: check-release
 check-release: ## Execute go test
-	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
+	go test -timeout 42m -v ./deploy/minikube/release_sanity_test.go
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile

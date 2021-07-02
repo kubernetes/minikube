@@ -18,9 +18,9 @@
   {
       "name": "v1.20.0-beta.0",
       "checksums": {
-          "darwin": "",
-          "linux": "",
-          "windows": ""
+          "darwin": "686f8d7c06c93f28543f982ec56a68544ab2ad6c7f70b39ede5174d7bac29651",
+          "linux": "fe0796852c9ef266597fc93fa4b7a88d2cab9ba7008f0e9f644b633c51d269a1",
+          "windows": "84a0686c90ab88d04a0aab57b8cadacf9197d3ea6b467f9f807d071efe7fad3c"
       }
   }
 ]
