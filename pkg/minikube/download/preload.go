@@ -110,7 +110,7 @@ var checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
 	}
 
 	// note: err won't be set if it's a 404
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		klog.Warningf("%s status code: %d", url, resp.StatusCode)
 		return false
 	}
