@@ -423,34 +423,63 @@ choco install minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
-1. Download the latest release.  
+1. Download the [latest release](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).  
 <br>
-If you have `curl` installed:
+    Or if you have `curl` installed, use this command:
     ```shell
     curl -Lo minikube.exe https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe
-    Move-Item .\minikube.exe C:\something-in-path\minikube.exe
     ```
-    Or you can download the stand-alone [minikube Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
-
-    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
 
 2. Add the binary in to your `PATH`.
+    - Create a new folder in C drive, name it `minikube` (recommended) or whatever you like.
+
+    - Move the `minikube.exe` to that folder.
+    - Click on the Windows start menu. Start typing "environment".
+    - You'll see the search result **Edit the system environment variabless.** Select it.
+    - A System Properties window will popup. Click the **Environment Variables** button at the bottom.
+    - Select the `Path` variable under **System variables**. Click the **Edit** button.
+    - Click the **Add** button and paste in the folder path where `minikube.exe` is placed.
+    - Click **OK** as needed. Close all remaining windows by clicking **OK**.
+    - Reopen Command prompt window, and run.
+
+    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
-1. Download the latest beta release.  
+1. Download the <a href="#" id="latest-beta-download-link">latest beta release</a>.  
 <br>
-If you have `curl` installed:
+    Or if you have `curl` installed, use this command:
     ```shell
     r=https://api.github.com/repos/kubernetes/minikube/releases
     curl -Lo minikube.exe $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-windows-amd64.exe' | head -n1)
-    Move-Item .\minikube.exe C:\something-in-path\minikube.exe
     ```
-    Or you can download the stand-alone minikube Windows installer from [the release page](https://github.com/kubernetes/minikube/releases).
-
-    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
 
 2. Add the binary in to your `PATH`.
+    - Create a new folder in C drive, name it `minikube` (recommended) or whatever you like.
+
+    - Move the `minikube.exe` to that folder.
+    - Click on the Windows start menu. Start typing "environment".
+    - You'll see the search result **Edit the system environment variabless.** Select it.
+    - A System Properties window will popup. Click the **Environment Variables** button at the bottom.
+    - Select the `Path` variable under **System variables**. Click the **Edit** button.
+    - Click the **Add** button and paste in the folder path where `minikube.exe` is placed.
+    - Click **OK** as needed. Close all remaining windows by clicking **OK**.
+    - Reopen Command prompt window, and run.
+
+    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+<script type="text/javascript">
+  fetch("https://api.github.com/repos/kubernetes/minikube/releases")
+    .then(response => response.text())
+    .then(data => {
+      let u = data.match(/http.*download\/v.*beta.*\/minikube-windows-amd64\.exe/)[0]
+      document.getElementById("latest-beta-download-link").href=u;
+    })
+    .catch((error) => {
+      let el = document.getElementById("latest-beta-download-link");
+      el.innerHTML = "latest beta from the release page";
+      el.href = "https://github.com/kubernetes/minikube/releases";
+    });
+</script>
 {{% /quiz_instruction %}}
 
 {{% /card %}}
