@@ -48,15 +48,8 @@ const (
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
 
-// Enumeration for preload existence cache.
-const (
-	preloadUnknown = iota // Value when preload status has not been checked.
-	preloadMissing        // Value when preload has been checked and is missing.
-	preloadPresent        // Value when preload has been checked and is present.
-)
-
 var (
-	preloadState int = preloadUnknown
+	preloadStates map[string]map[string]bool = make(map[string]map[string]bool)
 )
 
 // TarballName returns name of the tarball
@@ -99,6 +92,36 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", PreloadBucket, TarballName(k8sVersion, containerRuntime))
 }
 
+func setPreloadState(k8sVersion, containerRuntime string, value bool) {
+	cRuntimes, ok := preloadStates[k8sVersion]
+	if !ok {
+		cRuntimes = make(map[string]bool)
+		preloadStates[k8sVersion] = cRuntimes
+	}
+	cRuntimes[containerRuntime] = value
+}
+
+var checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
+	url := remoteTarballURL(k8sVersion, containerRuntime)
+	resp, err := http.Head(url)
+	if err != nil {
+		klog.Warningf("%s fetch error: %v", url, err)
+		setPreloadState(k8sVersion, containerRuntime, false)
+		return false
+	}
+
+	// note: err won't be set if it's a 404
+	if resp.StatusCode != 200 {
+		klog.Warningf("%s status code: %d", url, resp.StatusCode)
+		setPreloadState(k8sVersion, containerRuntime, false)
+		return false
+	}
+
+	klog.Infof("Found remote preload: %s", url)
+	setPreloadState(k8sVersion, containerRuntime, true)
+	return true
+}
+
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool {
 	// TODO (#8166): Get rid of the need for this and viper at all
@@ -116,36 +139,20 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 	}
 
 	// If the preload existence is cached, just return that value.
-	if preloadState != preloadUnknown {
-		return preloadState == preloadPresent
+	preloadState, ok := preloadStates[k8sVersion][containerRuntime]
+	if ok {
+		return preloadState
 	}
 
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found local preload: %s", targetPath)
-		preloadState = preloadPresent
+		setPreloadState(k8sVersion, containerRuntime, true)
 		return true
 	}
 
-	url := remoteTarballURL(k8sVersion, containerRuntime)
-	resp, err := http.Head(url)
-	if err != nil {
-		klog.Warningf("%s fetch error: %v", url, err)
-		preloadState = preloadMissing
-		return false
-	}
-
-	// note: err won't be set if it's a 404
-	if resp.StatusCode != 200 {
-		klog.Warningf("%s status code: %d", url, resp.StatusCode)
-		preloadState = preloadMissing
-		return false
-	}
-
-	klog.Infof("Found remote preload: %s", url)
-	preloadState = preloadPresent
-	return true
+	return checkRemotePreloadExists(k8sVersion, containerRuntime)
 }
 
 var checkPreloadExists = PreloadExists
@@ -209,7 +216,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	}
 
 	// If the download was successful, mark off that the preload exists in the cache.
-	preloadState = preloadPresent
+	setPreloadState(k8sVersion, containerRuntime, true)
 	return nil
 }
 
