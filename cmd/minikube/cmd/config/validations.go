@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	units "github.com/docker/go-units"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -53,8 +54,19 @@ func IsValidDiskSize(name string, disksize string) error {
 	return nil
 }
 
+// IsValidCPUs checks if a string is a valid number of CPUs
+func IsValidCPUs(name string, cpus string) error {
+	if cpus == constants.MaxResources {
+		return nil
+	}
+	return IsPositive(name, cpus)
+}
+
 // IsValidMemory checks if a string is a valid memory size
 func IsValidMemory(name string, memsize string) error {
+	if memsize == constants.MaxResources {
+		return nil
+	}
 	_, err := units.FromHumanSize(memsize)
 	if err != nil {
 		return fmt.Errorf("invalid memory size: %v", err)

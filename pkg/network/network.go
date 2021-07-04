@@ -77,11 +77,52 @@ type Interface struct {
 	IfaceMAC  string
 }
 
+// lookupInInterfaces iterates over all local network interfaces
+// and tries to match "ip" with associated networks
+// returns (network parameters, ip network, nil) if found
+// 		   (nil, nil, nil) it nof
+// 		   (nil, nil, error) if any error happened
+func lookupInInterfaces(ip net.IP) (*Parameters, *net.IPNet, error) {
+	// check local network interfaces
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed listing network interfaces: %w", err)
+	}
+
+	for _, iface := range ifaces {
+
+		ifAddrs, err := iface.Addrs()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed listing addresses of network interface %+v: %w", iface, err)
+		}
+
+		for _, ifAddr := range ifAddrs {
+			ifip, lan, err := net.ParseCIDR(ifAddr.String())
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed parsing network interface address %+v: %w", ifAddr, err)
+			}
+			if lan.Contains(ip) {
+				ip4 := ifip.To4().String()
+				rt := Parameters{
+					Interface: Interface{
+						IfaceName: iface.Name,
+						IfaceIPv4: ip4,
+						IfaceMTU:  iface.MTU,
+						IfaceMAC:  iface.HardwareAddr.String(),
+					},
+					Gateway: ip4,
+				}
+				return &rt, lan, nil
+			}
+		}
+	}
+	return nil, nil, nil
+}
+
 // inspect initialises IPv4 network parameters struct from given address addr.
 // addr can be single address (like "192.168.17.42"), network address (like "192.168.17.0") or in CIDR form (like "192.168.17.42/24 or "192.168.17.0/24").
 // If addr belongs to network of local network interface, parameters will also contain info about that network interface.
 func inspect(addr string) (*Parameters, error) {
-	n := &Parameters{}
 
 	// extract ip from addr
 	ip, network, err := net.ParseCIDR(addr)
@@ -92,31 +133,15 @@ func inspect(addr string) (*Parameters, error) {
 		}
 	}
 
-	// check local network interfaces
-	ifaces, err := net.Interfaces()
+	n := &Parameters{}
+
+	ifParams, ifNet, err := lookupInInterfaces(ip)
 	if err != nil {
-		return nil, fmt.Errorf("failed listing network interfaces: %w", err)
+		return nil, err
 	}
-	for _, iface := range ifaces {
-		ifAddrs, err := iface.Addrs()
-		if err != nil {
-			return nil, fmt.Errorf("failed listing addresses of network interface %+v: %w", iface, err)
-		}
-		for _, ifAddr := range ifAddrs {
-			ifip, lan, err := net.ParseCIDR(ifAddr.String())
-			if err != nil {
-				return nil, fmt.Errorf("failed parsing network interface address %+v: %w", ifAddr, err)
-			}
-			if lan.Contains(ip) {
-				n.IfaceName = iface.Name
-				n.IfaceIPv4 = ifip.To4().String()
-				n.IfaceMTU = iface.MTU
-				n.IfaceMAC = iface.HardwareAddr.String()
-				n.Gateway = n.IfaceIPv4
-				network = lan
-				break
-			}
-		}
+	if ifNet != nil {
+		network = ifNet
+		n = ifParams
 	}
 
 	// couldn't determine network parameters from addr nor from network interfaces

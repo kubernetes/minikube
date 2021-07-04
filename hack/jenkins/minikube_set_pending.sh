@@ -94,3 +94,5 @@ for j in ${jobs[@]}; do
   "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/${j}.pending"
 done
 
+STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/started_environments_${BUILD_NUMBER}.txt"
+printf "%s\n" "${jobs[@]}" | gsutil cp - "${STARTED_LIST_REMOTE}"

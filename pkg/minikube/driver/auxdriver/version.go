@@ -17,7 +17,7 @@ limitations under the License.
 package auxdriver
 
 import (
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/driver"
 )

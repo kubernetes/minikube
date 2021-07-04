@@ -17,9 +17,9 @@
 set -e
 
 install_kind() {
-	curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-amd64
+	curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/latest/download/kind-linux-amd64
 	chmod +x ./kind
-	sudo mv ./kind /usr/local
+	sudo mv ./kind /usr/local/bin/kind
 }
 
 install_k3d() {
@@ -51,7 +51,7 @@ run_benchmark() {
 	pwd
 	( cd ./hack/benchmark/time-to-k8s/time-to-k8s-repo/ &&
 		git submodule update --init &&
-		go run . --config local-kubernetes.yaml --iterations 5 --output output.csv )
+		go run . --config local-kubernetes.yaml --iterations 10 --output output.csv )
 }
 
 generate_chart() {

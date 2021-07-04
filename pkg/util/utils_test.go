@@ -24,7 +24,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 )
 
 func TestGetBinaryDownloadURL(t *testing.T) {

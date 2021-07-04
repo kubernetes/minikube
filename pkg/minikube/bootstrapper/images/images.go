@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 
 	"k8s.io/minikube/pkg/version"
 )

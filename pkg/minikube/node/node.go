@@ -82,7 +82,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 
 // drainNode drains then deletes (removes) node from cluster.
 func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, index, err := Retrieve(cc, name)
+	n, _, err := Retrieve(cc, name)
 	if err != nil {
 		return n, errors.Wrap(err, "retrieve")
 	}
@@ -130,8 +130,7 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 	}
 	klog.Infof("successfully deleted node %q", name)
 
-	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return n, nil
 }
 
 // Delete calls drainNode to remove node from cluster and deletes the host.
@@ -152,7 +151,13 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, err
 	}
 
-	return n, nil
+	_, index, err := Retrieve(cc, name)
+	if err != nil {
+		return n, errors.Wrap(err, "retrieve")
+	}
+
+	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
+	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
 
 // Retrieve finds the node by name in the given cluster

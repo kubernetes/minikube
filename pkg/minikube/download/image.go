@@ -17,6 +17,7 @@ limitations under the License.
 package download
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -168,17 +169,43 @@ func ImageToCache(img string) error {
 	}
 }
 
+func parseImage(img string) (*name.Tag, name.Reference, error) {
+	digest, err := name.NewDigest(img)
+	if err == nil {
+		tag := digest.Tag()
+		return &tag, digest, nil
+	}
+
+	_, ok := err.(*name.ErrBadName)
+	if !ok {
+		return nil, nil, errors.Wrap(err, "new ref")
+	}
+	// ErrBadName means img contains no digest
+	// It happens if its value is name:tag for example.
+	// In this case we want to give it a second chance and try to parse it one more time using name.NewTag(img)
+	tag, err := name.NewTag(img)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to parse image reference")
+	}
+	return &tag, tag, nil
+}
+
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
 func CacheToDaemon(img string) error {
 	p := imagePathInCache(img)
 
-	ref, err := name.NewDigest(img)
+	tag, ref, err := parseImage(img)
 	if err != nil {
-		return errors.Wrap(err, "new ref")
+		return err
+	}
+	// do not use cache if image is set in format <name>:latest
+	if _, ok := ref.(name.Tag); ok {
+		if tag.Name() == "latest" {
+			return fmt.Errorf("can't cache 'latest' tag")
+		}
 	}
 
-	tag := ref.Tag()
-	i, err := tarball.ImageFromPath(p, &tag)
+	i, err := tarball.ImageFromPath(p, tag)
 	if err != nil {
 		return errors.Wrap(err, "tarball")
 	}

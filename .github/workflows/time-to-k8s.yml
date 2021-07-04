@@ -2,16 +2,19 @@ name: "time-to-k8s benchmark"
 on:
   release:
     types: [released]
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: 1.16.4
 jobs:
   benchmark:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Checkout submodules
       run: git submodule update --init
     - uses: actions/setup-go@v2
       with:
-          go-version: 1.16.4
+          go-version: ${{env.GO_VERSION}}
           stable: true
     - name: Benchmark
       run: |

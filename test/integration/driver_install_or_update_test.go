@@ -25,8 +25,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/tools/apidiff/ioext"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 
 	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -290,12 +289,12 @@ func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, stri
 	}
 	// copy driver to temp bin
 	testDriverPath := filepath.Join(mkBinDir, "docker-machine-driver-hyperkit")
-	if err = ioext.CopyFile(testDataDriverPath, testDriverPath, false); err != nil {
+	if err = CopyFile(testDataDriverPath, testDriverPath, false); err != nil {
 		return "", "", fmt.Errorf("failed to setup current hyperkit driver: %v", err)
 	}
 
 	// try to copy cached files to the temp minikube folder to avoid downloading of iso and preloads
-	_ = ioext.CopyDir(filepath.Join(localpath.MakeMiniPath("cache")), filepath.Join(mkDir, "cache"))
+	_ = CopyDir(filepath.Join(localpath.MakeMiniPath("cache")), filepath.Join(mkDir, "cache"))
 
 	// change permission to allow driver to be executable
 	if err = os.Chmod(testDriverPath, 0755); err != nil {

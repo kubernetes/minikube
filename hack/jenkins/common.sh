@@ -429,23 +429,28 @@ if [ "$status" = "failure" ]; then
 fi
 echo "$description"
 
+REPORT_URL_BASE="https://storage.googleapis.com"
+
 if [ -z "${EXTERNAL}" ]; then
   # If we're already in GCP, then upload results to GCS directly
   SHORT_COMMIT=${COMMIT:0:7}
   JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
-  echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
-  gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
-  echo ">> uploading ${JSON_OUT}"
+
+  echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}.out.txt"
+  echo ">>   public URL: ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.out.txt"
+  gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}.out.txt"
+
+  echo ">> uploading ${JSON_OUT} to gs://${JOB_GCS_BUCKET}.json"
+  echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.json"
   gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
-  echo ">> uploading ${HTML_OUT}"
+
+  echo ">> uploading ${HTML_OUT} to ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.html"
+  echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.html"
   gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
-  echo ">> uploading ${SUMMARY_OUT}"
+
+  echo ">> uploading ${SUMMARY_OUT} to ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
+  echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-  if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
-    ./test-flake-chart/upload_tests.sh "${SUMMARY_OUT}"
-  elif [[ "${JOB_NAME}" == "Docker_Linux" || "${JOB_NAME}" == "Docker_Linux_containerd" || "${JOB_NAME}" == "KVM_Linux" || "${JOB_NAME}" == "KVM_Linux_containerd" ]]; then
-    ./test-flake-chart/report_flakes.sh "${MINIKUBE_LOCATION}" "${SUMMARY_OUT}" "${JOB_NAME}"
-  fi
 else 
   # Otherwise, put the results in a predictable spot so the upload job can find them
   REPORTS_PATH=test_reports

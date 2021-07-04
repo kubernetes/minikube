@@ -40,7 +40,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libvirt-dev
-          make cross e2e-cross debs
+          MINIKUBE_BUILD_IN_DOCKER=y make cross e2e-cross debs
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF

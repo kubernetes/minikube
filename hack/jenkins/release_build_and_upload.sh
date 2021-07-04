@@ -64,6 +64,7 @@ env BUILD_IN_DOCKER=y \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.ppc64le.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.s390x.rpm" \
   "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_arm64.deb" \
   "out/docker-machine-driver-kvm2-${RPM_VERSION}-${RPM_REVISION}.x86_64.rpm"
 
 # check if 'commit: <commit-id>' line contains '-dirty' commit suffix

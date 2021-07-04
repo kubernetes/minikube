@@ -26,7 +26,7 @@ import (
 	"golang.org/x/mod/semver"
 	"golang.org/x/oauth2"
 
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v36/github"
 	"k8s.io/klog/v2"
 )
 

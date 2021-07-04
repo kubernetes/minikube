@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 21
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 22
+VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.21.0
+ISO_VERSION ?= v1.22.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -54,7 +54,9 @@ HYPERKIT_BUILD_IMAGE 	?= neilotoole/xcgo:go1.15
 BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
-KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(KVM_GO_VERSION)
+
+KVM_BUILD_IMAGE_AMD64 ?= $(REGISTRY)/kvm-build-image_amd64:$(KVM_GO_VERSION)
+KVM_BUILD_IMAGE_ARM64 ?= $(REGISTRY)/kvm-build-image_arm64:$(KVM_GO_VERSION)
 
 ISO_BUCKET ?= minikube/iso
 
@@ -322,7 +324,12 @@ test-pkg/%: ## Trigger packaging test
 all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build all different minikube components
 
 .PHONY: drivers
-drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2 ## Build Hyperkit and KVM2 drivers
+drivers: ## Build Hyperkit and KVM2 drivers
+drivers: docker-machine-driver-hyperkit \
+	 docker-machine-driver-kvm2 \
+	 out/docker-machine-driver-kvm2-amd64 \
+	 out/docker-machine-driver-kvm2-arm64
+
 
 .PHONY: docker-machine-driver-hyperkit
 docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hyperkit driver
@@ -424,7 +431,8 @@ checksum: ## Generate checksums
 	for f in out/minikube.iso out/minikube-linux-amd64 out/minikube-linux-arm \
 		 out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x \
 		 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe \
-		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
+		 out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2-amd64 out/docker-machine-driver-kvm2-arm64 \
+		 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
 		fi ; \
@@ -510,12 +518,12 @@ verify-iso: # Make sure the current ISO exists in the expected bucket
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
-
 .PHONY: debs ## Build all deb packages
 debs: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb \
 	  out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb \
-	  out/docker-machine-driver-kvm2_$(DEB_VERSION).deb
-
+	  out/docker-machine-driver-kvm2_$(DEB_VERSION).deb \
+	  out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb \
+	  out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb
 
 .PHONY: deb_version
 deb_version:
@@ -637,7 +645,7 @@ release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using
 
 .PHONY: check-release
 check-release: ## Execute go test
-	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
+	go test -timeout 42m -v ./deploy/minikube/release_sanity_test.go
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
@@ -680,8 +688,8 @@ KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 
 .PHONY: local-kicbase
-local-kicbase: deploy/kicbase/auto-pause ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KICBASE_IMAGE_GCR) ./deploy/kicbase
+local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KICBASE_IMAGE_GCR) .
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
@@ -695,7 +703,7 @@ local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches 
 	$(SED) 's|Version = .*|Version = \"$(KIC_VERSION)-$(COMMIT_SHORT)\"|;s|baseImageSHA = .*|baseImageSHA = \"\"|;s|gcrRepo = .*|gcrRepo = \"local/kicbase\"|;s|dockerhubRepo = .*|dockerhubRepo = \"local/kicbase\"|' pkg/drivers/kic/types.go
 
 .PHONY: push-kic-base-image 
-push-kic-base-image: deploy/kicbase/auto-pause docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
+push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
 	docker login docker.pkg.github.com
@@ -706,7 +714,7 @@ endif
 ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
-	env $(X_BUILD_ENV) docker buildx build --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) ./deploy/kicbase
+	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) .
 
 out/preload-tool:
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ ./hack/preload-images/*.go
@@ -785,10 +793,84 @@ out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
+
+out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_amd64.deb
+	cp $< $@
+
+out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_aarch64.deb
+	cp $< $@
+
+out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_%.deb: out/docker-machine-driver-kvm2-%
+	cp -r installers/linux/deb/kvm2_deb_template out/docker-machine-driver-kvm2_$(DEB_VERSION)
+	chmod 0755 out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN
+	sed -E -i -e 's/--VERSION--/$(DEB_VERSION)/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
+	sed -E -i -e 's/--ARCH--/'$*'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
+	mkdir -p out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin
+	cp $< out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
+	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION) $@
+	rm -rf out/docker-machine-driver-kvm2_$(DEB_VERSION)
+
+out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.x86_64.rpm
+	cp $< $@
+
+out/docker-machine-driver-kvm2_$(RPM_VERSION).amd64.rpm: out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.x86_64.rpm
+	cp $< $@
+
+out/docker-machine-driver-kvm2_$(RPM_VERSION).arm64.rpm: out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.aarch64.rpm
+	cp $< $@
+
+out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.%.rpm: out/docker-machine-driver-kvm2-%
+	cp -r installers/linux/rpm/kvm2_rpm_template out/docker-machine-driver-kvm2-$(RPM_VERSION)
+	sed -E -i -e 's/--VERSION--/'$(RPM_VERSION)'/g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	sed -E -i -e 's|--OUT--|'$(PWD)/out'|g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
+		out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	@mv out/$*/docker-machine-driver-kvm2-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
+	rm -rf out/docker-machine-driver-kvm2-$(RPM_VERSION)
+
+.PHONY: kvm-image-amd64
+kvm-image-amd64: installers/linux/kvm/Dockerfile.amd64  ## Convenient alias to build the docker container
+	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_AMD64) -f $< $(dir $<)
+	@echo ""
+	@echo "$(@) successfully built"
+
+.PHONY: kvm-image-arm64
+kvm-image-arm64: installers/linux/kvm/Dockerfile.arm64  ## Convenient alias to build the docker container
+	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
+	@echo ""
+	@echo "$(@) successfully built"
+
+kvm_in_docker:
+	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_AMD64) || $(MAKE) kvm-image-amd64
+	rm -f out/docker-machine-driver-kvm2
+	$(call DOCKER,$(KVM_BUILD_IMAGE_AMD64),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
+
+.PHONY: install-kvm-driver
+install-kvm-driver: out/docker-machine-driver-kvm2  ## Install KVM Driver
+	mkdir -p $(GOBIN)
+	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
+
+
+out/docker-machine-driver-kvm2-arm64:
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_ARM64) || $(MAKE) kvm-image-arm64
+	$(call DOCKER,$(KVM_BUILD_IMAGE_ARM64),/usr/bin/make $@ COMMIT=$(COMMIT))
+else
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOARCH=arm64 \
+	go build \
+		-installsuffix "static" \
+		-ldflags="$(KVM2_LDFLAGS)" \
+		-tags "libvirt.1.3.1 without_lxc" \
+		-o $@ \
+		k8s.io/minikube/cmd/drivers/kvm
+endif
+	chmod +X $@
+
 out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
-	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
+	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_AMD64) || $(MAKE) kvm-image-amd64
+	$(call DOCKER,$(KVM_BUILD_IMAGE_AMD64),/usr/bin/make $@ COMMIT=$(COMMIT))
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
 else
@@ -803,51 +885,6 @@ else
 endif
 	chmod +X $@
 
-out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_amd64.deb
-	cp $< $@
-
-out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_%.deb: out/docker-machine-driver-kvm2-%
-	cp -r installers/linux/deb/kvm2_deb_template out/docker-machine-driver-kvm2_$(DEB_VERSION)
-	chmod 0755 out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN
-	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
-	sed -E -i 's/--ARCH--/'$*'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
-	mkdir -p out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin
-	cp $< out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
-	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION) $@
-	rm -rf out/docker-machine-driver-kvm2_$(DEB_VERSION)
-
-out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.x86_64.deb
-	cp $< $@
-
-out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.%.rpm: out/docker-machine-driver-kvm2-%
-	cp -r installers/linux/rpm/kvm2_rpm_template out/docker-machine-driver-kvm2-$(RPM_VERSION)
-	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
-	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
-	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
-		out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
-	@mv out/$*/docker-machine-driver-kvm2-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
-	rm -rf out/docker-machine-driver-kvm2-$(RPM_VERSION)
-
-.PHONY: kvm-image
-kvm-image: installers/linux/kvm/Dockerfile  ## Convenient alias to build the docker container
-	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE) -f $< $(dir $<)
-	@echo ""
-	@echo "$(@) successfully built"
-
-kvm_in_docker:
-	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
-	rm -f out/docker-machine-driver-kvm2
-	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
-
-.PHONY: install-kvm-driver
-install-kvm-driver: out/docker-machine-driver-kvm2  ## Install KVM Driver
-	mkdir -p $(GOBIN)
-	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
-
-.PHONY: release-kvm-driver
-release-kvm-driver: install-kvm-driver checksum  ## Release KVM Driver
-	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
-	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
 
 site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
 	git submodule update -f --init --recursive
@@ -869,9 +906,6 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serv
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
 
-.PHONY: deploy/kicbase/auto-pause # auto pause binary to be used for kic image work around for not passing the whole repo as docker context
-deploy/kicbase/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
-	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
 # auto pause binary to be used for ISO
 deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)

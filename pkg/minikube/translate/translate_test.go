@@ -17,6 +17,11 @@ limitations under the License.
 package translate
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
 	"testing"
 
 	"golang.org/x/text/language"
@@ -96,4 +101,82 @@ func TestT(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTranslationFilesValid(t *testing.T) {
+	languageFiles, err := filepath.Glob("../../../translations/*.json")
+	if err != nil {
+		t.Fatalf("failed to get translation files: %v", err)
+	}
+	for _, filename := range languageFiles {
+		lang := filepath.Base(filename)
+		t.Run(lang, func(t *testing.T) {
+			contents, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatalf("unable to read file %s: %v", filename, err)
+			}
+
+			// check if JSON is valid
+			if valid := json.Valid(contents); !valid {
+				t.Fatalf("%s does not contain valid json", filename)
+			}
+
+			// convert file into map
+			var entries map[string]string
+			if err := json.Unmarshal(contents, &entries); err != nil {
+				t.Fatalf("could not unmarshal file %s: %v", filename, err)
+			}
+
+			// for each line
+			for k, v := range entries {
+				// if no translation, skip
+				if v == "" {
+					continue
+				}
+
+				// get all variables (ex. {{.name}})
+				keyVariables := distinctVariables(k)
+				valueVariables := distinctVariables(v)
+
+				// check if number of original string and translated variables match
+				if len(keyVariables) != len(valueVariables) {
+					t.Errorf("line %q: %q has mismatching number of variables\noriginal string variables: %s; translated variables: %s", k, v, keyVariables, valueVariables)
+					continue
+				}
+
+				// for each variable in the original string
+				for i, keyVar := range keyVariables {
+					// check if translated string has same variable
+					if keyVar != valueVariables[i] {
+						t.Errorf("line %q: %q has mismatching variables\noriginal string variables: %s do not match translated variables: %s", k, v, keyVariables, valueVariables)
+						break
+					}
+				}
+			}
+		})
+	}
+}
+
+func distinctVariables(line string) []string {
+	re := regexp.MustCompile(`{{\..+?}}`)
+
+	// get all the variables from the string (possiible duplicates)
+	variables := re.FindAllString(line, -1)
+	distinctMap := make(map[string]bool)
+
+	// add them to a map to get distinct list of variables
+	for _, variable := range variables {
+		distinctMap[variable] = true
+	}
+	distinct := []string{}
+
+	// convert map into slice
+	for k := range distinctMap {
+		distinct = append(distinct, k)
+	}
+
+	// sort the slice to make the comparison easier
+	sort.Strings(distinct)
+
+	return distinct
 }

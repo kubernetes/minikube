@@ -19,7 +19,7 @@ package main
 import (
 	"context"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v36/github"
 
 	"k8s.io/klog/v2"
 )

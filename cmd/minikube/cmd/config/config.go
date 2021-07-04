@@ -76,7 +76,7 @@ var settings = []Setting{
 	{
 		name:        "cpus",
 		set:         SetInt,
-		validations: []setFn{IsPositive},
+		validations: []setFn{IsValidCPUs},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
