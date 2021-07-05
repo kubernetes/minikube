@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-# As of 2021-02-03, v1.0.0-rc93
-RUNC_MASTER_VERSION = 12644e614e25b05da6fd08a38ffa0cfe1903fdec
+# As of 2021-05-19, v1.0.0-rc95
+RUNC_MASTER_VERSION = b9ee9c6314599f1b4a7f497e1f1f856fe433d3b7
 RUNC_MASTER_SITE = https://github.com/opencontainers/runc/archive
 RUNC_MASTER_SOURCE = $(RUNC_MASTER_VERSION).tar.gz
 RUNC_MASTER_LICENSE = Apache-2.0
