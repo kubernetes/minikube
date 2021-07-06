@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"

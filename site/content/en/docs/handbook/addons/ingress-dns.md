@@ -1,6 +1,9 @@
-# Minikube Ingress DNS
-![Build Status](https://gitlab.com/cryptexlabs/public/development/minikube-ingress-dns/badges/master/pipeline.svg)
-
+---
+title: "Ingress DNS"
+linkTitle: "Minikube Ingress DNS"
+weight: 1
+date: 2021-06-03
+---
 DNS service for ingress controllers running on your minikube server
 
 ## Overview
@@ -172,7 +175,7 @@ sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.mDNSResponder.pli
 ## TODO
 - Add a service that runs on the host OS which will update the files in `/etc/resolver` automatically
 - Start this service when running `minikube addons enable ingress-dns` and stop the service when running
-`minikube addons disable ingress-dns`
+  `minikube addons disable ingress-dns`
 
 ## Contributors
 - [Josh Woodcock](https://github.com/woodcockjosh)

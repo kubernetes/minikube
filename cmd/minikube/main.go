@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
@@ -67,6 +68,7 @@ func main() {
 
 	// Don't parse flags when running as kubectl
 	_, callingCmd := filepath.Split(os.Args[0])
+	callingCmd = strings.TrimSuffix(callingCmd, ".exe")
 	parse := callingCmd != "kubectl"
 	setFlags(parse)
 

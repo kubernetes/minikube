@@ -19,13 +19,15 @@ package translate
 import (
 	"encoding/json"
 	"fmt"
-	"path"
+	"os"
+	"runtime"
 	"strings"
 
 	"github.com/cloudfoundry-attic/jibber_jabber"
 	"golang.org/x/text/language"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/translations"
 )
 
 var (
@@ -60,23 +62,29 @@ func T(s string) string {
 
 // DetermineLocale finds the system locale and sets the preferred language for output appropriately.
 func DetermineLocale() {
-	locale, err := jibber_jabber.DetectIETF()
-	if err != nil {
-		klog.V(1).Infof("Getting system locale failed: %v", err)
-		locale = ""
+	var locale string
+	// Allow windows users to overload the same env vars as unix users
+	if runtime.GOOS == "windows" {
+		locale = os.Getenv("LC_ALL")
+	}
+	if locale == "" {
+		var err error
+		locale, err = jibber_jabber.DetectIETF()
+		if err != nil {
+			klog.V(1).Infof("Getting system locale failed: %v", err)
+			locale = ""
+		}
 	}
 	SetPreferredLanguage(locale)
 
 	// Load translations for preferred language into memory.
 	p := preferredLanguage.String()
-	translationFile := path.Join("translations", fmt.Sprintf("%s.json", p))
-	t, err := Asset(translationFile)
+	t, err := translations.Translations.ReadFile(fmt.Sprintf("%s.json", p))
 	if err != nil {
 		// Attempt to find a more broad locale, e.g. fr instead of fr-FR.
 		if strings.Contains(p, "-") {
 			p = strings.Split(p, "-")[0]
-			translationFile := path.Join("translations", fmt.Sprintf("%s.json", p))
-			t, err = Asset(translationFile)
+			t, err = translations.Translations.ReadFile(fmt.Sprintf("%s.json", p))
 			if err != nil {
 				klog.V(1).Infof("Failed to load translation file for %s: %v", p, err)
 				return

@@ -106,7 +106,7 @@ var unpauseCmd = &cobra.Command{
 }
 
 func init() {
-	unpauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", constants.DefaultNamespaces, "namespaces to unpause")
+	unpauseCmd.Flags().StringSliceVarP(&namespaces, "namespaces", "n", constants.DefaultNamespaces, "namespaces to unpause")
 	unpauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, unpause all namespaces")
 	unpauseCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 }

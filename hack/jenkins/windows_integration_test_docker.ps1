@@ -21,6 +21,8 @@ gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-am
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
 
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT"
@@ -37,11 +39,12 @@ If ($lastexitcode -gt 0) {
 	Exit $lastexitcode
 }
 
-# Remove unused images and containers
-docker system prune --all --force
-
-
 ./out/minikube-windows-amd64.exe delete --all
+
+# Remove unused images and containers
+docker system prune --all --force --volumes
+
+./out/windows_integration_setup.ps1
 
 docker ps -aq | ForEach -Process {docker rm -fv $_}
 
@@ -85,7 +88,6 @@ gsutil -qm cp testout.json gs://$gcs_bucket/Docker_Windows.json
 gsutil -qm cp testout.html gs://$gcs_bucket/Docker_Windows.html
 gsutil -qm cp testout_summary.json gs://$gcs_bucket/Docker_Windows_summary.json
 
-
 # Update the PR with the new info
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"Docker_Windows`"}"
 Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
@@ -95,5 +97,7 @@ docker system prune --all --force
 
 # Just shutdown Docker, it's safer than anything else
 Get-Process "*Docker Desktop*" | Stop-Process
+
+./out/windows_integration_teardown.ps1
 
 Exit $env:result

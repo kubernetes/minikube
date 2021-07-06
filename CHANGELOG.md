@@ -1,5 +1,101 @@
 # Release Notes
 
+## Version 1.22.0-beta.0 - 2021-06-28
+
+Features:
+
+* auto-pause addon: add support for arm64 [#11743](https://github.com/kubernetes/minikube/pull/11743)
+* `addon list`: add info on each addon's maintainer  [#11753](https://github.com/kubernetes/minikube/pull/11753)
+* add ability to pass max to `--cpu` and `--memory` flags [#11692](https://github.com/kubernetes/minikube/pull/11692)
+
+Bugs:
+
+* Fix `--base-image` caching for images specified by name:tag [#11603](https://github.com/kubernetes/minikube/pull/11603)
+* Fix embed-certs global config [#11576](https://github.com/kubernetes/minikube/pull/11576)
+* Fix a download link to use arm64 instead of amd64 [#11653](https://github.com/kubernetes/minikube/pull/11653)
+* fix downloading duplicate base image [#11690](https://github.com/kubernetes/minikube/pull/11690)
+* fix multi-node loosing track of nodes after second restart [#11731](https://github.com/kubernetes/minikube/pull/11731)
+* gcp-auth: do not override existing environment variables in pods [#11665](https://github.com/kubernetes/minikube/pull/11665)
+
+Minor improvements:
+
+* Allow running amd64 binary on M1 [#11674](https://github.com/kubernetes/minikube/pull/11674)
+* improve containerd experience on cgroup v2 [#11632](https://github.com/kubernetes/minikube/pull/11632)
+* Improve French locale [#11728](https://github.com/kubernetes/minikube/pull/11728)
+* Fix UI error for stoppping systemd service [#11667](https://github.com/kubernetes/minikube/pull/11667)
+* international languages: allow using LC_ALL env to set local language for windows [#11721](https://github.com/kubernetes/minikube/pull/11721)
+* Change registery_mirror to registery-mirror [#11678](https://github.com/kubernetes/minikube/pull/11678)
+
+Version Upgrades:
+
+* ISO: Upgrade podman to 3.1.2 [#11704](https://github.com/kubernetes/minikube/pull/11704)
+* Upgrade Buildroot to 2021.02 LTS with Linux 4.19 [#11688](https://github.com/kubernetes/minikube/pull/11688)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andriy Dzikh
+- Daehyeok Mun
+- Dongjoon Hyun
+- Felipe Crescencio de Oliveira
+- Ilya Zuyev
+- JacekDuszenko
+- Jeff MAURY
+- Medya Ghazizadeh
+- Peixuan Ding
+- RA489
+- Sharif Elgamal
+- Steven Powell
+- Vishal Jain
+- zhangdb-git
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (63 comments)
+- sharifelgamal (9 comments)
+- ilya-zuyev (6 comments)
+- andriyDev (3 comments)
+- spowelljr (3 comments)
+- afbjorklund (1 comments)
+- prezha (1 comments)
+- tharun208 (1 comments)
+
+Thank you to our triage members for this release!
+
+## Version 1.21.0 - 2021-06-10
+* add more polish translations [#11587](https://github.com/kubernetes/minikube/pull/11587)
+* Modify MetricsServer to use v1 api version (instead of v1beta1). [#11584](https://github.com/kubernetes/minikube/pull/11584)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Andriy Dzikh
+- Ilya Zuyev
+- JacekDuszenko
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (11 comments)
+- medyagh (2 comments)
+- sharifelgamal (2 comments)
+- andriyDev (1 comments)
+
+Thank you to our triage members for this release!
+
+- RA489 (12 comments)
+- andriyDev (10 comments)
+- sharifelgamal (10 comments)
+- JacekDuszenko (7 comments)
+- spowelljr (5 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.21.0/) for this release!
+
 ## Version 1.21.0-beta.0 - 2021-06-02
 Features:
 * Support setting addons from environmental variables [#11469](https://github.com/kubernetes/minikube/pull/11469)
