@@ -44,10 +44,26 @@ func TestPause(t *testing.T) {
 			validator validateFunc
 		}{
 			{"Start", validateFreshStart},
+			{"DeployApp", validateDeployApp},
 			{"SecondStartNoReconfiguration", validateStartNoReconfigure},
 			{"Pause", validatePause},
 			{"VerifyStatus", validateStatus},
 			{"Unpause", validateUnpause},
+
+			{"PauseNamespaces", validatePauseNamespaces},
+			{"VerifyStatusNamespaces", validateStatusNamespaces},
+			{"UnpauseNamespaces", validateUnpauseNamespaces},
+			{"PauseNamespacesShort", validatePauseNamespacesShort},
+			{"VerifyStatusNamespacesShort", validateStatusNamespaces},
+			{"UnpauseNamespacesShort", validateUnpauseNamespacesShort},
+
+			{"PauseAllNamespaces", validatePauseAllNamespaces},
+			{"VerifyStatusAllNamespaces", validateStatus},
+			{"UnpauseAllNamespaces", validateUnpauseAllNamespaces},
+			{"PauseAllNamespacesShort", validatePauseAllNamespacesShort},
+			{"VerifyStatusAllNamespacesShort", validateStatus},
+			{"UnpauseAllNamespacesShort", validateUnpauseAllNamespacesShort},
+
 			{"PauseAgain", validatePause},
 			{"DeletePaused", validateDelete},
 			{"VerifyDeletedResources", validateVerifyDeleted},
@@ -99,26 +115,100 @@ func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile strin
 	}
 }
 
-// validatePause runs minikube pause
-func validatePause(ctx context.Context, t *testing.T, profile string) {
+// validateDeployApp deploys an app to a cluster
+func validateDeployApp(ctx context.Context, t *testing.T, profile string) {
+	// Create a deployment for app
+	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/nginx-deployment.yaml"))
+	if err != nil {
+		t.Errorf("failed to create nginx deployment")
+	}
+
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/nginx", "-n", "pause-test"))
+	if err != nil {
+		t.Errorf("failed to deploy nginx")
+	}
+}
+
+// runPauseCmd runs minikube pause with given flags
+func runPauseCmd(ctx context.Context, t *testing.T, profile string, flags []string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"pause", "-p", profile, "--alsologtostderr", "-v=5"}
+	args = append(args, flags...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to pause minikube with args: %q : %v", rr.Command(), err)
 	}
 }
 
-// validateUnpause runs minikube unpause
-func validateUnpause(ctx context.Context, t *testing.T, profile string) {
+// runUnpauseCmd runs minikube unpause with given flags
+func runUnpauseCmd(ctx context.Context, t *testing.T, profile string, flags []string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"unpause", "-p", profile, "--alsologtostderr", "-v=5"}
+	args = append(args, flags...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to unpause minikube with args: %q : %v", rr.Command(), err)
 	}
+}
+
+// validatePause runs minikube pause
+func validatePause(ctx context.Context, t *testing.T, profile string) {
+	runPauseCmd(ctx, t, profile, nil)
+}
+
+// validateUnpause runs minikube unpause
+func validateUnpause(ctx context.Context, t *testing.T, profile string) {
+	runUnpauseCmd(ctx, t, profile, nil)
+}
+
+// validatePauseNamespaces runs minikube pause with --namespaces flag
+func validatePauseNamespaces(ctx context.Context, t *testing.T, profile string) {
+	flags := []string{"--namespaces", "default,pause-test,unknown"}
+	runPauseCmd(ctx, t, profile, flags)
+}
+
+// validateUnpauseNamespaces runs minikube unpause with --namespaces flag
+func validateUnpauseNamespaces(ctx context.Context, t *testing.T, profile string) {
+	flags := []string{"--namespaces", "default,pause-test,unknown"}
+	runUnpauseCmd(ctx, t, profile, flags)
+}
+
+// validatePauseNamespacesShort runs minikube pause with -n flag
+func validatePauseNamespacesShort(ctx context.Context, t *testing.T, profile string) {
+	flags := []string{"-n", "default,pause-test,unknown"}
+	runPauseCmd(ctx, t, profile, flags)
+}
+
+// validateUnpauseNamespacesShort runs minikube unpause with -n flag
+func validateUnpauseNamespacesShort(ctx context.Context, t *testing.T, profile string) {
+	flags := []string{"-n", "default,pause-test,unknown"}
+	runUnpauseCmd(ctx, t, profile, flags)
+}
+
+// validatePauseAllNamespaces runs minikube pause with --all-namespaces flag
+func validatePauseAllNamespaces(ctx context.Context, t *testing.T, profile string) {
+	flags := []string{"--all-namespaces"}
+	runPauseCmd(ctx, t, profile, flags)
+}
+
+// validateUnpauseAllNamespaces runs minikube unpause with --all-namespaces flag
+func validateUnpauseAllNamespaces(ctx context.Context, t *testing.T, profile string) {
+	flags := []string{"--all-namespaces"}
+	runUnpauseCmd(ctx, t, profile, flags)
+}
+
+// validatePauseAllNamespacesShort runs minikube pause with -A flag
+func validatePauseAllNamespacesShort(ctx context.Context, t *testing.T, profile string) {
+	flags := []string{"-A"}
+	runPauseCmd(ctx, t, profile, flags)
+}
+
+// validateUnpauseAllNamespacesShort runs minikube unpause with -A flag
+func validateUnpauseAllNamespacesShort(ctx context.Context, t *testing.T, profile string) {
+	flags := []string{"-A"}
+	runUnpauseCmd(ctx, t, profile, flags)
 }
 
 // validateDelete deletes the unpaused cluster
@@ -191,5 +281,26 @@ func validateStatus(ctx context.Context, t *testing.T, profile string) {
 	}
 	if cs.StatusName != "Paused" {
 		t.Fatalf("incorrect status name: %v", cs.StatusName)
+	}
+}
+
+// validateStatusNamespaces makes sure paused clusters show up in minikube status correctly
+func validateStatusNamespaces(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	statusOutput := runStatusCmd(ctx, t, profile, false)
+	var cs cmd.ClusterState
+	if err := json.Unmarshal(statusOutput, &cs); err != nil {
+		t.Fatalf("unmarshalling: %v", err)
+	}
+	// verify the status looks as we expect
+	if cs.StatusCode != cmd.OK {
+		t.Fatalf("incorrect status code: %v", cs.StatusCode)
+	}
+	if cs.StatusName != "OK" {
+		t.Fatalf("incorrect status name: %v", cs.StatusName)
+	}
+	if cs.StepDetail != "* Paused 2 containers in: default, pause-test, unknown" {
+		t.Fatalf("incorrect step detail: %v", cs.StepDetail)
 	}
 }
