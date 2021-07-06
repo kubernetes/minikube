@@ -224,7 +224,12 @@ func loadAndInspect(ctx context.Context, t *testing.T, profile string, newImage 
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
-	if !strings.Contains(rr.Output(), fmt.Sprintf("busybox:load-%s", profile)) {
+	newImageLst := strings.Split(newImage, "/")
+	if len(newImageLst) == 0 {
+		t.Fatalf("new image improperly formed.")
+	}
+	// Check that unique tag name is in the output.
+	if !strings.Contains(rr.Output(), newImageLst[len(newImageLst)-1]) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 }
@@ -265,25 +270,25 @@ func validateLoadImageAndUpdateTag(ctx context.Context, t *testing.T, profile st
 		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
 	}
 	defer PostMortemLogs(t, profile)
-	// pull busybox
-	busyboxImage := "k8s.gcr.io/coredns:1.2.6"
-	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
+	// pull core dns
+	coreDNSImage := "k8s.gcr.io/coredns:1.2.6"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", coreDNSImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
-	// tag busybox
+	// tag with core dns
 	newImage := fmt.Sprintf("docker.io/library/coredns:load-%s", profile)
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, newImage))
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", coreDNSImage, newImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 	}
 
 	loadAndInspect(ctx, t, profile, newImage)
 
-	// tag busybox with a different tag, reload, and check it works.
+	// tag coredns with a different tag, reload, and check it works.
 	newImage = fmt.Sprintf("docker.io/library/coredns:load-new-%s", profile)
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, newImage))
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", coreDNSImage, newImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 	}
