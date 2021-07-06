@@ -69,12 +69,12 @@ var (
 
 	// user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary
 	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
-	// user attempted to run an amd64 executable on a darwin/arm64 system
-	WrongBinaryM1 = Kind{ID: "MK_WRONG_BINARY_M1", ExitCode: ExProgramUnsupported}
 
 	// minikube failed to create a new Docker Machine api client
 	NewAPIClient = Kind{ID: "MK_NEW_APICLIENT", ExitCode: ExProgramError}
-	// minikube could not enable an addon, e.g dashboard addon
+	// minikube could not disable an addon, e.g. dashboard addon
+	InternalAddonDisable = Kind{ID: "MK_ADDON_DISABLE", ExitCode: ExProgramError}
+	// minikube could not enable an addon, e.g. dashboard addon
 	InternalAddonEnable = Kind{ID: "MK_ADDON_ENABLE", ExitCode: ExProgramError}
 	// minikube failed to update internal configuration, such as the cached images config map
 	InternalAddConfig = Kind{ID: "MK_ADD_CONFIG", ExitCode: ExProgramError}
@@ -96,16 +96,10 @@ var (
 	InternalConfigView = Kind{ID: "MK_CONFIG_VIEW", ExitCode: ExProgramError}
 	// minikybe failed to delete an internal configuration, such as a cached image
 	InternalDelConfig = Kind{ID: "MK_DEL_CONFIG", ExitCode: ExProgramError}
-	// minikube failed to disable a minikube addon
-	InternalDisable = Kind{ID: "MK_DISABLE", ExitCode: ExProgramError}
 	// minikube failed to generate script to activate minikube docker-env
 	InternalDockerScript = Kind{ID: "MK_DOCKER_SCRIPT", ExitCode: ExProgramError}
-	// minkube failed to enable a minikube addon
-	InternalEnable = Kind{ID: "MK_ENABLE", ExitCode: ExProgramError}
 	// an error occurred when viper attempted to bind flags to configuration
 	InternalBindFlags = Kind{ID: "MK_BIND_FLAGS", ExitCode: ExProgramError}
-	// an error occurred when setting cofniguration flags (currently not in use)
-	InternalFlagSet = Kind{ID: "MK_FLAGS_SET", ExitCode: ExProgramError}
 	// minkube was passed an invalid format string in the --format flag
 	InternalFormatUsage = Kind{ID: "MK_FORMAT_USAGE", ExitCode: ExProgramError}
 	// minikube failed to auto-generate markdown-based documentation in the specified folder
@@ -116,8 +110,6 @@ var (
 	InternalKubernetesClient = Kind{ID: "MK_K8S_CLIENT", ExitCode: ExControlPlaneUnavailable}
 	// minikube failed to list some configuration data
 	InternalListConfig = Kind{ID: "MK_LIST_CONFIG", ExitCode: ExProgramError}
-	// minikube failed to write logs to stdout (currently not in use)
-	InternalLogtostderrFlag = Kind{ID: "MK_LOGTOSTDERR_FLAG", ExitCode: ExProgramError}
 	// minikube failed to follow or watch minikube logs
 	InternalLogFollow = Kind{ID: "MK_LOG_FOLLOW", ExitCode: ExProgramError}
 	// minikube failed to create an appropriate new runtime based on the driver in use
@@ -136,8 +128,6 @@ var (
 	InternalStatusJSON = Kind{ID: "MK_STATUS_JSON", ExitCode: ExProgramError}
 	// minikube failed to output minikube status text
 	InternalStatusText = Kind{ID: "MK_STATUS_TEXT", ExitCode: ExProgramError}
-	// minikube failed to generate script to deactivate minikube docker-env
-	InternalUnsetScript = Kind{ID: "MK_UNSET_SCRIPT", ExitCode: ExProgramError}
 	// minikube failed to execute (i.e. fill in values for) a view template for displaying current config
 	InternalViewExec = Kind{ID: "MK_VIEW_EXEC", ExitCode: ExProgramError}
 	// minikube failed to create view template for displaying current config
@@ -260,8 +250,6 @@ var (
 	HostDelCache = Kind{ID: "HOST_DEL_CACHE", ExitCode: ExHostError}
 	// minikube failed to kill a mount process
 	HostKillMountProc = Kind{ID: "HOST_KILL_MOUNT_PROC", ExitCode: ExHostError}
-	// minikube failed to unset host Kubernetes resources config
-	HostKubeconfigUnset = Kind{ID: "HOST_KUBECNOFIG_UNSET", ExitCode: ExHostConfig}
 	// minikube failed to update host Kubernetes resources config
 	HostKubeconfigUpdate = Kind{ID: "HOST_KUBECONFIG_UPDATE", ExitCode: ExHostConfig}
 	// minikube failed to delete Kubernetes config from context for a given profile
@@ -312,8 +300,6 @@ var (
 	DrvAsRoot = Kind{ID: "DRV_AS_ROOT", ExitCode: ExDriverPermission}
 	// the specified driver needs to be run as root
 	DrvNeedsRoot = Kind{ID: "DRV_NEEDS_ROOT", ExitCode: ExDriverPermission}
-	// the specified driver needs to be run as administrator
-	DrvNeedsAdministrator = Kind{ID: "DRV_NEEDS_ADMINISTRATOR", ExitCode: ExDriverPermission}
 
 	// minikube failed to load cached images
 	GuestCacheLoad = Kind{ID: "GUEST_CACHE_LOAD", ExitCode: ExGuestError}
@@ -385,8 +371,6 @@ var (
 	InetCacheKubectl = Kind{ID: "INET_CACHE_KUBECTL", ExitCode: ExInternetError}
 	// minikube failed to cache required images to tar files
 	InetCacheTar = Kind{ID: "INET_CACHE_TAR", ExitCode: ExInternetError}
-	// minikube failed to get required versions for binaries in use
-	InetGetVersions = Kind{ID: "INET_GET_VERSIONS", ExitCode: ExInternetError}
 	// minikube was unable to access main repository and mirrors for images
 	InetRepo = Kind{ID: "INET_REPO", ExitCode: ExInternetError}
 	// minikube was unable to access any known image repositories
@@ -400,8 +384,6 @@ var (
 	RuntimeEnable = Kind{ID: "RUNTIME_ENABLE", ExitCode: ExRuntimeError}
 	// minikube failed to cache images for the current container runtime
 	RuntimeCache = Kind{ID: "RUNTIME_CACHE", ExitCode: ExRuntimeError}
-	// minikube failed to restart the current container runtime
-	RuntimeRestart = Kind{ID: "RUNTIME_RESTART", ExitCode: ExRuntimeError}
 
 	// service check timed out while starting minikube dashboard
 	SvcCheckTimeout = Kind{ID: "SVC_CHECK_TIMEOUT", ExitCode: ExSvcTimeout}
@@ -422,8 +404,6 @@ var (
 	EnvDriverConflict = Kind{ID: "ENV_DRIVER_CONFLICT", ExitCode: ExDriverConflict}
 	// user attempted to run a command that is not supported on multi-node setup without some additional configuration
 	EnvMultiConflict = Kind{ID: "ENV_MULTINODE_CONFLICT", ExitCode: ExGuestConflict}
-	// the docker service was unavailable to the cluster
-	EnvDockerUnavailable = Kind{ID: "ENV_DOCKER_UNAVAILABLE", ExitCode: ExRuntimeUnavailable}
 	// the podman service was unavailable to the cluster
 	EnvPodmanUnavailable = Kind{ID: "ENV_PODMAN_UNAVAILABLE", ExitCode: ExRuntimeUnavailable}
 

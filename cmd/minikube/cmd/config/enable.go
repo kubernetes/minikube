@@ -49,7 +49,7 @@ var addonsEnableCmd = &cobra.Command{
 		viper.Set(config.AddonRegistries, registries)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
 		if err != nil {
-			exit.Error(reason.InternalEnable, "enable failed", err)
+			exit.Error(reason.InternalAddonEnable, "enable failed", err)
 		}
 		if addon == "dashboard" {
 			tipProfileArg := ""
