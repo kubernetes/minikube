@@ -42,6 +42,7 @@ var k8sIssues = []K8sIssue{
 			"1.20.4",
 			"1.20.5",
 			"1.20.6",
+			"1.21.0",
 		},
 		Description: "Kubernetes {{.version}} has a known performance issue on cluster startup. It might take 2 to 3 minutes for a cluster to start.",
 		URL:         "https://github.com/kubernetes/kubeadm/issues/2395",
