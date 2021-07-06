@@ -30,6 +30,7 @@ type K8sIssue struct {
 
 var k8sIssues = []K8sIssue{
 	{
+		// fixed by github.com/kubernetes/kubernetes/pull/99336
 		VersionsAffected: []string{
 			"1.18.16",
 			"1.18.17",
