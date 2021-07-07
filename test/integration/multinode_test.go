@@ -466,13 +466,13 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 
 	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/busybox"))
 	if err != nil {
-		t.Errorf("failed to delploy busybox to multinode cluster")
+		t.Errorf("failed to deploy busybox to multinode cluster")
 	}
 
 	// resolve Pod IPs
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].status.podIP}'"))
 	if err != nil {
-		t.Errorf("failed retrieve Pod IPs")
+		t.Errorf("failed to retrieve Pod IPs")
 	}
 	podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 	if len(podIPs) != 2 {
