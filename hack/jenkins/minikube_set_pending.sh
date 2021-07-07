@@ -26,11 +26,6 @@
 
 set -eux -o pipefail
 
-if [ "${ghprbPullId}" == "master" ]; then
-  echo "not setting github status for continuous builds"
-  exit 0
-fi
-
 jobs=(
      'Hyperkit_macOS'
      # 'Hyper-V_Windows'
@@ -53,6 +48,15 @@ jobs=(
      # 'Podman_Linux'
      'Docker_Cloud_Shell'
 )
+
+SHORT_COMMIT=${ghprbActualCommit:0:7}
+STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/started_environments_${BUILD_NUMBER}.txt"
+printf "%s\n" "${jobs[@]}" | gsutil cp - "${STARTED_LIST_REMOTE}"
+
+if [ "${ghprbPullId}" == "master" ]; then
+  echo "not setting github status for continuous builds"
+  exit 0
+fi
 
 # retry_github_status provides reliable github status updates
 function retry_github_status() {
@@ -88,11 +92,7 @@ function retry_github_status() {
   done
 }
 
-SHORT_COMMIT=${ghprbActualCommit:0:7}
 for j in ${jobs[@]}; do
   retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
   "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/${j}.pending"
 done
-
-STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/started_environments_${BUILD_NUMBER}.txt"
-printf "%s\n" "${jobs[@]}" | gsutil cp - "${STARTED_LIST_REMOTE}"
