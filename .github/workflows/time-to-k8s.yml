@@ -18,4 +18,18 @@ jobs:
           stable: true
     - name: Benchmark
       run: |
-          ./hack/benchmark/time-to-k8s/time-to-k8s.sh ${{ secrets.MINIKUBE_BOT_PAT }}
+          ./hack/benchmark/time-to-k8s/time-to-k8s.sh
+          echo "::set-output name=version::$(minikube version --short)"
+    - name: Create PR
+      uses: peter-evans/create-pull-request@v3
+      with:
+        token: ${{ secrets.MINIKUBE_BOT_PAT }}
+        commit-message: add time-to-k8s benchmark for ${{ steps.gendocs.outputs.version }}
+        committer: minikube-bot <minikube-bot@google.com>
+        author: minikube-bot <minikube-bot@google.com>
+        branch: addTimeToK8s${{ steps.gendocs.outputs.version }}
+        push-to-fork: minikube-bot/minikube
+        base: master
+        delete-branch: true
+        title: Add time-to-k8s benchmark for ${{ steps.gendocs.outputs.version }}
+        body: Updating time-to-k8s benchmark as part of the release process
