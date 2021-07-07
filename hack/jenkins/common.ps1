@@ -28,7 +28,10 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integrat
 
 $started=Get-Date -UFormat %s
 
-out/e2e-windows-amd64.exe --minikube-start-args="--driver=$driver" --binary=out/minikube-windows-amd64.exe --test.v --test.timeout=$timeout | Tee-Object -FilePath testout.txt
+gotestsum --jsonfile testout.json -f standard-verbose --raw-command -- `
+  go tool test2json -t `
+  out/e2e-windows-amd64.exe --minikube-start-args="--driver=$driver" --binary=out/minikube-windows-amd64.exe --test.v --test.timeout=$timeout |
+  Tee-Object -FilePath testout.txt
 
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
@@ -44,8 +47,6 @@ $ended=Get-Date -UFormat %s
 $elapsed=$ended-$started
 $elapsed=$elapsed/60
 $elapsed=[math]::Round($elapsed, 2)
-
-Get-Content testout.txt -Encoding ASCII | go tool test2json -t | Out-File -FilePath testout.json -Encoding ASCII
 
 $gopogh_status=gopogh --in testout.json --out_html testout.html --out_summary testout_summary.json --name "$env:JOB_NAME" -pr $env:MINIKUBE_LOCATION --repo github.com/kubernetes/minikube/ --details $env:COMMIT
 
