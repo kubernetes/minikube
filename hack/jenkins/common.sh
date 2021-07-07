@@ -96,6 +96,9 @@ fi
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
 
+# install gotestsum if not present
+GOROOT="/usr/local/go" ./installers/check_install_gotestsum.sh || true
+
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
 docker system df || true
@@ -374,7 +377,6 @@ gotestsum --jsonfile "${JSON_OUT}" -f standard-verbose --raw-command -- \
     ${EXTRA_TEST_ARGS} \
     -binary="${MINIKUBE_BIN}" 2>&1 \
   | tee "${TEST_OUT}"
-  
 
 result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
 set +x
