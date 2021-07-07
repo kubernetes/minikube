@@ -129,14 +129,14 @@ minikube was interrupted by an OS signal
 "MK_WRONG_BINARY_WSL" (Exit code ExProgramUnsupported)  
 user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary  
 
-"MK_WRONG_BINARY_M1" (Exit code ExProgramUnsupported)  
-user attempted to run an amd64 executable on a darwin/arm64 system  
-
 "MK_NEW_APICLIENT" (Exit code ExProgramError)  
 minikube failed to create a new Docker Machine api client  
 
+"MK_ADDON_DISABLE" (Exit code ExProgramError)  
+minikube could not disable an addon, e.g. dashboard addon  
+
 "MK_ADDON_ENABLE" (Exit code ExProgramError)  
-minikube could not enable an addon, e.g dashboard addon  
+minikube could not enable an addon, e.g. dashboard addon  
 
 "MK_ADD_CONFIG" (Exit code ExProgramError)  
 minikube failed to update internal configuration, such as the cached images config map  
@@ -168,20 +168,11 @@ minikube failed to view current config values
 "MK_DEL_CONFIG" (Exit code ExProgramError)  
 minikybe failed to delete an internal configuration, such as a cached image  
 
-"MK_DISABLE" (Exit code ExProgramError)  
-minikube failed to disable a minikube addon  
-
 "MK_DOCKER_SCRIPT" (Exit code ExProgramError)  
 minikube failed to generate script to activate minikube docker-env  
 
-"MK_ENABLE" (Exit code ExProgramError)  
-minkube failed to enable a minikube addon  
-
 "MK_BIND_FLAGS" (Exit code ExProgramError)  
 an error occurred when viper attempted to bind flags to configuration  
-
-"MK_FLAGS_SET" (Exit code ExProgramError)  
-an error occurred when setting cofniguration flags (currently not in use)  
 
 "MK_FORMAT_USAGE" (Exit code ExProgramError)  
 minkube was passed an invalid format string in the --format flag  
@@ -197,9 +188,6 @@ minikube failed to create a Kubernetes client set which is necessary for queryin
 
 "MK_LIST_CONFIG" (Exit code ExProgramError)  
 minikube failed to list some configuration data  
-
-"MK_LOGTOSTDERR_FLAG" (Exit code ExProgramError)  
-minikube failed to write logs to stdout (currently not in use)  
 
 "MK_LOG_FOLLOW" (Exit code ExProgramError)  
 minikube failed to follow or watch minikube logs  
@@ -227,9 +215,6 @@ minikube failed to output JSON-formatted minikube status
 
 "MK_STATUS_TEXT" (Exit code ExProgramError)  
 minikube failed to output minikube status text  
-
-"MK_UNSET_SCRIPT" (Exit code ExProgramError)  
-minikube failed to generate script to deactivate minikube docker-env  
 
 "MK_VIEW_EXEC" (Exit code ExProgramError)  
 minikube failed to execute (i.e. fill in values for) a view template for displaying current config  
@@ -309,9 +294,6 @@ minikube failed to delete cached images from host
 "HOST_KILL_MOUNT_PROC" (Exit code ExHostError)  
 minikube failed to kill a mount process  
 
-"HOST_KUBECNOFIG_UNSET" (Exit code ExHostConfig)  
-minikube failed to unset host Kubernetes resources config  
-
 "HOST_KUBECONFIG_UPDATE" (Exit code ExHostConfig)  
 minikube failed to update host Kubernetes resources config  
 
@@ -374,9 +356,6 @@ the driver in use is being run as root
 
 "DRV_NEEDS_ROOT" (Exit code ExDriverPermission)  
 the specified driver needs to be run as root  
-
-"DRV_NEEDS_ADMINISTRATOR" (Exit code ExDriverPermission)  
-the specified driver needs to be run as administrator  
 
 "GUEST_CACHE_LOAD" (Exit code ExGuestError)  
 minikube failed to load cached images  
@@ -480,9 +459,6 @@ minikube failed to cache the kubectl binary
 "INET_CACHE_TAR" (Exit code ExInternetError)  
 minikube failed to cache required images to tar files  
 
-"INET_GET_VERSIONS" (Exit code ExInternetError)  
-minikube failed to get required versions for binaries in use  
-
 "INET_REPO" (Exit code ExInternetError)  
 minikube was unable to access main repository and mirrors for images  
 
@@ -500,9 +476,6 @@ minikube failed to enable the current container runtime
 
 "RUNTIME_CACHE" (Exit code ExRuntimeError)  
 minikube failed to cache images for the current container runtime  
-
-"RUNTIME_RESTART" (Exit code ExRuntimeError)  
-minikube failed to restart the current container runtime  
 
 "SVC_CHECK_TIMEOUT" (Exit code ExSvcTimeout)  
 service check timed out while starting minikube dashboard  
@@ -530,9 +503,6 @@ user attempted to use a command that is not supported by the driver currently in
 
 "ENV_MULTINODE_CONFLICT" (Exit code ExGuestConflict)  
 user attempted to run a command that is not supported on multi-node setup without some additional configuration  
-
-"ENV_DOCKER_UNAVAILABLE" (Exit code ExRuntimeUnavailable)  
-the docker service was unavailable to the cluster  
 
 "ENV_PODMAN_UNAVAILABLE" (Exit code ExRuntimeUnavailable)  
 the podman service was unavailable to the cluster  
