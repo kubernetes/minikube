@@ -132,7 +132,7 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 [[params.links.user]]
 	name = "twitter"
 	url = "https://twitter.com/minikube_dev"
-	icon = "fas fa-twitter"
+	icon = "fab fa-twitter"
 	desc = "Follow minikube's official twitter for news/releases"
 
 
