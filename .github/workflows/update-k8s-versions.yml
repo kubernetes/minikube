@@ -1,5 +1,6 @@
 name: "update-kubernetes-versions"
 on:
+  workflow_dispatch:
   schedule:
     # every Monday at around 1 am pacific/8 am UTC
     - cron: "0 8 * * 1"
