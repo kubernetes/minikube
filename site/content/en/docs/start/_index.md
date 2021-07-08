@@ -427,21 +427,20 @@ choco install minikube
 <br>
     Or if you have `curl` installed, use this command:
     ```shell
-    curl -Lo minikube.exe https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe
+    curl -Lo minikube.exe https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe
+    New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
+    Move-Item .\minikube.exe c:\minikube\minikube.exe -Force
     ```
 
-2. Add the binary in to your `PATH`.
-    - Create a new folder in C drive, name it `minikube` (recommended) or whatever you like.
-
-    - Move the `minikube.exe` to that folder.
-    - Click on the Windows start menu. Start typing "environment".
-    - You'll see the search result **Edit the system environment variabless.** Select it.
-    - A System Properties window will popup. Click the **Environment Variables** button at the bottom.
-    - Select the `Path` variable under **System variables**. Click the **Edit** button.
-    - Click the **Add** button and paste in the folder path where `minikube.exe` is placed.
-    - Click **OK** as needed. Close all remaining windows by clicking **OK**.
-    - Reopen Command prompt window, and run.
-
+2. Add the binary in to your `PATH`.  
+<br>
+    _Make sure to run PowerShell as Administrator._
+    ```shell
+    $oldpath=[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+    if($oldpath -notlike "*;C:\minikube*"){`
+      [Environment]::SetEnvironmentVariable("Path", $oldpath+";C:\minikube", [EnvironmentVariableTarget]::Machine)`
+    }
+    ```
     _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
 {{% /quiz_instruction %}}
 
@@ -450,28 +449,28 @@ choco install minikube
 <br>
     Or if you have `curl` installed, use this command:
     ```shell
-    r=https://api.github.com/repos/kubernetes/minikube/releases
-    curl -Lo minikube.exe $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-windows-amd64.exe' | head -n1)
+    $r='https://api.github.com/repos/kubernetes/minikube/releases'
+    $u=curl -s $r | Select-String -Pattern 'http.*download/v.*beta.*/minikube-windows-amd64.exe' | Select Matches -First 1
+    curl -Lo minikube.exe $u.Matches.Value
+    New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
+    Move-Item .\minikube.exe c:\minikube\minikube.exe -Force
     ```
 
-2. Add the binary in to your `PATH`.
-    - Create a new folder in C drive, name it `minikube` (recommended) or whatever you like.
-
-    - Move the `minikube.exe` to that folder.
-    - Click on the Windows start menu. Start typing "environment".
-    - You'll see the search result **Edit the system environment variabless.** Select it.
-    - A System Properties window will popup. Click the **Environment Variables** button at the bottom.
-    - Select the `Path` variable under **System variables**. Click the **Edit** button.
-    - Click the **Add** button and paste in the folder path where `minikube.exe` is placed.
-    - Click **OK** as needed. Close all remaining windows by clicking **OK**.
-    - Reopen Command prompt window, and run.
-
+2. Add the binary in to your `PATH`.  
+<br>
+    _Make sure to run PowerShell as Administrator._
+    ```shell
+    $oldpath=[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+    if($oldpath -notlike "*;C:\minikube*"){`
+      [Environment]::SetEnvironmentVariable("Path", $oldpath+";C:\minikube", [EnvironmentVariableTarget]::Machine)`
+    }
+    ```
     _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
 <script type="text/javascript">
   fetch("https://api.github.com/repos/kubernetes/minikube/releases")
     .then(response => response.text())
     .then(data => {
-      let u = data.match(/http.*download\/v.*beta.*\/minikube-windows-amd64\.exe/)[0]
+      let u = data.match(/http.*download\/v.*beta.*\/minikube-installer\.exe/)[0]
       document.getElementById("latest-beta-download-link").href=u;
     })
     .catch((error) => {
