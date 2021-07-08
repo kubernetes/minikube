@@ -33,12 +33,13 @@ var distros = []string{
 	"debian:10",
 	"debian:9",
 	"ubuntu:latest",
+	"ubuntu:21.04",
 	"ubuntu:20.10",
 	"ubuntu:20.04",
 	"ubuntu:18.04",
 }
 
-var timeout = Minutes(10)
+var timeout = Minutes(16)
 
 // TestPackageInstall tests installation of .deb packages with minikube itself and with kvm2 driver
 // on various debian/ubuntu docker images
@@ -56,53 +57,63 @@ func TestDebPackageInstall(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to get minikube path: %v", err)
 	}
-	mkDebs, err := filepath.Glob(fmt.Sprintf("%s/minikube_*_%s.deb", pkgDir, runtime.GOARCH))
-	if err != nil {
-		t.Errorf("failed to find minikube deb in %q: %v", pkgDir, err)
-	}
-	kvmDebs, err := filepath.Glob(fmt.Sprintf("%s/docker-machine-driver-kvm2_*_%s.deb", pkgDir, runtime.GOARCH))
-	if err != nil {
-		t.Errorf("failed to find minikube deb in %q: %v", pkgDir, err)
-	}
 
 	for _, distro := range distros {
 		distroImg := distro
 		testName := fmt.Sprintf("install_%s_%s", runtime.GOARCH, distroImg)
 		t.Run(testName, func(t *testing.T) {
-			// apt-get update; dpkg -i minikube_${ver}_${arch}.deb
-			t.Run("minikube", func(t *testing.T) {
-				for _, mkDeb := range mkDebs {
-					rr, err := dpkgInstall(ctx, t, distro, mkDeb)
-					if err != nil || rr.ExitCode != 0 {
-						t.Errorf("failed to install %q on %q: err=%v, exit=%d",
-							mkDeb, distroImg, err, rr.ExitCode)
-					}
+			for _, arch := range []string{"amd64", "arm64"} {
+
+				mkDebs, err := filepath.Glob(fmt.Sprintf("%s/minikube_*_%s.deb", pkgDir, arch))
+				if err != nil {
+					t.Errorf("failed to find minikube deb in %q: %v", pkgDir, err)
 				}
-			})
-			// apt-get update; apt-get install -y libvirt0; dpkg -i docker-machine-driver-kvm2_${ver}_${arch}.deb
-			t.Run("kvm2-driver", func(t *testing.T) {
-				for _, kvmDeb := range kvmDebs {
-					rr, err := dpkgInstallDriver(ctx, t, distro, kvmDeb)
-					if err != nil || rr.ExitCode != 0 {
-						t.Errorf("failed to install %q on %q: err=%v, exit=%d",
-							kvmDeb, distroImg, err, rr.ExitCode)
-					}
+				kvmDebs, err := filepath.Glob(fmt.Sprintf("%s/docker-machine-driver-kvm2_*_%s.deb", pkgDir, arch))
+				if err != nil {
+					t.Errorf("failed to find minikube deb in %q: %v", pkgDir, err)
 				}
-			})
+
+				// Check minikube installation
+				t.Run("minikube", func(t *testing.T) {
+					for _, mkDeb := range mkDebs {
+						// apt-get update; dpkg -i minikube_${ver}_${arch}.deb
+						rr, err := dpkgInstall(ctx, t, distro, arch, mkDeb)
+						if err != nil || rr.ExitCode != 0 {
+							t.Errorf("failed to install %q on %q: err=%v, exit=%d",
+								mkDeb, distroImg, err, rr.ExitCode)
+						}
+					}
+				})
+				// Check kvm2 drivers installation
+				t.Run("kvm2-driver", func(t *testing.T) {
+					for _, kvmDeb := range kvmDebs {
+						// apt-get update; apt-get install -y libvirt0; dpkg -i docker-machine-driver-kvm2_${ver}_${arch}.deb
+						rr, err := dpkgInstallDriver(ctx, t, distro, arch, kvmDeb)
+						if err != nil || rr.ExitCode != 0 {
+							t.Errorf("failed to install %q on %q: err=%v, exit=%d",
+								kvmDeb, distroImg, err, rr.ExitCode)
+						}
+					}
+				})
+			}
 		})
 	}
 }
 
-func dpkgInstall(ctx context.Context, t *testing.T, image, deb string) (*RunResult, error) {
+func dpkgInstall(ctx context.Context, t *testing.T, image, arch, deb string) (*RunResult, error) {
 	return Run(t, exec.CommandContext(ctx,
-		"docker", "run", "--rm", fmt.Sprintf("-v%s:/var/tmp", filepath.Dir(deb)),
+		"docker", "run", "--rm",
+		fmt.Sprintf("--platform=linux/%s", arch),
+		fmt.Sprintf("-v%s:/var/tmp", filepath.Dir(deb)),
 		image,
 		"sh", "-c", fmt.Sprintf("apt-get update; dpkg -i /var/tmp/%s", filepath.Base(deb))))
 }
 
-func dpkgInstallDriver(ctx context.Context, t *testing.T, image, deb string) (*RunResult, error) {
+func dpkgInstallDriver(ctx context.Context, t *testing.T, image, arch, deb string) (*RunResult, error) {
 	return Run(t, exec.CommandContext(ctx,
-		"docker", "run", "--rm", fmt.Sprintf("-v%s:/var/tmp", filepath.Dir(deb)),
+		"docker", "run", "--rm",
+		fmt.Sprintf("--platform=linux/%s", arch),
+		fmt.Sprintf("-v%s:/var/tmp", filepath.Dir(deb)),
 		image,
 		"sh", "-c", fmt.Sprintf("apt-get update; apt-get install -y libvirt0; dpkg -i /var/tmp/%s", filepath.Base(deb))))
 }
