@@ -34,7 +34,12 @@ This will enable the dashboard add-on, and open the proxy in the default web bro
 It's worth noting that web browsers generally do not run properly as the root user, so if you are
 in an environment where you are running as root, see the URL-only option.
 
+By default, the dashboard is only accessible from within the internal Kubernetes virtual network.
+The `dashboard` command creates a temporary proxy to make the dashboard accessible from outside the Kubernetes virtual network.
+
 To stop the proxy (leaves the dashboard running), abort the started process (`Ctrl+C`).
+After the command exits, the dashboard remains running in Kubernetes cluster.
+You can run the `dashboard` command again to create another proxy to access the dashboard.
 
 ## Getting just the dashboard URL
 
