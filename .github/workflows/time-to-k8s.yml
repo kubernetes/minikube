@@ -1,5 +1,6 @@
 name: "time-to-k8s benchmark"
 on:
+  workflow_dispatch:
   release:
     types: [released]
 env:
