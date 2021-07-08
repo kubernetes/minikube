@@ -18,6 +18,17 @@ Example:
 minikube start --kubernetes-version=v1.15.0
 ```
 
+## How can I create more than one cluster with minikube?
+
+By default, `minikube start` creates a cluster named "minikube". If you would like to create a different cluster or change its name, you can use the `--profile` (or `-p`) flag, which will create a cluster with the specified name. Please note that you can have multiple clusters on the same machine.
+
+To see the list of your current clusters, run:
+```
+minikube profile list
+```
+
+minikube profiles are meant to be isolated from one another, with their own settings and drivers. If you want to create a single cluster with multiple nodes, try the [multi-node feature]({{< ref "/docs/tutorials/multi_node" >}}) instead.
+
 
 ## Docker Driver: How can I set minikube's cgroup manager?
 
@@ -91,4 +102,37 @@ Yes! If you prefer not having emoji in your minikube output 😔 , just set the 
 ```
 MINIKUBE_IN_STYLE=0 minikube start
 
+```
+
+## How can I access a minikube cluster from a remote network?
+
+minikube's primary goal is to quickly set up local Kubernetes clusters, and therefore we strongly discourage using minikube in production or for listening to remote traffic. By design, minikube is meant to only listen on the local network.
+
+However, it is possible to configure minikube to listen on a remote network. This will open your network to the outside world and is not recommended. If you are not fully aware of the security implications, please avoid using this.
+
+For the docker and podman driver, use `--listen-address` flag:
+
+```
+minikube start --listen-address=0.0.0.0
+```
+
+## How can I allocate maximum resources to minikube?
+
+Setting the `memory` and `cpus` flags on the start command to `max` will use maximum available resources:
+```
+minikube start --memory=max --cpus=max
+```
+
+## How can I run minikube on a different hard drive?
+
+Set the `MINIKUBE_HOME` env to a path on the drive you want minikube to run, then run `minikube start`.
+
+```
+# Unix
+export MINIKUBE_HOME=/otherdrive/.minikube
+
+# Windows
+$env:MINIKUBE_HOME = "D:\.minikube"
+
+minikube start
 ```

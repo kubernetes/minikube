@@ -39,11 +39,10 @@ If ($lastexitcode -gt 0) {
 	Exit $lastexitcode
 }
 
-# Remove unused images and containers
-docker system prune --all --force
-
-
 ./out/minikube-windows-amd64.exe delete --all
+
+# Remove unused images and containers
+docker system prune --all --force --volumes
 
 ./out/windows_integration_setup.ps1
 
@@ -88,7 +87,6 @@ gsutil -qm cp testout.txt gs://$gcs_bucket/Docker_Windowsout.txt
 gsutil -qm cp testout.json gs://$gcs_bucket/Docker_Windows.json
 gsutil -qm cp testout.html gs://$gcs_bucket/Docker_Windows.html
 gsutil -qm cp testout_summary.json gs://$gcs_bucket/Docker_Windows_summary.json
-
 
 # Update the PR with the new info
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"Docker_Windows`"}"

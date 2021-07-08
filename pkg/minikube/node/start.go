@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
@@ -97,6 +97,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
+
+	// check if installed runtime is compatible with current minikube code
+	if err = cruntime.CheckCompatibility(cr); err != nil {
+		return nil, err
+	}
+
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
 	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
@@ -353,7 +359,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
-
 	return cr
 }
 

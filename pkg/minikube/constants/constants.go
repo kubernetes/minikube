@@ -34,10 +34,10 @@ var (
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
 	// dont update till #10545 is solved
-	DefaultKubernetesVersion = "v1.20.7"
+	DefaultKubernetesVersion = "v1.21.2"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.22.0-alpha.2"
+	NewestKubernetesVersion = "v1.22.0-beta.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.14.0"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -114,6 +114,8 @@ const (
 
 	// TimeFormat is the format that should be used when outputting time
 	TimeFormat = time.RFC1123
+	// MaxResources is the value that can be passed into the memory and cpus flags to specify to use maximum resources
+	MaxResources = "max"
 )
 
 var (

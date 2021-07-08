@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"

@@ -22,6 +22,8 @@ import (
 	"runtime"
 	"strings"
 
+	"k8s.io/minikube/pkg/minikube/detect"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -97,7 +99,7 @@ func CacheKubectlBinary(k8sVersion string) (string, error) {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVersion, runtime.GOOS, runtime.GOARCH)
+	return download.Binary(binary, k8sVersion, runtime.GOOS, detect.EffectiveArch())
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
@@ -131,6 +133,15 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
+
+			if driver.IsDocker(cc.Driver) {
+				if download.ImageExistsInDaemon(img) {
+					klog.Infof("%s exists in daemon, skipping load", img)
+					finalImg = img
+					return nil
+				}
+			}
+
 			klog.Infof("Downloading %s to local cache", img)
 			err = download.ImageToCache(img)
 			if err == nil {
@@ -139,14 +150,6 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 			if downloadOnly {
 				return err
-			}
-
-			if driver.IsDocker(cc.Driver) {
-				if download.ImageExistsInDaemon(img) {
-					klog.Infof("%s exists in daemon, skipping load", img)
-					finalImg = img
-					return nil
-				}
 			}
 
 			if cc.Driver == driver.Podman {

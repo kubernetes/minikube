@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -163,6 +163,30 @@ type ListImagesOptions struct {
 // ErrContainerRuntimeNotRunning is thrown when container runtime is not running
 var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running")
 
+// ErrServiceVersion is the error returned when disk image has incompatible version of service
+type ErrServiceVersion struct {
+	// Service is the name of the incompatible service
+	Service string
+	// Installed is the installed version of Service
+	Installed string
+	// Required is the minimum required version of Service
+	Required string
+}
+
+// NewErrServiceVersion creates a new ErrServiceVersion
+func NewErrServiceVersion(svc, required, installed string) *ErrServiceVersion {
+	return &ErrServiceVersion{
+		Service:   svc,
+		Installed: installed,
+		Required:  required,
+	}
+}
+
+func (e ErrServiceVersion) Error() string {
+	return fmt.Sprintf("service %q version is %v. Required: %v",
+		e.Service, e.Installed, e.Required)
+}
+
 // New returns an appropriately configured runtime
 func New(c Config) (Manager, error) {
 	sm := sysinit.New(c.Runner)
@@ -242,4 +266,30 @@ func disableOthers(me Manager, cr CommandRunner) error {
 		}
 	}
 	return nil
+}
+
+var requiredContainerdVersion = semver.MustParse("1.4.0")
+
+// compatibleWithVersion checks if current version of "runtime" is compatible with version "v"
+func compatibleWithVersion(runtime, v string) error {
+	if runtime == "containerd" {
+		vv, err := semver.Make(v)
+		if err != nil {
+			return err
+		}
+		if requiredContainerdVersion.GT(vv) {
+			return NewErrServiceVersion(runtime, requiredContainerdVersion.String(), vv.String())
+		}
+	}
+	return nil
+}
+
+// CheckCompatibility checks if the container runtime managed by "cr" is compatible with current minikube code
+// returns: NewErrServiceVersion if not
+func CheckCompatibility(cr Manager) error {
+	v, err := cr.Version()
+	if err != nil {
+		return errors.Wrap(err, "Failed to check container runtime version")
+	}
+	return compatibleWithVersion(cr.Name(), v)
 }
