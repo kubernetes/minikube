@@ -82,8 +82,8 @@ function install_golang() {
   # using sudo because previously installed versions might have been installed by a different user.
   # as it was the case on jenkins VM.
   sudo rm -rf "$GO_TGZ"
-  curl -qL -O "https://storage.googleapis.com/golang/$GO_TGZ" &&
-  sudo rm -rf "$GO_DIR" &&
+  curl -qL -O "https://storage.googleapis.com/golang/$GO_TGZ"
+  sudo rm -rf "$GO_DIR"
   sudo mkdir -p "$GO_DIR"
   sudo tar -C "$GO_DIR" --strip-components=1 -xzf "$GO_TGZ"
 
