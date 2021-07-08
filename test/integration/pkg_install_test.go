@@ -103,7 +103,7 @@ func dpkgInstall(ctx context.Context, t *testing.T, image, deb string) (*RunResu
 
 func dpkgInstallDriver(ctx context.Context, t *testing.T, image, deb string) (*RunResult, error) {
 	return Run(t, exec.CommandContext(ctx,
-		"docker", "run", "--rm", "", fmt.Sprintf("-v%s:/var/tmp", filepath.Dir(deb)),
+		"docker", "run", "--rm", fmt.Sprintf("-v%s:/var/tmp", filepath.Dir(deb)),
 		image,
 		"sh", "-c", fmt.Sprintf("apt-get update; apt-get install -y libvirt0; dpkg -i /var/tmp/%s", filepath.Base(deb))))
 }
