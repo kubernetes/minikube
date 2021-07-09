@@ -14,4 +14,12 @@
 
 $test_home="$env:HOMEDRIVE$env:HOMEPATH\minikube-integration"
 
+if ($driver == "docker") {
+  # Remove unused images and containers
+  docker system prune --all --force
+
+  # Just shutdown Docker, it's safer than anything else
+  Get-Process "*Docker Desktop*" | Stop-Process
+}
+
 rm -r -Force $test_home
