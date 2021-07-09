@@ -33,7 +33,6 @@ var distros = []string{
 	"debian:10",
 	"debian:9",
 	"ubuntu:latest",
-	"ubuntu:21.04",
 	"ubuntu:20.10",
 	"ubuntu:20.04",
 	"ubuntu:18.04",
