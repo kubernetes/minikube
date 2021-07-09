@@ -164,8 +164,23 @@ webhooks:
       namespace: gcp-auth
       path: "/mutate"
   rules:
-  - operations: ["CREATE", "UPDATE"]
+  - operations: ["CREATE"]
     apiGroups: ["*"]
     apiVersions: ["*"]
     resources: ["pods"]
+    scope: "*"
+- name: gcp-auth-mutate-sa.k8s.io
+  failurePolicy: Ignore
+  sideEffects: None
+  admissionReviewVersions: ["v1","v1beta1"]
+  clientConfig:
+    service:
+      name: gcp-auth
+      namespace: gcp-auth
+      path: "/mutate/sa"
+  rules:
+  - operations: ["CREATE"]
+    apiGroups: ["*"]
+    apiVersions: ["*"]
+    resources: ["serviceaccounts"]
     scope: "*"

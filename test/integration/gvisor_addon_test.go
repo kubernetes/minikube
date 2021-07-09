@@ -25,6 +25,7 @@ import (
 	"testing"
 )
 
+// TestGvisorAddon tests the functionality of the gVisor addon
 func TestGvisorAddon(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")

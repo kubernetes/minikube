@@ -23,8 +23,10 @@ import (
 var (
 	// LowBullet is a bullet-point prefix for Low-fi mode
 	LowBullet = "* "
-	// LowIndent is an indented bullet-point prefix for Low-fi mode
-	LowIndent = "  - "
+	// LowIndent is an indented prefix for Low-fi mode
+	LowIndent = "  "
+	// LowIndentBullet is an indented bullet-point prefix for Low-fi mode
+	LowIndentBullet = "  - "
 	// LowWarning is a warning prefix for Low-fi mode
 	LowWarning = "! "
 	// LowError is an error prefix for Low-fi mode
@@ -51,38 +53,40 @@ const SpinnerCharacter = 9
 // Config is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var Config = map[Enum]Options{
-	Celebration:   {Prefix: "🎉  "},
-	Check:         {Prefix: "✅  "},
-	Command:       {Prefix: "    ▪ ", LowPrefix: LowIndent}, // Indented bullet
-	Confused:      {Prefix: "😕  "},
-	Deleted:       {Prefix: "💀  "},
-	Documentation: {Prefix: "📘  "},
-	Empty:         {Prefix: "", LowPrefix: ""},
-	Happy:         {Prefix: "😄  "},
-	Issue:         {Prefix: "    ▪ ", LowPrefix: LowIndent}, // Indented bullet
-	Issues:        {Prefix: "🍿  "},
-	Launch:        {Prefix: "🚀  "},
-	LogEntry:      {Prefix: "    "}, // Indent
-	New:           {Prefix: "🆕  "},
-	Notice:        {Prefix: "📌  "},
-	Option:        {Prefix: "    ▪ ", LowPrefix: LowIndent}, // Indented bullet
-	Pause:         {Prefix: "⏸️  "},
-	Provisioning:  {Prefix: "🌱  "},
-	Ready:         {Prefix: "🏄  "},
-	Restarting:    {Prefix: "🔄  "},
-	Running:       {Prefix: "🏃  "},
-	Sparkle:       {Prefix: "✨  "},
-	Stopped:       {Prefix: "🛑  "},
-	Stopping:      {Prefix: "✋  "},
-	Success:       {Prefix: "✅  "},
-	ThumbsDown:    {Prefix: "👎  "},
-	ThumbsUp:      {Prefix: "👍  "},
-	Unpause:       {Prefix: "⏯️  "},
-	URL:           {Prefix: "👉  ", LowPrefix: LowIndent},
-	Usage:         {Prefix: "💡  "},
-	Waiting:       {Prefix: "⌛  "},
-	Unsupported:   {Prefix: "🚡  "},
-	Workaround:    {Prefix: "👉  ", LowPrefix: LowIndent},
+	Celebration:        {Prefix: "🎉  "},
+	Check:              {Prefix: "✅  "},
+	Command:            {Prefix: "    ▪ ", LowPrefix: LowIndentBullet},
+	Confused:           {Prefix: "😕  "},
+	Deleted:            {Prefix: "💀  "},
+	Documentation:      {Prefix: "📘  "},
+	Empty:              {Prefix: "", LowPrefix: ""},
+	Happy:              {Prefix: "😄  "},
+	Issue:              {Prefix: "    ▪ ", LowPrefix: LowIndentBullet},
+	Indent:             {Prefix: "    ", LowPrefix: LowIndent},
+	Issues:             {Prefix: "🍿  "},
+	Launch:             {Prefix: "🚀  "},
+	LogEntry:           {Prefix: "    "}, // Indent
+	New:                {Prefix: "🆕  "},
+	Notice:             {Prefix: "📌  "},
+	Option:             {Prefix: "    ▪ ", LowPrefix: LowIndentBullet},
+	Pause:              {Prefix: "⏸️  "},
+	Provisioning:       {Prefix: "🌱  "},
+	Ready:              {Prefix: "🏄  "},
+	Restarting:         {Prefix: "🔄  "},
+	Running:            {Prefix: "🏃  "},
+	Sparkle:            {Prefix: "✨  "},
+	Stopped:            {Prefix: "🛑  "},
+	Stopping:           {Prefix: "✋  "},
+	Success:            {Prefix: "✅  "},
+	ThumbsDown:         {Prefix: "👎  "},
+	ThumbsUp:           {Prefix: "👍  "},
+	Unpause:            {Prefix: "⏯️  "},
+	URL:                {Prefix: "👉  ", LowPrefix: LowIndent},
+	Usage:              {Prefix: "💡  "},
+	Waiting:            {Prefix: "⌛  "},
+	WaitingWithSpinner: {Prefix: "⌛  ", OmitNewline: true, Spinner: true},
+	Unsupported:        {Prefix: "🚡  "},
+	Workaround:         {Prefix: "👉  ", LowPrefix: LowIndent},
 
 	// Fail emoji's
 	Conflict:         {Prefix: "💢  ", LowPrefix: LowWarning},
@@ -129,7 +133,7 @@ var Config = map[Enum]Options{
 	StartingNone:     {Prefix: "🤹  "},
 	StartingSSH:      {Prefix: "🔗  "},
 	StartingVM:       {Prefix: "🔥  ", OmitNewline: true, Spinner: true},
-	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndent, OmitNewline: true, Spinner: true}, // Indented bullet
+	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndentBullet, OmitNewline: true, Spinner: true},
 	Tip:              {Prefix: "💡  "},
 	Unmount:          {Prefix: "🔥  "},
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},

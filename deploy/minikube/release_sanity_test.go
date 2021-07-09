@@ -1,5 +1,3 @@
-// +build release
-
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -23,6 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"runtime"
 	"testing"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
@@ -46,17 +45,34 @@ func getSHAFromURL(url string) (string, error) {
 	return hex.EncodeToString(b[:]), nil
 }
 
+// TestReleasesJSON checks if all *GA* releases
+// 	enlisted in https://storage.googleapis.com/minikube/releases.json
+//	are available to download and have correct hashsum
 func TestReleasesJSON(t *testing.T) {
-	releases, err := notify.GetAllVersionsFromURL(notify.GithubMinikubeReleasesURL)
+	releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeReleasesURL)
 	if err != nil {
 		t.Fatalf("Error getting releases.json: %v", err)
 	}
+	checkReleases(t, releases)
+}
 
-	for _, r := range releases {
+// TestBetaReleasesJSON checks if all *BETA* releases
+// 	enlisted in https://storage.googleapis.com/minikube/releases-beta.json
+//	are available to download and have correct hashsum
+func TestBetaReleasesJSON(t *testing.T) {
+	releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeBetaReleasesURL)
+	if err != nil {
+		t.Fatalf("Error getting releases-bets.json: %v", err)
+	}
+	checkReleases(t, releases)
+}
+
+func checkReleases(t *testing.T, rs notify.Releases) {
+	for _, r := range rs {
 		fmt.Printf("Checking release: %s\n", r.Name)
 		for platform, sha := range r.Checksums {
 			fmt.Printf("Checking SHA for %s.\n", platform)
-			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform))
+			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform, runtime.GOARCH))
 			if err != nil {
 				t.Errorf("Error calculating SHA for %s-%s. Error: %v", r.Name, platform, err)
 				continue

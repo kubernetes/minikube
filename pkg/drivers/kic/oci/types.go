@@ -186,7 +186,7 @@ const (
 	MountPropagationBidirectional MountPropagation = 2
 )
 
-// MountPropagationValueToName is a map of valid MountPropogation values to
+// MountPropagationValueToName is a map of valid MountPropagation values to
 // their string names
 var MountPropagationValueToName = map[MountPropagation]string{
 	MountPropagationNone:            "None",
@@ -194,7 +194,7 @@ var MountPropagationValueToName = map[MountPropagation]string{
 	MountPropagationBidirectional:   "Bidirectional",
 }
 
-// MountPropagationNameToValue is a map of valid MountPropogation names to
+// MountPropagationNameToValue is a map of valid MountPropagation names to
 // their values
 var MountPropagationNameToValue = map[string]MountPropagation{
 	"None":            MountPropagationNone,

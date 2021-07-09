@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -93,7 +94,7 @@ type logRunner interface {
 const lookBackwardsCount = 400
 
 // Follow follows logs from multiple files in tail(1) format
-func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner) error {
+func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner, logOutput io.Writer) error {
 	cs := []string{}
 	for _, v := range logCommands(r, bs, cfg, 0, true) {
 		cs = append(cs, v+" &")
@@ -101,8 +102,8 @@ func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	cs = append(cs, "wait")
 
 	cmd := exec.Command("/bin/bash", "-c", strings.Join(cs, " "))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
+	cmd.Stdout = logOutput
+	cmd.Stderr = logOutput
 	if _, err := cr.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "log follow")
 	}
@@ -146,7 +147,10 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.C
 }
 
 // OutputProblems outputs discovered problems.
-func OutputProblems(problems map[string][]string, maxLines int) {
+func OutputProblems(problems map[string][]string, maxLines int, logOutput *os.File) {
+	out.SetErrFile(logOutput)
+	defer out.SetErrFile(os.Stderr)
+
 	for name, lines := range problems {
 		out.FailureT("Problems detected in {{.name}}:", out.V{"name": name})
 		if len(lines) > maxLines {
@@ -159,7 +163,7 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int) error {
+func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int, logOutput *os.File) error {
 	cmds := logCommands(r, bs, cfg, lines, false)
 	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
@@ -167,6 +171,9 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	for k := range cmds {
 		names = append(names, k)
 	}
+
+	out.SetOutFile(logOutput)
+	defer out.SetOutFile(os.Stdout)
 
 	sort.Strings(names)
 	failed := []string{}
@@ -184,20 +191,12 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 			failed = append(failed, name)
 			continue
 		}
+		l := ""
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			out.Styled(style.Empty, scanner.Text())
+			l += scanner.Text() + "\n"
 		}
-	}
-
-	if err := outputAudit(lines); err != nil {
-		klog.Errorf("failed to output audit logs: %v", err)
-		failed = append(failed, "audit")
-	}
-
-	if err := outputLastStart(); err != nil {
-		klog.Errorf("failed to output last start logs: %v", err)
-		failed = append(failed, "last start")
+		out.Styled(style.Empty, l)
 	}
 
 	if len(failed) > 0 {
@@ -233,21 +232,37 @@ func outputLastStart() error {
 		return fmt.Errorf("failed to open file %s: %v", fp, err)
 	}
 	defer f.Close()
+	l := ""
 	s := bufio.NewScanner(f)
 	for s.Scan() {
-		out.Styled(style.Empty, s.Text())
+		l += s.Text() + "\n"
 	}
+	out.Styled(style.Empty, l)
 	if err := s.Err(); err != nil {
 		return fmt.Errorf("failed to read file %s: %v", fp, err)
 	}
 	return nil
 }
 
+// OutputOffline outputs logs that don't need a running cluster.
+func OutputOffline(lines int, logOutput *os.File) {
+	out.SetOutFile(logOutput)
+	defer out.SetOutFile(os.Stdout)
+	if err := outputAudit(lines); err != nil {
+		klog.Errorf("failed to output audit logs: %v", err)
+	}
+	if err := outputLastStart(); err != nil {
+		klog.Errorf("failed to output last start logs: %v", err)
+	}
+
+	out.Styled(style.Empty, "")
+}
+
 // logCommands returns a list of commands that would be run to receive the anticipated logs
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
 	for _, pod := range importantPods {
-		ids, err := r.ListContainers(cruntime.ListOptions{Name: pod})
+		ids, err := r.ListContainers(cruntime.ListContainersOptions{Name: pod})
 		if err != nil {
 			klog.Errorf("Failed to list containers for %q: %v", pod, err)
 			continue

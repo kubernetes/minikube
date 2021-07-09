@@ -21,12 +21,14 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
@@ -40,6 +42,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cni"
@@ -59,6 +62,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -93,6 +97,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
+
+	// check if installed runtime is compatible with current minikube code
+	if err = cruntime.CheckCompatibility(cr); err != nil {
+		return nil, err
+	}
+
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
 	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
@@ -130,6 +140,15 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
 			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 		}
+
+		// not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds
+		go func() {
+			// inject {"host.minikube.internal": hostIP} record into CoreDNS
+			if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
+				klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
+				out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
+			}
+		}()
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
@@ -163,9 +182,13 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}()
 
 	// enable addons, both old and new!
+	addonList := viper.GetStringSlice(config.AddonListFlag)
 	if starter.ExistingAddons != nil {
+		if viper.GetBool("force") {
+			addons.Force = true
+		}
 		wg.Add(1)
-		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
+		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, addonList)
 	}
 
 	if apiServer {
@@ -181,16 +204,11 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "generating join token")
+		if err := joinCluster(starter, cpBs, bs); err != nil {
+			return nil, errors.Wrap(err, "joining cp")
 		}
 
-		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
-			return nil, errors.Wrap(err, "joining cluster")
-		}
-
-		cnm, err := cni.New(*starter.Cfg)
+		cnm, err := cni.New(starter.Cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "cni")
 		}
@@ -199,8 +217,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "cni apply")
 		}
 	}
-
-	klog.Infof("Will wait %s for node up to ", viper.GetDuration(waitTimeout))
+	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}
@@ -210,6 +227,53 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// joinCluster adds new or prepares and then adds existing node to the cluster.
+func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrapper.Bootstrapper) error {
+	start := time.Now()
+	klog.Infof("JoinCluster: %+v", starter.Cfg)
+	defer func() {
+		klog.Infof("JoinCluster complete in %s", time.Since(start))
+	}()
+
+	joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
+	if err != nil {
+		return fmt.Errorf("error generating join token: %w", err)
+	}
+
+	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
+	// You must delete the existing Node or change the name of this new joining Node"
+	if starter.PreExists {
+		klog.Infof("removing existing worker node %q before attempting to rejoin cluster: %+v", starter.Node.Name, starter.Node)
+		if _, err := drainNode(*starter.Cfg, starter.Node.Name); err != nil {
+			klog.Errorf("error removing existing worker node before rejoining cluster, will continue anyway: %v", err)
+		}
+		klog.Infof("successfully removed existing worker node %q from cluster: %+v", starter.Node.Name, starter.Node)
+	}
+
+	join := func() error {
+		klog.Infof("trying to join worker node %q to cluster: %+v", starter.Node.Name, starter.Node)
+		if err := bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
+			klog.Errorf("worker node failed to join cluster, will retry: %v", err)
+
+			// reset worker node to revert any changes made by previous kubeadm init/join
+			klog.Infof("resetting worker node %q before attempting to rejoin cluster...", starter.Node.Name)
+			if _, err := starter.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset --force", bsutil.InvokeKubeadm(starter.Cfg.KubernetesConfig.KubernetesVersion)))); err != nil {
+				klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
+			} else {
+				klog.Infof("successfully reset worker node %q", starter.Node.Name)
+			}
+
+			return err
+		}
+		return nil
+	}
+	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
+		return fmt.Errorf("error joining worker node to cluster: %w", err)
+	}
+
+	return nil
 }
 
 // Provision provisions the machine/container for the node
@@ -227,7 +291,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	}
 
 	if !driver.BareMetal(cc.Driver) {
-		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
+		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
 	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
@@ -236,7 +300,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
 	}
 
-	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
+	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
 	waitDownloadKicBaseImage(&kicGroup)
 
 	return startMachine(cc, n, delOnFail)
@@ -265,7 +329,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	// Preload is overly invasive for bare metal, and caching is not meaningful.
 	// KIC handles preload elsewhere.
 	if driver.IsVM(cc.Driver) {
-		if err := cr.Preload(cc.KubernetesConfig); err != nil {
+		if err := cr.Preload(cc); err != nil {
 			switch err.(type) {
 			case *cruntime.ErrISOFeature:
 				out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
@@ -295,7 +359,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
-
 	return cr
 }
 
@@ -377,6 +440,9 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	// update cluster and set up certs
 
 	if err := bs.UpdateCluster(cfg); err != nil {
+		if errors.Is(err, cruntime.ErrContainerRuntimeNotRunning) {
+			exit.Error(reason.KubernetesInstallFailedRuntimeNotRunning, "Failed to update cluster", err)
+		}
 		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 	}
 
@@ -394,7 +460,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	}
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, cc.KubernetesConfig.APIServerName, -1)
+		addr = strings.ReplaceAll(addr, n.IP, cc.KubernetesConfig.APIServerName)
 	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
@@ -425,7 +491,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists, err = startHost(m, cfg, node, delOnFail)
+	host, preExists, err = startHostInternal(m, cfg, node, delOnFail)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
 	}
@@ -448,8 +514,8 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	return runner, preExists, m, host, err
 }
 
-// startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
+// startHostInternal starts a new minikube host using a VM or None
+func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
 		return host, exists, nil
@@ -620,4 +686,48 @@ func prepareNone() {
 	if err := util.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
 		exit.Message(reason.HostHomeChown, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": localpath.MiniPath(), "error": err})
 	}
+}
+
+// addCoreDNSEntry adds host name and IP record to the DNS by updating CoreDNS's ConfigMap.
+// ref: https://coredns.io/plugins/hosts/
+// note: there can be only one 'hosts' block in CoreDNS's ConfigMap (avoid "plugin/hosts: this plugin can only be used once per Server Block" error)
+func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterConfig) error {
+	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
+	kubecfg := path.Join(vmpath.GuestPersistentDir, "kubeconfig")
+
+	// get current coredns configmap via kubectl
+	get := fmt.Sprintf("sudo %s --kubeconfig=%s -n kube-system get configmap coredns -o yaml", kubectl, kubecfg)
+	out, err := runner.RunCmd(exec.Command("/bin/bash", "-c", get))
+	if err != nil {
+		klog.Errorf("failed to get current CoreDNS ConfigMap: %v", err)
+		return err
+	}
+	cm := strings.TrimSpace(out.Stdout.String())
+
+	// check if this specific host entry already exists in coredns configmap, so not to duplicate/override it
+	host := regexp.MustCompile(fmt.Sprintf(`(?smU)^ *hosts {.*%s.*}`, name))
+	if host.MatchString(cm) {
+		klog.Infof("CoreDNS already contains %q host record, skipping...", name)
+		return nil
+	}
+
+	// inject hosts block with host record into coredns configmap
+	sed := fmt.Sprintf("sed '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
+	// check if hosts block already exists in coredns configmap
+	hosts := regexp.MustCompile(`(?smU)^ *hosts {.*}`)
+	if hosts.MatchString(cm) {
+		// inject host record into existing coredns configmap hosts block instead
+		klog.Info("CoreDNS already contains hosts block, will inject host record there...")
+		sed = fmt.Sprintf("sed '/^        hosts {.*/a \\           %s %s'", ip, name)
+	}
+
+	// replace coredns configmap via kubectl
+	replace := fmt.Sprintf("sudo %s --kubeconfig=%s replace -f -", kubectl, kubecfg)
+	if _, err := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s | %s", get, sed, replace))); err != nil {
+		klog.Errorf("failed to inject {%q: %s} host record into CoreDNS", name, ip)
+		return err
+	}
+	klog.Infof("{%q: %s} host record injected into CoreDNS", name, ip)
+
+	return nil
 }

@@ -39,7 +39,7 @@ func TestSetNotAllowed(t *testing.T) {
 		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
 	err = Set("memory", "10a")
-	if err == nil || err.Error() != "run validations for \"memory\" with value of \"10a\": [invalid disk size: invalid size: '10a']" {
+	if err == nil || err.Error() != "run validations for \"memory\" with value of \"10a\": [invalid memory size: invalid size: '10a']" {
 		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
 }

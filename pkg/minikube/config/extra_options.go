@@ -65,6 +65,14 @@ func (es *ExtraOptionSlice) Exists(value string) bool {
 
 // Set parses the string value into a slice
 func (es *ExtraOptionSlice) Set(value string) error {
+
+	// Check we don't end with suffix quotation.
+	prefixExists := strings.HasPrefix(value, "”") || strings.HasPrefix(value, "“")
+	suffixExists := strings.HasSuffix(value, "”") || strings.HasSuffix(value, "“")
+	if !prefixExists && suffixExists {
+		return fmt.Errorf("invalid value: extra-config cannot contain end quotation: %q", value)
+	}
+
 	// The component is the value before the first dot.
 	componentSplit := strings.SplitN(value, ".", 2)
 	if len(componentSplit) < 2 {

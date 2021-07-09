@@ -18,6 +18,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -75,6 +76,57 @@ func TestValidFlags(t *testing.T) {
 
 		if !reflect.DeepEqual(e, tc.values) {
 			t.Errorf("Wrong parsed value. Expected %s, got %s", tc.values, e)
+		}
+	}
+}
+
+func createQuoteError(value string) error {
+	return fmt.Errorf("invalid value: extra-config cannot contain end quotation: %q", value)
+}
+
+func createPeriodError(value string) error {
+	return fmt.Errorf("invalid value: must contain at least one period: %q", value)
+}
+
+func createEqualError(value string) error {
+	return fmt.Errorf("invalid value: must contain one equal sign: %q", value)
+}
+
+func TestSet(t *testing.T) {
+	extraOptions := ExtraOptionSlice{}
+
+	// Examples which will error from checks from the Set function.
+	for _, tc := range []struct {
+		valuesToSet string
+		expErr      error
+		extraOption ExtraOptionSlice
+	}{
+		{"etcd.client-cert-auth=false”", createQuoteError("etcd.client-cert-auth=false”"),
+			extraOptions},
+		{"etcdclient-cert-auth=false", createPeriodError("etcdclient-cert-auth=false"),
+			extraOptions},
+		{"etcd.client-cert-authfalse", createEqualError("etcd.client-cert-authfalse"),
+			extraOptions},
+	} {
+		if res := tc.extraOption.Set(tc.valuesToSet); res.Error() != tc.expErr.Error() {
+			t.Errorf("Result error of: %s does not match expected error: %s",
+				tc.expErr.Error(), res.Error())
+		}
+	}
+
+	// Examples which will not error from the Set function.
+	for _, tc := range []struct {
+		valuesToSet string
+		extraOption ExtraOptionSlice
+	}{
+		{"etcd.client-cert-auth=false", extraOptions},
+		// Will fail from the check in start.go, but not from Set function.
+		{"“etcd.client-cert-auth=false”", extraOptions},
+		// Will fail from the check in start.go, but not from Set function.
+		{"“etcd.client-cert-auth=false", extraOptions},
+	} {
+		if res := tc.extraOption.Set(tc.valuesToSet); res != nil {
+			t.Errorf("Unexpected error: %s", res.Error())
 		}
 	}
 }

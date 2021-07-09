@@ -22,23 +22,24 @@ date: 2019-11-24
 minikube start --nodes 2 -p multinode-demo
 ```
 ```
-😄  [multinode-demo] minikube v1.16.0 on Darwin 10.15.7
-✨  Automatically selected the docker driver. Other choices: hyperkit, virtualbox
+😄  [multinode-demo] minikube v1.18.1 on Opensuse-Tumbleweed 
+✨  Automatically selected the docker driver
 👍  Starting control plane node multinode-demo in cluster multinode-demo
-🔥  Creating docker container (CPUs=2, Memory=2200MB) ...
-🐳  Preparing Kubernetes v1.20.0 on Docker 20.10.0 ...
-🔗  Configuring CNI (Container Networking Interface) ...
+🔥  Creating docker container (CPUs=2, Memory=8000MB) ...
+🐳  Preparing Kubernetes v1.20.2 on Docker 20.10.3 ...
     ▪ Generating certificates and keys ...
     ▪ Booting up control plane ...
     ▪ Configuring RBAC rules ...
+🔗  Configuring CNI (Container Networking Interface) ...
 🔎  Verifying Kubernetes components...
+    ▪ Using image gcr.io/k8s-minikube/storage-provisioner:v5
 🌟  Enabled addons: storage-provisioner, default-storageclass
 
 👍  Starting node multinode-demo-m02 in cluster multinode-demo
-🔥  Creating docker container (CPUs=2, Memory=2200MB) ...
+🔥  Creating docker container (CPUs=2, Memory=8000MB) ...
 🌐  Found network options:
     ▪ NO_PROXY=192.168.49.2
-🐳  Preparing Kubernetes v1.20.0 on Docker 20.10.0 ...
+🐳  Preparing Kubernetes v1.20.2 on Docker 20.10.3 ...
     ▪ env NO_PROXY=192.168.49.2
 🔎  Verifying Kubernetes components...
 🏄  Done! kubectl is now configured to use "multinode-demo" cluster and "default" namespace by default
@@ -50,9 +51,9 @@ minikube start --nodes 2 -p multinode-demo
 kubectl get nodes
 ```
 ```
-NAME                 STATUS   ROLES    AGE   VERSION
-multinode-demo       Ready    master   72s   v1.18.2
-multinode-demo-m02   Ready    <none>   33s   v1.18.2
+NAME                 STATUS   ROLES                  AGE   VERSION
+multinode-demo       Ready    control-plane,master   99s   v1.20.2
+multinode-demo-m02   Ready    <none>                 73s   v1.20.2
 ```
 
 - You can also check the status of your nodes:
@@ -68,7 +69,6 @@ host: Running
 kubelet: Running
 apiserver: Running
 kubeconfig: Configured
-timeToStop: Nonexistent
 
 multinode-demo-m02
 type: Worker
@@ -106,9 +106,9 @@ service/hello created
 kubectl get pods -o wide
 ```
 ```
-NAME                    READY   STATUS    RESTARTS   AGE   IP           NODE             NOMINATED NODE   READINESS GATES
-hello-c7b8df44f-qbhxh   1/1     Running   0          31s   10.244.0.3   multinode-demo   <none>           <none>
-hello-c7b8df44f-xv4v6   1/1     Running   0          31s   10.244.0.2   multinode-demo   <none>           <none>
+NAME                     READY   STATUS    RESTARTS   AGE   IP           NODE                 NOMINATED NODE   READINESS GATES
+hello-695c67cf9c-bzrzk   1/1     Running   0          22s   10.244.1.2   multinode-demo-m02   <none>           <none>
+hello-695c67cf9c-frcvw   1/1     Running   0          22s   10.244.0.3   multinode-demo       <none>           <none>
 ```
 
 - Look at our service, to know what URL to hit
@@ -117,31 +117,31 @@ hello-c7b8df44f-xv4v6   1/1     Running   0          31s   10.244.0.2   multinod
 minikube service list -p multinode-demo
 ```
 ```
-|-------------|------------|--------------|-----------------------------|
-|  NAMESPACE  |    NAME    | TARGET PORT  |             URL             |
-|-------------|------------|--------------|-----------------------------|
-| default     | hello      |           80 | http://192.168.64.226:31000 |
-| default     | kubernetes | No node port |                             |
-| kube-system | kube-dns   | No node port |                             |
-|-------------|------------|--------------|-----------------------------|
+|-------------|------------|--------------|---------------------------|
+|  NAMESPACE  |    NAME    | TARGET PORT  |            URL            |
+|-------------|------------|--------------|---------------------------|
+| default     | hello      |           80 | http://192.168.49.2:31000 |
+| default     | kubernetes | No node port |                           |
+| kube-system | kube-dns   | No node port |                           |
+|-------------|------------|--------------|---------------------------|
 ```
 
 - Let's hit the URL a few times and see what comes back
 
 ```shell
-curl  http://192.168.64.226:31000
+curl  http://192.168.49.2:31000
 ```
 ```
-Hello from hello-c7b8df44f-qbhxh (10.244.0.3)
+Hello from hello-695c67cf9c-frcvw (10.244.0.3)
 
-curl  http://192.168.64.226:31000
-Hello from hello-c7b8df44f-qbhxh (10.244.0.3)
+curl  http://192.168.49.2:31000
+Hello from hello-695c67cf9c-bzrzk (10.244.1.2)
 
-curl  http://192.168.64.226:31000
-Hello from hello-c7b8df44f-xv4v6 (10.244.0.2)
+curl  http://192.168.49.2:31000
+Hello from hello-695c67cf9c-bzrzk (10.244.1.2)
 
-curl  http://192.168.64.226:31000
-Hello from hello-c7b8df44f-xv4v6 (10.244.0.2)
+curl  http://192.168.49.2:31000
+Hello from hello-695c67cf9c-frcvw (10.244.0.3)
 ```
 
 - Multiple nodes!

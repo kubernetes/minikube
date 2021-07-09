@@ -48,7 +48,7 @@ func TestStress(t *testing.T) {
 	}
 
 	oldPath := fmt.Sprintf("../../out/minikube-%s", *upgradeFrom)
-	url := util.GetBinaryDownloadURL(*upgradeFrom, runtime.GOOS)
+	url := util.GetBinaryDownloadURL(*upgradeFrom, runtime.GOOS, runtime.GOARCH)
 	t.Logf("Downloading minikube %s from %s", *upgradeFrom, url)
 	err = getter.GetFile(oldPath, url)
 	if err != nil {

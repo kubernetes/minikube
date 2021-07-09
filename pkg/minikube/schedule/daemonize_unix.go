@@ -28,7 +28,9 @@ import (
 	"github.com/VividCortex/godaemon"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
 // KillExisting kills existing scheduled stops by looking up the PID
@@ -37,6 +39,11 @@ func KillExisting(profiles []string) {
 	for _, profile := range profiles {
 		if err := killPIDForProfile(profile); err != nil {
 			klog.Errorf("error killng PID for profile %s: %v", profile, err)
+		}
+		_, cc := mustload.Partial(profile)
+		cc.ScheduledStop = nil
+		if err := config.SaveProfile(profile, cc); err != nil {
+			klog.Errorf("error saving profile for profile %s: %v", profile, err)
 		}
 	}
 }

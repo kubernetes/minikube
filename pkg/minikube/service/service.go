@@ -18,6 +18,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -106,7 +107,7 @@ func GetServiceURLs(api libmachine.API, cname string, namespace string, t *templ
 
 	serviceInterface := client.Services(namespace)
 
-	svcs, err := serviceInterface.List(meta.ListOptions{})
+	svcs, err := serviceInterface.List(context.Background(), meta.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -148,12 +149,12 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 		return SvcURL{}, errors.New("Error, attempted to generate service url with nil --format template")
 	}
 
-	svc, err := c.Services(namespace).Get(service, meta.GetOptions{})
+	svc, err := c.Services(namespace).Get(context.Background(), service, meta.GetOptions{})
 	if err != nil {
 		return SvcURL{}, errors.Wrapf(err, "service '%s' could not be found running", service)
 	}
 
-	endpoints, err := c.Endpoints(namespace).Get(service, meta.GetOptions{})
+	endpoints, err := c.Endpoints(namespace).Get(context.Background(), service, meta.GetOptions{})
 	m := make(map[int32]string)
 	if err == nil && endpoints != nil && len(endpoints.Subsets) > 0 {
 		for _, ept := range endpoints.Subsets {
@@ -201,7 +202,7 @@ func CheckService(cname string, namespace string, service string) error {
 		return errors.Wrap(err, "Error getting Kubernetes client")
 	}
 
-	svc, err := client.Services(namespace).Get(service, meta.GetOptions{})
+	svc, err := client.Services(namespace).Get(context.Background(), service, meta.GetOptions{})
 	if err != nil {
 		return &retry.RetriableError{
 			Err: errors.Wrapf(err, "Error getting service %s", service),
@@ -309,7 +310,7 @@ func GetServiceListByLabel(cname string, namespace string, key string, value str
 
 func getServiceListFromServicesByLabel(services typed_core.ServiceInterface, key string, value string) (*core.ServiceList, error) {
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
-	serviceList, err := services.List(meta.ListOptions{LabelSelector: selector.String()})
+	serviceList, err := services.List(context.Background(), meta.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
 		return &core.ServiceList{}, &retry.RetriableError{Err: err}
 	}
@@ -325,7 +326,7 @@ func CreateSecret(cname string, namespace, name string, dataValues map[string]st
 	}
 
 	secrets := client.Secrets(namespace)
-	secret, err := secrets.Get(name, meta.GetOptions{})
+	secret, err := secrets.Get(context.Background(), name, meta.GetOptions{})
 	if err != nil {
 		klog.Infof("Failed to retrieve existing secret: %v", err)
 	}
@@ -354,7 +355,7 @@ func CreateSecret(cname string, namespace, name string, dataValues map[string]st
 		Type: core.SecretTypeOpaque,
 	}
 
-	_, err = secrets.Create(secretObj)
+	_, err = secrets.Create(context.Background(), secretObj, meta.CreateOptions{})
 	if err != nil {
 		return &retry.RetriableError{Err: err}
 	}
@@ -370,7 +371,7 @@ func DeleteSecret(cname string, namespace, name string) error {
 	}
 
 	secrets := client.Secrets(namespace)
-	err = secrets.Delete(name, &meta.DeleteOptions{})
+	err = secrets.Delete(context.Background(), name, meta.DeleteOptions{})
 	if err != nil {
 		return &retry.RetriableError{Err: err}
 	}

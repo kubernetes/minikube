@@ -51,6 +51,7 @@ const (
 	Happy
 	HealthCheck
 	Improvement
+	Indent
 	Internet
 	ISODownload
 	Issue
@@ -99,6 +100,7 @@ const (
 	Verifying
 	VerifyingNoLine
 	Waiting
+	WaitingWithSpinner
 	WaitingPods
 	Warning
 	Workaround

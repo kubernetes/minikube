@@ -37,7 +37,7 @@ There are two pieces to the design: collecting the data and exporting the data.
 
 ### Collecting Data
 Luckily, we already have a lot of this infrastructure set up for JSON output.
-We know when a new substep of `minikube start` has started, because we call it explictly via `register.SetStep`.
+We know when a new substep of `minikube start` has started, because we call it explicitly via `register.SetStep`.
 We also know that substep has ended when a new substep begins.
 
 We can start new spans whenever `register.SetStep` is called, and thus collect tracing data.

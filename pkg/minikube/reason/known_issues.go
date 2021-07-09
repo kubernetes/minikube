@@ -14,22 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Copyright 2019 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY matchND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package reason
 
 import (
@@ -223,6 +207,16 @@ var providerIssues = []match{
 	// Docker environment
 	{
 		Kind: Kind{
+			ID:       "PR_DOCKER_IP_CONFLICT",
+			ExitCode: ExProviderError,
+			Advice:   "Run: 'minikube delete --all' to clean up all the abandoned networks.",
+			Issues:   []int{9605},
+		},
+		Regexp: re(`cannot find cgroup mount destination: unknown`),
+		GOOS:   []string{"linux"},
+	},
+	{
+		Kind: Kind{
 			ID:       "PR_DOCKER_CGROUP_MOUNT",
 			ExitCode: ExProviderError,
 			Advice:   "Run: 'sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd'",
@@ -272,6 +266,15 @@ var providerIssues = []match{
 		},
 		GOOS:   []string{"windows"},
 		Regexp: re(`docker:.*Mounts denied: EOF`),
+	},
+	{
+		Kind: Kind{
+			ID:       "PR_DOCKER_VER_UNSUPPORTED",
+			ExitCode: ExProviderError,
+			Advice:   "Update Docker to the latest minor version, this version is unsupported",
+			Issues:   []int{10362},
+		},
+		Regexp: re(`unexpected "=" in operand`),
 	},
 
 	// Hyperkit hypervisor
@@ -364,6 +367,18 @@ var providerIssues = []match{
 
 	// KVM hypervisor
 	{
+		Kind: Kind{
+			ID:       "PR_KVM_MISSING_NETWORK",
+			ExitCode: ExProviderError,
+			Advice:   "Validate your KVM networks. Run: virt-host-validate and then virsh net-list --all",
+			Issues:   []int{9009},
+			URL:      "https://minikube.sigs.k8s.io/docs/drivers/kvm2/",
+		},
+		Regexp: re(`Message='Network not found: no network with matching name`),
+		GOOS:   []string{"linux"},
+	},
+	{
+
 		Kind: Kind{
 			ID:       "PR_KVM_USER_PERMISSION",
 			ExitCode: ExProviderPermission,
@@ -623,6 +638,15 @@ var driverIssues = []match{
 		GOOS:   []string{"windows"},
 	},
 
+	// HyperKit
+	{
+		Kind: Kind{
+			ID:       "DRV_HYPERKIT_RENEWAL",
+			ExitCode: ExDriverError,
+		},
+		Regexp: re(`new-ing Hyperkit`),
+	},
+
 	// KVM
 	{
 		Kind: Kind{
@@ -747,7 +771,7 @@ var internetIssues = []match{
 			URL:      proxyDoc,
 			Issues:   []int{3860},
 		},
-		Regexp: re(`gcr.io.*443: connect: invalid argument`),
+		Regexp: re(`gcr.io\.*443: connect: invalid argument`),
 	},
 	{
 		Kind: Kind{
@@ -852,6 +876,25 @@ var internetIssues = []match{
 var guestIssues = []match{
 	{
 		Kind: Kind{
+			ID:       "GUEST_PROVISION_NOSPACE",
+			ExitCode: ExInsufficientStorage,
+			Advice:   "Ensure you have at least 20GB of free disk space.",
+		},
+		// https://github.com/kubernetes/minikube/issues/10482
+		Regexp: re(`no space left on device`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_KIC_CP_PUBKEY",
+			ExitCode: ExGuestError,
+			Advice:   "Ensure the tmp directory path is writable to the current user.",
+			Issues:   []int{10772},
+		},
+		// copying pub key: docker copy /var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169 into minikube:/home/docker/.ssh/authorized_keys, output: lstat /private/var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169: no such file or directory
+		Regexp: re(`copying pub key:*.* no such file or directory`),
+	},
+	{
+		Kind: Kind{
 			ID:       "GUEST_KVM2_NO_DOMAIN",
 			ExitCode: ExGuestNotFound,
 			Advice:   "The VM that minikube is configured for no longer exists. Run 'minikube delete'",
@@ -953,6 +996,56 @@ var guestIssues = []match{
 			Issues:   []int{9175},
 		},
 		Regexp: re(`configuration.*corrupt`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_STORAGE_DRIVER_BTRFS",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "This is a known issue with BTRFS storage driver, there is a workaround, please checkout the issue on GitHub",
+			Issues:   []int{11235},
+		},
+		Regexp: re(`'/var/lib/dpkg': No such file or directory`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_INCORRECT_ARCH",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "You might be using an amd64 version of minikube on a M1 Mac, use the arm64 version of minikube instead",
+			Issues:   []int{10243},
+		},
+		Regexp: re(`qemu: uncaught target signal 11 (Segmentation fault) - core dumped`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_CNI_INCOMPATIBLE",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "Bridge CNI is incompatible with multi-node clusters, use a different CNI",
+		},
+		Regexp: re(`bridge CNI is incompatible with multi-node clusters`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_PROVISION_ACQUIRE_LOCK",
+			ExitCode: ExGuestError,
+			Advice:   "Please try purging minikube using `minikube delete --all --purge`",
+			Issues:   []int{11022},
+		},
+		Regexp: re(`failed to acquire bootstrap client lock`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_PROVISION_CP_PUBKEY",
+			ExitCode: ExGuestError,
+		},
+		Regexp: re(`copying pub key`),
+	},
+	{
+		// This should be checked last
+		Kind: Kind{
+			ID:       "GUEST_PROVISION_EXIT_UNEXPECTED",
+			ExitCode: ExGuestError,
+		},
+		Regexp: re(`exited unexpectedly`),
 	},
 }
 

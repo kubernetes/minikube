@@ -1,34 +1,23 @@
 ---
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: ingress-nginx
-  namespace: kube-system
-  labels:
-    addonmanager.kubernetes.io/mode: Reconcile
-
----
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: ingress-nginx-admission
   labels:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/component: admission-webhook
+    app.kubernetes.io/component: controller
     addonmanager.kubernetes.io/mode: Reconcile
-  namespace: kube-system
-
+  name: ingress-nginx
+  namespace: ingress-nginx
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: system::ingress-nginx
   labels:
-    kubernetes.io/bootstrapping: rbac-defaults
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: ingress-nginx
 rules:
   - apiGroups:
       - ''
@@ -86,17 +75,34 @@ rules:
       - get
       - list
       - watch
-
 ---
-
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    addonmanager.kubernetes.io/mode: Reconcile
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ingress-nginx
+subjects:
+- kind: ServiceAccount
+  name: ingress-nginx
+  namespace: ingress-nginx
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: system::ingress-nginx
-  namespace: kube-system
   labels:
-    kubernetes.io/bootstrapping: rbac-defaults
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
     addonmanager.kubernetes.io/mode: Reconcile
+  name: ingress-nginx
+  namespace: ingress-nginx
 rules:
   - apiGroups:
       - ''
@@ -122,7 +128,6 @@ rules:
     verbs:
       - get
       - list
-      - update
       - watch
   - apiGroups:
       - extensions
@@ -166,56 +171,79 @@ rules:
   - apiGroups:
       - ''
     resources:
-      - endpoints
-    verbs:
-      - get
-  - apiGroups:
-      - ''
-    resources:
       - events
     verbs:
       - create
       - patch
-
 ---
-
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: system::ingress-nginx
-  namespace: kube-system
   labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-    addonmanager.kubernetes.io/mode: EnsureExists
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: ingress-nginx
+  namespace: ingress-nginx
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: system::ingress-nginx
+  name: ingress-nginx
 subjects:
 - kind: ServiceAccount
   name: ingress-nginx
-  namespace: kube-system
-
+  namespace: ingress-nginx
 ---
-
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ingress-nginx-admission
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: admission-webhook
+    addonmanager.kubernetes.io/mode: Reconcile
+  namespace: ingress-nginx
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ingress-nginx-admission
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: admission-webhook
+    addonmanager.kubernetes.io/mode: Reconcile
+  namespace: ingress-nginx
+rules:
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - validatingwebhookconfigurations
+    verbs:
+      - get
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: system::ingress-nginx
+  name: ingress-nginx-admission
   labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-    addonmanager.kubernetes.io/mode: EnsureExists
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: admission-webhook
+    addonmanager.kubernetes.io/mode: Reconcile
+  namespace: ingress-nginx
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: system::ingress-nginx
+  name: ingress-nginx-admission
 subjects:
-- kind: ServiceAccount
-  name: ingress-nginx
-  namespace: kube-system
-
+  - kind: ServiceAccount
+    name: ingress-nginx-admission
+    namespace: ingress-nginx
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -224,9 +252,8 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/component: admission-webhook
-    kubernetes.io/bootstrapping: rbac-defaults
-    addonmanager.kubernetes.io/mode: EnsureExists
-  namespace: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+  namespace: ingress-nginx
 rules:
   - apiGroups:
       - ''
@@ -235,20 +262,17 @@ rules:
     verbs:
       - get
       - create
-
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: system::ingress-nginx-admission
+  name: ingress-nginx-admission
   labels:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/component: admission-webhook
-    kubernetes.io/bootstrapping: rbac-defaults
-    addonmanager.kubernetes.io/mode: EnsureExists
-  namespace: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+  namespace: ingress-nginx
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -256,4 +280,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: ingress-nginx-admission
-    namespace: kube-system
+    namespace: ingress-nginx

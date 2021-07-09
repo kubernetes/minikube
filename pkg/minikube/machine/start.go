@@ -359,9 +359,24 @@ func AddHostAlias(c command.Runner, name string, ip net.IP) error {
 		return nil
 	}
 
-	script := fmt.Sprintf(`{ grep -v '\t%s$' /etc/hosts; echo "%s"; } > /tmp/h.$$; sudo cp /tmp/h.$$ /etc/hosts`, name, record)
-	if _, err := c.RunCmd(exec.Command("/bin/bash", "-c", script)); err != nil {
+	if _, err := c.RunCmd(addHostAliasCommand(name, record, true, "/etc/hosts")); err != nil {
 		return errors.Wrap(err, "hosts update")
 	}
 	return nil
+}
+
+func addHostAliasCommand(name string, record string, sudo bool, path string) *exec.Cmd {
+	sudoCmd := "sudo"
+	if !sudo { // for testing
+		sudoCmd = ""
+	}
+
+	script := fmt.Sprintf(
+		`{ grep -v $'\t%s$' "%s"; echo "%s"; } > /tmp/h.$$; %s cp /tmp/h.$$ "%s"`,
+		name,
+		path,
+		record,
+		sudoCmd,
+		path)
+	return exec.Command("/bin/bash", "-c", script)
 }

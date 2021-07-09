@@ -35,12 +35,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/translate"
+	"k8s.io/minikube/pkg/version"
 )
 
 var dirs = [...]string{
@@ -48,7 +50,6 @@ var dirs = [...]string{
 	localpath.MakeMiniPath("certs"),
 	localpath.MakeMiniPath("machines"),
 	localpath.MakeMiniPath("cache"),
-	localpath.MakeMiniPath("cache", "iso"),
 	localpath.MakeMiniPath("config"),
 	localpath.MakeMiniPath("addons"),
 	localpath.MakeMiniPath("files"),
@@ -62,7 +63,7 @@ var RootCmd = &cobra.Command{
 	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
-			if err := os.MkdirAll(path, 0o777); err != nil {
+			if err := os.MkdirAll(path, 0777); err != nil {
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
 		}
@@ -80,7 +81,7 @@ func Execute() {
 	defer audit.Log(time.Now())
 
 	// Check whether this is a windows binary (.exe) running inisde WSL.
-	if runtime.GOOS == "windows" && driver.IsMicrosoftWSL() {
+	if runtime.GOOS == "windows" && detect.IsMicrosoftWSL() {
 		var found = false
 		for _, a := range os.Args {
 			if a == "--force" {
@@ -89,11 +90,17 @@ func Execute() {
 			}
 		}
 		if !found {
-			exit.Message(reason.WrongBinaryWSL, "You are trying to run windows .exe binary inside WSL, for better integration please use Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force")
+			exit.Message(reason.WrongBinaryWSL, "You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force")
 		}
 	}
 
+	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
+		out.Infof("You are trying to run amd64 binary on M1 system. Please consider running darwin/arm64 binary instead (Download at {{.url}}.)",
+			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "arm64")})
+	}
+
 	_, callingCmd := filepath.Split(os.Args[0])
+	callingCmd = strings.TrimSuffix(callingCmd, ".exe")
 
 	if callingCmd == "kubectl" {
 		// If the user is using the minikube binary as kubectl, allow them to specify the kubectl context without also specifying minikube profile
@@ -147,7 +154,7 @@ func Execute() {
 
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
-		os.Exit(reason.ExProgramUsage)
+		defer os.Exit(reason.ExProgramUsage)
 	}
 }
 
@@ -243,6 +250,7 @@ func init() {
 				sshCmd,
 				kubectlCmd,
 				nodeCmd,
+				cpCmd,
 			},
 		},
 		{
@@ -293,14 +301,10 @@ func setupViper() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
+	viper.RegisterAlias(config.EmbedCerts, embedCerts)
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
-	viper.SetDefault(config.WantReportError, false)
-	viper.SetDefault(config.WantReportErrorPrompt, true)
-	viper.SetDefault(config.WantKubectlDownloadMsg, true)
 	viper.SetDefault(config.WantNoneDriverWarning, true)
-	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
-	viper.SetDefault(config.ShowBootstrapperDeprecationNotification, true)
 }
 
 func addToPath(dir string) {

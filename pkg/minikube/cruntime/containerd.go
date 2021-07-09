@@ -21,17 +21,20 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
 	"text/template"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -46,7 +49,6 @@ const (
 	containerdConfigTemplate = `root = "/var/lib/containerd"
 state = "/run/containerd"
 oom_score = 0
-
 [grpc]
   address = "/run/containerd/containerd.sock"
   uid = 0
@@ -76,23 +78,28 @@ oom_score = 0
     enable_selinux = false
     sandbox_image = "{{ .PodInfraContainerImage }}"
     stats_collect_period = 10
-    systemd_cgroup = {{ .SystemdCgroup }}
     enable_tls_streaming = false
     max_container_log_line_size = 16384
+
+	[plugins."io.containerd.grpc.v1.cri"]
+      [plugins."io.containerd.grpc.v1.cri".containerd]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+            runtime_type = "io.containerd.runc.v2"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+              SystemdCgroup = {{ .SystemdCgroup }}
+
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
-      no_pivot = true
       [plugins.cri.containerd.default_runtime]
-        runtime_type = "io.containerd.runtime.v1.linux"
-        runtime_engine = ""
-        runtime_root = ""
+        runtime_type = "io.containerd.runc.v2"
       [plugins.cri.containerd.untrusted_workload_runtime]
         runtime_type = ""
         runtime_engine = ""
         runtime_root = ""
     [plugins.cri.cni]
       bin_dir = "/opt/cni/bin"
-      conf_dir = "/etc/cni/net.d"
+      conf_dir = "{{.CNIConfDir}}"
       conf_template = ""
     [plugins.cri.registry]
       [plugins.cri.registry.mirrors]
@@ -104,12 +111,6 @@ oom_score = 0
         {{ end -}}
   [plugins.diff-service]
     default = ["walking"]
-  [plugins.linux]
-    shim = "containerd-shim"
-    runtime = "runc"
-    runtime_root = ""
-    no_shim = false
-    shim_debug = false
   [plugins.scheduler]
     pause_threshold = 0.02
     deletion_threshold = 0
@@ -188,10 +189,12 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 		PodInfraContainerImage string
 		SystemdCgroup          bool
 		InsecureRegistry       []string
+		CNIConfDir             string
 	}{
 		PodInfraContainerImage: pauseImage,
 		SystemdCgroup:          forceSystemd,
 		InsecureRegistry:       insecureRegistry,
+		CNIConfDir:             cni.ConfDir,
 	}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -239,12 +242,153 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 	return true
 }
 
+// ListImages lists images managed by this container runtime
+func (r *Containerd) ListImages(ListImagesOptions) ([]string, error) {
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "list", "--quiet")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrapf(err, "ctr images list")
+	}
+	all := strings.Split(rr.Stdout.String(), "\n")
+	imgs := []string{}
+	for _, img := range all {
+		if img == "" || strings.Contains(img, "sha256:") {
+			continue
+		}
+		imgs = append(imgs, img)
+	}
+	return imgs, nil
+}
+
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
 	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "ctr images import")
+	}
+	return nil
+}
+
+// PullImage pulls an image into this runtime
+func (r *Containerd) PullImage(name string) error {
+	return pullCRIImage(r.Runner, name)
+}
+
+// SaveImage save an image from this runtime
+func (r *Containerd) SaveImage(name string, path string) error {
+	klog.Infof("Saving image %s: %s", name, path)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "export", path, name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ctr images export")
+	}
+	return nil
+}
+
+// RemoveImage removes a image
+func (r *Containerd) RemoveImage(name string) error {
+	return removeCRIImage(r.Runner, name)
+}
+
+func gitClone(cr CommandRunner, src string) (string, error) {
+	// clone to a temporary directory
+	rr, err := cr.RunCmd(exec.Command("mktemp", "-d"))
+	if err != nil {
+		return "", err
+	}
+	tmp := strings.TrimSpace(rr.Stdout.String())
+	cmd := exec.Command("git", "clone", src, tmp)
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return "", err
+	}
+	return tmp, nil
+}
+
+func downloadRemote(cr CommandRunner, src string) (string, error) {
+	u, err := url.Parse(src)
+	if err != nil {
+		return "", err
+	}
+	if u.Scheme == "" && u.Host == "" { // regular file, return
+		return src, nil
+	}
+	if u.Scheme == "git" {
+		return gitClone(cr, src)
+	}
+
+	// download to a temporary file
+	rr, err := cr.RunCmd(exec.Command("mktemp"))
+	if err != nil {
+		return "", err
+	}
+	dst := strings.TrimSpace(rr.Stdout.String())
+	cmd := exec.Command("curl", "-L", "-o", dst, src)
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return "", err
+	}
+
+	// extract to a temporary directory
+	rr, err = cr.RunCmd(exec.Command("mktemp", "-d"))
+	if err != nil {
+		return "", err
+	}
+	tmp := strings.TrimSpace(rr.Stdout.String())
+	cmd = exec.Command("tar", "-C", tmp, "-xf", dst)
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return "", err
+	}
+
+	return tmp, nil
+}
+
+// BuildImage builds an image into this runtime
+func (r *Containerd) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
+	// download url if not already present
+	dir, err := downloadRemote(r.Runner, src)
+	if err != nil {
+		return err
+	}
+	if file != "" {
+		if dir != src {
+			file = path.Join(dir, file)
+		}
+		// copy to standard path for Dockerfile
+		df := path.Join(dir, "Dockerfile")
+		if file != df {
+			cmd := exec.Command("sudo", "cp", "-f", file, df)
+			if _, err := r.Runner.RunCmd(cmd); err != nil {
+				return err
+			}
+		}
+	}
+	klog.Infof("Building image: %s", dir)
+	extra := ""
+	if tag != "" {
+		// add default tag if missing
+		if !strings.Contains(tag, ":") {
+			tag += ":latest"
+		}
+		extra = fmt.Sprintf(",name=%s", tag)
+		if push {
+			extra += ",push=true"
+		}
+	}
+	args := []string{"buildctl", "build",
+		"--frontend", "dockerfile.v0",
+		"--local", fmt.Sprintf("context=%s", dir),
+		"--local", fmt.Sprintf("dockerfile=%s", dir),
+		"--output", fmt.Sprintf("type=image%s", extra)}
+	for _, opt := range opts {
+		args = append(args, "--"+opt)
+	}
+	c := exec.Command("sudo", args...)
+	e := os.Environ()
+	e = append(e, env...)
+	c.Env = e
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "buildctl build.")
 	}
 	return nil
 }
@@ -283,7 +427,7 @@ func (r *Containerd) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *Containerd) ListContainers(o ListOptions) ([]string, error) {
+func (r *Containerd) ListContainers(o ListContainersOptions) ([]string, error) {
 	return listCRIContainers(r.Runner, containerdNamespaceRoot, o)
 }
 
@@ -318,16 +462,16 @@ func (r *Containerd) SystemLogCmd(len int) string {
 }
 
 // Preload preloads the container runtime with k8s images
-func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
-	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
+func (r *Containerd) Preload(cc config.ClusterConfig) error {
+	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
 		return nil
 	}
 
-	k8sVersion := cfg.KubernetesVersion
-	cRuntime := cfg.ContainerRuntime
+	k8sVersion := cc.KubernetesConfig.KubernetesVersion
+	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
 	// If images already exist, return
-	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
+	images, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
@@ -351,6 +495,12 @@ func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "getting file asset")
 	}
+	defer func() {
+		if err := fa.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", fa.GetSourcePath(), err)
+		}
+	}()
+
 	t := time.Now()
 	if err := r.Runner.Copy(fa); err != nil {
 		return errors.Wrap(err, "copying file")

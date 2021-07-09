@@ -19,6 +19,7 @@ package cni
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -33,17 +34,27 @@ var bridgeConf = template.Must(template.New("bridge").Parse(`
 {
   "cniVersion": "0.3.1",
   "name": "bridge",
-  "type": "bridge",
-  "bridge": "bridge",
-  "addIf": "true",
-  "isDefaultGateway": true,
-  "forceAddress": false,
-  "ipMasq": true,
-  "hairpinMode": true,
-  "ipam": {
-      "type": "host-local",
-      "subnet": "{{.PodCIDR}}"
-  }
+  "plugins": [
+    {
+      "type": "bridge",
+      "bridge": "bridge",
+      "addIf": "true",
+      "isDefaultGateway": true,
+      "forceAddress": false,
+      "ipMasq": true,
+      "hairpinMode": true,
+      "ipam": {
+          "type": "host-local",
+          "subnet": "{{.PodCIDR}}"
+      }
+    },
+    {
+      "type": "portmap",
+      "capabilities": {
+          "portMappings": true
+      }
+    }
+  ]
 }
 `))
 
@@ -65,13 +76,17 @@ func (c Bridge) netconf() (assets.CopyableFile, error) {
 		return nil, err
 	}
 
-	return assets.NewMemoryAssetTarget(b.Bytes(), "/etc/cni/net.d/1-k8s.conf", "0644"), nil
+	return assets.NewMemoryAssetTarget(b.Bytes(), "/etc/cni/net.d/1-k8s.conflist", "0644"), nil
 }
 
 // Apply enables the CNI
 func (c Bridge) Apply(r Runner) error {
 	if len(c.cc.Nodes) > 1 {
 		return fmt.Errorf("bridge CNI is incompatible with multi-node clusters")
+	}
+
+	if _, err := r.RunCmd(exec.Command("sudo", "mkdir", "-p", "/etc/cni/net.d")); err != nil {
+		return err
 	}
 
 	f, err := c.netconf()

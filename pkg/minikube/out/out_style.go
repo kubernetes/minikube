@@ -54,7 +54,7 @@ func applyStyle(st style.Enum, useColor bool, format string) (string, bool) {
 func stylized(st style.Enum, useColor bool, format string, a ...V) (string, bool) {
 	var spinner bool
 	if a == nil {
-		a = []V{{}}
+		a = []V{}
 	}
 	format, spinner = applyStyle(st, useColor, format)
 	return Fmt(format, a...), spinner

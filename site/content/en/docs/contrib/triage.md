@@ -9,7 +9,7 @@ description: >
 
 Community triage takes place **every Wednesday** from **11AM-12PM PST**.
 
-- Hangouts link: https://meet.google.com/ikf-fvrs-eer
+- Hangouts link: https://meet.google.com/sss-wdet-gwe
 - Google Group: https://groups.google.com/forum/#!forum/minikube-dev
 
 All community members are welcome and encouraged to join and help us triage minikube!

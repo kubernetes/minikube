@@ -1,0 +1,36 @@
+name: "time-to-k8s benchmark"
+on:
+  workflow_dispatch:
+  release:
+    types: [released]
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: 1.16.4
+jobs:
+  benchmark:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Checkout submodules
+      run: git submodule update --init
+    - uses: actions/setup-go@v2
+      with:
+          go-version: ${{env.GO_VERSION}}
+          stable: true
+    - name: Benchmark
+      run: |
+          ./hack/benchmark/time-to-k8s/time-to-k8s.sh
+          echo "::set-output name=version::$(minikube version --short)"
+    - name: Create PR
+      uses: peter-evans/create-pull-request@v3
+      with:
+        token: ${{ secrets.MINIKUBE_BOT_PAT }}
+        commit-message: add time-to-k8s benchmark for ${{ steps.gendocs.outputs.version }}
+        committer: minikube-bot <minikube-bot@google.com>
+        author: minikube-bot <minikube-bot@google.com>
+        branch: addTimeToK8s${{ steps.gendocs.outputs.version }}
+        push-to-fork: minikube-bot/minikube
+        base: master
+        delete-branch: true
+        title: Add time-to-k8s benchmark for ${{ steps.gendocs.outputs.version }}
+        body: Updating time-to-k8s benchmark as part of the release process

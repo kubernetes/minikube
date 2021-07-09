@@ -40,7 +40,7 @@ const longDescription = `Outputs minikube shell completion for the given shell (
 		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
 	Ubuntu:
 		$ apt-get install bash-completion
-		$ source /etc/bash-completion
+		$ source /etc/bash_completion
 		$ source <(minikube completion bash) # for bash users
 		$ source <(minikube completion zsh) # for zsh users
 		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
@@ -77,23 +77,50 @@ var completionCmd = &cobra.Command{
 		}
 		if args[0] != "bash" && args[0] != "zsh" && args[0] != "fish" {
 			exit.Message(reason.Usage, "Sorry, completion support is not yet implemented for {{.name}}", out.V{"name": args[0]})
-		} else if args[0] == "bash" {
-			err := GenerateBashCompletion(os.Stdout, cmd.Parent())
-			if err != nil {
-				exit.Error(reason.InternalCompletion, "bash completion failed", err)
-			}
-		} else if args[0] == "zsh" {
-			err := GenerateZshCompletion(os.Stdout, cmd.Parent())
-			if err != nil {
-				exit.Error(reason.InternalCompletion, "zsh completion failed", err)
-			}
-		} else {
-			err := GenerateFishCompletion(os.Stdout, cmd.Parent())
-			if err != nil {
-				exit.Error(reason.InternalCompletion, "fish completion failed", err)
-			}
 		}
 	},
+}
+
+var bashCmd = &cobra.Command{
+	Use:   "bash",
+	Short: "bash completion.",
+	Long:  "Generate command completion for bash.",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := GenerateBashCompletion(os.Stdout, cmd.Root())
+		if err != nil {
+			exit.Error(reason.InternalCompletion, "bash completion failed", err)
+		}
+	},
+}
+
+var zshCmd = &cobra.Command{
+	Use:   "zsh",
+	Short: "zsh completion.",
+	Long:  "Generate command completion for zsh.",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := GenerateZshCompletion(os.Stdout, cmd.Root())
+		if err != nil {
+			exit.Error(reason.InternalCompletion, "zsh completion failed", err)
+		}
+	},
+}
+
+var fishCmd = &cobra.Command{
+	Use:   "fish",
+	Short: "fish completion.",
+	Long:  "Generate command completion for fish .",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := GenerateFishCompletion(os.Stdout, cmd.Root())
+		if err != nil {
+			exit.Error(reason.InternalCompletion, "fish completion failed", err)
+		}
+	},
+}
+
+func init() {
+	completionCmd.AddCommand(bashCmd)
+	completionCmd.AddCommand(zshCmd)
+	completionCmd.AddCommand(fishCmd)
 }
 
 // GenerateBashCompletion generates the completion for the bash shell

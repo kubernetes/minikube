@@ -87,7 +87,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}), nil
 }
 
-func status() registry.State {
+func status() (retState registry.State) {
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
@@ -116,10 +116,25 @@ func status() registry.State {
 		return registry.State{Reason: reason, Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
 	}
 
+	var improvement string
+	recordImprovement := func(s registry.State) {
+		if s.NeedsImprovement && s.Fix != "" {
+			improvement = s.Fix
+		}
+	}
+	defer func() {
+		if retState.Error == nil && retState.Fix == "" && improvement != "" {
+			retState.NeedsImprovement = true
+			retState.Fix = improvement
+		}
+	}()
+
 	klog.Infof("docker version: %s", o)
-	if s := checkDockerVersion(strings.TrimSpace(string(o))); s.Error != nil { // remove '\n' from o at the end
+	s := checkDockerVersion(strings.TrimSpace(string(o))) // remove '\n' from o at the end
+	if s.Error != nil {
 		return s
 	}
+	recordImprovement(s)
 
 	si, err := oci.CachedDaemonInfo("docker")
 	if err != nil {
@@ -129,6 +144,15 @@ func status() registry.State {
 
 	for _, serr := range si.Errors {
 		return suggestFix("info", -1, serr, fmt.Errorf("docker info error: %s", serr))
+	}
+
+	if si.Rootless {
+		return registry.State{
+			Reason:    "PROVIDER_DOCKER_ROOTLESS",
+			Error:     errors.New("rootless Docker not supported yet"),
+			Installed: true,
+			Healthy:   false,
+			Doc:       "https://github.com/kubernetes/minikube/issues/10836"}
 	}
 
 	return checkNeedsImprovement()
@@ -157,20 +181,24 @@ func checkDockerVersion(o string) registry.State {
 		}
 	}
 
+	hintInstallOfficial := fmt.Sprintf("Install the official release of %s (Minimum recommended version is %2d.%02d.%d, current version is %s)",
+		driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2], parts[1])
+
 	p := strings.SplitN(parts[1], ".", 3)
 	switch l := len(p); l {
 	case 2:
 		p = append(p, "0") // patch version not found
 	case 3:
-		//remove postfix string for unstable(test/nightly) channel. https://docs.docker.com/engine/install/
+		// remove postfix string for unstable(test/nightly) channel. https://docs.docker.com/engine/install/
 		p[2] = strings.SplitN(p[2], "-", 2)[0]
 	default:
+		// When Docker (Moby) was installed from the source code, the version string is typically set to "dev", or "library-import".
 		return registry.State{
-			Reason:    "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
-			Error:     errors.Errorf("expected version format is \"<year>.<month>.{patch}\". but got %s", parts[1]),
-			Installed: true,
-			Healthy:   false,
-			Doc:       docURL,
+			Installed:        true,
+			Healthy:          true,
+			NeedsImprovement: true,
+			Fix:              hintInstallOfficial,
+			Doc:              docURL,
 		}
 	}
 
@@ -178,11 +206,11 @@ func checkDockerVersion(o string) registry.State {
 		k, err := strconv.Atoi(s)
 		if err != nil {
 			return registry.State{
-				Reason:    "PROVIDER_DOCKER_VERSION_PARSING_FAILED",
-				Error:     errors.Wrap(err, "docker version"),
-				Installed: true,
-				Healthy:   false,
-				Doc:       docURL,
+				Installed:        true,
+				Healthy:          true,
+				NeedsImprovement: true,
+				Fix:              hintInstallOfficial,
+				Doc:              docURL,
 			}
 		}
 

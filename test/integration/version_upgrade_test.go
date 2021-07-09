@@ -43,7 +43,7 @@ func installRelease(version string) (f *os.File, err error) {
 	}
 	tf.Close()
 
-	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
+	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS, runtime.GOARCH)
 
 	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, Minutes(3)); err != nil {
 		return tf, err
@@ -60,10 +60,10 @@ func installRelease(version string) (f *os.File, err error) {
 
 // legacyStartArgs returns the arguments normally used for starting older versions of minikube
 func legacyStartArgs() []string {
-	return strings.Split(strings.Replace(*startArgs, "--driver", "--vm-driver", -1), " ")
+	return strings.Split(strings.ReplaceAll(*startArgs, "--driver", "--vm-driver"), " ")
 }
 
-// TestRunningBinaryUpgrade upgrades a running legacy cluster to head minikube
+// TestRunningBinaryUpgrade upgrades a running legacy cluster to minikube at HEAD
 func TestRunningBinaryUpgrade(t *testing.T) {
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
 	if TestingKicBaseImage() {
@@ -79,8 +79,18 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	// Should be a version from the last 6 months
 	legacyVersion := "v1.6.2"
 	if KicDriver() {
-		// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
-		legacyVersion = "v1.9.0"
+		if arm64Platform() {
+			// arm64 KIC driver is supported starting from v1.17.0
+			legacyVersion = "v1.17.0"
+		} else {
+			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
+			legacyVersion = "v1.9.0"
+		}
+	}
+	// the version containerd in ISO was upgraded to 1.4.2
+	// we need it to use runc.v2 plugin
+	if ContainerRuntime() == "containerd" {
+		legacyVersion = "v1.16.0"
 	}
 
 	tf, err := installRelease(legacyVersion)
@@ -93,7 +103,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	rr := &RunResult{}
 	r := func() error {
 		c := exec.CommandContext(ctx, tf.Name(), args...)
-		legacyEnv := []string{}
+		var legacyEnv []string
 		// replace the global KUBECONFIG with a fresh kubeconfig
 		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
 		// see: https://github.com/kubernetes/minikube/issues/10210
@@ -127,7 +137,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	}
 }
 
-// TestStoppedBinaryUpgrade starts a legacy minikube and stops it and then upgrades to head minikube
+// TestStoppedBinaryUpgrade starts a legacy minikube, stops it, and then upgrades to minikube at HEAD
 func TestStoppedBinaryUpgrade(t *testing.T) {
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
 	if TestingKicBaseImage() {
@@ -147,6 +157,18 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	if KicDriver() {
 		// first release with non-experimental KIC
 		legacyVersion = "v1.8.0"
+		if arm64Platform() {
+			// first release with non-experimental arm64 KIC
+			legacyVersion = "v1.17.0"
+		} else {
+			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
+			legacyVersion = "v1.9.0"
+		}
+	}
+	if ContainerRuntime() == "containerd" {
+		// the version containerd in ISO was upgraded to 1.4.2
+		// we need it to use runc.v2 plugin
+		legacyVersion = "v1.16.0"
 	}
 
 	tf, err := installRelease(legacyVersion)
@@ -159,7 +181,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	rr := &RunResult{}
 	r := func() error {
 		c := exec.CommandContext(ctx, tf.Name(), args...)
-		legacyEnv := []string{}
+		var legacyEnv []string
 		// replace the global KUBECONFIG with a fresh kubeconfig
 		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
 		// see: https://github.com/kubernetes/minikube/issues/10210
@@ -257,7 +279,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 	}
 
 	if cv.ServerVersion.GitVersion != constants.NewestKubernetesVersion {
-		t.Fatalf("expected server version %s is not the same with latest version %s", cv.ServerVersion.GitVersion, constants.NewestKubernetesVersion)
+		t.Fatalf("server version %s is not the same with the expected version %s after upgrade", cv.ServerVersion.GitVersion, constants.NewestKubernetesVersion)
 	}
 
 	t.Logf("Attempting to downgrade Kubernetes (should fail)")

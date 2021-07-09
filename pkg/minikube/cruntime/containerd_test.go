@@ -18,6 +18,8 @@ package cruntime
 
 import (
 	"testing"
+
+	"k8s.io/minikube/pkg/version"
 )
 
 func TestAddRepoTagToImageName(t *testing.T) {
@@ -27,7 +29,7 @@ func TestAddRepoTagToImageName(t *testing.T) {
 	}{
 		{"kubernetesui/dashboard:v2.1.0", "docker.io/kubernetesui/dashboard:v2.1.0"},
 		{"kubernetesui/metrics-scraper:v1.0.4", "docker.io/kubernetesui/metrics-scraper:v1.0.4"},
-		{"gcr.io/k8s-minikube/storage-provisioner:v4", "gcr.io/k8s-minikube/storage-provisioner:v4"},
+		{"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(), "gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion()},
 	}
 	for _, tc := range tests {
 		t.Run(tc.imgName, func(t *testing.T) {

@@ -37,12 +37,10 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// TestScheduledStopWindows tests the schedule stop functionality on Windows
 func TestScheduledStopWindows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("test only runs on windows")
-	}
-	if NoneDriver() {
-		t.Skip("--schedule does not work with the none driver")
 	}
 	profile := UniqueProfileName("scheduled-stop")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
@@ -67,12 +65,13 @@ func TestScheduledStopWindows(t *testing.T) {
 
 	// sleep for 5 seconds
 	time.Sleep(5 * time.Second)
+	// make sure minikube timetoStop is not present
+	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
-	// make sure minikube timtostop is "Nonexistent"
-	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "Nonexistent")
 }
 
+// TestScheduledStopWindows tests the schedule stop functionality on Unix
 func TestScheduledStopUnix(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test only runs on unix")
@@ -105,7 +104,10 @@ func TestScheduledStopUnix(t *testing.T) {
 	// sleep 12 just to be safe
 	stopMinikube(ctx, t, profile, []string{"--cancel-scheduled"})
 	time.Sleep(12 * time.Second)
+	// make sure minikube status is "Running"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Running.String())
+	// make sure minikube timetoStop is not present
+	ensureTimeToStopNotPresent(ctx, t, profile)
 
 	// schedule another stop, make sure minikube status is "Stopped"
 	stopMinikube(ctx, t, profile, []string{"--schedule", "5s"})
@@ -113,14 +115,14 @@ func TestScheduledStopUnix(t *testing.T) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
 
+	// make sure minikube timetoStop is not present
+	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
-	// make sure minikube timtostop is "Nonexistent"
-	ensureMinikubeStatus(ctx, t, profile, "TimeToStop", "Nonexistent")
 }
 
 func startMinikube(ctx context.Context, t *testing.T, profile string) {
-	args := append([]string{"start", "-p", profile, "--memory=1900"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2048"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
@@ -193,5 +195,16 @@ func ensureMinikubeScheduledTime(ctx context.Context, t *testing.T, profile stri
 	}
 	if err := retry.Expo(checkTime, time.Second, time.Minute); err != nil {
 		t.Fatalf("error %v", err)
+	}
+}
+
+func ensureTimeToStopNotPresent(ctx context.Context, t *testing.T, profile string) {
+	args := []string{"status", "-p", profile}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("minikube status: %v\n%s", err, rr.Output())
+	}
+	if strings.Contains(rr.Output(), "TimeToStop") {
+		t.Fatalf("expected status output to not include `TimeToStop` but got *%s*", rr.Output())
 	}
 }

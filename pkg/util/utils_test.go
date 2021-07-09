@@ -20,10 +20,11 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"runtime"
 	"syscall"
 	"testing"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 )
 
 func TestGetBinaryDownloadURL(t *testing.T) {
@@ -38,7 +39,7 @@ func TestGetBinaryDownloadURL(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		url := GetBinaryDownloadURL(tt.version, tt.platform)
+		url := GetBinaryDownloadURL(tt.version, tt.platform, runtime.GOARCH)
 		if url != tt.expectedURL {
 			t.Fatalf("Expected '%s' but got '%s'", tt.expectedURL, url)
 		}
@@ -88,7 +89,7 @@ func TestChownR(t *testing.T) {
 	if nil != err {
 		return
 	}
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(testDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", testDir)
@@ -142,7 +143,7 @@ func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 		return
 	}
 
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(testDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", testDir)

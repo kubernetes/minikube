@@ -76,7 +76,7 @@ func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...
 	lastKnownPodNumber := -1
 	f := func() (bool, error) {
 		listOpts := meta.ListOptions{LabelSelector: selector}
-		pods, err := c.CoreV1().Pods(ns).List(listOpts)
+		pods, err := c.CoreV1().Pods(ns).List(context.Background(), listOpts)
 		if err != nil {
 			klog.Infof("temporary error: getting Pods with label selector %q : [%v]\n", selector, err)
 			return false, nil
@@ -115,14 +115,14 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 		"metadata.name":      name,
 		"metadata.namespace": ns,
 	}.AsSelector().String()}
-	w, err := c.CoreV1().ReplicationControllers(ns).Watch(options)
-	if err != nil {
-		return err
-	}
 
 	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
 	defer cancel()
 
+	w, err := c.CoreV1().ReplicationControllers(ns).Watch(ctx, options)
+	if err != nil {
+		return err
+	}
 	_, err = watchtools.UntilWithoutRetry(ctx, w, func(event watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, apierr.NewNotFound(schema.GroupResource{Resource: "replicationcontrollers"}, "")
@@ -149,14 +149,14 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 		"metadata.name":      name,
 		"metadata.namespace": ns,
 	}.AsSelector().String()}
-	w, err := c.AppsV1().Deployments(ns).Watch(options)
-	if err != nil {
-		return err
-	}
 
 	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
 	defer cancel()
 
+	w, err := c.AppsV1().Deployments(ns).Watch(ctx, options)
+	if err != nil {
+		return err
+	}
 	_, err = watchtools.UntilWithoutRetry(ctx, w, func(event watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, apierr.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
@@ -179,7 +179,7 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 // WaitForService waits until the service appears (exist == true), or disappears (exist == false)
 func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, interval, timeout time.Duration) error {
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		_, err := c.CoreV1().Services(namespace).Get(name, meta.GetOptions{})
+		_, err := c.CoreV1().Services(namespace).Get(context.Background(), name, meta.GetOptions{})
 		switch {
 		case err == nil:
 			klog.Infof("Service %s in namespace %s found.", name, namespace)
@@ -212,25 +212,36 @@ func KubectlBinaryPath(version string) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }
 
-// ScaleDeployment sets the number of replicas of deployment in namespace and context
-func ScaleDeployment(context, namespace, deploymentName string, replicas int) error {
-	client, err := Client(context)
+// ScaleDeployment tries to set the number of deployment replicas in namespace and context.
+// It will retry (usually needed due to "the object has been modified; please apply your changes to the latest version and try again" error) up to ReasonableMutateTime to ensure target scale is achieved.
+func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) error {
+	client, err := Client(kcontext)
 	if err != nil {
 		return fmt.Errorf("client: %v", err)
 	}
 
-	scale, err := client.AppsV1().Deployments(namespace).GetScale(deploymentName, meta.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("deployment scale: %v", err)
-	}
-	if scale.Spec.Replicas != int32(replicas) {
-		scale.Spec.Replicas = int32(replicas)
-		_, err = client.AppsV1().Deployments(namespace).UpdateScale(deploymentName, scale)
+	err = wait.PollImmediate(kconst.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
+		scale, err := client.AppsV1().Deployments(namespace).GetScale(context.Background(), deploymentName, meta.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("deployment rescale: %v", err)
+			klog.Warningf("failed getting deployment scale, will retry: %v", err)
+			return false, nil
 		}
+		if scale.Spec.Replicas != int32(replicas) {
+			scale.Spec.Replicas = int32(replicas)
+			_, err = client.AppsV1().Deployments(namespace).UpdateScale(context.Background(), deploymentName, scale, meta.UpdateOptions{})
+			if err != nil {
+				klog.Warningf("failed rescaling deployment, will retry: %v", err)
+			}
+			// repeat (if change was successful - once again to check & confirm requested scale)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		klog.Infof("timed out trying to rescale deployment %q in namespace %q and context %q to %d: %v", deploymentName, namespace, kcontext, replicas, err)
+		return err
 	}
-	klog.Infof("deployment %q in namespace %q and context %q rescaled to %d", deploymentName, namespace, context, replicas)
+	klog.Infof("deployment %q in namespace %q and context %q rescaled to %d", deploymentName, namespace, kcontext, replicas)
 
 	return nil
 }

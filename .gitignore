@@ -26,17 +26,15 @@ _testmain.go
 *.test
 *.prof
 
+/deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause
 /deploy/kicbase/auto-pause
+/deploy/addons/auto-pause/auto-pause-hook
 /out
 /_gopath
 
 #iso version file
 deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 
-/pkg/minikube/assets/assets.go-e
-/pkg/minikube/assets/assets.go
-/pkg/minikube/translate/translations.go
-/pkg/minikube/translate/translations.go-e
 /minikube
 
 .DS_Store

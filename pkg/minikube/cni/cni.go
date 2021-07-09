@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
@@ -37,6 +38,23 @@ import (
 const (
 	// DefaultPodCIDR is the default CIDR to use in minikube CNI's.
 	DefaultPodCIDR = "10.244.0.0/16"
+
+	// DefaultConfDir is the default CNI Config Directory path
+	DefaultConfDir = "/etc/cni/net.d"
+	// CustomConfDir is the custom CNI Config Directory path used to avoid conflicting CNI configs
+	// ref: https://github.com/kubernetes/minikube/issues/10984 and https://github.com/kubernetes/minikube/pull/11106
+	CustomConfDir = "/etc/cni/net.mk"
+)
+
+var (
+	// ConfDir is the CNI Config Directory path that can be customised, defaulting to DefaultConfDir
+	ConfDir = DefaultConfDir
+
+	// Network is the network name that CNI should use (eg, "kindnet").
+	// Currently, only crio (and podman) can use it, so that setting custom ConfDir is not necessary.
+	// ref: https://github.com/cri-o/cri-o/issues/2121 (and https://github.com/containers/podman/issues/2370)
+	// ref: https://github.com/cri-o/cri-o/blob/master/docs/crio.conf.5.md#crionetwork-table
+	Network = ""
 )
 
 // Runner is the subset of command.Runner this package consumes
@@ -62,10 +80,11 @@ type tmplInput struct {
 	ImageName    string
 	PodCIDR      string
 	DefaultRoute string
+	CNIConfDir   string
 }
 
 // New returns a new CNI manager
-func New(cc config.ClusterConfig) (Manager, error) {
+func New(cc *config.ClusterConfig) (Manager, error) {
 	if cc.KubernetesConfig.NetworkPlugin != "" && cc.KubernetesConfig.NetworkPlugin != "cni" {
 		klog.Infof("network plugin configured as %q, returning disabled", cc.KubernetesConfig.NetworkPlugin)
 		return Disabled{}, nil
@@ -73,24 +92,32 @@ func New(cc config.ClusterConfig) (Manager, error) {
 
 	klog.Infof("Creating CNI manager for %q", cc.KubernetesConfig.CNI)
 
+	var cnm Manager
+	var err error
 	switch cc.KubernetesConfig.CNI {
 	case "", "auto":
-		return chooseDefault(cc), nil
+		cnm = chooseDefault(*cc)
 	case "false":
-		return Disabled{cc: cc}, nil
+		cnm = Disabled{cc: *cc}
 	case "kindnet", "true":
-		return KindNet{cc: cc}, nil
+		cnm = KindNet{cc: *cc}
 	case "bridge":
-		return Bridge{cc: cc}, nil
+		cnm = Bridge{cc: *cc}
 	case "calico":
-		return Calico{cc: cc}, nil
+		cnm = Calico{cc: *cc}
 	case "cilium":
-		return Cilium{cc: cc}, nil
+		cnm = Cilium{cc: *cc}
 	case "flannel":
-		return Flannel{cc: cc}, nil
+		cnm = Flannel{cc: *cc}
 	default:
-		return NewCustom(cc, cc.KubernetesConfig.CNI)
+		cnm, err = NewCustom(*cc, cc.KubernetesConfig.CNI)
 	}
+
+	if err := configureCNI(cc, cnm); err != nil {
+		klog.Errorf("unable to set CNI Config Directory: %v", err)
+	}
+
+	return cnm, err
 }
 
 // IsDisabled checks if CNI is disabled
@@ -116,15 +143,6 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return Bridge{}
 	}
 
-	if cc.KubernetesConfig.ContainerRuntime != "docker" {
-		if driver.IsKIC(cc.Driver) {
-			klog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-			return KindNet{cc: cc}
-		}
-		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-		return Bridge{cc: cc}
-	}
-
 	if driver.BareMetal(cc.Driver) {
 		klog.Infof("Driver %s used, CNI unnecessary in this configuration, recommending no CNI", cc.Driver)
 		return Disabled{cc: cc}
@@ -135,6 +153,15 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.
 		klog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
 		return KindNet{cc: cc}
+	}
+
+	if cc.KubernetesConfig.ContainerRuntime != "docker" {
+		if driver.IsKIC(cc.Driver) {
+			klog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+			return KindNet{cc: cc}
+		}
+		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		return Bridge{cc: cc}
 	}
 
 	klog.Infof("CNI unnecessary in this configuration, recommending no CNI")
@@ -168,5 +195,35 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}
 
+	return nil
+}
+
+// configureCNI - to avoid conflicting CNI configs, it sets:
+// - for crio: 'cni_default_network' config param via cni.Network
+// - for containerd and docker: kubelet's '--cni-conf-dir' flag to custom CNI Config Directory path (same used also by CNI Deployment).
+// ref: https://github.com/kubernetes/minikube/issues/10984 and https://github.com/kubernetes/minikube/pull/11106
+// Note: currently, this change affects only Kindnet CNI (and all multinodes using it), but it can be easily expanded to other/all CNIs if needed.
+// Note2: Cilium does not need workaround as they automatically restart pods after CNI is successfully deployed.
+func configureCNI(cc *config.ClusterConfig, cnm Manager) error {
+	if _, kindnet := cnm.(KindNet); kindnet {
+		// crio only needs CNI network name; hopefully others (containerd, docker and kubeadm/kubelet) will follow eventually
+		if cc.KubernetesConfig.ContainerRuntime == constants.CRIO {
+			Network = "kindnet"
+			return nil
+		}
+		// for containerd and docker: auto-set custom CNI via kubelet's 'cni-conf-dir' param, if not user-specified
+		eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", CustomConfDir)
+		if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
+			klog.Infof("auto-setting extra-config to %q", eo)
+			if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
+				return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
+			}
+			ConfDir = CustomConfDir
+			klog.Infof("extra-config set to %q", eo)
+		} else {
+			// respect user-specified custom CNI Config Directory
+			ConfDir = cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet")
+		}
+	}
 	return nil
 }

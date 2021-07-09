@@ -83,7 +83,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cc.Memory,
 		CPU:            cc.CPUs,
 		Network:        cc.KVMNetwork,
-		PrivateNetwork: "minikube-net",
+		PrivateNetwork: privateNetwork(cc),
 		Boot2DockerURL: download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:       cc.DiskSize,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.rawdisk", name)),
@@ -93,6 +93,14 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ConnectionURI:  cc.KVMQemuURI,
 		NUMANodeCount:  cc.KVMNUMACount,
 	}, nil
+}
+
+// if network is not user-defined it defaults to "mk-<cluster_name>"
+func privateNetwork(cc config.ClusterConfig) string {
+	if cc.Network == "" {
+		return fmt.Sprintf("mk-%s", cc.KubernetesConfig.ClusterName)
+	}
+	return cc.Network
 }
 
 // defaultURI returns the QEMU URI to connect to for health checks
@@ -105,8 +113,8 @@ func defaultURI() string {
 }
 
 func status() registry.State {
-	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// Allow no more than 6 seconds for querying state
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
 	path, err := exec.LookPath("virsh")
@@ -142,6 +150,15 @@ func status() registry.State {
 	cmd := exec.CommandContext(ctx, path, "domcapabilities", "--virttype", "kvm")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("LIBVIRT_DEFAULT_URI=%s", defaultURI()))
 	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return registry.State{
+			Installed: true,
+			Running:   false,
+			Error:     fmt.Errorf("%s timed out", strings.Join(cmd.Args, " ")),
+			Fix:       "Check that the libvirtd service is running and the socket is ready",
+			Doc:       docURL,
+		}
+	}
 	if err != nil {
 		return registry.State{
 			Installed: true,

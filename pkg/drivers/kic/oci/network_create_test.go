@@ -60,7 +60,7 @@ func TestDockerInspect(t *testing.T) {
 
 			// setting up mock funcs
 			dockerResponse = dockerInspectResponseWithMtu
-			dockerInsepctGetter = dockerInspectGetterMock
+			dockerInspectGetter = dockerInspectGetterMock
 
 			netInfo, err := dockerNetworkInspect("m2")
 

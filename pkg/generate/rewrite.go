@@ -20,7 +20,23 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
+
+// rewriteLogFile resets the magic "log_file" flag
+// otherwise it starts out under $TMP somewhere
+// and shows up as Changed, to default value ""
+func rewriteLogFile() error {
+	flag := pflag.Lookup("log_file")
+	if flag != nil {
+		// don't show the default value
+		err := pflag.Set("log_file", "")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 type rewrite struct {
 	flag       string

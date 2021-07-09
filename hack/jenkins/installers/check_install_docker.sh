@@ -16,6 +16,8 @@
 
 set -eux -o pipefail
 
+ARCH=${ARCH:=amd64}
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
   echo "detected darwin, exiting"
   exit 0
@@ -28,5 +30,5 @@ rm get-docker.sh
 sudo adduser jenkins docker || true
 
 echo "Installing latest kubectl"
-curl -LO "https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl"
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/${ARCH}/kubectl"
 sudo install ./kubectl /usr/local/bin/kubectl

@@ -127,10 +127,17 @@ fix_cgroup() {
   fi
   echo 'INFO: detected cgroup v1'
   echo 'INFO: fix cgroup mounts for all subsystems'
-  # see: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
-  # capture initial state before modifying
+  # See: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
+  # Capture initial state before modifying
+  #
+  # Basically we're looking for the cgroup-path for the cpu controller for the
+  # current process. this tells us what cgroup-path the container is in.
+  # Then we collect the subsystems that are active on this path.
+  # We assume the cpu controller is in use on all node containers.
+  #
+  # See: https://man7.org/linux/man-pages/man7/cgroups.7.html
   local current_cgroup
-  current_cgroup=$(grep systemd /proc/self/cgroup | cut -d: -f3)
+  current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
   local cgroup_subsystems
   cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep "${current_cgroup}" | awk '{print $2}')
   # For each cgroup subsystem, Docker does a bind mount from the current
@@ -145,10 +152,6 @@ fix_cgroup() {
   # The following is a workaround to recreate the original cgroup
   # environment by doing another bind mount for each subsystem.
   local cgroup_mounts
-
-  # This regexp finds all /sys/fs/cgroup mounts that are cgroupfs and mounted somewhere other than / - extracting fields 4+
-  # See https://man7.org/linux/man-pages/man5/proc.5.html for field names
-
   # xref: https://github.com/kubernetes/minikube/pull/9508
   # Example inputs:
   #
@@ -156,18 +159,14 @@ fix_cgroup() {
   # podman:               /libpod_parent/libpod-73a4fb9769188ae5dc51cb7e24b9f2752a4af7b802a8949f06a7b2f2363ab0e9 ...
   # Cloud Shell:          /kubepods/besteffort/pod3d6beaa3004913efb68ce073d73494b0/accdf94879f0a494f317e9a0517f23cdd18b35ff9439efd0175f17bbc56877c4 /sys/fs/cgroup/memory rw,nosuid,nodev,noexec,relatime master:19 - cgroup cgroup rw,memory
   # GitHub actions #9304: /actions_job/0924fbbcf7b18d2a00c171482b4600747afc367a9dfbeac9d6b14b35cda80399 /sys/fs/cgroup/memory rw,nosuid,nodev,noexec,relatime shared:263 master:24 - cgroup cgroup rw,memory
-
   cgroup_mounts=$(grep -E -o '/[[:alnum:]].* /sys/fs/cgroup.*.*cgroup' /proc/self/mountinfo || true)
-
   if [[ -n "${cgroup_mounts}" ]]; then
     local mount_root
-    mount_root=$(echo "${cgroup_mounts}" | head -n 1 | cut -d' ' -f1)
-
+    mount_root=$(head -n 1 <<<"${cgroup_mounts}" | cut -d' ' -f1)
     for mount_point in $(echo "${cgroup_mounts}" | cut -d' ' -f 2); do
       # bind mount each mount_point to mount_point + mount_root
       # mount --bind /sys/fs/cgroup/cpu /sys/fs/cgroup/cpu/docker/fb07bb6daf7730a3cb14fc7ff3e345d1e47423756ce54409e66e01911bab2160
       local target="${mount_point}${mount_root}"
-
       if ! findmnt "${target}"; then
         mkdir -p "${target}"
         mount --bind "${mount_point}" "${target}"
@@ -274,8 +273,9 @@ enable_network_magic(){
 
   # first we need to detect an IP to use for reaching the docker host
   local docker_host_ip
-  docker_host_ip="$( (getent ahostsv4 'host.docker.internal' | head -n1 | cut -d' ' -f1) || true)"
-  if [[ -z "${docker_host_ip}" ]]; then
+  docker_host_ip="$( (head -n1 <(getent ahostsv4 'host.docker.internal') | cut -d' ' -f1) || true)"
+  # if the ip doesn't exist or is a loopback address use the default gateway
+  if [[ -z "${docker_host_ip}" ]] || [[ $docker_host_ip =~ ^127\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
   fi
 
@@ -295,7 +295,7 @@ enable_network_magic(){
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
   # fixup IPs in manifests ...
-  curr_ipv4="$( (getent ahostsv4 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv4="$( (head -n1 <(getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
   if [ -f /kind/old-ipv4 ]; then
       old_ipv4=$(cat /kind/old-ipv4)
@@ -315,7 +315,7 @@ enable_network_magic(){
   fi
 
   # do IPv6
-  curr_ipv6="$( (getent ahostsv6 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv6="$( (head -n1 <(getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
   if [ -f /kind/old-ipv6 ]; then
       old_ipv6=$(cat /kind/old-ipv6)

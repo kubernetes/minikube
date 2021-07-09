@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
@@ -63,6 +63,9 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 
 	cgroupDriver, err := r.CGroupDriver()
 	if err != nil {
+		if !r.Active() {
+			return nil, cruntime.ErrContainerRuntimeNotRunning
+		}
 		return nil, errors.Wrap(err, "getting cgroup driver")
 	}
 
@@ -71,7 +74,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
-	cnm, err := cni.New(cc)
+	cnm, err := cni.New(&cc)
 	if err != nil {
 		return nil, errors.Wrap(err, "cni")
 	}

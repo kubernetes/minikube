@@ -16,6 +16,8 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: csi-hostpath-sc
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
 provisioner: hostpath.csi.k8s.io #csi-hostpath
 reclaimPolicy: Delete
 volumeBindingMode: Immediate

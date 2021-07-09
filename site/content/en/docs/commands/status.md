@@ -23,7 +23,7 @@ minikube status [flags]
 
 ```
   -f, --format string         Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-                              For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status (default "{{.Name}}\ntype: Control Plane\nhost: {{.Host}}\nkubelet: {{.Kubelet}}\napiserver: {{.APIServer}}\nkubeconfig: {{.Kubeconfig}}\ntimeToStop: {{.TimeToStop}}\n\n")
+                              For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status (default "{{.Name}}\ntype: Control Plane\nhost: {{.Host}}\nkubelet: {{.Kubelet}}\napiserver: {{.APIServer}}\nkubeconfig: {{.Kubeconfig}}\n{{- if .TimeToStop }}\ntimeToStop: {{.TimeToStop}}\n{{- end }}\n{{- if .DockerEnv }}\ndocker-env: {{.DockerEnv}}\n{{- end }}\n{{- if .PodManEnv }}\npodman-env: {{.PodManEnv}}\n{{- end }}\n\n")
   -l, --layout string         output layout (EXPERIMENTAL, JSON only): 'nodes' or 'cluster' (default "nodes")
   -n, --node string           The node to check status for. Defaults to control plane. Leave blank with default format for status on all nodes.
   -o, --output string         minikube status --output OUTPUT. json, text (default "text")
@@ -42,7 +42,7 @@ minikube status [flags]
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files

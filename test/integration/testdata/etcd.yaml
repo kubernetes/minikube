@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-etcd
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: operatorgroup
+  namespace: my-etcd
+spec:
+  targetNamespaces:
+  - my-etcd
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: my-etcd
+  namespace: my-etcd
+spec:
+  channel: singlenamespace-alpha
+  name: etcd
+  source: operatorhubio-catalog
+  sourceNamespace: olm

@@ -44,6 +44,6 @@ func main() {
 	err = cmd.GenerateBashCompletion(f, cmd.RootCmd)
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		defer os.Exit(1)
 	}
 }

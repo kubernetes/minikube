@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -32,18 +31,37 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
+
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/localpath"
+)
+
+const (
+	legacyDefaultDomain = "index.docker.io"
+	defaultDomain       = "docker.io"
 )
 
 var defaultPlatform = v1.Platform{
 	Architecture: runtime.GOARCH,
 	OS:           "linux",
+}
+
+var (
+	useDaemon = true
+	useRemote = true
+)
+
+// UseDaemon is if we should look in local daemon for image ref
+func UseDaemon(use bool) {
+	useDaemon = use
+}
+
+// UseRemote is if we should look in remote registry for image ref
+func UseRemote(use bool) {
+	useRemote = use
 }
 
 // DigestByDockerLib uses client by docker lib to return image digest
@@ -69,7 +87,7 @@ func DigestByGoLib(imgName string) string {
 		return ""
 	}
 
-	img, err := retrieveImage(ref)
+	img, _, err := retrieveImage(ref, imgName)
 	if err != nil {
 		klog.Infof("error retrieve Image %s ref %v ", imgName, err)
 		return ""
@@ -81,46 +99,6 @@ func DigestByGoLib(imgName string) string {
 		return cf.Hex
 	}
 	return cf.Hex
-}
-
-// ExistsImageInDaemon if img exist in local docker daemon
-func ExistsImageInDaemon(img string) bool {
-	// Check if image exists locally
-	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
-	if output, err := cmd.Output(); err == nil {
-		if strings.Contains(string(output), img) {
-			klog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return true
-		}
-	}
-	// Else, pull it
-	return false
-}
-
-// LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
-// TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
-func LoadFromTarball(binary, img string) error {
-	p := filepath.Join(constants.ImageCacheDir, img)
-	p = localpath.SanitizeCacheDir(p)
-
-	switch binary {
-	case driver.Podman:
-		return fmt.Errorf("not yet implemented, see issue #8426")
-	default:
-		tag, err := name.NewTag(Tag(img))
-		if err != nil {
-			return errors.Wrap(err, "new tag")
-		}
-
-		i, err := tarball.ImageFromPath(p, &tag)
-		if err != nil {
-			return errors.Wrap(err, "tarball")
-		}
-
-		_, err = daemon.Write(tag, i)
-		return err
-	}
-
 }
 
 // Tag returns just the image with the tag
@@ -135,56 +113,106 @@ func Tag(img string) string {
 	return img
 }
 
-// WriteImageToDaemon write img to the local docker daemon
-func WriteImageToDaemon(img string) error {
-	klog.Infof("Writing %s to local daemon", img)
-	ref, err := name.ParseReference(img)
-	if err != nil {
-		return errors.Wrap(err, "parsing reference")
+func canonicalName(ref name.Reference) string {
+	cname := ref.Name()
+	// go-containerregistry always uses the legacy index.docker.io registry
+	if strings.HasPrefix(cname, legacyDefaultDomain) {
+		cname = strings.Replace(cname, legacyDefaultDomain, defaultDomain, 1)
 	}
-	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref)
-	if err != nil {
-		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
-			ErrGithubNeedsLogin = errors.New(err.Error())
-			return ErrGithubNeedsLogin
-		} else if strings.Contains(err.Error(), "UNAUTHORIZED") {
-			ErrNeedsLogin = errors.New(err.Error())
-			return ErrNeedsLogin
-		}
-
-		return errors.Wrap(err, "getting remote image")
-	}
-	klog.V(3).Infof("Writing image %v", ref)
-	_, err = daemon.Write(ref, i)
-	if err != nil {
-		return errors.Wrap(err, "writing daemon image")
-	}
-
-	return nil
+	return cname
 }
 
-func retrieveImage(ref name.Reference) (v1.Image, error) {
+func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error) {
+	var err error
+	var img v1.Image
+
+	if !useDaemon && !useRemote {
+		return nil, "", fmt.Errorf("neither daemon nor remote")
+	}
+
 	klog.Infof("retrieving image: %+v", ref)
+	if useDaemon {
+		local := strings.HasPrefix(imgName, "localhost/")
+		canonical := imgName == canonicalName(ref)
+		// lookup unqualified short names
+		if !local && !canonical && useRemote {
+			klog.Infof("checking repository: %+v", ref.Context())
+			_, err := remote.Head(ref)
+			if err == nil {
+				imgName = canonicalName(ref)
+				klog.Infof("canonical name: %s", imgName)
+			}
+			if err != nil {
+				klog.Warningf("remote: %v", err)
+				klog.Infof("short name: %s", imgName)
+			}
+		}
+		img, err = retrieveDaemon(ref)
+		if err == nil {
+			return img, imgName, nil
+		}
+	}
+	if useRemote {
+		img, err = retrieveRemote(ref, defaultPlatform)
+		if err == nil {
+			img, err = fixPlatform(ref, img, defaultPlatform)
+			if err == nil {
+				return img, canonicalName(ref), nil
+			}
+		}
+	}
+
+	return nil, "", err
+}
+
+func retrieveDaemon(ref name.Reference) (v1.Image, error) {
 	img, err := daemon.Image(ref)
 	if err == nil {
 		klog.Infof("found %s locally: %+v", ref.Name(), img)
 		return img, nil
 	}
 	// reference does not exist in the local daemon
-	if err != nil {
-		klog.Infof("daemon lookup for %+v: %v", ref, err)
-	}
+	klog.Infof("daemon lookup for %+v: %v", ref, err)
+	return img, err
+}
 
-	platform := defaultPlatform
-	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
+func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(p))
 	if err == nil {
 		return img, nil
 	}
 
 	klog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
-	img, err = remote.Image(ref)
+	img, err = remote.Image(ref, remote.WithPlatform(p))
+	// reference does not exist in the remote registry
+	if err != nil {
+		klog.Infof("remote lookup for %+v: %v", ref, err)
+	}
 	return img, err
+}
+
+// See https://github.com/kubernetes/minikube/issues/10402
+// check if downloaded image Architecture field matches the requested and fix it otherwise
+func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, error) {
+	cfg, err := img.ConfigFile()
+	if err != nil {
+		klog.Warningf("failed to get config for %s: %v", ref, err)
+		return img, err
+	}
+
+	if cfg.Architecture == p.Architecture {
+		return img, nil
+	}
+	klog.Warningf("image %s arch mismatch: want %s got %s. fixing",
+		ref, p.Architecture, cfg.Architecture)
+
+	cfg.Architecture = p.Architecture
+	img, err = mutate.ConfigFile(img, cfg)
+	if err != nil {
+		klog.Warningf("failed to change config for %s: %v", ref, err)
+		return img, errors.Wrap(err, "failed to change image config")
+	}
+	return img, nil
 }
 
 func cleanImageCacheDir() error {

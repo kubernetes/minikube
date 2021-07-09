@@ -76,7 +76,7 @@ var settings = []Setting{
 	{
 		name:        "cpus",
 		set:         SetInt,
-		validations: []setFn{IsPositive},
+		validations: []setFn{IsValidCPUs},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
@@ -93,7 +93,7 @@ var settings = []Setting{
 	{
 		name:        "memory",
 		set:         SetString,
-		validations: []setFn{IsValidDiskSize},
+		validations: []setFn{IsValidMemory},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
@@ -115,20 +115,12 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
+		name: config.WantBetaUpdateNotification,
+		set:  SetBool,
+	},
+	{
 		name: config.ReminderWaitPeriodInHours,
 		set:  SetInt,
-	},
-	{
-		name: config.WantReportError,
-		set:  SetBool,
-	},
-	{
-		name: config.WantReportErrorPrompt,
-		set:  SetBool,
-	},
-	{
-		name: config.WantKubectlDownloadMsg,
-		set:  SetBool,
 	},
 	{
 		name: config.WantNoneDriverWarning,
@@ -140,15 +132,7 @@ var settings = []Setting{
 	},
 	{
 		name: Bootstrapper,
-		set:  SetString, //TODO(r2d4): more validation here?
-	},
-	{
-		name: config.ShowDriverDeprecationNotification,
-		set:  SetBool,
-	},
-	{
-		name: config.ShowBootstrapperDeprecationNotification,
-		set:  SetBool,
+		set:  SetString,
 	},
 	{
 		name: "insecure-registry",
@@ -168,7 +152,7 @@ var settings = []Setting{
 		setMap: SetMap,
 	},
 	{
-		name: "embed-certs",
+		name: config.EmbedCerts,
 		set:  SetBool,
 	},
 	{

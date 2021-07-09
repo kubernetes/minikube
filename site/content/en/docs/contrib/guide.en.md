@@ -19,7 +19,7 @@ We'd love to accept your patches! Before we can take them, [please fill out eith
 
 * ["good first issue"](https://github.com/kubernetes/minikube/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)  -  issues where there is a clear path to resolution
 * ["help wanted"](https://github.com/kubernetes/minikube/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+) - issues where we've identified a need but not resources to work on them
-"priority/important-soon" or "priority/important-longterm: - high impact issues that need to be addressed in the next couple of releases.
+* ["priority/important-soon"](https://github.com/kubernetes/minikube/issues?q=is%3Aopen+is%3Aissue+label%3Apriority%2Fimportant-soon) or ["priority/important-longterm"](https://github.com/kubernetes/minikube/issues?q=is%3Aopen+is%3Aissue+label%3Apriority%2Fimportant-longterm) - high impact issues that need to be addressed in the next couple of releases.
 
 * Ask on the #minikube Slack if you aren't sure
 
@@ -29,6 +29,17 @@ Once you've discovered an issue to work on:
 * Send a PR out that mentions the issue
 * Comment on the issue with `/assign` to assign it to yourself
 
+
+### clone `minikube`
+
+After forking minikube you can `clone` for best practices use the following instruction:
+
+```bash 
+git clone git@github.com:kubernetes/minikube.git
+git remote rename origin upstream
+git remote set-url --push upstream NO_PUSH
+git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/minikube.git
+```
 ### Contributing A Patch
 
 1. Submit an issue describing your proposed change

@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 // General configuration: used to set the VM Driver
@@ -96,6 +96,16 @@ func setMaxParallelism() {
 
 	// Each "minikube start" consumes up to 2 cores, though the average usage is somewhat lower
 	limit := int(math.Floor(float64(maxp) / 1.75))
+
+	// Windows and MacOS tests were failing from timeouts due to too much parallelism
+	if runtime.GOOS == "windows" {
+		limit /= 2
+	}
+
+	// Hardcode limit to 2 for macOS
+	if runtime.GOOS == "darwin" {
+		limit = 2
+	}
 
 	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", maxp, limit)
 	if err := flag.Set("test.parallel", strconv.Itoa(limit)); err != nil {
@@ -169,7 +179,7 @@ func arm64Platform() bool {
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
 // (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {
-	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin") || driver.IsMicrosoftWSL()
+	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin") || detect.IsMicrosoftWSL()
 }
 
 // CanCleanup returns if cleanup is allowed

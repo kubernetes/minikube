@@ -26,6 +26,8 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -70,13 +72,20 @@ var (
 
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
-	return supportedDrivers
+	arch := detect.RuntimeArch()
+	for _, a := range constants.SupportedArchitectures {
+		if arch == a {
+			return supportedDrivers
+		}
+	}
+	// remote cluster only
+	return []string{SSH}
 }
 
 // DisplaySupportedDrivers returns a string with a list of supported drivers
 func DisplaySupportedDrivers() string {
 	var sd []string
-	for _, d := range supportedDrivers {
+	for _, d := range SupportedDrivers() {
 		if registry.Driver(d).Priority == registry.Experimental {
 			sd = append(sd, d+" (experimental)")
 			continue
@@ -88,7 +97,7 @@ func DisplaySupportedDrivers() string {
 
 // Supported returns if the driver is supported on this host.
 func Supported(name string) bool {
-	for _, d := range supportedDrivers {
+	for _, d := range SupportedDrivers() {
 		if name == d {
 			return true
 		}
@@ -140,6 +149,11 @@ func IsMock(name string) bool {
 	return name == Mock
 }
 
+// IsKVM checks if the driver is a KVM[2]
+func IsKVM(name string) bool {
+	return name == KVM2 || name == AliasKVM
+}
+
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
 	if IsKIC(name) || BareMetal(name) {
@@ -158,6 +172,10 @@ func IsSSH(name string) bool {
 	return name == SSH
 }
 
+func AllowsPreload(driverName string) bool {
+	return !BareMetal(driverName) && !IsSSH(driverName)
+}
+
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
 	if !IsKIC(name) {
@@ -167,14 +185,7 @@ func NeedsPortForward(name string) bool {
 		return true
 	}
 	// Docker for Desktop
-	return runtime.GOOS == "darwin" || runtime.GOOS == "windows" || IsMicrosoftWSL()
-}
-
-// IsMicrosoftWSL will return true if process is running in WSL in windows
-// checking for WSL env var based on this https://github.com/microsoft/WSL/issues/423#issuecomment-608237689
-// also based on https://github.com/microsoft/vscode/blob/90a39ba0d49d75e9a4d7e62a6121ad946ecebc58/resources/win32/bin/code.sh#L24
-func IsMicrosoftWSL() bool {
-	return os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSLPATH") != ""
+	return runtime.GOOS == "darwin" || runtime.GOOS == "windows" || detect.IsMicrosoftWSL()
 }
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
@@ -282,6 +293,7 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 
 			if !ds.State.Healthy {
 				ds.Rejection = fmt.Sprintf("Not healthy: %v", ds.State.Error)
+				ds.Suggestion = fmt.Sprintf("%s <%s>", ds.State.Fix, ds.State.Doc)
 				rejects = append(rejects, ds)
 				continue
 			}
@@ -327,12 +339,16 @@ func SetLibvirtURI(v string) {
 
 // IndexFromMachineName returns the order of the container based on it is name
 func IndexFromMachineName(machineName string) int {
-	// minikube-m02
+	// minikube or offline-docker-20210314040449-6655 or minion-m02
 	sp := strings.Split(machineName, "-")
-	m := strings.Trim(sp[len(sp)-1], "m") // m02
-	i, err := strconv.Atoi(m)
-	if err != nil {
-		return 1
+	m := sp[len(sp)-1]             // minikube or 6655 or m02
+	if strings.HasPrefix(m, "m") { // likely minion node
+		m = strings.TrimPrefix(m, "m")
+		i, err := strconv.Atoi(m)
+		if err != nil {
+			return 1 // master node
+		}
+		return i // minion node
 	}
-	return i
+	return 1 // master node
 }

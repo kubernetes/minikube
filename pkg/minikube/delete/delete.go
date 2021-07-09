@@ -28,7 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
-//PossibleLeftOvers deletes KIC & non-KIC drivers left
+// PossibleLeftOvers deletes KIC & non-KIC drivers left
 func PossibleLeftOvers(ctx context.Context, cname string, driverName string) {
 	bin := ""
 	switch driverName {

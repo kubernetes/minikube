@@ -20,6 +20,7 @@ minikube logs [flags]
 ### Options
 
 ```
+      --file string   If present, writes to the provided file instead of stdout.
   -f, --follow        Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
   -n, --length int    Number of lines back to go within the log (default 60)
       --node string   The node to get logs from. Defaults to the primary control plane.
@@ -38,7 +39,7 @@ minikube logs [flags]
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files

@@ -19,7 +19,7 @@
 # 	ISO_BUCKET = the bucket location to upload the ISO (e.g. minikube-builds/PR_NUMBER)
 # 	ISO_VERSION = the suffix for the iso (i.e. minikube-$(ISO_VERSION).iso)
 
-set -x
+set -x -o pipefail
 
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
@@ -45,16 +45,11 @@ make release-iso | tee iso-logs.txt
 ec=$?
 if [ $ec -gt 0 ]; then
 	if [ "$release" = false ]; then
-		err=$(tail -100 iso-logs.txt)
-		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed, with the error below:
-		
-		<details>
-		<pre>
-		${err}
-		</pre>
-		</details>
-
-		Full logs are at https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit:0:7}/iso_build.txt
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.  
+		See the logs at: 
+		```
+		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit:0:7}/iso_build.txt
+		```
 		"
 	fi
 	exit $ec

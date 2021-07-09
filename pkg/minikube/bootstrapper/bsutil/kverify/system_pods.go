@@ -18,7 +18,9 @@ limitations under the License.
 package kverify
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -48,7 +50,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 		}
 
 		// Wait for any system pod, as waiting for apiserver may block until etcd
-		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+		pods, err := client.CoreV1().Pods("kube-system").List(context.Background(), meta.ListOptions{})
 		if err != nil {
 			klog.Warningf("pod list returned error: %v", err)
 			return err
@@ -77,7 +79,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	found := map[string]bool{}
 
-	pods, err := cs.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+	pods, err := cs.CoreV1().Pods("kube-system").List(context.Background(), meta.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -149,7 +151,7 @@ func podStatusMsg(pod core.Pod) string {
 func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner) {
 	problems := logs.FindProblems(r, bs, cfg, cr)
 	if len(problems) > 0 {
-		logs.OutputProblems(problems, 5)
+		logs.OutputProblems(problems, 5, os.Stderr)
 		time.Sleep(kconst.APICallRetryInterval * 15)
 	}
 }

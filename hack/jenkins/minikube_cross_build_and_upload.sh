@@ -46,6 +46,8 @@ make -j 16 \
   out/minikube_${DEB_VER}_amd64.deb \
   out/minikube_${DEB_VER}_arm64.deb \
   out/docker-machine-driver-kvm2_$(make deb_version_base).deb \
+  out/docker-machine-driver-kvm2_${DEB_VER}_amd64.deb \
+  out/docker-machine-driver-kvm2_${DEB_VER}_arm64.deb \
 && failed=$? || failed=$?
 
 BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
@@ -70,7 +72,7 @@ fi
 cp -r test/integration/testdata out/
 
 # Don't upload the buildroot artifacts if they exist
-rm -r out/buildroot || true
+rm -rf out/buildroot
 
 # At this point, the out directory contains the jenkins scripts (populated by jenkins),
 # testdata, and our build output. Push the changes to GCS so that worker nodes can re-use them.

@@ -17,19 +17,26 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
+
+# multi-tage docker build so we can build auto-pause for arm64
+FROM golang:1.16
+WORKDIR /src
+# becaue auto-pause binary depends on minikube's code we need to pass the whole source code as the context
+ADD . .
+RUN cd ./cmd/auto-pause/ && go build 
+
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20210119
+FROM ubuntu:focal-20210401
 
-ARG BUILDKIT_VERSION="v0.8.1"
+ARG BUILDKIT_VERSION="v0.8.2"
 
 # copy in static files (configs, scripts)
-COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
-COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
-COPY clean-install /usr/local/bin/clean-install
-COPY entrypoint /usr/local/bin/entrypoint
-# must first run make out/auto-pause
-COPY auto-pause /usr/local/bin/auto-pause
+COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
+COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
+COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
+COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
+COPY --from=0 /src/cmd/auto-pause/auto-pause /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -63,6 +70,7 @@ RUN echo "Ensuring scripts are executable ..." \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \
       nfs-common \
+      iputils-ping netcat-openbsd vim-tiny \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -91,8 +99,9 @@ STOPSIGNAL SIGRTMIN+3
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
 ARG COMMIT_SHA
-# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/1da0c5e6/images/base/Dockerfile
-# which is an ubuntu 20.04 with an entry-point that helps running systemd
+# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile
+# available as a docker image: docker.io/kindest/base:v20210402-3d9112b0
+# which is an ubuntu 20.10 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
 USER root
 
@@ -121,6 +130,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && rm -rf /tmp/buildkit.tgz \
     && chmod 755 /usr/local/bin/buildctl \
     && chmod 755 /usr/local/bin/buildkit-runc \
+    && chmod 755 /usr/local/bin/buildkit-qemu-* \
     && chmod 755 /usr/local/bin/buildkitd
 
 # Install cri-o/podman dependencies:
@@ -149,14 +159,14 @@ RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/lib
     systemd-tmpfiles --create
 
 # automount service
-COPY automount/minikube-automount /usr/sbin/minikube-automount
-COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
+COPY deploy/kicbase/automount/minikube-automount /usr/sbin/minikube-automount
+COPY deploy/kicbase/automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
 RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
     /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
 # scheduled stop service
-COPY scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
-COPY scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
+COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
+COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default

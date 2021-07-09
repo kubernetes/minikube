@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// TestDownloadOnly makes sure the --download-only parameter in minikube start caches the appropriate images and tarballs.
 func TestDownloadOnly(t *testing.T) {
 	// Stores the startup run result for later error messages
 	var rrr *RunResult
@@ -96,7 +97,9 @@ func TestDownloadOnly(t *testing.T) {
 				if NoneDriver() {
 					t.Skip("None driver does not have preload")
 				}
-				if download.PreloadExists(v, containerRuntime, true) {
+				// Driver does not matter here, since the only exception is none driver,
+				// which cannot occur here.
+				if download.PreloadExists(v, containerRuntime, "docker", true) {
 					// Just make sure the tarball path exists
 					if _, err := os.Stat(download.TarballPath(v, containerRuntime)); err != nil {
 						t.Errorf("failed to verify preloaded tarball file exists: %v", err)
@@ -131,6 +134,9 @@ func TestDownloadOnly(t *testing.T) {
 			})
 
 			t.Run("binaries", func(t *testing.T) {
+				if preloadExists {
+					t.Skip("Preload exists, binaries are present within.")
+				}
 				// checking binaries downloaded (kubelet,kubeadm)
 				for _, bin := range constants.KubernetesReleaseBinaries {
 					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)
@@ -154,6 +160,19 @@ func TestDownloadOnly(t *testing.T) {
 				fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, v, binary)
 				if _, err := os.Stat(fp); err != nil {
 					t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
+				}
+			})
+
+			// checks if the duration of `minikube logs` takes longer than 5 seconds
+			t.Run("LogsDuration", func(t *testing.T) {
+				ctx, cancel := context.WithTimeout(context.Background(), Seconds(5))
+				defer cancel()
+				args := []string{"logs", "-p", profile}
+				if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+					t.Logf("minikube logs failed with error: %v", err)
+				}
+				if err := ctx.Err(); err == context.DeadlineExceeded {
+					t.Error("minikube logs expected to finish by 5 seconds, but took longer")
 				}
 			})
 
@@ -187,6 +206,7 @@ func TestDownloadOnly(t *testing.T) {
 
 }
 
+// TestDownloadOnlyKic makes sure --download-only caches the docker driver images as well.
 func TestDownloadOnlyKic(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("skipping, only for docker or podman driver")

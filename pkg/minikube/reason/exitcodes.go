@@ -32,9 +32,8 @@ limitations under the License.
 
 package reason
 
+// Reserved UNIX exit codes
 const (
-	// Reserved UNIX exit codes
-
 	ExFailure     = 1 // Failure represents a general failure code
 	ExInterrupted = 2 // Ctrl-C (SIGINT)
 
@@ -57,7 +56,6 @@ const (
 	// navailableOff = 9 // (~EX_UNAVAILABLE)
 
 	// Error codes specific to the minikube program
-
 	ExProgramError       = 10 // generic error
 	ExProgramUsage       = 14 // bad command-line options
 	ExProgramConflict    = 11 // can't do what you want because of existing data
@@ -66,7 +64,6 @@ const (
 	ExProgramConfig      = 18 // bad configuration specified
 
 	// Error codes specific to resource limits (exit code layout follows no rules)
-
 	ExResourceError          = 20
 	ExInsufficientMemory     = 23
 	ExInsufficientStorage    = 26
@@ -74,7 +71,6 @@ const (
 	ExInsufficientCores      = 29
 
 	// Error codes specific to the host
-
 	ExHostError       = 30
 	ExHostConflict    = 31
 	ExHostTimeout     = 32
@@ -85,7 +81,6 @@ const (
 	ExHostConfig      = 38
 
 	// Error codes specific to remote networking
-
 	ExInternetError       = 40
 	ExInternetConflict    = 41
 	ExInternetTimeout     = 42
@@ -94,7 +89,6 @@ const (
 	ExInternetUnavailable = 49
 
 	// Error codes specific to the libmachine driver
-
 	ExDriverError       = 50
 	ExDriverConflict    = 51
 	ExDriverTimeout     = 52
@@ -106,7 +100,6 @@ const (
 	ExDriverUnavailable = 59
 
 	// Error codes specific to the driver provider
-
 	ExProviderError      = 60
 	ExProviderConflict   = 61
 	ExProviderTimeout    = 62
@@ -121,7 +114,6 @@ const (
 	ExProviderUnavailable = 69 // In common use
 
 	// Error codes specific to local networking
-
 	ExLocalNetworkError       = 70
 	ExLocalNetworkConflict    = 71
 	ExLocalNetworkTimeout     = 72
@@ -131,7 +123,6 @@ const (
 	ExLocalNetworkUnavailable = 79
 
 	// Error codes specific to the guest host
-
 	ExGuestError       = 80
 	ExGuestConflict    = 81
 	ExGuestTimeout     = 82
@@ -143,14 +134,12 @@ const (
 	ExGuestUnavailable = 89
 
 	// Error codes specific to the container runtime
-
 	ExRuntimeError       = 90
 	ExRuntimeNotRunning  = 93
 	ExRuntimeNotFound    = 95
 	ExRuntimeUnavailable = 99
 
 	// Error codes specific to the Kubernetes control plane
-
 	ExControlPlaneError       = 100
 	ExControlPlaneConflict    = 101
 	ExControlPlaneTimeout     = 102
@@ -161,7 +150,6 @@ const (
 	ExControlPlaneUnavailable = 109
 
 	// Error codes specific to a Kubernetes service
-
 	ExSvcError       = 110
 	ExSvcConflict    = 111
 	ExSvcTimeout     = 112

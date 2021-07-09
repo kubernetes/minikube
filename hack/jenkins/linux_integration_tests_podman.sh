@@ -25,8 +25,9 @@
 
 set -e
 
-OS_ARCH="linux-amd64"
-VM_DRIVER="podman"
+OS="linux"
+ARCH="amd64"
+DRIVER="podman"
 JOB_NAME="Experimental_Podman_Linux"
 CONTAINER_RUNTIME="containerd"
 

@@ -7,7 +7,7 @@ description: >
 
 ## Enabling debug logs
 
-Pass `--alsologtostderr` to minikube commands to see detailed log output output. To increase the log verbosity, you can use:
+Pass `--alsologtostderr` to minikube commands to see detailed log output. To increase the log verbosity, you can use:
 
 * `-v=1`: verbose messages
 * `-v=2`: really verbose messages
@@ -19,15 +19,15 @@ Example:
 
 ## Post-mortem minikube debug logs
 
-minikube stores post-mortem INFO logs in the temporary directory of your system. On macOS or Linux, it's easy to get a list of recent INFO logs:
+minikube stores post-mortem logs in the temporary directory of your system. One log file is created per subcommand and any subsequent invocations of the subcommand with the same args will append to the same file. If the log file has exceeded 1MB in size, a new log file is created. On macOS or Linux, it's easy to get a list of recent logs:
 
 ```shell
-find $TMPDIR -mtime -1 -type f -name "*minikube*INFO*" -ls  2>/dev/null
+find $TMPDIR -mtime -1 -type f -name "*minikube*" -ls  2>/dev/null
 ```
 
-For instance, this shows:
+For instance after running `minikube start`, the above comamnd will show:
 
-`-rw-r--r-- 1 user  grp  718 Aug 18 12:40 /var/folders/n1/qxvd9kc/T//minikube.mac.user.log.INFO.20200818-124017.63501`
+`-rw-r--r-- 1 user  grp  718 Aug 18 12:40 /var/folders/n1/qxvd9kc/T//minikube_start_dc950831e1a232e0318a6d6ca82aaf4f4a8a048b_0.log`
 
 These are plain text log files: you may rename them to "<filename>.log" and then drag/drop them into a GitHub issue for further analysis by the minikube team. You can quickly inspect the final lines of any of these logs via:
   

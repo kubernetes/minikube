@@ -147,7 +147,7 @@ func getLabels(containerRuntime string) *stackdriver.Labels {
 func minikubeStartTime(ctx context.Context, projectID, minikubePath, containerRuntime string) (float64, error) {
 	defer deleteMinikube(ctx, minikubePath)
 
-	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2000", "--trace=gcp", fmt.Sprintf("--container-runtime=%s", containerRuntime))
+	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2048", "--trace=gcp", fmt.Sprintf("--container-runtime=%s", containerRuntime))
 	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", pkgtrace.ProjectEnvVar, projectID))
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr

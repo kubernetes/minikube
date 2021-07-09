@@ -20,7 +20,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 )
 
 // Profile represents a minikube profile
@@ -52,11 +52,11 @@ type ClusterConfig struct {
 	HypervVirtualSwitch     string
 	HypervUseExternalSwitch bool
 	HypervExternalAdapter   string
-	KVMNetwork              string   // Only used by the KVM driver
-	KVMQemuURI              string   // Only used by kvm2
-	KVMGPU                  bool     // Only used by kvm2
-	KVMHidden               bool     // Only used by kvm2
-	KVMNUMACount            int      // Only used by kvm2
+	KVMNetwork              string   // Only used by the KVM2 driver
+	KVMQemuURI              string   // Only used by the KVM2 driver
+	KVMGPU                  bool     // Only used by the KVM2 driver
+	KVMHidden               bool     // Only used by the KVM2 driver
+	KVMNUMACount            int      // Only used by the KVM2 driver
 	DockerOpt               []string // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts     bool     // Only used by virtualbox
 	NFSShare                []string
@@ -74,7 +74,9 @@ type ClusterConfig struct {
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
 	Addons                  map[string]bool
-	VerifyComponents        map[string]bool // map of components to verify and wait for after start.
+	CustomAddonImages       map[string]string // Maps image names to the image to use for addons. e.g. Dashboard -> k8s.gcr.io/echoserver:1.4 makes dashboard addon use echoserver for its Dashboard deployment.
+	CustomAddonRegistries   map[string]string // Maps image names to the registry to use for addons. See CustomAddonImages for example.
+	VerifyComponents        map[string]bool   // map of components to verify and wait for after start.
 	StartHostTimeout        time.Duration
 	ScheduledStop           *ScheduledStopConfig
 	ExposedPorts            []string // Only used by the docker and podman driver

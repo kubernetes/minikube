@@ -31,8 +31,20 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
+
+type cacheError struct {
+	Err error
+}
+
+func (f *cacheError) Error() string {
+	return f.Err.Error()
+}
+
+// errCacheImageDoesntExist is thrown when image that user is trying to add does not exist
+var errCacheImageDoesntExist = &cacheError{errors.New("the image you are trying to add does not exist")}
 
 // DeleteFromCacheDir deletes tar files stored in cache dir
 func DeleteFromCacheDir(images []string) error {
@@ -52,15 +64,18 @@ func DeleteFromCacheDir(images []string) error {
 // The cache directory currently caches images using the imagename_tag
 // For example, k8s.gcr.io/kube-addon-manager:v6.5 would be
 // stored at $CACHE_DIR/k8s.gcr.io/kube-addon-manager_v6.5
-func SaveToDir(images []string, cacheDir string) error {
+func SaveToDir(images []string, cacheDir string, overwrite bool) error {
 	var g errgroup.Group
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
 			dst := filepath.Join(cacheDir, image)
 			dst = localpath.SanitizeCacheDir(dst)
-			if err := saveToTarFile(image, dst); err != nil {
-				klog.Errorf("save image to file %q -> %q failed: %v", image, dst, err)
+			if err := saveToTarFile(image, dst, overwrite); err != nil {
+				if err == errCacheImageDoesntExist {
+					out.WarningT("The image '{{.imageName}}' was not found; unable to add it to cache.", out.V{"imageName": image})
+					return nil
+				}
 				return errors.Wrapf(err, "caching image %q", dst)
 			}
 			klog.Infof("save to tar file %s -> %s succeeded", image, dst)
@@ -75,7 +90,7 @@ func SaveToDir(images []string, cacheDir string) error {
 }
 
 // saveToTarFile caches an image
-func saveToTarFile(iname, rawDest string) error {
+func saveToTarFile(iname, rawDest string, overwrite bool) error {
 	iname = normalizeTagName(iname)
 	start := time.Now()
 	defer func() {
@@ -97,7 +112,7 @@ func saveToTarFile(iname, rawDest string) error {
 	}
 	defer releaser.Release()
 
-	if _, err := os.Stat(dst); err == nil {
+	if _, err := os.Stat(dst); !overwrite && err == nil {
 		klog.Infof("%s exists", dst)
 		return nil
 	}
@@ -106,6 +121,7 @@ func saveToTarFile(iname, rawDest string) error {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
+	// use given short name
 	ref, err := name.ParseReference(iname, name.WeakValidation)
 	if err != nil {
 		return errors.Wrapf(err, "parsing image ref name for %s", iname)
@@ -114,12 +130,23 @@ func saveToTarFile(iname, rawDest string) error {
 		return errors.Wrapf(err, "nil reference for %s", iname)
 	}
 
-	img, err := retrieveImage(ref)
+	img, cname, err := retrieveImage(ref, iname)
 	if err != nil {
-		klog.Warningf("unable to retrieve image: %v", err)
+		return errCacheImageDoesntExist
 	}
 	if img == nil {
 		return errors.Wrapf(err, "nil image for %s", iname)
+	}
+
+	if cname != iname {
+		// use new canonical name
+		ref, err = name.ParseReference(cname, name.WeakValidation)
+		if err != nil {
+			return errors.Wrapf(err, "parsing image ref name for %s", cname)
+		}
+		if ref == nil {
+			return errors.Wrapf(err, "nil reference for %s", cname)
+		}
 	}
 
 	err = writeImage(img, dst, ref)

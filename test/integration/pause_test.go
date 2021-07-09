@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/cmd/minikube/cmd"
 )
 
+// TestPause tests minikube pause functionality
 func TestPause(t *testing.T) {
 	MaybeParallel(t)
 
@@ -68,10 +69,11 @@ func TestPause(t *testing.T) {
 	})
 }
 
+// validateFreshStart just starts a new minikube cluster
 func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=all"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2048", "--install-addons=false", "--wait=all"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
@@ -97,6 +99,7 @@ func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile strin
 	}
 }
 
+// validatePause runs minikube pause
 func validatePause(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -107,6 +110,7 @@ func validatePause(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateUnpause runs minikube unpause
 func validateUnpause(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -117,6 +121,7 @@ func validateUnpause(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateDelete deletes the unpaused cluster
 func validateDelete(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -127,7 +132,7 @@ func validateDelete(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// make sure no left over left after deleting a profile such as containers or volumes
+// validateVerifyDeleted makes sure no left over left after deleting a profile such as containers or volumes
 func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -171,6 +176,7 @@ func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+// validateStatus makes sure paused clusters show up in minikube status correctly
 func validateStatus(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 

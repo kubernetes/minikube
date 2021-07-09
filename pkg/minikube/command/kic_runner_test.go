@@ -33,21 +33,24 @@ func TestKICRunner(t *testing.T) {
 		}
 
 		tests := []struct {
-			in   bool
-			want string
+			isMinikubeSnap bool
+			isDockerSnap   bool
+			want           string
 		}{
-			{false, ""},
-			{true, home},
+			{false, false, ""},
+			{true, true, home},
+			{false, true, home},
+			{true, false, home},
 		}
 
 		for _, tt := range tests {
-			got, err := tempDirectory(tt.in)
+			got, err := tempDirectory(tt.isMinikubeSnap, tt.isDockerSnap)
 			if err != nil {
 				t.Fatalf("failed to get temp directory: %v", err)
 			}
 
 			if got != tt.want {
-				t.Errorf("tempDirectory(%t) = %s; want %s", tt.in, got, tt.want)
+				t.Errorf("tempDirectory(%t, %t) = %s; want %s", tt.isMinikubeSnap, tt.isDockerSnap, got, tt.want)
 			}
 		}
 	})

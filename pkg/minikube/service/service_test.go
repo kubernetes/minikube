@@ -18,6 +18,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -217,7 +218,7 @@ var endpointMap = map[string]*core.Endpoints{
 	},
 }
 
-func (e MockEndpointsInterface) Get(name string, _ meta.GetOptions) (*core.Endpoints, error) {
+func (e MockEndpointsInterface) Get(ctx context.Context, name string, _ meta.GetOptions) (*core.Endpoints, error) {
 	endpoint, ok := endpointMap[name]
 	if !ok {
 		return nil, errors.New("Endpoint not found")
@@ -235,7 +236,7 @@ type MockSecretInterface struct {
 	SecretsList *core.SecretList
 }
 
-func (s MockServiceInterface) List(opts meta.ListOptions) (*core.ServiceList, error) {
+func (s MockServiceInterface) List(ctx context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
 	serviceList := &core.ServiceList{
 		Items: []core.Service{},
 	}
@@ -254,7 +255,7 @@ func (s MockServiceInterface) List(opts meta.ListOptions) (*core.ServiceList, er
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(name string, _ meta.GetOptions) (*core.Service, error) {
+func (s MockServiceInterface) Get(ctx context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil

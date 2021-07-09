@@ -25,8 +25,9 @@
 
 set -e
 
-OS_ARCH="linux-amd64"
-VM_DRIVER="virtualbox"
+OS="linux"
+ARCH="amd64"
+DRIVER="virtualbox"
 JOB_NAME="VirtualBox_Linux"
 EXTRA_TEST_ARGS=""
 EXPECTED_DEFAULT_DRIVER="kvm2"

@@ -30,7 +30,7 @@ import (
 
 func TestGenerateCACert(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", tmpDir)
@@ -63,7 +63,7 @@ func TestGenerateCACert(t *testing.T) {
 
 func TestGenerateSignedCert(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", tmpDir)
@@ -74,7 +74,7 @@ func TestGenerateSignedCert(t *testing.T) {
 	}
 
 	signerTmpDir, err := ioutil.TempDir("", "")
-	defer func() { //clean up tempdir
+	defer func() { // clean up tempdir
 		err := os.RemoveAll(signerTmpDir)
 		if err != nil {
 			t.Errorf("failed to clean up temp folder  %q", signerTmpDir)

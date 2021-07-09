@@ -13,30 +13,76 @@
 # limitations under the License.
 
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: ingress-nginx-controller-admission
+  namespace: ingress-nginx
+spec:
+  type: ClusterIP
+  ports:
+    - name: https-webhook
+      port: 443
+      targetPort: webhook
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ingress-nginx-controller
-  namespace: kube-system
+  namespace: ingress-nginx
   labels:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/part-of: kube-system
     app.kubernetes.io/component: controller
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
-  replicas: 1
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      # maxUnavailable needs to be 1 so that port conflicts between the old and new pod doesn't happen when using hostPort
-      maxUnavailable: 1
-      maxSurge: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: ingress-nginx
       app.kubernetes.io/instance: ingress-nginx
       app.kubernetes.io/component: controller
+      addonmanager.kubernetes.io/mode: Reconcile
+  revisionHistoryLimit: 10
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  minReadySeconds: 0
   template:
     metadata:
       labels:
@@ -46,7 +92,7 @@ spec:
         addonmanager.kubernetes.io/mode: Reconcile
         gcp-auth-skip-secret: "true"
     spec:
-      serviceAccountName: ingress-nginx
+      dnsPolicy: ClusterFirst
       containers:
         - name: controller
           image: {{.CustomRegistries.IngressController  | default .ImageRepository | default .Registries.IngressController }}{{.Images.IngressController}}
@@ -58,7 +104,8 @@ spec:
                   - /wait-shutdown
           args:
             - /nginx-ingress-controller
-            - --configmap=$(POD_NAMESPACE)/nginx-load-balancer-conf
+            - --ingress-class=nginx
+            - --configmap=$(POD_NAMESPACE)/ingress-nginx-controller
             - --report-node-internal-ip-address
             - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
             - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
@@ -67,7 +114,7 @@ spec:
             - --validating-webhook-key=/usr/local/certificates/key
             {{if .CustomIngressCert}}
             - --default-ssl-certificate={{ .CustomIngressCert }} 
-           {{end}}
+            {{end}}
           securityContext:
             capabilities:
               drop:
@@ -85,6 +132,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: LD_PRELOAD
+              value: /usr/local/lib/libmimalloc.so
           livenessProbe:
             httpGet:
               path: /healthz
@@ -94,13 +143,14 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 1
             successThreshold: 1
-            failureThreshold: 3
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /healthz
               port: 10254
               scheme: HTTP
             initialDelaySeconds: 10
+            periodSeconds: 10
             timeoutSeconds: 1
             successThreshold: 1
             failureThreshold: 3
@@ -124,30 +174,32 @@ spec:
             requests:
               cpu: 100m
               memory: 90Mi
+      serviceAccountName: ingress-nginx
       volumes:
         - name: webhook-cert
           secret:
             secretName: ingress-nginx-admission
-
 ---
-
-apiVersion: admissionregistration.k8s.io/v1beta1
+# Currently(v0.44.0), ValidatingWebhookConfiguration of this validates v1beta1 request
+# TODO(govargo): check this after upstream ingress-nginx can validate v1 version
+# https://github.com/kubernetes/ingress-nginx/blob/controller-v0.44.0/internal/admission/controller/main.go#L46-L52
+apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   labels:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/component: admission-webhook
+    addonmanager.kubernetes.io/mode: Reconcile
   name: ingress-nginx-admission
-  namespace: kube-system
 webhooks:
   - name: validate.nginx.ingress.kubernetes.io
+    matchPolicy: Equivalent
     rules:
       - apiGroups:
           - networking.k8s.io
         apiVersions:
           - v1beta1
-          - v1
         operations:
           - CREATE
           - UPDATE
@@ -160,45 +212,9 @@ webhooks:
       - v1beta1
     clientConfig:
       service:
-        namespace: kube-system
+        namespace: ingress-nginx
         name: ingress-nginx-controller-admission
         path: /networking/v1beta1/ingresses
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: ingress-nginx-admission
-  labels:
-    app.kubernetes.io/name: ingress-nginx
-    app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/component: admission-webhook
-  namespace: kube-system
-rules:
-  - apiGroups:
-      - admissionregistration.k8s.io
-    resources:
-      - validatingwebhookconfigurations
-    verbs:
-      - get
-      - update
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: ingress-nginx-admission
-  labels:
-    app.kubernetes.io/name: ingress-nginx
-    app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/component: admission-webhook
-  namespace: kube-system
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: ingress-nginx-admission
-subjects:
-  - kind: ServiceAccount
-    name: ingress-nginx-admission
-    namespace: kube-system
 ---
 apiVersion: batch/v1
 kind: Job
@@ -208,7 +224,8 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/component: admission-webhook
-  namespace: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+  namespace: ingress-nginx
 spec:
   template:
     metadata:
@@ -217,6 +234,7 @@ spec:
         app.kubernetes.io/name: ingress-nginx
         app.kubernetes.io/instance: ingress-nginx
         app.kubernetes.io/component: admission-webhook
+        addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
         - name: create
@@ -224,17 +242,20 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - create
-            - --host=ingress-nginx-controller-admission,ingress-nginx-controller-admission.kube-system.svc
-            - --namespace=kube-system
+            - --host=ingress-nginx-controller-admission,ingress-nginx-controller-admission.$(POD_NAMESPACE).svc
+            - --namespace=$(POD_NAMESPACE)
             - --secret-name=ingress-nginx-admission
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
       restartPolicy: OnFailure
       serviceAccountName: ingress-nginx-admission
       securityContext:
         runAsNonRoot: true
         runAsUser: 2000
-
 ---
-
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -243,7 +264,8 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/component: admission-webhook
-  namespace: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+  namespace: ingress-nginx
 spec:
   template:
     metadata:
@@ -252,41 +274,26 @@ spec:
         app.kubernetes.io/name: ingress-nginx
         app.kubernetes.io/instance: ingress-nginx
         app.kubernetes.io/component: admission-webhook
+        addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
         - name: patch
           image: {{.CustomRegistries.KubeWebhookCertgenPatch  | default .ImageRepository | default .Registries.KubeWebhookCertgenPatch }}{{.Images.KubeWebhookCertgenPatch}}
-          imagePullPolicy:
+          imagePullPolicy: IfNotPresent
           args:
             - patch
             - --webhook-name=ingress-nginx-admission
-            - --namespace=kube-system
+            - --namespace=$(POD_NAMESPACE)
             - --patch-mutating=false
             - --secret-name=ingress-nginx-admission
             - --patch-failure-policy=Fail
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
       restartPolicy: OnFailure
       serviceAccountName: ingress-nginx-admission
       securityContext:
         runAsNonRoot: true
         runAsUser: 2000
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/name: ingress-nginx
-    app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/component: controller
-    addonmanager.kubernetes.io/mode: Reconcile
-  name: ingress-nginx-controller-admission
-  namespace: kube-system
-spec:
-  ports:
-    - name: https-webhook
-      port: 443
-      targetPort: webhook
-  selector:
-    app.kubernetes.io/name: ingress-nginx
-    app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/component: controller

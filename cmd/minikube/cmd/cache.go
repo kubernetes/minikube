@@ -52,7 +52,7 @@ var addCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		out.WarningT("\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"")
 		// Cache and load images into docker daemon
-		if err := machine.CacheAndLoadImages(args, cacheAddProfiles()); err != nil {
+		if err := machine.CacheAndLoadImages(args, cacheAddProfiles(), false); err != nil {
 			exit.Error(reason.InternalCacheLoad, "Failed to cache and load images", err)
 		}
 		// Add images to config file

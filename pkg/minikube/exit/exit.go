@@ -18,6 +18,7 @@ limitations under the License.
 package exit
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 
@@ -26,6 +27,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
+
+var (
+	shell bool
+)
+
+// SetShell configures if we are doing a shell configuration or not
+func SetShell(s bool) {
+	shell = s
+}
 
 // Message outputs a templated message and exits without interpretation
 func Message(r reason.Kind, format string, args ...out.V) {
@@ -54,7 +64,15 @@ func Message(r reason.Kind, format string, args ...out.V) {
 		out.Error(r, "Exiting due to {{.fatal_code}}: {{.fatal_msg}}", args...)
 	}
 
-	os.Exit(r.ExitCode)
+	Code(r.ExitCode)
+}
+
+// Code will exit with a code
+func Code(code int) {
+	if shell {
+		out.Output(os.Stdout, fmt.Sprintf("false exit code %d\n", code))
+	}
+	os.Exit(code)
 }
 
 // Advice is syntactic sugar to output a message with dynamically generated advice

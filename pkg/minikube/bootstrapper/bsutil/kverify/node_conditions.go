@@ -18,6 +18,7 @@ limitations under the License.
 package kverify
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -108,7 +109,7 @@ func NodePressure(cs *kubernetes.Clientset) error {
 	var err error
 
 	listNodes := func() error {
-		ns, err = cs.CoreV1().Nodes().List(meta.ListOptions{})
+		ns, err = cs.CoreV1().Nodes().List(context.Background(), meta.ListOptions{})
 		return err
 	}
 

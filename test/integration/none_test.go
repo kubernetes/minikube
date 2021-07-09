@@ -32,7 +32,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// None-driver specific test for CHANGE_MINIKUBE_NONE_USER
+// TestChangeNoneUser tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected
+// and changes the minikube file permissions from root to the correct user.
 func TestChangeNoneUser(t *testing.T) {
 	if !NoneDriver() {
 		t.Skip("Only test none driver.")

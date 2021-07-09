@@ -13,12 +13,28 @@ Run a kubectl binary matching the cluster version
 
 Run the Kubernetes client, download it if necessary. Remember -- after kubectl!
 
-Examples:
-minikube kubectl -- --help
-minikube kubectl -- get pods --namespace kube-system
+This will run the Kubernetes client (kubectl) with the same version as the cluster
+
+Normally it will download a binary matching the host operating system and architecture,
+but optionally you can also run it directly on the control plane over the ssh connection.
+This can be useful if you cannot run kubectl locally for some reason, like unsupported
+host. Please be aware that when using --ssh all paths will apply to the remote machine.
 
 ```shell
 minikube kubectl [flags]
+```
+
+### Examples
+
+```
+minikube kubectl -- --help
+minikube kubectl -- get pods --namespace kube-system
+```
+
+### Options
+
+```
+      --ssh   Use SSH for running kubernetes client on the node
 ```
 
 ### Options inherited from parent commands
@@ -33,7 +49,7 @@ minikube kubectl [flags]
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files

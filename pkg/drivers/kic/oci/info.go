@@ -32,6 +32,7 @@ type SysInfo struct {
 	TotalMemory   int64    // TotalMemory Total available ram
 	OSType        string   // container's OsType (windows or linux)
 	Swarm         bool     // Weather or not the docker swarm is active
+	Rootless      bool     // Weather or not the docker is running on rootless mode
 	StorageDriver string   // the storage driver for the daemon  (for example overlay2)
 	Errors        []string // any server issues
 }
@@ -62,7 +63,14 @@ func DaemonInfo(ociBin string) (SysInfo, error) {
 		return *cachedSysInfo, err
 	}
 	d, err := dockerSystemInfo()
-	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType, Swarm: d.Swarm.LocalNodeState == "active", StorageDriver: d.Driver, Errors: d.ServerErrors}
+	rootless := false
+	for _, se := range d.SecurityOptions {
+		if strings.HasPrefix(se, "name=rootless") {
+			rootless = true
+			break
+		}
+	}
+	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType, Swarm: d.Swarm.LocalNodeState == "active", Rootless: rootless, StorageDriver: d.Driver, Errors: d.ServerErrors}
 	return *cachedSysInfo, err
 }
 
@@ -244,9 +252,11 @@ func dockerSystemInfo() (dockerSysInfo, error) {
 	var ds dockerSysInfo
 	rawJSON, err := dockerInfoGetter()
 	if err != nil {
+		klog.Warningf("docker info: %v", err)
 		return ds, errors.Wrap(err, "docker system info")
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ds); err != nil {
+		klog.Warningf("unmarshal docker info: %v", err)
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
 
@@ -264,10 +274,12 @@ func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
 	rawJSON, err := podmanInfoGetter()
 	if err != nil {
+		klog.Warningf("podman info: %v", err)
 		return ps, errors.Wrap(err, "podman system info")
 	}
 
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ps); err != nil {
+		klog.Warningf("unmarshal podman info: %v", err)
 		return ps, errors.Wrapf(err, "unmarshal podman system info")
 	}
 	klog.Infof("podman info: %+v", ps)
