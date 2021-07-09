@@ -474,6 +474,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			NodePort:               viper.GetInt(apiServerPort),
 		},
 		MultiNodeRequested: viper.GetInt(nodes) > 1,
+		ImageMirrorCountry: strings.ToLower(viper.GetString(imageMirrorCountry)),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
