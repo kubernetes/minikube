@@ -83,6 +83,7 @@ type ClusterConfig struct {
 	ListenAddress           string   // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
 	MultiNodeRequested      bool
+	ImageMirrorCountry      string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
