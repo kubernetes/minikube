@@ -114,6 +114,10 @@ type KubernetesConfig struct {
 	NodeIP   string
 	NodePort int
 	NodeName string
+
+	// AutoPauseTime is used to specify how often minikube needs to check to autpause
+	// cluster.
+	AutoPauseTime time.Duration
 }
 
 // Node contains information about specific nodes in a cluster

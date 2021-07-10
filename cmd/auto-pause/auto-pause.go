@@ -18,19 +18,23 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/spf13/viper"
+
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
+
 	"log"
 	"net/http"
 	"sync"
 	"time"
-
-	"k8s.io/minikube/pkg/addons"
-	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/minikube/style"
 )
 
 var unpauseRequests = make(chan struct{})
@@ -47,13 +51,16 @@ func main() {
 	// Check current state
 	alreadyPaused()
 
+	profile := viper.GetString(config.ProfileName)
+	_, cfg := mustload.Partial(profile)
+
 	// channel for incoming messages
 	go func() {
 		for {
 			// On each iteration new timer is created
 			select {
 			// TODO: #10596 make it memory-leak proof
-			case <-time.After(addons.AutoPauseTime):
+			case <-time.After(cfg.KubernetesConfig.AutoPauseTime):
 				runPause()
 			case <-unpauseRequests:
 				fmt.Printf("Got request\n")
