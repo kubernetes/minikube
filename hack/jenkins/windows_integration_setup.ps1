@@ -16,7 +16,7 @@ $test_home="$env:HOMEDRIVE$env:HOMEPATH\minikube-integration"
 $env:KUBECONFIG="$test_home\kubeconfig"
 $env:MINIKUBE_HOME="$test_home\.minikube"
 
-if ($driver == "docker") {
+if ($driver -eq "docker") {
   # Remove unused images and containers
   docker system prune --all --force --volumes
   docker ps -aq | ForEach -Process {docker rm -fv $_}
