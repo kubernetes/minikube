@@ -54,9 +54,9 @@ func TestKubeadmImages(t *testing.T) {
 			"mirror.k8s.io/coredns:1.6.2",
 			"mirror.k8s.io/etcd:3.3.15-0",
 			"mirror.k8s.io/pause:3.1",
-			"mirror.k8s.io/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"mirror.k8s.io/dashboard:v2.1.0",
-			"mirror.k8s.io/metrics-scraper:v1.0.4",
+			"mirror.k8s.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
+			"mirror.k8s.io/kubernetesui/dashboard:v2.1.0",
+			"mirror.k8s.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
 		{"v1.15.0", "", false, []string{
 			"k8s.gcr.io/kube-proxy:v1.15.0",

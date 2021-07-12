@@ -96,9 +96,9 @@ func TestAuxiliary(t *testing.T) {
 
 func TestAuxiliaryMirror(t *testing.T) {
 	want := []string{
-		"test.mirror/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-		"test.mirror/dashboard:v2.1.0",
-		"test.mirror/metrics-scraper:v1.0.4",
+		"test.mirror/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
+		"test.mirror/kubernetesui/dashboard:v2.1.0",
+		"test.mirror/kubernetesui/metrics-scraper:v1.0.4",
 	}
 	got := auxiliary("test.mirror")
 	if diff := cmp.Diff(want, got); diff != "" {
