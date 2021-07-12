@@ -1274,26 +1274,36 @@ func validateRegistryMirror() {
 
 // This function validates if the --image-repository
 // args match the format of registry.cn-hangzhou.aliyuncs.com/google_containers
-func validateImageRepository(imagRepo string) (vaildImageRepo string) {
+// also "<hostname>[:<port>]"
+func validateImageRepository(imageRepo string) (validImageRepo string) {
 
-	if strings.ToLower(imagRepo) == "auto" {
-		vaildImageRepo = "auto"
+	if strings.ToLower(imageRepo) == "auto" {
+		validImageRepo = "auto"
 	}
-	URL, err := url.Parse(imagRepo)
+	URL, err := url.Parse(imageRepo)
+
 	if err != nil {
 		klog.Errorln("Error Parsing URL: ", err)
 	}
-	// tips when imagRepo ended with a trailing /.
-	if strings.HasSuffix(imagRepo, "/") {
-		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
-	}
-	// tips when imageRepo started with scheme.
-	if URL.Scheme != "" {
-		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, it will be as a domian, removed automatically", out.V{"scheme": URL.Scheme})
+
+	var imageRepoPort string
+
+	if URL.Port() != "" && strings.Contains(imageRepo, ":"+URL.Port()) {
+		imageRepoPort = ":" + URL.Port()
 	}
 
-	vaildImageRepo = URL.Hostname() + strings.TrimSuffix(URL.Path, "/")
-	return
+	// tips when imageRepo ended with a trailing /.
+	if strings.HasSuffix(imageRepo, "/") {
+		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
+	}
+	// tips when imageRepo started with scheme such as http(s).
+	if URL.Scheme != "" {
+		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, which will be removed automatically", out.V{"scheme": URL.Scheme})
+	}
+
+	validImageRepo = URL.Hostname() + imageRepoPort + strings.TrimSuffix(URL.Path, "/")
+
+	return validImageRepo
 }
 
 // This function validates if the --listen-address
