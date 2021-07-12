@@ -1286,13 +1286,12 @@ func validateImageRepository(imageRepo string) (validImageRepo string) {
 		klog.Errorln("Error Parsing URL: ", err)
 	}
 
-	var hasPorts = false
 	var imageRepoPort string
 
 	if URL.Port() != "" && strings.Contains(imageRepo, ":"+URL.Port()) {
-		hasPorts = true
 		imageRepoPort = ":" + URL.Port()
 	}
+
 	// tips when imageRepo ended with a trailing /.
 	if strings.HasSuffix(imageRepo, "/") {
 		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
@@ -1301,12 +1300,8 @@ func validateImageRepository(imageRepo string) (validImageRepo string) {
 	if URL.Scheme != "" {
 		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, which will be removed automatically", out.V{"scheme": URL.Scheme})
 	}
-
-	if hasPorts {
-		validImageRepo = URL.Hostname() + imageRepoPort + strings.TrimSuffix(URL.Path, "/")
-	} else {
-		validImageRepo = URL.Hostname() + strings.TrimSuffix(URL.Path, "/")
-	}
+	
+	validImageRepo = URL.Hostname() + imageRepoPort + strings.TrimSuffix(URL.Path, "/")
 
 	return validImageRepo
 }
