@@ -553,7 +553,7 @@
 	"The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/": "",
 	"The '{{.name}}' driver does not respect the --cpus flag": "",
 	"The '{{.name}}' driver does not respect the --memory flag": "",
-	"The --image-repository flag your provided contains Scheme: {{.scheme}}, it will be as a domian, removed automatically": "",
+	"The --image-repository flag your provided contains Scheme: {{.scheme}}, which will be removed automatically": "",
 	"The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically": "",
 	"The CIDR to be used for service cluster IPs.": "",
 	"The CIDR to be used for the minikube VM (virtualbox driver only)": "",
