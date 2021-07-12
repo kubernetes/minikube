@@ -54,9 +54,11 @@ gsutil cat "${FINISHED_LIST_REMOTE}"\
   | uniq > "${FINISHED_LIST}"
 
 STARTED_COUNT=$(echo "${STARTED_LIST}" | wc -l)
-FINISHED_COUNT=$(\
+FINISHED_LIST_JOINED=$(\
   echo "${STARTED_LIST}"\
-  | join - "${FINISHED_LIST}"\
+  | join - "${FINISHED_LIST}")
+FINISHED_COUNT=$(\
+  echo "${FINISHED_LIST_JOINED}"\
   | wc -l)
 
 if [ ${STARTED_COUNT} -ne ${FINISHED_COUNT} ]; then
@@ -68,6 +70,7 @@ fi
 gsutil rm "${BUCKET_PATH}/started_environments_${ROOT_JOB_ID}.txt"
 
 # At this point, we know all integration tests are done and we can process all summaries safely.
+echo "${FINISHED_LIST_JOINED}" > ${FINISHED_LIST}
 
 # Get directory of this script.
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
