@@ -18,11 +18,6 @@ set -eu -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-if ! [[ -r "${DIR}/gh_token.txt" ]]; then
-  echo "Missing '${DIR}/gh_token.txt'. Please create a GitHub token at https://github.com/settings/tokens and store in '${DIR}/gh_token.txt'."
-  exit 1
-fi
-
 install_pullsheet() {
   pullsheet_workdir="$(mktemp -d)"
   trap 'rm -rf -- ${pullsheet_workdir}' RETURN
@@ -69,11 +64,23 @@ tags_with_range=$(
 destination="$DIR/../site/content/en/docs/contrib/leaderboard"
 mkdir -p "$destination"
 
+TMP_TOKEN=$(mktemp)
+gh auth status -t 2>&1 | sed -n -r 's/^.*Token: ([a-zA-Z0-9_]*)/\1/p' > "$TMP_TOKEN"
+if [ ! -s "$TMP_TOKEN" ]; then
+  echo "Failed to acquire token from 'gh auth'. Ensure 'gh' is authenticated." 1>&2
+  exit 1
+fi
+# Ensure the token is deleted when the script exits, so the token is not leaked.
+function cleanup_token() {
+  rm -f "$TMP_TOKEN"
+}
+trap cleanup_token EXIT
+
 while read -r tag_index tag_name tag_start tag_end; do
   echo "Generating leaderboard for" "$tag_name" "(from $tag_start to $tag_end)"
   # Print header for page.
   printf -- "---\ntitle: \"$tag_name - $tag_end\"\nlinkTitle: \"$tag_name - $tag_end\"\nweight: $tag_index\n---\n" > "$destination/$tag_name.html"
   # Add pullsheet content (deleting the lines consisting of the command used to generate it).
-  $DIR/pullsheet leaderboard --token-path "$DIR/gh_token.txt" --repos kubernetes/minikube --since "$tag_start" --until "$tag_end" --logtostderr=false --stderrthreshold=2 \
+  $DIR/pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --since "$tag_start" --until "$tag_end" --logtostderr=false --stderrthreshold=2 \
     | sed -r -e "/Command\-line/,/pullsheet/d" >> "$destination/$tag_name.html"
 done <<< "$tags_with_range"
