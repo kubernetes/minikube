@@ -138,6 +138,7 @@ jobs:
           chmod a+x minikube-*
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -237,6 +238,7 @@ jobs:
           chmod a+x minikube-*
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker --container-runtime=containerd" -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -339,6 +341,7 @@ jobs:
           chmod a+x minikube-*
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -v=6 --alsologtostderr -test.run TestFunctional -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -438,6 +441,7 @@ jobs:
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "TestFunctional" -test.timeout=35m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -812,6 +816,7 @@ jobs:
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=none -test.timeout=10m -test.v -timeout-multiplier=1.5 -test.run TestFunctional -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -945,6 +950,7 @@ jobs:
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-arm64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-arm64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=25m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-arm64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
