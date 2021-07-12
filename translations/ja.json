@@ -208,6 +208,7 @@
 	"Exiting": "終了しています",
 	"Exiting due to {{.fatal_code}}: {{.fatal_msg}}": "",
 	"Exiting.": "終了しています",
+	"Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.": "",
 	"External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)": "",
 	"Fail check if container paused": "",
 	"Failed runtime": "",

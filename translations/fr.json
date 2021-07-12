@@ -218,6 +218,7 @@
 	"Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'": "Il manque de nouvelles fonctionnalités sur le disque existant ({{.error}}). Pour mettre à niveau, exécutez 'minikube delete'",
 	"Exiting": "Fermeture…",
 	"Exiting due to {{.fatal_code}}: {{.fatal_msg}}": "Fermeture en raison de {{.fatal_code}} : {{.fatal_msg}}",
+	"Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.": "",
 	"External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)": "L'adaptateur externe sur lequel un commutateur externe sera créé si aucun commutateur externe n'est trouvé. (pilote hyperv uniquement)",
 	"Fail check if container paused": "Échec de la vérification si le conteneur est en pause",
 	"Failed runtime": "Échec de l'exécution",
