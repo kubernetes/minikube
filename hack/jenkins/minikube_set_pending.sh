@@ -49,7 +49,7 @@ jobs=(
      'Docker_Cloud_Shell'
 )
 
-SHORT_COMMIT=${ghprbActualCommit:0:7}
+SHORT_COMMIT=${THE_COMMIT:0:7}
 STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/started_environments_${BUILD_NUMBER}.txt"
 printf "%s\n" "${jobs[@]}" | gsutil cp - "${STARTED_LIST_REMOTE}"
 
