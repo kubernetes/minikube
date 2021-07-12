@@ -343,6 +343,7 @@
 	"Install VirtualBox and ensure it is in the path, or select an alternative value for --driver": "",
 	"Install the latest hyperkit binary, and run 'minikube delete'": "",
 	"Invalid Container Runtime: \"{{.runtime}}\". Valid runtimes are: {{.validOptions}}": "",
+	"Invalid port": "",
 	"Invalid size passed in argument: {{.error}}": "Nieprawidłowy rozmiar przekazany w argumencie: {{.error}}",
 	"Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs": "",
 	"Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB": "",
