@@ -672,7 +672,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"portainer.yaml",
 			"0640"),
-	}, false, "portainer", "", nil, nil),
+	}, false, "portainer", "portainer.io", nil, nil),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
