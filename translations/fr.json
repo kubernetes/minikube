@@ -593,6 +593,7 @@
 	"The '{{.name}}' driver does not respect the --cpus flag": "Le pilote '{{.name}}' ne respecte pas l'indicateur --cpus",
 	"The '{{.name}}' driver does not respect the --memory flag": "Le pilote '{{.name}}' ne respecte pas l'indicateur --memory",
 	"The --image-repository flag your provided contains Scheme: {{.scheme}}, it will be as a domian, removed automatically": "L'indicateur --image-repository que vous avez fourni contient le schéma : {{.scheme}}, ce sera en tant que domaine, supprimé automatiquement",
+	"The --image-repository flag your provided contains Scheme: {{.scheme}}, which will be removed automatically": "",
 	"The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically": "L'indicateur --image-repository que vous avez fourni s'est terminé par un / qui pourrait provoquer un conflit dans kubernetes, supprimé automatiquement",
 	"The CIDR to be used for service cluster IPs.": "Méthode CIDR à exploiter pour les adresses IP des clusters du service.",
 	"The CIDR to be used for the minikube VM (virtualbox driver only)": "Méthode CIDR à exploiter pour la VM minikube (pilote virtualbox uniquement).",
