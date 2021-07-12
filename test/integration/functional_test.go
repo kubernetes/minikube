@@ -815,7 +815,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	mctx, cancel := context.WithTimeout(ctx, Seconds(300))
 	defer cancel()
 
-	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
+	args := []string{"dashboard", "--url", "--port", "36195", "-p", profile, "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(mctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to run minikube dashboard. args %q : %v", args, err)
