@@ -1300,7 +1300,7 @@ func validateImageRepository(imageRepo string) (validImageRepo string) {
 	if URL.Scheme != "" {
 		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, which will be removed automatically", out.V{"scheme": URL.Scheme})
 	}
-	
+
 	validImageRepo = URL.Hostname() + imageRepoPort + strings.TrimSuffix(URL.Path, "/")
 
 	return validImageRepo
