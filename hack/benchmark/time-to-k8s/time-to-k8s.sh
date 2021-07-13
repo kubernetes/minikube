@@ -32,7 +32,6 @@ install_minikube() {
 }
 
 run_benchmark() {
-	pwd
 	( cd ./hack/benchmark/time-to-k8s/time-to-k8s-repo/ &&
 		git submodule update --init &&
 		go run . --config local-kubernetes.yaml --iterations 10 --output output.csv )

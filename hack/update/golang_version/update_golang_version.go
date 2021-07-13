@@ -85,6 +85,11 @@ var (
 				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/time-to-k8s-public-chart.yaml": {
+			Replace: map[string]string{
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".travis.yml": {
 			Replace: map[string]string{
 				`go:\n  - .*`: `go:{{printf "\n  - %s" .StableVersion}}`,
