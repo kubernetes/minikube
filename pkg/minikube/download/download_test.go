@@ -208,7 +208,6 @@ func testPreloadExistsCaching(t *testing.T) {
 	checkCalled := false
 	checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
 		checkCalled = true
-		setPreloadState(k8sVersion, containerRuntime, doesPreloadExist)
 		return doesPreloadExist
 	}
 	existence := PreloadExists("v1", "c1", "docker", true)

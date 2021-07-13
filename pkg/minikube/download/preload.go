@@ -106,19 +106,16 @@ var checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
 	resp, err := http.Head(url)
 	if err != nil {
 		klog.Warningf("%s fetch error: %v", url, err)
-		setPreloadState(k8sVersion, containerRuntime, false)
 		return false
 	}
 
 	// note: err won't be set if it's a 404
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		klog.Warningf("%s status code: %d", url, resp.StatusCode)
-		setPreloadState(k8sVersion, containerRuntime, false)
 		return false
 	}
 
 	klog.Infof("Found remote preload: %s", url)
-	setPreloadState(k8sVersion, containerRuntime, true)
 	return true
 }
 
@@ -152,7 +149,9 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 		return true
 	}
 
-	return checkRemotePreloadExists(k8sVersion, containerRuntime)
+	existence := checkRemotePreloadExists(k8sVersion, containerRuntime)
+	setPreloadState(k8sVersion, containerRuntime, existence)
+	return existence
 }
 
 var checkPreloadExists = PreloadExists

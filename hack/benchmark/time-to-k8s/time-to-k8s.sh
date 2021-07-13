@@ -31,15 +31,6 @@ install_minikube() {
 	sudo install ./out/minikube /usr/local/bin/minikube
 }
 
-config_git() {
-	git config user.name "minikube-bot"
-	git config user.email "minikube-bot@google.com"
-}
-
-create_branch() {
-	git checkout -b addTimeToK8s"$1"
-}
-
 run_benchmark() {
 	pwd
 	( cd ./hack/benchmark/time-to-k8s/time-to-k8s-repo/ &&
@@ -55,19 +46,16 @@ create_page() {
 	printf -- "---\ntitle: \"%s Benchmark\"\nlinkTitle: \"%s Benchmark\"\nweight: 1\n---\n\n![time-to-k8s](/images/benchmarks/timeToK8s/%s.png)\n" "$1" "$1" "$1" > ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
 }
 
-commit_changes() {
-	git add ./site/static/images/benchmarks/timeToK8s/"$1".png ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
-	git commit -m "add time-to-k8s benchmark for $1"
+cleanup() {
+	rm ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv
 }
 
 install_kind
 install_k3d
 install_minikube
-config_git
 
 VERSION=$(minikube version --short)
-create_branch "$VERSION"
 run_benchmark
 generate_chart "$VERSION"
 create_page "$VERSION"
-commit_changes "$VERSION"
+cleanup

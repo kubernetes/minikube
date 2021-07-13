@@ -1,5 +1,6 @@
 name: "update-leaderboard"
 on:
+  workflow_dispatch:
   push:
     tags-ignore:
       - 'v*-beta.*'
@@ -19,6 +20,8 @@ jobs:
         run: |
           make update-leaderboard
           echo "::set-output name=changes::$(git status --porcelain)"
+        env:
+          GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
         if: ${{ steps.leaderboard.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@v3

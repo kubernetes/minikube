@@ -120,7 +120,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
-			baseImg = strings.Replace(baseImg, "gcr.io/k8s-minikube", cc.KubernetesConfig.ImageRepository, 1)
+			baseImg = strings.Replace(baseImg, "gcr.io", cc.KubernetesConfig.ImageRepository, 1)
 			cc.KicBaseImage = baseImg
 		}
 		var finalImg string
