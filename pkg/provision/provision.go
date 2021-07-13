@@ -254,7 +254,7 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 		return err
 	}
 
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s && sudo systemctl restart crio", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
 		return err
 	}
 
