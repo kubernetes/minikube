@@ -277,10 +277,10 @@ func validateStatus(ctx context.Context, t *testing.T, profile string) {
 	}
 	// verify the status looks as we expect
 	if cs.StatusCode != cmd.Paused {
-		t.Fatalf("incorrect status code: %v", cs.StatusCode)
+		t.Errorf("incorrect status code: expected %v, got %v", cmd.Paused, cs.StatusCode)
 	}
-	if cs.StatusName != "Paused" {
-		t.Fatalf("incorrect status name: %v", cs.StatusName)
+	if name := "Paused"; cs.StatusName != name {
+		t.Errorf("incorrect status name: expected %v, got %v", name, cs.StatusName)
 	}
 }
 
@@ -295,12 +295,12 @@ func validateStatusNamespaces(ctx context.Context, t *testing.T, profile string)
 	}
 	// verify the status looks as we expect
 	if cs.StatusCode != cmd.OK {
-		t.Fatalf("incorrect status code: %v", cs.StatusCode)
+		t.Errorf("incorrect status code: expected %v, got %v", cmd.OK, cs.StatusCode)
 	}
-	if cs.StatusName != "OK" {
-		t.Fatalf("incorrect status name: %v", cs.StatusName)
+	if name := "OK"; cs.StatusName != name {
+		t.Errorf("incorrect status name: expected %v, got %v", name, cs.StatusName)
 	}
-	if cs.StepDetail != "* Paused 2 containers in: default, pause-test, unknown" {
-		t.Fatalf("incorrect step detail: %v", cs.StepDetail)
+	if detail := "* Paused 2 containers in: default, pause-test, unknown"; cs.StepDetail != detail {
+		t.Errorf("incorrect step detail: expected %v, got %v", detail, cs.StepDetail)
 	}
 }
