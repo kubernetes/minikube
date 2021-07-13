@@ -91,7 +91,7 @@ else
 fi
 
 # installing golang so we could do go get for gopogh
-sudo ARCH="$ARCH"./installers/check_install_golang.sh "1.16.4" "/usr/local" || true
+./installers/check_install_golang.sh "1.16.4" "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
@@ -444,11 +444,11 @@ if [ -z "${EXTERNAL}" ]; then
   echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.json"
   gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 
-  echo ">> uploading ${HTML_OUT} to ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.html"
+  echo ">> uploading ${HTML_OUT} to gs://${JOB_GCS_BUCKET}.html"
   echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.html"
   gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
-  echo ">> uploading ${SUMMARY_OUT} to ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
+  echo ">> uploading ${SUMMARY_OUT} to gs://${JOB_GCS_BUCKET}_summary.json"
   echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
 else 
