@@ -1,8 +1,6 @@
 name: "time-to-k8s Public Chart"
 on:
   workflow_dispatch:
-  pull_request:
-    type: [opened]
   schedule:
     # every day at noon pacific/7 pm UTC
     - cron: "0 19 * * *"
