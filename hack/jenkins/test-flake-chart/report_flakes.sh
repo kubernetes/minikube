@@ -40,7 +40,7 @@ TMP_DATA=$(mktemp)
 # 3) Sort by environment, then test name.
 # 4) Store in file $TMP_DATA.
 gsutil cat $(< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\/; s/$/_summary.json/") \
-  | $DIR/process_data.sh \
+  | "$DIR/process_data.sh" \
   | sed -n -r -e "s/[0-9a-f]*,[0-9-]*,([a-zA-Z\/_0-9-]*),([a-zA-Z\/_0-9-]*),Failed,[.0-9]*/\1:\2/p" \
   | sort -t, -k\
   > "$TMP_DATA"
@@ -85,6 +85,6 @@ fi
 printf "\n\nTo see the flake rates of all tests on $ENVIRONMENT, click [here](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=$ENVIRONMENT)." >> "$TMP_COMMENT"
 
 # install gh if not present
-$DIR/../installers/check_install_gh.sh
+"$DIR/../installers/check_install_gh.sh"
 
 gh pr comment "https://github.com/kubernetes/minikube/pull/$PR_NUMBER" --body "$(cat $TMP_COMMENT)"
