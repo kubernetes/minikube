@@ -470,11 +470,11 @@ choco install minikube
   fetch("https://api.github.com/repos/kubernetes/minikube/releases")
     .then(response => response.text())
     .then(data => {
-      let u = data.match(/http.*download\/v.*beta.*\/minikube-installer\.exe/)[0]
-      document.getElementById("latest-beta-download-link").href=u;
+      const u = data.match(/http.*download\/v.*beta.*\/minikube-installer\.exe/)[0]
+      document.getElementById("latest-beta-download-link").href = u;
     })
     .catch((error) => {
-      let el = document.getElementById("latest-beta-download-link");
+      const el = document.getElementById("latest-beta-download-link");
       el.innerHTML = "latest beta from the release page";
       el.href = "https://github.com/kubernetes/minikube/releases";
     });
