@@ -16,4 +16,4 @@ Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally
 * For `ISO_BUCKET`, type in `minikube/iso`
 * Click *Build*
 
-The build will take roughly 50 minutes.
+The build will take roughly 50 minutes and will automatically create a PR with the changes.
