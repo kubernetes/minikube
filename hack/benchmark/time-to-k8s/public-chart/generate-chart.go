@@ -167,8 +167,8 @@ func createChart(benchmarks []benchmark, chartOutputPath string) {
 		}
 		for _, xyValue := range xyValues {
 			xy := &(*xyValue.xys)[i]
-			(*xy).Y = xyValue.value
-			(*xy).X = date
+			xy.Y = xyValue.value
+			xy.X = date
 		}
 	}
 
