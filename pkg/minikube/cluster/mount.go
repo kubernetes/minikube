@@ -27,6 +27,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 // MountConfig defines the options available to the Mount command
@@ -55,22 +57,25 @@ type mountRunner interface {
 }
 
 // Mount runs the mount command from the 9p client on the VM to the 9p server on the host
-func Mount(r mountRunner, source string, target string, c *MountConfig) error {
+func Mount(r mountRunner, source string, target string, c *MountConfig) {
 	if err := Unmount(r, target); err != nil {
-		return errors.Wrap(err, "umount")
+		exit.Error(reason.GuestMount, "mount failed", errors.Wrap(err, "umount"))
 	}
 
 	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s", c.Mode, target))); err != nil {
-		return errors.Wrap(err, "create folder pre-mount")
+		exit.Error(reason.GuestMount, "mount failed", errors.Wrap(err, "create folder pre-mount"))
 	}
 
 	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", mntCmd(source, target, c)))
 	if err != nil {
-		return errors.Wrapf(err, "mount with cmd %s ", rr.Command())
+		if strings.Contains(rr.Stderr.String(), "Connection timed out") {
+			exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", err)
+		} else {
+			exit.Error(reason.GuestMount, "mount failed", errors.Wrapf(err, "mount with cmd %s ", rr.Command()))
+		}
 	}
 
 	klog.Infof("mount successful: %q", rr.Output())
-	return nil
 }
 
 // returns either a raw UID number, or the subshell to resolve it.

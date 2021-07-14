@@ -190,10 +190,7 @@ var mountCmd = &cobra.Command{
 			}
 		}()
 
-		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
-		if err != nil {
-			exit.Error(reason.GuestMount, "mount failed", err)
-		}
+		cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
 		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Ln("")
 		out.Styled(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
