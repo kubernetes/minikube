@@ -191,6 +191,23 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, addonList)
 	}
 
+	// discourage use of the virtualbox driver
+	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
+		var altDriverList strings.Builder
+		for _, d := range driver.Choices(true) {
+			if d.Name != "virtualbox" {
+				altDriverList.WriteString(fmt.Sprintf("\t- %s\n", d.Name))
+			}
+		}
+
+		out.ErrT(style.Empty, "")
+		out.WarningT("The 'virtualbox' driver could be troublesome to work with, do not use if you aren't familiar with it")
+		out.ErrT(style.Tip, "You could instead use one of the drivers listed below:")
+		out.ErrT(style.Empty, altDriverList.String())
+		out.ErrT(style.Documentation, "For more information, see: https://minikube.sigs.k8s.io/docs/reference/drivers/virtualbox/")
+		out.ErrT(style.Empty, "")
+	}
+
 	if apiServer {
 		// special ops for none , like change minikube directory.
 		// multinode super doesn't work on the none driver

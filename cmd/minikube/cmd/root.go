@@ -305,6 +305,7 @@ func setupViper() {
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
 	viper.SetDefault(config.WantNoneDriverWarning, true)
+	viper.SetDefault(config.WantVirtualBoxDriverWarning, true)
 }
 
 func addToPath(dir string) {
