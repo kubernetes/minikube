@@ -190,7 +190,13 @@ var mountCmd = &cobra.Command{
 			}
 		}()
 
-		cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
+		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
+		if err != nil {
+			if rtErr, ok := err.(*cluster.MountError); ok && rtErr.ErrorType == cluster.MountErrorConnect {
+				exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", rtErr)
+			}
+			exit.Error(reason.GuestMount, "mount failed", err)
+		}
 		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Ln("")
 		out.Styled(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
