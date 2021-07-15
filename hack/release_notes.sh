@@ -40,7 +40,7 @@ if ! [[ -x "${DIR}/release-notes" ]] || ! [[ -x "${DIR}/pullsheet" ]]; then
   install_release_notes_helper
 fi
 
-git pull git@github.com:kubernetes/minikube master --tags
+git pull https://github.com/kubernetes/minikube.git master --tags
 recent=$(git describe --abbrev=0)
 recent_date=$(git log -1 --format=%as $recent)
 

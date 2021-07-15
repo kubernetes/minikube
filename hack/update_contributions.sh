@@ -34,7 +34,7 @@ if ! [[ -x "${DIR}/pullsheet" ]]; then
   install_pullsheet
 fi
 
-git pull git@github.com:kubernetes/minikube master --tags
+git pull https://github.com/kubernetes/minikube.git master --tags
 
 tags_to_generate=${1:-1}
 
