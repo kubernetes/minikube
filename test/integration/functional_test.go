@@ -99,6 +99,8 @@ func TestFunctional(t *testing.T) {
 			{"MinikubeKubectlCmdDirectly", validateMinikubeKubectlDirectCall},
 			{"ExtraConfig", validateExtraConfig}, // Ensure extra cmdline config change is saved
 			{"ComponentHealth", validateComponentHealth},
+			{"LogsCmd", validateLogsCmd},
+			{"LogsFileCmd", validateLogsFileCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -133,8 +135,6 @@ func TestFunctional(t *testing.T) {
 			{"DryRun", validateDryRun},
 			{"InternationalLanguage", validateInternationalLanguage},
 			{"StatusCmd", validateStatusCmd},
-			{"LogsCmd", validateLogsCmd},
-			{"LogsFileCmd", validateLogsFileCmd},
 			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
 			{"ServiceCmd", validateServiceCmd},
