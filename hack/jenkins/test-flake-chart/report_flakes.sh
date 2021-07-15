@@ -39,10 +39,10 @@ TMP_DATA=$(mktemp)
 # 2) Filter tests to only include failed tests (and only get their names and environment).
 # 3) Sort by environment, then test name.
 # 4) Store in file $TMP_DATA.
-gsutil cat $(< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\/; s/$/_summary.json/") \
+gsutil cat $(< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\//; s/$/_summary.json/") \
   | "$DIR/process_data.sh" \
   | sed -n -r -e "s/[0-9a-f]*,[0-9-]*,([a-zA-Z\/_0-9-]*),([a-zA-Z\/_0-9-]*),Failed,[.0-9]*/\1:\2/p" \
-  | sort -t, -k\
+  | sort -t: -k1,1 -k2,2 \
   > "$TMP_DATA"
 
 # Download the precomputed flake rates from the GCS bucket into file $TMP_FLAKE_RATES.
