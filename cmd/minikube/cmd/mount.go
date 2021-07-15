@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -190,7 +191,11 @@ var mountCmd = &cobra.Command{
 			}
 		}()
 
-		cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
+		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
+		if err != nil {
+			node.ExitIfFatal(err)
+			exit.Error(reason.GuestMount, "mount failed", err)
+		}
 		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Ln("")
 		out.Styled(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")

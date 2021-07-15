@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -73,5 +74,9 @@ func ExitIfFatal(err error) {
 			Advice:   "Try to start minikube with '--delete-on-failure=true' option",
 		}, fmt.Sprintf("Your existing minikube instance has version %s of service %v which is too old. "+
 			"Please try to start minikube with --delete-on-failure=true option", rtErr.Installed, rtErr.Service))
+	}
+
+	if rtErr, ok := err.(*cluster.MountError); ok && rtErr.ErrorType == cluster.MountErrorConnect {
+		exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", rtErr)
 	}
 }
