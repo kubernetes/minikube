@@ -6,6 +6,8 @@ on:
       - 'v*-beta.*'
   release:
     types: [published]
+env:
+  GO_VERSION: 1.16.4
 jobs:
   update-leaderboard:
     runs-on: ubuntu-latest
