@@ -194,18 +194,13 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	// discourage use of the virtualbox driver
 	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
 		var altDriverList strings.Builder
-		for _, d := range driver.Choices(true) {
-			if d.Name != "virtualbox" {
-				altDriverList.WriteString(fmt.Sprintf("\t- %s\n", d.Name))
+		for _, choice := range driver.Choices(true) {
+			if choice.Name != "virtualbox" {
+				altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
 			}
 		}
 
-		out.ErrT(style.Empty, "")
-		out.WarningT("The 'virtualbox' driver could be troublesome to work with, do not use if you aren't familiar with it")
-		out.ErrT(style.Tip, "You could instead use one of the drivers listed below:")
-		out.ErrT(style.Empty, altDriverList.String())
-		out.ErrT(style.Documentation, "For more information, see: https://minikube.sigs.k8s.io/docs/reference/drivers/virtualbox/")
-		out.ErrT(style.Empty, "")
+		out.Boxed("There are alternative drivers to virtualbox for better performance and support, consider using them {{.drivers}} \nTo turn this warning off use `minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
 	}
 
 	if apiServer {
