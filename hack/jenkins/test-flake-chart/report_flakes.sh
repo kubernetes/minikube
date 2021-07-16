@@ -35,14 +35,19 @@ MAX_REPORTED_TESTS=30
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 TMP_DATA=$(mktemp)
-# 1) Process the data in each gopogh summary.
-# 2) Filter tests to only include failed tests (and only get their names and environment).
-# 3) Sort by environment, then test name.
-# 4) Store in file $TMP_DATA.
-gsutil cat $(< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\//; s/$/_summary.json/") \
+# 1) Process the ENVIRONMENT_LIST to turn them into valid GCS URLs.
+# 2) Check to see if the files are present. Ignore any missing files.
+# 3) Cat the gopogh summaries together.
+# 4) Process the data in each gopogh summary.
+# 5) Filter tests to only include failed tests (and only get their names and environment).
+# 6) Sort by environment, then test name.
+# 7) Store in file $TMP_DATA.
+< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\//; s/$/_summary.json/" \
+  | (xargs gsutil ls || true) \
+  | xargs gsutil cat \
   | "$DIR/process_data.sh" \
   | sed -n -r -e "s/[0-9a-f]*,[0-9-]*,([a-zA-Z\/_0-9-]*),([a-zA-Z\/_0-9-]*),Failed,[.0-9]*/\1:\2/p" \
-  | sort -t: -k1,1 -k2,2 \
+  | sort \
   > "$TMP_DATA"
 
 # Download the precomputed flake rates from the GCS bucket into file $TMP_FLAKE_RATES.
