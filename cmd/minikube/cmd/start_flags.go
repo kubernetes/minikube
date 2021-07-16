@@ -120,6 +120,7 @@ const (
 	defaultSSHUser          = "root"
 	defaultSSHPort          = 22
 	listenAddress           = "listen-address"
+	extraDisks              = "extra-disks"
 )
 
 var (
@@ -166,6 +167,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
+	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit driver)")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -407,6 +409,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 
 	checkNumaCount(k8sVersion)
 
+	checkExtraDiskOptions(cmd, drvName)
+
 	cc = config.ClusterConfig{
 		Name:                    ClusterFlagValue(),
 		KeepContext:             viper.GetBool(keepContext),
@@ -449,6 +453,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		SSHUser:                 viper.GetString(sshSSHUser),
 		SSHKey:                  viper.GetString(sshSSHKey),
 		SSHPort:                 viper.GetInt(sshSSHPort),
+		ExtraDisks:              viper.GetInt(extraDisks),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -558,6 +563,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(humanReadableDiskSize) && getDiskSize() != existing.DiskSize {
 		out.WarningT("You cannot change the disk size for an existing minikube cluster. Please first delete the cluster.")
+	}
+
+	checkExtraDiskOptions(cmd, cc.Driver)
+	if cmd.Flags().Changed(extraDisks) && viper.GetInt(extraDisks) != existing.ExtraDisks {
+		out.WarningT("You cannot add or remove extra disks for an existing minikube cluster. Please first delete the cluster.")
 	}
 
 	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
@@ -705,4 +715,21 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	}
 	klog.Infof("Waiting for components: %+v", waitComponents)
 	return waitComponents
+}
+
+func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
+	supportedDrivers := []string{driver.HyperKit}
+
+	if cmd.Flags().Changed(extraDisks) {
+		supported := false
+		for _, driver := range supportedDrivers {
+			if driverName == driver {
+				supported = true
+				break
+			}
+		}
+		if !supported {
+			out.WarningT("Specifying extra disks is currently only supported for the following drivers: {{.supported_drivers}}. If you can contribute to add this feature, please create a PR.", out.V{"supported_drivers": supportedDrivers})
+		}
+	}
 }

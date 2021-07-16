@@ -64,6 +64,7 @@ type Driver struct {
 	UUID           string
 	VpnKitSock     string
 	VSockPorts     []string
+	ExtraDisks     int
 }
 
 // NewDriver creates a new driver for a host
@@ -228,6 +229,13 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 			Size: d.DiskSize,
 			Trim: true,
 		},
+	}
+	for i := 0; i < d.ExtraDisks; i++ {
+		h.Disks = append(h.Disks, &hyperkit.RawDisk{
+			Path: pkgdrivers.ExtraDiskPath(d.BaseDriver, i),
+			Size: d.DiskSize,
+			Trim: true,
+		})
 	}
 
 	return h, nil
