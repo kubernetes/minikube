@@ -139,24 +139,33 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 			secrets := client.Secrets(n.Name)
 
 			exists := false
-			secList, err := secrets.List(context.TODO(), metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-			for _, s := range secList.Items {
-				if s.Name == secretName {
-					exists = true
-					break
+			if !Refresh {
+				secList, err := secrets.List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					return err
+				}
+				for _, s := range secList.Items {
+					if s.Name == secretName {
+						exists = true
+						break
+					}
 				}
 			}
 
-			if !exists {
+			if !exists || Refresh {
 				secretObj := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: secretName,
 					},
 					Data: data,
 					Type: "kubernetes.io/dockercfg",
+				}
+
+				if Refresh {
+					err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{})
+					if err != nil {
+						klog.Infof("error deleting secret: %v", err)
+					}
 				}
 
 				_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
@@ -183,10 +192,19 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 
 			ips := corev1.LocalObjectReference{Name: secretName}
 			for _, sa := range salist.Items {
-				sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
-				_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
-				if err != nil {
-					return err
+				add := true
+				for _, ps := range sa.ImagePullSecrets {
+					if ps.Name == secretName {
+						add = false
+						break
+					}
+				}
+				if add {
+					sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
+					_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
+					if err != nil {
+						return err
+					}
 				}
 			}
 
