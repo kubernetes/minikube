@@ -53,17 +53,17 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 		return ids, errors.Wrap(err, "kubelet disable --now")
 	}
 
-	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Running, Namespaces: namespaces})
+	containers, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Running, Namespaces: namespaces})
 	if err != nil {
 		return ids, errors.Wrap(err, "list running")
 	}
 
-	if len(ids) == 0 {
+	if len(containers) == 0 {
 		klog.Warningf("no running containers to pause")
 		return ids, nil
 	}
 
-	return ids, cr.PauseContainers(ids)
+	return ids, cr.PauseContainers(containers.IDs())
 }
 
 // Unpause unpauses a Kubernetes cluster, retrying if necessary
@@ -82,10 +82,11 @@ func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 
 // unpause unpauses a Kubernetes cluster
 func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
-	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
+	containers, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
-		return ids, errors.Wrap(err, "list paused")
+		return nil, errors.Wrap(err, "list paused")
 	}
+	ids := containers.IDs()
 
 	if len(ids) == 0 {
 		klog.Warningf("no paused containers found")

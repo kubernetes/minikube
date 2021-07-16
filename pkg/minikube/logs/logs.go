@@ -261,13 +261,26 @@ func OutputOffline(lines int, logOutput *os.File) {
 // logCommands returns a list of commands that would be run to receive the anticipated logs
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
+	containers, err := r.ListContainers(cruntime.ListContainersOptions{})
+	if err != nil {
+		klog.Errorf("Failed to list containers: %v", err)
+		return nil
+	}
+
 	for _, pod := range importantPods {
-		ids, err := r.ListContainers(cruntime.ListContainersOptions{Name: pod})
-		if err != nil {
-			klog.Errorf("Failed to list containers for %q: %v", pod, err)
-			continue
+		ids := []string{}
+		for _, c := range containers {
+			// containers at CREATED state don't have logs
+			if c.State == cruntime.Created {
+				klog.Warningf("Skipped %s due to created state", c.ID)
+				continue
+			}
+			if c.Name != pod {
+				continue
+			}
+			ids = append(ids, c.ID)
 		}
-		klog.Infof("%d containers: %s", len(ids), ids)
+		klog.Infof("%d containers to log: %s", len(ids), ids)
 		if len(ids) == 0 {
 			klog.Warningf("No container was found matching %q", pod)
 			continue
