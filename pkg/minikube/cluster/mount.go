@@ -54,19 +54,38 @@ type mountRunner interface {
 	RunCmd(*exec.Cmd) (*command.RunResult, error)
 }
 
+const (
+	// MountErrorUnknown failed with unknown error
+	MountErrorUnknown = iota
+	// MountErrorConnect
+	MountErrorConnect
+)
+
+type MountError struct {
+	ErrorType       int
+	UnderlyingError error
+}
+
+func (m *MountError) Error() string {
+	return m.UnderlyingError.Error()
+}
+
 // Mount runs the mount command from the 9p client on the VM to the 9p server on the host
 func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 	if err := Unmount(r, target); err != nil {
-		return errors.Wrap(err, "umount")
+		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "umount")}
 	}
 
 	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s", c.Mode, target))); err != nil {
-		return errors.Wrap(err, "create folder pre-mount")
+		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "create folder pre-mount")}
 	}
 
 	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", mntCmd(source, target, c)))
 	if err != nil {
-		return errors.Wrapf(err, "mount with cmd %s ", rr.Command())
+		if strings.Contains(rr.Stderr.String(), "Connection timed out") {
+			return &MountError{ErrorType: MountErrorConnect, UnderlyingError: err}
+		}
+		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrapf(err, "mount with cmd %s ", rr.Command())}
 	}
 
 	klog.Infof("mount successful: %q", rr.Output())

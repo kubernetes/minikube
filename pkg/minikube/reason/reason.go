@@ -321,6 +321,15 @@ var (
 	GuestLoadHost = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
 	// minkube failed to create a mount
 	GuestMount = Kind{ID: "GUEST_MOUNT", ExitCode: ExGuestError}
+	// mount on guest was unable to connect to host mount server
+	GuestMountCouldNotConnect = Kind{
+		ID:       "GUEST_MOUNT_COULD_NOT_CONNECT",
+		ExitCode: ExGuestError,
+		Advice: `If the host has a firewall:
+		
+		1. Allow a port through the firewall
+		2. Specify "--port=<port_number>" for "minikube mount"`,
+	}
 	// minkube failed to update a mount
 	GuestMountConflict = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}
 	// minikube failed to add a node to the cluster

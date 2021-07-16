@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -50,6 +51,7 @@ const (
 // placeholders for flag values
 var (
 	mountIP      string
+	mountPort    uint16
 	mountVersion string
 	mountType    string
 	isKill       bool
@@ -191,6 +193,7 @@ var mountCmd = &cobra.Command{
 
 		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
 		if err != nil {
+			node.ExitIfFatal(err)
 			exit.Error(reason.GuestMount, "mount failed", err)
 		}
 		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
@@ -202,6 +205,7 @@ var mountCmd = &cobra.Command{
 
 func init() {
 	mountCmd.Flags().StringVar(&mountIP, "ip", "", "Specify the ip that the mount should be setup on")
+	mountCmd.Flags().Uint16Var(&mountPort, "port", 0, "Specify the port that the mount should be setup on, where 0 means any free port.")
 	mountCmd.Flags().StringVar(&mountType, "type", nineP, "Specify the mount filesystem type (supported types: 9p)")
 	mountCmd.Flags().StringVar(&mountVersion, "9p-version", defaultMountVersion, "Specify the 9p version that the mount should use")
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
@@ -212,9 +216,9 @@ func init() {
 	mountCmd.Flags().IntVar(&mSize, "msize", defaultMsize, "The number of bytes to use for 9p packet payload")
 }
 
-// getPort asks the kernel for a free open port that is ready to use
+// getPort uses the requested port or asks the kernel for a free open port that is ready to use
 func getPort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", mountPort))
 	if err != nil {
 		panic(err)
 	}
