@@ -423,15 +423,62 @@ choco install minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
-Download and run the stand-alone [minikube Windows installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
+1. Download the [latest release](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).  
+<br>
+    Or if you have `curl` installed, use this command:
+    ```shell
+    curl -Lo minikube.exe https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe
+    New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
+    Move-Item .\minikube.exe c:\minikube\minikube.exe -Force
+    ```
 
-_If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+2. Add the binary in to your `PATH`.  
+<br>
+    _Make sure to run PowerShell as Administrator._
+    ```shell
+    $oldpath=[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+    if($oldpath -notlike "*;C:\minikube*"){`
+      [Environment]::SetEnvironmentVariable("Path", $oldpath+";C:\minikube", [EnvironmentVariableTarget]::Machine)`
+    }
+    ```
+    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
-Download and run the stand-alone minikube Windows installer from [the release page](https://github.com/kubernetes/minikube/releases).
+1. Download the <a href="#" id="latest-beta-download-link">latest beta release</a>.  
+<br>
+    Or if you have `curl` installed, use this command:
+    ```shell
+    $r='https://api.github.com/repos/kubernetes/minikube/releases'
+    $u=curl -s $r | Select-String -Pattern 'http.*download/v.*beta.*/minikube-windows-amd64.exe' | Select Matches -First 1
+    curl -Lo minikube.exe $u.Matches.Value
+    New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
+    Move-Item .\minikube.exe c:\minikube\minikube.exe -Force
+    ```
 
-_If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+2. Add the binary in to your `PATH`.  
+<br>
+    _Make sure to run PowerShell as Administrator._
+    ```shell
+    $oldpath=[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+    if($oldpath -notlike "*;C:\minikube*"){`
+      [Environment]::SetEnvironmentVariable("Path", $oldpath+";C:\minikube", [EnvironmentVariableTarget]::Machine)`
+    }
+    ```
+    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+<script type="text/javascript">
+  fetch("https://api.github.com/repos/kubernetes/minikube/releases")
+    .then(response => response.text())
+    .then(data => {
+      const u = data.match(/http.*download\/v.*beta.*\/minikube-installer\.exe/)[0]
+      document.getElementById("latest-beta-download-link").href = u;
+    })
+    .catch((error) => {
+      const el = document.getElementById("latest-beta-download-link");
+      el.innerHTML = "latest beta from the release page";
+      el.href = "https://github.com/kubernetes/minikube/releases";
+    });
+</script>
 {{% /quiz_instruction %}}
 
 {{% /card %}}
