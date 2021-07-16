@@ -35,11 +35,16 @@ MAX_REPORTED_TESTS=30
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 TMP_DATA=$(mktemp)
-# 1) Process the data in each gopogh summary.
-# 2) Filter tests to only include failed tests (and only get their names and environment).
-# 3) Sort by environment, then test name.
-# 4) Store in file $TMP_DATA.
-gsutil cat $(< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\//; s/$/_summary.json/") \
+# 1) Process the ENVIRONMENT_LIST to turn them into valid GCS URLs.
+# 2) Check to see if the files are present. Ignore any missing files.
+# 3) Cat the gopogh summaries together.
+# 4) Process the data in each gopogh summary.
+# 5) Filter tests to only include failed tests (and only get their names and environment).
+# 6) Sort by environment, then test name.
+# 7) Store in file $TMP_DATA.
+< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\//; s/$/_summary.json/" \
+  | (xargs gsutil ls || true) \
+  | xargs gsutil cat \
   | "$DIR/process_data.sh" \
   | sed -n -r -e "s/[0-9a-f]*,[0-9-]*,([a-zA-Z\/_0-9-]*),([a-zA-Z\/_0-9-]*),Failed,[.0-9]*/\1:\2/p" \
   | sort -t: -k1,1 -k2,2 \
@@ -55,8 +60,10 @@ TMP_FAILED_RATES="$TMP_FLAKE_RATES\_filtered"
 # 3) Join the flake rates with the failing tests to only get flake rates of failing tests.
 # 4) Sort failed test flake rates based on the flakiness of that test - stable tests should be first on the list.
 # 5) Store in file $TMP_FAILED_RATES.
-< "$TMP_FLAKE_RATES" sed -n -r -e "s/([a-zA-Z0-9_-]*),([a-zA-Z\/0-9_-]*),([.0-9]*),[.0-9]*/\1:\2,\3/p" \
-  | sort -t, -k1,1 \
+deb_sorted=$(< "$TMP_FLAKE_RATES" sed -n -r -e "s/([a-zA-Z0-9_-]*),([a-zA-Z\/0-9_-]*),([.0-9]*),[.0-9]*/\1:\2,\3/p" \
+  | sort -t, -k1,1)
+echo "$deb_sorted"
+echo "$deb_sorted" \
   | join -t , -j 1 "$TMP_DATA" - \
   | sort -g -t, -k2,2 \
   > "$TMP_FAILED_RATES"
