@@ -299,6 +299,8 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "metrics-server", "kubernetes", map[string]string{
 		"MetricsServer": "metrics-server/metrics-server:v0.4.2@sha256:dbc33d7d35d2a9cc5ab402005aa7a0d13be6192f3550c7d42cba8d2d5e3a5d62",
+	}, false, "metrics-server", map[string]string{
+		"MetricsServer": "metrics-server/metrics-server:v0.5.0@sha256:6c5603956c0aed6b4087a8716afce8eb22f664b13162346ee852b4fab305ca15",
 	}, map[string]string{
 		"MetricsServer": "k8s.gcr.io",
 	}),
