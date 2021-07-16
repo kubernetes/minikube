@@ -16,6 +16,9 @@
 
 set -e
 
+# container-runtime (docker or containerd)
+RUNTIME="$1"
+
 install_minikube() {
         make
         sudo install ./out/minikube /usr/local/bin/minikube
@@ -24,20 +27,28 @@ install_minikube() {
 run_benchmark() {
         ( cd ./hack/benchmark/time-to-k8s/time-to-k8s-repo/ &&
                 git submodule update --init &&
-                go run . --config ../public-chart/local-kubernetes.yaml --iterations 10 --output output.csv )
+                go run . --config "../public-chart/$RUNTIME-benchmark.yaml" --iterations 10 --output ./output.csv )
 }
 
 generate_chart() {
         go run ./hack/benchmark/time-to-k8s/public-chart/generate-chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --output ./chart.png --past-runs ./runs.json
 }
 
-gsutil -m cp gs://minikube-time-to-k8s/runs.json .
+cleanup() {
+	rm ./runs.json
+	rm ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv
+	rm ./chart.png
+}
+
+gsutil -m cp "gs://minikube-time-to-k8s/$RUNTIME-runs.json" ./runs.json
 
 install_minikube
 
 run_benchmark
-generate_chart "$VERSION"
+generate_chart
 
-gsutil -m cp ./runs.json gs://minikube-time-to-k8s/runs.json
-gsutil -m cp ./runs.json "gs://minikube-time-to-k8s/$(date +'%Y-%m-%d').json"
-gsutil -m cp ./chart.png gs://minikube-time-to-k8s/chart.png
+gsutil -m cp ./runs.json "gs://minikube-time-to-k8s/$RUNTIME-runs.json"
+gsutil -m cp ./runs.json "gs://minikube-time-to-k8s/$(date +'%Y-%m-%d')-$RUNTIME.json"
+gsutil -m cp ./chart.png "gs://minikube-time-to-k8s/$RUNTIME-chart.png"
+
+cleanup

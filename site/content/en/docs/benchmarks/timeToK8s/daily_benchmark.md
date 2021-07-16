@@ -5,4 +5,12 @@ description: >
 weight: 1
 ---
 
-![time-to-k8s](https://storage.googleapis.com/minikube-time-to-k8s/chart.png)
+[Benchmarking Machine Specs](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)
+
+## Docker
+
+![Docker Benchmarks](https://storage.googleapis.com/minikube-time-to-k8s/docker-chart.png)
+
+## Containerd
+
+![Containerd Benchmaarks](https://storage.googleapis.com/minikube-time-to-k8s/containerd-chart.png)

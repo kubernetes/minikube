@@ -1,4 +1,0 @@
-testcases:
-  minikube:
-    setup: minikube start --memory=max --cpus=max
-    teardown: minikube delete
