@@ -77,6 +77,9 @@ type Runner interface {
 
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
+
+	// ReadableFile open a remote file for reading
+	ReadableFile(sourcePath string) (assets.ReadableFile, error)
 }
 
 // Command returns a human readable command string that does not induce eye fatigue

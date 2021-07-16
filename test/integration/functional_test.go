@@ -1482,7 +1482,21 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: cp is unsupported by none driver")
 	}
 
-	testCpCmd(ctx, t, profile, "")
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	// copy to node
+	testCpCmd(ctx, t, profile, "", srcPath, "", dstPath)
+
+	// copy from node
+	tmpDir, err := ioutil.TempDir("", "mk_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	tmpPath := filepath.Join(tmpDir, "cp-test.txt")
+	testCpCmd(ctx, t, profile, profile, dstPath, "", tmpPath)
 }
 
 // validateMySQL validates a minimalist MySQL deployment

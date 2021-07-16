@@ -148,6 +148,10 @@ func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
 	return nil
 }
 
+func (f *FakeCommandRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
+}
+
 // SetFileToContents stores the file to contents map for the FakeCommandRunner
 func (f *FakeCommandRunner) SetFileToContents(fileToContents map[string]string) {
 	for k, v := range fileToContents {

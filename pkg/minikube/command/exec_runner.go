@@ -202,3 +202,7 @@ func (e *execRunner) Remove(f assets.CopyableFile) error {
 	}
 	return os.Remove(dst)
 }
+
+func (e *execRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, fmt.Errorf("execRunner does not support ReadableFile - you could be the first to add it")
+}

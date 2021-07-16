@@ -517,18 +517,38 @@ func cpTestLocalPath() string {
 	return filepath.Join(*testdataDir, "cp-test.txt")
 }
 
-// testCpCmd ensures copy functionality into minikube instance.
-func testCpCmd(ctx context.Context, t *testing.T, profile string, node string) {
-	srcPath := cpTestLocalPath()
-	dstPath := cpTestMinikubePath()
-
-	cpArgv := []string{"-p", profile, "cp", srcPath}
+func cpTestReadText(ctx context.Context, t *testing.T, profile, node, path string) string {
 	if node == "" {
-		cpArgv = append(cpArgv, dstPath)
-	} else {
-		cpArgv = append(cpArgv, fmt.Sprintf("%s:%s", node, dstPath))
+		expected, err := ioutil.ReadFile(path)
+		if err != nil {
+			t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
+		}
+		return string(expected)
 	}
 
+	sshArgv := []string{"-p", profile, "ssh", "-n", node, fmt.Sprintf("sudo cat %s", path)}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), sshArgv...))
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
+	}
+	if err != nil {
+		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
+	}
+
+	return rr.Stdout.String()
+}
+
+func cpTestMergePath(node, path string) string {
+	if node == "" {
+		return path
+	}
+
+	return fmt.Sprintf("%s:%s", node, path)
+}
+
+// testCpCmd ensures copy functionality into minikube instance.
+func testCpCmd(ctx context.Context, t *testing.T, profile string, srcNode, srcPath, dstNode, dstPath string) {
+	cpArgv := []string{"-p", profile, "cp", cpTestMergePath(srcNode, srcPath), cpTestMergePath(dstNode, dstPath)}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), cpArgv...))
 	if ctx.Err() == context.DeadlineExceeded {
 		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
@@ -537,26 +557,15 @@ func testCpCmd(ctx context.Context, t *testing.T, profile string, node string) {
 		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
 	}
 
-	sshArgv := []string{"-p", profile, "ssh"}
-	if node != "" {
-		sshArgv = append(sshArgv, "-n", node)
-	}
-	sshArgv = append(sshArgv, fmt.Sprintf("sudo cat %s", dstPath))
-
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), sshArgv...))
-	if ctx.Err() == context.DeadlineExceeded {
-		t.Errorf("failed to run command by deadline. exceeded timeout : %s", rr.Command())
-	}
-	if err != nil {
-		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
+	expected := cpTestReadText(ctx, t, profile, srcNode, srcPath)
+	var copiedText string
+	if srcNode == "" && dstNode == "" {
+		copiedText = cpTestReadText(ctx, t, profile, profile, dstPath)
+	} else {
+		copiedText = cpTestReadText(ctx, t, profile, dstNode, dstPath)
 	}
 
-	expected, err := ioutil.ReadFile(srcPath)
-	if err != nil {
-		t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
-	}
-
-	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
+	if diff := cmp.Diff(expected, copiedText); diff != "" {
 		t.Errorf("/testdata/cp-test.txt content mismatch (-want +got):\n%s", diff)
 	}
 }

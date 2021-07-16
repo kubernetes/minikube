@@ -34,18 +34,68 @@ import (
 // MemorySource is the source name used for in-memory copies
 const MemorySource = "memory"
 
-// CopyableFile is something that can be copied
-type CopyableFile interface {
+// ReadableFile is something that can be read
+type ReadableFile interface {
 	io.Reader
 	GetLength() int
 	GetSourcePath() string
 
-	GetTargetDir() string
-	GetTargetName() string
 	GetPermissions() string
 	GetModTime() (time.Time, error)
 	Seek(int64, int) (int64, error)
 	Close() error
+}
+
+// BaseReadable is the base ReadableFile class
+type BaseReadableFile struct {
+	Length      int
+	SourcePath  string
+	Permissions string
+}
+
+// GetLength returns lentgh of file
+func (b *BaseReadableFile) GetLength() int {
+	return b.Length
+}
+
+// GetSourcePath returns asset name
+func (b *BaseReadableFile) GetSourcePath() string {
+	return b.SourcePath
+}
+
+// GetPermissions returns permissions
+func (b *BaseReadableFile) GetPermissions() string {
+	return b.Permissions
+}
+
+// CopyableFile is something that can be copied
+type CopyableFile interface {
+	ReadableFile
+
+	GetTargetDir() string
+	GetTargetName() string
+}
+
+type BaseCopyableFile struct {
+	ReadableFile
+	targetDir  string
+	targetName string
+}
+
+func (r *BaseCopyableFile) GetTargetDir() string {
+	return r.targetDir
+}
+
+func (r *BaseCopyableFile) GetTargetName() string {
+	return r.targetName
+}
+
+func NewBaseCopyableFile(source ReadableFile, targetDir, targetName string) *BaseCopyableFile {
+	return &BaseCopyableFile{
+		ReadableFile: source,
+		targetDir:    targetDir,
+		targetName:   targetName,
+	}
 }
 
 // BaseAsset is the base asset class

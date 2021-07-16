@@ -22,8 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -176,11 +179,30 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 		t.Errorf("failed to decode json from status: args %q: %v", rr.Command(), err)
 	}
 
-	for _, s := range statuses {
-		if s.Worker {
-			testCpCmd(ctx, t, profile, s.Name)
-		} else {
-			testCpCmd(ctx, t, profile, "")
+	tmpDir, err := ioutil.TempDir("", "mk_cp_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	for _, n := range statuses {
+		// copy local to node
+		testCpCmd(ctx, t, profile, "", srcPath, n.Name, dstPath)
+
+		// copy back from node to lcoal
+		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("cp-test_%s.txt", n.Name))
+		testCpCmd(ctx, t, profile, n.Name, dstPath, "", tmpPath)
+
+		// copy node to node
+		for _, n2 := range statuses {
+			if n.Name == n2.Name {
+				continue
+			}
+			fp := filepath.Join("/home/docker", fmt.Sprintf("cp-test_%s_%s.txt", n.Name, n2.Name))
+			testCpCmd(ctx, t, profile, n.Name, dstPath, n2.Name, fp)
 		}
 	}
 }

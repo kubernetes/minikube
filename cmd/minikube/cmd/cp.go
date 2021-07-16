@@ -25,7 +25,6 @@ import (
 	pt "path"
 	"strings"
 
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -36,12 +35,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 )
 
-// placeholders for flag values
-var (
-	srcPath string
-	dstPath string
-	dstNode string
-)
+type remotePath struct {
+	node string
+	path string
+}
 
 // cpCmd represents the cp command, similar to docker cp
 var cpCmd = &cobra.Command{
@@ -56,52 +53,25 @@ var cpCmd = &cobra.Command{
 	minikube cp <source file path> <target file absolute path> (example: "minikube cp a/b.txt /copied.txt")`)
 		}
 
-		srcPath = args[0]
-		dstPath = args[1]
-
-		// if destination path is not a absolute path, trying to parse with <node>:<abs path> format
-		if !strings.HasPrefix(dstPath, "/") {
-			if sp := strings.SplitN(dstPath, ":", 2); len(sp) == 2 {
-				dstNode = sp[0]
-				dstPath = sp[1]
-			}
-		}
-
-		validateArgs(srcPath, dstPath)
-
-		fa, err := assets.NewFileAsset(srcPath, pt.Dir(dstPath), pt.Base(dstPath), "0644")
-		if err != nil {
-			out.ErrLn("%v", errors.Wrap(err, "getting file asset"))
-			os.Exit(1)
-		}
-		defer func() {
-			if err := fa.Close(); err != nil {
-				klog.Warningf("error closing the file %s: %v", fa.GetSourcePath(), err)
-			}
-		}()
+		src := newRemotePath(args[0])
+		dst := newRemotePath(args[1])
+		validateArgs(src, dst)
 
 		co := mustload.Running(ClusterFlagValue())
 		var runner command.Runner
-		if dstNode == "" {
+
+		if dst.node != "" {
+			runner = remoteCommandRunner(&co, dst.node)
+		} else if src.node == "" {
+			// if node name not explicitly specfied in both of source and target,
+			// consider target is controlpanel node for backward compatibility.
 			runner = co.CP.Runner
 		} else {
-			n, _, err := node.Retrieve(*co.Config, dstNode)
-			if err != nil {
-				exit.Message(reason.GuestNodeRetrieve, "Node {{.nodeName}} does not exist.", out.V{"nodeName": dstNode})
-			}
-
-			h, err := machine.GetHost(co.API, *co.Config, *n)
-			if err != nil {
-				exit.Error(reason.GuestLoadHost, "Error getting host", err)
-			}
-
-			runner, err = machine.CommandRunner(h)
-			if err != nil {
-				exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
-			}
+			runner = command.NewExecRunner(false)
 		}
 
-		if err = runner.Copy(fa); err != nil {
+		fa := copyableFile(&co, src, dst)
+		if err := runner.Copy(fa); err != nil {
 			exit.Error(reason.InternalCommandRunner, fmt.Sprintf("Fail to copy file %s", fa.GetSourcePath()), err)
 		}
 	},
@@ -110,24 +80,80 @@ var cpCmd = &cobra.Command{
 func init() {
 }
 
-func validateArgs(srcPath string, dstPath string) {
-	if srcPath == "" {
-		exit.Message(reason.Usage, "Source {{.path}} can not be empty", out.V{"path": srcPath})
+// split path to node name and file path
+func newRemotePath(path string) *remotePath {
+	// if destination path is not a absolute path, trying to parse with <node>:<abs path> format
+	sp := strings.SplitN(path, ":", 2)
+	if len(sp) == 2 && len(sp[0]) > 0 && !strings.Contains(sp[0], "/") && strings.HasPrefix(sp[1], "/") {
+		return &remotePath{node: sp[0], path: sp[1]}
 	}
 
-	if dstPath == "" {
-		exit.Message(reason.Usage, "Target {{.path}} can not be empty", out.V{"path": dstPath})
+	return &remotePath{node: "", path: path}
+}
+
+func remoteCommandRunner(co *mustload.ClusterController, nodeName string) command.Runner {
+	n, _, err := node.Retrieve(*co.Config, nodeName)
+	if err != nil {
+		exit.Message(reason.GuestNodeRetrieve, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
 	}
 
-	if _, err := os.Stat(srcPath); err != nil {
+	h, err := machine.GetHost(co.API, *co.Config, *n)
+	if err != nil {
+		out.ErrLn("%v", errors.Wrap(err, "getting host"))
+		os.Exit(1)
+	}
+
+	runner, err := machine.CommandRunner(h)
+	if err != nil {
+		out.ErrLn("%v", errors.Wrap(err, "getting command runner"))
+		os.Exit(1)
+	}
+
+	return runner
+}
+
+func copyableFile(co *mustload.ClusterController, src, dst *remotePath) assets.CopyableFile {
+	// get assets.CopyableFile from minikube node
+	if src.node != "" {
+		runner := remoteCommandRunner(co, src.node)
+		f, err := runner.ReadableFile(src.path)
+		if err != nil {
+			out.ErrLn("%v", errors.Wrapf(err, "getting file from %s node", src.node))
+			os.Exit(1)
+		}
+
+		return assets.NewBaseCopyableFile(f, pt.Dir(dst.path), pt.Base(dst.path))
+	}
+
+	if _, err := os.Stat(src.path); err != nil {
 		if os.IsNotExist(err) {
-			exit.Message(reason.HostPathMissing, "Cannot find directory {{.path}} for copy", out.V{"path": srcPath})
+			exit.Message(reason.HostPathMissing, "Cannot find directory {{.path}} for copy", out.V{"path": src})
 		} else {
 			exit.Error(reason.HostPathStat, "stat failed", err)
 		}
 	}
 
-	if !strings.HasPrefix(dstPath, "/") {
-		exit.Message(reason.Usage, `<target file absolute path> must be an absolute Path. Relative Path is not allowed (example: "/home/docker/copied.txt")`)
+	fa, err := assets.NewFileAsset(src.path, pt.Dir(dst.path), pt.Base(dst.path), "0644")
+	if err != nil {
+		out.ErrLn("%v", errors.Wrap(err, "getting file asset"))
+		os.Exit(1)
+	}
+
+	return fa
+}
+
+func validateArgs(src, dst *remotePath) {
+	if src.path == "" {
+		exit.Message(reason.Usage, "Source {{.path}} can not be empty", out.V{"path": src.path})
+	}
+
+	if dst.path == "" {
+		exit.Message(reason.Usage, "Target {{.path}} can not be empty", out.V{"path": dst.path})
+	}
+
+	// if node name not explicitly specfied in both of source and target,
+	// consider target node is controlpanel for backward compatibility.
+	if src.node == "" && dst.node == "" && !strings.HasPrefix(dst.path, "/") {
+		exit.Message(reason.Usage, `Target <remote file path> must be an absolute Path. Relative Path is not allowed (example: "minikube:/home/docker/copied.txt")`)
 	}
 }
