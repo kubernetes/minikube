@@ -151,6 +151,7 @@ func TestFunctional(t *testing.T) {
 			{"PodmanEnv", validatePodmanEnv},
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
+			{"LoadImageAndUpdateTag", validateLoadImageAndUpdateTag},
 			{"RemoveImage", validateRemoveImage},
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
@@ -224,6 +225,32 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// loadAndInspect loads the image and then inspects that it was correctly loaded.
+func loadAndInspect(ctx context.Context, t *testing.T, profile string, newImage string) {
+	var rr *RunResult
+	var err error
+
+	// try to load the new image into minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", newImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// make sure the image was correctly loaded
+	rr, err = inspectImage(ctx, t, profile, newImage)
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	newImageLst := strings.Split(newImage, "/")
+	if len(newImageLst) == 0 {
+		t.Fatalf("new image improperly formed.")
+	}
+	// Check that unique tag name is in the output.
+	if !strings.Contains(rr.Output(), newImageLst[len(newImageLst)-1]) {
+		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
+	}
+}
+
 // validateLoadImage makes sure that `minikube image load` works as expected
 func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
@@ -247,21 +274,42 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 	}
 
-	// try to load the new image into minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", newImage))
+	loadAndInspect(ctx, t, profile, newImage)
+	loadAndInspect(ctx, t, profile, newImage)
+}
+
+// validateLoadImageAndUpdateTag loads image inspects, then updates tag and checks correctness.
+func validateLoadImageAndUpdateTag(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+	// pull core dns
+	coreDNSImage := "k8s.gcr.io/coredns:1.2.6"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", coreDNSImage))
 	if err != nil {
-		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
-	// make sure the image was correctly loaded
-	rr, err = inspectImage(ctx, t, profile, newImage)
+	// tag with core dns
+	newImage := fmt.Sprintf("docker.io/library/coredns:load-%s", profile)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", coreDNSImage, newImage))
 	if err != nil {
-		t.Fatalf("listing images: %v\n%s", err, rr.Output())
-	}
-	if !strings.Contains(rr.Output(), fmt.Sprintf("busybox:load-%s", profile)) {
-		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 	}
 
+	loadAndInspect(ctx, t, profile, newImage)
+
+	// tag coredns with a different tag, reload, and check it works.
+	newImage = fmt.Sprintf("docker.io/library/coredns:load-new-%s", profile)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", coreDNSImage, newImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+	loadAndInspect(ctx, t, profile, newImage)
 }
 
 // validateRemoveImage makes sures that `minikube image rm` works as expected
