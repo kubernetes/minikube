@@ -34,6 +34,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/machine/libmachine/state"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -43,7 +44,7 @@ import (
 // TestAddons tests addons that require no special environment in parallel
 func TestAddons(t *testing.T) {
 	profile := UniqueProfileName("addons")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(45))
 	defer Cleanup(t, profile, cancel)
 
 	// We don't need a dummy file is we're on GCE
@@ -68,6 +69,9 @@ func TestAddons(t *testing.T) {
 	}
 	if !arm64Platform() {
 		args = append(args, "--addons=helm-tiller")
+	}
+	if ContainerRuntime() == "docker" && !arm64Platform() {
+		args = append(args, "--addons=auto-pause")
 	}
 	if !detect.IsOnGCE() {
 		args = append(args, "--addons=gcp-auth")
@@ -122,6 +126,15 @@ func TestAddons(t *testing.T) {
 				MaybeParallel(t)
 				tc.validator(ctx, t, profile)
 			})
+		}
+	})
+
+	// AutoPause addon test
+	t.Run("AutoPause", func(t *testing.T) {
+		if ContainerRuntime() != "docker" {
+			t.Skip("not supported on non-docker runtime yet")
+		} else {
+			validateAutoPause(ctx, t, profile)
 		}
 	})
 
@@ -709,5 +722,55 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed disabling gcp-auth addon. arg %q.s %v", rr.Command(), err)
+	}
+}
+
+// validateAutoPause tests the auto-pause addon
+func validateAutoPause(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
+	}
+
+	// wait for auto-pause deployment
+	start := time.Now()
+	if err := kapi.WaitForDeploymentToStabilize(client, "auto-pause", "auto-pause-proxy", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for auto-pause deployment to stabilize: %v", err)
+	}
+	t.Logf("auto-pause stabilized in %s", time.Since(start))
+
+	if _, err := PodWait(ctx, t, profile, "auto-pause", "app=auto-pause-proxy", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for app=auto-pause pod: %v", err)
+	}
+
+	// make sure minikube api-server status is "Running"
+	ensureMinikubeStatus(ctx, t, profile, "APIServer", state.Running.String())
+	// make sure minikube kubelet status is "Running"
+	ensureMinikubeStatus(ctx, t, profile, "Kubelet", state.Running.String())
+
+	// wait to get kubernetes to get paused
+	time.Sleep(70 * time.Second)
+
+	// make sure minikube api-server status is "Paused"
+	ensureMinikubeStatus(ctx, t, profile, "APIServer", state.Paused.String())
+	// make sure minikube kubelet status is "Stopped"
+	ensureMinikubeStatus(ctx, t, profile, "Kubelet", state.Stopped.String())
+
+	// do some operation in kubernetes
+	_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "ns"))
+	if err != nil {
+		t.Fatalf("get namespace: %v", err)
+	}
+
+	// make sure minikube api-server status is "Running"
+	ensureMinikubeStatus(ctx, t, profile, "APIServer", state.Running.String())
+	// make sure minikube kubelet status is "Running"
+	ensureMinikubeStatus(ctx, t, profile, "Kubelet", state.Running.String())
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "auto-pause", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable auto-pause addon: args %q: %v", rr.Command(), err)
 	}
 }
