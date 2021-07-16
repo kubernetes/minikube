@@ -102,20 +102,17 @@ func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile strin
 // validatePause runs minikube pause
 func validatePause(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
-	args := []string{"pause", "-p", profile, "--alsologtostderr", "-v=5"}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	rr, err := runMinikubeCtx(ctx, t, profile, "pause", "--alsologtostderr", "-v=5")
 	if err != nil {
 		t.Errorf("failed to pause minikube with args: %q : %v", rr.Command(), err)
 	}
+	t.Error("Test error")
 }
 
 // validateUnpause runs minikube unpause
 func validateUnpause(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
-	args := []string{"unpause", "-p", profile, "--alsologtostderr", "-v=5"}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	rr, err := runMinikubeCtx(ctx, t, profile, "unpause", "--alsologtostderr", "-v=5")
 	if err != nil {
 		t.Errorf("failed to unpause minikube with args: %q : %v", rr.Command(), err)
 	}
@@ -125,8 +122,7 @@ func validateUnpause(ctx context.Context, t *testing.T, profile string) {
 func validateDelete(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	rr, err := runMinikubeCtx(ctx, t, profile, "delete", "--alsologtostderr", "-v=5")
 	if err != nil {
 		t.Errorf("failed to delete minikube with args: %q : %v", rr.Command(), err)
 	}
@@ -136,7 +132,7 @@ func validateDelete(ctx context.Context, t *testing.T, profile string) {
 func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+	rr, err := runMinikubeCtx(ctx, t, profile, "list", "--output", "json")
 	if err != nil {
 		t.Errorf("failed to list profiles with json format after it was deleted. args %q: %v", rr.Command(), err)
 	}

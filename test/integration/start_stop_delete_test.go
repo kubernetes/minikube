@@ -156,7 +156,7 @@ func TestStartStop(t *testing.T) {
 // validateFirstStart runs the initial minikube start
 func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	rr, err := runMinikubeCtx(ctx, t, profile, startArgs...)
 	if err != nil {
 		t.Fatalf("failed starting minikube -first start-. args %q: %v", rr.Command(), err)
 	}
@@ -175,7 +175,7 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile s
 	defer PostMortemLogs(t, profile)
 
 	// Enable an addon to assert it requests the correct image.
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile, "--images=MetricsServer=k8s.gcr.io/echoserver:1.4", "--registries=MetricsServer=fake.domain"))
+	rr, err := runMinikubeCtx(ctx, t, profile, "addons", "enable", "metrics-server", "--images=MetricsServer=k8s.gcr.io/echoserver:1.4", "--registries=MetricsServer=fake.domain")
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
@@ -198,7 +198,7 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile s
 // validateStop tests minikube stop
 func validateStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
+	rr, err := runMinikubeCtx(ctx, t, profile, "stop", "--alsologtostderr", "-v=3")
 	if err != nil {
 		t.Fatalf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
 	}
