@@ -181,6 +181,20 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		}
 	}
 
+	// When dealing with the use of ImageMirrorCountry, the image name is not a one-to-one correspondence.
+	if cc.ImageMirrorCountry != "" {
+		newImages := make(map[string]string, len(addon.Images))
+		for name, image := range addon.Images {
+			img := strings.Split(image, "/")
+			if len(img) > 1 {
+				newImages[name] = img[len(img)-1]
+				continue
+			}
+			newImages[name] = image
+		}
+		addon.Images = newImages
+	}
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "machine client")
