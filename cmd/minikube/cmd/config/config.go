@@ -127,6 +127,10 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
+		name: config.WantVirtualBoxDriverWarning,
+		set:  SetBool,
+	},
+	{
 		name: config.ProfileName,
 		set:  SetString,
 	},

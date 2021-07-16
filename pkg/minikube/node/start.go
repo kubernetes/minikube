@@ -191,6 +191,18 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, addonList)
 	}
 
+	// discourage use of the virtualbox driver
+	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
+		var altDriverList strings.Builder
+		for _, choice := range driver.Choices(true) {
+			if choice.Name != "virtualbox" {
+				altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
+			}
+		}
+
+		out.Boxed("There are alternative drivers to virtualbox for better performance and support, consider using them {{.drivers}} \nTo turn this warning off use `minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
+	}
+
 	if apiServer {
 		// special ops for none , like change minikube directory.
 		// multinode super doesn't work on the none driver

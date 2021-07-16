@@ -38,6 +38,8 @@ const (
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
 	// WantNoneDriverWarning is the key for WantNoneDriverWarning
 	WantNoneDriverWarning = "WantNoneDriverWarning"
+	// WantVirtualBoxDriverWarning is the key for WantVirtualBoxDriverWarning
+	WantVirtualBoxDriverWarning = "WantVirtualBoxDriverWarning"
 	// ProfileName represents the key for the global profile parameter
 	ProfileName = "profile"
 	// UserFlag is the key for the global user flag (ex. --user=user1)
