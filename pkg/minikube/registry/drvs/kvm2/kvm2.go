@@ -122,34 +122,38 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "Install libvirt", Doc: docURL}
 	}
 
-	member, err := isCurrentUserLibvirtGroupMember()
-	if err != nil {
-		return registry.State{
-			Installed: true,
-			Running:   true,
-			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-			Error:  fmt.Errorf("libvirt group membership check failed:\n%v", err.Error()),
-			Reason: "PR_KVM_USER_PERMISSION",
-			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-			Doc:    docURL,
-		}
-	}
-	if !member {
-		return registry.State{
-			Installed: true,
-			Running:   true,
-			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-			Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
-			Reason: "PR_KVM_USER_PERMISSION",
-			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-			Doc:    docURL,
-		}
-	}
-
 	// On Ubuntu 19.10 (libvirt 5.4), this fails if LIBVIRT_DEFAULT_URI is unset
 	cmd := exec.CommandContext(ctx, path, "domcapabilities", "--virttype", "kvm")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("LIBVIRT_DEFAULT_URI=%s", defaultURI()))
 	out, err := cmd.CombinedOutput()
+
+	// If we fail to connect to libvirt, first check whether we're member of the libvirt group.
+	if err != nil {
+		member, err := isCurrentUserLibvirtGroupMember()
+		if err != nil {
+			return registry.State{
+				Installed: true,
+				Running:   true,
+				// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+				Error:  fmt.Errorf("libvirt group membership check failed:\n%v", err.Error()),
+				Reason: "PR_KVM_USER_PERMISSION",
+				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+				Doc:    docURL,
+			}
+		}
+		if !member {
+			return registry.State{
+				Installed: true,
+				Running:   true,
+				// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+				Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
+				Reason: "PR_KVM_USER_PERMISSION",
+				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+				Doc:    docURL,
+			}
+		}
+	}
+
 	if ctx.Err() == context.DeadlineExceeded {
 		return registry.State{
 			Installed: true,
