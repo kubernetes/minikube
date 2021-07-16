@@ -196,6 +196,8 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 			}
 			if errors.Is(err, image.ErrGithubNeedsLogin) || errors.Is(err, image.ErrNeedsLogin) {
 				exit.Message(reason.Usage, `Please either authenticate to the registry or use --base-image flag to use a different registry.`)
+			} else if err.Error() == "failed to download kic base image or any fallback image" {
+				exit.Message(reason.GuestStart, "Failed to download KIC base image or any fallback image.")
 			} else {
 				klog.Errorln("Error downloading kic artifacts: ", err)
 			}
