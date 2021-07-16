@@ -161,6 +161,18 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /var/lib/minishift
     mount --bind /mnt/$PARTNAME/var/lib/minishift /var/lib/minishift
 
+    mkdir -p /mnt/$PARTNAME/var/lib/longhorn
+    mkdir /var/lib/longhorn
+    mount --bind /mnt/$PARTNAME/var/lib/longhorn /var/lib/longhorn
+
+    mkdir -p /mnt/$PARTNAME/var/lib/iscsi/send_targets
+    mkdir -p /var/lib/iscsi/send_targets
+    mount --bind /mnt/$PARTNAME/var/lib/iscsi/send_targets /var/lib/iscsi/send_targets
+
+    mkdir -p /mnt/$PARTNAME/var/lib/iscsi/nodes
+    mkdir -p /var/lib/iscsi/nodes
+    mount --bind /mnt/$PARTNAME/var/lib/iscsi/nodes /var/lib/iscsi/nodes
+
     ## make an env file for other services to discover this PARTNAME easier
     mkdir -p /var/run/minikube
     echo "PERSISTENT_DIR=\"/mnt/$PARTNAME\"" > /var/run/minikube/env

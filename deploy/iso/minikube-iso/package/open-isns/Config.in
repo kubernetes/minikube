@@ -1,0 +1,3 @@
+config BR2_PACKAGE_OPEN_ISNS
+	bool "open-isns"
+	default y
