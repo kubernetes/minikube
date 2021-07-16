@@ -136,6 +136,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed kubeconfig update")
 		}
 
+		if err := kapi.RemoveReadinessProbe(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName); err != nil {
+			klog.Warningf("Unable to update coredns: %v", err)
+		}
+
 		// scale down CoreDNS from default 2 to 1 replica
 		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
 			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)

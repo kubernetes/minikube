@@ -212,6 +212,32 @@ func KubectlBinaryPath(version string) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }
 
+// RemoveReadinessProbe removes readiness probe
+func RemoveReadinessProbe(kcontext, namespace, deploymentName string) error {
+	client, err := Client(kcontext)
+	if err != nil {
+		return fmt.Errorf("client: %v", err)
+	}
+	err = wait.PollImmediate(kconst.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
+		d, err := client.AppsV1().Deployments(namespace).Get(context.Background(), deploymentName, meta.GetOptions{})
+		if err != nil {
+			klog.Warningf("failed getting deployment, will retry: %v", err)
+			return false, nil
+		}
+		d.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+		d, err = client.AppsV1().Deployments(namespace).Update(context.Background(), d, meta.UpdateOptions{})
+		if err != nil {
+			klog.Warningf("failed updating deployment, will retry: %v", err)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		klog.Infof("failed to update readiness probe: %v", err)
+	}
+	return err
+}
+
 // ScaleDeployment tries to set the number of deployment replicas in namespace and context.
 // It will retry (usually needed due to "the object has been modified; please apply your changes to the latest version and try again" error) up to ReasonableMutateTime to ensure target scale is achieved.
 func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) error {
