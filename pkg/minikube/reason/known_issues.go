@@ -1162,6 +1162,16 @@ var controlPlaneIssues = []match{
 		},
 		Regexp: re(`apiServer.certSANs: Invalid value`),
 	},
+	{
+		Kind: Kind{
+			ID:           "K8S_UNHEALTHY_CONTROL_PLANE,
+			ExitCode:     ExControlPlaneTimeout,
+			Advice:       "Control Plane could not update, try minikube delete --all --purge",
+			NewIssueLink: true,
+			Issues:       []int{11417},
+		},
+		Regexp: re(`controlPlane never updated to`),
+	},
 }
 
 // serviceIssues are issues with services running on top of Kubernetes
