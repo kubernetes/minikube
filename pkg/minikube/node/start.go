@@ -193,14 +193,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// discourage use of the virtualbox driver
 	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
-		var altDriverList strings.Builder
-		for _, choice := range driver.Choices(true) {
-			if choice.Name != "virtualbox" {
-				altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
-			}
-		}
-
-		out.Boxed("There are alternative drivers to virtualbox for better performance and support, consider using them {{.drivers}} \nTo turn this warning off use `minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
+		warnVirtualBox()
 	}
 
 	if apiServer {
@@ -742,4 +735,16 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	klog.Infof("{%q: %s} host record injected into CoreDNS", name, ip)
 
 	return nil
+}
+
+// prints a warning to the console against the use of the 'virtualbox' driver
+func warnVirtualBox() {
+	var altDriverList strings.Builder
+	for _, choice := range driver.Choices(true) {
+		if choice.Name != "virtualbox" {
+			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
+		}
+	}
+
+	out.Boxed("There are alternative drivers to virtualbox for better performance and support, consider using them {{.drivers}} \nTo turn this warning off use `minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
 }
