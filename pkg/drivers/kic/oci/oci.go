@@ -123,7 +123,8 @@ func HasMemoryCgroup() bool {
 	return memcg
 }
 
-func hasMemorySwapCgroup() bool {
+// HasMemorySwapCgroup checks whether it is possible to set memory swap limit for cgroup.
+func HasMemorySwapCgroup() bool {
 	memcgSwap := true
 	if runtime.GOOS == "linux" {
 		var memoryswap string
@@ -137,6 +138,36 @@ func hasMemorySwapCgroup() bool {
 		}
 	}
 	return memcgSwap
+}
+
+// HasCPUCFSPeriod checks whether it is possible to set cpu cfs period for cgroup.
+func HasCPUCFSPeriod() bool {
+	cpuCfsPeriod := true
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_period_us"); os.IsNotExist(err) {
+			cpuCfsPeriod = false
+		}
+		if !cpuCfsPeriod {
+			// requires CONFIG_CFS_BANDWIDTH
+			klog.Warning("Your kernel does not support CPU cfs period or the cgroup is not mounted.")
+		}
+	}
+	return cpuCfsPeriod
+}
+
+// HasCPUCFSQuota checks whether it is possible to set cpu cfs quota for cgroup.
+func HasCPUCFSQuota() bool {
+	cpuCfsQuota := true
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"); os.IsNotExist(err) {
+			cpuCfsQuota = false
+		}
+		if !cpuCfsQuota {
+			// requires CONFIG_CFS_BANDWIDTH
+			klog.Warning("Your kernel does not support CPU cfs quota or the cgroup is not mounted.")
+		}
+	}
+	return cpuCfsQuota
 }
 
 // CreateContainerNode creates a new container node
@@ -184,58 +215,41 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
 
-	memcgSwap := hasMemorySwapCgroup()
-	memcg := HasMemoryCgroup()
-
-	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
-	var virtualization string
 	if p.OCIBinary == Podman { // enable execing in /var
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
-
-		if memcgSwap {
-			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-		}
-
-		if memcg {
-			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		}
-
-		virtualization = "podman" // VIRTUALIZATION_PODMAN
 	}
 	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
-
-		if memcg {
-			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		}
-		if memcgSwap {
-			// Disable swap by setting the value to match
-			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-		}
-
-		virtualization = "docker" // VIRTUALIZATION_DOCKER
 	}
 
-	cpuCfsPeriod := true
-	cpuCfsQuota := true
-	if runtime.GOOS == "linux" {
-		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_period_us"); os.IsNotExist(err) {
-			cpuCfsPeriod = false
-		}
-		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"); os.IsNotExist(err) {
-			cpuCfsQuota = false
-		}
-		if !cpuCfsPeriod || !cpuCfsQuota {
-			// requires CONFIG_CFS_BANDWIDTH
-			klog.Warning("Your kernel does not support CPU cfs period/quota or the cgroup is not mounted.")
-		}
+	memcgSwap := HasMemorySwapCgroup()
+	memcg := HasMemoryCgroup()
+
+	if memcg {
+		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 	}
+	if memcgSwap {
+		// Disable swap by setting the value to match
+		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
+	}
+
+	cpuCfsPeriod := HasCPUCFSPeriod()
+	cpuCfsQuota := HasCPUCFSQuota()
 
 	if cpuCfsPeriod && cpuCfsQuota {
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
+	}
+
+	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+	var virtualization string
+	if p.OCIBinary == Podman {
+		virtualization = "podman" // VIRTUALIZATION_PODMAN
+	}
+	if p.OCIBinary == Docker {
+		virtualization = "docker" // VIRTUALIZATION_DOCKER
 	}
 
 	runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", "container", virtualization))
