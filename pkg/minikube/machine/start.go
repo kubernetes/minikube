@@ -354,8 +354,8 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 
 // AddHostAlias makes fine adjustments to pod resources that aren't possible via kubeadm config.
 func AddHostAlias(c command.Runner, name string, ip net.IP) error {
-	record := fmt.Sprintf("%s\t%s", ip, name)
-	if _, err := c.RunCmd(exec.Command("grep", record+"$", "/etc/hosts")); err == nil {
+	record := hostAliasRecord(name, ip)
+	if _, err := c.RunCmd(hostAliasExists(ip, "/etc/hosts")); err == nil {
 		return nil
 	}
 
@@ -363,6 +363,19 @@ func AddHostAlias(c command.Runner, name string, ip net.IP) error {
 		return errors.Wrap(err, "hosts update")
 	}
 	return nil
+}
+
+func hostAliasRecord(name string, ip net.IP) string {
+	// don't rename localhost, use 127.0.1.1
+	if ip.Equal(net.ParseIP("127.0.0.1")) {
+		name = "localhost"
+	}
+	return fmt.Sprintf("%s\t%s", ip, name)
+}
+
+func hostAliasExists(ip net.IP, path string) *exec.Cmd {
+	regex := fmt.Sprintf("^%s[[:blank:]]", ip)
+	return exec.Command("grep", regex, path)
 }
 
 func addHostAliasCommand(name string, record string, sudo bool, path string) *exec.Cmd {

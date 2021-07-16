@@ -17,31 +17,28 @@ limitations under the License.
 package machine
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"testing"
 )
 
-const initialEtcHostsContent string = `127.0.0.1	localhost
-127.0.1.1	mymachinename
+const initialEtcHostsContent string = `127.0.0.1 localhost
+127.0.1.1 mymachinename
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
-127.0.0.1	host.minikube.internal
 192.168.42.139	control-plane.minikube.internal
 10.8.0.22	control-plane.minikube.internal
 `
 
-const expectedEtcHostsContent string = `127.0.0.1	localhost
-127.0.1.1	mymachinename
+const expectedEtcHostsContent string = `127.0.0.1 localhost
+127.0.1.1 mymachinename
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
-127.0.0.1	host.minikube.internal
 10.1.2.3	control-plane.minikube.internal
 `
 
@@ -52,19 +49,37 @@ func TestAddHostAliasInner(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(tempFilePath)
-	hostname := "control-plane.minikube.internal"
-	ip := net.ParseIP("10.1.2.3")
-	hostsFileLine := fmt.Sprintf("%s\t%s", ip, hostname)
 
-	// Act
-	cmd := addHostAliasCommand(hostname, hostsFileLine, false, tempFilePath)
-	if err = cmd.Run(); err != nil {
-		t.Error(err)
+	var hosts = []struct {
+		name string
+		ip   net.IP
+	}{
+		{
+			name: "host.minikube.internal",
+			ip:   net.ParseIP("127.0.0.1"),
+		},
+		{
+			name: "control-plane.minikube.internal",
+			ip:   net.ParseIP("10.1.2.3"),
+		},
 	}
+	for _, host := range hosts {
+		if err = hostAliasExists(host.ip, tempFilePath).Run(); err == nil {
+			continue
+		}
+		hostname := host.name
+		hostsFileLine := hostAliasRecord(hostname, host.ip)
 
-	// Assert
-	if err != nil {
-		t.Error(err)
+		// Act
+		cmd := addHostAliasCommand(hostname, hostsFileLine, false, tempFilePath)
+		if err = cmd.Run(); err != nil {
+			t.Error(err)
+		}
+
+		// Assert
+		if err != nil {
+			t.Error(err)
+		}
 	}
 
 	buff, err := ioutil.ReadFile(tempFilePath)
