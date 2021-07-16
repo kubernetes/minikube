@@ -30,7 +30,7 @@ const (
 	// The name of the GCR kicbase repository
 	gcrRepo = "gcr.io/k8s-minikube/kicbase"
 	// The name of the Dockerhub kicbase repository
-	dockerhubRepo = "kicbase/stable"
+	dockerhubRepo = "docker.io/kicbase/stable"
 )
 
 var (
