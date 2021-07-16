@@ -169,10 +169,10 @@ COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop /var/lib/minikube/sch
 COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
-# disable non-docker runtimes by default
-RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
-# enable docker which is default
-RUN systemctl enable docker.service && systemctl enable podman.socket
+# disable runtimes by default
+RUN systemctl disable docker && systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
+RUN systemctl enable podman.socket
+
 # making SSH work for docker container 
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 RUN mkdir /var/run/sshd
@@ -189,7 +189,7 @@ RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/contain
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
-RUN adduser --ingroup docker --disabled-password --gecos '' docker 
+RUN adduser --ingroup docker --disabled-password --gecos '' docker
 RUN adduser docker sudo
 RUN adduser docker podman
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
@@ -203,5 +203,5 @@ RUN mkdir -p /kind
 RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
-  /usr/share/local/* 
+  /usr/share/local/*
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
