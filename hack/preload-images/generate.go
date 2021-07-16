@@ -17,12 +17,14 @@ limitations under the License.
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
 
+	"github.com/docker/machine/libmachine/log"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -99,6 +101,23 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 
 	for _, img := range imgs {
 		pull := func() error {
+			// use base64 to avoid dealing with "/" and ":" in paths
+			imgFile := base64.StdEncoding.EncodeToString([]byte(containerRuntime + "-" + img))
+			cachedImg := filepath.Join("out", imgFile)
+			internalPath := filepath.Join("/var", "cache", imgFile)
+
+			var err error
+			if _, err = os.Stat(cachedImg); err == nil {
+				if err = copyFileToContainer(cachedImg, internalPath); err == nil {
+					err = cr.LoadImage(internalPath)
+					if err == nil {
+						log.Infof("loaded cached image %v", img)
+						return nil
+					}
+				}
+				log.Warnf("failed to load image %v: %v", img, err)
+			}
+
 			cmd := imagePullCommand(containerRuntime, img)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -106,13 +125,26 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 				time.Sleep(time.Second) // to avoid error: : exec: already started
 				return errors.Wrapf(err, "pulling image %s", img)
 			}
+
+			err = cr.SaveImage(img, internalPath)
+			if err != nil {
+				log.Warnf("failed to cache image %v: %v", img, err)
+				return nil
+			}
+
+			err = copyFileToHost(internalPath, "out/")
+			if err != nil {
+				log.Warnf("failed to get image file from container %v: %v", img, err)
+				return nil
+			}
+			log.Infof("cached image %v", img)
 			return nil
 		}
+
 		// retry up to 5 times if network is bad
 		if err = retry.Expo(pull, time.Microsecond, time.Minute, 5); err != nil {
 			return errors.Wrapf(err, "pull image %s", img)
 		}
-
 	}
 
 	// Transfer in k8s binaries
@@ -195,6 +227,26 @@ func copyTarballToHost(tarballFilename string) error {
 	dest := filepath.Join("out/", tarballFilename)
 	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/%s", profile, tarballFilename), dest)
 	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "cp cmd: %s", cmd.Args)
+	}
+	return nil
+}
+
+func copyFileToHost(file, dest string) error {
+	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/%s", profile, file), dest)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stdout
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "cp cmd: %s", cmd.Args)
+	}
+	return nil
+}
+
+func copyFileToContainer(file, dest string) error {
+	cmd := exec.Command("docker", "cp", file, fmt.Sprintf("%s:/%s", profile, dest))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stdout
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "cp cmd: %s", cmd.Args)
 	}
