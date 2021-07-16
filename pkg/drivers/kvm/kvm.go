@@ -28,7 +28,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
-	libvirt "github.com/libvirt/libvirt-go"
+	"github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/util/retry"
@@ -320,7 +320,6 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
 // Create a host using the driver's config
 func (d *Driver) Create() (err error) {
 	log.Info("Creating KVM machine...")
-	defer log.Infof("KVM machine creation complete!")
 	err = d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
@@ -364,10 +363,16 @@ func (d *Driver) Create() (err error) {
 	}
 	defer func() {
 		if ferr := dom.Free(); ferr != nil {
+			log.Warnf("unable to free domain: %v", err)
 			err = ferr
 		}
 	}()
-	return d.Start()
+	if err = d.Start(); err != nil {
+		log.Errorf("unable to start VM: %v", err)
+		return err
+	}
+	log.Infof("KVM machine creation complete!")
+	return nil
 }
 
 // ensureDirPermissions ensures that libvirt has access to access the image store directory
