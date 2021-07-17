@@ -61,6 +61,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
@@ -737,11 +738,11 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	return nil
 }
 
-// prints a warning to the console against the use of the 'virtualbox' driver
+// prints a warning to the console against the use of the 'virtualbox' driver, if alternatives are available
 func warnVirtualBox() {
 	var altDriverList strings.Builder
 	for _, choice := range driver.Choices(true) {
-		if choice.Name != "virtualbox" {
+		if choice.Name != "virtualbox" && choice.Priority != registry.Discouraged && !(choice.Name == "vmware" && !choice.State.Installed) {
 			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
 		}
 	}
