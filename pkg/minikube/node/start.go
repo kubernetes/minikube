@@ -746,5 +746,7 @@ func warnVirtualBox() {
 		}
 	}
 
-	out.Boxed("There are alternative drivers to virtualbox for better performance and support, consider using them {{.drivers}} \nTo turn this warning off use `minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
+	if altDriverList.Len() != 0 {
+		out.Boxed("There are alternative drivers to virtualbox for better performance and support, consider using them {{.drivers}} \nTo turn this warning off use `minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
+	}
 }
