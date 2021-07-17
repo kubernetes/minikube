@@ -13,4 +13,4 @@ weight: 1
 
 ## Containerd
 
-![Containerd Benchmaarks](https://storage.googleapis.com/minikube-time-to-k8s/containerd-chart.png)
+![Containerd Benchmarks](https://storage.googleapis.com/minikube-time-to-k8s/containerd-chart.png)
