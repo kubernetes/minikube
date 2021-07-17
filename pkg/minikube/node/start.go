@@ -742,7 +742,7 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 func warnVirtualBox() {
 	var altDriverList strings.Builder
 	for _, choice := range driver.Choices(true) {
-		if choice.Name != "virtualbox" && choice.Priority != registry.Discouraged && !(choice.Name == "vmware" && !choice.State.Installed) {
+		if choice.Name != "virtualbox" && choice.Priority != registry.Discouraged && !(choice.Name == "vmware" && !(choice.State.Installed && choice.State.Healthy)) {
 			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
 		}
 	}
