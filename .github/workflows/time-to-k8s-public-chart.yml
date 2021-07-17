@@ -2,8 +2,8 @@ name: "time-to-k8s Public Chart"
 on:
   workflow_dispatch:
   schedule:
-    # every day at noon pacific/7 pm UTC
-    - cron: "0 19 * * *"
+    # every day at 7am & 7pm pacific
+    - cron: "0 2,14 * * *"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: 1.16.5
