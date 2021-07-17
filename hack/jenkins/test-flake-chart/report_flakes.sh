@@ -74,7 +74,7 @@ fi
 
 # Create the comment template.
 TMP_COMMENT=$(mktemp)
-printf "These are the flake rates of all failed tests per %s.\n|Environment|Failed Tests|Flake Rate (%%)|\n|---|---|---|\n" "$ENVIRONMENT" > "$TMP_COMMENT"
+printf "These are the flake rates of all failed tests.\n|Environment|Failed Tests|Flake Rate (%%)|\n|---|---|---|\n" > "$TMP_COMMENT"
 # 1) Get the first $MAX_REPORTED_TESTS lines.
 # 2) Print a row in the table with the environment, test name, flake rate, and a link to the flake chart for that test.
 # 3) Append these rows to file $TMP_COMMENT.
@@ -87,7 +87,7 @@ if [[ "$FAILED_RATES_LINES" -gt 30 ]]; then
   printf "|More tests...|Continued...|\n\nToo many tests failed - See test logs for more details." >> "$TMP_COMMENT"
 fi
 
-printf "\n\nTo see the flake rates of all tests on $ENVIRONMENT, click [here](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=$ENVIRONMENT)." >> "$TMP_COMMENT"
+printf "\n\nTo see the flake rates of all tests by environment, click [here](https://minikube.sigs.k8s.io/docs/contrib/test_flakes/)." >> "$TMP_COMMENT"
 
 # install gh if not present
 "$DIR/../installers/check_install_gh.sh"
