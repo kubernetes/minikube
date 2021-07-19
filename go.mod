@@ -93,7 +93,7 @@ require (
 	k8s.io/api v0.21.2
 	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.2
-	k8s.io/klog/v2 v2.9.0
+	k8s.io/klog/v2 v2.10.0
 	k8s.io/kubectl v0.21.2
 	k8s.io/kubernetes v1.21.2
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
