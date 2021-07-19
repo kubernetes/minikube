@@ -755,6 +755,8 @@ github.com/lucas-clemente/quic-go v0.10.2/go.mod h1:hvaRS9IHjFLMq76puFJeWNfmn+H7
 github.com/lucas-clemente/quic-go-certificates v0.0.0-20160823095156-d2f86524cced/go.mod h1:NCcRLrOTZbzhZvixZLlERbJtDtYsmMw8Jc4vS8Z0g58=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.3 h1:CIdHhp5vSr+7i3DYmXyJHjVOeo27AGWtvq5SfmjyMVs=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.3/go.mod h1:p2hY99UqqG4FNLvAotM0K5kPlShyQ486ymrkNqv1NiA=
+github.com/machine-drivers/machine v0.7.1-0.20210718075337-753b247c76dd h1:p2X96xq/K8m9ai7C5DErfzKS4nlYqR61jilrApWvaW8=
+github.com/machine-drivers/machine v0.7.1-0.20210718075337-753b247c76dd/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.5 h1:b6kJs+EmPFMYGkow9GiUyCyOvIwYetYJ3fSaWak/Gls=
@@ -1049,8 +1051,6 @@ github.com/spf13/viper v1.4.0/go.mod h1:PTJ7Z/lr49W6bUbkmS1V3by4uWynFiR9p7+dSq/y
 github.com/spf13/viper v1.7.0/go.mod h1:8WkrPz2fc9jxqZNCJI/76HCieCp4Q8HaLFoCha5qpdg=
 github.com/spf13/viper v1.8.1 h1:Kq1fyeebqsBfbjZj4EL7gj2IO0mMaiyjYUWcUsl2O44=
 github.com/spf13/viper v1.8.1/go.mod h1:o0Pch8wJ9BVSWGQMbra6iw0oQ5oktSIBaujf1rJH9Ns=
-github.com/spowelljr/machine v0.7.1-0.20210716203536-5648625a5a47 h1:/H1fgMytJsSrYL/c2itPRGH4HZL1NVsghKQHxNurYAA=
-github.com/spowelljr/machine v0.7.1-0.20210716203536-5648625a5a47/go.mod h1:h0CsozYxblOtXrljLS28Cf7pH9kl2b/2f1QVTDiVX4c=
 github.com/stefanberger/go-pkcs11uri v0.0.0-20201008174630-78d3cae3a980/go.mod h1:AO3tvPzVZ/ayst6UlUKUv6rcPQInYe3IknH3jYhAKu8=
 github.com/storageos/go-api v2.2.0+incompatible/go.mod h1:ZrLn+e0ZuF3Y65PNF6dIwbJPZqfmtCXxFm9ckv0agOY=
 github.com/stretchr/objx v0.0.0-20180129172003-8a3f7159479f/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
