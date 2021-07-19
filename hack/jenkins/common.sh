@@ -96,6 +96,9 @@ fi
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
 
+# install gotestsum if not present
+GOROOT="/usr/local/go" ./installers/check_install_gotestsum.sh || true
+
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
 docker system df || true
@@ -360,11 +363,20 @@ then
     EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
 fi
 
-${SUDO_PREFIX}${E2E_BIN} \
-  -minikube-start-args="--driver=${DRIVER} ${EXTRA_START_ARGS}" \
-  -test.timeout=${TIMEOUT} -test.v \
-  ${EXTRA_TEST_ARGS} \
-  -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
+if test -f "${JSON_OUT}"; then
+  rm "${JSON_OUT}" || true # clean up previous runs of same build
+fi
+
+touch "${JSON_OUT}"
+
+gotestsum --jsonfile "${JSON_OUT}" -f standard-verbose --raw-command -- \
+  go tool test2json -t \
+  ${SUDO_PREFIX}${E2E_BIN} \
+    -minikube-start-args="--driver=${DRIVER} ${EXTRA_START_ARGS}" \
+    -test.timeout=${TIMEOUT} -test.v \
+    ${EXTRA_TEST_ARGS} \
+    -binary="${MINIKUBE_BIN}" 2>&1 \
+  | tee "${TEST_OUT}"
 
 result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
 set +x
@@ -385,18 +397,6 @@ elapsed=$(($e2e_end_time-$e2e_start_time))
 min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
-
-echo ">> Attmpting to convert test logs to json"
-if test -f "${JSON_OUT}"; then
-  rm "${JSON_OUT}" || true # clean up previous runs of same build
-fi
-
-touch "${JSON_OUT}"
-
-  
-# Generate JSON output
-echo ">> Running go test2json"
-go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 
 if ! type "jq" > /dev/null; then
 echo ">> Installing jq"
