@@ -756,8 +756,8 @@ github.com/lucas-clemente/quic-go v0.10.2/go.mod h1:hvaRS9IHjFLMq76puFJeWNfmn+H7
 github.com/lucas-clemente/quic-go-certificates v0.0.0-20160823095156-d2f86524cced/go.mod h1:NCcRLrOTZbzhZvixZLlERbJtDtYsmMw8Jc4vS8Z0g58=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.3 h1:CIdHhp5vSr+7i3DYmXyJHjVOeo27AGWtvq5SfmjyMVs=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.3/go.mod h1:p2hY99UqqG4FNLvAotM0K5kPlShyQ486ymrkNqv1NiA=
-github.com/machine-drivers/machine v0.7.1-0.20210306082426-fcb2ad5bcb17 h1:fQoDTuCuJ30R+D6TSB9SALB+J3jUMa8ID8YPfmSDA20=
-github.com/machine-drivers/machine v0.7.1-0.20210306082426-fcb2ad5bcb17/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
+github.com/machine-drivers/machine v0.7.1-0.20210719174735-6eca26732baa h1:RDn5zVjqpQP8yElV/30YUNiDsjksDSqq30JVQfo1wzY=
+github.com/machine-drivers/machine v0.7.1-0.20210719174735-6eca26732baa/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.5 h1:b6kJs+EmPFMYGkow9GiUyCyOvIwYetYJ3fSaWak/Gls=
