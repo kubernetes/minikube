@@ -1,0 +1,30 @@
+name: "time-to-k8s Public Chart"
+on:
+  workflow_dispatch:
+  schedule:
+    # every day at 7am & 7pm pacific
+    - cron: "0 2,14 * * *"
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: 1.16.5
+jobs:
+  time-to-k8s-public-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{env.GO_VERSION}}
+          stable: true
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_TIME_TO_K8S_SA_KEY }}
+          export_default_credentials: true
+      - name: Benchmark time-to-k8s for Docker
+        run: |
+          ./hack/benchmark/time-to-k8s/public-chart/public-chart.sh docker
+      - name: Benchmark time-to-k8s for Containerd
+        run: |
+          ./hack/benchmark/time-to-k8s/public-chart/public-chart.sh containerd
