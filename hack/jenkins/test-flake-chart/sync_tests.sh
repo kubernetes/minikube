@@ -75,6 +75,9 @@ echo "${FINISHED_LIST_JOINED}" > ${FINISHED_LIST}
 # Get directory of this script.
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
+# Ensure jq is installed on this machine.
+sudo apt-get install jq -y
+
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   for ENVIRONMENT in ${STARTED_LIST}; do
     SUMMARY="${BUCKET_PATH}/${ENVIRONMENT}_summary.json"

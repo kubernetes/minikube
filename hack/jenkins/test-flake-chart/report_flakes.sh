@@ -35,14 +35,19 @@ MAX_REPORTED_TESTS=30
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 TMP_DATA=$(mktemp)
-# 1) Process the data in each gopogh summary.
-# 2) Filter tests to only include failed tests (and only get their names and environment).
-# 3) Sort by environment, then test name.
-# 4) Store in file $TMP_DATA.
-gsutil cat $(< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\/; s/$/_summary.json/") \
+# 1) Process the ENVIRONMENT_LIST to turn them into valid GCS URLs.
+# 2) Check to see if the files are present. Ignore any missing files.
+# 3) Cat the gopogh summaries together.
+# 4) Process the data in each gopogh summary.
+# 5) Filter tests to only include failed tests (and only get their names and environment).
+# 6) Sort by environment, then test name.
+# 7) Store in file $TMP_DATA.
+< "${ENVIRONMENT_LIST}" sed -r "s/^/gs:\\/\\/minikube-builds\\/logs\\/${PR_NUMBER}\\/${SHORT_COMMIT}\\//; s/$/_summary.json/" \
+  | (xargs gsutil ls || true) \
+  | xargs gsutil cat \
   | "$DIR/process_data.sh" \
   | sed -n -r -e "s/[0-9a-f]*,[0-9-]*,([a-zA-Z\/_0-9-]*),([a-zA-Z\/_0-9-]*),Failed,[.0-9]*/\1:\2/p" \
-  | sort -t, -k\
+  | sort \
   > "$TMP_DATA"
 
 # Download the precomputed flake rates from the GCS bucket into file $TMP_FLAKE_RATES.
@@ -69,12 +74,12 @@ fi
 
 # Create the comment template.
 TMP_COMMENT=$(mktemp)
-printf "These are the flake rates of all failed tests per %s.\n|Environment|Failed Tests|Flake Rate (%%)|\n|---|---|---|\n" "$ENVIRONMENT" > "$TMP_COMMENT"
+printf "These are the flake rates of all failed tests.\n|Environment|Failed Tests|Flake Rate (%%)|\n|---|---|---|\n" > "$TMP_COMMENT"
 # 1) Get the first $MAX_REPORTED_TESTS lines.
 # 2) Print a row in the table with the environment, test name, flake rate, and a link to the flake chart for that test.
 # 3) Append these rows to file $TMP_COMMENT.
 < "$TMP_FAILED_RATES" head -n $MAX_REPORTED_TESTS \
-  | sed -n -r -e "s/([a-zA-Z\/0-9_-]*):([a-zA-Z\/0-9_-]*),([.0-9]*)/|\1|\2|\3 ([chart](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=\1\&test=\2))|/p" \
+  | sed -n -r -e "s/([a-zA-Z\/0-9_-]*):([a-zA-Z\/0-9_-]*),([.0-9]*)/|[\1](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=\1))|\2|\3 ([chart](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=\1\&test=\2))|/p" \
   >> "$TMP_COMMENT"
 
 # If there are too many failing tests, add an extra row explaining this, and a message after the table.
@@ -82,7 +87,7 @@ if [[ "$FAILED_RATES_LINES" -gt 30 ]]; then
   printf "|More tests...|Continued...|\n\nToo many tests failed - See test logs for more details." >> "$TMP_COMMENT"
 fi
 
-printf "\n\nTo see the flake rates of all tests on $ENVIRONMENT, click [here](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=$ENVIRONMENT)." >> "$TMP_COMMENT"
+printf "\n\nTo see the flake rates of all tests by environment, click [here](https://minikube.sigs.k8s.io/docs/contrib/test_flakes/)." >> "$TMP_COMMENT"
 
 # install gh if not present
 "$DIR/../installers/check_install_gh.sh"
