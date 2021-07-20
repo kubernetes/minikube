@@ -107,6 +107,10 @@ func Styled(st style.Enum, format string, a ...V) {
 	}
 	outStyled, spinner := stylized(st, useColor, format, a...)
 	if spinner {
+		if !isatty.IsTerminal(os.Stdout.Fd()) {
+			spin.Prefix = "\n"
+		}
+
 		spinnerString(outStyled)
 	} else {
 		String(outStyled)
