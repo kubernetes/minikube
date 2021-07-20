@@ -738,16 +738,16 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	return nil
 }
 
-// prints a warning to the console against the use of the 'virtualbox' driver, if alternatives are available
+// prints a warning to the console against the use of the 'virtualbox' driver, if alternatives are available and healthy
 func warnVirtualBox() {
 	var altDriverList strings.Builder
 	for _, choice := range driver.Choices(true) {
-		if choice.Name != "virtualbox" && choice.Priority != registry.Discouraged && !(choice.Name == "vmware" && !(choice.State.Installed && choice.State.Healthy)) {
+		if choice.Name != "virtualbox" && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
 			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
 		}
 	}
 
 	if altDriverList.Len() != 0 {
-		out.Boxed("There are alternative drivers to virtualbox for better performance and support, consider using them {{.drivers}} \nTo turn this warning off use `minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
+		out.Boxed("You have selected Virtualbox driver, but there are better options, for better performance and support consider using a different driver: {{.drivers}} \nTo turn off this suggestion run \n`minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
 	}
 }
