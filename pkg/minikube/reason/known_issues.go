@@ -1164,7 +1164,7 @@ var controlPlaneIssues = []match{
 	},
 	{
 		Kind: Kind{
-			ID:           "K8S_UNHEALTHY_CONTROL_PLANE,
+			ID:           "K8S_UNHEALTHY_CONTROL_PLANE",
 			ExitCode:     ExControlPlaneTimeout,
 			Advice:       "Control Plane could not update, try minikube delete --all --purge",
 			NewIssueLink: true,
