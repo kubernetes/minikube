@@ -109,14 +109,26 @@ if [ "$release" = false ]; then
 	gh pr comment ${ghprbPullId} --body "${message}"
 else
 	# We're releasing, so open a new PR with the newly released kicbase
-	
+
+	CONTAINER_ID=$(docker create $GCR_IMG)
+	IMG_TOOLS=$(mktemp)
+	docker cp "$CONTAINER_ID:/tools.csv" "$IMG_TOOLS"
+	docker rm "$CONTAINER_ID" > /dev/null
+	OTHER_KIC_VERSION_COUNT=$(ls site/content/en/docs/releaseInfo/kicToolVersions \
+		| sed "/^${KIC_VERSION}\.md$/ d; /_index\.md/ d" \
+		| wc -l)
+	TOOL_CELLS="$(< "$IMG_TOOLS" awk -F, 'NR>1 { printf "|%s|%s|\\n", $1, $2 }')"
+	sed "s/{{.Version}}/${KIC_VERSION}/g; s/{{.Order}}/${OTHER_KIC_VERSION_COUNT}/g; s/{{.ToolCells}}/${TOOL_CELLS}/" ./hack/jenkins/misc/kicbase_tool_versions.md.tmpl \
+		> "site/content/en/docs/releaseInfo/kicToolVersions/${KIC_VERSION}.md"
+	rm $IMG_TOOLS
+
 	branch=kicbase-release-${KIC_VERSION}
 	git checkout -b ${branch}
 
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go
 	make generate-docs
 
-	git add pkg/drivers/kic/types.go site/content/en/docs/commands/start.md
+	git add pkg/drivers/kic/types.go site/content/en/docs/commands/start.md "site/content/en/docs/releaseInfo/kicToolVersions/${KIC_VERSION}.md"
 	git commit -m "Update kicbase to ${KIC_VERSION}"
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
