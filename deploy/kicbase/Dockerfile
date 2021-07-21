@@ -37,6 +37,7 @@ COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.con
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY --from=0 /src/cmd/auto-pause/auto-pause /bin/auto-pause
+COPY deploy/kicbase/gen_tool_versions.sh /gen_tool_versions.sh
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -204,4 +205,8 @@ RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
   /usr/share/local/* 
+
+# Collect version info of each tool and store in `/tools.csv`
+RUN /gen_tool_versions.sh > "/tools.csv" && rm /gen_tool_versions.sh
+
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"

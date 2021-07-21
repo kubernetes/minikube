@@ -52,6 +52,7 @@ var versionCmd = &cobra.Command{
 		if listComponentsVersions && !shortVersion {
 			co := mustload.Running(ClusterFlagValue())
 			runner := co.CP.Runner
+			// If changed, consider changing `deploy/kicbase/gen_tool_versions.sh`
 			versionCMDS := map[string]*exec.Cmd{
 				"docker":     exec.Command("docker", "version", "--format={{.Client.Version}}"),
 				"containerd": exec.Command("containerd", "--version"),
