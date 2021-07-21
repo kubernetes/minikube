@@ -520,27 +520,22 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 	// get Pod names
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
 	if err != nil {
-		t.Errorf("failed get Pod names")
+		t.Fatalf("failed to get Pod names: %v", err)
 	}
 	podNames := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 
 	for _, name := range podNames {
 		// get host.minikube.internal ip as resolved by nslookup
-		if out, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3")); err != nil {
+		out, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3"))
+		if err != nil {
 			t.Errorf("Pod %s could not resolve 'host.minikube.internal': %v", name, err)
-		} else {
-			hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
-			// get node's eth0 network
-			if out, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "ip -4 -br -o a s eth0 | tr -s ' ' | cut -d' ' -f3")); err != nil {
-				t.Errorf("Error getting eth0 IP of node %s: %v", profile, err)
-			} else {
-				if _, nodeNet, err := net.ParseCIDR(strings.TrimSpace(out.Stdout.String())); err != nil {
-					t.Errorf("Error parsing eth0 IP of node %s: %v", profile, err)
-					// check if host ip belongs to node's eth0 network
-				} else if !nodeNet.Contains(hostIP) {
-					t.Errorf("Pod %s resolved 'host.minikube.internal' to %s while node's eth0 network is %s", name, hostIP, nodeNet)
-				}
-			}
+			continue
+		}
+		hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
+		// try pinging host from pod
+		ping := fmt.Sprintf("ping -c 1 %s", hostIP)
+		if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", ping)); err != nil {
+			t.Errorf("Failed to ping host (%s) from pod (%s): %v", hostIP, name, err)
 		}
 	}
 }
