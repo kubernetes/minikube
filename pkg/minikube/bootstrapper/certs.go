@@ -349,6 +349,9 @@ func collectCACerts() (map[string]string, error) {
 	for _, certsDir := range dirs {
 		err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
 			if err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
 				return err
 			}
 			if info == nil {
