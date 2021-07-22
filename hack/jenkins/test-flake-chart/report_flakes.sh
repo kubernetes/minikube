@@ -79,7 +79,7 @@ printf "These are the flake rates of all failed tests.\n|Environment|Failed Test
 # 2) Print a row in the table with the environment, test name, flake rate, and a link to the flake chart for that test.
 # 3) Append these rows to file $TMP_COMMENT.
 < "$TMP_FAILED_RATES" head -n $MAX_REPORTED_TESTS \
-  | sed -n -r -e "s/([a-zA-Z\/0-9_-]*):([a-zA-Z\/0-9_-]*),([.0-9]*)/|[\1](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=\1))|\2|\3 ([chart](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=\1\&test=\2))|/p" \
+  | sed -n -r -e "s/([a-zA-Z\/0-9_-]*):([a-zA-Z\/0-9_-]*),([.0-9]*)/|[\1](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=\1)|\2|\3 ([chart](https:\/\/storage.googleapis.com\/minikube-flake-rate\/flake_chart.html?env=\1\&test=\2))|/p" \
   >> "$TMP_COMMENT"
 
 # If there are too many failing tests, add an extra row explaining this, and a message after the table.
