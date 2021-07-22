@@ -79,11 +79,12 @@ printf "These are the flake rates of all failed tests.\n|Environment|Failed Test
 # Create variables to use for sed command.
 ENV_CHART_LINK_FORMAT="https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=\1"
 TEST_CHART_LINK_FORMAT="${ENV_CHART_LINK_FORMAT}\&test=\2"
+TEST_GOPOGH_LINK_FORMAT="https://storage.googleapis.com/minikube-builds/logs/${PR_NUMBER}/${SHORT_COMMIT}/\1.html#fail_\2"
 # 1) Get the first $MAX_REPORTED_TESTS lines.
 # 2) Print a row in the table with the environment, test name, flake rate, and a link to the flake chart for that test.
 # 3) Append these rows to file $TMP_COMMENT.
 < "$TMP_FAILED_RATES" head -n $MAX_REPORTED_TESTS \
-  | sed -n -r -e "s|([a-zA-Z\/0-9_-]*):([a-zA-Z\/0-9_-]*),([.0-9]*)|\|[\1](${ENV_CHART_LINK_FORMAT})\|\2\|\3 ([chart](${TEST_CHART_LINK_FORMAT}))\||p" \
+  | sed -n -r -e "s|([a-zA-Z\/0-9_-]*):([a-zA-Z\/0-9_-]*),([.0-9]*)|\|[\1](${ENV_CHART_LINK_FORMAT})\|\2 ([gopogh](${TEST_GOPOGH_LINK_FORMAT}))\|\3 ([chart](${TEST_CHART_LINK_FORMAT}))\||p" \
   >> "$TMP_COMMENT"
 
 # If there are too many failing tests, add an extra row explaining this, and a message after the table.
