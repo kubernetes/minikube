@@ -46,13 +46,13 @@ if [[ -z $KIC_VERSION ]]; then
 	now=$(date +%s)
 	KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
 	GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
-	DH_REPO=kicbase/build
+	DH_REPO=docker.io/kicbase/build
 	export KIC_VERSION=$KV-$now-$ghprbPullId
 else
 	# Actual kicbase release here
 	release=true
 	GCR_REPO=${GCR_REPO:-gcr.io/k8s-minikube/kicbase}
-	DH_REPO=${DH_REPO:-kicbase/stable}
+	DH_REPO=${DH_REPO:-docker.io/kicbase/stable}
 	export KIC_VERSION
 fi
 GCR_IMG=${GCR_REPO}:${KIC_VERSION}

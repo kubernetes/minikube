@@ -91,8 +91,8 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.21.3
-	k8s.io/apimachinery v0.21.2
-	k8s.io/client-go v0.21.2
+	k8s.io/apimachinery v0.21.3
+	k8s.io/client-go v0.21.3
 	k8s.io/klog/v2 v2.10.0
 	k8s.io/kubectl v0.21.3
 	k8s.io/kubernetes v1.21.2
