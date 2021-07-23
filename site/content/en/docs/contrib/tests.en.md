@@ -173,7 +173,7 @@ validates a minimalist MySQL deployment
 to check existence of the test file
 
 #### validateCertSync
-to check existence of the test certificate
+checks to make sure a custom cert has been copied into the minikube guest and installed correctly
 
 #### validateNotActiveRuntimeDisabled
 asserts that for a given runtime, the other runtimes disabled, for example for containerd runtime, docker and crio needs to be not running
