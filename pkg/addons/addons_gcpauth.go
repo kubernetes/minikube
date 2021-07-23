@@ -162,15 +162,15 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 				}
 
 				if Refresh {
-					err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{})
+					_, err := secrets.Update(context.TODO(), secretObj, metav1.UpdateOptions{})
 					if err != nil {
 						klog.Infof("error deleting secret: %v", err)
 					}
-				}
-
-				_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
-				if err != nil {
-					return err
+				} else {
+					_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
+					if err != nil {
+						return err
+					}
 				}
 			}
 
