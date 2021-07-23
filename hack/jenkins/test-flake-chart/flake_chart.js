@@ -267,6 +267,7 @@ function createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePe
   tableHeaderRow.appendChild(createCell("th", "Recent Flake Percentage"));
   tableHeaderRow.appendChild(createCell("th", "Growth (since last 15 days)"));
   table.appendChild(tableHeaderRow);
+  const tableBody = document.createElement("tbody");
   for (let i = 0; i < recentFlakePercentage.length; i++) {
     const {testName, flakeRate} = recentFlakePercentage[i];
     const row = document.createElement("tr");
@@ -276,8 +277,10 @@ function createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePe
     const growth = previousFlakePercentageMap.has(testName) ?
       flakeRate - previousFlakePercentageMap.get(testName) : 0;
     row.appendChild(createCell("td", `<span style="color: ${growth === 0 ? "black" : (growth > 0 ? "red" : "green")}">${growth > 0 ? '+' + growth.toFixed(2) : growth.toFixed(2)}%</span>`));
-    table.appendChild(row);
+    tableBody.appendChild(row);
   }
+  table.appendChild(tableBody);
+  new Tablesort(table);
   return table;
 }
 
@@ -499,7 +502,11 @@ function displayEnvironmentChart(testData, environmentName) {
     chart.draw(data, options);
   }
 
-  document.body.appendChild(createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePercentageMap, environmentName));
+  document.body.appendChild(
+    createRecentFlakePercentageTable(
+      recentFlakePercentage,
+      previousFlakePercentageMap,
+      environmentName));
 }
 
 async function init() {
