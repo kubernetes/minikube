@@ -14,7 +14,7 @@
 
 mkdir -p out
 
-(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.8.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
+(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
 (New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.6.4/gotestsum_1.6.4_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
 tar --directory "C:\Go\bin\" -xzvf "$env:TEMP\gotestsum.tar.gz" "gotestsum.exe"
 
