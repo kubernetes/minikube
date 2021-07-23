@@ -339,54 +339,60 @@ func isValidPEMCertificate(filePath string) (bool, error) {
 	return false, nil
 }
 
-// collectCACerts looks up all PEM certificates with .crt or .pem extension in ~/.minikube/certs to copy to the host.
+// collectCACerts looks up all PEM certificates with .crt or .pem extension in ~/.minikube/certs or ~/.minikube/files/etc/ssl/certs to copy to the host.
 // minikube root CA is also included but libmachine certificates (ca.pem/cert.pem) are excluded.
 func collectCACerts() (map[string]string, error) {
 	localPath := localpath.MiniPath()
 	certFiles := map[string]string{}
 
-	certsDir := filepath.Join(localPath, "certs")
-	err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info == nil {
-			return nil
-		}
-		if info.IsDir() {
-			return nil
-		}
-
-		fullPath := filepath.Join(certsDir, hostpath)
-		ext := strings.ToLower(filepath.Ext(hostpath))
-
-		if ext == ".crt" || ext == ".pem" {
-			if info.Size() < 32 {
-				klog.Warningf("ignoring %s, impossibly tiny %d bytes", fullPath, info.Size())
+	dirs := []string{filepath.Join(localPath, "certs"), filepath.Join(localPath, "files", "etc", "ssl", "certs")}
+	for _, certsDir := range dirs {
+		err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
+				return err
+			}
+			if info == nil {
+				return nil
+			}
+			if info.IsDir() {
 				return nil
 			}
 
-			klog.Infof("found cert: %s (%d bytes)", fullPath, info.Size())
+			fullPath := filepath.Join(certsDir, hostpath)
+			ext := strings.ToLower(filepath.Ext(hostpath))
 
-			validPem, err := isValidPEMCertificate(hostpath)
-			if err != nil {
-				return err
-			}
+			if ext == ".crt" || ext == ".pem" {
+				if info.Size() < 32 {
+					klog.Warningf("ignoring %s, impossibly tiny %d bytes", fullPath, info.Size())
+					return nil
+				}
 
-			if validPem {
-				filename := filepath.Base(hostpath)
-				dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
-				certFiles[hostpath] = path.Join(vmpath.GuestCertAuthDir, dst)
+				klog.Infof("found cert: %s (%d bytes)", fullPath, info.Size())
+
+				validPem, err := isValidPEMCertificate(hostpath)
+				if err != nil {
+					return err
+				}
+
+				if validPem {
+					filename := filepath.Base(hostpath)
+					dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
+					certFiles[hostpath] = path.Join(vmpath.GuestCertAuthDir, dst)
+				}
 			}
+			return nil
+		})
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "provisioning: traversal certificates dir %s", certsDir)
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "provisioning: traversal certificates dir %s", certsDir)
-	}
 
-	for _, excluded := range []string{"ca.pem", "cert.pem"} {
-		certFiles[filepath.Join(certsDir, excluded)] = ""
+		for _, excluded := range []string{"ca.pem", "cert.pem"} {
+			certFiles[filepath.Join(certsDir, excluded)] = ""
+		}
 	}
 
 	// populates minikube CA
