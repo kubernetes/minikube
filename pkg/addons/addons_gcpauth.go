@@ -161,10 +161,10 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 					Type: "kubernetes.io/dockercfg",
 				}
 
-				if Refresh {
+				if exists && Refresh {
 					_, err := secrets.Update(context.TODO(), secretObj, metav1.UpdateOptions{})
 					if err != nil {
-						klog.Infof("error deleting secret: %v", err)
+						return err
 					}
 				} else {
 					_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
