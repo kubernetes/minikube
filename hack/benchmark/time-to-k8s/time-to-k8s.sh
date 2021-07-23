@@ -32,7 +32,6 @@ install_minikube() {
 }
 
 run_benchmark() {
-	pwd
 	( cd ./hack/benchmark/time-to-k8s/time-to-k8s-repo/ &&
 		git submodule update --init &&
 		go run . --config local-kubernetes.yaml --iterations 10 --output output.csv )
@@ -43,7 +42,7 @@ generate_chart() {
 }
 
 create_page() {
-	printf -- "---\ntitle: \"%s Benchmark\"\nlinkTitle: \"%s Benchmark\"\nweight: 1\n---\n\n![time-to-k8s](/images/benchmarks/timeToK8s/%s.png)\n" "$1" "$1" "$1" > ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
+	printf -- "---\ntitle: \"%s Benchmark\"\nlinkTitle: \"%s Benchmark\"\nweight: -$(date +'%Y%m%d')\n---\n\n![time-to-k8s](/images/benchmarks/timeToK8s/%s.png)\n" "$1" "$1" "$1" > ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
 }
 
 cleanup() {

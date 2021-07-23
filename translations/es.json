@@ -99,6 +99,7 @@
 	"Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ": "Considera crear un cluster con más memoria usando `minikube start --memory CANT_MB`",
 	"Consider increasing Docker Desktop's memory size.": "Considera incrementar la memoria asignada a Docker Desktop",
 	"Continuously listing/getting the status with optional interval duration.": "",
+	"Control Plane could not update, try minikube delete --all --purge": "",
 	"Copy the specified file into minikube": "",
 	"Copy the specified file into minikube, it will be saved at path \u003ctarget file absolute path\u003e in your minikube.\\nExample Command : \\\"minikube cp a.txt /home/docker/b.txt\\\"\\n                  \\\"minikube cp a.txt minikube-m02:/home/docker/b.txt\\\"\\n": "",
 	"Could not determine a Google Cloud project, which might be ok.": "No se pudo determinar un proyecto de Google Cloud que podría estar bien.",
