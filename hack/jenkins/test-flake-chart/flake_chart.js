@@ -197,60 +197,167 @@ function aggregateRuns(testRuns) {
     }));
 }
 
+// Takes a set of test runs (all of the same test), and aggregates them into one element per week.
+function aggregateWeeklyRuns(testRuns, weekDates) {
+  return testRuns
+    // Group runs by the date it ran.
+    .groupBy(run => weekDates.findRounded(run.date).getTime())
+    // Sort by run date, past to future.
+    .sort((a, b) => weekDates.findRounded(a[0].date) - weekDates.findRounded(b[0].date))
+    // Map each group to all variables need to format the rows.
+    .map(tests => ({
+      date: weekDates.findRounded(tests[0].date), // Get one of the dates from the tests, and use it to get the rounded time (which will all be the same).
+      flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
+      duration: tests.map(test => test.duration).average(), // Compute average duration of runs.
+      commitHashes: tests.map(test => ({ // Take all hashes, statuses, and durations of tests in this group.
+        hash: test.commit,
+        status: test.status,
+        duration: test.duration
+      })).groupBy(run => run.hash).map(runsWithSameHash => ({
+        hash: runsWithSameHash[0].hash,
+        failures: runsWithSameHash.map(run => run.status === testStatus.FAILED ? 1 : 0).sum(),
+        runs: runsWithSameHash.length,
+        duration: runsWithSameHash.map(run => run.duration).average(),
+      }))
+    }));
+}
+
 const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
 
 function displayTestAndEnvironmentChart(testData, testName, environmentName) {
-  const data = new google.visualization.DataTable();
-  data.addColumn('date', 'Date');
-  data.addColumn('number', 'Flake Percentage');
-  data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
-  data.addColumn('number', 'Duration');
-  data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
-
   const testRuns = testData
     // Filter to only contain unskipped runs of the requested test and requested environment.
     .filter(test => test.name === testName && test.environment === environmentName && test.status !== testStatus.SKIPPED);
+  const chartsContainer = document.getElementById('chart_div');
+  {
+    const data = new google.visualization.DataTable();
+    data.addColumn('date', 'Date');
+    data.addColumn('number', 'Flake Percentage');
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+    data.addColumn('number', 'Duration');
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
 
-  data.addRows(
-    aggregateRuns(testRuns)
-      .map(groupData => [
-        groupData.date,
-        groupData.flakeRate,
-        `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-          <b>${groupData.date.toString()}</b><br>
-          <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
-          <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
-        </div>`,
-        groupData.duration,
-        `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-          <b>${groupData.date.toString()}</b><br>
-          <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
-          <b>Hashes:</b><br>
-          ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
-        </div>`,
-      ])
-  );
+    data.addRows(
+      aggregateRuns(testRuns)
+        .map(groupData => [
+          groupData.date,
+          groupData.flakeRate,
+          `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+            <b>${groupData.date.toString()}</b><br>
+            <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
+            <b>Hashes:</b><br>
+            ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+          </div>`,
+          groupData.duration,
+          `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+            <b>${groupData.date.toString()}</b><br>
+            <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
+            <b>Hashes:</b><br>
+            ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
+          </div>`,
+        ])
+    );
 
-  const options = {
-    title: `Flake rate and duration by day of ${testName} on ${environmentName}`,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    pointSize: 10,
-    pointShape: "circle",
-    series: {
-      0: { targetAxisIndex: 0 },
-      1: { targetAxisIndex: 1 },
-    },
-    vAxes: {
-      0: { title: "Flake rate", minValue: 0, maxValue: 100 },
-      1: { title: "Duration (seconds)" },
-    },
-    colors: ['#dc3912', '#3366cc'],
-    tooltip: { trigger: "selection", isHtml: true }
-  };
-  const chart = new google.visualization.LineChart(document.getElementById('chart_div'));
-  chart.draw(data, options);
+    const options = {
+      title: `Flake rate and duration by day of ${testName} on ${environmentName}`,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      pointSize: 10,
+      pointShape: "circle",
+      series: {
+        0: { targetAxisIndex: 0 },
+        1: { targetAxisIndex: 1 },
+      },
+      vAxes: {
+        0: { title: "Flake rate", minValue: 0, maxValue: 100 },
+        1: { title: "Duration (seconds)" },
+      },
+      colors: ['#dc3912', '#3366cc'],
+      tooltip: { trigger: "selection", isHtml: true }
+    };
+    const flakeRateContainer = document.createElement("div");
+    flakeRateContainer.style.width = "100vw";
+    flakeRateContainer.style.height = "100vh";
+    chartsContainer.appendChild(flakeRateContainer);
+    const chart = new google.visualization.LineChart(flakeRateContainer);
+    chart.draw(data, options);
+  }
+  {
+    const dates = testRuns.map(run => run.date.getTime());
+    const startDate = new Date(Math.min(...dates));
+    const endDate = new Date(Math.max(...dates));
+  
+    const weekDates = [];
+    let currentDate = startDate;
+    while (currentDate < endDate) {
+      weekDates.push(currentDate);
+      currentDate = new Date(currentDate);
+      currentDate.setDate(currentDate.getDate() + 7);
+    }
+    weekDates.push(currentDate);
+    weekDates.findRounded = function (value) {
+      let index = this.findIndex(v => value < v);
+      if (index == 0) {
+        return this[index];
+      }
+      if (index < 0) {
+        index = this.length;
+      }
+      return this[index - 1];
+    }
+
+    const data = new google.visualization.DataTable();
+    data.addColumn('date', 'Date');
+    data.addColumn('number', 'Flake Percentage');
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+    data.addColumn('number', 'Duration');
+    data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+
+    data.addRows(
+      aggregateWeeklyRuns(testRuns, weekDates)
+        .map(groupData => [
+          groupData.date,
+          groupData.flakeRate,
+          `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+            <b>${groupData.date.toString()}</b><br>
+            <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
+            <b>Hashes:</b><br>
+            ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+          </div>`,
+          groupData.duration,
+          `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+            <b>${groupData.date.toString()}</b><br>
+            <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
+            <b>Hashes:</b><br>
+            ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
+          </div>`,
+        ])
+    );
+
+    const options = {
+      title: `Flake rate and duration by week of ${testName} on ${environmentName}`,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      pointSize: 10,
+      pointShape: "circle",
+      series: {
+        0: { targetAxisIndex: 0 },
+        1: { targetAxisIndex: 1 },
+      },
+      vAxes: {
+        0: { title: "Flake rate", minValue: 0, maxValue: 100 },
+        1: { title: "Duration (seconds)" },
+      },
+      colors: ['#dc3912', '#3366cc'],
+      tooltip: { trigger: "selection", isHtml: true }
+    };
+    const flakeRateContainer = document.createElement("div");
+    flakeRateContainer.style.width = "100vw";
+    flakeRateContainer.style.height = "100vh";
+    chartsContainer.appendChild(flakeRateContainer);
+    const chart = new google.visualization.LineChart(flakeRateContainer);
+    chart.draw(data, options);
+  }
 }
 
 function createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePercentageMap, environmentName) {
@@ -364,6 +471,83 @@ function displayEnvironmentChart(testData, environmentName) {
     );
     const options = {
       title: `Flake rate by day of top ${topFlakes} of recent test flakiness (past ${dateRange} days) on ${environmentName}`,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      pointSize: 10,
+      pointShape: "circle",
+      vAxes: {
+        0: { title: "Flake rate", minValue: 0, maxValue: 100 },
+      },
+      tooltip: { trigger: "selection", isHtml: true }
+    };
+    const flakeRateContainer = document.createElement("div");
+    flakeRateContainer.style.width = "100vw";
+    flakeRateContainer.style.height = "100vh";
+    chartsContainer.appendChild(flakeRateContainer);
+    const chart = new google.visualization.LineChart(flakeRateContainer);
+    chart.draw(data, options);
+  }
+  {
+    const dates = testData.map(run => run.date.getTime());
+    const startDate = new Date(Math.min(...dates));
+    const endDate = new Date(Math.max(...dates));
+  
+    const weekDates = [];
+    let currentDate = startDate;
+    while (currentDate < endDate) {
+      weekDates.push(currentDate);
+      currentDate = new Date(currentDate);
+      currentDate.setDate(currentDate.getDate() + 7);
+    }
+    weekDates.push(currentDate);
+    weekDates.findRounded = function (value) {
+      let index = this.findIndex(v => value < v);
+      if (index == 0) {
+        return this[index];
+      }
+      if (index < 0) {
+        index = this.length;
+      }
+      return this[index - 1];
+    }
+    const aggregatedWeeklyRuns = new Map(testRuns.map(test => [
+      test[0].name,
+      new Map(aggregateWeeklyRuns(test, weekDates)
+        .map(runDate => [ weekDates.findRounded(runDate.date).getTime(), runDate ]))]));
+    const uniqueWeekDates = new Set();
+    for (const [_, runDateMap] of aggregatedWeeklyRuns) {
+      for (const [dateTime, _] of runDateMap) {
+        uniqueWeekDates.add(dateTime);
+      }
+    }
+    const orderedWeekDates = Array.from(uniqueWeekDates).sort();
+    const recentWeeklyTopFlakes = computeFlakePercentage(aggregatedWeeklyRuns, [orderedWeekDates[orderedWeekDates.length - 1]])
+      .sort((a, b) => b.flakeRate - a.flakeRate)
+      .slice(0, topFlakes)
+      .map(({testName}) => testName);
+    const data = new google.visualization.DataTable();
+    data.addColumn('date', 'Date');
+    for (const name of recentWeeklyTopFlakes) {
+      data.addColumn('number', `Flake Percentage - ${name}`);
+      data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+    }
+    data.addRows(
+      orderedWeekDates.map(dateTime => [new Date(dateTime)].concat(recentTopFlakes.map(name => {
+        const data = aggregatedWeeklyRuns.get(name).get(dateTime);
+        return data !== undefined ? [
+          data.flakeRate,
+          `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
+            <b style="display: block">${name}</b><br>
+            <b>${data.date.toString()}</b><br>
+            <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
+            <b>Hashes:</b><br>
+            ${data.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+          </div>`
+        ] : [null, null];
+      })).flat())
+    );
+    const options = {
+      title: `Flake rate by week of top ${topFlakes} of recent test flakiness (past week) on ${environmentName}`,
       width: window.innerWidth,
       height: window.innerHeight,
       pointSize: 10,
