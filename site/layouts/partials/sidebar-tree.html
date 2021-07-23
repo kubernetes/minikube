@@ -68,7 +68,7 @@
   <ul class="td-sidebar-nav__section pr-md-3">
     <li class="td-sidebar-nav__section-title">
       <!-- Link for subections -->
-      <a href="{{ $s.RelPermalink }}" class="align-left pl-0 pr-2{{ if not $expandSection }} collapsed{{ end }}{{ if $activeSection}} active{{ end }} td-sidebar-link td-sidebar-link__section">{{ $s.LinkTitle }}</a>
+      <a href="{{ $s.RelPermalink }}" class="align-left pl-0 pr-2{{ if not $expandSection }} collapsed{{ end }}{{ if $activeSection}} active{{ end }} td-sidebar-link td-sidebar-link__section">🍀 {{ $s.LinkTitle }}</a>
     </li>
     <ul>
       <li class="collapse {{ if $showSection }}show{{ end }}" id="{{ $sid }}">
@@ -100,7 +100,7 @@
           {{ end }}
 
           {{ if $showPage }}
-            <a class="td-sidebar-link td-sidebar-link__page {{ if $activePage }} active{{ end }}" id="{{ $mid }}" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+            <a class="td-sidebar-link td-sidebar-link__page {{ if $activePage }} active{{ end }}" id="{{ $mid }}" href="{{ .RelPermalink }}"> ➔ {{ .LinkTitle }}</a>
           {{ end }}
 
           {{/* end minikube hack */}}
