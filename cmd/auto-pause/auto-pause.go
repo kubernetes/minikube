@@ -54,7 +54,6 @@ func main() {
 			" not current value of {{.interval}}", out.V{"interval": interval.String()})
 	}
 	tickerChannel := time.NewTicker(interval)
-	defer tickerChannel.Stop()
 
 	// Check current state
 	alreadyPaused()
