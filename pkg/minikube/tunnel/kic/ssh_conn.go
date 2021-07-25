@@ -157,6 +157,7 @@ func (c *sshConn) startAndWait() error {
 
 func (c *sshConn) stop() error {
 	if c.activeConn {
+		c.activeConn = false
 		out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
 		return c.cmd.Process.Kill()
 	}
