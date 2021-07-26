@@ -168,6 +168,10 @@ Array.prototype.groupBy = function (keyGetter) {
   }, new Map()).values());
 };
 
+Array.prototype.oneOfEach = function (keyGetter) {
+  return Array.from(new Map(this.map(value => [ keyGetter(value), value ])).values());
+}
+
 // Parse URL search `query` into [{key, value}].
 function parseUrlQuery(query) {
   if (query[0] === '?') {
@@ -572,76 +576,65 @@ function displayEnvironmentChart(testData, environmentName) {
     chart.draw(data, options);
   }
   {
-    // Group test runs by their date, then by their commit, and finally by test names.
-    const testCountData = testData
-      // Group by date.
-      .groupBy(run => run.date.getTime())
-      .map(runDate => ({
-        date: runDate[0].date,
-        commits: runDate
-          // Group by commit
-          .groupBy(run => run.commit)
-          .map(commitRuns => commitRuns
-            // Group by test name.
-            .groupBy(commitRun => commitRun.name)
-            // Consolidate tests of a single name into a single object.
-            .reduce((accum, commitTestRuns) => ({
-              commit: commitTestRuns[0].commit,
-              // The total number of times any test ran.
-              sumTestCount: accum.sumTestCount + commitTestRuns.length,
-              // The total number of times any test failed.
-              sumFailCount: accum.sumFailCount + commitTestRuns.filter(run => run.status === testStatus.FAILED).length,
-              // The most number of times any test name ran (this will be a proxy for the number of integration jobs were triggered).
-              maxRunCount: Math.max(accum.maxRunCount, commitTestRuns.length),
-            }), {
-              sumTestCount: 0,
-              sumFailCount: 0,
-              maxRunCount: 0
+    const jobData = 
+      testData
+        .groupBy(run => run.date.getTime())
+        .map(runDate => ({
+          date: runDate[0].date,
+          runInfo: runDate
+            .oneOfEach(run => run.rootJob)
+            .map(run => ({
+              commit: run.commit,
+              rootJob: run.rootJob,
+              testCount: run.testCount,
+              totalDuration: run.totalDuration
             }))
-      }))
-      .map(dateInfo => ({
-        ...dateInfo,
-        // Use the commit data of each date to compute the average test count and average fail count for the day.
-        testCount: dateInfo.commits.reduce(
-          (accum, commitInfo) => accum + (commitInfo.sumTestCount / commitInfo.maxRunCount), 0) / dateInfo.commits.length,
-        failCount: dateInfo.commits.reduce(
-          (accum, commitInfo) => accum + (commitInfo.sumFailCount / commitInfo.maxRunCount), 0) / dateInfo.commits.length,
-      }))
-      .sort((a, b) => a.date - b.date);
+        }))
+        .sort((a, b) => a.date - b.date)
+        .map(({date, runInfo}) => ({
+          date,
+          runInfo,
+          testCount: runInfo.map(job => job.testCount).average(),
+          totalDuration: runInfo.map(job => job.totalDuration).average(),
+        }));
 
     const data = new google.visualization.DataTable();
     data.addColumn('date', 'Date');
     data.addColumn('number', 'Test Count');
     data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
-    data.addColumn('number', 'Failed Tests');
+    data.addColumn('number', 'Duration');
     data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
     data.addRows(
-      testCountData.map(dateInfo => [
+      jobData.map(dateInfo => [
         dateInfo.date,
         dateInfo.testCount,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${dateInfo.date.toString()}</b><br>
           <b>Test Count (averaged): </b> ${+dateInfo.testCount.toFixed(2)}<br>
           <b>Hashes:</b><br>
-          ${dateInfo.commits.map(commit => `  - <a href="${hashToLink(commit.commit, environmentName)}">${commit.commit}</a> (Test count (averaged): ${+(commit.sumTestCount / commit.maxRunCount).toFixed(2)} [${commit.sumTestCount} tests / ${commit.maxRunCount} runs])`).join("<br>")}
+          ${dateInfo.runInfo.map(job => `  - <a href="${hashToLink(job.commit, environmentName)}">${job.commit}</a> (Job ${job.rootJob}) Test count: ${job.testCount}`).join("<br>")}
         </div>`,
-        dateInfo.failCount,
+        dateInfo.totalDuration,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${dateInfo.date.toString()}</b><br>
-          <b>Fail Count (averaged): </b> ${+dateInfo.failCount.toFixed(2)}<br>
+          <b>Total Duration (averaged): </b> ${+dateInfo.totalDuration.toFixed(2)}<br>
           <b>Hashes:</b><br>
-          ${dateInfo.commits.map(commit => `  - <a href="${hashToLink(commit.commit, environmentName)}">${commit.commit}</a> (Fail count (averaged): ${+(commit.sumFailCount / commit.maxRunCount).toFixed(2)} [${commit.sumFailCount} fails / ${commit.maxRunCount} runs])`).join("<br>")}
+          ${dateInfo.runInfo.map(job => `  - <a href="${hashToLink(job.commit, environmentName)}">${job.commit}</a> (Job ${job.rootJob}) Total Duration: ${+job.totalDuration.toFixed(2)}s`).join("<br>")}
         </div>`,
       ]));
     const options = {
-      title: `Test count by day on ${environmentName}`,
+      title: `Test count and total duration by day on ${environmentName}`,
       width: window.innerWidth,
       height: window.innerHeight,
       pointSize: 10,
       pointShape: "circle",
+      series: {
+        0: { targetAxisIndex: 0 },
+        1: { targetAxisIndex: 1 },
+      },
       vAxes: {
-        0: { title: "Test Count" },
-        1: { title: "Failed Tests" },
+        0: { title: "Test Count", minValue: 0 },
+        1: { title: "Duration (seconds)", minValue: 0 },
       },
       tooltip: { trigger: "selection", isHtml: true }
     };
