@@ -28,21 +28,21 @@ printf "Commit Hash,Test Date,Environment,Test,Status,Duration\n"
 # 247982745892,2021-06-10,Docker_Linux,TestFunctional,Passed,0.5
 jq -r '((.PassedTests[]? as $name | {
           commit: (.Detail.Details | split(":") | .[0]),
-          date: (.Detail.Details | split(":") | .[1]),
+          date: (.Detail.Details | split(":") | .[1] | if . then . else "0001-01-01" end),
           environment: .Detail.Name,
           test: $name,
           duration: .Durations[$name],
           status: "Passed"}),
         (.FailedTests[]? as $name | {
           commit: (.Detail.Details | split(":") | .[0]),
-          date: (.Detail.Details | split(":") | .[1]),
+          date: (.Detail.Details | split(":") | .[1] | if . then . else "0001-01-01" end),
           environment: .Detail.Name,
           test: $name,
           duration: .Durations[$name],
           status: "Failed"}),
         (.SkippedTests[]? as $name | {
           commit: (.Detail.Details | split(":") | .[0]),
-          date: (.Detail.Details | split(":") | .[1]),
+          date: (.Detail.Details | split(":") | .[1] | if . then . else "0001-01-01" end),
           environment: .Detail.Name,
           test: $name,
           duration: 0,
