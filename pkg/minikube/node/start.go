@@ -748,6 +748,17 @@ func warnVirtualBox() {
 	}
 
 	if altDriverList.Len() != 0 {
-		out.Boxed("You have selected Virtualbox driver, but there are better options, for better performance and support consider using a different driver: {{.drivers}} \nTo turn off this suggestion run \n`minikube config set WantVirtualBoxDriverWarning false`", out.V{"drivers": altDriverList.String()})
+		out.Boxed(`You have selected "virtualbox" driver, but there are better options !
+For better performance and support consider using a different driver: {{.drivers}}
+
+To turn off this warning run:
+
+	$ minikube config set WantVirtualBoxDriverWarning false
+
+
+To learn more about on minikube drivers checkout https://minikube.sigs.k8s.io/docs/drivers/
+To see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/
+
+`, out.V{"drivers": altDriverList.String()})
 	}
 }
