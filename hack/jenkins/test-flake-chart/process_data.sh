@@ -21,35 +21,48 @@
 set -eu -o pipefail
 
 # Print header.
-printf "Commit Hash,Test Date,Environment,Test,Status,Duration\n"
+printf "Commit Hash,Test Date,Environment,Test,Status,Duration,Root Job,Total Tests Ran,Total Duration\n"
 
-# Turn each test in each summary file to a CSV line containing its commit hash, date, environment, test, status, and duration.
+# Turn each test in each summary file to a CSV line containing its commit hash,
+# date, environment, test, status, duration, root job id, total tests ran on this run, and total duration of this run.
 # Example line:
-# 247982745892,2021-06-10,Docker_Linux,TestFunctional,Passed,0.5
+# 247982745892,2021-06-10,Docker_Linux,TestFunctional,Passed,0.5,some_identifier,251,2303.48
 jq -r '((.PassedTests[]? as $name | {
           commit: (.Detail.Details | split(":") | .[0]),
           date: (.Detail.Details | split(":") | .[1] | if . then . else "0001-01-01" end),
           environment: .Detail.Name,
           test: $name,
           duration: .Durations[$name],
-          status: "Passed"}),
+          status: "Passed",
+          rootJob: (.Detail.Details | split(":") | .[2] | if . then . else "0" end),
+          totalTestsRan: (.NumberOfPass + .NumberOfFail),
+          totalDuration: (.TotalDuration | if . then . else 0 end)}),
         (.FailedTests[]? as $name | {
           commit: (.Detail.Details | split(":") | .[0]),
           date: (.Detail.Details | split(":") | .[1] | if . then . else "0001-01-01" end),
           environment: .Detail.Name,
           test: $name,
           duration: .Durations[$name],
-          status: "Failed"}),
+          status: "Failed",
+          rootJob: (.Detail.Details | split(":") | .[2] | if . then . else "0" end),
+          totalTestsRan: (.NumberOfPass + .NumberOfFail),
+          totalDuration: (.TotalDuration | if . then . else 0 end)}),
         (.SkippedTests[]? as $name | {
           commit: (.Detail.Details | split(":") | .[0]),
           date: (.Detail.Details | split(":") | .[1] | if . then . else "0001-01-01" end),
           environment: .Detail.Name,
           test: $name,
           duration: 0,
-          status: "Skipped"}))
+          status: "Skipped",
+          rootJob: (.Detail.Details | split(":") | .[2] | if . then . else "0" end),
+          totalTestsRan: (.NumberOfPass + .NumberOfFail),
+          totalDuration: (.TotalDuration | if . then . else 0 end)}))
         | .commit + ","
           + .date + ","
           + .environment + ","
           + .test + ","
           + .status + ","
-          + (.duration | tostring)'
+          + (.duration | tostring) + ","
+          + .rootJob + ","
+          + (.totalTestsRan | tostring) + ","
+          + (.totalDuration | tostring)'
