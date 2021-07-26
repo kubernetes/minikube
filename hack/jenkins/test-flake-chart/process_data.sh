@@ -26,7 +26,30 @@ printf "Commit Hash,Test Date,Environment,Test,Status,Duration\n"
 # Turn each test in each summary file to a CSV line containing its commit hash, date, environment, test, status, and duration.
 # Example line:
 # 247982745892,2021-06-10,Docker_Linux,TestFunctional,Passed,0.5
-jq -r '((.PassedTests[]? as $name | {commit: (.Detail.Details | split(":") | .[0]), date: (.Detail.Details | split(":") | .[1]), environment: .Detail.Name, test: $name, duration: .Durations[$name], status: "Passed"}),
-          (.FailedTests[]? as $name | {commit: (.Detail.Details | split(":") | .[0]), date: (.Detail.Details | split(":") | .[1]), environment: .Detail.Name, test: $name, duration: .Durations[$name], status: "Failed"}),
-          (.SkippedTests[]? as $name | {commit: (.Detail.Details | split(":") | .[0]), date: (.Detail.Details | split(":") | .[1]), environment: .Detail.Name, test: $name, duration: 0, status: "Skipped"}))
-          | .commit + "," + .date + "," + .environment + "," + .test + "," + .status + "," + (.duration | tostring)'
+jq -r '((.PassedTests[]? as $name | {
+          commit: (.Detail.Details | split(":") | .[0]),
+          date: (.Detail.Details | split(":") | .[1]),
+          environment: .Detail.Name,
+          test: $name,
+          duration: .Durations[$name],
+          status: "Passed"}),
+        (.FailedTests[]? as $name | {
+          commit: (.Detail.Details | split(":") | .[0]),
+          date: (.Detail.Details | split(":") | .[1]),
+          environment: .Detail.Name,
+          test: $name,
+          duration: .Durations[$name],
+          status: "Failed"}),
+        (.SkippedTests[]? as $name | {
+          commit: (.Detail.Details | split(":") | .[0]),
+          date: (.Detail.Details | split(":") | .[1]),
+          environment: .Detail.Name,
+          test: $name,
+          duration: 0,
+          status: "Skipped"}))
+        | .commit + ","
+          + .date + ","
+          + .environment + ","
+          + .test + ","
+          + .status + ","
+          + (.duration | tostring)'
