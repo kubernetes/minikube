@@ -387,6 +387,9 @@ minikube failed to load host
 "GUEST_MOUNT" (Exit code ExGuestError)  
 minkube failed to create a mount  
 
+"GUEST_MOUNT_COULD_NOT_CONNECT" (Exit code ExGuestError)  
+mount on guest was unable to connect to host mount server  
+
 "GUEST_MOUNT_CONFLICT" (Exit code ExGuestConflict)  
 minkube failed to update a mount  
 
