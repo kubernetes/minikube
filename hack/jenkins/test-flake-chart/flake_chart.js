@@ -565,46 +565,6 @@ function displayEnvironmentChart(testData, environmentName) {
     chart.draw(data, options);
   }
   {
-    const data = new google.visualization.DataTable();
-    data.addColumn('date', 'Date');
-    for (const name of recentTopFlakes) {
-      data.addColumn('number', `Duration - ${name}`);
-      data.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
-    }
-    data.addRows(
-      orderedDates.map(dateTime => [new Date(dateTime)].concat(recentTopFlakes.map(name => {
-        const data = aggregatedRuns.get(name).get(dateTime);
-        return data !== undefined ? [
-          data.duration,
-          `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b style="display: block">${name}</b><br>
-            <b>${data.date.toString()}</b><br>
-            <b>Average Duration:</b> ${data.duration.toFixed(2)}s<br>
-            <b>Hashes:</b><br>
-            ${data.commitHashes.map(({ hash, duration, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average Duration: ${duration.toFixed(2)}s [${runs} runs])`).join("<br>")}
-          </div>`
-        ] : [null, null];
-      })).flat())
-    );
-    const options = {
-      title: `Average duration by day of top ${topFlakes} of recent test flakiness (past ${dateRange} days) on ${environmentName}`,
-      width: window.innerWidth,
-      height: window.innerHeight,
-      pointSize: 10,
-      pointShape: "circle",
-      vAxes: {
-        0: { title: "Average Duration (s)" },
-      },
-      tooltip: { trigger: "selection", isHtml: true }
-    };
-    const durationContainer = document.createElement("div");
-    durationContainer.style.width = "100vw";
-    durationContainer.style.height = "100vh";
-    chartsContainer.appendChild(durationContainer);
-    const chart = new google.visualization.LineChart(durationContainer);
-    chart.draw(data, options);
-  }
-  {
     // Group test runs by their date, then by their commit, and finally by test names.
     const testCountData = testData
       // Group by date.
