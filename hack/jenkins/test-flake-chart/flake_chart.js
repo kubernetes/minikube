@@ -104,23 +104,27 @@ async function loadTestData() {
   });
   // Consume the header to ensure the data has the right number of fields.
   const header = (await lines.next()).value;
-  if (header.split(",").length != 6) {
+  if (header.split(",").length != 9) {
     document.body.removeChild(box);
-    throw `Fetched CSV data contains wrong number of fields. Expected: 6. Actual Header: "${header}"`;
+    throw `Fetched CSV data contains wrong number of fields. Expected: 9. Actual Header: "${header}"`;
   }
 
   const testData = [];
-  let lineData = ["", "", "", "", "", ""];
+  let lineData = ["", "", "", "", "", "", "", "", ""];
   for await (const line of lines) {
     let splitLine = line.split(",");
-    if (splitLine.length != 6) {
-      console.warn(`Found line with wrong number of fields. Actual: ${splitLine.length} Expected: 6. Line: "${line}"`);
+    if (splitLine.length != 9) {
+      console.warn(`Found line with wrong number of fields. Actual: ${splitLine.length} Expected: 9. Line: "${line}"`);
       continue;
     }
     splitLine = splitLine.map((value, index) => value === "" ? lineData[index] : value);
     lineData = splitLine;
     if (!isValidEnumValue(testStatus, splitLine[4])) {
       console.warn(`Invalid test status provided. Actual: ${splitLine[4]} Expected: One of ${Object.values(testStatus).join(", ")}`);
+      continue;
+    }
+    // Skip unsafe dates.
+    if (splitLine[1] === "0001-01-01") {
       continue;
     }
     testData.push({
@@ -130,6 +134,9 @@ async function loadTestData() {
       name: splitLine[3],
       status: splitLine[4],
       duration: Number(splitLine[5]),
+      rootJob: splitLine[6],
+      testCount: Number(splitLine[7]),
+      totalDuration: Number(splitLine[8]),
     });
   }
   document.body.removeChild(box);
