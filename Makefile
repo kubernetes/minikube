@@ -32,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.16.4
+GO_VERSION ?= 1.16.6
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -957,6 +957,12 @@ help:
 	@printf "\033[1m--------------------------------------\033[21m\n"
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+
+
+.PHONY: update-golang-version
+update-golang-version:
+	(cd hack/update/golang_version && \
+	 go run update_golang_version.go)
 
 .PHONY: update-kubernetes-version
 update-kubernetes-version:

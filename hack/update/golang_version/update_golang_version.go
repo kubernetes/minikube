@@ -80,7 +80,17 @@ var (
 				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
-		".github/workflows/update_k8s_versions.yml": {
+		".github/workflows/update-k8s-versions.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/update-golang-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/time-to-k8s-public-chart.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
@@ -88,17 +98,6 @@ var (
 		".github/workflows/pr_verified.yaml": {
 			Replace: map[string]string{
 				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/time-to-k8s-public-chart.yaml": {
-			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".travis.yml": {
-			Replace: map[string]string{
-				`go:\n  - .*`: `go:{{printf "\n  - %s" .StableVersion}}`,
-				`go: .*`:      `go: {{.StableVersion}}`,
 			},
 		},
 		"go.mod": {
@@ -113,7 +112,8 @@ var (
 		},
 		"Makefile": {
 			Replace: map[string]string{
-				`GO_VERSION \?= .*`: `GO_VERSION ?= {{.StableVersion}}`,
+				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
+				`GO_VERSION \?= 1.*`: `GO_VERSION ?= {{.StableVersion}}`,
 			},
 		},
 	}
