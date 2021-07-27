@@ -30,6 +30,7 @@ Configurable fields:
  * WantBetaUpdateNotification
  * ReminderWaitPeriodInHours
  * WantNoneDriverWarning
+ * WantVirtualBoxDriverWarning
  * profile
  * bootstrapper
  * insecure-registry
