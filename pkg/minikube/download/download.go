@@ -51,9 +51,15 @@ func CreateDstDownloadMock(src, dst string) error {
 
 // download is a well-configured atomic download function
 func download(src string, dst string) error {
-	progress := getter.WithProgress(DefaultProgressBar)
-	if out.JSON {
-		progress = getter.WithProgress(DefaultJSONOutput)
+	var clientOptions []getter.ClientOption
+	if out.IsTerminal(os.Stdout) {
+		progress := getter.WithProgress(DefaultProgressBar)
+		if out.JSON {
+			progress = getter.WithProgress(DefaultJSONOutput)
+		}
+		clientOptions = []getter.ClientOption{progress}
+	} else {
+		clientOptions = []getter.ClientOption{}
 	}
 	tmpDst := dst + ".download"
 	client := &getter.Client{
@@ -61,7 +67,7 @@ func download(src string, dst string) error {
 		Dst:     tmpDst,
 		Dir:     false,
 		Mode:    getter.ClientModeFile,
-		Options: []getter.ClientOption{progress},
+		Options: clientOptions,
 		Getters: map[string]getter.Getter{
 			"file":  &getter.FileGetter{Copy: false},
 			"http":  &getter.HttpGetter{Netrc: false},
