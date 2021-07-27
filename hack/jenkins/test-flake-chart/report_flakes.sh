@@ -46,7 +46,7 @@ TMP_DATA=$(mktemp)
   | (xargs gsutil ls || true) \
   | xargs gsutil cat \
   | "$DIR/process_data.sh" \
-  | sed -n -r -e "s|[0-9a-f]*,[0-9-]*,([a-zA-Z/_0-9-]*),([a-zA-Z/_0-9-]*),Failed,[.0-9]*|\1:\2|p" \
+  | sed -n -r -e "s|[0-9a-f]*,[0-9-]*,([a-zA-Z/_0-9-]*),([a-zA-Z/_0-9-]*),Failed,[.0-9]*,[a-zA-Z/_0-9-]*,[0-9]*,[.0-9]*|\1:\2|p" \
   | sort \
   > "$TMP_DATA"
 
