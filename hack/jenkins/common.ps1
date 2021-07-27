@@ -50,7 +50,7 @@ $elapsed=$ended-$started
 $elapsed=$elapsed/60
 $elapsed=[math]::Round($elapsed, 2)
 
-$gopogh_status=gopogh --in testout.json --out_html testout.html --out_summary testout_summary.json --name "$env:JOB_NAME" -pr $env:MINIKUBE_LOCATION --repo github.com/kubernetes/minikube/ --details $env:COMMIT
+$gopogh_status=gopogh --in testout.json --out_html testout.html --out_summary testout_summary.json --name "$env:JOB_NAME" -pr $env:MINIKUBE_LOCATION --repo github.com/kubernetes/minikube/ --details "$env:COMMIT:$(Get-Date -Format "yyyy-MM-dd"):$env:ROOT_JOB_ID"
 
 $failures=echo $gopogh_status | jq '.NumberOfFail'
 $tests=echo $gopogh_status | jq '.NumberOfTests'

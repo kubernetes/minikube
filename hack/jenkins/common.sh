@@ -419,7 +419,7 @@ fi
 
 touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
-gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d)") || true
+gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}") || true
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
 test_num=$(echo $gopogh_status | jq '.NumberOfTests')
 pessimistic_status="${fail_num} / ${test_num} failures"

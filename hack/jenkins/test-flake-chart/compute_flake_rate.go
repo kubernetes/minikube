@@ -80,7 +80,7 @@ func readData(file io.Reader) []testEntry {
 	testEntries := []testEntry{}
 
 	fileReader := bufio.NewReaderSize(file, 256)
-	previousLine := []string{"", "", "", "", "", ""}
+	previousLine := []string{"", "", "", "", "", "", "", "", ""}
 	firstLine := true
 	for {
 		lineBytes, _, err := fileReader.ReadLine()
@@ -93,8 +93,8 @@ func readData(file io.Reader) []testEntry {
 		line := string(lineBytes)
 		fields := strings.Split(line, ",")
 		if firstLine {
-			if len(fields) != 6 {
-				exit(fmt.Sprintf("Data CSV in incorrect format. Expected 6 columns, but got %d", len(fields)), fmt.Errorf("bad CSV format"))
+			if len(fields) != 9 {
+				exit(fmt.Sprintf("Data CSV in incorrect format. Expected 9 columns, but got %d", len(fields)), fmt.Errorf("bad CSV format"))
 			}
 			firstLine = false
 		}
@@ -103,8 +103,8 @@ func readData(file io.Reader) []testEntry {
 				fields[i] = previousLine[i]
 			}
 		}
-		if len(fields) != 6 {
-			fmt.Printf("Found line with wrong number of columns. Expectd 6, but got %d - skipping\n", len(fields))
+		if len(fields) != 9 {
+			fmt.Printf("Found line with wrong number of columns. Expectd 9, but got %d - skipping\n", len(fields))
 			continue
 		}
 		previousLine = fields
