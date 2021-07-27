@@ -19,6 +19,9 @@ package images
 // DefaultKubernetesRepo is the default Kubernetes repository
 const DefaultKubernetesRepo = "k8s.gcr.io"
 
+// DefaultMinikubeRepo is the default Minikube repository
+const DefaultMinikubeRepo = "gcr.io/k8s-minikube"
+
 // kubernetesRepo returns the official Kubernetes repository, or an alternate
 func kubernetesRepo(mirror string) string {
 	if mirror != "" {
@@ -32,5 +35,5 @@ func minikubeRepo(mirror string) string {
 	if mirror != "" {
 		return mirror
 	}
-	return "gcr.io/k8s-minikube"
+	return DefaultMinikubeRepo
 }
