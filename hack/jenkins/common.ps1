@@ -63,7 +63,7 @@ If($env:status -eq "failure") {
 echo $description
 
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
-$gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT"
+$gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 
 #Upload logs to gcs
 gsutil -qm cp testout.txt gs://$gcs_bucket/${env:JOB_NAME}out.txt

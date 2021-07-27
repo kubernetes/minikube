@@ -49,8 +49,7 @@ jobs=(
      'Docker_Cloud_Shell'
 )
 
-SHORT_COMMIT=${THE_COMMIT:0:7}
-STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/started_environments_${BUILD_NUMBER}.txt"
+STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${BUILD_NUMBER}/started_environments.txt"
 printf "%s\n" "${jobs[@]}" | gsutil cp - "${STARTED_LIST_REMOTE}"
 
 if [ "${ghprbPullId}" == "master" ]; then
@@ -94,5 +93,5 @@ function retry_github_status() {
 
 for j in ${jobs[@]}; do
   retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
-  "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/${j}.pending"
+  "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${BUILD_NUMBER}/${j}.pending"
 done

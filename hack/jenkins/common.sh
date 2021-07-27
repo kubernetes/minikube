@@ -36,7 +36,7 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 readonly TIMEOUT=${1:-120m}
 
-public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}.html"
+public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/${JOB_NAME}.html"
 
 # retry_github_status provides reliable github status updates
 function retry_github_status() {
@@ -434,7 +434,7 @@ REPORT_URL_BASE="https://storage.googleapis.com"
 if [ -z "${EXTERNAL}" ]; then
   # If we're already in GCP, then upload results to GCS directly
   SHORT_COMMIT=${COMMIT:0:7}
-  JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
+  JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/${JOB_NAME}"
 
   echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}.out.txt"
   echo ">>   public URL: ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.out.txt"

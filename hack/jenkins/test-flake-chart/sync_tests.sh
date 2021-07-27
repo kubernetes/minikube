@@ -26,8 +26,8 @@
 
 set -o pipefail
 
-BUCKET_PATH="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}"
-STARTED_LIST=$(gsutil cat "${BUCKET_PATH}/started_environments_${ROOT_JOB_ID}.txt" | sort | uniq)
+BUCKET_PATH="gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}"
+STARTED_LIST=$(gsutil cat "${BUCKET_PATH}/started_environments.txt" | sort | uniq)
 
 if [ $? -ne 0 ]; then
   echo "Unable to read environment list. Likely being run before all tests are ready or after tests have already been uploaded." 1>&2
@@ -36,7 +36,7 @@ fi
 
 set -eu -o pipefail
 
-FINISHED_LIST_REMOTE="${BUCKET_PATH}/finished_environments_${ROOT_JOB_ID}.txt"
+FINISHED_LIST_REMOTE="${BUCKET_PATH}/finished_environments.txt"
 # Ensure FINISHED_LIST_REMOTE exists so we can append (but don't erase any existing entries in FINISHED_LIST_REMOTE)
 < /dev/null gsutil cp -n - "${FINISHED_LIST_REMOTE}"
 # Copy the job name to APPEND_TMP. If the job name ends in "_integration" remove it.
@@ -67,7 +67,7 @@ if [ ${STARTED_COUNT} -ne ${FINISHED_COUNT} ]; then
 fi
 
 # Prevent other invocations of this script from uploading the same thing multiple times.
-gsutil rm "${BUCKET_PATH}/started_environments_${ROOT_JOB_ID}.txt"
+gsutil rm "${BUCKET_PATH}/started_environments.txt"
 
 # At this point, we know all integration tests are done and we can process all summaries safely.
 echo "${FINISHED_LIST_JOINED}" > ${FINISHED_LIST}
@@ -84,8 +84,8 @@ if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
     "${DIR}/upload_tests.sh" "${SUMMARY}" || true
   done
 else
-  "${DIR}/report_flakes.sh" "${MINIKUBE_LOCATION}" "${COMMIT:0:7}" "${FINISHED_LIST}"
+  "${DIR}/report_flakes.sh" "${MINIKUBE_LOCATION}" "${ROOT_JOB_ID}" "${FINISHED_LIST}"
 fi
 
-gsutil rm "${BUCKET_PATH}/finished_environments_${ROOT_JOB_ID}.txt"
+gsutil rm "${BUCKET_PATH}/finished_environments.txt"
 rm "${FINISHED_LIST}"
