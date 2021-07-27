@@ -976,9 +976,21 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				t.Skipf("failed to build docker image, skipping local test: %v", err)
 			}
 
+			defer func() {
+				_, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", img))
+				if err != nil {
+					t.Errorf("failed to delete local image %q, err %v", img, err)
+				}
+			}()
+
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 			if err != nil {
 				t.Errorf("failed to 'cache add' local image %q. args %q err %v", img, rr.Command(), err)
+			}
+
+			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "delete", img))
+			if err != nil {
+				t.Errorf("failed to 'cache delete' local image %q. args %q err %v", img, rr.Command(), err)
 			}
 		})
 
