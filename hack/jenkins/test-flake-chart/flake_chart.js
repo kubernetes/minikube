@@ -195,15 +195,10 @@ function aggregateRuns(testRuns) {
       date: tests[0].date, // Get one of the dates from the tests (which will all be the same).
       flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
       duration: tests.map(test => test.duration).average(), // Compute average duration of runs.
-      commitHashes: tests.map(test => ({ // Take all hashes, statuses, and durations of tests in this group.
-        hash: test.commit,
+      jobs: tests.map(test => ({ // Take all job ids, statuses, and durations of tests in this group.
+        id: test.rootJob,
         status: test.status,
         duration: test.duration
-      })).groupBy(run => run.hash).map(runsWithSameHash => ({
-        hash: runsWithSameHash[0].hash,
-        failures: runsWithSameHash.map(run => run.status === testStatus.FAILED ? 1 : 0).sum(),
-        runs: runsWithSameHash.length,
-        duration: runsWithSameHash.map(run => run.duration).average(),
       }))
     }));
 }
@@ -220,20 +215,15 @@ function aggregateWeeklyRuns(testRuns, weekDates) {
       date: weekDates.findRounded(tests[0].date), // Get one of the dates from the tests, and use it to get the rounded time (which will all be the same).
       flakeRate: tests.map(test => test.status === testStatus.FAILED ? 100 : 0).average(), // Compute average of runs where FAILED counts as 100%.
       duration: tests.map(test => test.duration).average(), // Compute average duration of runs.
-      commitHashes: tests.map(test => ({ // Take all hashes, statuses, and durations of tests in this group.
-        hash: test.commit,
+      jobs: tests.map(test => ({ // Take all job ids, statuses, and durations of tests in this group.
+        id: test.rootJob,
         status: test.status,
         duration: test.duration
-      })).groupBy(run => run.hash).map(runsWithSameHash => ({
-        hash: runsWithSameHash[0].hash,
-        failures: runsWithSameHash.map(run => run.status === testStatus.FAILED ? 1 : 0).sum(),
-        runs: runsWithSameHash.length,
-        duration: runsWithSameHash.map(run => run.duration).average(),
       }))
     }));
 }
 
-const hashToLink = (hash, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${hash.substring(0,7)}/${environment}.html`;
+const jobIdToLink = (jobId, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${jobId}/${environment}.html`;
 
 function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   const testRuns = testData
@@ -256,15 +246,15 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b>${groupData.date.toString()}</b><br>
             <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
-            <b>Hashes:</b><br>
-            ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+            <b>Jobs:</b><br>
+            ${groupData.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
           </div>`,
           groupData.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b>${groupData.date.toString()}</b><br>
             <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
-            <b>Hashes:</b><br>
-            ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
+            <b>Jobs:</b><br>
+            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${duration}s)`).join("<br>")}
           </div>`,
         ])
     );
@@ -332,15 +322,15 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b>${groupData.date.toString()}</b><br>
             <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
-            <b>Hashes:</b><br>
-            ${groupData.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+            <b>Jobs:</b><br>
+            ${groupData.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
           </div>`,
           groupData.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b>${groupData.date.toString()}</b><br>
             <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
-            <b>Hashes:</b><br>
-            ${groupData.commitHashes.map(({ hash, runs, duration }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Average of ${runs}: ${duration.toFixed(2)}s)`).join("<br>")}
+            <b>Jobs:</b><br>
+            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${duration}s)`).join("<br>")}
           </div>`,
         ])
     );
@@ -434,7 +424,7 @@ function displayEnvironmentChart(testData, environmentName) {
       const dateInfo = data.get(date);
       return dateInfo === undefined ? null : {
         flakeRate: dateInfo.flakeRate,
-        runs: dateInfo.commitHashes.length
+        runs: dateInfo.jobs.length
       };
     }).filter(dateInfo => dateInfo != null)
       .reduce(({flakeCount, totalCount}, {flakeRate, runs}) => ({
@@ -474,8 +464,8 @@ function displayEnvironmentChart(testData, environmentName) {
             <b style="display: block">${name}</b><br>
             <b>${data.date.toString()}</b><br>
             <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
-            <b>Hashes:</b><br>
-            ${data.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+            <b>Jobs:</b><br>
+            ${data.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
           </div>`
         ] : [null, null];
       })).flat())
@@ -551,8 +541,8 @@ function displayEnvironmentChart(testData, environmentName) {
             <b style="display: block">${name}</b><br>
             <b>${data.date.toString()}</b><br>
             <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
-            <b>Hashes:</b><br>
-            ${data.commitHashes.map(({ hash, failures, runs }) => `  - <a href="${hashToLink(hash, environmentName)}">${hash}</a> (Failures: ${failures}/${runs})`).join("<br>")}
+            <b>Jobs:</b><br>
+            ${data.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
           </div>`
         ] : [null, null];
       })).flat())
@@ -611,15 +601,15 @@ function displayEnvironmentChart(testData, environmentName) {
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${dateInfo.date.toString()}</b><br>
           <b>Test Count (averaged): </b> ${+dateInfo.testCount.toFixed(2)}<br>
-          <b>Hashes:</b><br>
-          ${dateInfo.runInfo.map(job => `  - <a href="${hashToLink(job.commit, environmentName)}">${job.commit}</a> (Job ${job.rootJob}) Test count: ${job.testCount}`).join("<br>")}
+          <b>Jobs:</b><br>
+          ${dateInfo.runInfo.map(job => `  - <a href="${jobIdToLink(job.rootJob, environmentName)}">${job.rootJob}</a> Test count: ${job.testCount}`).join("<br>")}
         </div>`,
         dateInfo.totalDuration,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${dateInfo.date.toString()}</b><br>
           <b>Total Duration (averaged): </b> ${+dateInfo.totalDuration.toFixed(2)}<br>
-          <b>Hashes:</b><br>
-          ${dateInfo.runInfo.map(job => `  - <a href="${hashToLink(job.commit, environmentName)}">${job.commit}</a> (Job ${job.rootJob}) Total Duration: ${+job.totalDuration.toFixed(2)}s`).join("<br>")}
+          <b>Jobs:</b><br>
+          ${dateInfo.runInfo.map(job => `  - <a href="${jobIdToLink(job.rootJob, environmentName)}">${job.rootJob}</a> Total Duration: ${+job.totalDuration.toFixed(2)}s`).join("<br>")}
         </div>`,
       ]));
     const options = {
