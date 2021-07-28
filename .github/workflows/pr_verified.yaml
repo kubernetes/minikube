@@ -21,7 +21,7 @@ on:
       - deleted
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: 1.16.4
+  GO_VERSION: 1.16.6
 
 jobs:
   # Runs before all other jobs
