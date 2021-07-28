@@ -21,7 +21,7 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_des
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/common.ps1 out/
 
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
-$gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT"
+$gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 
 ./out/setup_docker_desktop_windows.ps1
 If ($lastexitcode -gt 0) {

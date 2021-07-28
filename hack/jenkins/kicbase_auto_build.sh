@@ -70,7 +70,7 @@ if [ $ec -gt 0 ]; then
 		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed.  
 		See the logs at:
 	       	```
-		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit:0:7}/kic_image_build.txt
+		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/kicbase-${BUILD_NUMBER}/kic_image_build.txt
 		```
 		"
 	fi

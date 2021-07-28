@@ -48,7 +48,7 @@ if [ $ec -gt 0 ]; then
 		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.  
 		See the logs at: 
 		```
-		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit:0:7}/iso_build.txt
+		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/iso-${BUILD_NUMBER}/iso_build.txt
 		```
 		"
 	fi

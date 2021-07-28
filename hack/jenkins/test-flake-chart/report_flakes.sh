@@ -21,12 +21,12 @@
 set -eu -o pipefail
 
 if [ "$#" -ne 3 ]; then
-  echo "Wrong number of arguments. Usage: report_flakes.sh <PR number> <short commit> <environment list file>" 1>&2
+  echo "Wrong number of arguments. Usage: report_flakes.sh <PR number> <Root job id> <environment list file>" 1>&2
   exit 1
 fi
 
 PR_NUMBER=$1
-SHORT_COMMIT=$2
+ROOT_JOB=$2
 ENVIRONMENT_LIST=$3
 
 # To prevent having a super-long comment, add a maximum number of tests to report.
@@ -42,7 +42,7 @@ TMP_DATA=$(mktemp)
 # 5) Filter tests to only include failed tests (and only get their names and environment).
 # 6) Sort by environment, then test name.
 # 7) Store in file $TMP_DATA.
-< "${ENVIRONMENT_LIST}" sed -r "s|^|gs://minikube-builds/logs/${PR_NUMBER}/${SHORT_COMMIT}/|; s|$|_summary.json|" \
+< "${ENVIRONMENT_LIST}" sed -r "s|^|gs://minikube-builds/logs/${PR_NUMBER}/${ROOT_JOB}/|; s|$|_summary.json|" \
   | (xargs gsutil ls || true) \
   | xargs gsutil cat \
   | "$DIR/process_data.sh" \
@@ -79,7 +79,7 @@ printf "These are the flake rates of all failed tests.\n|Environment|Failed Test
 # Create variables to use for sed command.
 ENV_CHART_LINK_FORMAT="https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=\1"
 TEST_CHART_LINK_FORMAT="${ENV_CHART_LINK_FORMAT}\&test=\2"
-TEST_GOPOGH_LINK_FORMAT="https://storage.googleapis.com/minikube-builds/logs/${PR_NUMBER}/${SHORT_COMMIT}/\1.html#fail_\2"
+TEST_GOPOGH_LINK_FORMAT="https://storage.googleapis.com/minikube-builds/logs/${PR_NUMBER}/${ROOT_JOB}/\1.html#fail_\2"
 # 1) Get the first $MAX_REPORTED_TESTS lines.
 # 2) Print a row in the table with the environment, test name, flake rate, and a link to the flake chart for that test.
 # 3) Append these rows to file $TMP_COMMENT.
