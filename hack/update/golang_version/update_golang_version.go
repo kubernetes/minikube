@@ -148,7 +148,8 @@ func main() {
 
 // goVersion returns Golang stable version.
 func goVersions() (stable, stableMM string, err error) {
-	resp, err := http.Get("https://golang.org/VERSION?m=text")
+	// will update to the same image that kubernetes project uses
+	resp, err := http.Get("https://raw.githubusercontent.com/kubernetes/kubernetes/master/build/build-image/cross/VERSION")
 	if err != nil {
 		return "", "", err
 	}
@@ -156,7 +157,8 @@ func goVersions() (stable, stableMM string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	stable = strings.TrimPrefix(string(body), "go")
+	stable = strings.TrimPrefix(string(body), "v")
+	stable = strings.Split(stable, "-")[0]
 	mmp := strings.SplitN(stable, ".", 3)
 	stableMM = strings.Join(mmp[0:2], ".") // <major>.<minor> version
 	return stable, stableMM, nil

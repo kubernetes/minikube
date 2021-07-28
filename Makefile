@@ -32,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.16.6
+GO_VERSION ?= 1.16.4
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
