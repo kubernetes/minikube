@@ -107,7 +107,7 @@ var (
 		},
 		"hack/jenkins/common.sh": {
 			Replace: map[string]string{
-				`sudo \.\/installers\/check_install_golang\.sh \".*\" \"\/usr\/local\"`: `sudo ./installers/check_install_golang.sh "{{.StableVersion}}" "/usr/local"`,
+				`\.\/installers\/check_install_golang\.sh \".*\" \"\/usr\/local\" .*`: `./installers/check_install_golang.sh "{{.StableVersion}}" "/usr/local" || true`,
 			},
 		},
 		"Makefile": {
