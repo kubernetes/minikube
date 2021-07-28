@@ -25,5 +25,9 @@
   <body>
     <div id="chart_div"></div>
   </body>
-  <script src="flake_chart.js"></script>
+  <script>
+    const el = document.createElement('script');
+    el.setAttribute('src', `flake_chart.js?t=${Math.random()}`);
+    document.head.appendChild(el);
+  </script>
 </html>
