@@ -958,6 +958,12 @@ help:
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 
+
+.PHONY: update-golang-version
+update-golang-version:
+	(cd hack/update/golang_version && \
+	 go run update_golang_version.go)
+
 .PHONY: update-kubernetes-version
 update-kubernetes-version:
 	(cd hack/update/kubernetes_version && \
