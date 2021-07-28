@@ -47,57 +47,57 @@ var (
 	schema = map[string]update.Item{
 		".github/workflows/build.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/docs.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/time-to-k8s.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/leaderboard.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/translations.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/update-k8s-versions.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/update-golang-version.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/time-to-k8s-public-chart.yml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/pr_verified.yaml": {
 			Replace: map[string]string{
-				`GO_VERSION: '.*`: `GO_VERSION: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		"go.mod": {
