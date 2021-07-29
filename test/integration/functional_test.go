@@ -342,7 +342,7 @@ func listImages(ctx context.Context, t *testing.T, profile string) (*RunResult, 
 // validateBuildImage makes sures that `minikube image build` works as expected
 func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
-		t.Skip("load image not available on none driver")
+		t.Skip("image build not available on none driver")
 	}
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
@@ -350,10 +350,6 @@ func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	newImage := fmt.Sprintf("localhost/my-image:%s", profile)
-	if ContainerRuntime() == "containerd" {
-		startBuildkit(ctx, t, profile)
-		// unix:///run/buildkit/buildkitd.sock
-	}
 
 	// try to build the new image with minikube
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
@@ -376,16 +372,6 @@ func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Output(), newImage) {
 		t.Fatalf("expected %s to be built with minikube but the image is not there", newImage)
-	}
-}
-
-func startBuildkit(ctx context.Context, t *testing.T, profile string) {
-	// sudo systemctl start buildkit.socket
-	cmd := exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "nohup",
-		"sudo", "-b", "buildkitd", "--oci-worker=false",
-		"--containerd-worker=true", "--containerd-worker-namespace=k8s.io")
-	if rr, err := Run(t, cmd); err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 }
 
