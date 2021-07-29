@@ -459,7 +459,7 @@ Alternatively, minikube can download the appropriate version of kubectl and you 
 ```shell
 minikube kubectl -- get po -A
 ```
-If you've downloaded kubectl through minikube, you can make your life easier by adding the following to your shell config:
+You can also make your life easier by adding the following to your shell config:
 ```shell
 alias kubectl="minikube kubectl --"
 ```
