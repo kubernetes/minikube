@@ -1,6 +1,6 @@
 ---
 title: "How to use custom TLS certificate with ingress addon"
-linkTitle: "Using custom TLS certificate with ingress addon"
+linkTitle: "Using Custom TLS certificate with Ingress Addon"
 weight: 1
 date: 2020-11-30
 ---
