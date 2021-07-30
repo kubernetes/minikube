@@ -209,7 +209,7 @@ EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
 RUN adduser --ingroup docker --disabled-password --gecos '' docker 
 RUN adduser docker sudo
-RUN adduser docker podman
+RUN adduser docker podman buildkit
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER docker
 RUN mkdir /home/docker/.ssh
