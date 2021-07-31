@@ -91,11 +91,13 @@ func main() {
 			},
 		}
 
-		if _, ok := constants.KubeadmImages[imageVersion]; !ok {
+		majorMinorVersion := semver.MajorMinor(imageVersion)
+
+		if _, ok := constants.KubeadmImages[majorMinorVersion]; !ok {
 			schema[minikubeConstantsFilePath].Replace[`KubeadmImages = .*`] =
 				`KubeadmImages = map[string]map[string]string{ {{.ImageMap}}`
 		} else {
-			versionIdentifier := fmt.Sprintf(`"%s": {[^}]+},`, imageVersion)
+			versionIdentifier := fmt.Sprintf(`"%s": {[^}]+},`, majorMinorVersion)
 			schema[minikubeConstantsFilePath].Replace[versionIdentifier] = "{{.ImageMap}}"
 		}
 
@@ -107,6 +109,7 @@ func getKubeadmImagesMapString(version string) (string, error) {
 	url := fmt.Sprintf(kubeadmReleaseURL, version)
 	fileName := fmt.Sprintf(kubeadmBinaryName, version)
 	if err := downloadFile(url, fileName); err != nil {
+		klog.Errorf("failed to download kubeadm binary %s", err.Error())
 		return "", err
 	}
 
@@ -114,6 +117,7 @@ func getKubeadmImagesMapString(version string) (string, error) {
 	args := []string{"config", "images", "list"}
 	imageListString, err := executeCommand(kubeadmCommand, args...)
 	if err != nil {
+		klog.Errorf("failed to execute kubeadm command %s", kubeadmCommand)
 		return "", err
 	}
 
@@ -126,18 +130,20 @@ func getKubeadmImagesMapString(version string) (string, error) {
 
 func formatKubeadmImageList(version, data string) (string, error) {
 	templateData := make(map[string]map[string]string)
-	templateData[version] = make(map[string]string)
+	majorMinorVersion := semver.MajorMinor(version)
+	templateData[majorMinorVersion] = make(map[string]string)
 	lines := strings.Split(data, "\n")
 	for _, line := range lines {
 		imageTag := strings.Split(line, ":")
 		if len(imageTag) == 2 {
-			templateData[version][imageTag[0]] = imageTag[1]
+			templateData[majorMinorVersion][imageTag[0]] = imageTag[1]
 		}
 	}
 
 	imageTemplate := template.New("kubeadmImage")
 	t, err := imageTemplate.Parse(kubeadmImagesTemplate)
 	if err != nil {
+		klog.Errorf("failed to create kubeadm image map template %s", err.Error())
 		return "", err
 	}
 

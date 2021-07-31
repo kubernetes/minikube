@@ -33,11 +33,11 @@ func Pause(v semver.Version, mirror string) string {
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
 	pv := "3.2"
-	k8sVersion := fmt.Sprintf("v1.%d.0", v.Minor)
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 	imageName := path.Join(kubernetesRepo(mirror), "pause")
 
-	if _, ok := constants.KubeadmImages[k8sVersion]; ok {
-		pv = constants.KubeadmImages[k8sVersion][imageName]
+	if _, ok := constants.KubeadmImages[majorMinorVersion]; ok {
+		pv = constants.KubeadmImages[majorMinorVersion][imageName]
 	}
 
 	if semver.MustParseRange("<1.18.0-alpha.0")(v) {
@@ -95,15 +95,16 @@ func coreDNS(v semver.Version, mirror string) string {
 	*/
 
 	cv := "1.7.0"
-	k8sVersion := fmt.Sprintf("v1.%d.0", v.Minor)
+
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 	imageName := path.Join(kubernetesRepo(mirror), "coredns")
 
 	if v.Minor >= 21 {
 		imageName = path.Join(imageName, "coredns")
 	}
 
-	if _, ok := constants.KubeadmImages[k8sVersion]; ok {
-		cv = constants.KubeadmImages[k8sVersion][imageName]
+	if _, ok := constants.KubeadmImages[majorMinorVersion]; ok {
+		cv = constants.KubeadmImages[majorMinorVersion][imageName]
 	}
 
 	// return path.Join(kubernetesRepo(mirror), "coredns:"+cv)
@@ -129,11 +130,11 @@ func etcd(v semver.Version, mirror string) string {
 	//	ev = "3.2.18"
 	//}
 	*/
-	k8sVersion := fmt.Sprintf("v1.%d.0", v.Minor)
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 	imageName := path.Join(kubernetesRepo(mirror), "etcd")
 
-	if _, ok := constants.KubeadmImages[k8sVersion]; ok {
-		ev = constants.KubeadmImages[k8sVersion][imageName]
+	if _, ok := constants.KubeadmImages[majorMinorVersion]; ok {
+		ev = constants.KubeadmImages[majorMinorVersion][imageName]
 	}
 
 	// An awkward special case for v1.19.0 - do not imitate unless necessary

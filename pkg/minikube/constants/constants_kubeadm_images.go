@@ -18,7 +18,7 @@ package constants
 
 var (
 	KubeadmImages = map[string]map[string]string{
-		"v1.22.0-rc.0": {
+		"v1.22": {
 			"k8s.gcr.io/coredns/coredns":         "v1.8.4",
 			"k8s.gcr.io/etcd":                    "3.4.13-0",
 			"k8s.gcr.io/kube-apiserver":          "v1.21.3",
@@ -27,7 +27,8 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.21.3",
 			"k8s.gcr.io/pause":                   "3.5",
 		},
-		"v1.21.3": {
+
+		"v1.21": {
 			"k8s.gcr.io/coredns/coredns":         "v1.8.0",
 			"k8s.gcr.io/etcd":                    "3.4.13-0",
 			"k8s.gcr.io/kube-apiserver":          "v1.21.3",
@@ -36,16 +37,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.21.3",
 			"k8s.gcr.io/pause":                   "3.4.1",
 		},
-		"v1.21.0": {
-			"k8s.gcr.io/coredns/coredns":         "v1.8.0",
-			"k8s.gcr.io/etcd":                    "3.4.13-0",
-			"k8s.gcr.io/kube-apiserver":          "v1.21.3",
-			"k8s.gcr.io/kube-controller-manager": "v1.21.3",
-			"k8s.gcr.io/kube-proxy":              "v1.21.3",
-			"k8s.gcr.io/kube-scheduler":          "v1.21.3",
-			"k8s.gcr.io/pause":                   "3.4.1",
-		},
-		"v1.20.0": {
+		"v1.20": {
 			"k8s.gcr.io/coredns":                 "1.7.0",
 			"k8s.gcr.io/etcd":                    "3.4.13-0",
 			"k8s.gcr.io/kube-apiserver":          "v1.20.9",
@@ -54,7 +46,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.20.9",
 			"k8s.gcr.io/pause":                   "3.2",
 		},
-		"v1.19.0": {
+		"v1.19": {
 			"k8s.gcr.io/coredns":                 "1.7.0",
 			"k8s.gcr.io/etcd":                    "3.4.9-1",
 			"k8s.gcr.io/kube-apiserver":          "v1.19.13",
@@ -63,7 +55,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.19.13",
 			"k8s.gcr.io/pause":                   "3.2",
 		},
-		"v1.18.0": {
+		"v1.18": {
 			"k8s.gcr.io/coredns":                 "1.6.7",
 			"k8s.gcr.io/etcd":                    "3.4.3-0",
 			"k8s.gcr.io/kube-apiserver":          "v1.18.20",
@@ -72,7 +64,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.18.20",
 			"k8s.gcr.io/pause":                   "3.2",
 		},
-		"v1.17.0": {
+		"v1.17": {
 			"k8s.gcr.io/coredns":                 "1.6.5",
 			"k8s.gcr.io/etcd":                    "3.4.3-0",
 			"k8s.gcr.io/kube-apiserver":          "v1.17.17",
@@ -81,16 +73,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.17.17",
 			"k8s.gcr.io/pause":                   "3.1",
 		},
-		"v1.16.1": {
-			"mirror.k8s.io/kube-proxy":              "v1.16.1",
-			"mirror.k8s.io/kube-scheduler":          "v1.16.1",
-			"mirror.k8s.io/kube-controller-manager": "v1.16.1",
-			"mirror.k8s.io/kube-apiserver":          "v1.16.1",
-			"mirror.k8s.io/coredns":                 "1.6.2",
-			"mirror.k8s.io/etcd":                    "3.3.15-0",
-			"mirror.k8s.io/pause":                   "3.1",
-		},
-		"v1.16.0": {
+		"v1.16": {
 			"k8s.gcr.io/coredns":                 "1.6.2",
 			"k8s.gcr.io/etcd":                    "3.3.15-0",
 			"k8s.gcr.io/kube-apiserver":          "v1.16.15",
@@ -99,7 +82,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.16.15",
 			"k8s.gcr.io/pause":                   "3.1",
 		},
-		"v1.15.0": {
+		"v1.15": {
 			"k8s.gcr.io/coredns":                 "1.3.1",
 			"k8s.gcr.io/etcd":                    "3.3.10",
 			"k8s.gcr.io/kube-apiserver":          "v1.15.12",
@@ -108,7 +91,8 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.15.12",
 			"k8s.gcr.io/pause":                   "3.1",
 		},
-		"v1.14.0": {
+
+		"v1.14": {
 			"k8s.gcr.io/coredns":                 "1.3.1",
 			"k8s.gcr.io/etcd":                    "3.3.10",
 			"k8s.gcr.io/kube-apiserver":          "v1.14.10",
@@ -117,7 +101,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.14.10",
 			"k8s.gcr.io/pause":                   "3.1",
 		},
-		"v1.13.0": {
+		"v1.13": {
 			"k8s.gcr.io/coredns":                 "1.2.6",
 			"k8s.gcr.io/etcd":                    "3.2.24",
 			"k8s.gcr.io/kube-apiserver":          "v1.13.12",
@@ -126,7 +110,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.13.12",
 			"k8s.gcr.io/pause":                   "3.1",
 		},
-		"v1.12.0": {
+		"v1.12": {
 			"k8s.gcr.io/coredns":                 "1.2.2",
 			"k8s.gcr.io/etcd":                    "3.2.24",
 			"k8s.gcr.io/kube-apiserver":          "v1.21.3",
@@ -135,7 +119,7 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.21.3",
 			"k8s.gcr.io/pause":                   "3.1",
 		},
-		"v1.11.0": {
+		"v1.11": {
 			"k8s.gcr.io/coredns":                       "1.1.3",
 			"k8s.gcr.io/etcd-amd64":                    "3.2.18",
 			"k8s.gcr.io/kube-apiserver-amd64":          "v1.11.10",

@@ -932,6 +932,11 @@ else
 	 go run update_kubernetes_version.go)
 endif
 
+.PHONY: update-kubeadm-constants
+update-kubeadm-constants:
+	(cd hack/update/kubeadm_constants && \
+	 go run update_kubeadm_constants.go -kubernetes-version=latest)
+
 .PHONY: stress
 stress: ## run the stress tests
 	go test -test.v -test.timeout=2h ./test/stress -loops=10 | tee "./out/testout_$(COMMIT_SHORT).txt"

@@ -63,7 +63,7 @@ func init() {
 		klog.Warningf("Unable to set flag value for alsologtostderr: %v", err)
 	}
 
-	// used in update_kubeadm_image_versions.go
+	// used in update_kubeadm_constants.go
 	flag.String("kubernetes-version", "", "kubernetes-version")
 	flag.Parse()
 	defer klog.Flush()
