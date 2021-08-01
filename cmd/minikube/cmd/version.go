@@ -69,7 +69,10 @@ var versionCmd = &cobra.Command{
 					klog.Warningf("error getting %s's version: %v", k, err)
 					data[k] = "error"
 				} else {
-					data[k] = strings.TrimSpace(rr.Stdout.String())
+					version := rr.Stdout.String()
+					// remove extra lines after the version
+					version = strings.Split(version, "\n")[0]
+					data[k] = strings.TrimSpace(version)
 				}
 
 			}
