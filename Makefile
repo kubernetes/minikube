@@ -702,6 +702,10 @@ endif
 local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches source code to point to it
 	$(SED) 's|Version = .*|Version = \"$(KIC_VERSION)-$(COMMIT_SHORT)\"|;s|baseImageSHA = .*|baseImageSHA = \"\"|;s|gcrRepo = .*|gcrRepo = \"local/kicbase\"|;s|dockerhubRepo = .*|dockerhubRepo = \"local/kicbase\"|' pkg/drivers/kic/types.go
 
+.PHONY: build-kic-base-image
+build-kic-base-image: docker-multi-arch-builder ## Build multi-arch local/kicbase:latest
+	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --load  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) .
+
 .PHONY: push-kic-base-image 
 push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
