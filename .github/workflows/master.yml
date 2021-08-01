@@ -1,5 +1,6 @@
 name: Master
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -13,7 +14,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: 1.16.1
+  GO_VERSION: '1.16.6'
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
@@ -122,7 +123,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -221,7 +222,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -323,7 +324,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -409,7 +410,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -555,7 +556,7 @@ jobs:
         continue-on-error: true
         shell: powershell
         run: |
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           choco install -y caffeine
@@ -693,7 +694,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "SilentlyContinue"
-          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
+          (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh.exe", "C:\ProgramData\chocolatey\bin\gopogh.exe")
           choco install -y kubernetes-cli
           choco install -y jq
           choco install -y caffeine
@@ -798,7 +799,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@v1
@@ -866,6 +867,28 @@ jobs:
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     steps:
+      - name: Install tools
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y jq docker git cron
+          sudo usermod -aG docker $USER
+
+      - name: Init
+        shell: bash
+        run: |
+          if [[ -f /var/run/reboot.in.progress ]]; then
+            echo "reboot in progress"
+            exit 1
+          fi
+          sudo touch /var/run/job.in.progress
+          rm -rf cleanup.sh install_cleanup.sh
+          # after this PR is merged, update URLs to get the scripts from github master
+          wget https://storage.googleapis.com/minikube-ci-utils/cleanup.sh
+          wget https://storage.googleapis.com/minikube-ci-utils/install_cleanup.sh
+          chmod +x cleanup.sh install_cleanup.sh
+          ./install_cleanup.sh
+
       - name: Install kubectl
         shell: bash
         run: |
@@ -876,14 +899,8 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-linux-arm64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-arm64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
-
-      - name: Install tools
-        shell: bash
-        run: |
-          sudo apt update
-          sudo apt install -y jq docker
 
       - name: Docker Info
         shell: bash

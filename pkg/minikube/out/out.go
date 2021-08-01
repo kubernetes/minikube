@@ -32,7 +32,7 @@ import (
 
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/briandowns/spinner"
-	isatty "github.com/mattn/go-isatty"
+	"github.com/mattn/go-isatty"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -68,6 +68,8 @@ var (
 	JSON = false
 	// spin is spinner showed at starting minikube
 	spin = spinner.New(spinner.CharSets[style.SpinnerCharacter], 100*time.Millisecond)
+	// defaultBoxCfg is the default style config for cli box output
+	defaultBoxCfg = box.Config{Py: 1, Px: 4, Type: "Round", Color: "Red"}
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
@@ -113,28 +115,33 @@ func Styled(st style.Enum, format string, a ...V) {
 	}
 }
 
-func boxedCommon(printFunc func(format string, a ...interface{}), format string, a ...V) {
+func boxedCommon(printFunc func(format string, a ...interface{}), cfg box.Config, title string, format string, a ...V) {
+	box := box.New(cfg)
+	if !useColor {
+		box.Config.Color = ""
+	}
 	str := Sprintf(style.None, format, a...)
-	str = strings.TrimSpace(str)
-	box := box.New(box.Config{Py: 1, Px: 4, Type: "Round"})
-	if useColor {
-		box.Config.Color = "Red"
-	}
-	str = box.String("", str)
-	lines := strings.Split(str, "\n")
-	for _, line := range lines {
-		printFunc(line + "\n")
-	}
+	printFunc(box.String(title, strings.TrimSpace(str)))
 }
 
-// Boxed writes a stylized and templated message in a box to stdout
+// Boxed writes a stylized and templated message in a box to stdout using the default style config
 func Boxed(format string, a ...V) {
-	boxedCommon(String, format, a...)
+	boxedCommon(String, defaultBoxCfg, "", format, a...)
 }
 
-// BoxedErr writes a stylized and templated message in a box to stderr
+// BoxedErr writes a stylized and templated message in a box to stderr using the default style config
 func BoxedErr(format string, a ...V) {
-	boxedCommon(Err, format, a...)
+	boxedCommon(Err, defaultBoxCfg, "", format, a...)
+}
+
+// BoxedWithConfig writes a templated message in a box with customized style config to stdout
+func BoxedWithConfig(cfg box.Config, st style.Enum, title string, format string, a ...V) {
+	if st != style.None {
+		title = Sprintf(st, title)
+	}
+	// need to make sure no newlines are in the title otherwise box-cli-maker panics
+	title = strings.ReplaceAll(title, "\n", "")
+	boxedCommon(String, cfg, title, format, a...)
 }
 
 // Sprintf is used for returning the string (doesn't write anything)
@@ -452,5 +459,8 @@ func applyTmpl(format string, a ...V) string {
 // Fmt applies formatting and translation
 func Fmt(format string, a ...V) string {
 	format = translate.T(format)
+	if len(a) == 0 {
+		return format
+	}
 	return applyTmpl(format, a...)
 }

@@ -50,6 +50,10 @@ import (
 // Force is used to override checks for addons
 var Force bool = false
 
+// Refresh is used to refresh pods in specific cases when an addon is enabled
+// Currently only used for gcp-auth
+var Refresh bool = false
+
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 	klog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)
@@ -137,6 +141,9 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 
 	// check addon status before enabling/disabling it
 	if isAddonAlreadySet(cc, addon, enable) {
+		if addon.Name() == "gcp-auth" {
+			return nil
+		}
 		klog.Warningf("addon %s should already be in state %v", name, val)
 		if !enable {
 			return nil
@@ -185,6 +192,12 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
 	}
 
+	// Persist images even if the machine is running so starting gets the correct images.
+	images, customRegistries, err := assets.SelectAndPersistImages(addon, cc)
+	if err != nil {
+		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
+	}
+
 	mName := config.MachineName(*cc, cp)
 	host, err := machine.LoadHost(api, mName)
 	if err != nil || !machine.IsRunning(api, mName) {
@@ -219,11 +232,12 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	var networkInfo assets.NetworkInfo
 	if len(cc.Nodes) >= 1 {
 		networkInfo.ControlPlaneNodeIP = cc.Nodes[0].IP
+		networkInfo.ControlPlaneNodePort = cc.Nodes[0].Port
 	} else {
 		out.WarningT("At least needs control plane nodes to enable addon")
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo)
+	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 

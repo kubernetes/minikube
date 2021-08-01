@@ -39,8 +39,9 @@ import (
 
 // unpauseCmd represents the docker-pause command
 var unpauseCmd = &cobra.Command{
-	Use:   "unpause",
-	Short: "unpause Kubernetes",
+	Use:     "unpause",
+	Aliases: []string{"resume"},
+	Short:   "unpause Kubernetes",
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		register.SetEventLogPath(localpath.EventLog(cname))
@@ -105,7 +106,7 @@ var unpauseCmd = &cobra.Command{
 }
 
 func init() {
-	unpauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", constants.DefaultNamespaces, "namespaces to unpause")
+	unpauseCmd.Flags().StringSliceVarP(&namespaces, "namespaces", "n", constants.DefaultNamespaces, "namespaces to unpause")
 	unpauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, unpause all namespaces")
 	unpauseCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 }

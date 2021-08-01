@@ -1,0 +1,10 @@
+[Unit]
+Description=Auto Pause Service
+
+[Service]
+Type=simple
+ExecStart=/bin/auto-pause --container-runtime={{.ContainerRuntime}}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

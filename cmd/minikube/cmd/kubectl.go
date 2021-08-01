@@ -27,6 +27,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
@@ -78,6 +79,19 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 				os.Exit(1)
 			}
 			return
+		}
+
+		supported := false
+		arch := detect.RuntimeArch()
+		for _, a := range constants.SupportedArchitectures {
+			if arch == a {
+				supported = true
+				break
+			}
+		}
+		if !supported {
+			fmt.Fprintf(os.Stderr, "Not supported on: %s\n", arch)
+			os.Exit(1)
 		}
 
 		if len(args) > 1 && args[0] != "--help" {

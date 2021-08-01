@@ -1,21 +1,19 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
-  - tstromberg
   - afbjorklund
   - sharifelgamal
-  - RA489
   - medyagh
   - blueelvis
   - prasadkatti
-  - ilya-zuyev
   - prezha	
+  - spowelljr
 approvers:
-  - tstromberg
   - afbjorklund
   - sharifelgamal
   - medyagh
-  - ilya-zuyev
+  - spowelljr
+  - prezha	
 emeritus_approvers:
   - dlorenc
   - luxas
@@ -24,3 +22,4 @@ emeritus_approvers:
   - aaron-prindle
   - priyawadhwa
   - josedonizetti
+  - tstromberg

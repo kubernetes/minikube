@@ -1,5 +1,219 @@
 # Release Notes
 
+## Version 1.22.0 - 2021-07-07
+
+Features:
+* `minikube version`: add `--components` flag to list all included software [#11843](https://github.com/kubernetes/minikube/pull/11843)
+
+Minor Improvements:
+* auto-pause: add support for other container runtimes [#11834](https://github.com/kubernetes/minikube/pull/11834)
+* windows: support renaming binary to `kubectl.exe` and running as kubectl [#11819](https://github.com/kubernetes/minikube/pull/11819)
+
+Bugs:
+* Fix "kubelet Default-Start contains no runlevels" error [#11815](https://github.com/kubernetes/minikube/pull/11815)
+
+Version Upgrades:
+* bump default kubernetes version to v1.21.2 & newest kubernetes version to v1.22.0-beta.0 [#11901](https://github.com/kubernetes/minikube/pull/11901)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andriy Dzikh
+- Dakshraj Sharma
+- Ilya Zuyev
+- Jeff MAURY
+- Maxime Kjaer
+- Medya Ghazizadeh
+- Rajwinder Mahal
+- Sharif Elgamal
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (27 comments)
+- sharifelgamal (10 comments)
+- andriyDev (5 comments)
+- spowelljr (4 comments)
+- ilya-zuyev (3 comments)
+
+Thank you to our triage members for this release!
+
+- medyagh (16 comments)
+- spowelljr (7 comments)
+- afbjorklund (4 comments)
+- mahalrs (4 comments)
+- sharifelgamal (3 comments)
+
+## Version 1.22.0-beta.0 - 2021-06-28
+
+Features:
+
+* auto-pause addon: add support for arm64 [#11743](https://github.com/kubernetes/minikube/pull/11743)
+* `addon list`: add info on each addon's maintainer  [#11753](https://github.com/kubernetes/minikube/pull/11753)
+* add ability to pass max to `--cpu` and `--memory` flags [#11692](https://github.com/kubernetes/minikube/pull/11692)
+
+Bugs:
+
+* Fix `--base-image` caching for images specified by name:tag [#11603](https://github.com/kubernetes/minikube/pull/11603)
+* Fix embed-certs global config [#11576](https://github.com/kubernetes/minikube/pull/11576)
+* Fix a download link to use arm64 instead of amd64 [#11653](https://github.com/kubernetes/minikube/pull/11653)
+* fix downloading duplicate base image [#11690](https://github.com/kubernetes/minikube/pull/11690)
+* fix multi-node loosing track of nodes after second restart [#11731](https://github.com/kubernetes/minikube/pull/11731)
+* gcp-auth: do not override existing environment variables in pods [#11665](https://github.com/kubernetes/minikube/pull/11665)
+
+Minor improvements:
+
+* Allow running amd64 binary on M1 [#11674](https://github.com/kubernetes/minikube/pull/11674)
+* improve containerd experience on cgroup v2 [#11632](https://github.com/kubernetes/minikube/pull/11632)
+* Improve French locale [#11728](https://github.com/kubernetes/minikube/pull/11728)
+* Fix UI error for stoppping systemd service [#11667](https://github.com/kubernetes/minikube/pull/11667)
+* international languages: allow using LC_ALL env to set local language for windows [#11721](https://github.com/kubernetes/minikube/pull/11721)
+* Change registery_mirror to registery-mirror [#11678](https://github.com/kubernetes/minikube/pull/11678)
+
+Version Upgrades:
+
+* ISO: Upgrade podman to 3.1.2 [#11704](https://github.com/kubernetes/minikube/pull/11704)
+* Upgrade Buildroot to 2021.02 LTS with Linux 4.19 [#11688](https://github.com/kubernetes/minikube/pull/11688)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Andriy Dzikh
+- Daehyeok Mun
+- Dongjoon Hyun
+- Felipe Crescencio de Oliveira
+- Ilya Zuyev
+- JacekDuszenko
+- Jeff MAURY
+- Medya Ghazizadeh
+- Peixuan Ding
+- RA489
+- Sharif Elgamal
+- Steven Powell
+- Vishal Jain
+- zhangdb-git
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (63 comments)
+- sharifelgamal (9 comments)
+- ilya-zuyev (6 comments)
+- andriyDev (3 comments)
+- spowelljr (3 comments)
+- afbjorklund (1 comments)
+- prezha (1 comments)
+- tharun208 (1 comments)
+
+Thank you to our triage members for this release!
+
+## Version 1.21.0 - 2021-06-10
+* add more polish translations [#11587](https://github.com/kubernetes/minikube/pull/11587)
+* Modify MetricsServer to use v1 api version (instead of v1beta1). [#11584](https://github.com/kubernetes/minikube/pull/11584)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Andriy Dzikh
+- Ilya Zuyev
+- JacekDuszenko
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (11 comments)
+- medyagh (2 comments)
+- sharifelgamal (2 comments)
+- andriyDev (1 comments)
+
+Thank you to our triage members for this release!
+
+- RA489 (12 comments)
+- andriyDev (10 comments)
+- sharifelgamal (10 comments)
+- JacekDuszenko (7 comments)
+- spowelljr (5 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.21.0/) for this release!
+
+## Version 1.21.0-beta.0 - 2021-06-02
+Features:
+* Support setting addons from environmental variables [#11469](https://github.com/kubernetes/minikube/pull/11469)
+* Add "resume" as an alias for "unpause" [#11431](https://github.com/kubernetes/minikube/pull/11431)
+* Implement target node option for `cp` command [#11304](https://github.com/kubernetes/minikube/pull/11304)
+
+Bugs:
+* Fix delete command for paused kic driver with containerd/crio runtime [#11504](https://github.com/kubernetes/minikube/pull/11504)
+* kicbase: try image without sha before failing [#11559](https://github.com/kubernetes/minikube/pull/11559)
+* bug: return error on invalid function name in extract.TranslatableStrings [#11454](https://github.com/kubernetes/minikube/pull/11454)
+* Prevent downloading duplicate binaries already present in preload [#11461](https://github.com/kubernetes/minikube/pull/11461)
+* gcp-auth addon: do not reapply gcp-auth yamls on minikube restart [#11486](https://github.com/kubernetes/minikube/pull/11486)
+* Disable Non-Active Containers Runtimes [#11516](https://github.com/kubernetes/minikube/pull/11516)
+* Persist custom addon image/registry settings. [#11432](https://github.com/kubernetes/minikube/pull/11432)
+* Fix auto-pause on VMs (detect right control-plane IP) [#11438](https://github.com/kubernetes/minikube/pull/11438)
+
+Version Upgrades:
+* bump default k8s version to v1.20.7 and newest to v1.22.0-alpha.2 [#11525](https://github.com/kubernetes/minikube/pull/11525)
+* containerd: upgrade `io.containerd.runtime.v1.linux` to `io.containerd.runc.v2` (suppot cgroup v2) [#11325](https://github.com/kubernetes/minikube/pull/11325)
+* metallb-addon: Update metallb from 0.8.2 to 0.9.6 [#11410](https://github.com/kubernetes/minikube/pull/11410)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Akihiro Suda
+- Alessandro Lenzen
+- Anders F Björklund
+- Andriy Dzikh
+- Brian de Alwis
+- Claudia J. Kang
+- Daehyeok Mun
+- Emma
+- Evan Anderson
+- Evan Baker
+- Garen Torikian
+- Ilya Zuyev
+- Jasmine Hegman
+- Kent Iso
+- KushagraIndurkhya
+- Li Zhijian
+- Medya Ghazizadeh
+- Peixuan Ding
+- Predrag Rogic
+- Sharif Elgamal
+- Steven Powell
+- TAKAHASHI Shuuji
+- Thomas Güttler
+- Tomasz Janiszewski
+- Utkarsh Srivastava
+- VigoTheHacker
+- hex0punk
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (129 comments)
+- ilya-zuyev (20 comments)
+- afbjorklund (10 comments)
+- spowelljr (9 comments)
+- sharifelgamal (5 comments)
+- AkihiroSuda (1 comments)
+- andriyDev (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (34 comments)
+- medyagh (32 comments)
+- andriyDev (14 comments)
+- dinever (13 comments)
+- ilya-zuyev (11 comments)
+
+
 ## Version 1.20.0 - 2021-05-06
 
 Feature:

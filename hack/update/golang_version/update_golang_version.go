@@ -45,35 +45,59 @@ const (
 
 var (
 	schema = map[string]update.Item{
-		".github/workflows/iso.yml": {
-			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/kic_image.yml": {
-			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
-			},
-		},
 		".github/workflows/build.yml": {
 			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`go-version: '.*`: `go-version: '{{.StableVersion}}'`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
-		".travis.yml": {
+		".github/workflows/docs.yml": {
 			Replace: map[string]string{
-				`go:\n  - .*`: `go:{{printf "\n  - %s" .StableVersion}}`,
-				`go: .*`:      `go: {{.StableVersion}}`,
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/time-to-k8s.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/leaderboard.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/translations.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/update-k8s-versions.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/update-golang-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/time-to-k8s-public-chart.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/pr_verified.yaml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		"go.mod": {
@@ -83,12 +107,13 @@ var (
 		},
 		"hack/jenkins/common.sh": {
 			Replace: map[string]string{
-				`sudo \.\/installers\/check_install_golang\.sh \".*\" \"\/usr\/local\"`: `sudo ./installers/check_install_golang.sh "{{.StableVersion}}" "/usr/local"`,
+				`\.\/installers\/check_install_golang\.sh \".*\" \"\/usr\/local\" .*`: `./installers/check_install_golang.sh "{{.StableVersion}}" "/usr/local" || true`,
 			},
 		},
 		"Makefile": {
 			Replace: map[string]string{
-				`GO_VERSION \?= .*`: `GO_VERSION ?= {{.StableVersion}}`,
+				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
+				`GO_VERSION \?= 1.*`: `GO_VERSION ?= {{.StableVersion}}`,
 			},
 		},
 	}
@@ -123,7 +148,8 @@ func main() {
 
 // goVersion returns Golang stable version.
 func goVersions() (stable, stableMM string, err error) {
-	resp, err := http.Get("https://golang.org/VERSION?m=text")
+	// will update to the same image that kubernetes project uses
+	resp, err := http.Get("https://raw.githubusercontent.com/kubernetes/kubernetes/master/build/build-image/cross/VERSION")
 	if err != nil {
 		return "", "", err
 	}
@@ -131,7 +157,8 @@ func goVersions() (stable, stableMM string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	stable = strings.TrimPrefix(string(body), "go")
+	stable = strings.TrimPrefix(string(body), "v")
+	stable = strings.Split(stable, "-")[0]
 	mmp := strings.SplitN(stable, ".", 3)
 	stableMM = strings.Join(mmp[0:2], ".") // <major>.<minor> version
 	return stable, stableMM, nil

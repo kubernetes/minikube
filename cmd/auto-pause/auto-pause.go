@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,10 +40,11 @@ var mu sync.Mutex
 var runtimePaused bool
 var version = "0.0.1"
 
-// TODO: #10597 make this configurable to support containerd/cri-o
-var runtime = "docker"
+var runtime = flag.String("container-runtime", "docker", "Container runtime to use for (un)pausing")
 
 func main() {
+	flag.Parse()
+
 	// TODO: #10595 make this configurable
 	const interval = time.Minute * 1
 
@@ -89,7 +91,7 @@ func runPause() {
 
 	r := command.NewExecRunner(true)
 
-	cr, err := cruntime.New(cruntime.Config{Type: runtime, Runner: r})
+	cr, err := cruntime.New(cruntime.Config{Type: *runtime, Runner: r})
 	if err != nil {
 		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 	}
@@ -111,7 +113,7 @@ func runUnpause() {
 
 	r := command.NewExecRunner(true)
 
-	cr, err := cruntime.New(cruntime.Config{Type: runtime, Runner: r})
+	cr, err := cruntime.New(cruntime.Config{Type: *runtime, Runner: r})
 	if err != nil {
 		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 	}
@@ -130,7 +132,7 @@ func alreadyPaused() {
 	defer mu.Unlock()
 
 	r := command.NewExecRunner(true)
-	cr, err := cruntime.New(cruntime.Config{Type: runtime, Runner: r})
+	cr, err := cruntime.New(cruntime.Config{Type: *runtime, Runner: r})
 	if err != nil {
 		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
 	}

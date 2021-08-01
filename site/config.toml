@@ -129,6 +129,13 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	icon = "fas fa-envelope"
 	desc = "Interact with the minikube users here"
 
+[[params.links.user]]
+	name = "twitter"
+	url = "https://twitter.com/minikube_dev"
+	icon = "fab fa-twitter"
+	desc = "Follow minikube's official twitter for news/releases"
+
+
 # Developer relevant links. These will show up on right side of footer and in the community page if you have one.
 [[params.links.developer]]
 	name = "GitHub"

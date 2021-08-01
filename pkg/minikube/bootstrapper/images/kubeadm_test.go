@@ -29,9 +29,13 @@ func TestKubeadmImages(t *testing.T) {
 	tests := []struct {
 		version string
 		mirror  string
+		invalid bool
 		want    []string
 	}{
-		{"v1.17.0", "", []string{
+		{"invalid", "", true, nil},
+		{"v0.0.1", "", true, nil}, // too old
+		{"v2.0.0", "", true, nil}, // too new
+		{"v1.17.0", "", false, []string{
 			"k8s.gcr.io/kube-proxy:v1.17.0",
 			"k8s.gcr.io/kube-scheduler:v1.17.0",
 			"k8s.gcr.io/kube-controller-manager:v1.17.0",
@@ -43,19 +47,19 @@ func TestKubeadmImages(t *testing.T) {
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
-		{"v1.16.0", "k8s.gcr.io", []string{
-			"k8s.gcr.io/kube-proxy:v1.16.0",
-			"k8s.gcr.io/kube-scheduler:v1.16.0",
-			"k8s.gcr.io/kube-controller-manager:v1.16.0",
-			"k8s.gcr.io/kube-apiserver:v1.16.0",
+		{"v1.16.1", "k8s.gcr.io", false, []string{
+			"k8s.gcr.io/kube-proxy:v1.16.1",
+			"k8s.gcr.io/kube-scheduler:v1.16.1",
+			"k8s.gcr.io/kube-controller-manager:v1.16.1",
+			"k8s.gcr.io/kube-apiserver:v1.16.1",
 			"k8s.gcr.io/coredns:1.6.2",
 			"k8s.gcr.io/etcd:3.3.15-0",
 			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"k8s.gcr.io/dashboard:v2.1.0",
-			"k8s.gcr.io/metrics-scraper:v1.0.4",
+			"k8s.gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
+			"k8s.gcr.io/kubernetesui/dashboard:v2.1.0",
+			"k8s.gcr.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
-		{"v1.15.0", "", []string{
+		{"v1.15.0", "", false, []string{
 			"k8s.gcr.io/kube-proxy:v1.15.0",
 			"k8s.gcr.io/kube-scheduler:v1.15.0",
 			"k8s.gcr.io/kube-controller-manager:v1.15.0",
@@ -67,7 +71,7 @@ func TestKubeadmImages(t *testing.T) {
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
-		{"v1.14.0", "", []string{
+		{"v1.14.0", "", false, []string{
 			"k8s.gcr.io/kube-proxy:v1.14.0",
 			"k8s.gcr.io/kube-scheduler:v1.14.0",
 			"k8s.gcr.io/kube-controller-manager:v1.14.0",
@@ -79,7 +83,7 @@ func TestKubeadmImages(t *testing.T) {
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
-		{"v1.13.0", "", []string{
+		{"v1.13.0", "", false, []string{
 			"k8s.gcr.io/kube-proxy:v1.13.0",
 			"k8s.gcr.io/kube-scheduler:v1.13.0",
 			"k8s.gcr.io/kube-controller-manager:v1.13.0",
@@ -91,7 +95,7 @@ func TestKubeadmImages(t *testing.T) {
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
-		{"v1.12.0", "", []string{
+		{"v1.12.0", "", false, []string{
 			"k8s.gcr.io/kube-proxy:v1.12.0",
 			"k8s.gcr.io/kube-scheduler:v1.12.0",
 			"k8s.gcr.io/kube-controller-manager:v1.12.0",
@@ -103,11 +107,16 @@ func TestKubeadmImages(t *testing.T) {
 			"docker.io/kubernetesui/dashboard:v2.1.0",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 		}},
+		{"v1.11.0", "", true, nil},
+		{"v1.10.0", "", true, nil},
 	}
 	for _, tc := range tests {
 		got, err := Kubeadm(tc.mirror, tc.version)
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
+		if err == nil && tc.invalid {
+			t.Fatalf("expected err (%s): %v", tc.version, got)
+		}
+		if err != nil && !tc.invalid {
+			t.Fatalf("unexpected err (%s): %v", tc.version, err)
 		}
 		sort.Strings(got)
 		sort.Strings(tc.want)

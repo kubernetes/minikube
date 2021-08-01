@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"os/user"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,7 +45,8 @@ import (
 )
 
 var (
-	dashboardURLMode bool
+	dashboardURLMode     bool
+	dashboardExposedPort int
 	// Matches: 127.0.0.1:8001
 	// TODO(tstromberg): Get kubectl to implement a stable supported output format.
 	hostPortRe = regexp.MustCompile(`127.0.0.1:\d{4,}`)
@@ -63,6 +65,10 @@ var dashboardCmd = &cobra.Command{
 			if err := proxy.ExcludeIP(n.IP); err != nil {
 				klog.Errorf("Error excluding IP from proxy: %s", err)
 			}
+		}
+
+		if dashboardExposedPort < 0 || dashboardExposedPort > 65535 {
+			exit.Message(reason.HostKubectlProxy, "Invalid port")
 		}
 
 		kubectlVersion := co.Config.KubernetesConfig.KubernetesVersion
@@ -92,7 +98,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(style.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectlVersion, cname)
+		p, hostPort, err := kubectlProxy(kubectlVersion, cname, dashboardExposedPort)
 		if err != nil {
 			exit.Error(reason.HostKubectlProxy, "kubectl proxy", err)
 		}
@@ -126,10 +132,10 @@ var dashboardCmd = &cobra.Command{
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string, error) {
+func kubectlProxy(kubectlVersion string, contextName string, port int) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 
-	kubectlArgs := []string{"--context", contextName, "proxy", "--port=0"}
+	kubectlArgs := []string{"--context", contextName, "proxy", "--port", strconv.Itoa(port)}
 
 	var cmd *exec.Cmd
 	if kubectl, err := exec.LookPath("kubectl"); err == nil {
@@ -172,8 +178,8 @@ func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string,
 
 // readByteWithTimeout returns a byte from a reader or an indicator that a timeout has occurred.
 func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
-	bc := make(chan byte)
-	ec := make(chan error)
+	bc := make(chan byte, 1)
+	ec := make(chan error, 1)
 	go func() {
 		b, err := r.ReadByte()
 		if err != nil {
@@ -217,4 +223,5 @@ func checkURL(url string) error {
 
 func init() {
 	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display dashboard URL instead of opening a browser")
+	dashboardCmd.Flags().IntVar(&dashboardExposedPort, "port", 0, "Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.")
 }

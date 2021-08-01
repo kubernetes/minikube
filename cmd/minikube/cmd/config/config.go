@@ -76,7 +76,7 @@ var settings = []Setting{
 	{
 		name:        "cpus",
 		set:         SetInt,
-		validations: []setFn{IsPositive},
+		validations: []setFn{IsValidCPUs},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
@@ -123,19 +123,11 @@ var settings = []Setting{
 		set:  SetInt,
 	},
 	{
-		name: config.WantReportError,
-		set:  SetBool,
-	},
-	{
-		name: config.WantReportErrorPrompt,
-		set:  SetBool,
-	},
-	{
-		name: config.WantKubectlDownloadMsg,
-		set:  SetBool,
-	},
-	{
 		name: config.WantNoneDriverWarning,
+		set:  SetBool,
+	},
+	{
+		name: config.WantVirtualBoxDriverWarning,
 		set:  SetBool,
 	},
 	{
@@ -145,14 +137,6 @@ var settings = []Setting{
 	{
 		name: Bootstrapper,
 		set:  SetString,
-	},
-	{
-		name: config.ShowDriverDeprecationNotification,
-		set:  SetBool,
-	},
-	{
-		name: config.ShowBootstrapperDeprecationNotification,
-		set:  SetBool,
 	},
 	{
 		name: "insecure-registry",
@@ -172,7 +156,7 @@ var settings = []Setting{
 		setMap: SetMap,
 	},
 	{
-		name: "embed-certs",
+		name: config.EmbedCerts,
 		set:  SetBool,
 	},
 	{

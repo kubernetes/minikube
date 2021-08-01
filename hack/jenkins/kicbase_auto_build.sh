@@ -46,13 +46,13 @@ if [[ -z $KIC_VERSION ]]; then
 	now=$(date +%s)
 	KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
 	GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
-	DH_REPO=kicbase/build
+	DH_REPO=docker.io/kicbase/build
 	export KIC_VERSION=$KV-$now-$ghprbPullId
 else
 	# Actual kicbase release here
 	release=true
 	GCR_REPO=${GCR_REPO:-gcr.io/k8s-minikube/kicbase}
-	DH_REPO=${DH_REPO:-kicbase/stable}
+	DH_REPO=${DH_REPO:-docker.io/kicbase/stable}
 	export KIC_VERSION
 fi
 GCR_IMG=${GCR_REPO}:${KIC_VERSION}
@@ -67,16 +67,11 @@ CIBUILD=yes make push-kic-base-image | tee kic-logs.txt
 ec=$?
 if [ $ec -gt 0 ]; then
 	if [ "$release" = false ]; then
-		err=$(tail -100 kic-logs.txt)
-		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed, with the error below:
-		
-		<details>
-		<pre>
-		${err}
-		</pre>
-		</details>
-
-		Full logs are at https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit:0:7}/kic_image_build.txt
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed.  
+		See the logs at:
+	       	```
+		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/kicbase-${BUILD_NUMBER}/kic_image_build.txt
+		```
 		"
 	fi
 	exit $ec

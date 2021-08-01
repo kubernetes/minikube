@@ -36,26 +36,22 @@ const (
 	WantBetaUpdateNotification = "WantBetaUpdateNotification"
 	// ReminderWaitPeriodInHours is the key for ReminderWaitPeriodInHours
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
-	// WantReportError is the key for WantReportError
-	WantReportError = "WantReportError"
-	// WantReportErrorPrompt is the key for WantReportErrorPrompt
-	WantReportErrorPrompt = "WantReportErrorPrompt"
-	// WantKubectlDownloadMsg is the key for WantKubectlDownloadMsg
-	WantKubectlDownloadMsg = "WantKubectlDownloadMsg"
 	// WantNoneDriverWarning is the key for WantNoneDriverWarning
 	WantNoneDriverWarning = "WantNoneDriverWarning"
+	// WantVirtualBoxDriverWarning is the key for WantVirtualBoxDriverWarning
+	WantVirtualBoxDriverWarning = "WantVirtualBoxDriverWarning"
 	// ProfileName represents the key for the global profile parameter
 	ProfileName = "profile"
-	// ShowDriverDeprecationNotification is the key for ShowDriverDeprecationNotification
-	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
-	// ShowBootstrapperDeprecationNotification is the key for ShowBootstrapperDeprecationNotification
-	ShowBootstrapperDeprecationNotification = "ShowBootstrapperDeprecationNotification"
 	// UserFlag is the key for the global user flag (ex. --user=user1)
 	UserFlag = "user"
 	// AddonImages stores custom addon images config
 	AddonImages = "addon-images"
 	// AddonRegistries stores custom addon images config
 	AddonRegistries = "addon-registries"
+	// AddonListFlag represents the key for addons parameter
+	AddonListFlag = "addons"
+	// EmbedCerts represents the config for embedding certificates in kubeconfig
+	EmbedCerts = "EmbedCerts"
 )
 
 var (
@@ -67,8 +63,6 @@ var (
 	DockerOpt []string
 	// ExtraOptions contains extra options (if any)
 	ExtraOptions ExtraOptionSlice
-	// AddonList contains the list of addons
-	AddonList []string
 )
 
 // ErrNotExist is the error returned when a config does not exist

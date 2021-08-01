@@ -48,7 +48,10 @@ make verify-iso
 env BUILD_IN_DOCKER=y \
   make -j 16 \
   all \
+  out/minikube-linux-arm64 \
+  out/minikube-linux-arm64.tar.gz \
   out/minikube-darwin-arm64 \
+  out/minikube-darwin-arm64.tar.gz \
   out/minikube-installer.exe \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_arm64.deb" \
@@ -61,6 +64,7 @@ env BUILD_IN_DOCKER=y \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.ppc64le.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.s390x.rpm" \
   "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_arm64.deb" \
   "out/docker-machine-driver-kvm2-${RPM_VERSION}-${RPM_REVISION}.x86_64.rpm"
 
 # check if 'commit: <commit-id>' line contains '-dirty' commit suffix
@@ -75,6 +79,7 @@ fi
 
 # Don't upload temporary copies, avoid unused duplicate files in the release storage
 rm -f out/minikube-linux-x86_64
+rm -f out/minikube-linux-i686
 rm -f out/minikube-linux-aarch64
 rm -f out/minikube-linux-armhf
 rm -f out/minikube-linux-armv7hl

@@ -29,19 +29,15 @@ Configurable fields:
  * WantUpdateNotification
  * WantBetaUpdateNotification
  * ReminderWaitPeriodInHours
- * WantReportError
- * WantReportErrorPrompt
- * WantKubectlDownloadMsg
  * WantNoneDriverWarning
+ * WantVirtualBoxDriverWarning
  * profile
  * bootstrapper
- * ShowDriverDeprecationNotification
- * ShowBootstrapperDeprecationNotification
  * insecure-registry
  * hyperv-virtual-switch
  * disable-driver-mounts
  * cache
- * embed-certs
+ * EmbedCerts
  * native-ssh
 
 ```shell

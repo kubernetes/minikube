@@ -49,7 +49,7 @@ var addonsEnableCmd = &cobra.Command{
 		viper.Set(config.AddonRegistries, registries)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
 		if err != nil {
-			exit.Error(reason.InternalEnable, "enable failed", err)
+			exit.Error(reason.InternalAddonEnable, "enable failed", err)
 		}
 		if addon == "dashboard" {
 			tipProfileArg := ""
@@ -77,5 +77,6 @@ func init() {
 	addonsEnableCmd.Flags().StringVar(&images, "images", "", "Images used by this addon. Separated by commas.")
 	addonsEnableCmd.Flags().StringVar(&registries, "registries", "", "Registries used by this addon. Separated by commas.")
 	addonsEnableCmd.Flags().BoolVar(&addons.Force, "force", false, "If true, will perform potentially dangerous operations. Use with discretion.")
+	addonsEnableCmd.Flags().BoolVar(&addons.Refresh, "refresh", false, "If true, pods might get deleted and restarted on addon enable")
 	AddonsCmd.AddCommand(addonsEnableCmd)
 }

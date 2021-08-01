@@ -23,4 +23,4 @@ MINIKUBE_GCP_PROJECT_ID=<project ID> minikube start --output json --trace gcp
 
 There are many exporters available via [OpenTelemetry community contributions](https://github.com/open-telemetry/opentelemetry-collector-contrib).
 
-If you would like to see additional exporters, please create an [issue](https://github.com/kubernetes/minikube/issues) or refer to our [contribution][https://minikube.sigs.k8s.io/docs/contrib/] guidelines and submit a pull request. Thank you!
+If you would like to see additional exporters, please create an [issue](https://github.com/kubernetes/minikube/issues) or refer to our [contribution](https://minikube.sigs.k8s.io/docs/contrib/) guidelines and submit a pull request. Thank you!

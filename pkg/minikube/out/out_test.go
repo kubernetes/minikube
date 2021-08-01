@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/Delta456/box-cli-maker/v2"
+
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -159,6 +161,145 @@ func TestLatestLogPath(t *testing.T) {
 		}
 		if got != tt.want {
 			t.Errorf("os.Args = %s; latestLogFilePath() = %q; wanted %q", tt.args, got, tt.want)
+		}
+	}
+}
+
+func TestBoxed(t *testing.T) {
+	f := tests.NewFakeFile()
+	SetOutFile(f)
+	Boxed(`Running with {{.driver}} driver and port {{.port}}`, V{"driver": "docker", "port": 8000})
+	got := f.String()
+	want :=
+		`╭────────────────────────────────────────────────╮
+│                                                │
+│    Running with docker driver and port 8000    │
+│                                                │
+╰────────────────────────────────────────────────╯
+`
+	if got != want {
+		t.Errorf("Boxed() = %q, want %q", got, want)
+	}
+}
+
+func TestBoxedErr(t *testing.T) {
+	f := tests.NewFakeFile()
+	SetErrFile(f)
+	BoxedErr(`Running with {{.driver}} driver and port {{.port}}`, V{"driver": "docker", "port": 8000})
+	got := f.String()
+	want :=
+		`╭────────────────────────────────────────────────╮
+│                                                │
+│    Running with docker driver and port 8000    │
+│                                                │
+╰────────────────────────────────────────────────╯
+`
+	if got != want {
+		t.Errorf("Boxed() = %q, want %q", got, want)
+	}
+}
+
+func TestBoxedWithConfig(t *testing.T) {
+	testCases := []struct {
+		config box.Config
+		st     style.Enum
+		title  string
+		format string
+		args   []V
+		want   string
+	}{
+		{
+			box.Config{Px: 2, Py: 2},
+			style.None,
+			"",
+			"Boxed content",
+			nil,
+			`┌─────────────────┐
+│                 │
+│                 │
+│  Boxed content  │
+│                 │
+│                 │
+└─────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 0, Py: 0},
+			style.None,
+			"",
+			"Boxed content with 0 padding",
+			nil,
+			`┌────────────────────────────┐
+│Boxed content with 0 padding│
+└────────────────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 1, Py: 1, TitlePos: "Inside"},
+			style.None,
+			"Hello World",
+			"Boxed content with title inside",
+			nil,
+			`┌─────────────────────────────────┐
+│                                 │
+│           Hello World           │
+│                                 │
+│ Boxed content with title inside │
+│                                 │
+└─────────────────────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			style.None,
+			"Hello World",
+			"Boxed content with title inside",
+			nil,
+			`┌ Hello World ────────────────────┐
+│                                 │
+│ Boxed content with title inside │
+│                                 │
+└─────────────────────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			style.Tip,
+			"Hello World",
+			"Boxed content with title inside",
+			nil,
+			`┌ * Hello World ──────────────────┐
+│                                 │
+│ Boxed content with title inside │
+│                                 │
+└─────────────────────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			style.Tip,
+			// This case is to make sure newlines (\n) are removed before printing
+			// Otherwise box-cli-maker panices:
+			// https://github.com/Delta456/box-cli-maker/blob/7b5a1ad8a016ce181e7d8b05e24b54ff60b4b38a/box.go#L69-L71
+			"Hello \nWorld",
+			"Boxed content with title inside",
+			nil,
+			`┌ * Hello World ──────────────────┐
+│                                 │
+│ Boxed content with title inside │
+│                                 │
+└─────────────────────────────────┘
+`,
+		},
+	}
+
+	for _, tc := range testCases {
+		f := tests.NewFakeFile()
+		SetOutFile(f)
+		BoxedWithConfig(tc.config, tc.st, tc.title, tc.format, tc.args...)
+		got := f.String()
+		if tc.want != got {
+			t.Errorf("Expecting BoxedWithConfig(%v, %v, %s, %s, %s) = \n%s, want \n%s", tc.config, tc.st, tc.title, tc.format, tc.args, got, tc.want)
 		}
 	}
 }

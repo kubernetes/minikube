@@ -32,7 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-func testDocs(docPath string) error {
+func TestDocs(docPath string, pathToCheck string) error {
 	counter := 0
 	buf := bytes.NewBuffer([]byte{})
 	date := time.Now().Format("2006-01-02")
@@ -42,7 +42,7 @@ func testDocs(docPath string) error {
 		return err
 	}
 
-	err = filepath.Walk("test/integration", func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(pathToCheck, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() || !strings.HasSuffix(path, ".go") {
 			return nil
 		}
@@ -78,14 +78,14 @@ func testDocs(docPath string) error {
 				counter++
 				comments := fd.Doc
 				if comments == nil {
-					e := writeComment("NEEDS DOC\n", buf)
+					e := writeComment(fnName, "// NEEDS DOC\n", buf)
 					return e == nil
 				}
 				for _, comment := range comments.List {
 					if strings.Contains(comment.Text, "TODO") {
 						continue
 					}
-					e := writeComment(comment.Text, buf)
+					e := writeComment(fnName, comment.Text, buf)
 					if e != nil {
 						return false
 					}
@@ -99,11 +99,6 @@ func testDocs(docPath string) error {
 		})
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-
-	_, err = buf.WriteString(fmt.Sprintf("TEST COUNT: %d\n", counter))
 	if err != nil {
 		return err
 	}
@@ -134,9 +129,10 @@ func writeSubTest(testName string, w *bytes.Buffer) error {
 	return err
 }
 
-func writeComment(comment string, w *bytes.Buffer) error {
+func writeComment(testName string, comment string, w *bytes.Buffer) error {
 	// Remove the leading // from the testdoc comments
 	comment = comment[3:]
+	comment = strings.TrimPrefix(comment, testName+" ")
 	_, err := w.WriteString(comment + "\n")
 	return err
 }

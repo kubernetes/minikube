@@ -22,6 +22,8 @@ import (
 	"runtime"
 	"strings"
 
+	"k8s.io/minikube/pkg/minikube/detect"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -48,11 +50,11 @@ const (
 )
 
 // BeginCacheKubernetesImages caches images required for Kubernetes version in the background
-func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
+func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string, driverName string) {
 	// TODO: remove imageRepository check once #7695 is fixed
-	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime) {
+	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime, driverName) {
 		klog.Info("Caching tarball of preloaded images")
-		err := download.Preload(k8sVersion, cRuntime)
+		err := download.Preload(k8sVersion, cRuntime, driverName)
 		if err == nil {
 			klog.Infof("Finished verifying existence of preloaded tar for  %s on %s", k8sVersion, cRuntime)
 			return // don't cache individual images if preload is successful.
@@ -69,13 +71,13 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 	})
 }
 
-// HandleDownloadOnly caches appropariate binaries and images
-func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string) {
+// handleDownloadOnly caches appropariate binaries and images
+func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, containerRuntime, driverName string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
 		return
 	}
-	if err := doCacheBinaries(k8sVersion); err != nil {
+	if err := doCacheBinaries(k8sVersion, containerRuntime, driverName); err != nil {
 		exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
 	}
 	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
@@ -97,12 +99,16 @@ func CacheKubectlBinary(k8sVersion string) (string, error) {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVersion, runtime.GOOS, runtime.GOARCH)
+	return download.Binary(binary, k8sVersion, runtime.GOOS, detect.EffectiveArch())
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
-func doCacheBinaries(k8sVersion string) error {
-	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+func doCacheBinaries(k8sVersion, containerRuntime, driverName string) error {
+	existingBinaries := constants.KubernetesReleaseBinaries
+	if !download.PreloadExists(k8sVersion, containerRuntime, driverName) {
+		existingBinaries = nil
+	}
+	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), existingBinaries)
 }
 
 // beginDownloadKicBaseImage downloads the kic image
@@ -114,7 +120,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
-			baseImg = strings.Replace(baseImg, "gcr.io/k8s-minikube", cc.KubernetesConfig.ImageRepository, 1)
+			baseImg = strings.Replace(baseImg, "gcr.io", cc.KubernetesConfig.ImageRepository, 1)
 			cc.KicBaseImage = baseImg
 		}
 		var finalImg string
@@ -127,38 +133,43 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
-			if image.ExistsImageInCache(img) {
-				klog.Infof("%s exists in cache, skipping pull", img)
-				finalImg = img
-			} else {
-				klog.Infof("Downloading %s to local cache", img)
-				err = image.WriteImageToCache(img)
-				if err == nil {
-					klog.Infof("successfully saved %s as a tarball", img)
+
+			if driver.IsDocker(cc.Driver) {
+				if download.ImageExistsInDaemon(img) {
+					klog.Infof("%s exists in daemon, skipping load", img)
 					finalImg = img
+					return nil
 				}
+			}
+
+			klog.Infof("Downloading %s to local cache", img)
+			err = download.ImageToCache(img)
+			if err == nil {
+				klog.Infof("successfully saved %s as a tarball", img)
+				finalImg = img
 			}
 			if downloadOnly {
 				return err
 			}
 
-			if err := image.LoadFromTarball(cc.Driver, img); err == nil {
-				klog.Infof("successfully loaded %s from cached tarball", img)
-				// strip the digest from the img before saving it in the config
-				// because loading an image from tarball to daemon doesn't load the digest
-				finalImg = img
-				return nil
+			if cc.Driver == driver.Podman {
+				return fmt.Errorf("not yet implemented, see issue #8426")
 			}
-
 			if driver.IsDocker(cc.Driver) {
-				if image.ExistsImageInDaemon(img) {
-					klog.Infof("%s exists in daemon, skipping pull", img)
+				klog.Infof("Loading %s from local cache", img)
+				err = download.CacheToDaemon(img)
+				if err == nil {
+					klog.Infof("successfully loaded %s from cached tarball", img)
 					finalImg = img
 					return nil
 				}
+			}
+
+			if driver.IsDocker(cc.Driver) {
+				klog.Infof("failed to load %s, will try remote image if available: %v", img, err)
 
 				klog.Infof("Downloading %s to local daemon", img)
-				err = image.WriteImageToDaemon(img)
+				err = download.ImageToDaemon(img)
 				if err == nil {
 					klog.Infof("successfully downloaded %s", img)
 					finalImg = img
@@ -194,7 +205,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 	klog.Info("Successfully downloaded all kic artifacts")
 }
 
-// WaitCacheRequiredImages blocks until the required images are all cached.
+// waitCacheRequiredImages blocks until the required images are all cached.
 func waitCacheRequiredImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return
@@ -214,7 +225,7 @@ func saveImagesToTarFromConfig() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return image.SaveToDir(images, constants.ImageCacheDir)
+	return image.SaveToDir(images, constants.ImageCacheDir, false)
 }
 
 // CacheAndLoadImagesInConfig loads the images currently in the config file
@@ -227,7 +238,7 @@ func CacheAndLoadImagesInConfig(profiles []*config.Profile) error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheAndLoadImages(images, profiles)
+	return machine.CacheAndLoadImages(images, profiles, false)
 }
 
 func imagesInConfigFile() ([]string, error) {

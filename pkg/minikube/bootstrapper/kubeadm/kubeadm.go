@@ -32,7 +32,7 @@ import (
 
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
@@ -297,13 +297,12 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 	type step struct {
 		logTag       string
 		registerStep register.RegStep
-		stepMessage  string
 	}
 
 	steps := []step{
-		{logTag: "certs", registerStep: register.PreparingKubernetesCerts, stepMessage: "Generating certificates and keys ..."},
-		{logTag: "control-plane", registerStep: register.PreparingKubernetesControlPlane, stepMessage: "Booting up control plane ..."},
-		{logTag: "bootstrap-token", registerStep: register.PreparingKubernetesBootstrapToken, stepMessage: "Configuring RBAC rules ..."},
+		{logTag: "certs", registerStep: register.PreparingKubernetesCerts},
+		{logTag: "control-plane", registerStep: register.PreparingKubernetesControlPlane},
+		{logTag: "bootstrap-token", registerStep: register.PreparingKubernetesBootstrapToken},
 	}
 	nextStepIndex := 0
 
@@ -318,7 +317,17 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 			continue
 		}
 		register.Reg.SetStep(nextStep.registerStep)
-		out.Step(style.SubStep, nextStep.stepMessage)
+		// because the translation extract (make extract) needs simple strings to be included in translations we have to pass simple strings
+		if nextStepIndex == 0 {
+			out.Step(style.SubStep, "Generating certificates and keys ...")
+		}
+		if nextStepIndex == 1 {
+			out.Step(style.SubStep, "Booting up control plane ...")
+		}
+		if nextStepIndex == 2 {
+			out.Step(style.SubStep, "Configuring RBAC rules ...")
+		}
+
 		nextStepIndex++
 	}
 	wg.Done()
@@ -559,13 +568,13 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 		klog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
 		return true
 	}
-
-	st, err := kverify.APIServerStatus(k.c, hostname, port)
+	// cruntime.Enable() may restart kube-apiserver but does not wait for it to return back
+	apiStatusTimeout := 3000 * time.Millisecond
+	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)
 	if err != nil {
 		klog.Infof("needs reconfigure: apiserver error: %v", err)
 		return true
 	}
-
 	if st != state.Running {
 		klog.Infof("needs reconfigure: apiserver in state %s", st)
 		return true
@@ -839,8 +848,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // SetupCerts sets up certificates within the cluster.
 func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) error {
-	_, err := bootstrapper.SetupCerts(k.c, k8s, n)
-	return err
+	return bootstrapper.SetupCerts(k.c, k8s, n)
 }
 
 // UpdateCluster updates the control plane with cluster-level info.
@@ -858,12 +866,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "runtime")
 	}
 
-	if err := r.Preload(cfg.KubernetesConfig); err != nil {
+	if err := r.Preload(cfg); err != nil {
 		klog.Infof("preload failed, will try to load cached images: %v", err)
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
-		if err := machine.LoadCachedImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
+		if err := machine.LoadCachedImages(&cfg, k.c, images, constants.ImageCacheDir, false); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}

@@ -1,0 +1,12 @@
+{{ $id := .Get "id" }}
+{{ $selected := split $id "/" }}
+
+{{ $os := index $selected 1 }}
+{{ $arch := index $selected 2 }}
+{{ $release := index $selected 3 }}
+{{ $installer := index $selected 4 }}
+
+<div data-quiz-id="{{ with .Get "id"}}{{.}}{{end}}" class="quiz-instruction">
+<p>To install the latest minikube <b>{{ lower $release }}</b> release on <b>{{ $arch }}</b> <b>{{ $os }}</b> using <b>{{ replace $installer "Binary" "binary" }}</b>:</p>
+{{ .Inner }}
+</div>

@@ -120,28 +120,32 @@ minikube image help [command] [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube image list
+## minikube image load
 
-List images
+Load a image into minikube
 
 ### Synopsis
 
-List images
+Load a image into minikube
 
 ```shell
-minikube image list [flags]
+minikube image load IMAGE | ARCHIVE | - [flags]
 ```
-
-### Aliases
-
-[ls]
 
 ### Examples
 
 ```
+minikube image load image
+minikube image load image.tar
+```
 
-$ minikube image list
+### Options
 
+```
+      --daemon      Cache image from docker daemon
+      --overwrite   Overwrite image even if same image:tag name exists (default true)
+      --pull        Pull the remote image (no caching)
+      --remote      Cache image from remote registry
 ```
 
 ### Options inherited from parent commands
@@ -166,31 +170,28 @@ $ minikube image list
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube image load
+## minikube image ls
 
-Load a image into minikube
+List images
 
 ### Synopsis
 
-Load a image into minikube
+List images
 
 ```shell
-minikube image load IMAGE | ARCHIVE | - [flags]
+minikube image ls [flags]
 ```
+
+### Aliases
+
+[list]
 
 ### Examples
 
 ```
-minikube image load image
-minikube image load image.tar
-```
 
-### Options
+$ minikube image ls
 
-```
-      --daemon   Cache image from docker daemon
-      --pull     Pull the remote image (no caching)
-      --remote   Cache image from remote registry
 ```
 
 ### Options inherited from parent commands
@@ -229,7 +230,7 @@ minikube image rm IMAGE [IMAGE...] [flags]
 
 ### Aliases
 
-[unload]
+[remove unload]
 
 ### Examples
 

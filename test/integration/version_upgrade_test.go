@@ -87,6 +87,11 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 			legacyVersion = "v1.9.0"
 		}
 	}
+	// the version containerd in ISO was upgraded to 1.4.2
+	// we need it to use runc.v2 plugin
+	if ContainerRuntime() == "containerd" {
+		legacyVersion = "v1.16.0"
+	}
 
 	tf, err := installRelease(legacyVersion)
 	if err != nil {
@@ -98,7 +103,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	rr := &RunResult{}
 	r := func() error {
 		c := exec.CommandContext(ctx, tf.Name(), args...)
-		legacyEnv := []string{}
+		var legacyEnv []string
 		// replace the global KUBECONFIG with a fresh kubeconfig
 		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
 		// see: https://github.com/kubernetes/minikube/issues/10210
@@ -155,7 +160,15 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 		if arm64Platform() {
 			// first release with non-experimental arm64 KIC
 			legacyVersion = "v1.17.0"
+		} else {
+			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
+			legacyVersion = "v1.9.0"
 		}
+	}
+	if ContainerRuntime() == "containerd" {
+		// the version containerd in ISO was upgraded to 1.4.2
+		// we need it to use runc.v2 plugin
+		legacyVersion = "v1.16.0"
 	}
 
 	tf, err := installRelease(legacyVersion)
@@ -168,7 +181,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	rr := &RunResult{}
 	r := func() error {
 		c := exec.CommandContext(ctx, tf.Name(), args...)
-		legacyEnv := []string{}
+		var legacyEnv []string
 		// replace the global KUBECONFIG with a fresh kubeconfig
 		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
 		// see: https://github.com/kubernetes/minikube/issues/10210
@@ -266,7 +279,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 	}
 
 	if cv.ServerVersion.GitVersion != constants.NewestKubernetesVersion {
-		t.Fatalf("expected server version %s is not the same with latest version %s", cv.ServerVersion.GitVersion, constants.NewestKubernetesVersion)
+		t.Fatalf("server version %s is not the same with the expected version %s after upgrade", cv.ServerVersion.GitVersion, constants.NewestKubernetesVersion)
 	}
 
 	t.Logf("Attempting to downgrade Kubernetes (should fail)")

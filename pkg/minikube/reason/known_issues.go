@@ -267,6 +267,15 @@ var providerIssues = []match{
 		GOOS:   []string{"windows"},
 		Regexp: re(`docker:.*Mounts denied: EOF`),
 	},
+	{
+		Kind: Kind{
+			ID:       "PR_DOCKER_VER_UNSUPPORTED",
+			ExitCode: ExProviderError,
+			Advice:   "Update Docker to the latest minor version, this version is unsupported",
+			Issues:   []int{10362},
+		},
+		Regexp: re(`unexpected "=" in operand`),
+	},
 
 	// Hyperkit hypervisor
 	{
@@ -999,6 +1008,23 @@ var guestIssues = []match{
 	},
 	{
 		Kind: Kind{
+			ID:       "GUEST_INCORRECT_ARCH",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "You might be using an amd64 version of minikube on a M1 Mac, use the arm64 version of minikube instead",
+			Issues:   []int{10243},
+		},
+		Regexp: re(`qemu: uncaught target signal 11 (Segmentation fault) - core dumped`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_CNI_INCOMPATIBLE",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "Bridge CNI is incompatible with multi-node clusters, use a different CNI",
+		},
+		Regexp: re(`bridge CNI is incompatible with multi-node clusters`),
+	},
+	{
+		Kind: Kind{
 			ID:       "GUEST_PROVISION_ACQUIRE_LOCK",
 			ExitCode: ExGuestError,
 			Advice:   "Please try purging minikube using `minikube delete --all --purge`",
@@ -1135,6 +1161,16 @@ var controlPlaneIssues = []match{
 			Issues:       []int{9175},
 		},
 		Regexp: re(`apiServer.certSANs: Invalid value`),
+	},
+	{
+		Kind: Kind{
+			ID:           "K8S_UNHEALTHY_CONTROL_PLANE",
+			ExitCode:     ExControlPlaneTimeout,
+			Advice:       "Control Plane could not update, try minikube delete --all --purge",
+			NewIssueLink: true,
+			Issues:       []int{11417},
+		},
+		Regexp: re(`controlPlane never updated to`),
 	},
 }
 

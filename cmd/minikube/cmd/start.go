@@ -28,10 +28,11 @@ import (
 	"os/user"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -50,8 +51,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -120,7 +123,7 @@ func platform() string {
 
 	// This environment is exotic, let's output a bit more.
 	if vrole == "guest" || runtime.GOARCH != "amd64" {
-		if vsys != "" {
+		if vrole == "guest" && vsys != "" {
 			s.WriteString(fmt.Sprintf(" (%s/%s)", vsys, runtime.GOARCH))
 		} else {
 			s.WriteString(fmt.Sprintf(" (%s)", runtime.GOARCH))
@@ -159,14 +162,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	// can be configured as MINIKUBE_IMAGE_REPOSITORY and IMAGE_MIRROR_COUNTRY
 	// this should be updated to documentation
 	if len(registryMirror) == 0 {
-		registryMirror = viper.GetStringSlice("registry_mirror")
+		registryMirror = viper.GetStringSlice("registry-mirror")
 	}
 
 	if !config.ProfileNameValid(ClusterFlagValue()) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
 		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 2 characters, starting with alphanumeric.")
 	}
-
 	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		kind := reason.HostConfigLoad
@@ -177,7 +179,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if existing != nil {
-		upgradeExistingConfig(existing)
+		upgradeExistingConfig(cmd, existing)
 	} else {
 		validateProfileName()
 	}
@@ -214,7 +216,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			// Walk down the rest of the options
 			for _, alt := range alts {
 				// Skip non-default drivers
-				if !ds.Default {
+				if !alt.Default {
 					continue
 				}
 				out.WarningT("Startup with {{.old_driver}} driver failed, trying with alternate driver {{.new_driver}}: {{.error}}", out.V{"old_driver": ds.Name, "new_driver": alt.Name, "error": err})
@@ -401,7 +403,7 @@ func updateDriver(driverName string) {
 	v, err := version.GetSemverVersion()
 	if err != nil {
 		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+	} else if err := auxdriver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
 		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
 	}
 }
@@ -588,10 +590,39 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
 		out.Step(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
+		sort.Slice(rejects, func(i, j int) bool {
+			if rejects[i].Priority == rejects[j].Priority {
+				return rejects[i].Preference > rejects[j].Preference
+			}
+			return rejects[i].Priority > rejects[j].Priority
+		})
 		for _, r := range rejects {
+			if !r.Default {
+				continue
+			}
 			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+			if r.Suggestion != "" {
+				out.Infof("{{ .name }}: Suggestion: {{ .suggestion}}", out.V{"name": r.Name, "suggestion": r.Suggestion})
+			}
 		}
-		exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		foundStoppedDocker := false
+		foundUnhealthy := false
+		for _, reject := range rejects {
+			if reject.Name == driver.Docker && reject.State.Installed && !reject.State.Running {
+				foundStoppedDocker = true
+				break
+			} else if reject.State.Installed && !reject.State.Healthy {
+				foundUnhealthy = true
+				break
+			}
+		}
+		if foundStoppedDocker {
+			exit.Message(reason.DrvDockerNotRunning, "Found docker, but the docker service isn't running. Try restarting the docker service.")
+		} else if foundUnhealthy {
+			exit.Message(reason.DrvNotHealthy, "Found driver(s) but none were healthy. See above for suggestions how to fix installed drivers.")
+		} else {
+			exit.Message(reason.DrvNotDetected, "No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		}
 	}
 
 	if len(alts) > 1 {
@@ -715,9 +746,11 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 // validateDriver validates that the selected driver appears sane, exits if not
 func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
+	os := detect.RuntimeOS()
+	arch := detect.RuntimeArch()
 	klog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": runtime.GOOS, "arch": runtime.GOARCH})
+		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": os, "arch": arch})
 	}
 
 	// if we are only downloading artifacts for a driver, we can stop validation here
@@ -997,56 +1030,49 @@ func validateRequestedMemorySize(req int, drvName string) {
 
 // validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
 func validateCPUCount(drvName string) {
-	var cpuCount int
-	if driver.BareMetal(drvName) {
+	var availableCPUs int
 
-		// Uses the gopsutil cpu package to count the number of logical cpu cores
+	cpuCount := getCPUCount(drvName)
+	isKIC := driver.IsKIC(drvName)
+
+	if isKIC {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			si, err = oci.DaemonInfo(drvName)
+			if err != nil {
+				exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+			}
+		}
+		availableCPUs = si.CPUs
+	} else {
 		ci, err := cpu.Counts(true)
 		if err != nil {
-			klog.Warningf("Unable to get CPU info: %v", err)
-		} else {
-			cpuCount = ci
+			exit.Message(reason.Usage, "Unable to get CPU info: {{.err}}", out.V{"err": err})
 		}
-	} else {
-		cpuCount = viper.GetInt(cpus)
+		availableCPUs = ci
 	}
 
 	if cpuCount < minimumCPUS {
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
-	if !driver.IsKIC((drvName)) {
-		return
-	}
-
-	si, err := oci.CachedDaemonInfo(drvName)
-	if err != nil {
-		out.Styled(style.Confused, "Failed to verify '{{.driver_name}} info' will try again ...", out.V{"driver_name": drvName})
-		si, err = oci.DaemonInfo(drvName)
-		if err != nil {
-			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
-		}
-
-	}
-
-	if si.CPUs < cpuCount {
-
+	if availableCPUs < cpuCount {
 		if driver.IsDockerDesktop(drvName) {
 			out.Styled(style.Empty, `- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.`, out.V{"driver_name": drvName})
 			if runtime.GOOS == "darwin" {
-				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`, out.V{"driver_name": drvName})
+				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-mac/#resources`)
 			}
 			if runtime.GOOS == "windows" {
 				out.String("\n\t")
-				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`, out.V{"driver_name": drvName})
+				out.Styled(style.Empty, `- Docs https://docs.docker.com/docker-for-windows/#resources`)
 			}
 		}
 
-		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": si.CPUs})
+		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": availableCPUs})
 	}
 
 	// looks good
-	if si.CPUs >= 2 {
+	if availableCPUs >= 2 {
 		return
 	}
 
@@ -1114,6 +1140,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		if !validRuntime {
 			exit.Message(reason.Usage, `Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
 		}
+
+		validateCNI(cmd, runtime)
 	}
 
 	if driver.BareMetal(drvName) {
@@ -1176,7 +1204,20 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	validateRegistryMirror()
 	validateInsecureRegistry()
+}
 
+// if container runtime is not docker, check that cni is not disabled
+func validateCNI(cmd *cobra.Command, runtime string) {
+	if runtime == "docker" {
+		return
+	}
+	if cmd.Flags().Changed(cniFlag) && strings.ToLower(viper.GetString(cniFlag)) == "false" {
+		if viper.GetBool(force) {
+			out.WarnReason(reason.Usage, "You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI", out.V{"name": runtime})
+		} else {
+			exit.Message(reason.Usage, "The \"{{.name}}\" container runtime requires CNI", out.V{"name": runtime})
+		}
+	}
 }
 
 // validateChangedMemoryFlags validates memory related flags.
@@ -1188,11 +1229,30 @@ func validateChangedMemoryFlags(drvName string) {
 	if !driver.HasResourceLimits(drvName) {
 		out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 	}
-	req, err := util.CalculateSizeInMB(viper.GetString(memory))
-	if err != nil {
-		exitIfNotForced(reason.Usage, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+	var req int
+	var err error
+	memString := viper.GetString(memory)
+	if memString == constants.MaxResources {
+		sysLimit, containerLimit, err := memoryLimits(drvName)
+		if err != nil {
+			klog.Warningf("Unable to query memory limits: %+v", err)
+		}
+		req = noLimitMemory(sysLimit, containerLimit)
+	} else {
+		req, err = util.CalculateSizeInMB(memString)
+		if err != nil {
+			exitIfNotForced(reason.Usage, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": memString, "error": err})
+		}
 	}
 	validateRequestedMemorySize(req, drvName)
+}
+
+func noLimitMemory(sysLimit int, containerLimit int) int {
+	if containerLimit != 0 {
+		return containerLimit
+	}
+	// Recommend 1GB to handle OS/VM overhead
+	return sysLimit - 1024
 }
 
 // This function validates if the --registry-mirror
@@ -1214,26 +1274,36 @@ func validateRegistryMirror() {
 
 // This function validates if the --image-repository
 // args match the format of registry.cn-hangzhou.aliyuncs.com/google_containers
-func validateImageRepository(imagRepo string) (vaildImageRepo string) {
+// also "<hostname>[:<port>]"
+func validateImageRepository(imageRepo string) (validImageRepo string) {
 
-	if strings.ToLower(imagRepo) == "auto" {
-		vaildImageRepo = "auto"
+	if strings.ToLower(imageRepo) == "auto" {
+		validImageRepo = "auto"
 	}
-	URL, err := url.Parse(imagRepo)
+	URL, err := url.Parse(imageRepo)
+
 	if err != nil {
 		klog.Errorln("Error Parsing URL: ", err)
 	}
-	// tips when imagRepo ended with a trailing /.
-	if strings.HasSuffix(imagRepo, "/") {
-		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
-	}
-	// tips when imageRepo started with scheme.
-	if URL.Scheme != "" {
-		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, it will be as a domian, removed automatically", out.V{"scheme": URL.Scheme})
+
+	var imageRepoPort string
+
+	if URL.Port() != "" && strings.Contains(imageRepo, ":"+URL.Port()) {
+		imageRepoPort = ":" + URL.Port()
 	}
 
-	vaildImageRepo = URL.Hostname() + strings.TrimSuffix(URL.Path, "/")
-	return
+	// tips when imageRepo ended with a trailing /.
+	if strings.HasSuffix(imageRepo, "/") {
+		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
+	}
+	// tips when imageRepo started with scheme such as http(s).
+	if URL.Scheme != "" {
+		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, which will be removed automatically", out.V{"scheme": URL.Scheme})
+	}
+
+	validImageRepo = URL.Hostname() + imageRepoPort + strings.TrimSuffix(URL.Path, "/")
+
+	return validImageRepo
 }
 
 // This function validates if the --listen-address
@@ -1462,5 +1532,8 @@ func exitGuestProvision(err error) {
 	if errors.Cause(err) == oci.ErrInsufficientDockerStorage {
 		exit.Message(reason.RsrcInsufficientDockerStorage, "preload extraction failed: \"No space left on device\"")
 	}
-	exit.Error(reason.GuestProvision, "error provisioning host", err)
+	if errors.Cause(err) == oci.ErrGetSSHPortContainerNotRunning {
+		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited prematurely after it was created, consider investigating Docker's performance/health.")
+	}
+	exit.Error(reason.GuestProvision, "error provisioning guest", err)
 }
