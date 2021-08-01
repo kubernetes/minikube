@@ -152,7 +152,7 @@ func formatKubeadmImageList(version, data string) (string, error) {
 		return "", err
 	}
 
-	return bytesBuffer.String(), nil
+	return strings.TrimLeft(bytesBuffer.String(), "\n"), nil
 }
 
 func downloadFile(url, fileName string) error {

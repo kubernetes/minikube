@@ -27,7 +27,6 @@ var (
 			"k8s.gcr.io/kube-scheduler":          "v1.21.3",
 			"k8s.gcr.io/pause":                   "3.5",
 		},
-
 		"v1.21": {
 			"k8s.gcr.io/coredns/coredns":         "v1.8.0",
 			"k8s.gcr.io/etcd":                    "3.4.13-0",

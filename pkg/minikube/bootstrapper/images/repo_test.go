@@ -52,11 +52,11 @@ func Test_minikubeRepo(t *testing.T) {
 	}{
 		{
 			"",
-			DefaultMinikubeRepo,
+			"gcr.io/k8s-minikube",
 		},
 		{
 			"mirror.k8s.io",
-			"mirror.k8s.io",
+			"mirror.k8s.io/k8s-minikube",
 		},
 	}
 

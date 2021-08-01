@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/constants"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 
 	"k8s.io/minikube/pkg/version"
 )

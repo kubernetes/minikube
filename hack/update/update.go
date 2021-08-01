@@ -64,7 +64,7 @@ func init() {
 	}
 
 	// used in update_kubeadm_constants.go
-	flag.String("kubernetes-version", "", "kubernetes-version")
+	flag.String("kubernetes-version", "latest", "kubernetes-version")
 	flag.Parse()
 	defer klog.Flush()
 
