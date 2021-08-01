@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/json"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -86,7 +87,13 @@ var versionCmd = &cobra.Command{
 				if gitCommitID != "" {
 					out.Ln("commit: %v", gitCommitID)
 				}
-				for k, v := range data {
+				keys := make([]string, 0, len(data))
+				for k := range data {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				for _, k := range keys {
+					v := data[k]
 					// for backward compatibility we keep displaying the old way for these two
 					if k == "minikubeVersion" || k == "commit" {
 						continue
