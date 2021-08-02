@@ -1,6 +1,6 @@
 ---
 title: "Setup minikube as CI step in github actions"
-linkTitle: "Minikube in github actions"
+linkTitle: "Minikube in Github Actions"
 weight: 1
 date: 2020-06-02
 description: >
