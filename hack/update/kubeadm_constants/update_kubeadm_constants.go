@@ -84,7 +84,7 @@ func main() {
 			klog.Fatalln(err)
 		}
 
-		data := Data{ImageMap: imageMapString}
+		var data Data
 		schema := map[string]update.Item{
 			minikubeConstantsFilePath: {
 				Replace: map[string]string{},
@@ -94,9 +94,11 @@ func main() {
 		majorMinorVersion := semver.MajorMinor(imageVersion)
 
 		if _, ok := constants.KubeadmImages[majorMinorVersion]; !ok {
+			data = Data{ImageMap: imageMapString}
 			schema[minikubeConstantsFilePath].Replace[`KubeadmImages = .*`] =
 				`KubeadmImages = map[string]map[string]string{ {{.ImageMap}}`
 		} else {
+			data = Data{ImageMap: strings.TrimLeft(imageMapString, "\n")}
 			versionIdentifier := fmt.Sprintf(`"%s": {[^}]+},`, majorMinorVersion)
 			schema[minikubeConstantsFilePath].Replace[versionIdentifier] = "{{.ImageMap}}"
 		}
@@ -152,7 +154,7 @@ func formatKubeadmImageList(version, data string) (string, error) {
 		return "", err
 	}
 
-	return strings.TrimLeft(bytesBuffer.String(), "\n"), nil
+	return bytesBuffer.String(), nil
 }
 
 func downloadFile(url, fileName string) error {

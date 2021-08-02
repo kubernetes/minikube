@@ -17,7 +17,6 @@ limitations under the License.
 package images
 
 import (
-	"fmt"
 	"sort"
 	"testing"
 
@@ -121,7 +120,6 @@ func TestKubeadmImages(t *testing.T) {
 		sort.Strings(got)
 		sort.Strings(tc.want)
 		if diff := cmp.Diff(tc.want, got); diff != "" {
-			fmt.Println(diff)
 			t.Errorf("%s images mismatch (-want +got):\n%s", tc.version, diff)
 		}
 	}
