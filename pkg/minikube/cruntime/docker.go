@@ -40,6 +40,9 @@ import (
 // KubernetesContainerPrefix is the prefix of each Kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
+const InternalDockerCRISocket = "/var/run/dockershim.sock"
+const ExternalDockerCRISocket = "/var/run/cri-dockerd.sock"
+
 // ErrISOFeature is the error returned when disk image is missing features
 type ErrISOFeature struct {
 	missing string
@@ -64,6 +67,7 @@ type Docker struct {
 	KubernetesVersion semver.Version
 	Init              sysinit.Manager
 	UseCRI            bool
+	CRIService        string
 }
 
 // Name is a human readable name for Docker
@@ -92,7 +96,7 @@ func (r *Docker) SocketPath() string {
 	if r.Socket != "" {
 		return r.Socket
 	}
-	return "/var/run/dockershim.sock"
+	return InternalDockerCRISocket
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
@@ -140,7 +144,20 @@ func (r *Docker) Enable(disOthers, forceSystemd bool) error {
 		return r.Init.Restart("docker")
 	}
 
-	return r.Init.Start("docker")
+	if err := r.Init.Start("docker"); err != nil {
+		return err
+	}
+
+	if r.CRIService != "" {
+		if err := r.Init.Enable(r.CRIService); err != nil {
+			return err
+		}
+		if err := r.Init.Start(r.CRIService); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Restart restarts Docker on a host
@@ -161,6 +178,14 @@ func (r *Docker) Disable() error {
 	}
 	if err := r.Init.Disable("docker.socket"); err != nil {
 		klog.ErrorS(err, "Failed to disable", "service", "docker.socket")
+	}
+	if r.CRIService != "" {
+		if err := r.Init.Stop(r.CRIService); err != nil {
+			return err
+		}
+		if err := r.Init.Disable(r.CRIService); err != nil {
+			return err
+		}
 	}
 	return r.Init.Mask("docker.service")
 }
