@@ -5,7 +5,7 @@ After=buildkit.socket
 Documentation=https://github.com/moby/buildkit
 
 [Service]
-ExecStart=/usr/local/bin/buildkitd --addr fd:// --oci-worker=false --containerd-worker=true --containerd-worker-namespace=k8s.io
+ExecStart=/usr/sbin/buildkitd --addr fd:// --oci-worker=false --containerd-worker=true --containerd-worker-namespace=k8s.io
 
 [Install]
 WantedBy=multi-user.target

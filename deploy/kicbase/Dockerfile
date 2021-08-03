@@ -142,6 +142,7 @@ COPY deploy/kicbase/containerd-fuse-overlayfs.service /etc/systemd/system/contai
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
  && echo "Installing buildkit ..." \
+    && addgroup --system buildkit
     && export BUILDKIT_BASE_URL="https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}" \
     && curl -sSL --retry 5 --output /tmp/buildkit.tgz "${BUILDKIT_BASE_URL}/buildkit-${BUILDKIT_VERSION}.linux-${ARCH}.tar.gz" \
     && tar -C /usr/local -xzvf /tmp/buildkit.tgz \
@@ -209,7 +210,8 @@ EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
 RUN adduser --ingroup docker --disabled-password --gecos '' docker 
 RUN adduser docker sudo
-RUN adduser docker podman buildkit
+RUN adduser docker podman
+RUN adduser docker buildkit
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER docker
 RUN mkdir /home/docker/.ssh
