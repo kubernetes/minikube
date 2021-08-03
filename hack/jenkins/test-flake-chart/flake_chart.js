@@ -14,11 +14,12 @@ function displayError(message) {
   document.body.appendChild(element);
 }
 
-// Creates a generator that reads the response body one line at a time.
-async function* bodyByLinesIterator(response, updateProgress) {
+// Reads `response` into an array of lines while calling `updateProgress` in between.
+async function getBodyLinesWithProgress(response, updateProgress) {
   const utf8Decoder = new TextDecoder('utf-8');
   const reader = response.body.getReader();
 
+  const lines = [];
   let pendingText = "";
   let readerDone = false;
   while (!readerDone) {
@@ -37,16 +38,17 @@ async function* bodyByLinesIterator(response, updateProgress) {
       const fullLine = pendingText + sublines[i];
       pendingText = "";
       if (fullLine !== "") {
-        yield fullLine;
+        lines.push(fullLine);
       }
     }
     pendingText = sublines[sublines.length - 1];
   }
 
-  // If there is any text remaining, return it.
+  // If there is any text remaining, append it.
   if (pendingText !== "") {
-    yield pendingText;
+    lines.push(pendingText);
   }
+  return lines;
 }
 
 // Determines whether `str` matches at least one value in `enumObject`.
@@ -90,12 +92,12 @@ async function loadTestData() {
   document.body.appendChild(box);
 
   let readBytes = 0;
-  const lines = bodyByLinesIterator(response, value => {
+  const lines = await getBodyLinesWithProgress(response, value => {
     readBytes += value;
     progressBar.setAttribute("value", readBytes);
   });
   // Consume the header to ensure the data has the right number of fields.
-  const header = (await lines.next()).value;
+  const header = lines[0];
   if (header.split(",").length != 9) {
     document.body.removeChild(box);
     throw `Fetched CSV data contains wrong number of fields. Expected: 9. Actual Header: "${header}"`;
@@ -103,7 +105,8 @@ async function loadTestData() {
 
   const testData = [];
   let lineData = ["", "", "", "", "", "", "", "", ""];
-  for await (const line of lines) {
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
     let splitLine = line.split(",");
     if (splitLine.length != 9) {
       console.warn(`Found line with wrong number of fields. Actual: ${splitLine.length} Expected: 9. Line: "${line}"`);
