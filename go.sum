@@ -70,6 +70,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Delta456/box-cli-maker/v2 v2.2.1 h1:uTcuvT6Ty+LBHuRUdFrJBpqP9RhtLxI5+5ZpKYAUuVw=
 github.com/Delta456/box-cli-maker/v2 v2.2.1/go.mod h1:R7jxZHK2wGBR2Luz/Vgi8jP5fz1ljUXgu2o2JQNmvFU=
+github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2 h1:rMamBsR6iCT9Y5m2Il6vFGJvY7FAgck4AoA/LobheKU=
+github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
 github.com/GoogleCloudPlatform/k8s-cloud-provider v0.0.0-20200415212048-7901bc822317/go.mod h1:DF8FZRxMHMGv/vP2lQP6h+dYzzjpuRn24VeRiYn3qjQ=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0 h1:ljU7eS7Fe0eGWEJxhoIjGANPEhx2f5PKTbDjvT61Kwk=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0/go.mod h1:TLDTgf8D4fD8Y1DizdJKtfIjkHJZU1J+mieFB1qS5T8=

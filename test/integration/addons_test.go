@@ -700,7 +700,20 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 		// Make sure the pod is up and running, which means we successfully pulled the private image down
 		// 8 minutes, because 4 is not enough for images to pull in all cases.
-		_, err := PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+		if err != nil {
+			t.Fatalf("wait for private image: %v", err)
+		}
+
+		// Try it with a European mirror as well
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image-eu.yaml")))
+		if err != nil {
+			t.Fatalf("print env project: %v", err)
+		}
+
+		// Make sure the pod is up and running, which means we successfully pulled the private image down
+		// 8 minutes, because 4 is not enough for images to pull in all cases.
+		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image-eu", Minutes(8))
 		if err != nil {
 			t.Fatalf("wait for private image: %v", err)
 		}

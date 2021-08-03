@@ -23,8 +23,10 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
+	gcr_config "github.com/GoogleCloudPlatform/docker-credential-gcr/config"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	corev1 "k8s.io/api/core/v1"
@@ -131,8 +133,16 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 	token, err := creds.TokenSource.Token()
 	// Only try to add secret if Token was found
 	if err == nil {
+		dockercfg := ""
+		registries := append(gcr_config.DefaultGCRRegistries[:], gcr_config.DefaultARRegistries[:]...)
+		for _, reg := range registries {
+			dockercfg += fmt.Sprintf(`"https://%s":{"username":"oauth2accesstoken","password":"%s","email":"none"},`, reg, token.AccessToken)
+		}
+
+		dockercfg = strings.TrimSuffix(dockercfg, ",")
+
 		data := map[string][]byte{
-			".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}, "https://us-docker.pkg.dev":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken, token.AccessToken)),
+			".dockercfg": []byte(fmt.Sprintf(`{%s}`, dockercfg)),
 		}
 
 		for _, n := range namespaces.Items {
