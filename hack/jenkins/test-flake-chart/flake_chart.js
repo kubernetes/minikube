@@ -19,9 +19,7 @@ async function* bodyByLinesIterator(response, updateProgress) {
   const utf8Decoder = new TextDecoder('utf-8');
   const reader = response.body.getReader();
 
-  const re = /\n|\r|\r\n/gm;
   let pendingText = "";
-
   let readerDone = false;
   while (!readerDone) {
     // Read a chunk.
@@ -34,21 +32,15 @@ async function* bodyByLinesIterator(response, updateProgress) {
     updateProgress(chunk.length);
     const decodedChunk = utf8Decoder.decode(chunk);
 
-    let startIndex = 0;
-    let result;
-    // Keep processing until there are no more new lines.
-    while ((result = re.exec(decodedChunk)) !== null) {
-      const text = decodedChunk.substring(startIndex, result.index);
-      startIndex = re.lastIndex;
-
-      const line = pendingText + text;
+    const sublines = decodedChunk.split('\n');
+    for (let i = 0; i < sublines.length - 1; i++) {
+      const fullLine = pendingText + sublines[i];
       pendingText = "";
-      if (line !== "") {
-        yield line;
+      if (fullLine !== "") {
+        yield fullLine;
       }
     }
-    // Any text after the last new line is appended to any pending text.
-    pendingText += decodedChunk.substring(startIndex);
+    pendingText = sublines[sublines.length - 1];
   }
 
   // If there is any text remaining, return it.
