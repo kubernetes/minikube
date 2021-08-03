@@ -81,6 +81,8 @@ async function loadTestData() {
     throw `Failed to fetch data from GCS bucket. Error: ${responseText}`;
   }
 
+  const responseDate = new Date(response.headers.get("date").toString());
+
   const box = document.createElement("div");
   box.style.width = "100%";
   const innerBox = document.createElement("div");
@@ -143,7 +145,7 @@ async function loadTestData() {
   if (testData.length == 0) {
     throw "Fetched CSV data is empty or poorly formatted.";
   }
-  return testData;
+  return [testData, responseDate];
 }
 
 Array.prototype.sum = function() {
@@ -636,7 +638,7 @@ function displayEnvironmentChart(testData, environmentName) {
     chart.draw(data, options);
   }
 
-  document.body.appendChild(
+  chartsContainer.appendChild(
     createRecentFlakePercentageTable(
       recentFlakePercentage,
       previousFlakePercentageMap,
@@ -645,11 +647,11 @@ function displayEnvironmentChart(testData, environmentName) {
 
 async function init() {
   google.charts.load('current', { 'packages': ['corechart'] });
-  let testData;
+  let testData, responseDate;
   try {
     // Wait for Google Charts to load, and for test data to load.
     // Only store the test data (at index 1) into `testData`.
-    testData = (await Promise.all([
+    [testData, responseDate] = (await Promise.all([
       new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
       loadTestData()
     ]))[1];
@@ -666,6 +668,8 @@ async function init() {
   } else {
     displayTestAndEnvironmentChart(testData, desiredTest, desiredEnvironment);
   }
+  document.querySelector('#data_date_container').style.display = 'block';
+  document.querySelector('#data_date').innerText = responseDate.toLocaleString();
 }
 
 init();
