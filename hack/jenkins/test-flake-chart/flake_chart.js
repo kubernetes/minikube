@@ -103,9 +103,20 @@ async function loadTestData() {
     throw `Fetched CSV data contains wrong number of fields. Expected: 9. Actual Header: "${header}"`;
   }
 
+  progressBarPrompt.textContent = "Parsing data...";
+  progressBar.setAttribute("max", lines.length);
+
   const testData = [];
   let lineData = ["", "", "", "", "", "", "", "", ""];
   for (let i = 1; i < lines.length; i++) {
+    if (i % 30000 === 0) {
+      await new Promise(resolve => {
+        setTimeout(() => {
+          progressBar.setAttribute("value", i);
+          resolve();
+        });
+      });
+    }
     const line = lines[i];
     let splitLine = line.split(",");
     if (splitLine.length != 9) {
