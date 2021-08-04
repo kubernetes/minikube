@@ -1,6 +1,6 @@
 ---
 title: "Ingress nginx for TCP and UDP services"
-linkTitle: "Ingress nginx for TCP and UDP services"
+linkTitle: "Ingress Nginx for TCP and UDP Services"
 weight: 1
 date: 2019-08-15
 description: >
