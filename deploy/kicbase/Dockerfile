@@ -23,7 +23,7 @@ FROM golang:1.16
 WORKDIR /src
 # becaue auto-pause binary depends on minikube's code we need to pass the whole source code as the context
 ADD . .
-RUN cd ./cmd/auto-pause/ && go build 
+RUN cd ./cmd/auto-pause/ && go build
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
@@ -108,7 +108,7 @@ USER root
 # install system requirements from the regular distro repositories
 RUN clean-install \
     lz4 \
-    gnupg \ 
+    gnupg \
     sudo \
     openssh-server \
     dnsutils \
@@ -173,7 +173,7 @@ RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
 RUN systemctl enable docker.service && systemctl enable podman.socket
-# making SSH work for docker container 
+# making SSH work for docker container
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 RUN mkdir /var/run/sshd
 RUN echo 'root:root' |chpasswd
@@ -189,7 +189,7 @@ RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/contain
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
-RUN adduser --ingroup docker --disabled-password --gecos '' docker 
+RUN adduser --ingroup docker --disabled-password --gecos '' docker
 RUN adduser docker sudo
 RUN adduser docker podman
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
@@ -203,5 +203,5 @@ RUN mkdir -p /kind
 RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
-  /usr/share/local/* 
+  /usr/share/local/*
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
