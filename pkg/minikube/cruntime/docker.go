@@ -167,6 +167,14 @@ func (r *Docker) Restart() error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
+	if r.CRIService != "" {
+		if err := r.Init.Stop(r.CRIService); err != nil {
+			return err
+		}
+		if err := r.Init.Disable(r.CRIService); err != nil {
+			return err
+		}
+	}
 	klog.Info("disabling docker service ...")
 	// because #10373
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
@@ -178,14 +186,6 @@ func (r *Docker) Disable() error {
 	}
 	if err := r.Init.Disable("docker.socket"); err != nil {
 		klog.ErrorS(err, "Failed to disable", "service", "docker.socket")
-	}
-	if r.CRIService != "" {
-		if err := r.Init.Stop(r.CRIService); err != nil {
-			return err
-		}
-		if err := r.Init.Disable(r.CRIService); err != nil {
-			return err
-		}
 	}
 	return r.Init.Mask("docker.service")
 }
