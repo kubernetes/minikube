@@ -75,7 +75,11 @@ const testStatus = {
 }
 
 async function loadTestData() {
-  const response = await fetch("data.csv");
+  const response = await fetch("data.csv", {
+    headers: {
+      "Cache-Control": "max-age=3600,must-revalidate",
+    }
+  });
   if (!response.ok) {
     const responseText = await response.text();
     throw `Failed to fetch data from GCS bucket. Error: ${responseText}`;
