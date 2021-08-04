@@ -61,10 +61,6 @@ func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) 
 }
 
 func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
-	if !Force && detect.IsOnGCE() {
-		exit.Message(reason.InternalCredsNotNeeded, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
-	}
-
 	// Grab command runner from running cluster
 	cc := mustload.Running(cfg.Name)
 	r := cc.CP.Runner
@@ -76,18 +72,24 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 	}
 
+	// Create a registry secret in every namespace we can find
+	// Always create the pull secret, no matter where we are
+	err = createPullSecret(cfg, creds)
+	if err != nil {
+		return errors.Wrap(err, "pull secret")
+	}
+
+	// If the env var is explicitly set, even in GCE, then defer to the user and continue
+	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTUALS") == "" {
+		exit.Message(reason.InternalCredsNotNeeded, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+	}
+
 	// Actually copy the creds over
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
 
 	err = r.Copy(f)
 	if err != nil {
 		return err
-	}
-
-	// Create a registry secret in every namespace we can find
-	err = createPullSecret(cfg, creds)
-	if err != nil {
-		return errors.Wrap(err, "pull secret")
 	}
 
 	// First check if the project env var is explicitly set
