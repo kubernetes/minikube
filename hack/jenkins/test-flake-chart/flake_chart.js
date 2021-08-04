@@ -14,14 +14,13 @@ function displayError(message) {
   document.body.appendChild(element);
 }
 
-// Creates a generator that reads the response body one line at a time.
-async function* bodyByLinesIterator(response, updateProgress) {
+// Reads `response` into an array of lines while calling `updateProgress` in between.
+async function getBodyLinesWithProgress(response, updateProgress) {
   const utf8Decoder = new TextDecoder('utf-8');
   const reader = response.body.getReader();
 
-  const re = /\n|\r|\r\n/gm;
+  const lines = [];
   let pendingText = "";
-
   let readerDone = false;
   while (!readerDone) {
     // Read a chunk.
@@ -34,27 +33,22 @@ async function* bodyByLinesIterator(response, updateProgress) {
     updateProgress(chunk.length);
     const decodedChunk = utf8Decoder.decode(chunk);
 
-    let startIndex = 0;
-    let result;
-    // Keep processing until there are no more new lines.
-    while ((result = re.exec(decodedChunk)) !== null) {
-      const text = decodedChunk.substring(startIndex, result.index);
-      startIndex = re.lastIndex;
-
-      const line = pendingText + text;
+    const sublines = decodedChunk.split('\n');
+    for (let i = 0; i < sublines.length - 1; i++) {
+      const fullLine = pendingText + sublines[i];
       pendingText = "";
-      if (line !== "") {
-        yield line;
+      if (fullLine !== "") {
+        lines.push(fullLine);
       }
     }
-    // Any text after the last new line is appended to any pending text.
-    pendingText += decodedChunk.substring(startIndex);
+    pendingText = sublines[sublines.length - 1];
   }
 
-  // If there is any text remaining, return it.
+  // If there is any text remaining, append it.
   if (pendingText !== "") {
-    yield pendingText;
+    lines.push(pendingText);
   }
+  return lines;
 }
 
 // Determines whether `str` matches at least one value in `enumObject`.
@@ -104,20 +98,32 @@ async function loadTestData() {
   document.body.appendChild(box);
 
   let readBytes = 0;
-  const lines = bodyByLinesIterator(response, value => {
+  const lines = await getBodyLinesWithProgress(response, value => {
     readBytes += value;
     progressBar.setAttribute("value", readBytes);
   });
   // Consume the header to ensure the data has the right number of fields.
-  const header = (await lines.next()).value;
+  const header = lines[0];
   if (header.split(",").length != 9) {
     document.body.removeChild(box);
     throw `Fetched CSV data contains wrong number of fields. Expected: 9. Actual Header: "${header}"`;
   }
 
+  progressBarPrompt.textContent = "Parsing data...";
+  progressBar.setAttribute("max", lines.length);
+
   const testData = [];
   let lineData = ["", "", "", "", "", "", "", "", ""];
-  for await (const line of lines) {
+  for (let i = 1; i < lines.length; i++) {
+    if (i % 30000 === 0) {
+      await new Promise(resolve => {
+        setTimeout(() => {
+          progressBar.setAttribute("value", i);
+          resolve();
+        });
+      });
+    }
+    const line = lines[i];
     let splitLine = line.split(",");
     if (splitLine.length != 9) {
       console.warn(`Found line with wrong number of fields. Actual: ${splitLine.length} Expected: 9. Line: "${line}"`);
