@@ -963,7 +963,7 @@ help:
 
 
 .PHONY: update-docsy-theme
-update-docsy-theme:
+update-docsy-theme: ## updates the git submodule for the docsy theme used in minikube website
 	(git submodule update --init --recursive && \
 	 cd ./site/themes/docsy && \
 	 git pull origin master && \
