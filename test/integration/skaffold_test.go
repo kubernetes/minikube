@@ -81,7 +81,11 @@ func TestSkaffold(t *testing.T) {
 	}
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", fmt.Sprintf("%s:%s", filepath.Dir(abs), os.Getenv("PATH")))
+	pathSeparator := ":"
+	if runtime.GOOS == "windows" {
+		pathSeparator = ";"
+	}
+	os.Setenv("PATH", fmt.Sprintf("%s%s%s", filepath.Dir(abs), pathSeparator, os.Getenv("PATH")))
 
 	// make sure 'docker' and 'minikube' are now in PATH
 	for _, binary := range []string{"minikube", "docker"} {
