@@ -573,6 +573,11 @@ Pause Kubernetes without impacting deployed applications:
 minikube pause
 ```
 
+Unpause a paused instance:
+```shell
+minikube unpause
+```
+
 Halt the cluster:
 
 ```shell
