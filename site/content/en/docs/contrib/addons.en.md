@@ -77,7 +77,7 @@ Then, add into `pkg/minikube/assets/addons.go` the list of files to copy into th
       "registry-proxy.yaml",
       "0640",
       false),
-  }, false, "registry"),
+  }, false, "registry", "google"),
 ```
 
 The `MustBinAsset` arguments are:
@@ -89,7 +89,7 @@ The `MustBinAsset` arguments are:
 * permissions (typically `0640`)
 * boolean value representing if template substitution is required (often `false`)
 
-The boolean value on the last line is whether the addon should be enabled by default. This should always be `false`.
+The boolean value on the last line is whether the addon should be enabled by default. This should always be `false`. In addition, following the addon name on the last line is the maintainer field. This is meant to inform users about the controlling party of an addon's images. In the case above, the maintainer is Google, since the registry addon uses images that Google controls. When creating a new addon, the source of the images should be contacted and requested whether they are willing to be the point of contact for this addon before being put. If the source does not accept the responsibility, leaving the maintainer field empty is acceptable.
 
 To see other examples, see the [addons commit history](https://github.com/kubernetes/minikube/commits/master/deploy/addons) for other recent examples.
 
