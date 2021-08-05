@@ -340,7 +340,7 @@ verifies the preload tarballs get pulled in properly by minikube
 tests the schedule stop functionality on Windows
 
 ## TestScheduledStopUnix
-TestScheduledStopWindows tests the schedule stop functionality on Unix
+tests the schedule stop functionality on Unix
 
 ## TestSkaffold
 makes sure skaffold run can be run with minikube
