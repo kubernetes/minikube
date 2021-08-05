@@ -63,15 +63,15 @@ func TestScheduledStopWindows(t *testing.T) {
 	// reschedule stop for 5 seconds from now
 	stopMinikube(ctx, t, profile, []string{"--schedule", "5s"})
 
-	// sleep for 5 seconds
-	time.Sleep(5 * time.Second)
+	// wait for stop to complete
+	time.Sleep(15 * time.Second)
 	// make sure minikube timetoStop is not present
 	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Stopped.String())
 }
 
-// TestScheduledStopWindows tests the schedule stop functionality on Unix
+// TestScheduledStopUnix tests the schedule stop functionality on Unix
 func TestScheduledStopUnix(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test only runs on unix")
@@ -115,6 +115,8 @@ func TestScheduledStopUnix(t *testing.T) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
 
+	// wait for stop to complete
+	time.Sleep(15 * time.Second)
 	// make sure minikube timetoStop is not present
 	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"
@@ -134,7 +136,7 @@ func stopMinikube(ctx context.Context, t *testing.T, profile string, additionalA
 	args = append(args, additionalArgs...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())
+		t.Fatalf("stopping minikube: %v\n%s", err, rr.Output())
 	}
 }
 
@@ -201,7 +203,7 @@ func ensureMinikubeScheduledTime(ctx context.Context, t *testing.T, profile stri
 func ensureTimeToStopNotPresent(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"status", "-p", profile}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
+	if err != nil && strings.Contains(rr.Output(), "Error") {
 		t.Fatalf("minikube status: %v\n%s", err, rr.Output())
 	}
 	if strings.Contains(rr.Output(), "TimeToStop") {
