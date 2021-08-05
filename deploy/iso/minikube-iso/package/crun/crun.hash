@@ -1,3 +1,5 @@
 # Locally computed
 sha256 8065b73ae37ccfb960915fa10051e2bf27850d1c2c69ffeb9eec17c6f198d1c9  crun-0.19.tar.gz
 sha256 7b190ff934355e69636e24c12864326a6ebccdbb12af1f14bead217118eb19cb  crun-0.19.1.tar.gz
+sha256 93423c730ac8deb8dacf805fb15dc5c3ac12e47f8a3eb36dd42166ccfd023d00  crun-0.20.tar.gz
+sha256 84a31b25169d92b59a2611fe256a2cc48b05edd9aee8eab4e3dabb60d88f5a23  crun-0.20.1.tar.gz
