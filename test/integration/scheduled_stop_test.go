@@ -203,6 +203,8 @@ func ensureMinikubeScheduledTime(ctx context.Context, t *testing.T, profile stri
 func ensureTimeToStopNotPresent(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"status", "-p", profile}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	// `minikube status` returns a non-zero exit code if the cluster is not running
+	// so also check for "Error" in the output to confirm it's an actual error
 	if err != nil && strings.Contains(rr.Output(), "Error") {
 		t.Fatalf("minikube status: %v\n%s", err, rr.Output())
 	}
