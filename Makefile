@@ -962,6 +962,13 @@ help:
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 
+.PHONY: update-docsy-theme
+update-docsy-theme:
+	(git submodule update --init --recursive && \
+	 cd ./site/themes/docsy && \
+	 git pull origin master && \
+	 git add . && git commit -m "update docsy them")
+
 
 .PHONY: update-golang-version
 update-golang-version:
