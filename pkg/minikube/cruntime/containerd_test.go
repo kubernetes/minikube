@@ -49,7 +49,8 @@ func TestParseContainerdVersion(t *testing.T) {
 		{"containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39", "1.2.0"},
 		{"containerd github.com/containerd/containerd v1.2.1-rc.0 de1f167ab96338a9f5c2b17347abf84bdf1dd411", "1.2.1-rc.0"},
 		{"containerd github.com/containerd/containerd 1.4.4-0ubuntu1 ", "1.4.4-0ubuntu1"},
-		{"containerd github.com/containerd/containerd 1.5.2-0ubuntu1~21.04.2 ", "1.5.2"},
+		{"containerd github.com/containerd/containerd 1.5.2-0ubuntu1~21.04.2 ", "1.5.2-0ubuntu1"},
+		{"containerd github.com/containerd/containerd 1.5.4~ds1 1.5.4~ds1-1", "1.5.4"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.version, func(t *testing.T) {

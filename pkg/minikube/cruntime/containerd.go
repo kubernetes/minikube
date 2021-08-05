@@ -146,6 +146,7 @@ func parseContainerdVersion(line string) (string, error) {
 	words := strings.Split(line, " ")
 	if len(words) >= 4 && words[0] == "containerd" {
 		version := strings.Replace(words[2], "v", "", 1)
+		version = strings.SplitN(version, "~", 2)[0]
 		if _, err := semver.Parse(version); err != nil {
 			parts := strings.SplitN(version, "-", 2)
 			return parts[0], nil
