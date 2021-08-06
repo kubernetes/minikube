@@ -35,6 +35,10 @@ import (
 	docker "k8s.io/minikube/third_party/go-dockerclient"
 )
 
+var (
+	allNodes bool
+)
+
 // imageCmd represents the image command
 var imageCmd = &cobra.Command{
 	Use:   "image COMMAND",
@@ -217,7 +221,7 @@ var buildImageCmd = &cobra.Command{
 				// Otherwise, assume it's a tar
 			}
 		}
-		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}); err != nil {
+		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}, allNodes, nodeName); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
 		}
 		if tmp != "" {
@@ -257,6 +261,8 @@ func init() {
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
 	buildImageCmd.Flags().StringArrayVar(&buildEnv, "build-env", nil, "Environment variables to pass to the build. (format: key=value)")
 	buildImageCmd.Flags().StringArrayVar(&buildOpt, "build-opt", nil, "Specify arbitrary flags to pass to the build. (format: key=value)")
+	buildImageCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to build on. Defaults to the primary control plane.")
+	buildImageCmd.Flags().BoolVarP(&allNodes, "all", "", false, "Build image on all nodes.")
 	imageCmd.AddCommand(buildImageCmd)
 	imageCmd.AddCommand(listImageCmd)
 }
