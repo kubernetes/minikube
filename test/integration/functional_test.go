@@ -289,7 +289,7 @@ func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string
 
 	// save image to file
 	imageFile := "busybox.tar.gz"
-	rr, err := Run(t, exec.CommandContext(ctx, "docker", "save", newImage, "|", "gzip", ">", imageFile))
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "save", newImage, "|", "gzip", ">", imageFile))
 	if err != nil {
 		t.Fatalf("failed to save image to file: %v\n%s", err, rr.Output())
 	}
