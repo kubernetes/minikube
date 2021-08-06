@@ -64,6 +64,8 @@ func TestDefaultDockerSocketPath(t *testing.T) {
 	}{
 		{"1.20.0", InternalDockerCRISocket},
 		{"1.21.3", InternalDockerCRISocket},
+		{"1.23.0-alpha.0", ExternalDockerCRISocket},
+		{"1.23.0-beta.0", ExternalDockerCRISocket},
 		{"1.23.0", ExternalDockerCRISocket},
 		{"1.24.6", ExternalDockerCRISocket},
 	}

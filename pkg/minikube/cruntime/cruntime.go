@@ -196,7 +196,7 @@ func New(c Config) (Manager, error) {
 		sp := c.Socket
 		cs := ""
 		// There is no more dockershim socket, in Kubernetes version 1.23 and beyond
-		if sp == "" && c.KubernetesVersion.GTE(semver.Version{Major: 1, Minor: 23}) {
+		if sp == "" && c.KubernetesVersion.GTE(semver.MustParse("1.23.0-alpha.0")) {
 			sp = ExternalDockerCRISocket
 			cs = "cri-docker.socket"
 		}
