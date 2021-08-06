@@ -37,7 +37,7 @@ Please send a PR to suggest any improvements to it.
 - [x] Windows as a first-class citizen
 - [x] WSL2 support (no additional VM required)
 - [ ] Firecracker VM support
-- [ ] Generic (SSH) driver support
+- [x] Generic (SSH) driver support
 
 ## (#5) Reliable
 
@@ -54,5 +54,5 @@ Please send a PR to suggest any improvements to it.
 
 ## (#7) Developer Focused
 
-- [ ] Container build integration
+- [x] Container build integration
 - [ ] Documented workflow for Kubernetes development
