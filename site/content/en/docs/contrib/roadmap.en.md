@@ -6,17 +6,17 @@ description: >
   Development Roadmap
 ---
 
-This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2020, divided by how they apply to our [guiding principles]({{< ref "/docs/contrib/principles" >}})
+This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2021, divided by how they apply to our [guiding principles]({{< ref "/docs/contrib/principles" >}})
 
 Please send a PR to suggest any improvements to it.
 
-# 2020
+# 2021
 
 ## (#1) Inclusive and community-driven
 
 - [x] Maintainers from 4 countries, 4 companies
-- [ ] Installation documentation in 5+ written languages
 - [x] Enhancements approved by a community-driven process
+- [ ] Installation documentation in 5+ written languages
 
 ## (#2) User-friendly
 
@@ -48,9 +48,9 @@ Please send a PR to suggest any improvements to it.
 ## (#6) High Performance
 
 - [x] Startup latency under 30s
-- [ ] Kernel-assisted mounts (CIFS, NFS) by default
 - [x] Pause support
 - [x] <25% CPU overhead on a single core
+- [ ] Kernel-assisted mounts (CIFS, NFS) by default
 
 ## (#7) Developer Focused
 
