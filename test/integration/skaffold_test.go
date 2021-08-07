@@ -72,8 +72,15 @@ func TestSkaffold(t *testing.T) {
 		t.Fatalf("unable to determine abs path: %v", err)
 	}
 
-	if filepath.Base(Target()) != "minikube" {
-		new := filepath.Join(filepath.Dir(abs), "minikube")
+	binaryName := "minikube"
+	pathSeparator := ":"
+	if runtime.GOOS == "windows" {
+		binaryName += ".exe"
+		pathSeparator = ";"
+	}
+
+	if filepath.Base(Target()) != binaryName {
+		new := filepath.Join(filepath.Dir(abs), binaryName)
 		t.Logf("copying %s to %s", Target(), new)
 		if err := copy.Copy(Target(), new); err != nil {
 			t.Fatalf("error copying to minikube")
@@ -81,10 +88,6 @@ func TestSkaffold(t *testing.T) {
 	}
 
 	oldPath := os.Getenv("PATH")
-	pathSeparator := ":"
-	if runtime.GOOS == "windows" {
-		pathSeparator = ";"
-	}
 	os.Setenv("PATH", fmt.Sprintf("%s%s%s", filepath.Dir(abs), pathSeparator, os.Getenv("PATH")))
 
 	// make sure 'docker' and 'minikube' are now in PATH
