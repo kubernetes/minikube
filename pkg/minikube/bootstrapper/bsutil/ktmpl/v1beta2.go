@@ -59,7 +59,8 @@ certificatesDir: {{.CertDir}}
 clusterName: mk
 controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
 dns:
-  type: CoreDNS
+  type: CoreDNS{{ if .CoreDNSImageRepository}}
+  imageRepository: {{.CoreDNSImageRepository}}{{end}}
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}

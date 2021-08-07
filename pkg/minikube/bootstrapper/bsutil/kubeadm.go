@@ -87,28 +87,29 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	klog.Infof("Using pod CIDR: %s", podCIDR)
 
 	opts := struct {
-		CertDir             string
-		ServiceCIDR         string
-		PodSubnet           string
-		AdvertiseAddress    string
-		APIServerPort       int
-		KubernetesVersion   string
-		EtcdDataDir         string
-		EtcdExtraArgs       map[string]string
-		ClusterName         string
-		NodeName            string
-		DNSDomain           string
-		CRISocket           string
-		ImageRepository     string
-		ComponentOptions    []componentOptions
-		FeatureArgs         map[string]bool
-		NoTaintMaster       bool
-		NodeIP              string
-		CgroupDriver        string
-		ClientCAFile        string
-		StaticPodPath       string
-		ControlPlaneAddress string
-		KubeProxyOptions    map[string]string
+		CertDir                string
+		ServiceCIDR            string
+		PodSubnet              string
+		AdvertiseAddress       string
+		APIServerPort          int
+		KubernetesVersion      string
+		EtcdDataDir            string
+		EtcdExtraArgs          map[string]string
+		ClusterName            string
+		NodeName               string
+		DNSDomain              string
+		CRISocket              string
+		ImageRepository        string
+		CoreDNSImageRepository string
+		ComponentOptions       []componentOptions
+		FeatureArgs            map[string]bool
+		NoTaintMaster          bool
+		NodeIP                 string
+		CgroupDriver           string
+		ClientCAFile           string
+		StaticPodPath          string
+		ControlPlaneAddress    string
+		KubeProxyOptions       map[string]string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -149,6 +150,12 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	// v1beta2 isn't required until v1.17.
 	if version.GTE(semver.MustParse("1.17.0")) {
 		configTmpl = ktmpl.V1Beta2
+	}
+	// handle the renaming of the coredns image from "coredns" to "coredns/coredns"
+	if version.GTE(semver.MustParse("1.21.0-alpha.1")) &&
+		opts.ImageRepository != "" &&
+		opts.CoreDNSImageRepository == "" {
+		opts.CoreDNSImageRepository = opts.ImageRepository + "/coredns"
 	}
 	klog.Infof("kubeadm options: %+v", opts)
 	if err := configTmpl.Execute(&b, opts); err != nil {

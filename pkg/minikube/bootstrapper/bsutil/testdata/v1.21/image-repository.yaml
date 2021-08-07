@@ -36,6 +36,7 @@ clusterName: mk
 controlPlaneEndpoint: control-plane.minikube.internal:8443
 dns:
   type: CoreDNS
+  imageRepository: test/repo/coredns
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
