@@ -144,6 +144,77 @@ var loadImageCmd = &cobra.Command{
 	},
 }
 
+func readFile(w io.Writer, tmp string) error {
+	r, err := os.Open(tmp)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(w, r)
+	if err != nil {
+		return err
+	}
+	err = r.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// saveImageCmd represents the image load command
+var saveImageCmd = &cobra.Command{
+	Use:     "save IMAGE [ARCHIVE | -]",
+	Short:   "Save a image from minikube",
+	Long:    "Save a image from minikube",
+	Example: "minikube image save image\nminikube image save image image.tar",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			exit.Message(reason.Usage, "Please provide an image in the container runtime to save from minikube via <minikube image save IMAGE_NAME>")
+		}
+		// Save images from container runtime
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if len(args) > 1 {
+			output = args[1]
+
+			if args[1] == "-" {
+				tmp, err := ioutil.TempFile("", "image.*.tar")
+				if err != nil {
+					exit.Error(reason.GuestImageSave, "Failed to get temp", err)
+				}
+				tmp.Close()
+				output = tmp.Name()
+			}
+
+			if err := machine.DoSaveImages([]string{args[0]}, output, []*config.Profile{profile}, ""); err != nil {
+				exit.Error(reason.GuestImageSave, "Failed to save image", err)
+			}
+
+			if args[1] == "-" {
+				err := readFile(os.Stdout, output)
+				if err != nil {
+					exit.Error(reason.GuestImageSave, "Failed to read temp", err)
+				}
+				os.Remove(output)
+			}
+		} else {
+			if err := machine.SaveAndCacheImages([]string{args[0]}, []*config.Profile{profile}); err != nil {
+				exit.Error(reason.GuestImageSave, "Failed to save image", err)
+			}
+			if imgDaemon || imgRemote {
+				image.UseDaemon(imgDaemon)
+				image.UseRemote(imgRemote)
+				err := image.UploadCachedImage(args[0])
+				if err != nil {
+					exit.Error(reason.GuestImageSave, "Failed to save image", err)
+				}
+			}
+		}
+	},
+}
+
 var removeImageCmd = &cobra.Command{
 	Use:   "rm IMAGE [IMAGE...]",
 	Short: "Remove one or more images",
@@ -258,5 +329,8 @@ func init() {
 	buildImageCmd.Flags().StringArrayVar(&buildEnv, "build-env", nil, "Environment variables to pass to the build. (format: key=value)")
 	buildImageCmd.Flags().StringArrayVar(&buildOpt, "build-opt", nil, "Specify arbitrary flags to pass to the build. (format: key=value)")
 	imageCmd.AddCommand(buildImageCmd)
+	saveImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image to docker daemon")
+	saveImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image to remote registry")
+	imageCmd.AddCommand(saveImageCmd)
 	imageCmd.AddCommand(listImageCmd)
 }
