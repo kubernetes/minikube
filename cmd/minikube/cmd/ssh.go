@@ -18,6 +18,9 @@ package cmd
 
 import (
 	"os"
+	"strings"
+
+	"github.com/docker/machine/libmachine/ssh"
 
 	"github.com/spf13/cobra"
 
@@ -56,12 +59,46 @@ var sshCmd = &cobra.Command{
 			}
 		}
 
-		err = machine.CreateSSHShell(co.API, *co.Config, *n, args, nativeSSHClient)
-		if err != nil {
-			// This is typically due to a non-zero exit code, so no need for flourish.
-			out.ErrLn("ssh: %v", err)
-			// It'd be nice if we could pass up the correct error code here :(
-			os.Exit(1)
+		willRunCommand := strings.Join(args, " ")
+		if len(willRunCommand) > 1 {
+			host, err := machine.GetHost(co.API, *co.Config, *n)
+			if err != nil {
+				// This is typically due to a non-zero exit code, so no need for flourish.
+				out.ErrLn("%s: %v", willRunCommand, err)
+				// It'd be nice if we could pass up the correct error code here :(
+				os.Exit(1)
+			}
+
+			if nativeSSHClient {
+				ssh.SetDefaultClient(ssh.Native)
+			} else {
+				ssh.SetDefaultClient(ssh.External)
+			}
+
+			client, err := host.CreateSSHClient()
+			if err != nil {
+				// This is typically due to a non-zero exit code, so no need for flourish.
+				out.ErrLn("%s: %v", willRunCommand, err)
+				// It'd be nice if we could pass up the correct error code here :(
+				os.Exit(1)
+			}
+			output, err = client.Output(willRunCommand)
+			if err != nil {
+				// This is typically due to a non-zero exit code, so no need for flourish.
+				out.ErrLn("%s: %v", willRunCommand, err)
+				// It'd be nice if we could pass up the correct error code here :(
+				os.Exit(1)
+			}
+			out.Output(os.Stdout, "Command output\n\n %s", output)
+		} else {
+
+			err = machine.CreateSSHShell(co.API, *co.Config, *n, args, nativeSSHClient)
+			if err != nil {
+				// This is typically due to a non-zero exit code, so no need for flourish.
+				out.ErrLn("ssh: %v", err)
+				// It'd be nice if we could pass up the correct error code here :(
+				os.Exit(1)
+			}
 		}
 	},
 }
