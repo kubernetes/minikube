@@ -152,6 +152,7 @@ func TestFunctional(t *testing.T) {
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
 			{"RemoveImage", validateRemoveImage},
+			{"LoadImageFromFile", validateLoadImageFromFile},
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
 			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
@@ -262,6 +263,57 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 
+}
+
+// validateLoadImageFromFile makes sure that `minikube image load` works from a local file
+func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+	// pull busybox
+	busyboxImage := "busybox:1.31"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+	}
+
+	tag := fmt.Sprintf("load-from-file-%s", profile)
+	taggedImage := fmt.Sprintf("docker.io/library/busybox:%s", tag)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, taggedImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
+	// save image to file
+	imageFile := "busybox.tar"
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "save", "-o", imageFile, taggedImage))
+	if err != nil {
+		t.Fatalf("failed to save image to file: %v\n%s", err, rr.Output())
+	}
+	defer os.Remove(imageFile)
+
+	// try to load the new image into minikube
+	imagePath, err := filepath.Abs(imageFile)
+	if err != nil {
+		t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imagePath))
+	if err != nil {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// make sure the image was correctly loaded
+	rr, err = listImages(ctx, t, profile)
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), tag) {
+		t.Fatalf("expected %s to be loaded into minikube but the image is not there", taggedImage)
+	}
 }
 
 // validateRemoveImage makes sures that `minikube image rm` works as expected
