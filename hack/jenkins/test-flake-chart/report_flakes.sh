@@ -103,7 +103,14 @@ TEST_GOPOGH_LINK_FORMAT='https://storage.googleapis.com/minikube-builds/logs/'${
 # 2) Print a row in the table with the environment, test name, flake rate, and a link to the flake chart for that test.
 # 3) Append these rows to file $TMP_COMMENT.
 head -n "$MAX_REPORTED_TESTS" "$TMP_FAILED_RATES" \
-  | awk '-F[:,]' '{ printf "|[%1$s]('$ENV_CHART_LINK_FORMAT')|%2$s ([gopogh]('$TEST_GOPOGH_LINK_FORMAT'))|%3$s ([chart]('$TEST_CHART_LINK_FORMAT'))|\n", $1, $2, $3 }' \
+  | awk '-F[:,]' '{
+      if ($3 != "n/a") {
+        rate_text = sprintf("%3$s ([chart]('$TEST_CHART_LINK_FORMAT'))", $1, $2, $3)
+      } else {
+        rate_text = $3
+      }
+      printf "|[%1$s]('$ENV_CHART_LINK_FORMAT')|%2$s ([gopogh]('$TEST_GOPOGH_LINK_FORMAT'))|%3$s|\n", $1, $2, rate_text
+    }' \
   >> "$TMP_COMMENT"
 
 # If there are too many failing tests, add an extra row explaining this, and a message after the table.
