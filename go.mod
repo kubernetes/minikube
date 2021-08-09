@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.15.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
 	github.com/Delta456/box-cli-maker/v2 v2.2.1
+	github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
 	github.com/Microsoft/hcsshim v0.8.17 // indirect
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
@@ -30,7 +31,7 @@ require (
 	github.com/google/slowjam v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gookit/color v1.4.2 // indirect
-	github.com/hashicorp/go-getter v1.5.6
+	github.com/hashicorp/go-getter v1.5.7
 	github.com/hashicorp/go-retryablehttp v0.7.0
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
@@ -94,7 +95,7 @@ require (
 	k8s.io/apimachinery v0.22.0
 	k8s.io/client-go v0.21.3
 	k8s.io/klog/v2 v2.10.0
-	k8s.io/kubectl v0.21.3
+	k8s.io/kubectl v0.22.0
 	k8s.io/kubernetes v1.21.3
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
