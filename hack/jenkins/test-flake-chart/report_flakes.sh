@@ -58,19 +58,32 @@ sed -r "s|^|gs://minikube-builds/logs/${PR_NUMBER}/${ROOT_JOB}/|; s|$|_summary.j
 TMP_FLAKE_RATES=$(mktemp)
 gsutil cp gs://minikube-flake-rate/flake_rates.csv "$TMP_FLAKE_RATES"
 
-TMP_FAILED_RATES="$TMP_FLAKE_RATES\_filtered"
+TMP_FAILED_RATES=$(mktemp)
+# 1) Parse the flake rates to only include the environment and test name.
+# 2) Sort the environment+test names.
+# 3) Get all lines in $TMP_DATA not present in $TMP_FLAKE_RATES.
+# 4) Append column containing "n/a" to data.
+# 4) Store in $TMP_FAILED_RATES
+awk -F, 'NR>1 {
+  printf "%s:%s\n", $1, $2
+}' "$TMP_FLAKE_RATES" \
+  | sort \
+  | comm -13 - "$TMP_DATA" \
+  | sed -r -e 's|$|,n/a|' \
+  > "$TMP_FAILED_RATES"
+
 # 1) Parse the flake rates to only include the environment, test name, and flake rates.
 # 2) Sort the flake rates based on environment+test name.
 # 3) Join the flake rates with the failing tests to only get flake rates of failing tests.
 # 4) Sort failed test flake rates based on the flakiness of that test - stable tests should be first on the list.
-# 5) Store in file $TMP_FAILED_RATES.
+# 5) Append to file $TMP_FAILED_RATES.
 awk -F, 'NR>1 {
   printf "%s:%s,%s\n", $1, $2, $3
 }' "$TMP_FLAKE_RATES" \
   | sort -t, -k1,1 \
   | join -t , -j 1 "$TMP_DATA" - \
   | sort -g -t, -k2,2 \
-  > "$TMP_FAILED_RATES"
+  >> "$TMP_FAILED_RATES"
 
 FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES")
 if [[ "$FAILED_RATES_LINES" -eq 0 ]]; then
