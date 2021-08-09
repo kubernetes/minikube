@@ -46,10 +46,7 @@ ec=$?
 if [ $ec -gt 0 ]; then
 	if [ "$release" = false ]; then
 		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.  
-		See the logs at: 
-		```
-		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/iso-${BUILD_NUMBER}/iso_build.txt
-		```
+		See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/iso-${BUILD_NUMBER}/iso_build.txt
 		"
 	fi
 	exit $ec
