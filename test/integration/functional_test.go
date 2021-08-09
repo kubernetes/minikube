@@ -281,9 +281,16 @@ func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
+	tag := fmt.Sprintf("load-from-file-%s", profile)
+	taggedImage := fmt.Sprintf("docker.io/library/busybox:%s", tag)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, taggedImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
 	// save image to file
 	imageFile := "busybox.tar"
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "save", "-o", imageFile, busyboxImage))
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "save", "-o", imageFile, taggedImage))
 	if err != nil {
 		t.Fatalf("failed to save image to file: %v\n%s", err, rr.Output())
 	}
@@ -304,8 +311,8 @@ func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
-	if !strings.Contains(rr.Output(), busyboxImage) {
-		t.Fatalf("expected %s to be loaded into minikube but the image is not there", busyboxImage)
+	if !strings.Contains(rr.Output(), tag) {
+		t.Fatalf("expected %s to be loaded into minikube but the image is not there", taggedImage)
 	}
 }
 
