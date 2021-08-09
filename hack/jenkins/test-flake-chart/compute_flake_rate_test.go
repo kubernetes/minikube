@@ -51,12 +51,12 @@ func compareEntrySlices(t *testing.T, actualData, expectedData []testEntry, extr
 
 func TestReadData(t *testing.T) {
 	actualData := readData(strings.NewReader(
-		`A,B,C,D,E,F
-		hash,2000-01-01,env1,test1,Passed,1
-		hash,2001-01-01,env2,test2,Failed,0.5
-		hash,,,test1,,0.6
-		hash,2002-01-01,,,Passed,0.9
-		hash,2003-01-01,env3,test3,Passed,2`,
+		`A,B,C,D,E,F,G,H,I
+		hash,2000-01-01,env1,test1,Passed,1,1,1,1
+		hash,2001-01-01,env2,test2,Failed,0.5,,,
+		hash,,,test1,,0.6,,,
+		hash,2002-01-01,,,Passed,0.9,,,
+		hash,2003-01-01,env3,test3,Passed,2,,,`,
 	))
 	expectedData := []testEntry{
 		{
@@ -179,7 +179,7 @@ func TestSplitData(t *testing.T) {
 }
 
 func TestFilterRecentEntries(t *testing.T) {
-	entryE1T1R1, entryE1T1R2, entryE1T1R3, entryE1T1O1, entryE1T1O2 := testEntry{
+	entryE1T1O1, entryE1T1O2, entryE1T1O3, entryE1T1O4, entryE1T1O5 := testEntry{
 		name:        "test1",
 		environment: "env1",
 		date:        simpleDate(2000, 4),
@@ -221,7 +221,7 @@ func TestFilterRecentEntries(t *testing.T) {
 		date:        simpleDate(2001, 1),
 		status:      "Passed",
 	}
-	entryE2T2R1, entryE2T2R2, entryE2T2O1 := testEntry{
+	entryE2T2R1, entryE2T2R2, entryE2T2R3 := testEntry{
 		name:        "test2",
 		environment: "env2",
 		date:        simpleDate(2003, 3),
@@ -241,34 +241,29 @@ func TestFilterRecentEntries(t *testing.T) {
 	actualData := filterRecentEntries(splitEntryMap{
 		"env1": {
 			"test1": {
-				entryE1T1R1,
-				entryE1T1R2,
-				entryE1T1R3,
 				entryE1T1O1,
 				entryE1T1O2,
+				entryE1T1O3,
+				entryE1T1O4,
+				entryE1T1O5,
 			},
 			"test2": {
+				entryE1T2O1,
 				entryE1T2R1,
 				entryE1T2R2,
-				entryE1T2O1,
 			},
 		},
 		"env2": {
 			"test2": {
 				entryE2T2R1,
 				entryE2T2R2,
-				entryE2T2O1,
+				entryE2T2R3,
 			},
 		},
-	}, 2)
+	}, simpleDate(2001, 2))
 
 	expectedData := splitEntryMap{
 		"env1": {
-			"test1": {
-				entryE1T1R1,
-				entryE1T1R2,
-				entryE1T1R3,
-			},
 			"test2": {
 				entryE1T2R1,
 				entryE1T2R2,
@@ -278,6 +273,7 @@ func TestFilterRecentEntries(t *testing.T) {
 			"test2": {
 				entryE2T2R1,
 				entryE2T2R2,
+				entryE2T2R3,
 			},
 		},
 	}
