@@ -140,6 +140,22 @@ func (r *Containerd) Style() style.Enum {
 	return style.Containerd
 }
 
+// parseContainerdVersion parses version from containerd --version
+func parseContainerdVersion(line string) (string, error) {
+	// containerd github.com/containerd/containerd v1.0.0 89623f28b87a6004d4b785663257362d1658a729
+	words := strings.Split(line, " ")
+	if len(words) >= 4 && words[0] == "containerd" {
+		version := strings.Replace(words[2], "v", "", 1)
+		version = strings.SplitN(version, "~", 2)[0]
+		if _, err := semver.Parse(version); err != nil {
+			parts := strings.SplitN(version, "-", 2)
+			return parts[0], nil
+		}
+		return version, nil
+	}
+	return "", fmt.Errorf("unknown version: %q", line)
+}
+
 // Version retrieves the current version of this runtime
 func (r *Containerd) Version() (string, error) {
 	c := exec.Command("containerd", "--version")
@@ -147,12 +163,11 @@ func (r *Containerd) Version() (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "containerd check version.")
 	}
-	// containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39
-	words := strings.Split(rr.Stdout.String(), " ")
-	if len(words) >= 4 && words[0] == "containerd" {
-		return strings.Replace(words[2], "v", "", 1), nil
+	version, err := parseContainerdVersion(rr.Stdout.String())
+	if err != nil {
+		return "", err
 	}
-	return "", fmt.Errorf("unknown version: %q", rr.Stdout.String())
+	return version, nil
 }
 
 // SocketPath returns the path to the socket file for containerd
