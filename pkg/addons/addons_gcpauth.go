@@ -83,7 +83,8 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	// If the env var is explicitly set, even in GCE, then defer to the user and continue
 	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTUALS") == "" {
-		exit.Message(reason.InternalCredsNotNeeded, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+		out.WarningT("It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+		return nil
 	}
 
 	// Actually copy the creds over
@@ -322,6 +323,12 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
+
+	// If we're in GCE and didn't actually start the gcp-auth pods, don't check for them.
+	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTUALS") == "" {
+		return nil
+	}
+
 	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
 	if err != nil {
 		return err

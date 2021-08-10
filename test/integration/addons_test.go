@@ -82,8 +82,8 @@ func TestAddons(t *testing.T) {
 	if detect.IsOnGCE() {
 		args = []string{"-p", profile, "addons", "enable", "gcp-auth"}
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-		if err == nil {
-			t.Errorf("Expected error but didn't get one. command %v, output %v", rr.Command(), rr.Output())
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Command(), err)
 		} else {
 			if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
 				t.Errorf("Unexpected error message: %v", rr.Output())
