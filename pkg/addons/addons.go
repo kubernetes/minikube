@@ -208,8 +208,10 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 
 func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool) (bool, error) {
 	// If the gcp-auth credentials haven't been mounted in, don't start the pods
-	if _, err := os.Stat(credentialsPath); os.IsNotExist(err) && name == "gcp-auth" {
-		return true, nil
+	if name == "gcp-auth" {
+		if _, err := os.Stat(credentialsPath); os.IsNotExist(err) {
+			return true, nil
+		}
 	}
 
 	// to match both ingress and ingress-dns addons
