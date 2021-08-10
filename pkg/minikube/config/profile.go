@@ -287,7 +287,7 @@ func removeChildNodes(inValidPs []*Profile, nodeNames map[string]bool) (ps []*Pr
 
 // LoadProfile loads type Profile based on its name
 func LoadProfile(name string, miniHome ...string) (*Profile, error) {
-	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
+	cfg, err := Load(name, miniHome...)
 	p := &Profile{
 		Name:   name,
 		Config: cfg,
