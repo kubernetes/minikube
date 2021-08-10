@@ -15,4 +15,4 @@ Get the [current status](https://gist.github.com/choco-bot/a14b1e5bfaf70839b338e
 
  Minikube Chocolatey update script on [Github](https://github.com/chocolatey-community/chocolatey-coreteampackages/tree/master/automatic/minikube).
 
-#### Note: Windows support is limited to 64bit systems.
+**Note: Windows support is limited to 64bit systems.**
