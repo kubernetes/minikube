@@ -289,6 +289,7 @@ func ImageToDaemon(img string) error {
 		errchan <- err
 	}()
 	var update v1.Update
+loop:
 	for {
 		select {
 		case update = <-c:
@@ -299,7 +300,7 @@ func ImageToDaemon(img string) error {
 			if err != nil {
 				return errors.Wrap(err, "writing daemon image")
 			}
-			break
+			break loop
 		}
 	}
 	klog.V(3).Infof("Pulling image %v", ref)
