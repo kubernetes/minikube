@@ -37,6 +37,8 @@ OPEN_ISSUE_THRESHOLD=80
 # Threshold to close existing issues at
 CLOSE_ISSUE_THRESHOLD=20
 
+"${DIR}/../installers/check_install_gh.sh" || true
+
 # Get a list of issues from Github and extract only those that look like flake issues.
 # Sort by test name for later usage.
 EXISTING_ISSUES_LIST=$(mktemp)
