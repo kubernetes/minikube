@@ -159,10 +159,10 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed waititing for ingress-nginx-controller : %v", err)
 	}
 
-	// create networking.k8s.io/v1beta1 ingress
-	createv1betaIngress := func() error {
+	// create networking.k8s.io/v1 ingress
+	createv1Ingress := func() error {
 		// apply networking.k8s.io/v1beta1 ingress
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1beta.yaml")))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1.yaml")))
 		if err != nil {
 			return err
 		}
@@ -172,8 +172,8 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		return nil
 	}
 
-	// create networking.k8s.io/v1beta1 ingress
-	if err := retry.Expo(createv1betaIngress, 1*time.Second, Seconds(90)); err != nil {
+	// create networking.k8s.io/v1 ingress
+	if err := retry.Expo(createv1Ingress, 1*time.Second, Seconds(90)); err != nil {
 		t.Errorf("failed to create ingress: %v", err)
 	}
 
@@ -222,19 +222,6 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	// check if the ingress can route nginx app with networking.k8s.io/v1beta1 ingress
 	if err := retry.Expo(checkv1betaIngress, 500*time.Millisecond, Seconds(90)); err != nil {
 		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
-	}
-
-	// create networking.k8s.io/v1 ingress
-	createv1Ingress := func() error {
-		// apply networking.k8s.io/v1beta1 ingress
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1.yaml")))
-		if err != nil {
-			return err
-		}
-		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s (may be temporary)", rr.Command(), rr.Stderr)
-		}
-		return nil
 	}
 
 	// create networking.k8s.io/v1 ingress

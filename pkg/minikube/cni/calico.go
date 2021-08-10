@@ -83,7 +83,7 @@ data:
 ---
 # Source: calico/templates/kdd-crds.yaml
 
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: bgpconfigurations.crd.projectcalico.org
@@ -97,7 +97,7 @@ spec:
     singular: bgpconfiguration
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: bgppeers.crd.projectcalico.org
@@ -111,7 +111,7 @@ spec:
     singular: bgppeer
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: blockaffinities.crd.projectcalico.org
@@ -125,7 +125,7 @@ spec:
     singular: blockaffinity
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: clusterinformations.crd.projectcalico.org
@@ -139,7 +139,7 @@ spec:
     singular: clusterinformation
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: felixconfigurations.crd.projectcalico.org
@@ -153,7 +153,7 @@ spec:
     singular: felixconfiguration
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: globalnetworkpolicies.crd.projectcalico.org
@@ -169,7 +169,7 @@ spec:
     - gnp
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: globalnetworksets.crd.projectcalico.org
@@ -183,7 +183,7 @@ spec:
     singular: globalnetworkset
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: hostendpoints.crd.projectcalico.org
@@ -197,7 +197,7 @@ spec:
     singular: hostendpoint
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: ipamblocks.crd.projectcalico.org
@@ -211,7 +211,7 @@ spec:
     singular: ipamblock
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: ipamconfigs.crd.projectcalico.org
@@ -225,7 +225,7 @@ spec:
     singular: ipamconfig
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: ipamhandles.crd.projectcalico.org
@@ -239,7 +239,7 @@ spec:
     singular: ipamhandle
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: ippools.crd.projectcalico.org
@@ -253,7 +253,7 @@ spec:
     singular: ippool
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: kubecontrollersconfigurations.crd.projectcalico.org
@@ -266,7 +266,7 @@ spec:
     plural: kubecontrollersconfigurations
     singular: kubecontrollersconfiguration
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: networkpolicies.crd.projectcalico.org
@@ -280,7 +280,7 @@ spec:
     singular: networkpolicy
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: networksets.crd.projectcalico.org
