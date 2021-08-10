@@ -115,8 +115,6 @@ github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdc
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
 github.com/VividCortex/godaemon v1.0.0 h1:aHYrScWvgaSOdAoYCdObWXLm+e1rldP9Pwb1ZvuZkQw=
 github.com/VividCortex/godaemon v1.0.0/go.mod h1:hBWe/72KbGt/lb95E+Sh9ersdYbB57Dt6CG66S1YPno=
-github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321165649-761f6f9626b1 h1:AI8EIk8occ3pruhaTpkaQxQGlC1dHx3J9hAtg7t+FLI=
-github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321165649-761f6f9626b1/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYVaIZs/MK/Jz5any1wFW0=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af h1:wVe6/Ea46ZMeNkQjjBW6xcqyQA/j5e0D6GytH95g0gQ=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
@@ -548,6 +546,8 @@ github.com/google/go-cmp v0.5.4/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.6 h1:BKbKCqvP6I+rmFHt06ZmyQtvB8xAkWdhFyr0ZUNZcxQ=
 github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
+github.com/google/go-containerregistry v0.4.1 h1:Lrcj2AOoZ7WKawsoKAh2O0dH0tBqMW2lTEmozmK4Z3k=
+github.com/google/go-containerregistry v0.4.1/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYVaIZs/MK/Jz5any1wFW0=
 github.com/google/go-github v17.0.0+incompatible h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=
 github.com/google/go-github v17.0.0+incompatible/go.mod h1:zLgOLi98H3fifZn+44m+umXrS52loVEgC2AApnigrVQ=
 github.com/google/go-github/v36 v36.0.0 h1:ndCzM616/oijwufI7nBRa+5eZHLldT+4yIB68ib5ogs=
