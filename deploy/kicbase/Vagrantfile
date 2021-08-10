@@ -1,0 +1,77 @@
+# Copyright 2018 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+Vagrant.configure("2") do |config|
+  # start from ubuntu 20.04, this image is reasonably small as a starting point
+  # for a kubernetes node image, it doesn't contain much we don't need
+  config.vm.box = "ubuntu/focal64"
+
+  config.vm.hostname = "minikube"
+  config.vm.network "private_network", ip: "192.168.50.4"
+
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.cpus = 2
+    vb.memory = "2048"
+
+    # focal64 bug: https://bugs.launchpad.net/cloud-images/+bug/1829625
+    vb.customize [ "modifyvm", :id, "--uartmode1", "file", File::NULL ]
+  end
+
+  #if Vagrant.has_plugin?("vagrant-cachier")
+  #  config.cache.scope = :box
+  #end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "Installing Packages ..."
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      systemd \
+      conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
+      libseccomp2 pigz \
+      bash ca-certificates curl rsync \
+      nfs-common \
+      #EOL
+    echo "Ensuring /etc/kubernetes/manifests"
+    mkdir -p /etc/kubernetes/manifests
+
+    # install system requirements from the regular distro repositories
+    apt-get install -y --no-install-recommends \
+      iputils-ping netcat-openbsd vim-tiny net-tools \
+      lz4 \
+      gnupg \
+      sudo \
+      openssh-server \
+      dnsutils \
+      libglib2.0-0
+      # libglib2.0-0 is required for conmon, which is required for podman
+
+    # install docker
+    echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list
+      curl --no-progress-meter -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
+      apt-key add - < docker.key && \
+      apt-get update && \
+      apt-get install -y docker-ce docker-ce-cli containerd.io
+
+    # enable docker which is default
+    systemctl enable docker.socket
+
+    # minikube relies on /etc/hosts for control-plane discovery. This prevents nefarious DNS servers from breaking it.
+    sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
+
+    # add to docker group
+    adduser vagrant docker
+  SHELL
+end
