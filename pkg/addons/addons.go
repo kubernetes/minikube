@@ -151,42 +151,12 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
-	// If the credentials haven't been mounted in, don't start the pods
-	if name == "gcp-auth" {
-		if _, err := os.Stat(credentialsPath); os.IsNotExist(err) {
-			return nil
-		}
+	bail, err := addonSpecificChecks(cc, name, enable)
+	if err != nil {
+		return err
 	}
-
-	// to match both ingress and ingress-dns addons
-	if strings.HasPrefix(name, "ingress") && enable {
-		if driver.IsKIC(cc.Driver) {
-			if runtime.GOOS == "windows" {
-				out.Styled(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
-			} else if runtime.GOOS != "linux" {
-				exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
-Alternatively to use this addon you can use a vm-based driver:
-
-	'minikube start --vm=true'
-
-To track the update on this work in progress feature please check:
-https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
-			} else if driver.BareMetal(cc.Driver) {
-				out.WarningT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.`,
-					out.V{"driver_name": cc.Driver, "addon_name": name})
-			}
-		}
-	}
-
-	if strings.HasPrefix(name, "istio") && enable {
-		minMem := 8192
-		minCPUs := 4
-		if cc.Memory < minMem {
-			out.WarningT("Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB", out.V{"minMem": minMem, "memory": cc.Memory})
-		}
-		if cc.CPUs < minCPUs {
-			out.WarningT("Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs", out.V{"minCPUs": minCPUs, "cpus": cc.CPUs})
-		}
+	if bail {
+		return nil
 	}
 
 	api, err := machine.NewAPIClient()
@@ -213,19 +183,6 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		return nil
 	}
 
-	if name == "registry" {
-		if driver.NeedsPortForward(cc.Driver) {
-			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
-			if err != nil {
-				return errors.Wrap(err, "registry port")
-			}
-			if enable {
-				out.Boxed(`Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
-			}
-			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
-		}
-	}
-
 	runner, err := machine.CommandRunner(host)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
@@ -247,6 +204,59 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 
 	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
+}
+
+func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool) (bool, error) {
+	// If the gcp-auth credentials haven't been mounted in, don't start the pods
+	if _, err := os.Stat(credentialsPath); os.IsNotExist(err) && name == "gcp-auth" {
+		return true, nil
+	}
+
+	// to match both ingress and ingress-dns addons
+	if strings.HasPrefix(name, "ingress") && enable {
+		if driver.IsKIC(cc.Driver) {
+			if runtime.GOOS == "windows" {
+				out.Styled(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
+			} else if runtime.GOOS != "linux" {
+				exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
+Alternatively to use this addon you can use a vm-based driver:
+
+'minikube start --vm=true'
+
+To track the update on this work in progress feature please check:
+https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
+			} else if driver.BareMetal(cc.Driver) {
+				out.WarningT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.`,
+					out.V{"driver_name": cc.Driver, "addon_name": name})
+			}
+		}
+	}
+
+	if strings.HasPrefix(name, "istio") && enable {
+		minMem := 8192
+		minCPUs := 4
+		if cc.Memory < minMem {
+			out.WarningT("Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB", out.V{"minMem": minMem, "memory": cc.Memory})
+		}
+		if cc.CPUs < minCPUs {
+			out.WarningT("Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs", out.V{"minCPUs": minCPUs, "cpus": cc.CPUs})
+		}
+	}
+
+	if name == "registry" {
+		if driver.NeedsPortForward(cc.Driver) {
+			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
+			if err != nil {
+				return false, errors.Wrap(err, "registry port")
+			}
+			if enable {
+				out.Boxed(`Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
+			}
+			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
+		}
+	}
+
+	return false, nil
 }
 
 func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
