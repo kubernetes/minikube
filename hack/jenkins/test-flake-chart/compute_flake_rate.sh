@@ -135,7 +135,7 @@ join -t , -1 1 -2 3 "${OPEN_ISSUES_LIST}" "${EXISTING_ISSUES_LIST}" \
 # 3) Append to $EXISTING_ISSUES_LIST
 comm -13 "${EXISTING_ISSUES_TESTS_ONLY}" "${OPEN_ISSUES_LIST}" \
   | xargs -I % sh -c \
-    'gh issue create -b "Will be filled in with details" -l kind/failing-test -t "Frequent test failures of \`%\`" \
+    'gh issue create -b "Will be filled in with details" -l kind/failing-test -l priority/backlog -t "Frequent test failures of \`%\`" \
       | sed -n -r "s~^https://github.com/kubernetes/minikube/issues/([0-9]*)$~\1,OPEN,%~p"' \
   >> "${EXISTING_ISSUES_LIST}"
 
