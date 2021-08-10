@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -71,7 +73,16 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil || creds.JSON == nil {
-		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		if detect.IsCloudShell() {
+			if c := os.Getenv("CLOUDSDK_CONFIG"); c != "" {
+				f, err := ioutil.ReadFile(path.Join(c, "application_default_credentials.json"))
+				if err == nil {
+					creds, _ = google.CredentialsFromJSON(ctx, f)
+				}
+			}
+		} else {
+			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		}
 	}
 
 	// Create a registry secret in every namespace we can find
@@ -123,6 +134,10 @@ or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 }
 
 func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error {
+	if creds == nil {
+		return errors.New("no credentials, skipping creating pull secret")
+	}
+
 	client, err := service.K8s.GetCoreClient(cc.Name)
 	if err != nil {
 		return err
