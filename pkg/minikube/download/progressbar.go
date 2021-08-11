@@ -27,14 +27,41 @@ import (
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/hashicorp/go-getter"
+	"k8s.io/klog/v2"
 )
 
 // DefaultProgressBar is the default cheggaaa progress bar
 var DefaultProgressBar getter.ProgressTracker = &progressBar{}
 
 type progressBar struct {
-	lock     sync.Mutex
-	progress *pb.ProgressBar
+	lock sync.Mutex
+	pool *pb.Pool
+	pbs  int
+}
+
+// AddProgressBar add progress bar to the concurrent pool
+func (cpb *progressBar) AddProgressBar(p *pb.ProgressBar) error {
+	if cpb.pool == nil {
+		cpb.pool = pb.NewPool()
+		if err := cpb.pool.Start(); err != nil {
+			return err
+		}
+	}
+	cpb.pool.Add(p)
+	cpb.pbs++
+	return nil
+}
+
+// RemoveProgressBar removes progress bar from the concurrent pool
+func (cpb *progressBar) RemoveProgressBar(p *pb.ProgressBar) error {
+	cpb.pbs--
+	if cpb.pbs <= 0 {
+		if err := cpb.pool.Stop(); err != nil {
+			return err
+		}
+		cpb.pool = nil
+	}
+	return nil
 }
 
 // TrackProgress instantiates a new progress bar that will
@@ -43,10 +70,7 @@ type progressBar struct {
 func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, stream io.ReadCloser) io.ReadCloser {
 	cpb.lock.Lock()
 	defer cpb.lock.Unlock()
-	if cpb.progress == nil {
-		cpb.progress = pb.New64(totalSize)
-	}
-	p := pb.Full.Start64(totalSize)
+	p := pb.New64(totalSize).SetTemplate(pb.Full)
 	fn := filepath.Base(src)
 	// abbreviate filename for progress
 	maxwidth := 30 - len("...")
@@ -59,6 +83,10 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(79)
+
+	if err := cpb.AddProgressBar(p); err != nil {
+		klog.Errorf("pool start: %v", err)
+	}
 	barReader := p.NewProxyReader(stream)
 
 	return &readCloser{
@@ -67,6 +95,9 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 			cpb.lock.Lock()
 			defer cpb.lock.Unlock()
 			p.Finish()
+			if err := cpb.RemoveProgressBar(p); err != nil {
+				klog.Errorf("pool stop: %v", err)
+			}
 			return nil
 		},
 	}
