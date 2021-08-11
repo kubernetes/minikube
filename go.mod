@@ -86,7 +86,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
 	golang.org/x/term v0.0.0-20210406210042-72f3dc4e9b72
-	golang.org/x/text v0.3.6
+	golang.org/x/text v0.3.7
 	gonum.org/v1/plot v0.9.0
 	google.golang.org/api v0.52.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
@@ -104,7 +104,6 @@ replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20210719174735-6eca26732baa
-	github.com/google/go-containerregistry => github.com/afbjorklund/go-containerregistry v0.4.1-0.20210321165649-761f6f9626b1
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/api => k8s.io/api v0.21.2
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.21.2
