@@ -103,9 +103,9 @@ require (
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
+	github.com/cheggaaa/pb/v3 => github.com/yayaha/pb/v3 v3.0.9-0.20210722161537-6336041c275e
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20210719174735-6eca26732baa
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
-	github.com/cheggaaa/pb/v3 => github.com/yayaha/pb/v3 v3.0.9-0.20210722161537-6336041c275e
 	k8s.io/api => k8s.io/api v0.21.2
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.21.2
 	k8s.io/apimachinery => k8s.io/apimachinery v0.21.2
