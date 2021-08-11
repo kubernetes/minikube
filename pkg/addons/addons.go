@@ -18,7 +18,7 @@ package addons
 
 import (
 	"fmt"
-	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"sort"
@@ -194,6 +194,14 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
+	// If the gcp-auth credentials haven't been mounted in, don't start the pods
+	if name == "gcp-auth" {
+		rr, err := runner.RunCmd(exec.Command("cat", credentialsPath))
+		if err != nil || rr.Stdout.String() == "" {
+			return nil
+		}
+	}
+
 	var networkInfo assets.NetworkInfo
 	if len(cc.Nodes) >= 1 {
 		networkInfo.ControlPlaneNodeIP = cc.Nodes[0].IP
@@ -207,13 +215,6 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 }
 
 func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool) (bool, error) {
-	// If the gcp-auth credentials haven't been mounted in, don't start the pods
-	if name == "gcp-auth" {
-		if _, err := os.Stat(credentialsPath); os.IsNotExist(err) {
-			return true, nil
-		}
-	}
-
 	// to match both ingress and ingress-dns addons
 	if strings.HasPrefix(name, "ingress") && enable {
 		if driver.IsKIC(cc.Driver) {
