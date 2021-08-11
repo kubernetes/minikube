@@ -19,7 +19,7 @@ only real way to do this is to add an entry for every service in your `/etc/host
 reasons. If you have a lot of services running that each have their own dns entry then you have to set those up
 manually. Even if you automate it you then need to rely on the host operating system storing configurations instead of
 storing them in your cluster. To make it worse it has to be constantly maintained and updated as services are added,
-remove, and renamed. I call it the `/ets/hosts` pollution problem.
+remove, and renamed. I call it the `/etc/hosts` pollution problem.
 
 ### Solution
 What if you could just access your local services magically without having to edit your `/etc/hosts` file? Well now you
