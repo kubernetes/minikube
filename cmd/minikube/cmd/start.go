@@ -1118,6 +1118,14 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		viper.Set(imageRepository, validateImageRepository(viper.GetString(imageRepository)))
 	}
 
+	if cmd.Flags().Changed(ports) {
+		err := validatePorts(viper.GetStringSlice(ports))
+		if err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+
+	}
+
 	if cmd.Flags().Changed(containerRuntime) {
 		runtime := strings.ToLower(viper.GetString(containerRuntime))
 
@@ -1312,6 +1320,25 @@ func validateListenAddress(listenAddr string) {
 	if len(listenAddr) > 0 && net.ParseIP(listenAddr) == nil {
 		exit.Message(reason.Usage, "Sorry, the IP provided with the --listen-address flag is invalid: {{.listenAddr}}.", out.V{"listenAddr": listenAddr})
 	}
+}
+
+// This function validates that the --ports are not below 1024 for the host and not outside range
+func validatePorts(ports []string) error {
+	for _, portDuplet := range ports {
+		for i, port := range strings.Split(portDuplet, ":") {
+			p, err := strconv.Atoi(port)
+			if err != nil {
+				return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s", ports)
+			}
+			if p > 65535 || p < 1 {
+				return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range %s", ports)
+			}
+			if p < 1024 && i == 0 {
+				return errors.Errorf("Sorry, you cannot use privileged ports on the host (below 1024) %s", ports)
+			}
+		}
+	}
+	return nil
 }
 
 // This function validates that the --insecure-registry follows one of the following formats:

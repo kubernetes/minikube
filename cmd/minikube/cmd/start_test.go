@@ -363,3 +363,39 @@ func TestValidateImageRepository(t *testing.T) {
 	}
 
 }
+
+func TestValidatePorts(t *testing.T) {
+	var tests = []struct {
+		ports    []string
+		errorMsg string
+	}{
+		{
+			ports:    []string{"test:80"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [test:80]",
+		},
+		{
+			ports:    []string{"0:80"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0:80]",
+		},
+		{
+			ports:    []string{"80:80"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [80:80]",
+		},
+		{
+			ports:    []string{"8080:80", "6443:443"},
+			errorMsg: "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(strings.Join(test.ports, ","), func(t *testing.T) {
+			gotError := ""
+			got := validatePorts(test.ports)
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validatePorts(ports=%v): got %v, expected %v", test.ports, got, test.errorMsg)
+			}
+		})
+	}
+}
