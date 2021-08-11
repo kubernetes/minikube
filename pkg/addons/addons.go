@@ -151,12 +151,9 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
-	bail, err := addonSpecificChecks(cc, name, enable)
+	err = addonSpecificChecks(cc, name, enable)
 	if err != nil {
 		return err
-	}
-	if bail {
-		return nil
 	}
 
 	api, err := machine.NewAPIClient()
@@ -214,7 +211,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 
-func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool) (bool, error) {
+func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool) error {
 	// to match both ingress and ingress-dns addons
 	if strings.HasPrefix(name, "ingress") && enable {
 		if driver.IsKIC(cc.Driver) {
@@ -250,7 +247,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		if driver.NeedsPortForward(cc.Driver) {
 			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
 			if err != nil {
-				return false, errors.Wrap(err, "registry port")
+				return errors.Wrap(err, "registry port")
 			}
 			if enable {
 				out.Boxed(`Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
@@ -259,7 +256,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		}
 	}
 
-	return false, nil
+	return nil
 }
 
 func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
