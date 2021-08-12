@@ -151,11 +151,6 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
-	err = addonSpecificChecks(cc, name, enable)
-	if err != nil {
-		return err
-	}
-
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "machine client")
@@ -185,18 +180,12 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		return errors.Wrap(err, "command runner")
 	}
 
-	if name == "auto-pause" && !enable { // needs to be disabled before deleting the service file in the internal disable
-		if err := sysinit.New(runner).DisableNow("auto-pause"); err != nil {
-			klog.ErrorS(err, "failed to disable", "service", "auto-pause")
-		}
+	bail, err := addonSpecificChecks(cc, name, enable, runner)
+	if err != nil {
+		return err
 	}
-
-	// If the gcp-auth credentials haven't been mounted in, don't start the pods
-	if name == "gcp-auth" {
-		rr, err := runner.RunCmd(exec.Command("cat", credentialsPath))
-		if err != nil || rr.Stdout.String() == "" {
-			return nil
-		}
+	if bail {
+		return nil
 	}
 
 	var networkInfo assets.NetworkInfo
@@ -211,7 +200,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 
-func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool) error {
+func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, runner command.Runner) (bool, error) {
 	// to match both ingress and ingress-dns addons
 	if strings.HasPrefix(name, "ingress") && enable {
 		if driver.IsKIC(cc.Driver) {
@@ -230,6 +219,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 					out.V{"driver_name": cc.Driver, "addon_name": name})
 			}
 		}
+		return false, nil
 	}
 
 	if strings.HasPrefix(name, "istio") && enable {
@@ -241,22 +231,39 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		if cc.CPUs < minCPUs {
 			out.WarningT("Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs", out.V{"minCPUs": minCPUs, "cpus": cc.CPUs})
 		}
+		return false, nil
 	}
 
 	if name == "registry" {
 		if driver.NeedsPortForward(cc.Driver) {
 			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
 			if err != nil {
-				return errors.Wrap(err, "registry port")
+				return false, errors.Wrap(err, "registry port")
 			}
 			if enable {
 				out.Boxed(`Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
 			}
 			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
 		}
+		return false, nil
 	}
 
-	return nil
+	if name == "auto-pause" && !enable { // needs to be disabled before deleting the service file in the internal disable
+		if err := sysinit.New(runner).DisableNow("auto-pause"); err != nil {
+			klog.ErrorS(err, "failed to disable", "service", "auto-pause")
+		}
+		return false, nil
+	}
+
+	// If the gcp-auth credentials haven't been mounted in, don't start the pods
+	if name == "gcp-auth" {
+		rr, err := runner.RunCmd(exec.Command("cat", credentialsPath))
+		if err != nil || rr.Stdout.String() == "" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
