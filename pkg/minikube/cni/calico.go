@@ -18,6 +18,7 @@ package cni
 
 import (
 	"bytes"
+	// goembed needs this
 	_ "embed"
 	"text/template"
 
