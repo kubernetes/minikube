@@ -46,18 +46,22 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	t.Run("Setup", func(t *testing.T) {
+	setupFailed := t.Run("Setup", func(t *testing.T) {
 		// We don't need a dummy file is we're on GCE
 		if !detect.IsOnGCE() || detect.IsCloudShell() {
 			// Set an env var to point to our dummy credentials file
 			err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
-			defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+			t.Cleanup(func() {
+				os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+			})
 			if err != nil {
 				t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
 			}
 
 			err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
-			defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+			t.Cleanup(func() {
+				os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+			})
 			if err != nil {
 				t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 			}
@@ -100,6 +104,10 @@ func TestAddons(t *testing.T) {
 			}
 		}
 	})
+
+	if setupFailed {
+		t.Fatalf("Failed setup for addon tests")
+	}
 
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
