@@ -26,7 +26,7 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: bump golang versions
+          commit-message: bump golaint versions
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_golint_version
