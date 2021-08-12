@@ -135,24 +135,29 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("The test WaitService is broken on github actions in macos https://github.com/kubernetes/minikube/issues/8434")
 	}
-	checkRoutePassword(t)
+	setupFailed := t.Run("Setup", func(t *testing.T) {
+		checkRoutePassword(t)
 
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Fatalf("failed to get Kubernetes client for %q: %v", profile, err)
-	}
+		client, err := kapi.Client(profile)
+		if err != nil {
+			t.Fatalf("failed to get Kubernetes client for %q: %v", profile, err)
+		}
 
-	// Start the "nginx" pod.
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", Minutes(4)); err != nil {
-		t.Fatalf("wait: %v", err)
-	}
+		// Start the "nginx" pod.
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+		if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", Minutes(4)); err != nil {
+			t.Fatalf("wait: %v", err)
+		}
 
-	if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, Minutes(2)); err != nil {
-		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
+		if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, Minutes(2)); err != nil {
+			t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
+		}
+	})
+	if setupFailed {
+		t.Fatal("Failed setup")
 	}
 
 	t.Run("IngressIP", func(t *testing.T) {
@@ -160,7 +165,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 			t.Skip("The test WaitService/IngressIP is broken on hyperv https://github.com/kubernetes/minikube/issues/8381")
 		}
 		// Wait until the nginx-svc has a loadbalancer ingress IP
-		err = wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
+		err := wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 			if err != nil {
 				return false, err
