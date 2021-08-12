@@ -140,18 +140,24 @@ func ImageToCache(img string) error {
 	}
 	klog.V(3).Infof("Writing image %v", tag)
 	errchan := make(chan error)
-	p := pb.Full.Start64(0)
 	fn := strings.Split(ref.Name(), "@")[0]
 	// abbreviate filename for progress
 	maxwidth := 30 - len("...")
 	if len(fn) > maxwidth {
 		fn = fn[0:maxwidth] + "..."
 	}
+	size, err := tarball.CalculateSize(map[name.Reference]v1.Image{tag: i})
+	if err != nil {
+		return errors.Wrap(err, "calculating image size")
+	}
+	p := pb.New64(size).SetTemplate(pb.Full)
 	p.Set("prefix", "    > "+fn+": ")
 	p.Set(pb.Bytes, true)
 
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(79)
+
+	DefaultProgressBar.AddProgressBar(p)
 
 	go func() {
 		err = tarball.WriteToFile(f, tag, i, tarball.WithProgress(c))
@@ -162,9 +168,9 @@ func ImageToCache(img string) error {
 		select {
 		case update = <-c:
 			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
 		case err = <-errchan:
 			p.Finish()
+			DefaultProgressBar.RemoveProgressBar(p)
 			if err != nil {
 				return errors.Wrap(err, "writing tarball image")
 			}
@@ -271,18 +277,24 @@ func ImageToDaemon(img string) error {
 
 	klog.V(3).Infof("Writing image %v", tag)
 	errchan := make(chan error)
-	p := pb.Full.Start64(0)
 	fn := strings.Split(ref.Name(), "@")[0]
 	// abbreviate filename for progress
 	maxwidth := 30 - len("...")
 	if len(fn) > maxwidth {
 		fn = fn[0:maxwidth] + "..."
 	}
+	size, err := tarball.CalculateSize(map[name.Reference]v1.Image{tag: i})
+	if err != nil {
+		return errors.Wrap(err, "calculating image size")
+	}
+	p := pb.New64(size).SetTemplate(pb.Full)
 	p.Set("prefix", "    > "+fn+": ")
 	p.Set(pb.Bytes, true)
 
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(79)
+
+	DefaultProgressBar.AddProgressBar(p)
 
 	go func() {
 		_, err = daemon.Write(tag, i)
@@ -294,9 +306,9 @@ loop:
 		select {
 		case update = <-c:
 			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
 		case err = <-errchan:
 			p.Finish()
+			DefaultProgressBar.RemoveProgressBar(p)
 			if err != nil {
 				return errors.Wrap(err, "writing daemon image")
 			}

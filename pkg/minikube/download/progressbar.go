@@ -30,8 +30,16 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// DefaultProgressBar is the default cheggaaa progress bar
-var DefaultProgressBar getter.ProgressTracker = &progressBar{}
+// PoolProgressTracker defines a progress tracker interface used to track a
+// pool of progress bars.
+type PoolProgressTracker interface {
+	getter.ProgressTracker
+	AddProgressBar(*pb.ProgressBar) error
+	RemoveProgressBar(p *pb.ProgressBar) error
+}
+
+// DefaultProgressBar is the default cheggaaa progress bar.
+var DefaultProgressBar PoolProgressTracker = &progressBar{}
 
 type progressBar struct {
 	lock sync.Mutex
@@ -41,6 +49,8 @@ type progressBar struct {
 
 // AddProgressBar add progress bar to the concurrent pool
 func (cpb *progressBar) AddProgressBar(p *pb.ProgressBar) error {
+	cpb.lock.Lock()
+	defer cpb.lock.Unlock()
 	if cpb.pool == nil {
 		cpb.pool = pb.NewPool()
 		if err := cpb.pool.Start(); err != nil {
@@ -54,6 +64,8 @@ func (cpb *progressBar) AddProgressBar(p *pb.ProgressBar) error {
 
 // RemoveProgressBar removes progress bar from the concurrent pool
 func (cpb *progressBar) RemoveProgressBar(p *pb.ProgressBar) error {
+	cpb.lock.Lock()
+	defer cpb.lock.Unlock()
 	cpb.pbs--
 	if cpb.pbs <= 0 {
 		if err := cpb.pool.Stop(); err != nil {
@@ -68,8 +80,6 @@ func (cpb *progressBar) RemoveProgressBar(p *pb.ProgressBar) error {
 // display the progress of stream until closed.
 // total can be 0.
 func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, stream io.ReadCloser) io.ReadCloser {
-	cpb.lock.Lock()
-	defer cpb.lock.Unlock()
 	p := pb.New64(totalSize).SetTemplate(pb.Full)
 	fn := filepath.Base(src)
 	// abbreviate filename for progress
@@ -92,8 +102,6 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 	return &readCloser{
 		Reader: barReader,
 		close: func() error {
-			cpb.lock.Lock()
-			defer cpb.lock.Unlock()
 			p.Finish()
 			if err := cpb.RemoveProgressBar(p); err != nil {
 				klog.Errorf("pool stop: %v", err)
