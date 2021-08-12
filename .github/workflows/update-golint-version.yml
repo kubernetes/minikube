@@ -1,4 +1,4 @@
-name: "update-golang-versions"
+name: "update-golint-version"
 on:
   workflow_dispatch:
   schedule:
