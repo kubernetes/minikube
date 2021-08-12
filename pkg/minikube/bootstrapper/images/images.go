@@ -163,18 +163,37 @@ func KindNet(repo string) string {
 	return path.Join(repo, "kindnetd:v20210326-1e038dc5")
 }
 
+// all calico images are from https://docs.projectcalico.org/manifests/calico.yaml
+const calicoVersion = "v3.20.0"
+
 // CalicoDaemonSet returns the image used for calicoDaemonSet
 func CalicoDaemonSet(repo string) string {
 	if repo == "" {
-		repo = "calico"
+		repo = "docker.io/calico"
 	}
-	return path.Join(repo, "node:v3.14.1")
+	return path.Join(repo, "node:"+calicoVersion)
 }
 
 // CalicoDeployment returns the image used for calicoDeployment
 func CalicoDeployment(repo string) string {
 	if repo == "" {
-		repo = "calico"
+		repo = "docker.io/calico"
 	}
-	return path.Join(repo, "kube-controllers:v3.14.1")
+	return path.Join(repo, "kube-controllers::"+calicoVersion)
+}
+
+// CalicoFelixDriver returns image used for felix driver
+func CalicoFelixDriver(repo string) string {
+	if repo == "" {
+		repo = "docker.io/calico"
+	}
+	return path.Join(repo, "pod2daemon-flexvol::"+calicoVersion)
+}
+
+// CalicoBin returns image used for calico binary image
+func CalicoBin(repo string) string {
+	if repo == "" {
+		repo = "docker.io/calico"
+	}
+	return path.Join(repo, "cni::"+calicoVersion)
 }
