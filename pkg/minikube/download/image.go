@@ -146,6 +146,7 @@ func ImageToCache(img string) error {
 	if len(fn) > maxwidth {
 		fn = fn[0:maxwidth] + "..."
 	}
+
 	size, err := tarball.CalculateSize(map[name.Reference]v1.Image{tag: i})
 	if err != nil {
 		return errors.Wrap(err, "calculating image size")
@@ -153,11 +154,11 @@ func ImageToCache(img string) error {
 	p := pb.New64(size).SetTemplate(pb.Full)
 	p.Set("prefix", "    > "+fn+": ")
 	p.Set(pb.Bytes, true)
-
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(79)
-
-	DefaultProgressBar.AddProgressBar(p)
+	if err := DefaultProgressBar.AddProgressBar(p); err != nil {
+		klog.Errorf("error adding progress bar to pool: %v", err)
+	}
 
 	go func() {
 		err = tarball.WriteToFile(f, tag, i, tarball.WithProgress(c))
@@ -170,7 +171,9 @@ func ImageToCache(img string) error {
 			p.SetCurrent(update.Complete)
 		case err = <-errchan:
 			p.Finish()
-			DefaultProgressBar.RemoveProgressBar(p)
+			if err := DefaultProgressBar.RemoveProgressBar(p); err != nil {
+				klog.Errorf("error removing progress bar from pool: %v", err)
+			}
 			if err != nil {
 				return errors.Wrap(err, "writing tarball image")
 			}
@@ -283,6 +286,7 @@ func ImageToDaemon(img string) error {
 	if len(fn) > maxwidth {
 		fn = fn[0:maxwidth] + "..."
 	}
+
 	size, err := tarball.CalculateSize(map[name.Reference]v1.Image{tag: i})
 	if err != nil {
 		return errors.Wrap(err, "calculating image size")
@@ -290,11 +294,11 @@ func ImageToDaemon(img string) error {
 	p := pb.New64(size).SetTemplate(pb.Full)
 	p.Set("prefix", "    > "+fn+": ")
 	p.Set(pb.Bytes, true)
-
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(79)
-
-	DefaultProgressBar.AddProgressBar(p)
+	if err := DefaultProgressBar.AddProgressBar(p); err != nil {
+		klog.Errorf("error adding progress bar to pool: %v", err)
+	}
 
 	go func() {
 		_, err = daemon.Write(tag, i)
@@ -308,7 +312,9 @@ loop:
 			p.SetCurrent(update.Complete)
 		case err = <-errchan:
 			p.Finish()
-			DefaultProgressBar.RemoveProgressBar(p)
+			if err := DefaultProgressBar.RemoveProgressBar(p); err != nil {
+				klog.Errorf("error removing progress bar from pool: %v", err)
+			}
 			if err != nil {
 				return errors.Wrap(err, "writing daemon image")
 			}
