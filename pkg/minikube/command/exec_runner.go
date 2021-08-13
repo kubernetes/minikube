@@ -184,24 +184,6 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 	return writeFile(dst, f, os.FileMode(perms))
 }
 
-// CopyFrom copies a file
-func (e *execRunner) CopyFrom(f assets.CopyableFile) error {
-	src := path.Join(f.GetTargetDir(), f.GetTargetName())
-
-	dst := f.GetSourcePath()
-	klog.Infof("cp: %s --> %s (%d bytes)", src, dst, f.GetLength())
-	if f.GetLength() == 0 {
-		klog.Warningf("0 byte asset: %+v", f)
-	}
-
-	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
-	if err != nil || perms > 07777 {
-		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
-	}
-
-	return writeFile(dst, f, os.FileMode(perms))
-}
-
 // Remove removes a file
 func (e *execRunner) Remove(f assets.CopyableFile) error {
 	dst := filepath.Join(f.GetTargetDir(), f.GetTargetName())
