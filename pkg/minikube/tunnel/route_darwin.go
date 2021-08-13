@@ -50,7 +50,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	command := exec.Command("sudo", "route", "-n", "add", serviceCIDR, gatewayIP)
 	klog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
-	message := fmt.Sprintf("%s", stdInAndOut)
+	message := string(stdInAndOut)
 	re := regexp.MustCompile(fmt.Sprintf("add net (.*): gateway %s\n", gatewayIP))
 	if !re.MatchString(message) {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))

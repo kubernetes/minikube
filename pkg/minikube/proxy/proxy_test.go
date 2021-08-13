@@ -225,10 +225,6 @@ func TestUpdateTransport(t *testing.T) {
 		c := UpdateTransport(&rc)
 		tr := &http.Transport{}
 		tr.RegisterProtocol("file", http.NewFileTransport(http.Dir("/tmp")))
-		rt := c.WrapTransport(tr)
-		if _, ok := rt.(http.RoundTripper); !ok {
-			t.Fatalf("Cannot cast rt(%v) to http.RoundTripper", rt)
-		}
 	})
 	t.Run("existing", func(t *testing.T) {
 		// rest config initialized with WrapTransport function
