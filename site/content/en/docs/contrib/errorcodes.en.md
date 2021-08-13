@@ -381,9 +381,6 @@ minikube failed to remove an image
 "GUEST_IMAGE_BUILD" (Exit code ExGuestError)  
 minikube failed to build an image  
 
-"GUEST_IMAGE_SAVE" (Exit code ExGuestError)  
-minikube failed to push or save an image  
-
 "GUEST_LOAD_HOST" (Exit code ExGuestError)  
 minikube failed to load host  
 

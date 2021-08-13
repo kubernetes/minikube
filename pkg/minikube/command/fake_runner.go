@@ -142,19 +142,6 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	return nil
 }
 
-func (f *FakeCommandRunner) CopyFrom(file assets.CopyableFile) error {
-	v, ok := f.fileMap.Load(file.GetSourcePath())
-	if !ok {
-		return fmt.Errorf("not found in map")
-	}
-	b := v.(bytes.Buffer)
-	_, err := io.Copy(file, &b)
-	if err != nil {
-		return errors.Wrapf(err, "error writing file: %+v", file)
-	}
-	return nil
-}
-
 // Remove removes the filename, file contents key value pair from the stored map
 func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
 	f.fileMap.Delete(file.GetSourcePath())
