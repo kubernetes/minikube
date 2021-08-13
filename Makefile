@@ -77,7 +77,7 @@ GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable gofmt,goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
+	  --enable gofmt,goimports,gocritic,revive,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
 export GO111MODULE := on

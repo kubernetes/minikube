@@ -48,11 +48,11 @@ import (
 )
 
 // Force is used to override checks for addons
-var Force bool = false
+var Force = false
 
 // Refresh is used to refresh pods in specific cases when an addon is enabled
 // Currently only used for gcp-auth
-var Refresh bool = false
+var Refresh = false
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
@@ -377,7 +377,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	enabledAddons := []string{}
+	var enabledAddons []string
 
 	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
