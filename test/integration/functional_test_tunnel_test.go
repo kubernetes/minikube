@@ -135,9 +135,8 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("The test WaitService is broken on github actions in macos https://github.com/kubernetes/minikube/issues/8434")
 	}
+	checkRoutePassword(t)
 	setupFailed := t.Run("Setup", func(t *testing.T) {
-		checkRoutePassword(t)
-
 		client, err := kapi.Client(profile)
 		if err != nil {
 			t.Fatalf("failed to get Kubernetes client for %q: %v", profile, err)
