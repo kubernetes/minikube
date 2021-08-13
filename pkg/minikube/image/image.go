@@ -33,12 +33,10 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -191,62 +189,6 @@ func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 		klog.Infof("remote lookup for %+v: %v", ref, err)
 	}
 	return img, err
-}
-
-// imagePathInCache returns path in local cache directory
-func imagePathInCache(img string) string {
-	f := filepath.Join(constants.ImageCacheDir, img)
-	f = localpath.SanitizeCacheDir(f)
-	return f
-}
-
-func UploadCachedImage(imgName string) error {
-	tag, err := name.NewTag(imgName, name.WeakValidation)
-	if err != nil {
-		klog.Infof("error parsing image name %s tag %v ", imgName, err)
-		return err
-	}
-	return uploadImage(tag, imagePathInCache(imgName))
-}
-
-func uploadImage(tag name.Tag, p string) error {
-	var err error
-	var img v1.Image
-
-	if !useDaemon && !useRemote {
-		return fmt.Errorf("neither daemon nor remote")
-	}
-
-	img, err = tarball.ImageFromPath(p, &tag)
-	if err != nil {
-		return errors.Wrap(err, "tarball")
-	}
-	ref := name.Reference(tag)
-
-	klog.Infof("uploading image: %+v from: %s", ref, p)
-	if useDaemon {
-		return uploadDaemon(ref, img)
-	}
-	if useRemote {
-		return uploadRemote(ref, img, defaultPlatform)
-	}
-	return nil
-}
-
-func uploadDaemon(ref name.Reference, img v1.Image) error {
-	resp, err := daemon.Write(ref, img)
-	if err != nil {
-		klog.Warningf("daemon load for %s: %v\n%s", ref, err, resp)
-	}
-	return err
-}
-
-func uploadRemote(ref name.Reference, img v1.Image, p v1.Platform) error {
-	err := remote.Write(ref, img, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(p))
-	if err != nil {
-		klog.Warningf("remote push for %s: %v", ref, err)
-	}
-	return err
 }
 
 // See https://github.com/kubernetes/minikube/issues/10402

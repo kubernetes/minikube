@@ -17,14 +17,11 @@ limitations under the License.
 package command
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
 	"path"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -373,85 +370,6 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	out, err := sess.CombinedOutput(scp)
 	if err != nil {
 		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
-	}
-	return g.Wait()
-}
-
-// CopyFrom copies a file from the remote over SSH.
-func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
-	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
-
-	sess, err := s.session()
-	if err != nil {
-		return errors.Wrap(err, "NewSession")
-	}
-	defer func() {
-		if err := sess.Close(); err != nil {
-			if err != io.EOF {
-				klog.Errorf("session close: %v", err)
-			}
-		}
-	}()
-
-	cmd := exec.Command("stat", "-c", "%s", dst)
-	rr, err := s.RunCmd(cmd)
-	if err != nil {
-		return fmt.Errorf("%s: %v", cmd, err)
-	}
-	length, err := strconv.Atoi(strings.TrimSuffix(rr.Stdout.String(), "\n"))
-	if err != nil {
-		return err
-	}
-	src := f.GetSourcePath()
-	klog.Infof("scp %s --> %s (%d bytes)", dst, src, length)
-	f.SetLength(length)
-
-	r, err := sess.StdoutPipe()
-	if err != nil {
-		return errors.Wrap(err, "StdoutPipe")
-	}
-	w, err := sess.StdinPipe()
-	if err != nil {
-		return errors.Wrap(err, "StdinPipe")
-	}
-	// The scpcmd below *should not* return until all data is copied and the
-	// StdinPipe is closed. But let's use errgroup to make it explicit.
-	var g errgroup.Group
-	var copied int64
-
-	g.Go(func() error {
-		defer w.Close()
-		br := bufio.NewReader(r)
-		fmt.Fprint(w, "\x00")
-		b, err := br.ReadBytes('\n')
-		if err != nil {
-			return errors.Wrap(err, "ReadBytes")
-		}
-		if b[0] != 'C' {
-			return fmt.Errorf("unexpected: %v", b)
-		}
-		fmt.Fprint(w, "\x00")
-
-		copied = 0
-		for copied < int64(length) {
-			n, err := io.CopyN(f, br, int64(length))
-			if err != nil {
-				return errors.Wrap(err, "io.CopyN")
-			}
-			copied += n
-		}
-		fmt.Fprint(w, "\x00")
-		err = sess.Wait()
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-
-	scp := fmt.Sprintf("sudo scp -f %s", f.GetTargetPath())
-	err = sess.Start(scp)
-	if err != nil {
-		return fmt.Errorf("%s: %s", scp, err)
 	}
 	return g.Wait()
 }

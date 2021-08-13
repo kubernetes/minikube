@@ -236,10 +236,6 @@ func (f *FakeRunner) Copy(assets.CopyableFile) error {
 	return nil
 }
 
-func (f *FakeRunner) CopyFrom(assets.CopyableFile) error {
-	return nil
-}
-
 func (f *FakeRunner) Remove(assets.CopyableFile) error {
 	return nil
 }

@@ -204,15 +204,6 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	return k.copy(tf.Name(), dst)
 }
 
-// CopyFrom copies a file
-func (k *kicRunner) CopyFrom(f assets.CopyableFile) error {
-	src := f.GetTargetPath()
-	dst := f.GetSourcePath()
-
-	klog.Infof("%s (direct): %s --> %s", k.ociBin, src, dst)
-	return k.copyFrom(src, dst)
-}
-
 // tempDirectory returns the directory to use as the temp directory
 // or an empty string if it should use the os default temp directory.
 func tempDirectory(isMinikubeSnap bool, isDockerSnap bool) (string, error) {
@@ -236,14 +227,6 @@ func (k *kicRunner) copy(src string, dst string) error {
 		return copyToPodman(src, fullDest)
 	}
 	return copyToDocker(src, fullDest)
-}
-
-func (k *kicRunner) copyFrom(src string, dst string) error {
-	fullSource := fmt.Sprintf("%s:%s", k.nameOrID, src)
-	if k.ociBin == oci.Podman {
-		return copyToPodman(fullSource, dst)
-	}
-	return copyToDocker(fullSource, dst)
 }
 
 func (k *kicRunner) chmod(dst string, perm string) error {
