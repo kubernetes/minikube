@@ -55,6 +55,9 @@ var Force bool = false
 // Currently only used for gcp-auth
 var Refresh bool = false
 
+// ErrSkipThisAddon is a special error that tells us to not error out, but to also not mark the addon as enabled
+var ErrSkipThisAddon = errors.New("skipping this addon")
+
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 	klog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)
@@ -65,11 +68,17 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 
 	// Run any additional validations for this property
 	if err := run(cc, name, value, a.validations); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "running validations")
 	}
 
 	// Run any callbacks for this property
 	if err := run(cc, name, value, a.callbacks); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "running callbacks")
 	}
 	return nil
@@ -92,6 +101,9 @@ func SetAndSave(profile string, name string, value string) error {
 	}
 
 	if err := RunCallbacks(cc, name, value); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "run callbacks")
 	}
 
@@ -105,15 +117,18 @@ func SetAndSave(profile string, name string, value string) error {
 
 // Runs all the validation or callback functions and collects errors
 func run(cc *config.ClusterConfig, name string, value string, fns []setFn) error {
-	var errors []error
+	var errs []error
 	for _, fn := range fns {
 		err := fn(cc, name, value)
 		if err != nil {
-			errors = append(errors, err)
+			if errors.Is(err, ErrSkipThisAddon) {
+				return ErrSkipThisAddon
+			}
+			errs = append(errs, err)
 		}
 	}
-	if len(errors) > 0 {
-		return fmt.Errorf("%v", errors)
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
 	}
 	return nil
 }
