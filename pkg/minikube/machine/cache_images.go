@@ -19,6 +19,7 @@ package machine
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
@@ -47,6 +48,9 @@ var loadRoot = path.Join(vmpath.GuestPersistentDir, "images")
 
 // loadImageLock is used to serialize image loads to avoid overloading the guest VM
 var loadImageLock sync.Mutex
+
+// saveRoot is where images should be saved from within the guest VM
+var saveRoot = path.Join(vmpath.GuestPersistentDir, "images")
 
 // CacheImagesForBootstrapper will cache images for a bootstrapper
 func CacheImagesForBootstrapper(imageRepository string, version string, clusterBootstrapper string) error {
@@ -323,6 +327,173 @@ func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
 		return errors.Wrap(err, "removing image")
 	}
 
+	return nil
+}
+
+// SaveCachedImages saves from the container runtime to the cache
+func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
+	klog.Infof("SaveImages start: %s", images)
+	start := time.Now()
+
+	defer func() {
+		klog.Infof("SaveImages completed in %s", time.Since(start))
+	}()
+
+	var g errgroup.Group
+
+	for _, image := range images {
+		image := image
+		g.Go(func() error {
+			return transferAndSaveCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "saving cached images")
+	}
+	klog.Infoln("Successfully saved all cached images")
+	return nil
+}
+
+// SaveLocalImages saves images from the container runtime
+func SaveLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string, output string) error {
+	var g errgroup.Group
+	for _, image := range images {
+		image := image
+		g.Go(func() error {
+			return transferAndSaveImage(runner, cc.KubernetesConfig, output, image)
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "saving images")
+	}
+	klog.Infoln("Successfully saved all images")
+	return nil
+}
+
+// SaveAndCacheImages saves images from all profiles into the cache
+func SaveAndCacheImages(images []string, profiles []*config.Profile) error {
+	if len(images) == 0 {
+		return nil
+	}
+
+	return DoSaveImages(images, "", profiles, constants.ImageCacheDir)
+}
+
+// DoSaveImages saves images from all profiles
+func DoSaveImages(images []string, output string, profiles []*config.Profile, cacheDir string) error {
+	api, err := NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "api")
+	}
+	defer api.Close()
+
+	klog.Infof("Save images: %q", images)
+
+	succeeded := []string{}
+	failed := []string{}
+
+	for _, p := range profiles { // loading images to all running profiles
+		pName := p.Name // capture the loop variable
+
+		c, err := config.Load(pName)
+		if err != nil {
+			// Non-fatal because it may race with profile deletion
+			klog.Errorf("Failed to load profile %q: %v", pName, err)
+			failed = append(failed, pName)
+			continue
+		}
+
+		for _, n := range c.Nodes {
+			m := config.MachineName(*c, n)
+
+			status, err := Status(api, m)
+			if err != nil {
+				klog.Warningf("error getting status for %s: %v", m, err)
+				failed = append(failed, m)
+				continue
+			}
+
+			if status == state.Running.String() { // the not running hosts will load on next start
+				h, err := api.Load(m)
+				if err != nil {
+					klog.Warningf("Failed to load machine %q: %v", m, err)
+					failed = append(failed, m)
+					continue
+				}
+				cr, err := CommandRunner(h)
+				if err != nil {
+					return err
+				}
+				if cacheDir != "" {
+					// saving image names, to cache
+					err = SaveCachedImages(c, cr, images, cacheDir)
+				} else {
+					// saving mage files
+					err = SaveLocalImages(c, cr, images, output)
+				}
+				if err != nil {
+					failed = append(failed, m)
+					klog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+					continue
+				}
+				succeeded = append(succeeded, m)
+			}
+		}
+	}
+
+	klog.Infof("succeeded pulling from : %s", strings.Join(succeeded, " "))
+	klog.Infof("failed pulling from : %s", strings.Join(failed, " "))
+	// Live pushes are not considered a failure
+	return nil
+}
+
+// transferAndSaveCachedImage transfers and loads a single image from the cache
+func transferAndSaveCachedImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
+	dst := filepath.Join(cacheDir, imgName)
+	dst = localpath.SanitizeCacheDir(dst)
+	return transferAndSaveImage(cr, k8s, dst, imgName)
+}
+
+// transferAndSaveImage transfers and loads a single image
+func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst string, imgName string) error {
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
+	klog.Infof("Saving image to: %s", dst)
+	filename := filepath.Base(dst)
+
+	_, err = os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		return err
+	}
+
+	f, err := assets.NewFileAsset(dst, saveRoot, filename, "0644")
+	if err != nil {
+		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+		}
+	}()
+
+	src := path.Join(saveRoot, filename)
+	args := append([]string{"rm", "-f"}, src)
+	if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return err
+	}
+	err = r.SaveImage(imgName, src)
+	if err != nil {
+		return errors.Wrapf(err, "%s save %s", r.Name(), src)
+	}
+
+	if err := cr.CopyFrom(f); err != nil {
+		return errors.Wrap(err, "transferring cached image")
+	}
+
+	klog.Infof("Transferred and saved %s to cache", dst)
 	return nil
 }
 
