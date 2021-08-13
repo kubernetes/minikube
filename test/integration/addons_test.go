@@ -46,7 +46,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	setupFailed := t.Run("Setup", func(t *testing.T) {
+	setupSucceeded := t.Run("Setup", func(t *testing.T) {
 		// We don't need a dummy file is we're on GCE
 		if !detect.IsOnGCE() || detect.IsCloudShell() {
 			// Set an env var to point to our dummy credentials file
@@ -105,7 +105,7 @@ func TestAddons(t *testing.T) {
 		}
 	})
 
-	if setupFailed {
+	if !setupSucceeded {
 		t.Fatalf("Failed setup for addon tests")
 	}
 

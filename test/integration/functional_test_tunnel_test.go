@@ -136,7 +136,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 		t.Skip("The test WaitService is broken on github actions in macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 	checkRoutePassword(t)
-	setupFailed := t.Run("Setup", func(t *testing.T) {
+	setupSucceeded := t.Run("Setup", func(t *testing.T) {
 		client, err := kapi.Client(profile)
 		if err != nil {
 			t.Fatalf("failed to get Kubernetes client for %q: %v", profile, err)
@@ -155,7 +155,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 			t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 		}
 	})
-	if setupFailed {
+	if !setupSucceeded {
 		t.Fatal("Failed setup")
 	}
 
