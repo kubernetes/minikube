@@ -23,7 +23,6 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -31,7 +30,7 @@ import (
 
 var (
 	dataCsv   = flag.String("data-csv", "", "Source data to compute flake rates on")
-	dateRange = flag.Uint("date-range", 5, "Number of test dates to consider when computing flake rate")
+	dateRange = flag.Uint("date-range", 5, "Number of days prior to today to compute flake rate for")
 )
 
 func main() {
@@ -42,9 +41,11 @@ func main() {
 		exit("Unable to read data CSV", err)
 	}
 
+	dateCutoff := time.Now().AddDate(0, 0, -int(*dateRange))
+
 	testEntries := readData(file)
 	splitEntries := splitData(testEntries)
-	filteredEntries := filterRecentEntries(splitEntries, *dateRange)
+	filteredEntries := filterRecentEntries(splitEntries, dateCutoff)
 	flakeRates := computeFlakeRates(filteredEntries)
 	averageDurations := computeAverageDurations(filteredEntries)
 	fmt.Println("Environment,Test,Flake Rate,Duration")
@@ -162,48 +163,16 @@ func appendEntry(splitEntries splitEntryMap, environment, test string, entry tes
 	environmentSplit[test] = append(testSplit, entry)
 }
 
-// Filters `splitEntries` to include only the most recent `date_range` dates.
-func filterRecentEntries(splitEntries splitEntryMap, dateRange uint) splitEntryMap {
+// Filters `splitEntries` to include only entries after `dateCutoff`.
+func filterRecentEntries(splitEntries splitEntryMap, dateCutoff time.Time) splitEntryMap {
 	filteredEntries := make(splitEntryMap)
 
 	for environment, environmentSplit := range splitEntries {
 		for test, testSplit := range environmentSplit {
-			dates := make([]time.Time, len(testSplit))
 			for _, entry := range testSplit {
-				dates = append(dates, entry.date)
-			}
-			// Sort dates from future to past.
-			sort.Slice(dates, func(i, j int) bool {
-				return dates[j].Before(dates[i])
-			})
-			datesInRange := make([]time.Time, 0, dateRange)
-			var lastDate time.Time
-			// Go through each date.
-			for _, date := range dates {
-				// If date is the same as last date, ignore it.
-				if date.Equal(lastDate) {
-					continue
+				if !entry.date.Before(dateCutoff) {
+					appendEntry(filteredEntries, environment, test, entry)
 				}
-
-				// Add the date.
-				datesInRange = append(datesInRange, date)
-				lastDate = date
-				// If the date_range has been hit, break out.
-				if uint(len(datesInRange)) == dateRange {
-					break
-				}
-			}
-
-			for _, entry := range testSplit {
-				// Look for the first element <= entry.date
-				index := sort.Search(len(datesInRange), func(i int) bool {
-					return !datesInRange[i].After(entry.date)
-				})
-				// If no date is <= entry.date, or the found date does not equal entry.date.
-				if index == len(datesInRange) || !datesInRange[index].Equal(entry.date) {
-					continue
-				}
-				appendEntry(filteredEntries, environment, test, entry)
 			}
 		}
 	}

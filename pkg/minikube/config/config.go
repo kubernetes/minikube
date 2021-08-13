@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -171,7 +172,15 @@ func encode(w io.Writer, m MinikubeConfig) error {
 
 // Load loads the Kubernetes and machine config for the current machine
 func Load(profile string, miniHome ...string) (*ClusterConfig, error) {
-	return DefaultLoader.LoadConfigFromFile(profile, miniHome...)
+	cc, err := DefaultLoader.LoadConfigFromFile(profile, miniHome...)
+	if err == nil {
+		klog.Infof("Loaded profile config \"%s\": Driver=%s, ContainerRuntime=%s, KubernetesVersion=%s",
+			profile,
+			cc.Driver,
+			cc.KubernetesConfig.ContainerRuntime,
+			cc.KubernetesConfig.KubernetesVersion)
+	}
+	return cc, err
 }
 
 // Write writes the Kubernetes and machine config for the current machine

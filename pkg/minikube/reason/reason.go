@@ -317,6 +317,8 @@ var (
 	GuestImageRemove = Kind{ID: "GUEST_IMAGE_REMOVE", ExitCode: ExGuestError}
 	// minikube failed to build an image
 	GuestImageBuild = Kind{ID: "GUEST_IMAGE_BUILD", ExitCode: ExGuestError}
+	// minikube failed to push or save an image
+	GuestImageSave = Kind{ID: "GUEST_IMAGE_SAVE", ExitCode: ExGuestError}
 	// minikube failed to load host
 	GuestLoadHost = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
 	// minkube failed to create a mount

@@ -49,11 +49,11 @@ import (
 )
 
 // Force is used to override checks for addons
-var Force bool = false
+var Force = false
 
 // Refresh is used to refresh pods in specific cases when an addon is enabled
 // Currently only used for gcp-auth
-var Refresh bool = false
+var Refresh = false
 
 // ErrSkipThisAddon is a special error that tells us to not error out, but to also not mark the addon as enabled
 var ErrSkipThisAddon = errors.New("skipping this addon")
@@ -417,7 +417,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	enabledAddons := []string{}
+	var enabledAddons []string
 
 	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)

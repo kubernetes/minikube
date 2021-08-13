@@ -116,7 +116,7 @@ func TestScheduledStopUnix(t *testing.T) {
 	}
 
 	// wait for stop to complete
-	time.Sleep(15 * time.Second)
+	time.Sleep(25 * time.Second)
 	// make sure minikube timetoStop is not present
 	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"

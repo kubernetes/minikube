@@ -65,6 +65,8 @@ type CommandRunner interface {
 	WaitCmd(sc *command.StartedCmd) (*command.RunResult, error)
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
+	// CopyFrom is a convenience method that runs a command to copy a file back
+	CopyFrom(assets.CopyableFile) error
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
 }

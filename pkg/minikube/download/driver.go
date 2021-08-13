@@ -19,9 +19,11 @@ package download
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -30,12 +32,21 @@ func driverWithChecksumURL(name string, v semver.Version) string {
 	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s/%s", v, name)
 	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
 }
+func driverWithArchAndChecksumURL(name string, v semver.Version) string {
+	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s-%s/%s", v, runtime.GOARCH, name)
+	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
+}
 
 // Driver downloads an arbitrary driver
 func Driver(name string, destination string, v semver.Version) error {
 	out.Step(style.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": name})
-	if err := download(driverWithChecksumURL(name, v), destination); err != nil {
-		return errors.Wrap(err, "download")
+
+	archURL := driverWithArchAndChecksumURL(name, v)
+	if err := download(archURL, destination); err != nil {
+		klog.Infof("failed to download arch specific driver: %v. trying to get the common version", err)
+		if err := download(driverWithChecksumURL(name, v), destination); err != nil {
+			return errors.Wrap(err, "download")
+		}
 	}
 
 	// Give downloaded drivers a baseline decent file permission

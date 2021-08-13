@@ -235,7 +235,7 @@ function aggregateWeeklyRuns(testRuns, weekDates) {
     }));
 }
 
-const jobIdToLink = (jobId, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${jobId}/${environment}.html`;
+const testGopoghLink = (jobId, environment, testName) => `https://storage.googleapis.com/minikube-builds/logs/master/${jobId}/${environment}.html${testName ? `#fail_${testName}` : ``}`;
 
 function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   const testRuns = testData
@@ -259,14 +259,14 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
             <b>${groupData.date.toString()}</b><br>
             <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
-            ${groupData.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
+            ${groupData.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${status})`).join("<br>")}
           </div>`,
           groupData.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b>${groupData.date.toString()}</b><br>
             <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
             <b>Jobs:</b><br>
-            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${duration}s)`).join("<br>")}
+            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${duration}s)`).join("<br>")}
           </div>`,
         ])
     );
@@ -335,14 +335,14 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
             <b>${groupData.date.toString()}</b><br>
             <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
-            ${groupData.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
+            ${groupData.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${status})`).join("<br>")}
           </div>`,
           groupData.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b>${groupData.date.toString()}</b><br>
             <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
             <b>Jobs:</b><br>
-            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${duration}s)`).join("<br>")}
+            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${duration}s)`).join("<br>")}
           </div>`,
         ])
     );
@@ -477,7 +477,7 @@ function displayEnvironmentChart(testData, environmentName) {
             <b>${data.date.toString()}</b><br>
             <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
-            ${data.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
+            ${data.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, name)}">${id}</a> (${status})`).join("<br>")}
           </div>`
         ] : [null, null];
       })).flat())
@@ -554,7 +554,7 @@ function displayEnvironmentChart(testData, environmentName) {
             <b>${data.date.toString()}</b><br>
             <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
-            ${data.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
+            ${data.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, name)}">${id}</a> (${status})`).join("<br>")}
           </div>`
         ] : [null, null];
       })).flat())
@@ -614,14 +614,14 @@ function displayEnvironmentChart(testData, environmentName) {
           <b>${dateInfo.date.toString()}</b><br>
           <b>Test Count (averaged): </b> ${+dateInfo.testCount.toFixed(2)}<br>
           <b>Jobs:</b><br>
-          ${dateInfo.runInfo.map(job => `  - <a href="${jobIdToLink(job.rootJob, environmentName)}">${job.rootJob}</a> Test count: ${job.testCount}`).join("<br>")}
+          ${dateInfo.runInfo.map(job => `  - <a href="${testGopoghLink(job.rootJob, environmentName)}">${job.rootJob}</a> Test count: ${job.testCount}`).join("<br>")}
         </div>`,
         dateInfo.totalDuration,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
           <b>${dateInfo.date.toString()}</b><br>
           <b>Total Duration (averaged): </b> ${+dateInfo.totalDuration.toFixed(2)}<br>
           <b>Jobs:</b><br>
-          ${dateInfo.runInfo.map(job => `  - <a href="${jobIdToLink(job.rootJob, environmentName)}">${job.rootJob}</a> Total Duration: ${+job.totalDuration.toFixed(2)}s`).join("<br>")}
+          ${dateInfo.runInfo.map(job => `  - <a href="${testGopoghLink(job.rootJob, environmentName)}">${job.rootJob}</a> Total Duration: ${+job.totalDuration.toFixed(2)}s`).join("<br>")}
         </div>`,
       ]));
     const options = {

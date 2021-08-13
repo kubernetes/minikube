@@ -30,7 +30,8 @@ type testCase struct {
 }
 
 func appendVersionVariations(tc []testCase, v []int, reason string) []testCase {
-	appendedTc := append(tc, testCase{
+	appendedTc := tc
+	appendedTc = append(appendedTc, testCase{
 		version: fmt.Sprintf("linux-%02d.%02d", v[0], v[1]),
 		expect:  reason,
 	})

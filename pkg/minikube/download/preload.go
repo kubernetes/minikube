@@ -49,7 +49,7 @@ const (
 )
 
 var (
-	preloadStates map[string]map[string]bool = make(map[string]map[string]bool)
+	preloadStates = make(map[string]map[string]bool)
 )
 
 // TarballName returns name of the tarball
