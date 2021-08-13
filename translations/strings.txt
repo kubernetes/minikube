@@ -532,6 +532,7 @@
 	"Starts a node.": "",
 	"Starts an existing stopped node in a cluster.": "",
 	"Startup with {{.old_driver}} driver failed, trying with alternate driver {{.new_driver}}: {{.error}}": "",
+	"Stopped tunnel for service {{.service}}.": "",
 	"Stopping node \"{{.name}}\"  ...": "",
 	"Stopping tunnel for service {{.service}}.": "",
 	"Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the \"start\" command.": "",
