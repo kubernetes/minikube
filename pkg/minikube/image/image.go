@@ -225,7 +225,7 @@ func uploadImage(tag name.Tag, p string) error {
 
 	klog.Infof("uploading image: %+v from: %s", ref, p)
 	if useDaemon {
-		return uploadDaemon(ref, img)
+		return uploadDaemon(tag, img)
 	}
 	if useRemote {
 		return uploadRemote(ref, img, defaultPlatform)
@@ -233,10 +233,10 @@ func uploadImage(tag name.Tag, p string) error {
 	return nil
 }
 
-func uploadDaemon(ref name.Reference, img v1.Image) error {
-	resp, err := daemon.Write(ref, img)
+func uploadDaemon(tag name.Tag, img v1.Image) error {
+	resp, err := daemon.Write(tag, img)
 	if err != nil {
-		klog.Warningf("daemon load for %s: %v\n%s", ref, err, resp)
+		klog.Warningf("daemon load for %s: %v\n%s", tag, err, resp)
 	}
 	return err
 }
