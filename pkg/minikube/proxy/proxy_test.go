@@ -222,7 +222,7 @@ func TestExcludeIP(t *testing.T) {
 func TestUpdateTransport(t *testing.T) {
 	t.Run("new", func(t *testing.T) {
 		rc := rest.Config{}
-		c := UpdateTransport(&rc)
+		UpdateTransport(&rc)
 		tr := &http.Transport{}
 		tr.RegisterProtocol("file", http.NewFileTransport(http.Dir("/tmp")))
 	})

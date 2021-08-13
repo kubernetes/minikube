@@ -157,7 +157,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if err != nil {
 		klog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
 	}
-	profilesToDelete := append(validProfiles, invalidProfiles...)
+	profilesToDelete := validProfiles
+	profilesToDelete = append(profilesToDelete, invalidProfiles...)
 	// in the case user has more than 1 profile and runs --purge
 	// to prevent abandoned VMs/containers, force user to run with delete --all
 	if purge && len(profilesToDelete) > 1 && !deleteAll {

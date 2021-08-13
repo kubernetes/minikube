@@ -164,7 +164,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 	if err != nil {
 		return err
 	}
-	msg := fmt.Sprintf("%s", stdInAndOut)
+	msg := string(stdInAndOut)
 	klog.V(4).Infof("%s", msg)
 	re := regexp.MustCompile("^delete net ([^:]*)$")
 	if !re.MatchString(msg) {
