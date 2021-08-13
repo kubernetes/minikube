@@ -139,7 +139,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 }
 
 var defaultSh = "bash"
-var defaultShell shellData = shellConfigMap[defaultSh]
+var defaultShell = shellConfigMap[defaultSh]
 
 var (
 	// ForceShell forces a shell name

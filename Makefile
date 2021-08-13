@@ -32,7 +32,6 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-# update this only by running `make update-golang-version`
 GO_VERSION ?= 1.16.7
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
@@ -67,9 +66,8 @@ MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.182
-# latest from https://github.com/golangci/golangci-lint/releases 
-# update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.41.1
+# latest from https://github.com/golangci/golangci-lint/releases
+GOLINT_VERSION ?= v1.39.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -77,7 +75,7 @@ GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable gofmt,goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
+	  --enable gofmt,goimports,gocritic,revive,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
 export GO111MODULE := on
@@ -974,12 +972,6 @@ update-golang-version:
 update-kubernetes-version:
 	(cd hack/update/kubernetes_version && \
 	 go run update_kubernetes_version.go)
-
-.PHONY: update-golint-version
-update-golint-version:
-	(cd hack/update/golint_version && \
-	 go run update_golint_version.go)
-
 
 .PHONY: update-kubernetes-version-pr
 update-kubernetes-version-pr:

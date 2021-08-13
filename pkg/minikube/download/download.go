@@ -35,8 +35,8 @@ import (
 
 var (
 	// DownloadMock is called instead of the download implementation if not nil.
-	DownloadMock func(src, dst string) error = nil
-	checkCache                               = os.Stat
+	DownloadMock func(src, dst string) error
+	checkCache   = os.Stat
 )
 
 // CreateDstDownloadMock is the default mock implementation of download.
