@@ -568,6 +568,7 @@
 	"Starts a node.": "Démarre un nœud.",
 	"Starts an existing stopped node in a cluster.": "Démarre un nœud arrêté existant dans un cluster.",
 	"Startup with {{.old_driver}} driver failed, trying with alternate driver {{.new_driver}}: {{.error}}": "Échec du démarrage avec le pilote {{.old_driver}}, essai avec un autre pilote {{.new_driver}} : {{.error}}",
+	"Stopped tunnel for service {{.service}}.": "",
 	"Stopping \"{{.profile_name}}\" in {{.driver_name}} ...": "Arrêt de \"{{.profile_name}}\" sur {{.driver_name}}...",
 	"Stopping node \"{{.name}}\"  ...": "Nœud d'arrêt \"{{.name}}\" ...",
 	"Stopping tunnel for service {{.service}}.": "Tunnel d'arrêt pour le service {{.service}}.",

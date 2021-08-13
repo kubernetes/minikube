@@ -581,6 +581,7 @@
 	"Starts a node.": "",
 	"Starts an existing stopped node in a cluster.": "",
 	"Startup with {{.old_driver}} driver failed, trying with alternate driver {{.new_driver}}: {{.error}}": "",
+	"Stopped tunnel for service {{.service}}.": "",
 	"Stopping \"{{.profile_name}}\" in {{.driver_name}} ...": "Zatrzymywanie \"{{.profile_name}}\" - {{.driver_name}}...",
 	"Stopping node \"{{.name}}\"  ...": "",
 	"Stopping tunnel for service {{.service}}.": "",
