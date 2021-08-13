@@ -341,7 +341,7 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 
 	// If we're in GCE and didn't actually start the gcp-auth pods, don't check for them.
 	// We also don't want to actually set the addon as enabled, so just exit completely.
-	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTUALS") == "" {
+	if enable && !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTUALS") == "" {
 		return ErrSkipThisAddon
 	}
 
