@@ -179,7 +179,7 @@ func CalicoDeployment(repo string) string {
 	if repo == "" {
 		repo = "docker.io/calico"
 	}
-	return path.Join(repo, "kube-controllers::"+calicoVersion)
+	return path.Join(repo, "kube-controllers:"+calicoVersion)
 }
 
 // CalicoFelixDriver returns image used for felix driver
@@ -187,7 +187,7 @@ func CalicoFelixDriver(repo string) string {
 	if repo == "" {
 		repo = "docker.io/calico"
 	}
-	return path.Join(repo, "pod2daemon-flexvol::"+calicoVersion)
+	return path.Join(repo, "pod2daemon-flexvol:"+calicoVersion)
 }
 
 // CalicoBin returns image used for calico binary image
@@ -195,5 +195,5 @@ func CalicoBin(repo string) string {
 	if repo == "" {
 		repo = "docker.io/calico"
 	}
-	return path.Join(repo, "cni::"+calicoVersion)
+	return path.Join(repo, "cni:"+calicoVersion)
 }
