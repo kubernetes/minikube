@@ -201,7 +201,7 @@ func (r *Docker) ListImages(ListImagesOptions) ([]string, error) {
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
-	c := exec.Command("docker", "load", "-i", path)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cat %s | docker load", path))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "loadimage docker.")
 	}
@@ -224,7 +224,7 @@ func (r *Docker) PullImage(name string) error {
 // SaveImage saves an image from this runtime
 func (r *Docker) SaveImage(name string, path string) error {
 	klog.Infof("Saving image %s: %s", name, path)
-	c := exec.Command("docker", "save", name, "-o", path)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker save '%s' | sudo tee %s >/dev/null", name, path))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "saveimage docker.")
 	}
