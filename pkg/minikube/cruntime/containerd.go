@@ -305,6 +305,16 @@ func (r *Containerd) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)
 }
 
+// TagImage tags an image in this runtime
+func (r *Containerd) TagImage(source string, target string) error {
+	klog.Infof("Tagging image %s: %s", source, target)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "tag", source, target)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ctr images tag")
+	}
+	return nil
+}
+
 func gitClone(cr CommandRunner, src string) (string, error) {
 	// clone to a temporary directory
 	rr, err := cr.RunCmd(exec.Command("mktemp", "-d"))
