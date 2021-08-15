@@ -539,3 +539,60 @@ func ListImages(profile *config.Profile) error {
 
 	return nil
 }
+
+// TagImage tags image in all nodes in profile
+func TagImage(profile *config.Profile, source string, target string) error {
+	api, err := NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "error creating api client")
+	}
+	defer api.Close()
+
+	succeeded := []string{}
+	failed := []string{}
+
+	pName := profile.Name
+
+	c, err := config.Load(pName)
+	if err != nil {
+		klog.Errorf("Failed to load profile %q: %v", pName, err)
+		return errors.Wrapf(err, "error loading config for profile :%v", pName)
+	}
+
+	for _, n := range c.Nodes {
+		m := config.MachineName(*c, n)
+
+		status, err := Status(api, m)
+		if err != nil {
+			klog.Warningf("error getting status for %s: %v", m, err)
+			continue
+		}
+
+		if status == state.Running.String() {
+			h, err := api.Load(m)
+			if err != nil {
+				klog.Warningf("Failed to load machine %q: %v", m, err)
+				continue
+			}
+			runner, err := CommandRunner(h)
+			if err != nil {
+				return err
+			}
+			cruntime, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
+			if err != nil {
+				return errors.Wrap(err, "error creating container runtime")
+			}
+			err = cruntime.TagImage(source, target)
+			if err != nil {
+				failed = append(failed, m)
+				klog.Warningf("Failed to tag image for profile %s %v", pName, err.Error())
+				continue
+			}
+			succeeded = append(succeeded, m)
+		}
+	}
+
+	klog.Infof("succeeded tagging in: %s", strings.Join(succeeded, " "))
+	klog.Infof("failed tagging in: %s", strings.Join(failed, " "))
+	return nil
+}

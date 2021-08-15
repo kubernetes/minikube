@@ -378,8 +378,14 @@ minikube failed to pull or load an image
 "GUEST_IMAGE_REMOVE" (Exit code ExGuestError)  
 minikube failed to remove an image  
 
+"GUEST_IMAGE_PULL" (Exit code ExGuestError)  
+minikube failed to pull an image  
+
 "GUEST_IMAGE_BUILD" (Exit code ExGuestError)  
 minikube failed to build an image  
+
+"GUEST_IMAGE_TAG" (Exit code ExGuestError)  
+minikube failed to tag an image  
 
 "GUEST_LOAD_HOST" (Exit code ExGuestError)  
 minikube failed to load host  

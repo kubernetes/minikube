@@ -165,6 +165,24 @@ $ minikube image unload image busybox
 	},
 }
 
+var pullImageCmd = &cobra.Command{
+	Use:   "pull",
+	Short: "Pull images",
+	Example: `
+$ minikube image pull busybox
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if err := machine.PullImages(args, profile); err != nil {
+			exit.Error(reason.GuestImagePull, "Failed to pull images", err)
+		}
+	},
+}
+
 func createTar(dir string) (string, error) {
 	tar, err := docker.CreateTarStream(dir, dockerFile)
 	if err != nil {
@@ -245,6 +263,28 @@ $ minikube image ls
 	},
 }
 
+var tagImageCmd = &cobra.Command{
+	Use:   "tag",
+	Short: "Tag images",
+	Example: `
+$ minikube image tag source target
+`,
+	Aliases: []string{"list"},
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 2 {
+			exit.Message(reason.Usage, "Please provide source and target image")
+		}
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if err := machine.TagImage(profile, args[0], args[1]); err != nil {
+			exit.Error(reason.GuestImageTag, "Failed to tag images", err)
+		}
+	},
+}
+
 func init() {
 	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
@@ -252,6 +292,7 @@ func init() {
 	loadImageCmd.Flags().BoolVar(&overwrite, "overwrite", true, "Overwrite image even if same image:tag name exists")
 	imageCmd.AddCommand(loadImageCmd)
 	imageCmd.AddCommand(removeImageCmd)
+	imageCmd.AddCommand(pullImageCmd)
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
 	buildImageCmd.Flags().BoolVarP(&push, "push", "", false, "Push the new image (requires tag)")
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
@@ -259,4 +300,5 @@ func init() {
 	buildImageCmd.Flags().StringArrayVar(&buildOpt, "build-opt", nil, "Specify arbitrary flags to pass to the build. (format: key=value)")
 	imageCmd.AddCommand(buildImageCmd)
 	imageCmd.AddCommand(listImageCmd)
+	imageCmd.AddCommand(tagImageCmd)
 }
