@@ -106,7 +106,7 @@ type Manager interface {
 	// Tag an image
 	TagImage(string, string) error
 
-	// ImageExists takes image name and image sha checks if an it exists
+	// ImageExists takes image name and optionally image sha to check if an image exists
 	ImageExists(string, string) bool
 	// ListImages returns a list of images managed by this container runtime
 	ListImages(ListImagesOptions) ([]string, error)

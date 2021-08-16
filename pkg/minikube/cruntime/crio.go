@@ -162,7 +162,7 @@ func (r *CRIO) Disable() error {
 	return r.Init.ForceStop("crio")
 }
 
-// ImageExists checks if an image exists
+// ImageExists checks if image exists based on image name and optionally image sha
 func (r *CRIO) ImageExists(name string, sha string) bool {
 	// expected output looks like [NAME@sha256:SHA]
 	c := exec.Command("sudo", "podman", "image", "inspect", "--format", "{{.Id}}", name)
@@ -170,7 +170,7 @@ func (r *CRIO) ImageExists(name string, sha string) bool {
 	if err != nil {
 		return false
 	}
-	if !strings.Contains(rr.Output(), sha) {
+	if sha != "" && !strings.Contains(rr.Output(), sha) {
 		return false
 	}
 	return true

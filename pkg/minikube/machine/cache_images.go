@@ -461,6 +461,10 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 		return errors.Wrap(err, "runtime")
 	}
 
+	if !r.ImageExists(imgName, "") {
+		return errors.Errorf("image %s not found", imgName)
+	}
+
 	klog.Infof("Saving image to: %s", dst)
 	filename := filepath.Base(dst)
 

@@ -248,10 +248,14 @@ func (r *Containerd) Disable() error {
 	return r.Init.ForceStop("containerd")
 }
 
-// ImageExists checks if an image exists, expected input format
+// ImageExists checks if image exists based on image name and optionally image sha
 func (r *Containerd) ImageExists(name string, sha string) bool {
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s | grep %s", name, sha))
-	if _, err := r.Runner.RunCmd(c); err != nil {
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s", name))
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return false
+	}
+	if sha != "" && !strings.Contains(rr.Output(), sha) {
 		return false
 	}
 	return true
