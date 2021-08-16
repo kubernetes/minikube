@@ -194,7 +194,7 @@ var hostIssues = []match{
 		Kind: Kind{
 			ID:       "HOST_ROOT_CGROUP",
 			ExitCode: ExHostUnsupported,
-			Advice: `CGroup allocation is not available in your environment, You are possibly running minikube in a nested container, try run with these options:
+			Advice: `CGroup allocation is not available in your environment, You might be running minikube in a nested container. Try running:
 			
 	minikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=""
 
