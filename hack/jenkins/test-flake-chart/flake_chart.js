@@ -158,6 +158,14 @@ async function loadTestData() {
   return [testData, responseDate];
 }
 
+Array.prototype.min = function() {
+  return this.reduce((acc, val) => Math.min(acc, val), Number.MAX_VALUE)
+}
+
+Array.prototype.max = function() {
+  return this.reduce((acc, val) => Math.max(acc, val), -Number.MAX_VALUE)
+}
+
 Array.prototype.sum = function() {
   return this.reduce((sum, value) => sum + value, 0);
 };
@@ -297,8 +305,8 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   }
   {
     const dates = testRuns.map(run => run.date.getTime());
-    const startDate = new Date(Math.min(...dates));
-    const endDate = new Date(Math.max(...dates));
+    const startDate = new Date(dates.min());
+    const endDate = new Date(dates.max());
   
     const weekDates = [];
     let currentDate = startDate;
@@ -502,8 +510,8 @@ function displayEnvironmentChart(testData, environmentName) {
   }
   {
     const dates = testData.map(run => run.date.getTime());
-    const startDate = new Date(Math.min(...dates));
-    const endDate = new Date(Math.max(...dates));
+    const startDate = new Date(dates.min());
+    const endDate = new Date(dates.max());
   
     const weekDates = [];
     let currentDate = startDate;
