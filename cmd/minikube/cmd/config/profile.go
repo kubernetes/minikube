@@ -97,3 +97,7 @@ var ProfileCmd = &cobra.Command{
 		}
 	},
 }
+
+func init() {
+	ProfileCmd.Aliases = append(ProfileCmd.Aliases, "cluster")
+}
