@@ -179,9 +179,9 @@ var hostIssues = []match{
 		Kind: Kind{
 			ID:       "HOST_CGROUP_NOT_SUPPORTED",
 			ExitCode: ExHostUnsupported,
-			Advice: `CGroup allocation is not available in your environment, try passing  
+			Advice: `CGroup allocation is not available in your environment, You are possibly running minikube in a nested container, try run with these options:
 			
-			--extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=""
+	minikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=""
 
 			
 			`,
@@ -190,6 +190,22 @@ var hostIssues = []match{
 		Regexp: re(`Failed to start ContainerManager" err="Unit kubepods.slice already exists.`),
 		GOOS:   []string{"linux"},
 	},
+	{
+		Kind: Kind{
+			ID:       "HOST_ROOT_CGROUP",
+			ExitCode: ExHostUnsupported,
+			Advice: `CGroup allocation is not available in your environment, You are possibly running minikube in a nested container, try run with these options:
+			
+	minikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=""
+
+			
+			`,
+			Issues: []int{12232},
+		},
+		Regexp: re(`Failed to start ContainerManager" err="failed to initialize top level QOS containers: root container [kubepods] doesn't exist`),
+		GOOS:   []string{"linux"},
+	},
+
 	{
 		Kind: Kind{
 			ID:       "HOST_PIDS_CGROUP",
