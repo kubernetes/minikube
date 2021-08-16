@@ -43,6 +43,8 @@ const (
 	WantVirtualBoxDriverWarning = "WantVirtualBoxDriverWarning"
 	// ProfileName represents the key for the global profile parameter
 	ProfileName = "profile"
+	// ClusterName represents the key for the global cluster parameter (alias of profile)
+	ClusterName = "cluster"
 	// UserFlag is the key for the global user flag (ex. --user=user1)
 	UserFlag = "user"
 	// AddonImages stores custom addon images config
