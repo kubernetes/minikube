@@ -177,6 +177,21 @@ var hostIssues = []match{
 	},
 	{
 		Kind: Kind{
+			ID:       "HOST_CGROUP_NOT_SUPPORTED",
+			ExitCode: ExHostUnsupported,
+			Advice: `CGroup allocation is not available in your environment, try passing  
+			
+			--extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=""
+
+			
+			`,
+			Issues: []int{12232},
+		},
+		Regexp: re(`Failed to start ContainerManager" err="Unit kubepods.slice already exists.`),
+		GOOS:   []string{"linux"},
+	},
+	{
+		Kind: Kind{
 			ID:       "HOST_PIDS_CGROUP",
 			ExitCode: ExHostUnsupported,
 			Advice:   "Ensure that the required 'pids' cgroup is enabled on your host: grep pids /proc/cgroups",
