@@ -55,18 +55,21 @@ func TestJSONOutput(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.command, func(t *testing.T) {
-			args := []string{test.command, "-p", profile, "--output=json", "--user=testUser"}
-			args = append(args, test.args...)
+			var ces []*cloudEvent
+			t.Run("Command", func(t *testing.T) {
+				args := []string{test.command, "-p", profile, "--output=json", "--user=testUser"}
+				args = append(args, test.args...)
 
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-			if err != nil {
-				t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
-			}
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+				if err != nil {
+					t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
+				}
 
-			ces, err := cloudEvents(t, rr)
-			if err != nil {
-				t.Fatalf("converting to cloud events: %v\n", err)
-			}
+				ces, err = cloudEvents(t, rr)
+				if err != nil {
+					t.Fatalf("converting to cloud events: %v\n", err)
+				}
+			})
 
 			t.Run("Audit", func(t *testing.T) {
 				got, err := auditContains("testUser")
