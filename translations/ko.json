@@ -73,6 +73,8 @@
 	"Bridge CNI is incompatible with multi-node clusters, use a different CNI": "",
 	"Build a container image in minikube": "minikube 내 컨테이너 이미지를 빌드합니다",
 	"Build a container image, using the container runtime.": "컨테이너 런타임을 사용하여 컨테이너 이미지를 빌드합니다.",
+	"CGroup allocation is not available in your environment, You might be running minikube in a nested container. Try running:\n\t\t\t\n\tminikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=\"\"\n\n\t\t\t\n\t\t\t": "",
+	"CGroup allocation is not available in your environment. You might be running minikube in a nested container. Try running:\n\t\t\t\n\tminikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=\"\"\n\n\t\t\t\n\t\t\t": "",
 	"CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)": "",
 	"Cache image from docker daemon": "도커 데몬의 캐시 이미지",
 	"Cache image from remote registry": "원격 레지스트리의 캐시 이미지",

@@ -70,6 +70,8 @@
 	"Bridge CNI is incompatible with multi-node clusters, use a different CNI": "Le pont CNI est incompatible avec les clusters multi-nœuds, utilisez un autre CNI",
 	"Build a container image in minikube": "Construire une image de conteneur dans minikube",
 	"Build a container image, using the container runtime.": "Construire une image de conteneur à l'aide de l'environnement d'exécution du conteneur.",
+	"CGroup allocation is not available in your environment, You might be running minikube in a nested container. Try running:\n\t\t\t\n\tminikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=\"\"\n\n\t\t\t\n\t\t\t": "",
+	"CGroup allocation is not available in your environment. You might be running minikube in a nested container. Try running:\n\t\t\t\n\tminikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=\"\"\n\n\t\t\t\n\t\t\t": "",
 	"CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)": "Plug-in CNI à utiliser. Options valides : auto, bridge, calico, cilium, flannel, kindnet ou chemin vers un manifeste CNI (par défaut : auto)",
 	"Cache image from docker daemon": "Cacher l'image du démon docker",
 	"Cache image from remote registry": "Cacher l'image du registre distant",
