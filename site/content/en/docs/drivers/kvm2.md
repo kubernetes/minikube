@@ -70,9 +70,9 @@ example output:
 ```
 where:
 *  ***default*** is the default libvirt network,
-*  ***mk-kvm0*** is a default libvirt network created for minikube ***kvm0*** profile (eg, using `minikube start -p kvm0 --driver=kvm2`),
-*  ***mk-minikube*** is a network created for default minikube profile (eg, using `minikube start --driver=kvm2`) and
-*  ***my-custom-kvm-priv-net*** is a custom private network name provided for minikube profile (eg, using `minikube start -p kvm1 --driver=kvm2 --network="my-custom-kvm-priv-net"`).
+*  ***mk-kvm0*** is a default libvirt network created for minikube ***kvm0*** cluster (eg, using `minikube start -p kvm0 --driver=kvm2`),
+*  ***mk-minikube*** is a network created for default minikube cluster (eg, using `minikube start --driver=kvm2`) and
+*  ***my-custom-kvm-priv-net*** is a custom private network name provided for minikube cluster (eg, using `minikube start -p kvm1 --driver=kvm2 --network="my-custom-kvm-priv-net"`).
 
 2.  Run `sudo virsh net-autostart <network>` to manually set **network** to autostart, if not already set.
 

@@ -19,7 +19,7 @@ minikube start --help
 
 ## Persistent Configuration
 
-minikube allows users to persistently store new default values to be used across all profiles, using the `minikube config` command. This is done providing a property name, and a property value.
+minikube allows users to persistently store new default values to be used across all clusters, using the `minikube config` command. This is done providing a property name, and a property value.
 
 For example, to persistently configure minikube to use hyperkit:
 

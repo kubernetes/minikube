@@ -53,7 +53,7 @@ You may find it useful to set various options to test only a particular test aga
 Run a single test on an active cluster:
 
 ```shell
-make integration -e TEST_ARGS="-test.run TestFunctional/parallel/MountCmd --profile=minikube --cleanup=false"
+make integration -e TEST_ARGS="-test.run TestFunctional/parallel/MountCmd --cluster=minikube --cleanup=false"
 ```
 
 WARNING: For this to work repeatedly, the test must be written so that it cleans up after itself.

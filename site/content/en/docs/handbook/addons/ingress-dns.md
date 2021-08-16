@@ -54,14 +54,14 @@ minikube addons enable ingress-dns
 ### Add the minikube ip as a dns server
 
 #### Mac OS
-Create a file in `/etc/resolver/minikube-profilename-test`
+Create a file in `/etc/resolver/minikube-clustername-test`
 ```
 domain test
 nameserver 192.168.99.169
 search_order 1
 timeout 5
 ```
-Replace `192.168.99.169` with your minikube ip and `profilename` is the name of the minikube profile for the
+Replace `192.168.99.169` with your minikube ip and `clustername` is the name of the minikube cluster for the
 corresponding ip address
 
 If you have multiple minikube ips you must configure multiple files
