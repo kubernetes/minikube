@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -80,7 +81,6 @@ func TestIsAddonAlreadySet(t *testing.T) {
 	if assets.Addons["ingress"].IsEnabled(cc) {
 		t.Errorf("expected ingress to not be enabled")
 	}
-
 }
 
 func TestDisableUnknownAddon(t *testing.T) {
@@ -148,5 +148,28 @@ func TestStart(t *testing.T) {
 
 	if !assets.Addons["dashboard"].IsEnabled(cc) {
 		t.Errorf("expected dashboard to be enabled")
+	}
+}
+
+func TestStartWithImageMirrorCountry(t *testing.T) {
+	// this test will write a config.json into MinikubeHome, create a temp dir for it
+	tempDir := tests.MakeTempDir()
+	defer tests.RemoveTempDir(tempDir)
+
+	cc := &config.ClusterConfig{
+		Name:               "start",
+		CPUs:               2,
+		Memory:             2500,
+		KubernetesConfig:   config.KubernetesConfig{},
+		ImageMirrorCountry: "cn",
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go Start(&wg, cc, map[string]bool{}, []string{""})
+	wg.Wait()
+
+	if strings.Contains(assets.Addons["storage-provisioner"].Images["StorageProvisioner"], "k8s-minikube") {
+		t.Errorf("expected storage-provisioner image not in repo k8s-minikube")
 	}
 }

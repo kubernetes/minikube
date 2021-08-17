@@ -182,18 +182,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	}
 
 	// When dealing with the use of ImageMirrorCountry, the image name is not a one-to-one correspondence.
-	if cc.ImageMirrorCountry != "" {
-		newImages := make(map[string]string, len(addon.Images))
-		for name, image := range addon.Images {
-			img := strings.Split(image, "/")
-			if len(img) > 1 {
-				newImages[name] = img[len(img)-1]
-				continue
-			}
-			newImages[name] = image
-		}
-		addon.Images = newImages
-	}
+	checkImageMirrorCountry(cc, addon)
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -417,5 +406,21 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 		if err := Set(cc, a, "true"); err != nil {
 			klog.Errorf("store failed: %v", err)
 		}
+	}
+}
+
+func checkImageMirrorCountry(cc *config.ClusterConfig, addon *assets.Addon) {
+	if cc.ImageMirrorCountry != "" {
+		newImages := make(map[string]string, len(addon.Images))
+		for name, image := range addon.Images {
+			img := strings.Split(image, "/")
+			if len(img) > 1 {
+				newImages[name] = img[len(img)-1]
+				continue
+			}
+			newImages[name] = image
+		}
+		fmt.Println("hello:", newImages)
+		addon.Images = newImages
 	}
 }
