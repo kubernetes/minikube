@@ -264,14 +264,14 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
           groupData.date,
           groupData.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b>${groupData.date.toString()}</b><br>
+            <b>Date:</b> ${groupData.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
             ${groupData.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${status})`).join("<br>")}
           </div>`,
           groupData.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b>${groupData.date.toString()}</b><br>
+            <b>Date:</b> ${groupData.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
             <b>Jobs:</b><br>
             ${groupData.jobs.map(({ id, duration }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${duration}s)`).join("<br>")}
@@ -340,14 +340,14 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
           groupData.date,
           groupData.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b>${groupData.date.toString()}</b><br>
+            <b>Date:</b> ${groupData.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
             ${groupData.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${status})`).join("<br>")}
           </div>`,
           groupData.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b>${groupData.date.toString()}</b><br>
+            <b>Date:</b> ${groupData.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
             <b>Jobs:</b><br>
             ${groupData.jobs.map(({ id, duration }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${duration}s)`).join("<br>")}
@@ -482,7 +482,7 @@ function displayEnvironmentChart(testData, environmentName) {
           data.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b style="display: block">${name}</b><br>
-            <b>${data.date.toString()}</b><br>
+            <b>Date:</b> ${data.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
             ${data.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, name)}">${id}</a> (${status})`).join("<br>")}
@@ -559,7 +559,7 @@ function displayEnvironmentChart(testData, environmentName) {
           data.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b style="display: block">${name}</b><br>
-            <b>${data.date.toString()}</b><br>
+            <b>Date:</b> ${data.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
             ${data.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, name)}">${id}</a> (${status})`).join("<br>")}
@@ -619,14 +619,14 @@ function displayEnvironmentChart(testData, environmentName) {
         dateInfo.date,
         dateInfo.testCount,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-          <b>${dateInfo.date.toString()}</b><br>
+          <b>Date:</b> ${dateInfo.date.toLocaleString([], {dateStyle: 'medium'})}<br>
           <b>Test Count (averaged): </b> ${+dateInfo.testCount.toFixed(2)}<br>
           <b>Jobs:</b><br>
           ${dateInfo.runInfo.map(job => `  - <a href="${testGopoghLink(job.rootJob, environmentName)}">${job.rootJob}</a> Test count: ${job.testCount}`).join("<br>")}
         </div>`,
         dateInfo.totalDuration,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-          <b>${dateInfo.date.toString()}</b><br>
+          <b>Date:</b> ${dateInfo.date.toLocaleString([], {dateStyle: 'medium'})}<br>
           <b>Total Duration (averaged): </b> ${+dateInfo.totalDuration.toFixed(2)}<br>
           <b>Jobs:</b><br>
           ${dateInfo.runInfo.map(job => `  - <a href="${testGopoghLink(job.rootJob, environmentName)}">${job.rootJob}</a> Total Duration: ${+job.totalDuration.toFixed(2)}s`).join("<br>")}
