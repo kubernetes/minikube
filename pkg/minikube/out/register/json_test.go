@@ -18,8 +18,10 @@ package register
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -39,11 +41,9 @@ func TestPrintStep(t *testing.T) {
 	}
 
 	PrintStep("message")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	CompareJSON(t, actual, []byte(expected))
 }
 
 func TestPrintInfo(t *testing.T) {
@@ -59,11 +59,10 @@ func TestPrintInfo(t *testing.T) {
 	}
 
 	PrintInfo("info")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	CompareJSON(t, actual, []byte(expected))
+
 }
 
 func TestError(t *testing.T) {
@@ -79,11 +78,9 @@ func TestError(t *testing.T) {
 	}
 
 	PrintError("error")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	CompareJSON(t, actual, []byte(expected))
 }
 
 func TestErrorExitCode(t *testing.T) {
@@ -99,10 +96,9 @@ func TestErrorExitCode(t *testing.T) {
 	}
 
 	PrintErrorExitCode("error", 5, map[string]string{"a": "b"}, map[string]string{"c": "d"})
-	actual := buf.String()
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	actual := buf.Bytes()
+
+	CompareJSON(t, actual, []byte(expected))
 }
 
 func TestWarning(t *testing.T) {
@@ -118,9 +114,24 @@ func TestWarning(t *testing.T) {
 	}
 
 	PrintWarning("warning")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
+	CompareJSON(t, actual, []byte(expected))
+}
+
+// CompareJSON compares the structs of actual and expected instead of just the strings
+func CompareJSON(t *testing.T, actual []byte, expected []byte) {
+	var actualJSON struct{}
+	var expectedJSON struct{}
+	err := json.Unmarshal(actual, &actualJSON)
+	if err != nil {
+		t.Fatalf("error unmarshalling actual: %v", err)
+	}
+	err = json.Unmarshal(expected, &expectedJSON)
+	if err != nil {
+		t.Fatalf("error unmarshalling expected: %v", err)
+	}
+	if !reflect.DeepEqual(expectedJSON, actualJSON) {
 		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
 	}
 }

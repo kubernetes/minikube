@@ -18,7 +18,9 @@ package out
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -86,7 +88,7 @@ func TestDisplayProblem(t *testing.T) {
 	}
 }
 
-func TestDisplayJSON(t *testing.T) {
+func TestDisplayProblemJSON(t *testing.T) {
 	defer SetJSON(false)
 	SetJSON(true)
 
@@ -96,7 +98,6 @@ func TestDisplayJSON(t *testing.T) {
 	}{
 		{
 			k: &reason.Kind{
-
 				ID:       "BUG",
 				ExitCode: 4,
 				Advice:   "fix me!",
@@ -117,10 +118,20 @@ func TestDisplayJSON(t *testing.T) {
 				return "random-id"
 			}
 
-			JSON = true
 			Error(*tc.k, "my error")
-			actual := buf.String()
-			if actual != tc.expected {
+			actual := buf.Bytes()
+
+			var actualJSON struct{}
+			var expectedJSON struct{}
+			err := json.Unmarshal(actual, &actualJSON)
+			if err != nil {
+				t.Fatalf("error unmarshalling actual: %v", err)
+			}
+			err = json.Unmarshal([]byte(tc.expected), &expectedJSON)
+			if err != nil {
+				t.Fatalf("error unmarshalling expected: %v", err)
+			}
+			if !reflect.DeepEqual(expectedJSON, actualJSON) {
 				t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", tc.expected, actual)
 			}
 		})
