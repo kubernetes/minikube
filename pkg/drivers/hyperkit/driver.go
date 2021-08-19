@@ -276,10 +276,7 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	if err := d.setupNFSMounts(); err != nil {
-		return err
-	}
-	return nil
+	return d.setupNFSMounts()
 }
 
 func (d *Driver) setupIP(mac string) error {

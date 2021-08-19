@@ -221,7 +221,8 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("ListProfiles length = %d, expected %d\nvalid: %v\ninvalid: %v\n", len(validProfiles)+len(inValidProfiles), numberOfTotalProfileDirs, validProfiles, inValidProfiles)
 	}
 
-	profiles := append(validProfiles, inValidProfiles...)
+	profiles := validProfiles
+	profiles = append(profiles, inValidProfiles...)
 	hostAndDirsDeleter = hostAndDirsDeleterMock
 	errs := DeleteProfiles(profiles)
 

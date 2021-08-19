@@ -134,9 +134,9 @@ func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 		args = append(args, "--root", root)
 	}
 	args = append(args, "pause")
-
+	cargs := args
 	for _, id := range ids {
-		cargs := append(args, id)
+		cargs = append(cargs, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", cargs...)); err != nil {
 			return errors.Wrap(err, "runc")
 		}
@@ -161,9 +161,9 @@ func unpauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 		args = append(args, "--root", root)
 	}
 	args = append(args, "resume")
-
+	cargs := args
 	for _, id := range ids {
-		cargs := append(args, id)
+		cargs := append(cargs, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", cargs...)); err != nil {
 			return errors.Wrap(err, "runc")
 		}

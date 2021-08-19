@@ -204,12 +204,15 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 		return nil, errors.Wrap(err, "getting service cluster ip")
 	}
 
-	apiServerIPs := append(k8s.APIServerIPs,
+	apiServerIPs := k8s.APIServerIPs
+	apiServerIPs = append(apiServerIPs,
 		net.ParseIP(n.IP), serviceIP, net.ParseIP(oci.DefaultBindIPV4), net.ParseIP("10.0.0.1"))
 
-	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName, constants.ControlPlaneAlias)
-	apiServerAlternateNames := append(
-		apiServerNames,
+	apiServerNames := k8s.APIServerNames
+	apiServerNames = append(apiServerNames, k8s.APIServerName, constants.ControlPlaneAlias)
+
+	apiServerAlternateNames := apiServerNames
+	apiServerAlternateNames = append(apiServerAlternateNames,
 		util.GetAlternateDNS(k8s.DNSDomain)...)
 
 	daemonHost := oci.DaemonHost(k8s.ContainerRuntime)

@@ -46,57 +46,67 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	// We don't need a dummy file is we're on GCE
-	if !detect.IsOnGCE() || detect.IsCloudShell() {
-		// Set an env var to point to our dummy credentials file
-		err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
-		defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
-		if err != nil {
-			t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
+	setupSucceeded := t.Run("Setup", func(t *testing.T) {
+		// We don't need a dummy file is we're on GCE
+		if !detect.IsOnGCE() || detect.IsCloudShell() {
+			// Set an env var to point to our dummy credentials file
+			err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
+			t.Cleanup(func() {
+				os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+			})
+			if err != nil {
+				t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
+			}
+
+			err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
+			t.Cleanup(func() {
+				os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+			})
+			if err != nil {
+				t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+			}
 		}
 
-		err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
-		defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
-		if err != nil {
-			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
+		if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none driver and macos docker driver does not support ingress
+			args = append(args, "--addons=ingress")
 		}
-	}
-
-	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
-	if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none driver and macos docker driver does not support ingress
-		args = append(args, "--addons=ingress")
-	}
-	if !arm64Platform() {
-		args = append(args, "--addons=helm-tiller")
-	}
-	if !detect.IsOnGCE() {
-		args = append(args, "--addons=gcp-auth")
-	}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-
-	// If we're running the integration tests on GCE, which is frequently the case, first check to make sure we exit out properly,
-	// then use force to actually test using creds.
-	if detect.IsOnGCE() {
-		args = []string{"-p", profile, "addons", "enable", "gcp-auth"}
+		if !arm64Platform() {
+			args = append(args, "--addons=helm-tiller")
+		}
+		if !detect.IsOnGCE() {
+			args = append(args, "--addons=gcp-auth")
+		}
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-		if err == nil {
-			t.Errorf("Expected error but didn't get one. command %v, output %v", rr.Command(), rr.Output())
-		} else {
-			if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
-				t.Errorf("Unexpected error message: %v", rr.Output())
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+
+		// If we're running the integration tests on GCE, which is frequently the case, first check to make sure we exit out properly,
+		// then use force to actually test using creds.
+		if detect.IsOnGCE() {
+			args = []string{"-p", profile, "addons", "enable", "gcp-auth"}
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+			if err == nil {
+				t.Errorf("Expected error but didn't get one. command %v, output %v", rr.Command(), rr.Output())
 			} else {
-				// ok, use force here since we are in GCE
-				// do not use --force unless absolutely necessary
-				args = append(args, "--force")
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Command(), err)
+				if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+					t.Errorf("Unexpected error message: %v", rr.Output())
+				} else {
+					// ok, use force here since we are in GCE
+					// do not use --force unless absolutely necessary
+					args = append(args, "--force")
+					rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+					if err != nil {
+						t.Errorf("%s failed: %v", rr.Command(), err)
+					}
 				}
 			}
 		}
+	})
+
+	if !setupSucceeded {
+		t.Fatalf("Failed setup for addon tests")
 	}
 
 	// Parallelized tests
@@ -125,19 +135,21 @@ func TestAddons(t *testing.T) {
 		}
 	})
 
-	// Assert that disable/enable works offline
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to stop minikube. args %q : %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
-	}
+	t.Run("StoppedEnableDisable", func(t *testing.T) {
+		// Assert that disable/enable works offline
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to stop minikube. args %q : %v", rr.Command(), err)
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Command(), err)
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
+		}
+	})
 }
 
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
@@ -159,10 +171,10 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed waititing for ingress-nginx-controller : %v", err)
 	}
 
-	// create networking.k8s.io/v1beta1 ingress
-	createv1betaIngress := func() error {
+	// create networking.k8s.io/v1 ingress
+	createv1Ingress := func() error {
 		// apply networking.k8s.io/v1beta1 ingress
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1beta.yaml")))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1.yaml")))
 		if err != nil {
 			return err
 		}
@@ -172,8 +184,8 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		return nil
 	}
 
-	// create networking.k8s.io/v1beta1 ingress
-	if err := retry.Expo(createv1betaIngress, 1*time.Second, Seconds(90)); err != nil {
+	// create networking.k8s.io/v1 ingress
+	if err := retry.Expo(createv1Ingress, 1*time.Second, Seconds(90)); err != nil {
 		t.Errorf("failed to create ingress: %v", err)
 	}
 
@@ -222,19 +234,6 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	// check if the ingress can route nginx app with networking.k8s.io/v1beta1 ingress
 	if err := retry.Expo(checkv1betaIngress, 500*time.Millisecond, Seconds(90)); err != nil {
 		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
-	}
-
-	// create networking.k8s.io/v1 ingress
-	createv1Ingress := func() error {
-		// apply networking.k8s.io/v1beta1 ingress
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1.yaml")))
-		if err != nil {
-			return err
-		}
-		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s (may be temporary)", rr.Command(), rr.Stderr)
-		}
-		return nil
 	}
 
 	// create networking.k8s.io/v1 ingress
