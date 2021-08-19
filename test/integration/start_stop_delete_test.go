@@ -37,7 +37,7 @@ import (
 )
 
 // TestStartStop tests starting, stopping and restarting a minikube clusters with various Kubernetes versions and configurations
-// The oldest supported, newest supported and default Kubernetes versions are always tested.
+// The oldest supported, newest supported and default Kubernetes versions are always tested. Also tests --cluster flag does the same as --profile and -p.
 func TestStartStop(t *testing.T) {
 	MaybeParallel(t)
 
@@ -107,7 +107,7 @@ func TestStartStop(t *testing.T) {
 					waitFlag = "--wait=apiserver,system_pods,default_sa"
 				}
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", waitFlag}, tc.args...)
+				startArgs := append([]string{"start", "--cluster", profile, "--memory=2200", "--alsologtostderr", waitFlag}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
 
