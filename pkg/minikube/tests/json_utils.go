@@ -22,6 +22,7 @@ import (
 	"testing"
 )
 
+// TestEvent simulates a CloudEvent for our JSON output
 type TestEvent struct {
 	Data            map[string]string `json:"data"`
 	Datacontenttype string            `json:"datacontenttype"`
@@ -31,6 +32,8 @@ type TestEvent struct {
 	Eventtype       string            `json:"type"`
 }
 
+// CompareJSON takes two byte slices, unmarshals them to TestEvent
+// and compares them, failing the test if they don't match
 func CompareJSON(t *testing.T, actual, expected []byte) {
 	var actualJSON, expectedJSON TestEvent
 
