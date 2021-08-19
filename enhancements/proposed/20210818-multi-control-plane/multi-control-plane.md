@@ -14,7 +14,7 @@ Please review this proposal with the following priorities:
 
 ## Summary
 
-Minikube now supports multiple worker nodes. But multiple control plane nodes haven't been implemented yet. As part of multinode MEP, this proposal discusses the details of multiple control plane implementation.
+Minikube now supports multiple worker nodes. But multiple control plane nodes haven't been implemented yet. As part of [multinode MEP](https://github.com/kubernetes/minikube/blob/master/enhancements/proposed/20200130-multinode/multinode-proposal.md), this proposal discusses the details of multiple control plane implementation.
 
 ## Goals
 
