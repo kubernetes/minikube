@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestPrintStep(t *testing.T) {
@@ -39,11 +41,9 @@ func TestPrintStep(t *testing.T) {
 	}
 
 	PrintStep("message")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	tests.CompareJSON(t, actual, []byte(expected))
 }
 
 func TestPrintInfo(t *testing.T) {
@@ -59,11 +59,9 @@ func TestPrintInfo(t *testing.T) {
 	}
 
 	PrintInfo("info")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	tests.CompareJSON(t, actual, []byte(expected))
 }
 
 func TestError(t *testing.T) {
@@ -79,11 +77,9 @@ func TestError(t *testing.T) {
 	}
 
 	PrintError("error")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	tests.CompareJSON(t, actual, []byte(expected))
 }
 
 func TestErrorExitCode(t *testing.T) {
@@ -99,10 +95,9 @@ func TestErrorExitCode(t *testing.T) {
 	}
 
 	PrintErrorExitCode("error", 5, map[string]string{"a": "b"}, map[string]string{"c": "d"})
-	actual := buf.String()
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	actual := buf.Bytes()
+
+	tests.CompareJSON(t, actual, []byte(expected))
 }
 
 func TestWarning(t *testing.T) {
@@ -118,9 +113,7 @@ func TestWarning(t *testing.T) {
 	}
 
 	PrintWarning("warning")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	tests.CompareJSON(t, actual, []byte(expected))
 }

@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestSetCurrentStep(t *testing.T) {
@@ -42,9 +44,7 @@ func TestSetCurrentStep(t *testing.T) {
 	}
 
 	PrintStep("message")
-	actual := buf.String()
+	actual := buf.Bytes()
 
-	if actual != expected {
-		t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", expected, actual)
-	}
+	tests.CompareJSON(t, actual, []byte(expected))
 }
