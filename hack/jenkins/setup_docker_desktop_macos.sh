@@ -25,14 +25,14 @@ fi
 osascript -e 'quit app "Docker"'
 
 # wait 2 minutes for it to start back up
-timeout=120
+timeout=240
 elapsed=0
 echo "Starting Docker Desktop..."
 open --background -a Docker
-echo "Waiting at most two minutes..."
+echo "Waiting at most four minutes..."
 while ! docker system info > /dev/null 2>&1;
 do
-  sleep 1
+  sleep 5
   elapsed=$((elapsed+1))
   if [ $elapsed -gt $timeout ]; then
 	  echo "Start Docker Desktop failed"
