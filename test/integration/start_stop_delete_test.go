@@ -83,10 +83,7 @@ func TestStartStop(t *testing.T) {
 				version string
 				args    []string
 			}{
-				{"cloud-shell", constants.DefaultKubernetesVersion, []string{
-					"--extra-config=kubelet.cgroups-per-qos=false",
-					"--extra-config=kubelet.enforce-node-allocatable=\"\"",
-				}},
+				{"cloud-shell", constants.DefaultKubernetesVersion, []string{}},
 			}
 		}
 

@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -478,6 +479,11 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
 		cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
+	}
+
+	if detect.IsCloudShell() {
+		cc.KubernetesConfig.ExtraOptions.Set("kubelet.cgroups-per-qos=false")
+		cc.KubernetesConfig.ExtraOptions.Set("kubelet.enforce-node-allocatable=\"\"")
 	}
 
 	return cc
