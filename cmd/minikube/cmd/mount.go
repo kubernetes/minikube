@@ -116,10 +116,10 @@ var mountCmd = &cobra.Command{
 				klog.Infof("Selecting IP for WSL. This may be incorrect...")
 				ip, err = func() (net.IP, error) {
 					conn, err := net.Dial("udp", "8.8.8.8:80")
-					defer conn.Close()
 					if err != nil {
 						return nil, err
 					}
+					defer conn.Close()
 					return conn.LocalAddr().(*net.UDPAddr).IP, nil
 				}()
 			} else {
