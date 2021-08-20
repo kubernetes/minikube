@@ -113,6 +113,7 @@ var mountCmd = &cobra.Command{
 		var err error
 		if mountIP == "" {
 			if detect.IsMicrosoftWSL() {
+				klog.Infof("Selecting IP for WSL. This may be incorrect...")
 				ip, err = func() (net.IP, error) {
 					conn, err := net.Dial("udp", "8.8.8.8:80")
 					defer conn.Close()
