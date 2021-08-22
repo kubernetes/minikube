@@ -381,6 +381,9 @@ minikube failed to remove an image
 "GUEST_IMAGE_PULL" (Exit code ExGuestError)  
 minikube failed to pull an image  
 
+"GUEST_IMAGE_PUSH" (Exit code ExGuestError)  
+minikube failed to push an image  
+
 "GUEST_IMAGE_BUILD" (Exit code ExGuestError)  
 minikube failed to build an image  
 

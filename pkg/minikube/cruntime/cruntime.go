@@ -103,6 +103,8 @@ type Manager interface {
 	SaveImage(string, string) error
 	// Tag an image
 	TagImage(string, string) error
+	// Push an image from the runtime to the container registry
+	PushImage(string) error
 
 	// ImageExists takes image name and image sha checks if an it exists
 	ImageExists(string, string) bool

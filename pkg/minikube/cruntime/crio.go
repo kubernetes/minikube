@@ -260,6 +260,16 @@ func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []
 	return nil
 }
 
+// PushImage pushes an image
+func (r *CRIO) PushImage(name string) error {
+	klog.Infof("Pushing image %s", name)
+	c := exec.Command("sudo", "podman", "push", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio push image")
+	}
+	return nil
+}
+
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
 func (r *CRIO) CGroupDriver() (string, error) {
 	c := exec.Command("crio", "config")
