@@ -266,6 +266,9 @@ func supportLegacyIngress(cc *config.ClusterConfig) error {
 			"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
 			"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
 		}
+		if cc.CustomAddonImages == nil {
+			cc.CustomAddonImages = map[string]string{}
+		}
 		for name, path := range imgs {
 			if _, exists := cc.CustomAddonImages[name]; !exists {
 				cc.CustomAddonImages[name] = path
