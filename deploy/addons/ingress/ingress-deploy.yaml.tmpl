@@ -351,9 +351,9 @@ spec:
             - --validating-webhook=:8443
             - --validating-webhook-certificate=/usr/local/certificates/cert
             - --validating-webhook-key=/usr/local/certificates/key
-            {{if .CustomIngressCert}}
+            {{- if .CustomIngressCert}}
             - --default-ssl-certificate={{ .CustomIngressCert }} 
-            {{end}}
+            {{- end}}
           securityContext:
             capabilities:
               drop:
@@ -449,9 +449,9 @@ webhooks:
     failurePolicy: Fail
     sideEffects: None
     admissionReviewVersions:
-    {{if eq .IngressAPIVersion "v1beta1"}}
+    {{- if eq .IngressAPIVersion "v1beta1"}}
       - v1
-    {{end}}
+    {{- end}}
       - {{.IngressAPIVersion}}
     clientConfig:
       service:
