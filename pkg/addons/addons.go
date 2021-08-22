@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -44,6 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -160,6 +162,9 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 					out.V{"driver_name": cc.Driver, "addon_name": name})
 			}
 		}
+		if err := supportLegacyIngress(cc); err != nil {
+			return err
+		}
 	}
 
 	if strings.HasPrefix(name, "istio") && enable {
@@ -244,6 +249,30 @@ func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable boo
 	}
 
 	return false
+}
+
+// maintain backwards compatibility with k8s < v1.19
+// by replacing images with old versions if custom ones are not already provided
+func supportLegacyIngress(cc *config.ClusterConfig) error {
+	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+	if semver.MustParseRange("<1.19.0")(v) {
+		imgs := map[string]string{
+			// https://github.com/kubernetes/ingress-nginx/blob/f3c50698d98299b1a61f83cb6c4bb7de0b71fb4b/deploy/static/provider/kind/deploy.yaml#L327
+			"IngressController": "ingress-nginx/controller:v0.49.0@sha256:e9707504ad0d4c119036b6d41ace4a33596139d3feb9ccb6617813ce48c3eeef",
+			// issues: https://github.com/kubernetes/ingress-nginx/issues/7418 and https://github.com/jet/kube-webhook-certgen/issues/30
+			"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+			"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+		}
+		for name, path := range imgs {
+			if _, exists := cc.CustomAddonImages[name]; !exists {
+				cc.CustomAddonImages[name] = path
+			}
+		}
+	}
+	return nil
 }
 
 func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, runner command.Runner, data interface{}, enable bool) error {

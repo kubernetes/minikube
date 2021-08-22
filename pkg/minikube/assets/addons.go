@@ -21,12 +21,15 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/deploy/addons"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -230,24 +233,17 @@ var Addons = map[string]*Addon{
 	}),
 	"ingress": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IngressAssets,
-			"ingress/ingress-configmap.yaml.tmpl",
+			"ingress/ingress-deploy.yaml.tmpl",
 			vmpath.GuestAddonsDir,
-			"ingress-configmap.yaml",
-			"0640"),
-		MustBinAsset(addons.IngressAssets,
-			"ingress/ingress-rbac.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"ingress-rbac.yaml",
-			"0640"),
-		MustBinAsset(addons.IngressAssets,
-			"ingress/ingress-dp.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"ingress-dp.yaml",
+			"ingress-deploy.yaml",
 			"0640"),
 	}, false, "ingress", "", map[string]string{
-		"IngressController":        "ingress-nginx/controller:v0.44.0@sha256:3dd0fac48073beaca2d67a78c746c7593f9c575168a17139a9955a82c63c4b9a",
-		"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
-		"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+		// https://github.com/kubernetes/ingress-nginx/blob/557604f4ef526f7755d36089b617bc7686c389f9/deploy/static/provider/kind/deploy.yaml#L323
+		"IngressController": "ingress-nginx/controller:v1.0.0-beta.3@sha256:44a7a06b71187a4529b0a9edee5cc22bdf71b414470eff696c3869ea8d90a695",
+		// https://github.com/kubernetes/ingress-nginx/blob/557604f4ef526f7755d36089b617bc7686c389f9/deploy/static/provider/kind/deploy.yaml#L612
+		"KubeWebhookCertgenCreate": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
+		// https://github.com/kubernetes/ingress-nginx/blob/557604f4ef526f7755d36089b617bc7686c389f9/deploy/static/provider/kind/deploy.yaml#L660
+		"KubeWebhookCertgenPatch": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
 	}, map[string]string{
 		"IngressController": "k8s.gcr.io",
 	}),
@@ -795,6 +791,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		LoadBalancerStartIP string
 		LoadBalancerEndIP   string
 		CustomIngressCert   string
+		IngressAPIVersion   string
 		ContainerRuntime    string
 		Images              map[string]string
 		Registries          map[string]string
@@ -807,6 +804,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
 		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
 		CustomIngressCert:   cfg.CustomIngressCert,
+		IngressAPIVersion:   "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
 		ContainerRuntime:    cfg.ContainerRuntime,
 		Images:              images,
 		Registries:          addon.Registries,
@@ -818,6 +816,16 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	}
 	if opts.Registries == nil {
 		opts.Registries = make(map[string]string)
+	}
+
+	// maintain backwards compatibility with k8s < v1.19
+	// by using v1beta1 instead of v1 api version for ingress
+	v, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+	if semver.MustParseRange("<1.19.0")(v) {
+		opts.IngressAPIVersion = "v1beta1"
 	}
 
 	// Network info for generating template
