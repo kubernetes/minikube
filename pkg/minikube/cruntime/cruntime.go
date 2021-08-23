@@ -101,6 +101,10 @@ type Manager interface {
 	BuildImage(string, string, string, bool, []string, []string) error
 	// Save an image from the runtime on a host
 	SaveImage(string, string) error
+	// Tag an image
+	TagImage(string, string) error
+	// Push an image from the runtime to the container registry
+	PushImage(string) error
 
 	// ImageExists takes image name and image sha checks if an it exists
 	ImageExists(string, string) bool
