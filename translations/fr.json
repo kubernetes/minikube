@@ -876,6 +876,7 @@
 	"failed to add node": "échec de l'ajout du nœud",
 	"failed to open browser: {{.error}}": "échec de l'ouverture du navigateur : {{.error}}",
 	"failed to save config": "échec de l'enregistrement de la configuration",
+	"failed to set cloud shell kubelet config options": "",
 	"failed to start node": "échec du démarrage du nœud",
 	"fish completion failed": "la complétion fish a échoué",
 	"fish completion.": "complétion fish.",

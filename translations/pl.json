@@ -878,6 +878,7 @@
 	"failed to add node": "",
 	"failed to open browser: {{.error}}": "Nie udało się otworzyć przeglądarki: {{.error}}",
 	"failed to save config": "",
+	"failed to set cloud shell kubelet config options": "",
 	"failed to start node": "",
 	"fish completion failed": "",
 	"fish completion.": "",
