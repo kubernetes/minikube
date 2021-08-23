@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 // TestStartStop tests starting, stopping and restarting a minikube clusters with various Kubernetes versions and configurations
@@ -74,6 +75,16 @@ func TestStartStop(t *testing.T) {
 			{"embed-certs", constants.DefaultKubernetesVersion, []string{
 				"--embed-certs",
 			}},
+		}
+
+		if detect.IsCloudShell() {
+			tests = []struct {
+				name    string
+				version string
+				args    []string
+			}{
+				{"cloud-shell", constants.DefaultKubernetesVersion, []string{}},
+			}
 		}
 
 		for _, tc := range tests {
