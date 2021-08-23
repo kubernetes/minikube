@@ -31,8 +31,11 @@ func Pause(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	pv := "3.4.1"
+	pv := "3.5"
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
+	if semver.MustParseRange("<1.22.0-alpha.3")(v) {
+		pv = "3.4.1"
+	}
 	if semver.MustParseRange("<1.21.0-alpha.3")(v) {
 		pv = "3.2"
 	}
@@ -71,8 +74,10 @@ func coreDNS(v semver.Version, mirror string) string {
 	if semver.MustParseRange("<1.21.0-alpha.1")(v) {
 		in = "coredns"
 	}
-	cv := "v1.8.0"
+	cv := "v1.8.4"
 	switch v.Minor {
+	case 21:
+		cv = "v1.8.0"
 	case 20, 19:
 		cv = "1.7.0"
 	case 18:
@@ -96,7 +101,7 @@ func etcd(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	ev := "3.4.13-3"
+	ev := "3.5.0-0"
 
 	switch v.Minor {
 	case 19, 20, 21:
