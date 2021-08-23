@@ -86,7 +86,7 @@ var tunnelCmd = &cobra.Command{
 			sshPort := strconv.Itoa(port)
 			sshKey := filepath.Join(localpath.MiniPath(), "machines", cname, "id_rsa")
 
-			kicSSHTunnel := kic.NewSSHTunnel(ctx, sshPort, sshKey, clientset.CoreV1())
+			kicSSHTunnel := kic.NewSSHTunnel(ctx, sshPort, sshKey, clientset.CoreV1(), clientset.NetworkingV1())
 			err = kicSSHTunnel.Start()
 			if err != nil {
 				exit.Error(reason.SvcTunnelStart, "error starting tunnel", err)

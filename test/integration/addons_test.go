@@ -29,7 +29,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -68,7 +67,7 @@ func TestAddons(t *testing.T) {
 		}
 
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
-		if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none driver and macos docker driver does not support ingress
+		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress")
 		}
 		if !arm64Platform() {
@@ -155,7 +154,7 @@ func TestAddons(t *testing.T) {
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-	if NoneDriver() || (runtime.GOOS == "darwin" && KicDriver()) {
+	if NoneDriver() {
 		t.Skipf("skipping: ingress not supported ")
 	}
 
