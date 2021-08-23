@@ -36,7 +36,7 @@ type sshConn struct {
 	activeConn bool
 }
 
-func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
+func createSSHConn(name, sshPort, sshKey string, resourcePorts []int32, resourceIP string, resourceName string) *sshConn {
 	// extract sshArgs
 	sshArgs := []string{
 		// TODO: document the options here
@@ -50,17 +50,17 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 
 	askForSudo := false
 	var privilegedPorts []int32
-	for _, port := range svc.Spec.Ports {
+	for _, port := range resourcePorts {
 		arg := fmt.Sprintf(
 			"-L %d:%s:%d",
-			port.Port,
-			svc.Spec.ClusterIP,
-			port.Port,
+			port,
+			resourceIP,
+			port,
 		)
 
 		// check if any port is privileged
-		if port.Port < 1024 {
-			privilegedPorts = append(privilegedPorts, port.Port)
+		if port < 1024 {
+			privilegedPorts = append(privilegedPorts, port)
 			askForSudo = true
 		}
 
@@ -71,8 +71,8 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 	if askForSudo && runtime.GOOS != "windows" {
 		out.Styled(
 			style.Warning,
-			"The service {{.service}} requires privileged ports to be exposed: {{.ports}}",
-			out.V{"service": svc.Name, "ports": fmt.Sprintf("%v", privilegedPorts)},
+			"The service/ingress {{.resource}} requires privileged ports to be exposed: {{.ports}}",
+			out.V{"resource": resourceName, "ports": fmt.Sprintf("%v", privilegedPorts)},
 		)
 
 		out.Styled(style.Permissions, "sudo permission will be asked for it.")
@@ -89,7 +89,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 
 	return &sshConn{
 		name:       name,
-		service:    svc.Name,
+		service:    resourceName,
 		cmd:        cmd,
 		activeConn: false,
 	}

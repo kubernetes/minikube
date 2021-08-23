@@ -244,6 +244,16 @@ func (r *Docker) RemoveImage(name string) error {
 	return nil
 }
 
+// TagImage tags an image in this runtime
+func (r *Docker) TagImage(source string, target string) error {
+	klog.Infof("Tagging image %s: %s", source, target)
+	c := exec.Command("docker", "tag", source, target)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "tag image docker.")
+	}
+	return nil
+}
+
 // BuildImage builds an image into this runtime
 func (r *Docker) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
 	klog.Infof("Building image: %s", src)
@@ -274,6 +284,16 @@ func (r *Docker) BuildImage(src string, file string, tag string, push bool, env 
 		if _, err := r.Runner.RunCmd(c); err != nil {
 			return errors.Wrap(err, "pushimage docker.")
 		}
+	}
+	return nil
+}
+
+// PushImage pushes an image
+func (r *Docker) PushImage(name string) error {
+	klog.Infof("Pushing image: %s", name)
+	c := exec.Command("docker", "push", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "push image docker.")
 	}
 	return nil
 }

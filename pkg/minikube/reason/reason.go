@@ -315,8 +315,14 @@ var (
 	GuestImageLoad = Kind{ID: "GUEST_IMAGE_LOAD", ExitCode: ExGuestError}
 	// minikube failed to remove an image
 	GuestImageRemove = Kind{ID: "GUEST_IMAGE_REMOVE", ExitCode: ExGuestError}
+	// minikube failed to pull an image
+	GuestImagePull = Kind{ID: "GUEST_IMAGE_PULL", ExitCode: ExGuestError}
+	// minikube failed to push an image
+	GuestImagePush = Kind{ID: "GUEST_IMAGE_PUSH", ExitCode: ExGuestError}
 	// minikube failed to build an image
 	GuestImageBuild = Kind{ID: "GUEST_IMAGE_BUILD", ExitCode: ExGuestError}
+	// minikube failed to tag an image
+	GuestImageTag = Kind{ID: "GUEST_IMAGE_TAG", ExitCode: ExGuestError}
 	// minikube failed to load host
 	GuestLoadHost = Kind{ID: "GUEST_LOAD_HOST", ExitCode: ExGuestError}
 	// minkube failed to create a mount
