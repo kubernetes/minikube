@@ -482,8 +482,14 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 	}
 
 	if detect.IsCloudShell() {
-		cc.KubernetesConfig.ExtraOptions.Set("kubelet.cgroups-per-qos=false")
-		cc.KubernetesConfig.ExtraOptions.Set("kubelet.enforce-node-allocatable=\"\"")
+		err := cc.KubernetesConfig.ExtraOptions.Set("kubelet.cgroups-per-qos=false")
+		if err != nil {
+			exit.Error(reason.InternalConfigSet, "failed to set cloud shell kubelet config options", err)
+		}
+		err = cc.KubernetesConfig.ExtraOptions.Set("kubelet.enforce-node-allocatable=\"\"")
+		if err != nil {
+			exit.Error(reason.InternalConfigSet, "failed to set cloud shell kubelet config options", err)
+		}
 	}
 
 	return cc
