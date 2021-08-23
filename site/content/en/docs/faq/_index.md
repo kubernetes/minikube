@@ -95,7 +95,7 @@ Simply run the following command to be enrolled into beta notifications:
 minikube config set WantBetaUpdateNotification true
 ```
 
-## Can I get rid of the emoji in minikube's outpuut?
+## Can I get rid of the emoji in minikube's output?
 
 Yes! If you prefer not having emoji in your minikube output 😔 , just set the `MINIKUBE_IN_STYLE` environment variable to `0` or `false`:
 
