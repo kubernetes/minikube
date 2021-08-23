@@ -125,6 +125,17 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 `, s...)
 		},
 	},
+	"tcsh": {
+		prefix:         "setenv ",
+		suffix:         "\";\n",
+		delimiter:      " \"",
+		unsetPrefix:    "unsetenv ",
+		unsetSuffix:    ";\n",
+		unsetDelimiter: "",
+		usageHint: func(s ...interface{}) string {
+			return fmt.Sprintf("\n: \"%s\"\n: eval `%s`\n", s...)
+		},
+	},
 	"none": {
 		prefix:         "",
 		suffix:         "\n",
