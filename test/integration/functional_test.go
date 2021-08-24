@@ -479,7 +479,6 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 	posixTests := []ShellTest{
 		{"bash", []string{"/bin/bash", "-c"}, "eval $(%[1]s -p %[2]s docker-env) && "},
-		{"tcsh", []string{"/bin/tcsh", "-c"}, "setenv SHELL /bin/tcsh && eval `%[1]s -p %[2]s docker-env` && "},
 	}
 
 	tests := posixTests
