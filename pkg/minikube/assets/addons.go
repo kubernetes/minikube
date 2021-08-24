@@ -310,8 +310,9 @@ var Addons = map[string]*Addon{
 			"olm.yaml",
 			"0640"),
 	}, false, "olm", "", map[string]string{
-		"OLM":                        "operator-framework/olm:v0.17.0@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607",
-		"UpstreamCommunityOperators": "operator-framework/upstream-community-operators:07bbc13@sha256:cc7b3fdaa1ccdea5866fcd171669dc0ed88d3477779d8ed32e3712c827e38cc0",
+		"OLM": "operator-framework/olm@sha256:e74b2ac57963c7f3ba19122a8c31c9f2a0deb3c0c5cac9e5323ccffd0ca198ed",
+		// operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
+		"UpstreamCommunityOperators": "operatorhubio/catalog:latest",
 	}, map[string]string{
 		"OLM":                        "quay.io",
 		"UpstreamCommunityOperators": "quay.io",
@@ -527,12 +528,12 @@ var Addons = map[string]*Addon{
 			"gcp-auth-service.yaml",
 			"0640"),
 		MustBinAsset(addons.GcpAuthAssets,
-			"gcp-auth/gcp-auth-webhook.yaml.tmpl.tmpl",
+			"gcp-auth/gcp-auth-webhook.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-webhook.yaml",
 			"0640"),
 	}, false, "gcp-auth", "google", map[string]string{
-		"KubeWebhookCertgen": "jettech/kube-webhook-certgen:v1.3.0@sha256:ff01fba91131ed260df3f3793009efbf9686f5a5ce78a85f81c386a4403f7689",
+		"KubeWebhookCertgen": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.7@sha256:be9661afbd47e4042bee1cb48cae858cc2f4b4e121340ee69fdc0013aeffcca4",
 	}, map[string]string{
 		"GCPAuthWebhook": "gcr.io",

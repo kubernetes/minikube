@@ -419,37 +419,27 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
-	}
-
 	start := time.Now()
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "catalog-operator", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for catalog-operator deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=catalog-operator", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod catalog-operator: %v", err)
 	}
 	t.Logf("catalog-operator stabilized in %s", time.Since(start))
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "olm-operator", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for olm-operator deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=olm-operator", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod olm-operator: %v", err)
 	}
 	t.Logf("olm-operator stabilized in %s", time.Since(start))
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "packageserver", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for packageserver deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=packageserver", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod olm-operator: %v", err)
 	}
 	t.Logf("packageserver stabilized in %s", time.Since(start))
 
-	if _, err := PodWait(ctx, t, profile, "olm", "app=catalog-operator", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod catalog-operator: %v", err)
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=olm.catalogSource=operatorhubio-catalog", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod operatorhubio-catalog: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "olm", "app=olm-operator", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod olm-operator: %v", err)
-	}
-	if _, err := PodWait(ctx, t, profile, "olm", "app=packageserver", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod packageserver: %v", err)
-	}
-	if _, err := PodWait(ctx, t, profile, "olm", "olm.catalogSource=operatorhubio-catalog", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod operatorhubio-catalog: %v", err)
-	}
+	t.Logf("operatorhubio-catalog stabilized in %s", time.Since(start))
 
 	// Install one sample Operator such as etcd
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "etcd.yaml")))
@@ -471,7 +461,6 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-
 	// Operator installation takes a while
 	if err := retry.Expo(checkOperatorInstalled, time.Second*3, Minutes(10)); err != nil {
 		t.Errorf("failed checking operator installed: %v", err.Error())
