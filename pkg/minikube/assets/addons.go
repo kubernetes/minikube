@@ -537,7 +537,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "gcp-auth", "google", map[string]string{
 		"KubeWebhookCertgen": "jettech/kube-webhook-certgen:v1.3.0@sha256:ff01fba91131ed260df3f3793009efbf9686f5a5ce78a85f81c386a4403f7689",
-		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.6@sha256:c407ad6ee97d8a0e8a21c713e2d9af66aaf73315e4a123874c00b786f962f3cd",
+		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.7@sha256:be9661afbd47e4042bee1cb48cae858cc2f4b4e121340ee69fdc0013aeffcca4",
 	}, map[string]string{
 		"GCPAuthWebhook": "gcr.io",
 	}),
