@@ -299,11 +299,7 @@ func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string
 	defer os.Remove(imageFile)
 
 	// try to load the new image into minikube
-	imagePath, err := filepath.Abs(imageFile)
-	if err != nil {
-		t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imagePath))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imageFile))
 	if err != nil {
 		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
 	}
