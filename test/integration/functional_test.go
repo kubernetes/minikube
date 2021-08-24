@@ -65,6 +65,8 @@ var mitm *StartSession
 
 var runCorpProxy = GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
 
+var imageFile = "busybox.tar"
+
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
 
@@ -208,7 +210,7 @@ func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
 			}
 		})
 	}
-
+	os.Remove(imageFile)
 }
 
 // validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
@@ -291,16 +293,18 @@ func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string
 	}
 
 	// save image to file
-	imageFile := "busybox.tar"
 	rr, err = Run(t, exec.CommandContext(ctx, "docker", "save", "-o", imageFile, taggedImage))
 	if err != nil {
 		t.Fatalf("failed to save image to file: %v\n%s", err, rr.Output())
 	}
-	defer os.Remove(imageFile)
 
 	// try to load the new image into minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imageFile))
+	imagePath, err := filepath.Abs(imageFile)
 	if err != nil {
+		t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imagePath))
+	if err != nil || rr.Stderr.String() != "" {
 		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
 	}
 
@@ -428,7 +432,6 @@ func validateSaveImageToFile(ctx context.Context, t *testing.T, profile string) 
 	}
 
 	// try to save the new image from minikube
-	imageFile := "busybox.tar"
 	imagePath, err := filepath.Abs(imageFile)
 	if err != nil {
 		t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
@@ -443,7 +446,6 @@ func validateSaveImageToFile(ctx context.Context, t *testing.T, profile string) 
 	if err != nil {
 		t.Fatalf("failed to load image to file: %v\n%s", err, rr.Output())
 	}
-	defer os.Remove(imageFile)
 
 	// make sure the image was correctly loaded
 	rr, err = Run(t, exec.CommandContext(ctx, "docker", "images", name))
