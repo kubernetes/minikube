@@ -5,7 +5,7 @@ go 1.16
 require (
 	cloud.google.com/go/storage v1.15.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
-	github.com/Delta456/box-cli-maker/v2 v2.2.1
+	github.com/Delta456/box-cli-maker/v2 v2.2.2
 	github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.16.0
 	github.com/Microsoft/hcsshim v0.8.17 // indirect
@@ -29,7 +29,6 @@ require (
 	github.com/google/go-github/v36 v36.0.0
 	github.com/google/slowjam v1.0.0
 	github.com/google/uuid v1.3.0
-	github.com/gookit/color v1.4.2 // indirect
 	github.com/hashicorp/go-getter v1.5.7
 	github.com/hashicorp/go-retryablehttp v0.7.0
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
@@ -53,7 +52,6 @@ require (
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.3
 	github.com/mattbaird/jsonpatch v0.0.0-20200820163806-098863c1fc24
 	github.com/mattn/go-isatty v0.0.13
-	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
 	github.com/moby/sys/mount v0.2.0 // indirect
@@ -84,7 +82,7 @@ require (
 	golang.org/x/mod v0.5.0
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
+	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
 	golang.org/x/term v0.0.0-20210406210042-72f3dc4e9b72
 	golang.org/x/text v0.3.7
 	gonum.org/v1/plot v0.9.0
