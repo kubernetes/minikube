@@ -356,6 +356,24 @@ $ minikube image tag source target
 	},
 }
 
+var pushImageCmd = &cobra.Command{
+	Use:   "push",
+	Short: "Push images",
+	Example: `
+$ minikube image push busybox
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if err := machine.PushImages(args, profile); err != nil {
+			exit.Error(reason.GuestImagePush, "Failed to push images", err)
+		}
+	},
+}
+
 func init() {
 	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
@@ -375,4 +393,5 @@ func init() {
 	imageCmd.AddCommand(saveImageCmd)
 	imageCmd.AddCommand(listImageCmd)
 	imageCmd.AddCommand(tagImageCmd)
+	imageCmd.AddCommand(pushImageCmd)
 }

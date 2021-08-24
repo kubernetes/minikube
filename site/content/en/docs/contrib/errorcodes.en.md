@@ -387,6 +387,9 @@ minikube failed to build an image
 "GUEST_IMAGE_SAVE" (Exit code ExGuestError)  
 minikube failed to push or save an image  
 
+"GUEST_IMAGE_PUSH" (Exit code ExGuestError)  
+minikube failed to push an image  
+
 "GUEST_IMAGE_TAG" (Exit code ExGuestError)  
 minikube failed to tag an image  
 

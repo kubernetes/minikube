@@ -288,6 +288,16 @@ func (r *Docker) BuildImage(src string, file string, tag string, push bool, env 
 	return nil
 }
 
+// PushImage pushes an image
+func (r *Docker) PushImage(name string) error {
+	klog.Infof("Pushing image: %s", name)
+	c := exec.Command("docker", "push", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "push image docker.")
+	}
+	return nil
+}
+
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
 func (r *Docker) CGroupDriver() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully
