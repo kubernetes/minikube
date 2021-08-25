@@ -38,6 +38,9 @@ kind: Ingress
 metadata:
   name: example-ingress
   namespace: kube-system
+  annotations:
+    # use the shared ingress-nginx
+    kubernetes.io/ingress.class: nginx
 spec:
   rules:
     - host: hello-john.test
