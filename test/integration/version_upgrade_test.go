@@ -161,51 +161,53 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	}
 	defer os.Remove(tf.Name())
 
-	args := append([]string{"start", "-p", profile, "--memory=2200"}, legacyStartArgs()...)
-	rr := &RunResult{}
-	r := func() error {
-		c := exec.CommandContext(ctx, tf.Name(), args...)
-		var legacyEnv []string
-		// replace the global KUBECONFIG with a fresh kubeconfig
-		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
-		// see: https://github.com/kubernetes/minikube/issues/10210
-		for _, e := range os.Environ() {
-			if !strings.Contains(e, "KUBECONFIG") { // get all global envs except the Kubeconfig which is used by new versions of minikubes
-				legacyEnv = append(legacyEnv, e)
+	t.Run("Upgrade", func(t *testing.T) {
+		args := append([]string{"start", "-p", profile, "--memory=2200"}, legacyStartArgs()...)
+		rr := &RunResult{}
+		r := func() error {
+			c := exec.CommandContext(ctx, tf.Name(), args...)
+			var legacyEnv []string
+			// replace the global KUBECONFIG with a fresh kubeconfig
+			// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
+			// see: https://github.com/kubernetes/minikube/issues/10210
+			for _, e := range os.Environ() {
+				if !strings.Contains(e, "KUBECONFIG") { // get all global envs except the Kubeconfig which is used by new versions of minikubes
+					legacyEnv = append(legacyEnv, e)
+				}
 			}
+			// using a fresh kubeconfig for this test
+			legacyKubeConfig, err := ioutil.TempFile("", "legacy_kubeconfig")
+			if err != nil {
+				t.Fatalf("failed to create temp file for legacy kubeconfig %v", err)
+			}
+
+			defer os.Remove(legacyKubeConfig.Name()) // clean up
+			legacyEnv = append(legacyEnv, fmt.Sprintf("KUBECONFIG=%s", legacyKubeConfig.Name()))
+			c.Env = legacyEnv
+			rr, err = Run(t, c)
+			return err
 		}
-		// using a fresh kubeconfig for this test
-		legacyKubeConfig, err := ioutil.TempFile("", "legacy_kubeconfig")
+
+		// Retry up to two times, to allow flakiness for the legacy release
+		if err := retry.Expo(r, 1*time.Second, Minutes(30), 2); err != nil {
+			t.Fatalf("legacy %s start failed: %v", desiredLegacyVersion, err)
+		}
+
+		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "-p", profile, "stop"))
 		if err != nil {
-			t.Fatalf("failed to create temp file for legacy kubeconfig %v", err)
+			t.Errorf("failed to stop cluster: %s: %v", rr.Command(), err)
 		}
 
-		defer os.Remove(legacyKubeConfig.Name()) // clean up
-		legacyEnv = append(legacyEnv, fmt.Sprintf("KUBECONFIG=%s", legacyKubeConfig.Name()))
-		c.Env = legacyEnv
-		rr, err = Run(t, c)
-		return err
-	}
-
-	// Retry up to two times, to allow flakiness for the legacy release
-	if err := retry.Expo(r, 1*time.Second, Minutes(30), 2); err != nil {
-		t.Fatalf("legacy %s start failed: %v", desiredLegacyVersion, err)
-	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "-p", profile, "stop"))
-	if err != nil {
-		t.Errorf("failed to stop cluster: %s: %v", rr.Command(), err)
-	}
-
-	args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("upgrade from %s to HEAD failed: %s: %v", desiredLegacyVersion, rr.Command(), err)
-	}
+		args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Fatalf("upgrade from %s to HEAD failed: %s: %v", desiredLegacyVersion, rr.Command(), err)
+		}
+	})
 
 	t.Run("MinikubeLogs", func(t *testing.T) {
 		args := []string{"logs", "-p", profile}
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+		_, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Fatalf("`minikube logs` after upgrade to HEAD from %s failed: %v", desiredLegacyVersion, err)
 		}

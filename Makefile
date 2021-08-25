@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.22.0-1628238775-12122
+ISO_VERSION ?= v1.22.0-1628974786-12268
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -32,6 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
+# update this only by running `make update-golang-version`
 GO_VERSION ?= 1.16.7
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
@@ -39,7 +40,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2020.02.12
+BUILDROOT_BRANCH ?= 2021.02.4
 REGISTRY ?= gcr.io/k8s-minikube
 
 # Get git commit id
@@ -65,9 +66,10 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.182
-# latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.39.0
+KERNEL_VERSION ?= 4.19.202
+# latest from https://github.com/golangci/golangci-lint/releases 
+# update this only by running `make update-golint-version`
+GOLINT_VERSION ?= v1.42.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -75,7 +77,7 @@ GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable gofmt,goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
+	  --enable gofmt,goimports,gocritic,revive,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
 export GO111MODULE := on
@@ -280,8 +282,6 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 	fi;
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
-	mkdir -p $(BUILD_DIR)/buildroot/output/build
-	echo "module buildroot.org/go" > $(BUILD_DIR)/buildroot/output/build/go.mod
 	$(MAKE) -C $(BUILD_DIR)/buildroot host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
@@ -682,7 +682,7 @@ docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker buildx rm --builder $(X_DOCKER_BUILDER) || true
 	env $(X_BUILD_ENV) docker buildx create --name $(X_DOCKER_BUILDER) --buildkitd-flags '--debug' || true
 
-KICBASE_ARCH = linux/arm64,linux/amd64
+KICBASE_ARCH = linux/amd64,linux/arm,linux/arm64,linux/ppc64le,linux/s390x
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
@@ -785,7 +785,7 @@ release-notes:
 update-leaderboard:
 	hack/update_contributions.sh
 
-out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-amd64
+out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-$(GOARCH)
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
@@ -972,6 +972,12 @@ update-golang-version:
 update-kubernetes-version:
 	(cd hack/update/kubernetes_version && \
 	 go run update_kubernetes_version.go)
+
+.PHONY: update-golint-version
+update-golint-version:
+	(cd hack/update/golint_version && \
+	 go run update_golint_version.go)
+
 
 .PHONY: update-kubernetes-version-pr
 update-kubernetes-version-pr:

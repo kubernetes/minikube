@@ -19,7 +19,8 @@ metadata:
   namespace: gcp-auth
 spec:
   ports:
-    - port: 443
+    - name: https
+      port: 443
       targetPort: 8443
       protocol: TCP
   selector:

@@ -189,7 +189,7 @@ func RunWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, max
 	notify := func(err error, wait time.Duration) {
 		klog.Errorf("Temporary error running '%s' (will retry in %s): %v", cmd.String(), wait, err)
 	}
-	if err := backoff.RetryNotify(func() error {
+	return backoff.RetryNotify(func() error {
 		cmd.Stdin = stdin
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
@@ -198,10 +198,7 @@ func RunWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, max
 			return fmt.Errorf("%w: %s", err, stderr.String())
 		}
 		return nil
-	}, bc, notify); err != nil {
-		return err
-	}
-	return nil
+	}, bc, notify)
 }
 
 // Run runs command cmd with stdin

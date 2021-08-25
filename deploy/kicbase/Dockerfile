@@ -29,7 +29,7 @@ RUN cd ./cmd/auto-pause/ && go build
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20210401
 
-ARG BUILDKIT_VERSION="v0.8.2"
+ARG BUILDKIT_VERSION="v0.9.0"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf

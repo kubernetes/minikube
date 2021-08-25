@@ -91,8 +91,8 @@ func selfRegistration(clientset *kubernetes.Clientset, caCert []byte) {
 			klog.Fatal(err2)
 		}
 	}
-	var failurePolicy v1.FailurePolicyType = v1.Fail
-	var sideEffects v1.SideEffectClass = v1.SideEffectClassNone
+	var failurePolicy = v1.Fail
+	var sideEffects = v1.SideEffectClassNone
 
 	webhookConfig := &v1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{

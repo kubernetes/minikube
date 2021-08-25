@@ -72,7 +72,7 @@ func execute() error {
 
 	// Open non-autopause csv file of benchmark summary
 	napResults := []float64{}
-	var napFn string = "./out/benchmark-results/" + sessionID + "/cstat.nonautopause.summary"
+	napFn := "./out/benchmark-results/" + sessionID + "/cstat.nonautopause.summary"
 	napFile, err := os.Open(napFn)
 	if err != nil {
 		return errors.Wrap(err, "Missing summary csv")
@@ -97,7 +97,7 @@ func execute() error {
 
 	// Open auto-pause csv file of benchmark summary
 	apResults := []float64{}
-	var apFn string = "./out/benchmark-results/" + sessionID + "/cstat.autopause.summary"
+	apFn := "./out/benchmark-results/" + sessionID + "/cstat.autopause.summary"
 	apFile, err := os.Open(apFn)
 	if err != nil {
 		return errors.Wrap(err, "Missing summary csv")

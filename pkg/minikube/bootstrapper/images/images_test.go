@@ -66,6 +66,15 @@ k8s.gcr.io/pause:3.4.1
 k8s.gcr.io/etcd:3.4.13-0
 k8s.gcr.io/coredns/coredns:v1.8.0
 `, "\n"), "\n")},
+		{"v1.22.0", strings.Split(strings.Trim(`
+k8s.gcr.io/kube-apiserver:v1.22.0
+k8s.gcr.io/kube-controller-manager:v1.22.0
+k8s.gcr.io/kube-scheduler:v1.22.0
+k8s.gcr.io/kube-proxy:v1.22.0
+k8s.gcr.io/pause:3.5
+k8s.gcr.io/etcd:3.5.0-0
+k8s.gcr.io/coredns/coredns:v1.8.4
+`, "\n"), "\n")},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.version, func(t *testing.T) {
