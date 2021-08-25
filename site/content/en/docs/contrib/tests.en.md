@@ -84,6 +84,12 @@ makes sure that `minikube image load` works from a local file
 #### validateRemoveImage
 makes sures that `minikube image rm` works as expected
 
+#### validateSaveImage
+makes sure that `minikube image save` works as expected
+
+#### validateSaveImageToFile
+makes sure that `minikube image save` works to a local file
+
 #### validateBuildImage
 makes sures that `minikube image build` works as expected
 

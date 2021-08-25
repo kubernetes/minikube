@@ -65,6 +65,8 @@ type CommandRunner interface {
 	WaitCmd(sc *command.StartedCmd) (*command.RunResult, error)
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
+	// CopyFrom is a convenience method that runs a command to copy a file back
+	CopyFrom(assets.CopyableFile) error
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
 }
@@ -106,7 +108,7 @@ type Manager interface {
 	// Push an image from the runtime to the container registry
 	PushImage(string) error
 
-	// ImageExists takes image name and image sha checks if an it exists
+	// ImageExists takes image name and optionally image sha to check if an image exists
 	ImageExists(string, string) bool
 	// ListImages returns a list of images managed by this container runtime
 	ListImages(ListImagesOptions) ([]string, error)
