@@ -163,16 +163,16 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get Kubernetes client: %v", client)
 	}
 
-	if err := kapi.WaitForDeploymentToStabilize(client, "ingress-nginx", "ingress-nginx-controller", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for ingress-controller deployment to stabilize: %v", err)
-	}
-	if _, err := PodWait(ctx, t, profile, "ingress-nginx", "app.kubernetes.io/name=ingress-nginx", Minutes(12)); err != nil {
+	// avoid timeouts like:
+	// Error from server (InternalError): Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": dial tcp 10.107.218.58:443: i/o timeout
+	// Error from server (InternalError): Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": context deadline exceeded
+	if _, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=ingress-nginx", "pod", "--selector=app.kubernetes.io/component=controller", "--timeout=90s")); err != nil {
 		t.Fatalf("failed waititing for ingress-nginx-controller : %v", err)
 	}
 
 	// create networking.k8s.io/v1 ingress
 	createv1Ingress := func() error {
-		// apply networking.k8s.io/v1beta1 ingress
+		// apply networking.k8s.io/v1 ingress
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1.yaml")))
 		if err != nil {
 			return err
@@ -182,8 +182,6 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-
-	// create networking.k8s.io/v1 ingress
 	if err := retry.Expo(createv1Ingress, 1*time.Second, Seconds(90)); err != nil {
 		t.Errorf("failed to create ingress: %v", err)
 	}
@@ -202,43 +200,6 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 
 	want := "Welcome to nginx!"
 	addr := "http://127.0.0.1/"
-	// check if the ingress can route nginx app with networking.k8s.io/v1beta1 ingress
-	checkv1betaIngress := func() error {
-		var rr *RunResult
-		var err error
-		if NoneDriver() { // just run curl directly on the none driver
-			rr, err = Run(t, exec.CommandContext(ctx, "curl", "-s", addr, "-H", "'Host: nginx.example.com'"))
-			if err != nil {
-				return err
-			}
-		} else {
-			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
-			if err != nil {
-				return err
-			}
-		}
-
-		stderr := rr.Stderr.String()
-		if rr.Stderr.String() != "" {
-			t.Logf("debug: unexpected stderr for %v:\n%s", rr.Command(), stderr)
-		}
-
-		stdout := rr.Stdout.String()
-		if !strings.Contains(stdout, want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), stdout, want)
-		}
-		return nil
-	}
-
-	// check if the ingress can route nginx app with networking.k8s.io/v1beta1 ingress
-	if err := retry.Expo(checkv1betaIngress, 500*time.Millisecond, Seconds(90)); err != nil {
-		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
-	}
-
-	// create networking.k8s.io/v1 ingress
-	if err := retry.Expo(createv1Ingress, 1*time.Second, Seconds(90)); err != nil {
-		t.Errorf("failed to create ingress: %v", err)
-	}
 
 	// check if the ingress can route nginx app with networking.k8s.io/v1 ingress
 	checkv1Ingress := func() error {
@@ -255,20 +216,16 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 				return err
 			}
 		}
-
 		stderr := rr.Stderr.String()
 		if rr.Stderr.String() != "" {
 			t.Logf("debug: unexpected stderr for %v:\n%s", rr.Command(), stderr)
 		}
-
 		stdout := rr.Stdout.String()
 		if !strings.Contains(stdout, want) {
 			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), stdout, want)
 		}
 		return nil
 	}
-
-	// check if the ingress can route nginx app with networking.k8s.io/v1 ingress
 	if err := retry.Expo(checkv1Ingress, 500*time.Millisecond, Seconds(90)); err != nil {
 		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
 	}
@@ -462,37 +419,27 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
-	}
-
 	start := time.Now()
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "catalog-operator", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for catalog-operator deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=catalog-operator", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod catalog-operator: %v", err)
 	}
 	t.Logf("catalog-operator stabilized in %s", time.Since(start))
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "olm-operator", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for olm-operator deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=olm-operator", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod olm-operator: %v", err)
 	}
 	t.Logf("olm-operator stabilized in %s", time.Since(start))
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "packageserver", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for packageserver deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=packageserver", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod olm-operator: %v", err)
 	}
 	t.Logf("packageserver stabilized in %s", time.Since(start))
 
-	if _, err := PodWait(ctx, t, profile, "olm", "app=catalog-operator", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod catalog-operator: %v", err)
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=olm.catalogSource=operatorhubio-catalog", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod operatorhubio-catalog: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "olm", "app=olm-operator", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod olm-operator: %v", err)
-	}
-	if _, err := PodWait(ctx, t, profile, "olm", "app=packageserver", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod packageserver: %v", err)
-	}
-	if _, err := PodWait(ctx, t, profile, "olm", "olm.catalogSource=operatorhubio-catalog", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod operatorhubio-catalog: %v", err)
-	}
+	t.Logf("operatorhubio-catalog stabilized in %s", time.Since(start))
 
 	// Install one sample Operator such as etcd
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "etcd.yaml")))
@@ -514,7 +461,6 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-
 	// Operator installation takes a while
 	if err := retry.Expo(checkOperatorInstalled, time.Second*3, Minutes(10)); err != nil {
 		t.Errorf("failed checking operator installed: %v", err.Error())

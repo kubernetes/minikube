@@ -27,6 +27,7 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 * [Dashboard](https://minikube.sigs.k8s.io/docs/handbook/dashboard/) - `minikube dashboard`
 * [Container runtimes](https://minikube.sigs.k8s.io/docs/handbook/config/#runtime-configuration) - `minikube start --container-runtime`
 * [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/handbook/config/#modifying-kubernetes-defaults) via command-line flags
+* Supports common [CI environments](https://github.com/minikube-ci/examples)
 
 As well as developer-friendly features:
 
