@@ -3,7 +3,8 @@ kind: Ingress
 metadata:
   name: nginx-ingress
   annotations:
-    kubernetes.io/ingress.class: "nginx"
+    # use the shared ingress-nginx
+    kubernetes.io/ingress.class: nginx
   labels:
     integration-test: ingress
 spec:
@@ -11,7 +12,7 @@ spec:
   - host: nginx.example.com
     http:
       paths:
-      - path: "/"
+      - path: /
         pathType: Prefix
         backend:
           service:

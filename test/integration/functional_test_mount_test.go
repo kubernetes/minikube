@@ -276,7 +276,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		t.Logf("reading mount text")
 		mountText := func() string {
 			str := ""
-			var err error = nil
+			var err error
 			for err == nil {
 				var add string
 				add, err = ss.Stdout.ReadString(0)

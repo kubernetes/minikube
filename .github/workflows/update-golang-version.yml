@@ -6,9 +6,9 @@ on:
     - cron: "0 9 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.16.6'
+  GO_VERSION: '1.16.7'
 jobs:
-  bump-k8s-versions:
+  bump-golang-version:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

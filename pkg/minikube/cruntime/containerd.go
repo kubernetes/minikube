@@ -140,6 +140,22 @@ func (r *Containerd) Style() style.Enum {
 	return style.Containerd
 }
 
+// parseContainerdVersion parses version from containerd --version
+func parseContainerdVersion(line string) (string, error) {
+	// containerd github.com/containerd/containerd v1.0.0 89623f28b87a6004d4b785663257362d1658a729
+	words := strings.Split(line, " ")
+	if len(words) >= 4 && words[0] == "containerd" {
+		version := strings.Replace(words[2], "v", "", 1)
+		version = strings.SplitN(version, "~", 2)[0]
+		if _, err := semver.Parse(version); err != nil {
+			parts := strings.SplitN(version, "-", 2)
+			return parts[0], nil
+		}
+		return version, nil
+	}
+	return "", fmt.Errorf("unknown version: %q", line)
+}
+
 // Version retrieves the current version of this runtime
 func (r *Containerd) Version() (string, error) {
 	c := exec.Command("containerd", "--version")
@@ -147,12 +163,11 @@ func (r *Containerd) Version() (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "containerd check version.")
 	}
-	// containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39
-	words := strings.Split(rr.Stdout.String(), " ")
-	if len(words) >= 4 && words[0] == "containerd" {
-		return strings.Replace(words[2], "v", "", 1), nil
+	version, err := parseContainerdVersion(rr.Stdout.String())
+	if err != nil {
+		return "", err
 	}
-	return "", fmt.Errorf("unknown version: %q", rr.Stdout.String())
+	return version, nil
 }
 
 // SocketPath returns the path to the socket file for containerd
@@ -233,10 +248,14 @@ func (r *Containerd) Disable() error {
 	return r.Init.ForceStop("containerd")
 }
 
-// ImageExists checks if an image exists, expected input format
+// ImageExists checks if image exists based on image name and optionally image sha
 func (r *Containerd) ImageExists(name string, sha string) bool {
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s | grep %s", name, sha))
-	if _, err := r.Runner.RunCmd(c); err != nil {
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s", name))
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return false
+	}
+	if sha != "" && !strings.Contains(rr.Output(), sha) {
 		return false
 	}
 	return true
@@ -288,6 +307,16 @@ func (r *Containerd) SaveImage(name string, path string) error {
 // RemoveImage removes a image
 func (r *Containerd) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)
+}
+
+// TagImage tags an image in this runtime
+func (r *Containerd) TagImage(source string, target string) error {
+	klog.Infof("Tagging image %s: %s", source, target)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "tag", source, target)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ctr images tag")
+	}
+	return nil
 }
 
 func gitClone(cr CommandRunner, src string) (string, error) {
@@ -343,6 +372,10 @@ func downloadRemote(cr CommandRunner, src string) (string, error) {
 
 // BuildImage builds an image into this runtime
 func (r *Containerd) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
+	if err := r.initBuildkitDaemon(); err != nil {
+		return fmt.Errorf("failed to init buildkit daemon: %v", err)
+	}
+
 	// download url if not already present
 	dir, err := downloadRemote(r.Runner, src)
 	if err != nil {
@@ -390,6 +423,34 @@ func (r *Containerd) BuildImage(src string, file string, tag string, push bool, 
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "buildctl build.")
 	}
+	return nil
+}
+
+// PushImage pushes an image
+func (r *Containerd) PushImage(name string) error {
+	klog.Infof("Pushing image %s: %s", name)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "push", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ctr images push")
+	}
+	return nil
+}
+func (r *Containerd) initBuildkitDaemon() error {
+	// if daemon is already running, do nothing
+	cmd := exec.Command("pgrep", "buildkitd")
+	if _, err := r.Runner.RunCmd(cmd); err == nil {
+		return nil
+	}
+
+	// otherwise, start daemon
+	cmd = exec.Command("/bin/bash", "-c", "sudo -b buildkitd --oci-worker false --containerd-worker true --containerd-worker-namespace k8s.io &> /dev/null")
+	if _, err := r.Runner.RunCmd(cmd); err != nil {
+		return fmt.Errorf("failed to start buildkit daemon: %v", err)
+	}
+
+	// give the daemon time to finish starting up or image build will fail
+	time.Sleep(1 * time.Second)
+
 	return nil
 }
 

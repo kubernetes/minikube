@@ -151,7 +151,10 @@ func TestFunctional(t *testing.T) {
 			{"PodmanEnv", validatePodmanEnv},
 			{"NodeLabels", validateNodeLabels},
 			{"LoadImage", validateLoadImage},
+			{"SaveImage", validateSaveImage},
 			{"RemoveImage", validateRemoveImage},
+			{"LoadImageFromFile", validateLoadImageFromFile},
+			{"SaveImageToFile", validateSaveImageToFile},
 			{"BuildImage", validateBuildImage},
 			{"ListImages", validateListImages},
 			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
@@ -205,7 +208,6 @@ func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
 			}
 		})
 	}
-
 }
 
 // validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
@@ -248,7 +250,7 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// try to load the new image into minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", newImage))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", newImage))
 	if err != nil {
 		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
 	}
@@ -262,6 +264,57 @@ func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
 	}
 
+}
+
+// validateLoadImageFromFile makes sure that `minikube image load` works from a local file
+func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+	// pull busybox
+	busyboxImage := "busybox:1.31"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+	}
+
+	tag := fmt.Sprintf("load-from-file-%s", profile)
+	taggedImage := fmt.Sprintf("docker.io/library/busybox:%s", tag)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, taggedImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
+	// save image to file
+	imageFile := "busybox-load.tar"
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "save", "-o", imageFile, taggedImage))
+	if err != nil {
+		t.Fatalf("failed to save image to file: %v\n%s", err, rr.Output())
+	}
+	defer os.Remove(imageFile)
+
+	// try to load the new image into minikube
+	imagePath, err := filepath.Abs(imageFile)
+	if err != nil {
+		t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imagePath))
+	if err != nil || rr.Stderr.String() != "" {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// make sure the image was correctly loaded
+	rr, err = listImages(ctx, t, profile)
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), tag) {
+		t.Fatalf("expected %s to be loaded into minikube but the image is not there: %v", taggedImage, rr.Output())
+	}
 }
 
 // validateRemoveImage makes sures that `minikube image rm` works as expected
@@ -311,6 +364,101 @@ func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
 
 }
 
+// validateSaveImage makes sure that `minikube image save` works as expected
+func validateSaveImage(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("load image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+	// pull busybox
+	busyboxImage := "docker.io/library/busybox:1.29"
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", busyboxImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+	}
+
+	// tag busybox
+	name := "busybox"
+	tag := fmt.Sprintf("save-%s", profile)
+	newImage := fmt.Sprintf("docker.io/library/%s:%s", name, tag)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "tag", busyboxImage, newImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
+	// try to save the new image from minikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", newImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
+	}
+
+	// make sure the image was correctly loaded
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "images", name))
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), fmt.Sprintf("save-%s", profile)) {
+		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
+	}
+
+}
+
+// validateSaveImageToFile makes sure that `minikube image save` works to a local file
+func validateSaveImageToFile(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("save image not available on none driver")
+	}
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
+	}
+	defer PostMortemLogs(t, profile)
+	// pull busybox
+	busyboxImage := "docker.io/library/busybox:1.30"
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", busyboxImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+	}
+
+	name := "busybox"
+	tag := fmt.Sprintf("save-to-file-%s", profile)
+	taggedImage := fmt.Sprintf("docker.io/library/%s:%s", name, tag)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "tag", busyboxImage, taggedImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
+	// try to save the new image from minikube
+	imageFile := "busybox-save.tar"
+	imagePath, err := filepath.Abs(imageFile)
+	if err != nil {
+		t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", taggedImage, imagePath))
+	if err != nil {
+		t.Fatalf("saving image from minikube: %v\n%s", err, rr.Output())
+	}
+
+	// load image from file
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "load", "-i", imagePath))
+	if err != nil {
+		t.Fatalf("failed to load image to file: %v\n%s", err, rr.Output())
+	}
+	defer os.Remove(imageFile)
+
+	// make sure the image was correctly loaded
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "images", name))
+	if err != nil {
+		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), tag) {
+		t.Fatalf("expected %s to be loaded but the image is not there", taggedImage)
+	}
+
+}
+
 func inspectImage(ctx context.Context, t *testing.T, profile string, image string) (*RunResult, error) {
 	var cmd *exec.Cmd
 	if ContainerRuntime() == "docker" {
@@ -342,7 +490,7 @@ func listImages(ctx context.Context, t *testing.T, profile string) (*RunResult, 
 // validateBuildImage makes sures that `minikube image build` works as expected
 func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
-		t.Skip("load image not available on none driver")
+		t.Skip("image build not available on none driver")
 	}
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
@@ -350,10 +498,6 @@ func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	newImage := fmt.Sprintf("localhost/my-image:%s", profile)
-	if ContainerRuntime() == "containerd" {
-		startBuildkit(ctx, t, profile)
-		// unix:///run/buildkit/buildkitd.sock
-	}
 
 	// try to build the new image with minikube
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
@@ -376,16 +520,6 @@ func validateBuildImage(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Output(), newImage) {
 		t.Fatalf("expected %s to be built with minikube but the image is not there", newImage)
-	}
-}
-
-func startBuildkit(ctx context.Context, t *testing.T, profile string) {
-	// sudo systemctl start buildkit.socket
-	cmd := exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "nohup",
-		"sudo", "-b", "buildkitd", "--oci-worker=false",
-		"--containerd-worker=true", "--containerd-worker-namespace=k8s.io")
-	if rr, err := Run(t, cmd); err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 }
 
@@ -429,53 +563,76 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("only validate docker env with docker container runtime, currently testing %s", cr)
 	}
 	defer PostMortemLogs(t, profile)
-	mctx, cancel := context.WithTimeout(ctx, Seconds(120))
-	defer cancel()
-	var rr *RunResult
-	var err error
+
+	type ShellTest struct {
+		name          string
+		commandPrefix []string
+		formatArg     string
+	}
+
+	windowsTests := []ShellTest{
+		{"powershell", []string{"powershell.exe", "-NoProfile", "-NonInteractive"}, "%[1]s -p %[2]s docker-env | Invoke-Expression ; "},
+	}
+	posixTests := []ShellTest{
+		{"bash", []string{"/bin/bash", "-c"}, "eval $(%[1]s -p %[2]s docker-env) && "},
+	}
+
+	tests := posixTests
 	if runtime.GOOS == "windows" {
-		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ;"+Target()+" status -p "+profile)
-		rr, err = Run(t, c)
-	} else {
-		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
-		// we should be able to get minikube status with a bash which evaled docker-env
-		rr, err = Run(t, c)
+		tests = windowsTests
 	}
-	if mctx.Err() == context.DeadlineExceeded {
-		t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
-	}
-	if err != nil {
-		t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
-	}
-	if !strings.Contains(rr.Output(), "Running") {
-		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
-	}
-	if !strings.Contains(rr.Output(), "in-use") {
-		t.Fatalf("expected status output to include `in-use` after eval docker-env but got *%s*", rr.Output())
-	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mctx, cancel := context.WithTimeout(ctx, Seconds(120))
+			defer cancel()
 
-	mctx, cancel = context.WithTimeout(ctx, Seconds(60))
-	defer cancel()
-	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
-	if runtime.GOOS == "windows" { // testing docker-env eval in powershell
-		c := exec.CommandContext(mctx, "powershell.exe", "-NoProfile", "-NonInteractive", Target()+" -p "+profile+" docker-env | Invoke-Expression ; docker images")
-		rr, err = Run(t, c)
-	} else {
-		c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
-		rr, err = Run(t, c)
-	}
+			command := make([]string, len(tc.commandPrefix)+1)
+			// Would use "copy" built-in here, but that is shadowed by "copy" package
+			for i, v := range tc.commandPrefix {
+				command[i] = v
+			}
 
-	if mctx.Err() == context.DeadlineExceeded {
-		t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
-	}
+			formattedArg := fmt.Sprintf(tc.formatArg, Target(), profile)
 
-	if err != nil {
-		t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
-	}
+			// we should be able to get minikube status with a shell which evaled docker-env
+			command[len(command)-1] = formattedArg + Target() + " status -p " + profile
+			c := exec.CommandContext(mctx, command[0], command[1:]...)
+			rr, err := Run(t, c)
 
-	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
-	if !strings.Contains(rr.Output(), expectedImgInside) {
-		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
+			if mctx.Err() == context.DeadlineExceeded {
+				t.Errorf("failed to run the command by deadline. exceeded timeout. %s", rr.Command())
+			}
+			if err != nil {
+				t.Fatalf("failed to do status after eval-ing docker-env. error: %v", err)
+			}
+			if !strings.Contains(rr.Output(), "Running") {
+				t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
+			}
+			if !strings.Contains(rr.Output(), "in-use") {
+				t.Fatalf("expected status output to include `in-use` after eval docker-env but got *%s*", rr.Output())
+			}
+
+			mctx, cancel = context.WithTimeout(ctx, Seconds(60))
+			defer cancel()
+
+			// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
+			command[len(command)-1] = formattedArg + "docker images"
+			c = exec.CommandContext(mctx, command[0], command[1:]...)
+			rr, err = Run(t, c)
+
+			if mctx.Err() == context.DeadlineExceeded {
+				t.Errorf("failed to run the command in 30 seconds. exceeded 30s timeout. %s", rr.Command())
+			}
+
+			if err != nil {
+				t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
+			}
+
+			expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
+			if !strings.Contains(rr.Output(), expectedImgInside) {
+				t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
+			}
+		})
 	}
 }
 

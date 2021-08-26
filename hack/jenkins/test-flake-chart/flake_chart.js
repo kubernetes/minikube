@@ -14,14 +14,13 @@ function displayError(message) {
   document.body.appendChild(element);
 }
 
-// Creates a generator that reads the response body one line at a time.
-async function* bodyByLinesIterator(response, updateProgress) {
+// Reads `response` into an array of lines while calling `updateProgress` in between.
+async function getBodyLinesWithProgress(response, updateProgress) {
   const utf8Decoder = new TextDecoder('utf-8');
   const reader = response.body.getReader();
 
-  const re = /\n|\r|\r\n/gm;
+  const lines = [];
   let pendingText = "";
-
   let readerDone = false;
   while (!readerDone) {
     // Read a chunk.
@@ -34,27 +33,22 @@ async function* bodyByLinesIterator(response, updateProgress) {
     updateProgress(chunk.length);
     const decodedChunk = utf8Decoder.decode(chunk);
 
-    let startIndex = 0;
-    let result;
-    // Keep processing until there are no more new lines.
-    while ((result = re.exec(decodedChunk)) !== null) {
-      const text = decodedChunk.substring(startIndex, result.index);
-      startIndex = re.lastIndex;
-
-      const line = pendingText + text;
+    const sublines = decodedChunk.split('\n');
+    for (let i = 0; i < sublines.length - 1; i++) {
+      const fullLine = pendingText + sublines[i];
       pendingText = "";
-      if (line !== "") {
-        yield line;
+      if (fullLine !== "") {
+        lines.push(fullLine);
       }
     }
-    // Any text after the last new line is appended to any pending text.
-    pendingText += decodedChunk.substring(startIndex);
+    pendingText = sublines[sublines.length - 1];
   }
 
-  // If there is any text remaining, return it.
+  // If there is any text remaining, append it.
   if (pendingText !== "") {
-    yield pendingText;
+    lines.push(pendingText);
   }
+  return lines;
 }
 
 // Determines whether `str` matches at least one value in `enumObject`.
@@ -75,11 +69,17 @@ const testStatus = {
 }
 
 async function loadTestData() {
-  const response = await fetch("data.csv");
+  const response = await fetch("data.csv", {
+    headers: {
+      "Cache-Control": "max-age=3600,must-revalidate",
+    }
+  });
   if (!response.ok) {
     const responseText = await response.text();
     throw `Failed to fetch data from GCS bucket. Error: ${responseText}`;
   }
+
+  const responseDate = new Date(response.headers.get("date").toString());
 
   const box = document.createElement("div");
   box.style.width = "100%";
@@ -98,20 +98,32 @@ async function loadTestData() {
   document.body.appendChild(box);
 
   let readBytes = 0;
-  const lines = bodyByLinesIterator(response, value => {
+  const lines = await getBodyLinesWithProgress(response, value => {
     readBytes += value;
     progressBar.setAttribute("value", readBytes);
   });
   // Consume the header to ensure the data has the right number of fields.
-  const header = (await lines.next()).value;
+  const header = lines[0];
   if (header.split(",").length != 9) {
     document.body.removeChild(box);
     throw `Fetched CSV data contains wrong number of fields. Expected: 9. Actual Header: "${header}"`;
   }
 
+  progressBarPrompt.textContent = "Parsing data...";
+  progressBar.setAttribute("max", lines.length);
+
   const testData = [];
   let lineData = ["", "", "", "", "", "", "", "", ""];
-  for await (const line of lines) {
+  for (let i = 1; i < lines.length; i++) {
+    if (i % 30000 === 0) {
+      await new Promise(resolve => {
+        setTimeout(() => {
+          progressBar.setAttribute("value", i);
+          resolve();
+        });
+      });
+    }
+    const line = lines[i];
     let splitLine = line.split(",");
     if (splitLine.length != 9) {
       console.warn(`Found line with wrong number of fields. Actual: ${splitLine.length} Expected: 9. Line: "${line}"`);
@@ -143,7 +155,15 @@ async function loadTestData() {
   if (testData.length == 0) {
     throw "Fetched CSV data is empty or poorly formatted.";
   }
-  return testData;
+  return [testData, responseDate];
+}
+
+Array.prototype.min = function() {
+  return this.reduce((acc, val) => Math.min(acc, val), Number.MAX_VALUE)
+}
+
+Array.prototype.max = function() {
+  return this.reduce((acc, val) => Math.max(acc, val), -Number.MAX_VALUE)
 }
 
 Array.prototype.sum = function() {
@@ -223,7 +243,7 @@ function aggregateWeeklyRuns(testRuns, weekDates) {
     }));
 }
 
-const jobIdToLink = (jobId, environment) => `https://storage.googleapis.com/minikube-builds/logs/master/${jobId}/${environment}.html`;
+const testGopoghLink = (jobId, environment, testName) => `https://storage.googleapis.com/minikube-builds/logs/master/${jobId}/${environment}.html${testName ? `#fail_${testName}` : ``}`;
 
 function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   const testRuns = testData
@@ -244,17 +264,17 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
           groupData.date,
           groupData.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b>${groupData.date.toString()}</b><br>
+            <b>Date:</b> ${groupData.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
-            ${groupData.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
+            ${groupData.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${status})`).join("<br>")}
           </div>`,
           groupData.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b>${groupData.date.toString()}</b><br>
+            <b>Date:</b> ${groupData.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
             <b>Jobs:</b><br>
-            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${duration}s)`).join("<br>")}
+            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${duration}s)`).join("<br>")}
           </div>`,
         ])
     );
@@ -285,8 +305,8 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   }
   {
     const dates = testRuns.map(run => run.date.getTime());
-    const startDate = new Date(Math.min(...dates));
-    const endDate = new Date(Math.max(...dates));
+    const startDate = new Date(dates.min());
+    const endDate = new Date(dates.max());
   
     const weekDates = [];
     let currentDate = startDate;
@@ -320,17 +340,17 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
           groupData.date,
           groupData.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b>${groupData.date.toString()}</b><br>
+            <b>Date:</b> ${groupData.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Flake Percentage:</b> ${groupData.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
-            ${groupData.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
+            ${groupData.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${status})`).join("<br>")}
           </div>`,
           groupData.duration,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-            <b>${groupData.date.toString()}</b><br>
+            <b>Date:</b> ${groupData.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Average Duration:</b> ${groupData.duration.toFixed(2)}s<br>
             <b>Jobs:</b><br>
-            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${duration}s)`).join("<br>")}
+            ${groupData.jobs.map(({ id, duration }) => `  - <a href="${testGopoghLink(id, environmentName, testName)}">${id}</a> (${duration}s)`).join("<br>")}
           </div>`,
         ])
     );
@@ -462,10 +482,10 @@ function displayEnvironmentChart(testData, environmentName) {
           data.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b style="display: block">${name}</b><br>
-            <b>${data.date.toString()}</b><br>
+            <b>Date:</b> ${data.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
-            ${data.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
+            ${data.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, name)}">${id}</a> (${status})`).join("<br>")}
           </div>`
         ] : [null, null];
       })).flat())
@@ -490,8 +510,8 @@ function displayEnvironmentChart(testData, environmentName) {
   }
   {
     const dates = testData.map(run => run.date.getTime());
-    const startDate = new Date(Math.min(...dates));
-    const endDate = new Date(Math.max(...dates));
+    const startDate = new Date(dates.min());
+    const endDate = new Date(dates.max());
   
     const weekDates = [];
     let currentDate = startDate;
@@ -539,10 +559,10 @@ function displayEnvironmentChart(testData, environmentName) {
           data.flakeRate,
           `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
             <b style="display: block">${name}</b><br>
-            <b>${data.date.toString()}</b><br>
+            <b>Date:</b> ${data.date.toLocaleString([], {dateStyle: 'medium'})}<br>
             <b>Flake Percentage:</b> ${data.flakeRate.toFixed(2)}%<br>
             <b>Jobs:</b><br>
-            ${data.jobs.map(({ id, status }) => `  - <a href="${jobIdToLink(id, environmentName)}">${id}</a> (${status})`).join("<br>")}
+            ${data.jobs.map(({ id, status }) => `  - <a href="${testGopoghLink(id, environmentName, name)}">${id}</a> (${status})`).join("<br>")}
           </div>`
         ] : [null, null];
       })).flat())
@@ -599,17 +619,17 @@ function displayEnvironmentChart(testData, environmentName) {
         dateInfo.date,
         dateInfo.testCount,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-          <b>${dateInfo.date.toString()}</b><br>
+          <b>Date:</b> ${dateInfo.date.toLocaleString([], {dateStyle: 'medium'})}<br>
           <b>Test Count (averaged): </b> ${+dateInfo.testCount.toFixed(2)}<br>
           <b>Jobs:</b><br>
-          ${dateInfo.runInfo.map(job => `  - <a href="${jobIdToLink(job.rootJob, environmentName)}">${job.rootJob}</a> Test count: ${job.testCount}`).join("<br>")}
+          ${dateInfo.runInfo.map(job => `  - <a href="${testGopoghLink(job.rootJob, environmentName)}">${job.rootJob}</a> Test count: ${job.testCount}`).join("<br>")}
         </div>`,
         dateInfo.totalDuration,
         `<div style="padding: 1rem; font-family: 'Arial'; font-size: 14">
-          <b>${dateInfo.date.toString()}</b><br>
+          <b>Date:</b> ${dateInfo.date.toLocaleString([], {dateStyle: 'medium'})}<br>
           <b>Total Duration (averaged): </b> ${+dateInfo.totalDuration.toFixed(2)}<br>
           <b>Jobs:</b><br>
-          ${dateInfo.runInfo.map(job => `  - <a href="${jobIdToLink(job.rootJob, environmentName)}">${job.rootJob}</a> Total Duration: ${+job.totalDuration.toFixed(2)}s`).join("<br>")}
+          ${dateInfo.runInfo.map(job => `  - <a href="${testGopoghLink(job.rootJob, environmentName)}">${job.rootJob}</a> Total Duration: ${+job.totalDuration.toFixed(2)}s`).join("<br>")}
         </div>`,
       ]));
     const options = {
@@ -636,7 +656,7 @@ function displayEnvironmentChart(testData, environmentName) {
     chart.draw(data, options);
   }
 
-  document.body.appendChild(
+  chartsContainer.appendChild(
     createRecentFlakePercentageTable(
       recentFlakePercentage,
       previousFlakePercentageMap,
@@ -645,11 +665,11 @@ function displayEnvironmentChart(testData, environmentName) {
 
 async function init() {
   google.charts.load('current', { 'packages': ['corechart'] });
-  let testData;
+  let testData, responseDate;
   try {
     // Wait for Google Charts to load, and for test data to load.
     // Only store the test data (at index 1) into `testData`.
-    testData = (await Promise.all([
+    [testData, responseDate] = (await Promise.all([
       new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
       loadTestData()
     ]))[1];
@@ -666,6 +686,8 @@ async function init() {
   } else {
     displayTestAndEnvironmentChart(testData, desiredTest, desiredEnvironment);
   }
+  document.querySelector('#data_date_container').style.display = 'block';
+  document.querySelector('#data_date').innerText = responseDate.toLocaleString();
 }
 
 init();

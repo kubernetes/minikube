@@ -162,7 +162,7 @@ func (r *CRIO) Disable() error {
 	return r.Init.ForceStop("crio")
 }
 
-// ImageExists checks if an image exists
+// ImageExists checks if image exists based on image name and optionally image sha
 func (r *CRIO) ImageExists(name string, sha string) bool {
 	// expected output looks like [NAME@sha256:SHA]
 	c := exec.Command("sudo", "podman", "image", "inspect", "--format", "{{.Id}}", name)
@@ -170,7 +170,7 @@ func (r *CRIO) ImageExists(name string, sha string) bool {
 	if err != nil {
 		return false
 	}
-	if !strings.Contains(rr.Output(), sha) {
+	if sha != "" && !strings.Contains(rr.Output(), sha) {
 		return false
 	}
 	return true
@@ -216,6 +216,16 @@ func (r *CRIO) RemoveImage(name string) error {
 	return removeCRIImage(r.Runner, name)
 }
 
+// TagImage tags an image in this runtime
+func (r *CRIO) TagImage(source string, target string) error {
+	klog.Infof("Tagging image %s: %s", source, target)
+	c := exec.Command("sudo", "podman", "tag", source, target)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio tag image")
+	}
+	return nil
+}
+
 // BuildImage builds an image into this runtime
 func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
 	klog.Infof("Building image: %s", src)
@@ -246,6 +256,16 @@ func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []
 		if _, err := r.Runner.RunCmd(c); err != nil {
 			return errors.Wrap(err, "crio push image")
 		}
+	}
+	return nil
+}
+
+// PushImage pushes an image
+func (r *CRIO) PushImage(name string) error {
+	klog.Infof("Pushing image %s", name)
+	c := exec.Command("sudo", "podman", "push", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio push image")
 	}
 	return nil
 }

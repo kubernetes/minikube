@@ -71,7 +71,7 @@ func execute() error {
 
 	// Open csv file of benchmark summary
 	results := []float64{}
-	var fn string = "./out/benchmark-results/" + sessionID + "/cstat.summary"
+	fn := "./out/benchmark-results/" + sessionID + "/cstat.summary"
 	file, err := os.Open(fn)
 	if err != nil {
 		return errors.Wrap(err, "Missing summary csv")

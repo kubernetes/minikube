@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/json"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -53,13 +54,14 @@ var versionCmd = &cobra.Command{
 			co := mustload.Running(ClusterFlagValue())
 			runner := co.CP.Runner
 			versionCMDS := map[string]*exec.Cmd{
-				"docker":     exec.Command("docker", "version", "--format={{.Client.Version}}"),
+				"docker":     exec.Command("docker", "--version"),
+				"dockerd":    exec.Command("dockerd", "--version"),
 				"containerd": exec.Command("containerd", "--version"),
-				"crio":       exec.Command("crio", "version"),
-				"podman":     exec.Command("sudo", "podman", "version"),
-				"crictl":     exec.Command("sudo", "crictl", "version"),
+				"crio":       exec.Command("crio", "--version"),
+				"podman":     exec.Command("sudo", "podman", "--version"),
+				"crictl":     exec.Command("sudo", "crictl", "--version"),
 				"buildctl":   exec.Command("buildctl", "--version"),
-				"ctr":        exec.Command("sudo", "ctr", "version"),
+				"ctr":        exec.Command("ctr", "--version"),
 				"runc":       exec.Command("runc", "--version"),
 			}
 			for k, v := range versionCMDS {
@@ -68,7 +70,10 @@ var versionCmd = &cobra.Command{
 					klog.Warningf("error getting %s's version: %v", k, err)
 					data[k] = "error"
 				} else {
-					data[k] = strings.TrimSpace(rr.Stdout.String())
+					version := rr.Stdout.String()
+					// remove extra lines after the version
+					version = strings.Split(version, "\n")[0]
+					data[k] = strings.TrimSpace(version)
 				}
 
 			}
@@ -82,7 +87,13 @@ var versionCmd = &cobra.Command{
 				if gitCommitID != "" {
 					out.Ln("commit: %v", gitCommitID)
 				}
-				for k, v := range data {
+				keys := make([]string, 0, len(data))
+				for k := range data {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				for _, k := range keys {
+					v := data[k]
 					// for backward compatibility we keep displaying the old way for these two
 					if k == "minikubeVersion" || k == "commit" {
 						continue

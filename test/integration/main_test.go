@@ -146,7 +146,7 @@ func DockerDriver() bool {
 
 // PodmanDriver returns whether or not this test is using the docker or podman driver
 func PodmanDriver() bool {
-	return strings.Contains(*startArgs, "--vm-driver=podman") || strings.Contains(*startArgs, "driver=podman")
+	return strings.Contains(*startArgs, "--driver=podman") || strings.Contains(*startArgs, "--vm-driver=podman")
 }
 
 // KicDriver returns whether or not this test is using the docker or podman driver

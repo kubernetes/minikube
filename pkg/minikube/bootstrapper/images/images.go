@@ -34,7 +34,7 @@ func Pause(v semver.Version, mirror string) string {
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
-	pv := "3.4.1"
+	pv := "3.5"
 
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 	imageName := path.Join(kubernetesRepo(mirror), "pause")
@@ -72,7 +72,7 @@ func coreDNS(v semver.Version, mirror string) string {
 	// Should match `CoreDNSImageName` and `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 
-	cv := "1.8.0"
+	cv := "1.8.4"
 	in := "coredns/coredns"
 	if semver.MustParseRange("<1.21.0-alpha.1")(v) {
 		in = "coredns"
@@ -92,7 +92,7 @@ func etcd(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	ev := "3.4.13-3"
+	ev := "3.5.0-0"
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 	imageName := path.Join(kubernetesRepo(mirror), "etcd")
 
@@ -147,18 +147,34 @@ func KindNet(repo string) string {
 	return path.Join(repo, "kindnetd:v20210326-1e038dc5")
 }
 
+// all calico images are from https://docs.projectcalico.org/manifests/calico.yaml
+const calicoVersion = "v3.20.0"
+const calicoRepo = "docker.io/calico"
+
 // CalicoDaemonSet returns the image used for calicoDaemonSet
 func CalicoDaemonSet(repo string) string {
-	if repo == "" {
-		repo = "calico"
-	}
-	return path.Join(repo, "node:v3.14.1")
+	return calicoCommon(repo, "node")
+
 }
 
 // CalicoDeployment returns the image used for calicoDeployment
 func CalicoDeployment(repo string) string {
+	return calicoCommon(repo, "kube-controllers")
+}
+
+// CalicoFelixDriver returns image used for felix driver
+func CalicoFelixDriver(repo string) string {
+	return calicoCommon(repo, "pod2daemon-flexvol")
+}
+
+// CalicoBin returns image used for calico binary image
+func CalicoBin(repo string) string {
+	return calicoCommon(repo, "cni")
+}
+
+func calicoCommon(repo string, name string) string {
 	if repo == "" {
-		repo = "calico"
+		repo = calicoRepo
 	}
-	return path.Join(repo, "kube-controllers:v3.14.1")
+	return path.Join(repo, fmt.Sprintf("%s:%s", name, calicoVersion))
 }
