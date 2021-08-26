@@ -139,7 +139,10 @@ func enableIPForwarding(cr CommandRunner) error {
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable(disOthers, _ bool) error {
+func (r *CRIO) Enable(disOthers, _, inUserNamespace bool) error {
+	if inUserNamespace {
+		return errors.New("inUserNamespace must not be true for cri-o (yet)")
+	}
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)

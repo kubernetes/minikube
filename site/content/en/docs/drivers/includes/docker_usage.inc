@@ -16,3 +16,24 @@ To make docker the default driver:
 minikube config set driver docker
 ```
 
+## Rootless Docker
+### Requirements
+- Docker 20.10 or higher, see https://rootlesscontaine.rs/getting-started/docker/
+- Cgroup v2 delegation, see https://rootlesscontaine.rs/getting-started/common/cgroup2/
+
+### Usage
+
+Start a cluster using the rootless docker driver:
+
+```shell
+dockerd-rootless-setuptool.sh install -f
+docker context use rootless
+
+minikube start --driver=docker --container-runtime=containerd
+```
+
+The `--container-runtime` flag must be currently set to "containerd".
+
+The restrictions of rootless `kind` apply to minikube with rootless docker as well.
+
+See https://kind.sigs.k8s.io/docs/user/rootless/ .

@@ -162,6 +162,9 @@ func CreateContainerNode(p CreateParams) error {
 		// including some ones docker would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
+		// enable /dev/fuse explicitly for fuse-overlayfs
+		// (Rootless Docker does not automatically mount /dev/fuse with --privileged)
+		"--device", "/dev/fuse",
 		"--security-opt", "seccomp=unconfined", //  ignore seccomp
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
