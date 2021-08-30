@@ -77,6 +77,9 @@ const domainTmpl = `
     {{if .GPU}}
     {{.DevicesXML}}
     {{end}}
+    {{if gt .ExtraDisks 0}}
+    {{.ExtraDisksXML}}
+    {{end}}
   </devices>
 </domain>
 `
