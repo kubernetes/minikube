@@ -467,9 +467,9 @@ var Addons = map[string]*Addon{
 			"helm-tiller-svc.yaml",
 			"0640"),
 	}, false, "helm-tiller", "", map[string]string{
-		"Tiller": "kubernetes-helm/tiller:v2.16.12@sha256:6003775d503546087266eda39418d221f9afb5ccfe35f637c32a1161619a3f9c",
+		"Tiller": "helm/tiller:v2.16.12@sha256:6003775d503546087266eda39418d221f9afb5ccfe35f637c32a1161619a3f9c",
 	}, map[string]string{
-		"Tiller": "gcr.io",
+		"Tiller": "ghcr.io",
 	}),
 	"ingress-dns": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IngressDNSAssets,
