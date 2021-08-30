@@ -119,7 +119,8 @@ var (
 		"Makefile": {
 			Replace: map[string]string{
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
-				`GO_VERSION \?= 1.*`: `GO_VERSION ?= {{.StableVersion}}`,
+				`GO_VERSION \?= 1.*`:             `GO_VERSION ?= {{.StableVersion}}`,
+				`GO_K8S_VERSION_PREFIX \?= v1.*`: `GO_K8S_VERSION_PREFIX ?= {{.K8SVersion}}`,
 			},
 		},
 	}
@@ -134,6 +135,8 @@ var (
 type Data struct {
 	StableVersion   string `json:"stableVersion"`
 	StableVersionMM string `json:"stableVersionMM"` // go.mod wants go version in <major>.<minor> format
+	K8SVersion      string `json:"k8sVersion"`      // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
+
 }
 
 func main() {
@@ -142,30 +145,33 @@ func main() {
 	defer cancel()
 
 	// get Golang stable version
-	stable, stableMM, err := goVersions()
+	stable, stableMM, k8sVersion, err := goVersions()
 	if err != nil || stable == "" || stableMM == "" {
 		klog.Fatalf("Unable to get Golang stable version: %v", err)
 	}
-	data := Data{StableVersion: stable, StableVersionMM: stableMM}
+	data := Data{StableVersion: stable, StableVersionMM: stableMM, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s", data.StableVersion)
 
 	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
 }
 
 // goVersion returns Golang stable version.
-func goVersions() (stable, stableMM string, err error) {
+func goVersions() (stable, stableMM, k8sVersion string, err error) {
 	// will update to the same image that kubernetes project uses
 	resp, err := http.Get("https://raw.githubusercontent.com/kubernetes/kubernetes/master/build/build-image/cross/VERSION")
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
-	stable = strings.TrimPrefix(string(body), "v")
-	stable = strings.Split(stable, "-")[0]
+	// example response: v1.23.0-go1.17-buster.0
+	stable = string(body)
+	k8sVersion = strings.Split(stable, "-")[0]
+	stable = strings.Split(stable, "-")[1]
+	stable = strings.Replace(stable, "go", "", 1)
 	mmp := strings.SplitN(stable, ".", 3)
 	stableMM = strings.Join(mmp[0:2], ".") // <major>.<minor> version
-	return stable, stableMM, nil
+	return stable, stableMM, k8sVersion, nil
 }
