@@ -163,8 +163,10 @@ func goVersions() (stable, stableMM string, err error) {
 	if err != nil {
 		return "", "", err
 	}
+	// example response: v1.23.0-go1.17-buster.0
 	stable = strings.TrimPrefix(string(body), "v")
-	stable = strings.Split(stable, "-")[0]
+	stable = strings.Split(stable, "-")[1]
+	stable = strings.Replace(stable, "go", "", 1)
 	mmp := strings.SplitN(stable, ".", 3)
 	stableMM = strings.Join(mmp[0:2], ".") // <major>.<minor> version
 	return stable, stableMM, nil
