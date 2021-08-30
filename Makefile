@@ -35,7 +35,7 @@ RPM_REVISION ?= 0
 # update this only by running `make update-golang-version`
 GO_VERSION ?= 1.16.7
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.21.0
+GO_K8S_VERSION_PREFIX ?= v1.23.0
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
