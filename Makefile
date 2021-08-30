@@ -34,9 +34,7 @@ RPM_REVISION ?= 0
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
 GO_VERSION ?= 1.16.7
-# Kubernetes uses k8s version in golang image version because:
-# https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
-# TODO: make automation update this #12374
+# update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.23.0
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
