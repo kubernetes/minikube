@@ -119,8 +119,8 @@ var (
 		"Makefile": {
 			Replace: map[string]string{
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
-				`GO_VERSION \?= 1.*`:      `GO_VERSION ?= {{.StableVersion}}`,
-				`GO_K8S_VERSION \?= v1.*`: `GO_K8S_VERSION ?= {{.K8SVersion}}`,
+				`GO_VERSION \?= 1.*`:             `GO_VERSION ?= {{.StableVersion}}`,
+				`GO_K8S_VERSION_PREFIX \?= v1.*`: `GO_K8S_VERSION_PREFIX ?= {{.K8SVersion}}`,
 			},
 		},
 	}
