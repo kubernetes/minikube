@@ -492,7 +492,35 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		}
 	}
 
+	if driver.IsKIC(drvName) {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+		}
+		if si.Rootless {
+			if cc.KubernetesConfig.ContainerRuntime != "containerd" {
+				exit.Message(reason.Usage, "Container runtime must be set to \"containerd\" for rootless")
+				// TODO: support cri-o (https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/#configuring-cri)
+			}
+			// KubeletInUserNamespace feature gate is essential for rootless driver.
+			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
+			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+		}
+	}
+
 	return cc
+}
+
+func addFeatureGate(featureGates, s string) string {
+	split := strings.Split(featureGates, ",")
+	m := make(map[string]struct{}, len(split))
+	for _, v := range split {
+		m[v] = struct{}{}
+	}
+	if _, ok := m[s]; !ok {
+		split = append(split, s)
+	}
+	return strings.Join(split, ",")
 }
 
 func checkNumaCount(k8sVersion string) {

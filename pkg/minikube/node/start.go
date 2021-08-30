@@ -349,7 +349,8 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	err = cr.Enable(disableOthers, forceSystemd())
+	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+	err = cr.Enable(disableOthers, forceSystemd(), inUserNamespace)
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}

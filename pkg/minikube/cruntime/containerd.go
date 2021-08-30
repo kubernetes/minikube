@@ -69,6 +69,12 @@ oom_score = 0
 [cgroup]
   path = ""
 
+[proxy_plugins]
+# fuse-overlayfs is used for rootless
+[proxy_plugins."fuse-overlayfs"]
+  type = "snapshot"
+  address = "/run/containerd-fuse-overlayfs.sock"
+
 [plugins]
   [plugins.cgroups]
     no_prometheus = false
@@ -80,6 +86,7 @@ oom_score = 0
     stats_collect_period = 10
     enable_tls_streaming = false
     max_container_log_line_size = 16384
+    restrict_oom_score_adj = {{ .RestrictOOMScoreAdj }}
 
 	[plugins."io.containerd.grpc.v1.cri"]
       [plugins."io.containerd.grpc.v1.cri".containerd]
@@ -90,7 +97,7 @@ oom_score = 0
               SystemdCgroup = {{ .SystemdCgroup }}
 
     [plugins.cri.containerd]
-      snapshotter = "overlayfs"
+      snapshotter = "{{ .Snapshotter }}"
       [plugins.cri.containerd.default_runtime]
         runtime_type = "io.containerd.runc.v2"
       [plugins.cri.containerd.untrusted_workload_runtime]
@@ -193,23 +200,31 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string, inUserNamespace bool) error {
 	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err
 	}
 	pauseImage := images.Pause(kv, imageRepository)
+	snapshotter := "overlayfs"
+	if inUserNamespace {
+		snapshotter = "fuse-overlayfs"
+	}
 	opts := struct {
 		PodInfraContainerImage string
 		SystemdCgroup          bool
 		InsecureRegistry       []string
 		CNIConfDir             string
+		RestrictOOMScoreAdj    bool
+		Snapshotter            string
 	}{
 		PodInfraContainerImage: pauseImage,
 		SystemdCgroup:          forceSystemd,
 		InsecureRegistry:       insecureRegistry,
 		CNIConfDir:             cni.ConfDir,
+		RestrictOOMScoreAdj:    inUserNamespace,
+		Snapshotter:            snapshotter,
 	}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -223,7 +238,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 }
 
 // Enable idempotently enables containerd on a host
-func (r *Containerd) Enable(disOthers, forceSystemd bool) error {
+func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -232,11 +247,17 @@ func (r *Containerd) Enable(disOthers, forceSystemd bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd, r.InsecureRegistry); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd, r.InsecureRegistry, inUserNamespace); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
+	}
+
+	if inUserNamespace {
+		if err := r.Init.EnableNow("containerd-fuse-overlayfs"); err != nil {
+			return err
+		}
 	}
 
 	// Otherwise, containerd will fail API requests with 'Unimplemented'

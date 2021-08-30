@@ -107,7 +107,10 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(disOthers, forceSystemd bool) error {
+func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+	if inUserNamespace {
+		return errors.New("inUserNamespace must not be true for docker")
+	}
 	containerdWasActive := r.Init.Active("containerd")
 
 	if disOthers {
