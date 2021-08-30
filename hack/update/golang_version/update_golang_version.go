@@ -119,8 +119,8 @@ var (
 		"Makefile": {
 			Replace: map[string]string{
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
-				`GO_VERSION \?= 1.*`:     `GO_VERSION ?= {{.StableVersion}}`,
-				`GO_K8S_VERSION \?= 1.*`: `GO_K8S_VERSION ?= {{.K8sVersion}}`,
+				`GO_VERSION \?= 1.*`:      `GO_VERSION ?= {{.StableVersion}}`,
+				`GO_K8S_VERSION \?= v1.*`: `GO_K8S_VERSION ?= {{.K8SVersion}}`,
 			},
 		},
 	}
@@ -135,7 +135,7 @@ var (
 type Data struct {
 	StableVersion   string `json:"stableVersion"`
 	StableVersionMM string `json:"stableVersionMM"` // go.mod wants go version in <major>.<minor> format
-	K8SVersion      string `json:"k8sVersionMM"`    // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
+	K8SVersion      string `json:"k8sVersion"`      // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
 
 }
 
@@ -160,15 +160,15 @@ func goVersions() (stable, stableMM, k8sVersion string, err error) {
 	// will update to the same image that kubernetes project uses
 	resp, err := http.Get("https://raw.githubusercontent.com/kubernetes/kubernetes/master/build/build-image/cross/VERSION")
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	// example response: v1.23.0-go1.17-buster.0
 	stable = string(body)
-	k8sVersion := strings.Split(stable, "-")[0]
+	k8sVersion = strings.Split(stable, "-")[0]
 	stable = strings.Split(stable, "-")[1]
 	stable = strings.Replace(stable, "go", "", 1)
 	mmp := strings.SplitN(stable, ".", 3)
