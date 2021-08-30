@@ -469,6 +469,8 @@ var Addons = map[string]*Addon{
 	}, false, "helm-tiller", "", map[string]string{
 		"Tiller": "helm/tiller:v2.16.12@sha256:6003775d503546087266eda39418d221f9afb5ccfe35f637c32a1161619a3f9c",
 	}, map[string]string{
+		// GCR is deprecated in helm
+		// https://github.com/helm/helm/issues/10004#issuecomment-894478908
 		"Tiller": "ghcr.io",
 	}),
 	"ingress-dns": NewAddon([]*BinAsset{
