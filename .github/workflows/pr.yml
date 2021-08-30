@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.16.7'
+  GO_VERSION: '1.17'
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
