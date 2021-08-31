@@ -147,10 +147,16 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && curl -sSL --retry 5 --output /tmp/buildkit.tgz "${BUILDKIT_BASE_URL}/buildkit-${BUILDKIT_VERSION}.linux-${ARCH}.tar.gz" \
     && tar -C /usr/local -xzvf /tmp/buildkit.tgz \
     && rm -rf /tmp/buildkit.tgz \
+    && mkdir -p /usr/local/lib/systemd/system \
+    && curl -L --retry 5 --output /usr/local/lib/systemd/system/buildkit.service "https://raw.githubusercontent.com/moby/buildkit/${BUILDKIT_VERSION}/examples/systemd/buildkit.service" \
+    && curl -L --retry 5 --output /usr/local/lib/systemd/system/buildkit.socket "https://raw.githubusercontent.com/moby/buildkit/${BUILDKIT_VERSION}/examples/systemd/buildkit.socket" \
+    && mkdir -p /etc/buildkit \
+    && echo "[worker.oci]\n  enabled = false\n[worker.containerd]\n  enabled = true\n  namespace = \"k8s.io\"" > /etc/buildkit/buildkitd.toml \
     && chmod 755 /usr/local/bin/buildctl \
     && chmod 755 /usr/local/bin/buildkit-runc \
     && chmod 755 /usr/local/bin/buildkit-qemu-* \
-    && chmod 755 /usr/local/bin/buildkitd
+    && chmod 755 /usr/local/bin/buildkitd \
+    && systemctl enable buildkit.socket
 
 # Install cri-o/podman dependencies:
 RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
