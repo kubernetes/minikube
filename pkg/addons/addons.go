@@ -449,7 +449,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 		awg.Add(1)
 		go func(name string) {
 			err := RunCallbacks(cc, name, "true")
-			if err != nil {
+			if err != nil && !errors.Is(err, ErrSkipThisAddon) {
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
 			} else {
 				enabledAddons = append(enabledAddons, name)
