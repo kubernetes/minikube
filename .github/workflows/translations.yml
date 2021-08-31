@@ -6,7 +6,7 @@ on:
       - "translations/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.16.7'
+  GO_VERSION: '1.17'
 jobs:
   unit_test:
     runs-on: ubuntu-20.04
