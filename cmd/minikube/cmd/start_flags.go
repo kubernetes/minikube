@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -167,7 +168,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
-	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit driver)")
+	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -481,7 +482,46 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
 	}
 
+	if detect.IsCloudShell() {
+		err := cc.KubernetesConfig.ExtraOptions.Set("kubelet.cgroups-per-qos=false")
+		if err != nil {
+			exit.Error(reason.InternalConfigSet, "failed to set cloud shell kubelet config options", err)
+		}
+		err = cc.KubernetesConfig.ExtraOptions.Set("kubelet.enforce-node-allocatable=\"\"")
+		if err != nil {
+			exit.Error(reason.InternalConfigSet, "failed to set cloud shell kubelet config options", err)
+		}
+	}
+
+	if driver.IsKIC(drvName) {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+		}
+		if si.Rootless {
+			if cc.KubernetesConfig.ContainerRuntime != "containerd" {
+				exit.Message(reason.Usage, "Container runtime must be set to \"containerd\" for rootless")
+				// TODO: support cri-o (https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/#configuring-cri)
+			}
+			// KubeletInUserNamespace feature gate is essential for rootless driver.
+			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
+			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+		}
+	}
+
 	return cc
+}
+
+func addFeatureGate(featureGates, s string) string {
+	split := strings.Split(featureGates, ",")
+	m := make(map[string]struct{}, len(split))
+	for _, v := range split {
+		m[v] = struct{}{}
+	}
+	if _, ok := m[s]; !ok {
+		split = append(split, s)
+	}
+	return strings.Join(split, ",")
 }
 
 func checkNumaCount(k8sVersion string) {
@@ -719,7 +759,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 }
 
 func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
-	supportedDrivers := []string{driver.HyperKit}
+	supportedDrivers := []string{driver.HyperKit, driver.KVM2}
 
 	if cmd.Flags().Changed(extraDisks) {
 		supported := false

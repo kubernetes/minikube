@@ -78,8 +78,17 @@ checks if minikube cluster is created with correct kubernetes's node label
 #### validateLoadImage
 makes sure that `minikube image load` works as expected
 
+#### validateLoadImageFromFile
+makes sure that `minikube image load` works from a local file
+
 #### validateRemoveImage
 makes sures that `minikube image rm` works as expected
+
+#### validateSaveImage
+makes sure that `minikube image save` works as expected
+
+#### validateSaveImageToFile
+makes sure that `minikube image save` works to a local file
 
 #### validateBuildImage
 makes sures that `minikube image build` works as expected
@@ -340,7 +349,7 @@ verifies the preload tarballs get pulled in properly by minikube
 tests the schedule stop functionality on Windows
 
 ## TestScheduledStopUnix
-TestScheduledStopWindows tests the schedule stop functionality on Unix
+tests the schedule stop functionality on Unix
 
 ## TestSkaffold
 makes sure skaffold run can be run with minikube

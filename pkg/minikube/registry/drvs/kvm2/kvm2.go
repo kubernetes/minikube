@@ -70,6 +70,7 @@ type kvmDriver struct {
 	Hidden         bool
 	ConnectionURI  string
 	NUMANodeCount  int
+	ExtraDisks     int
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
@@ -92,6 +93,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		Hidden:         cc.KVMHidden,
 		ConnectionURI:  cc.KVMQemuURI,
 		NUMANodeCount:  cc.KVMNUMACount,
+		ExtraDisks:     cc.ExtraDisks,
 	}, nil
 }
 

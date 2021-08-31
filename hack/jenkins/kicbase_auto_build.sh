@@ -68,10 +68,7 @@ ec=$?
 if [ $ec -gt 0 ]; then
 	if [ "$release" = false ]; then
 		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed.  
-		See the logs at:
-	       	```
-		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/kicbase-${BUILD_NUMBER}/kic_image_build.txt
-		```
+		See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/kic_image_build.txt
 		"
 	fi
 	exit $ec
@@ -101,7 +98,7 @@ if [ "$release" = false ]; then
 	if [ $? -gt 0 ]; then
 		message="Hi ${ghprbPullAuthorLoginMention}, we failed to push the reference to the kicbase to your PR. Please run the following command and push manually.
 
-		sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go; make generate-docs;
+		sed -i 's|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|' pkg/drivers/kic/types.go
 		
 		"
 	fi

@@ -349,7 +349,8 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	err = cr.Enable(disableOthers, forceSystemd())
+	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+	err = cr.Enable(disableOthers, forceSystemd(), inUserNamespace)
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}
@@ -401,11 +402,7 @@ func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, in
 		}
 		return nil
 	}
-	if err := retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return err
-	}
-
-	return nil
+	return retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second)
 }
 
 func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
@@ -426,11 +423,7 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 		klog.Info(rr.Stdout.String())
 		return nil
 	}
-	if err := retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return err
-	}
-
-	return nil
+	return retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second)
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started

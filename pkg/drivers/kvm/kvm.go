@@ -28,7 +28,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
-	libvirt "github.com/libvirt/libvirt-go"
+	"github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/util/retry"
@@ -88,6 +88,12 @@ type Driver struct {
 
 	// NUMA XML
 	NUMANodeXML string
+
+	// Extra Disks
+	ExtraDisks int
+
+	// Extra Disks XML
+	ExtraDisksXML []string
 }
 
 const (
@@ -320,7 +326,6 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
 // Create a host using the driver's config
 func (d *Driver) Create() (err error) {
 	log.Info("Creating KVM machine...")
-	defer log.Infof("KVM machine creation complete!")
 	err = d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
@@ -353,6 +358,26 @@ func (d *Driver) Create() (err error) {
 		return errors.Wrap(err, "error creating disk")
 	}
 
+	if d.ExtraDisks > 20 {
+		// Limiting the number of disks to 20 arbitrarily. If more disks are
+		// needed, the logical name generation has to changed to create them if
+		// the form hdaa, hdab, etc
+		return errors.Wrap(err, "cannot create more than 20 extra disks")
+	}
+	for i := 0; i < d.ExtraDisks; i++ {
+		diskpath, err := createExtraDisk(d, i)
+		if err != nil {
+			return errors.Wrap(err, "creating extra disks")
+		}
+		// Starting the logical names for the extra disks from hdd as the cdrom device is set to hdc.
+		// TODO: Enhance the domain template to use variable for the logical name of the main disk and the cdrom disk.
+		extraDisksXML, err := getExtraDiskXML(diskpath, fmt.Sprintf("hd%v", string(rune('d'+i))))
+		if err != nil {
+			return errors.Wrap(err, "creating extraDisk XML")
+		}
+		d.ExtraDisksXML = append(d.ExtraDisksXML, extraDisksXML)
+	}
+
 	if err := ensureDirPermissions(store); err != nil {
 		log.Errorf("unable to ensure permissions on %s: %v", store, err)
 	}
@@ -364,10 +389,16 @@ func (d *Driver) Create() (err error) {
 	}
 	defer func() {
 		if ferr := dom.Free(); ferr != nil {
+			log.Warnf("unable to free domain: %v", err)
 			err = ferr
 		}
 	}()
-	return d.Start()
+	if err = d.Start(); err != nil {
+		log.Errorf("unable to start VM: %v", err)
+		return err
+	}
+	log.Infof("KVM machine creation complete!")
+	return nil
 }
 
 // ensureDirPermissions ensures that libvirt has access to access the image store directory

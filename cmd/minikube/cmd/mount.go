@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -111,7 +112,19 @@ var mountCmd = &cobra.Command{
 		var ip net.IP
 		var err error
 		if mountIP == "" {
-			ip, err = cluster.HostIP(co.CP.Host, co.Config.Name)
+			if detect.IsMicrosoftWSL() {
+				klog.Infof("Selecting IP for WSL. This may be incorrect...")
+				ip, err = func() (net.IP, error) {
+					conn, err := net.Dial("udp", "8.8.8.8:80")
+					if err != nil {
+						return nil, err
+					}
+					defer conn.Close()
+					return conn.LocalAddr().(*net.UDPAddr).IP, nil
+				}()
+			} else {
+				ip, err = cluster.HostIP(co.CP.Host, co.Config.Name)
+			}
 			if err != nil {
 				exit.Error(reason.IfHostIP, "Error getting the host IP address to use from within the VM", err)
 			}

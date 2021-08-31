@@ -43,13 +43,13 @@ const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v11"
+	PreloadVersion = "v12"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
 
 var (
-	preloadStates map[string]map[string]bool = make(map[string]map[string]bool)
+	preloadStates = make(map[string]map[string]bool)
 )
 
 // TarballName returns name of the tarball

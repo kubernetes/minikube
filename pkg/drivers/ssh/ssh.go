@@ -206,10 +206,7 @@ func (d *Driver) Stop() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
-	if err := sysinit.New(d.exec).Restart("kubelet"); err != nil {
-		return err
-	}
-	return nil
+	return sysinit.New(d.exec).Restart("kubelet")
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.

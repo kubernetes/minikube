@@ -62,7 +62,7 @@ func Enable() error {
 		return errors.Wrap(err, "restarting containerd")
 	}
 	// When pod is terminated, disable gvisor and exit
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c

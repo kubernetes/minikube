@@ -15,6 +15,6 @@ if (Jenkins) {
 	exit 0
 }
 echo "doing it"
-docker system prune --all --force
+docker system prune --all --force --volumes
 Get-Process "*Docker Desktop*" | Stop-Process
 shutdown /r

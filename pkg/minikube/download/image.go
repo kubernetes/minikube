@@ -121,6 +121,10 @@ func ImageToCache(img string) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
 	}
+	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	if err != nil {
+		return errors.Wrap(err, "parsing tag")
+	}
 	klog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
 	if err != nil {
@@ -134,7 +138,7 @@ func ImageToCache(img string) error {
 
 		return errors.Wrap(err, "getting remote image")
 	}
-	klog.V(3).Infof("Writing image %v", ref)
+	klog.V(3).Infof("Writing image %v", tag)
 	errchan := make(chan error)
 	p := pb.Full.Start64(0)
 	fn := strings.Split(ref.Name(), "@")[0]
@@ -150,7 +154,7 @@ func ImageToCache(img string) error {
 	p.SetWidth(79)
 
 	go func() {
-		err = tarball.WriteToFile(f, ref, i, tarball.WithProgress(c))
+		err = tarball.WriteToFile(f, tag, i, tarball.WithProgress(c))
 		errchan <- err
 	}()
 	var update v1.Update
@@ -170,24 +174,25 @@ func ImageToCache(img string) error {
 }
 
 func parseImage(img string) (*name.Tag, name.Reference, error) {
-	digest, err := name.NewDigest(img)
-	if err == nil {
-		tag := digest.Tag()
-		return &tag, digest, nil
-	}
 
-	_, ok := err.(*name.ErrBadName)
-	if !ok {
-		return nil, nil, errors.Wrap(err, "new ref")
-	}
-	// ErrBadName means img contains no digest
-	// It happens if its value is name:tag for example.
-	// In this case we want to give it a second chance and try to parse it one more time using name.NewTag(img)
-	tag, err := name.NewTag(img)
+	var ref name.Reference
+	tag, err := name.NewTag(strings.Split(img, "@")[0])
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to parse image reference")
 	}
-	return &tag, tag, nil
+	digest, err := name.NewDigest(img)
+	if err != nil {
+		_, ok := err.(*name.ErrBadName)
+		if !ok {
+			return nil, nil, errors.Wrap(err, "new ref")
+		}
+		// ErrBadName means img contains no digest
+		// It happens if its value is name:tag for example.
+		ref = tag
+	} else {
+		ref = digest
+	}
+	return &tag, ref, nil
 }
 
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
@@ -210,7 +215,7 @@ func CacheToDaemon(img string) error {
 		return errors.Wrap(err, "tarball")
 	}
 
-	resp, err := daemon.Write(ref, i)
+	resp, err := daemon.Write(*tag, i)
 	klog.V(2).Infof("response: %s", resp)
 	return err
 }
@@ -240,6 +245,10 @@ func ImageToDaemon(img string) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
 	}
+	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	if err != nil {
+		return errors.Wrap(err, "parsing tag")
+	}
 
 	if DownloadMock != nil {
 		klog.Infof("Mock download: %s -> daemon", img)
@@ -260,7 +269,7 @@ func ImageToDaemon(img string) error {
 		return errors.Wrap(err, "getting remote image")
 	}
 
-	klog.V(3).Infof("Writing image %v", ref)
+	klog.V(3).Infof("Writing image %v", tag)
 	errchan := make(chan error)
 	p := pb.Full.Start64(0)
 	fn := strings.Split(ref.Name(), "@")[0]
@@ -276,10 +285,11 @@ func ImageToDaemon(img string) error {
 	p.SetWidth(79)
 
 	go func() {
-		_, err = daemon.Write(ref, i, tarball.WithProgress(c))
+		_, err = daemon.Write(tag, i)
 		errchan <- err
 	}()
 	var update v1.Update
+loop:
 	for {
 		select {
 		case update = <-c:
@@ -290,7 +300,14 @@ func ImageToDaemon(img string) error {
 			if err != nil {
 				return errors.Wrap(err, "writing daemon image")
 			}
-			return nil
+			break loop
 		}
 	}
+	klog.V(3).Infof("Pulling image %v", ref)
+	// Pull digest
+	cmd := exec.Command("docker", "pull", "--quiet", img)
+	if _, err := cmd.Output(); err != nil {
+		return errors.Wrap(err, "pulling remote image")
+	}
+	return nil
 }
