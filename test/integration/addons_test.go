@@ -86,10 +86,10 @@ func TestAddons(t *testing.T) {
 		if detect.IsOnGCE() {
 			args = []string{"-p", profile, "addons", "enable", "gcp-auth"}
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-			if err == nil {
-				t.Errorf("Expected error but didn't get one. command %v, output %v", rr.Command(), rr.Output())
+			if err != nil {
+				t.Errorf("%s failed: %v", rr.Command(), err)
 			} else {
-				if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+				if !detect.IsCloudShell() && !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
 					t.Errorf("Unexpected error message: %v", rr.Output())
 				} else {
 					// ok, use force here since we are in GCE
@@ -389,10 +389,10 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	}
 
 	want := "Server: &version.Version"
-	// Test from inside the cluster (`helm version` use pod.list permission. we use tiller serviceaccount in kube-system to list pod)
+	// Test from inside the cluster (`helm version` use pod.list permission.)
 	checkHelmTiller := func() error {
 
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--serviceaccount=tiller", "--", "version"))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
 		if err != nil {
 			return err
 		}

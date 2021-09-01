@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -71,7 +73,16 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil || creds.JSON == nil {
-		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		if detect.IsCloudShell() {
+			if c := os.Getenv("CLOUDSDK_CONFIG"); c != "" {
+				f, err := ioutil.ReadFile(path.Join(c, "application_default_credentials.json"))
+				if err == nil {
+					creds, _ = google.CredentialsFromJSON(ctx, f)
+				}
+			}
+		} else {
+			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		}
 	}
 
 	// Create a registry secret in every namespace we can find
@@ -82,8 +93,9 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	}
 
 	// If the env var is explicitly set, even in GCE, then defer to the user and continue
-	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTUALS") == "" {
-		exit.Message(reason.InternalCredsNotNeeded, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		out.WarningT("It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+		return nil
 	}
 
 	// Actually copy the creds over
@@ -122,19 +134,23 @@ or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 }
 
 func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error {
-	client, err := service.K8s.GetCoreClient(cc.Name)
-	if err != nil {
-		return err
-	}
-
-	namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return err
+	if creds == nil {
+		return errors.New("no credentials, skipping creating pull secret")
 	}
 
 	token, err := creds.TokenSource.Token()
 	// Only try to add secret if Token was found
 	if err == nil {
+		client, err := service.K8s.GetCoreClient(cc.Name)
+		if err != nil {
+			return err
+		}
+
+		namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+
 		dockercfg := ""
 		registries := append(gcr_config.DefaultGCRRegistries[:], gcr_config.DefaultARRegistries[:]...)
 		for _, reg := range registries {
@@ -322,6 +338,13 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
+
+	// If we're in GCE and didn't actually start the gcp-auth pods, don't check for them.
+	// We also don't want to actually set the addon as enabled, so just exit completely.
+	if enable && !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		return ErrSkipThisAddon
+	}
+
 	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
 	if err != nil {
 		return err
