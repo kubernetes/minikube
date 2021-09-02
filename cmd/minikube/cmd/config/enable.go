@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -48,7 +49,7 @@ var addonsEnableCmd = &cobra.Command{
 		viper.Set(config.AddonImages, images)
 		viper.Set(config.AddonRegistries, registries)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
-		if err != nil {
+		if err != nil && !errors.Is(err, addons.ErrSkipThisAddon) {
 			exit.Error(reason.InternalAddonEnable, "enable failed", err)
 		}
 		if addon == "dashboard" {
@@ -63,8 +64,9 @@ var addonsEnableCmd = &cobra.Command{
 `, out.V{"profileArg": tipProfileArg})
 
 		}
-
-		out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
+		if err != nil {
+			out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
+		}
 	},
 }
 

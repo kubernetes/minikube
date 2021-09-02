@@ -18,6 +18,7 @@ package addons
 
 import (
 	"fmt"
+	"os/exec"
 	"path"
 	"runtime"
 	"sort"
@@ -56,6 +57,9 @@ var Force = false
 // Currently only used for gcp-auth
 var Refresh = false
 
+// ErrSkipThisAddon is a special error that tells us to not error out, but to also not mark the addon as enabled
+var ErrSkipThisAddon = errors.New("skipping this addon")
+
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 	klog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)
@@ -66,11 +70,17 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 
 	// Run any additional validations for this property
 	if err := run(cc, name, value, a.validations); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "running validations")
 	}
 
 	// Run any callbacks for this property
 	if err := run(cc, name, value, a.callbacks); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "running callbacks")
 	}
 	return nil
@@ -93,6 +103,9 @@ func SetAndSave(profile string, name string, value string) error {
 	}
 
 	if err := RunCallbacks(cc, name, value); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "run callbacks")
 	}
 
@@ -106,15 +119,18 @@ func SetAndSave(profile string, name string, value string) error {
 
 // Runs all the validation or callback functions and collects errors
 func run(cc *config.ClusterConfig, name string, value string, fns []setFn) error {
-	var errors []error
+	var errs []error
 	for _, fn := range fns {
 		err := fn(cc, name, value)
 		if err != nil {
-			errors = append(errors, err)
+			if errors.Is(err, ErrSkipThisAddon) {
+				return ErrSkipThisAddon
+			}
+			errs = append(errs, err)
 		}
 	}
-	if len(errors) > 0 {
-		return fmt.Errorf("%v", errors)
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
 	}
 	return nil
 }
@@ -152,35 +168,6 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
-	// to match both ingress and ingress-dns addons
-	if strings.HasPrefix(name, "ingress") && enable {
-		if driver.IsKIC(cc.Driver) {
-			if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-				out.Styled(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
-			} else if driver.BareMetal(cc.Driver) {
-				out.WarningT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.`,
-					out.V{"driver_name": cc.Driver, "addon_name": name})
-			}
-		}
-		if err := supportLegacyIngress(cc); err != nil {
-			return err
-		}
-	}
-
-	if strings.HasPrefix(name, "istio") && enable {
-		minMem := 8192
-		minCPUs := 4
-		if cc.Memory < minMem {
-			out.WarningT("Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB", out.V{"minMem": minMem, "memory": cc.Memory})
-		}
-		if cc.CPUs < minCPUs {
-			out.WarningT("Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs", out.V{"minCPUs": minCPUs, "cpus": cc.CPUs})
-		}
-	}
-
-	// When dealing with the use of ImageMirrorCountry, the image name is not a one-to-one correspondence.
-	checkImageMirrorCountry(cc, addon)
-
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "machine client")
@@ -205,28 +192,17 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		return nil
 	}
 
-	if name == "registry" {
-		if driver.NeedsPortForward(cc.Driver) {
-			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
-			if err != nil {
-				return errors.Wrap(err, "registry port")
-			}
-			if enable {
-				out.Boxed(`Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
-			}
-			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
-		}
-	}
-
 	runner, err := machine.CommandRunner(host)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
 	}
 
-	if name == "auto-pause" && !enable { // needs to be disabled before deleting the service file in the internal disable
-		if err := sysinit.New(runner).DisableNow("auto-pause"); err != nil {
-			klog.ErrorS(err, "failed to disable", "service", "auto-pause")
-		}
+	bail, err := addonSpecificChecks(cc, name, enable, runner)
+	if err != nil {
+		return err
+	}
+	if bail {
+		return nil
 	}
 
 	var networkInfo assets.NetworkInfo
@@ -239,6 +215,68 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 
 	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
+}
+
+func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, runner command.Runner) (bool, error) {
+	// to match both ingress and ingress-dns addons
+	if strings.HasPrefix(name, "ingress") && enable {
+		if driver.IsKIC(cc.Driver) {
+			if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+				out.Styled(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
+			} else if driver.BareMetal(cc.Driver) {
+				out.WarningT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.`,
+					out.V{"driver_name": cc.Driver, "addon_name": name})
+			}
+		}
+		if err := supportLegacyIngress(cc); err != nil {
+			return false, err
+		}
+	}
+
+	if strings.HasPrefix(name, "istio") && enable {
+		minMem := 8192
+		minCPUs := 4
+		if cc.Memory < minMem {
+			out.WarningT("Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB", out.V{"minMem": minMem, "memory": cc.Memory})
+		}
+		if cc.CPUs < minCPUs {
+			out.WarningT("Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs", out.V{"minCPUs": minCPUs, "cpus": cc.CPUs})
+		}
+	}
+
+	// When dealing with the use of ImageMirrorCountry, the image name is not a one-to-one correspondence.
+	checkImageMirrorCountry(cc, addon)
+
+	if name == "registry" {
+		if driver.NeedsPortForward(cc.Driver) {
+			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
+			if err != nil {
+				return false, errors.Wrap(err, "registry port")
+			}
+			if enable {
+				out.Boxed(`Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
+			}
+			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
+		}
+		return false, nil
+	}
+
+	if name == "auto-pause" && !enable { // needs to be disabled before deleting the service file in the internal disable
+		if err := sysinit.New(runner).DisableNow("auto-pause"); err != nil {
+			klog.ErrorS(err, "failed to disable", "service", "auto-pause")
+		}
+		return false, nil
+	}
+
+	// If the gcp-auth credentials haven't been mounted in, don't start the pods
+	if name == "gcp-auth" {
+		rr, err := runner.RunCmd(exec.Command("cat", credentialsPath))
+		if err != nil || rr.Stdout.String() == "" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
@@ -414,7 +452,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 		awg.Add(1)
 		go func(name string) {
 			err := RunCallbacks(cc, name, "true")
-			if err != nil {
+			if err != nil && !errors.Is(err, ErrSkipThisAddon) {
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
 			} else {
 				enabledAddons = append(enabledAddons, name)
