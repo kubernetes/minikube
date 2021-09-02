@@ -101,8 +101,15 @@ systemctl restart NetworkManager.service
 Also see `dns=` in [NetworkManager.conf](https://developer.gnome.org/NetworkManager/stable/NetworkManager.conf.html).
 
 #### Windows
+Open `Powershell` as Administrator and execute the following
+```sh
+Add-DnsClientNrptRule -Namespace ".test" -NameServers "$(minikube ip)"
+```
 
-TODO
+The following will remove any matching rules, before creating one. This is helpful if your minikube has a new ip
+```sh
+Get-DnsClientNrptRule | Where-Object {$_.Namespace -eq '.test'} | Remove-DnsClientNrptRule -Force; Add-DnsClientNrptRule -Namespace ".test" -NameServers "$(minikube ip)"
+```
 
 ## Testing
 
