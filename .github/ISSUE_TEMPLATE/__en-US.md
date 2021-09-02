@@ -9,7 +9,7 @@ about: Report an issue
 2. 
 3.
 
-**Run `minikube logs --file=logs.txt` and attach the log file to this issue:**
+**Run `minikube logs --file=logs.txt` and drag and drop the log file into this issue**
 
 <!--- TIP: Add the "--alsologtostderr" flag to the command-line for more logs --->
 **Full output of failed command if not `minikube start`:**
