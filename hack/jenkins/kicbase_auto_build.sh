@@ -25,7 +25,7 @@ docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASS}
 ./hack/jenkins/installers/check_install_gh.sh
 
 # Make sure golang is installed and configured
-./installers/check_install_golang.sh "/usr/local" || true
+./hack/jenkins/installers/check_install_golang.sh "/usr/local" || true
 
 # Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
