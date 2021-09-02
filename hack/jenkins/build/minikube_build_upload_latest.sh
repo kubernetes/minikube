@@ -22,8 +22,7 @@ set -eux -o pipefail
 readonly bucket="minikube/latest"
 
 # Make sure the right golang version is installed based on Makefile
-WANT_GOLANG_VERSION=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
-./hack/jenkins/installers/check_install_golang.sh $WANT_GOLANG_VERSION /usr/local
+./hack/jenkins/installers/check_install_golang.sh /usr/local
 
 
 declare -rx GOPATH=/var/lib/jenkins/go
