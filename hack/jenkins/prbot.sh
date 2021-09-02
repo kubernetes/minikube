@@ -27,7 +27,7 @@ fi
 ./installers/check_install_gh.sh 
 
 # Make sure go is installed and configured                                            
-./installers/check_install_golang.sh "1.16" "/usr/local" || true
+./installers/check_install_golang.sh "/usr/local" || true
 
 # Grab latest code                                                                    
 git clone https://github.com/kubernetes/minikube.git                                  

@@ -111,11 +111,6 @@ var (
 				`(?m)^go .*`: `go {{.StableVersionMM}}`,
 			},
 		},
-		"hack/jenkins/common.sh": {
-			Replace: map[string]string{
-				`\.\/installers\/check_install_golang\.sh \".*\" \"\/usr\/local\" .*`: `./installers/check_install_golang.sh "{{.StableVersion}}" "/usr/local" || true`,
-			},
-		},
 		"Makefile": {
 			Replace: map[string]string{
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile

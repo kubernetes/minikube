@@ -16,14 +16,14 @@
 
 set -eux -o pipefail
 
-if (($# < 2)); then
-  echo "ERROR: given ! ($#) number of parameters but expect 2."
-  echo "USAGE: ./check_install_golang.sh VERSION_TO_INSTALL INSTALL_PATH"
+if (($# < 1)); then
+  echo "ERROR: given ! ($#) parameters but expected 1."
+  echo "USAGE: ./check_install_golang.sh INSTALL_PATH"
   exit 1
 fi
 
-VERSION_TO_INSTALL=${1}
-INSTALL_PATH=${2}
+VERSION_TO_INSTALL=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
+INSTALL_PATH=${1}
 
 function current_arch() {
   case $(arch) in
@@ -51,7 +51,7 @@ function check_and_install_golang() {
   fi
 
   # golang has been installed and check its version
-  if [[ $(go version) =~ (([0-9]+)\.([0-9]+).([0-9]+).([\.0-9]*)) ]]; then
+  if [[ $(go version | cut -d' ' -f 3) =~ go(([0-9]+)\.([0-9]+).([0-9]+)*) ]]; then
     HOST_VERSION=${BASH_REMATCH[1]}
     if [ $HOST_VERSION = $VERSION_TO_INSTALL ]; then
       echo "go version on the host looks good : $HOST_VERSION"
