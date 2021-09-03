@@ -1,5 +1,110 @@
 # Release Notes
 
+## Version 1.23.0 - 2021-09-03
+
+Features:
+* Add `--extra-disks` capability to kvm2 driver [#12351](https://github.com/kubernetes/minikube/pull/12351)
+* Support Rootless Docker [#12359](https://github.com/kubernetes/minikube/pull/12359)
+* Add support for tcsh in docker-env subcommand [#12332](https://github.com/kubernetes/minikube/pull/12332)
+* Support Ingress on MacOS, driver docker [#12089](https://github.com/kubernetes/minikube/pull/12089)
+* KVM2 driver for linux/aarch64 [#11768](https://github.com/kubernetes/minikube/pull/11768)
+* Build kicbase image for linux/s390x [#12079](https://github.com/kubernetes/minikube/pull/12079)
+* Add configurable port for minikube mount [#11979](https://github.com/kubernetes/minikube/pull/11979)
+* Add ability to create extra disks on hyperkit vms [#11483](https://github.com/kubernetes/minikube/pull/11483)
+* Add method for customized box output [#11709](https://github.com/kubernetes/minikube/pull/11709)
+* Add addon support for portainer [#11933](https://github.com/kubernetes/minikube/pull/11933)
+* minikube start --image-repository will now accept URLs with port [#11585](https://github.com/kubernetes/minikube/pull/11585)
+
+minikube image:
+* Add `minikube image` commands for pull and tag and push [#12326](https://github.com/kubernetes/minikube/pull/12326)
+* new `image save` command [#12162](https://github.com/kubernetes/minikube/pull/12162)
+* Auto start buildkit daemon on `image build` for containerd [#12076](https://github.com/kubernetes/minikube/pull/12076)
+
+Bug fixes:
+* Select WSL VM IP when performing mounting [#12319](https://github.com/kubernetes/minikube/pull/12319)
+* Fix minikube restart on Cloud Shell [#12237](https://github.com/kubernetes/minikube/pull/12237)
+* pause each container separately [#12318](https://github.com/kubernetes/minikube/pull/12318)
+* Add output parameter to the docker-env none shell [#12263](https://github.com/kubernetes/minikube/pull/12263)
+* Clean up ssh tunnels during exit. [#11745](https://github.com/kubernetes/minikube/pull/11745)
+* Fix loading an image from tar failing on existing delete [#12143](https://github.com/kubernetes/minikube/pull/12143)
+* configure gcp-auth addon pull secret to work with all GCR and AR mirrors [#12106](https://github.com/kubernetes/minikube/pull/12106)
+* Fix the error output of minikube version --components command [#12085](https://github.com/kubernetes/minikube/pull/12085)
+* Added restart command after setting crio options [#11968](https://github.com/kubernetes/minikube/pull/11968)
+* Don't set conntrack parameters in kube-proxy [#11957](https://github.com/kubernetes/minikube/pull/11957)
+* Fix kvm2 driver arm64 deb package [#11937](https://github.com/kubernetes/minikube/pull/11937)
+* Allow to set the dashboard proxyfied port [#11553](https://github.com/kubernetes/minikube/pull/11553)
+
+Version Upgrades:
+* bump golang version to 1.17 [#12378](https://github.com/kubernetes/minikube/pull/12378)
+* Bump k8s.io/kubectl from 0.22.0 to 0.22.1 [#12335](https://github.com/kubernetes/minikube/pull/12335)
+* Bump default Kubernetes version to v1.22.1 and update addons to with new API (ingress, gcpauth, olm and cilium) [#12325](https://github.com/kubernetes/minikube/pull/12325)
+* Add kubeadm image versions for kubernetes 1.22 [#12331](https://github.com/kubernetes/minikube/pull/12331)
+* bump calico to v3.20 and move away from v1beta apis [#12230](https://github.com/kubernetes/minikube/pull/12230)
+* Upgrade Buildroot to 2021.02 LTS with Linux 4.19 [#12268](https://github.com/kubernetes/minikube/pull/12268)
+* Upgrade buildkit from 0.8.2 to 0.9.0 [#12032](https://github.com/kubernetes/minikube/pull/12032)
+* ISO: Upgrade Docker, from 20.10.6 to 20.10.8 [#12122](https://github.com/kubernetes/minikube/pull/12122)
+* ISO: Upgrade crictl (from cri-tools) to v1.21.0 [#12129](https://github.com/kubernetes/minikube/pull/12129)
+
+Thank you to our contributors for this release!
+
+- Akihiro Suda
+- Alexandre Garnier
+- Anders F Björklund
+- Andriy Dzikh
+- Blaine Gardner
+- Devdutt Shenoi
+- Ilya Zuyev
+- Jack Zhang
+- Jeff MAURY
+- Joel Klint
+- Julien Breux
+- Leopold Schabel
+- Matt Dainty
+- Medya Ghazizadeh
+- Pablo Caderno
+- Parthvi Vala
+- Peixuan Ding
+- Predrag Rogic
+- Raghavendra Talur
+- Rajwinder Mahal
+- Sharif Elgamal
+- Steven Powell
+- Tejal Desai
+- Vishal Jain
+- Zhang Shihe
+- amit dixit
+- balasu
+- dmpe
+- jayonlau
+- m-aciek
+- rajdevworks
+- なつき
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (68 comments)
+- sharifelgamal (26 comments)
+- afbjorklund (22 comments)
+- spowelljr (15 comments)
+- andriyDev (7 comments)
+- mikebrow (7 comments)
+- iliadmitriev (2 comments)
+- ilya-zuyev (2 comments)
+- azhao155 (1 comments)
+- briandealwis (1 comments)
+- ncresswell (1 comments)
+- shahiddev (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (47 comments)
+- RA489 (36 comments)
+- sharifelgamal (32 comments)
+- spowelljr (28 comments)
+- medyagh (20 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.23.0/) for this release!
+
 ## Version 1.22.0 - 2021-07-07
 
 Features:
