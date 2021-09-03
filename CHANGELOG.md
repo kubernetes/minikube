@@ -3,17 +3,16 @@
 ## Version 1.23.0 - 2021-09-03
 
 Features:
-* Add `--extra-disks` capability to kvm2 driver [#12351](https://github.com/kubernetes/minikube/pull/12351)
 * Support Rootless Docker [#12359](https://github.com/kubernetes/minikube/pull/12359)
 * Add support for tcsh in docker-env subcommand [#12332](https://github.com/kubernetes/minikube/pull/12332)
 * Support Ingress on MacOS, driver docker [#12089](https://github.com/kubernetes/minikube/pull/12089)
-* KVM2 driver for linux/aarch64 [#11768](https://github.com/kubernetes/minikube/pull/11768)
-* Build kicbase image for linux/s390x [#12079](https://github.com/kubernetes/minikube/pull/12079)
+* Add support for linux/s390x on docker/podman drivers [#12079](https://github.com/kubernetes/minikube/pull/12079)
 * Add configurable port for minikube mount [#11979](https://github.com/kubernetes/minikube/pull/11979)
-* Add ability to create extra disks on hyperkit vms [#11483](https://github.com/kubernetes/minikube/pull/11483)
 * Add method for customized box output [#11709](https://github.com/kubernetes/minikube/pull/11709)
 * Add addon support for portainer [#11933](https://github.com/kubernetes/minikube/pull/11933)
 * minikube start --image-repository will now accept URLs with port [#11585](https://github.com/kubernetes/minikube/pull/11585)
+* Add ability to create extra disks for hyperkit driver [#11483](https://github.com/kubernetes/minikube/pull/11483)
+* Add ability to create extra disks for kvm2 driver [#12351](https://github.com/kubernetes/minikube/pull/12351)
 
 minikube image:
 * Add `minikube image` commands for pull and tag and push [#12326](https://github.com/kubernetes/minikube/pull/12326)
@@ -36,7 +35,6 @@ Bug fixes:
 
 Version Upgrades:
 * bump golang version to 1.17 [#12378](https://github.com/kubernetes/minikube/pull/12378)
-* Bump k8s.io/kubectl from 0.22.0 to 0.22.1 [#12335](https://github.com/kubernetes/minikube/pull/12335)
 * Bump default Kubernetes version to v1.22.1 and update addons to with new API (ingress, gcpauth, olm and cilium) [#12325](https://github.com/kubernetes/minikube/pull/12325)
 * Add kubeadm image versions for kubernetes 1.22 [#12331](https://github.com/kubernetes/minikube/pull/12331)
 * bump calico to v3.20 and move away from v1beta apis [#12230](https://github.com/kubernetes/minikube/pull/12230)
