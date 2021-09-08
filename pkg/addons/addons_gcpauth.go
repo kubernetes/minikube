@@ -69,19 +69,32 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	cc := mustload.Running(cfg.Name)
 	r := cc.CP.Runner
 
-	// Grab credentials from where GCP would normally look
 	ctx := context.Background()
+
+	// We need to detect early if we use GOOGLE_APPLICATION_CREDENTIALS and have the --force flag set because
+	// google.FindDefaultCredentials() reads this setting
+	if credentialsFile := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); credentialsFile != "" && !Force {
+		exit.Message(reason.Usage, "It seems that you are running in GCE and have GOOGLE_APPLICATION_CREDENTIALS environment variable set, if you would still like to authenticate using a credentials file use the --force flag.")
+	}
+
+	// Grab credentials from where GCP would normally look
 	creds, err := google.FindDefaultCredentials(ctx)
-	if err != nil || creds.JSON == nil {
+	if err != nil {
 		if detect.IsCloudShell() {
 			if c := os.Getenv("CLOUDSDK_CONFIG"); c != "" {
 				f, err := ioutil.ReadFile(path.Join(c, "application_default_credentials.json"))
 				if err == nil {
 					creds, _ = google.CredentialsFromJSON(ctx, f)
+				} else {
+					exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
 				}
 			}
 		} else {
 			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		}
+	} else {
+		if _, credentialsPresent := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); !credentialsPresent && detect.IsOnGCE() {
+			out.WarningT("It seems that you are running in GCE, we will use the attached service account.")
 		}
 	}
 
@@ -90,12 +103,6 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	err = createPullSecret(cfg, creds)
 	if err != nil {
 		return errors.Wrap(err, "pull secret")
-	}
-
-	// If the env var is explicitly set, even in GCE, then defer to the user and continue
-	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
-		out.WarningT("It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
-		return nil
 	}
 
 	// Actually copy the creds over
