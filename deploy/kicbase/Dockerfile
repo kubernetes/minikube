@@ -192,7 +192,12 @@ COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/syst
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default
-RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
+RUN systemctl disable containerd && \
+    export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "arm64" ]; \
+    then \
+        systemctl disable crio && rm /etc/crictl.yaml; \
+    fi
 # enable docker which is default
 RUN systemctl enable docker.service && systemctl enable podman.socket
 # making SSH work for docker container 
