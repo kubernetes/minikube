@@ -87,7 +87,7 @@ awk -F, 'NR>1 {
 
 # Filter out arm64 and macOS tests until they're more stable
 grep -v arm64 "$TMP_FAILED_RATES" > "$TMP_FAILED_RATES"
-grep -v macOS ""$TMP_FAILED_RATES" > ""$TMP_FAILED_RATES"
+grep -v macOS "$TMP_FAILED_RATES" > "$TMP_FAILED_RATES"
 
 FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES")
 if [[ "$FAILED_RATES_LINES" -eq 0 ]]; then
