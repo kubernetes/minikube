@@ -85,9 +85,9 @@ awk -F, 'NR>1 {
   | sort -g -t, -k2,2 \
   >> "$TMP_FAILED_RATES"
 
-# Filter out arm64 and macOS tests until they're more stable
+# Filter out arm64, macOS and windows tests until they're more stable
 TMP_FAILED_RATES_FILTERED=$(mktemp)
-grep -v "arm64\|macOS" "$TMP_FAILED_RATES" > "$TMP_FAILED_RATES_FILTERED"
+grep -v "arm64\|macOS\|Windows" "$TMP_FAILED_RATES" > "$TMP_FAILED_RATES_FILTERED"
 
 FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES_FILTERED")
 if [[ "$FAILED_RATES_LINES" -eq 0 ]]; then
