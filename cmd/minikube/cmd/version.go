@@ -63,6 +63,7 @@ var versionCmd = &cobra.Command{
 				"buildctl":   exec.Command("buildctl", "--version"),
 				"ctr":        exec.Command("ctr", "--version"),
 				"runc":       exec.Command("runc", "--version"),
+				"crun":       exec.Command("crun", "--version"),
 			}
 			for k, v := range versionCMDS {
 				rr, err := runner.RunCmd(v)
