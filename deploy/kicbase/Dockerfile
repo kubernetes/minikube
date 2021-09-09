@@ -32,7 +32,6 @@ FROM ubuntu:focal-20210401
 ARG BUILDKIT_VERSION="v0.9.0"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
-ARG CRIO_VERSION="1.22"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
