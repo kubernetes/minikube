@@ -32,6 +32,7 @@ FROM ubuntu:focal-20210401
 ARG BUILDKIT_VERSION="v0.9.0"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
+ARG CRIO_VERSION="1.22"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -157,15 +158,10 @@ RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/li
     clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun
 
 # install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
-# currently cri-o only supports amd64 & arm64, so skip installation on other archs
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "arm64" ]; \
-    then \
-        sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.22/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.22.list" && \
-        curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.22/xUbuntu_20.04/Release.key && \
-        apt-key add - < Release.key && \
-        clean-install cri-o cri-o-runc; \
-    fi
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
+    apt-key add - < Release.key && \
+    clean-install cri-o cri-o-runc
 
 # install podman
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
@@ -192,12 +188,7 @@ COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/syst
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default
-RUN systemctl disable containerd && \
-    export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "arm64" ]; \
-    then \
-        systemctl disable crio && rm /etc/crictl.yaml; \
-    fi
+RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
 RUN systemctl enable docker.service && systemctl enable podman.socket
 # making SSH work for docker container 
