@@ -1121,7 +1121,25 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(containerRuntime) {
 		runtime := strings.ToLower(viper.GetString(containerRuntime))
 
-		validateContainerRuntime(runtime, drvName)
+		validOptions := cruntime.ValidRuntimes()
+		// `crio` is accepted as an alternative spelling to `cri-o`
+		validOptions = append(validOptions, constants.CRIO)
+
+		var validRuntime bool
+		for _, option := range validOptions {
+			if runtime == option {
+				validRuntime = true
+			}
+
+			// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
+			if runtime == "cri-o" {
+				viper.Set(containerRuntime, constants.CRIO)
+			}
+		}
+
+		if !validRuntime {
+			exit.Message(reason.Usage, `Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
+		}
 
 		validateCNI(cmd, runtime)
 	}
@@ -1186,42 +1204,6 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	validateRegistryMirror()
 	validateInsecureRegistry()
-}
-
-func validateContainerRuntime(runtime string, drvName string) {
-	validOptions := cruntime.ValidRuntimes()
-	// `crio` is accepted as an alternative spelling to `cri-o`
-	validOptions = append(validOptions, constants.CRIO)
-
-	var validRuntime bool
-	for _, option := range validOptions {
-		if runtime == option {
-			validRuntime = true
-		}
-
-		// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
-		if runtime == "cri-o" {
-			viper.Set(containerRuntime, constants.CRIO)
-		}
-	}
-
-	if !validRuntime {
-		exit.Message(reason.Usage, `Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
-	}
-
-	// cri-o runtime only supports amd64 & arm64 if kicbase driver is used
-	if runtime != "cri-o" && runtime != constants.CRIO {
-		return
-	}
-	if !driver.IsKIC(drvName) {
-		return
-	}
-	arch := detect.RuntimeArch()
-	if arch != "amd64" && arch != "arm64" {
-		return
-	}
-
-	exit.Message(reason.Usage, `Invalid Container Runtime: "{{.runtime}}". When using a kicbase driver (docker & podman), {{.runtime}} is only supported on amd64 & arm64, use docker or containerd instead.`, out.V{"runtime": runtime})
 }
 
 // if container runtime is not docker, check that cni is not disabled
