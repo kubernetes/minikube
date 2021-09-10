@@ -352,6 +352,7 @@
 	"Install VirtualBox and ensure it is in the path, or select an alternative value for --driver": "",
 	"Install the latest hyperkit binary, and run 'minikube delete'": "",
 	"Invalid Container Runtime: \"{{.runtime}}\". Valid runtimes are: {{.validOptions}}": "",
+	"Invalid Container Runtime: \"{{.runtime}}\". When using a kicbase driver (docker \u0026 podman), {{.runtime}} is only supported on amd64 \u0026 arm64, use docker or containerd instead.": "",
 	"Invalid port": "",
 	"Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs": "",
 	"Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB": "",
