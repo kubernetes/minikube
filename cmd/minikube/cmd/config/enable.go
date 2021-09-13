@@ -64,7 +64,7 @@ var addonsEnableCmd = &cobra.Command{
 `, out.V{"profileArg": tipProfileArg})
 
 		}
-		if err != nil {
+		if err == nil {
 			out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
 		}
 	},
