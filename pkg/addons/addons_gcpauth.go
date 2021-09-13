@@ -72,7 +72,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Grab credentials from where GCP would normally look
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
-	if err != nil || creds.JSON == nil {
+	if err != nil {
 		if detect.IsCloudShell() {
 			if c := os.Getenv("CLOUDSDK_CONFIG"); c != "" {
 				f, err := ioutil.ReadFile(path.Join(c, "application_default_credentials.json"))
@@ -95,6 +95,11 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// If the env var is explicitly set, even in GCE, then defer to the user and continue
 	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
 		out.WarningT("It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+		return nil
+	}
+
+	if creds.JSON == nil {
+		out.WarningT("You have authenicated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file to in order to continue. The image pull secret has been imported.")
 		return nil
 	}
 
