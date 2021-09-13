@@ -1,3 +1,4 @@
+//go:build iso
 // +build iso
 
 /*

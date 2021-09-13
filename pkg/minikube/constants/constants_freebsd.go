@@ -1,4 +1,5 @@
-// +build linux, !gendocs
+//go:build (linux && ignore) || !gendocs
+// +build linux,ignore !gendocs
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
