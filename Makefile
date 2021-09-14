@@ -43,6 +43,8 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2021.02.4
+GOLANG_OPTIONS = GO_VERSION=1.16.1 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+BUILDROOT_OPTIONS = BR2_EXTERNAL=$(PWD)/external $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
 # Get git commit id
@@ -283,17 +285,18 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		@cp $(PWD)/deploy/iso/minikube-iso/go.hash buildroot/package/go/go.hash
 	fi;
-	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
-	$(MAKE) -C $(BUILD_DIR)/buildroot host-python
-	$(MAKE) -C $(BUILD_DIR)/buildroot
+	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
 
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
 iso-menuconfig: ## Configure buildroot configuration
-	$(MAKE) -C $(BUILD_DIR)/buildroot menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot savedefconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) savedefconfig
 
 # Change the kernel configuration for the minikube ISO
 .PHONY: linux-menuconfig
