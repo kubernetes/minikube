@@ -43,7 +43,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2021.02.4
-GOLANG_OPTIONS = GO_VERSION=v1.17 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GO_VERSION=1.17 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 # BUILDROOT_OPTIONS = BR2_EXTERNAL=$(PWD)/external $(GOLANG_OPTIONS)
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
