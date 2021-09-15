@@ -169,6 +169,9 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 		}
 
 		for _, n := range namespaces.Items {
+			if n.Name == "kube-system" {
+				continue
+			}
 			secrets := client.Secrets(n.Name)
 
 			exists := false
@@ -328,6 +331,9 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	// No need to check for an error here, if the secret doesn't exist, no harm done.
 	for _, n := range namespaces.Items {
+		if n.Name == "kube-system" {
+			continue
+		}
 		secrets := client.Secrets(n.Name)
 		err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 		if err != nil {
