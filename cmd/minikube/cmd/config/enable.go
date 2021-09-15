@@ -46,6 +46,9 @@ var addonsEnableCmd = &cobra.Command{
 			out.Styled(style.Waiting, "using metrics-server addon, heapster is deprecated")
 			addon = "metrics-server"
 		}
+		if addon == "ambassador" {
+			out.Styled(style.Warning, "The ambassador addon has stopped working as of v1.23.0, for more details visit: https://github.com/datawire/ambassador-operator/issues/73")
+		}
 		viper.Set(config.AddonImages, images)
 		viper.Set(config.AddonRegistries, registries)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
