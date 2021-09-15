@@ -664,8 +664,15 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed disabling gcp-auth addon. arg %q.s %v", rr.Command(), err)
+	disableGCPAuth := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
+		t.Errorf("failed to disable GCP auth addon: %v", err)
 	}
 }
