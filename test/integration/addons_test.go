@@ -121,7 +121,6 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
-			{"GCPAuth", validateGCPAuthAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -130,6 +129,25 @@ func TestAddons(t *testing.T) {
 			}
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
+
+	// Run other tests after to avoid collision
+	t.Run("serial", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			validator validateFunc
+		}{
+			{"GCPAuth", validateGCPAuthAddon},
+		}
+		for _, tc := range tests {
+			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
 		}
