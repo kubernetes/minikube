@@ -480,8 +480,10 @@ var Addons = map[string]*Addon{
 			"ingress-dns-pod.yaml",
 			"0640"),
 	}, false, "ingress-dns", "", map[string]string{
-		"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
-	}, nil),
+		"IngressDNS": "k8s-minikube/minikube-ingress-dns:0.0.1@sha256:69dc3c878c2e49ad85b70fdf9e8e6e87a1f961f42c8029e0912bebfa828ade46",
+	}, map[string]string{
+		"IngressDNS": "gcr.io",
+	}),
 	"metallb": NewAddon([]*BinAsset{
 		MustBinAsset(addons.MetallbAssets,
 			"metallb/metallb.yaml.tmpl",
