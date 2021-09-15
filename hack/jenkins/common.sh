@@ -84,7 +84,7 @@ fi
 
 # We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
-  sudo apt-get -y install lsof psmisc
+  sudo apt-get -y install lsof psmisc dnsutils
 else
   brew install pstree coreutils pidof
   ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
