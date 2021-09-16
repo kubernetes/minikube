@@ -61,6 +61,7 @@ metadata:
   name: gcp-auth-certs-create
   namespace: gcp-auth
 spec:
+  ttlSecondsAfterFinished: 120
   template:
     metadata:
       name: gcp-auth-certs-create
@@ -120,6 +121,7 @@ metadata:
   name: gcp-auth-certs-patch
   namespace: gcp-auth
 spec:
+  ttlSecondsAfterFinished: 120
   template:
     metadata:
       name: gcp-auth-certs-patch

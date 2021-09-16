@@ -169,7 +169,7 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 		}
 
 		for _, n := range namespaces.Items {
-			if n.Name == "kube-system" {
+			if skipNamespace(n.Name) {
 				continue
 			}
 			secrets := client.Secrets(n.Name)
@@ -197,7 +197,7 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 					Type: "kubernetes.io/dockercfg",
 				}
 
-				if exists && Refresh {
+				if Refresh {
 					_, err := secrets.Update(context.TODO(), secretObj, metav1.UpdateOptions{})
 					if err != nil {
 						return err
@@ -261,7 +261,7 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 	}
 	for _, n := range namespaces.Items {
 		// Ignore kube-system and gcp-auth namespaces
-		if n.Name == metav1.NamespaceSystem || n.Name == namespaceName {
+		if skipNamespace(n.Name) {
 			continue
 		}
 
@@ -331,7 +331,7 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	// No need to check for an error here, if the secret doesn't exist, no harm done.
 	for _, n := range namespaces.Items {
-		if n.Name == "kube-system" {
+		if skipNamespace(n.Name) {
 			continue
 		}
 		secrets := client.Secrets(n.Name)
@@ -396,4 +396,8 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 	}
 
 	return err
+}
+
+func skipNamespace(name string) bool {
+	return name == metav1.NamespaceSystem || name == namespaceName
 }
