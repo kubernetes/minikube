@@ -121,7 +121,6 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
-			{"GCPAuth", validateGCPAuthAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -130,6 +129,25 @@ func TestAddons(t *testing.T) {
 			}
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
+
+	// Run other tests after to avoid collision
+	t.Run("serial", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			validator validateFunc
+		}{
+			{"GCPAuth", validateGCPAuthAddon},
+		}
+		for _, tc := range tests {
+			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
 		}
@@ -682,8 +700,15 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed disabling gcp-auth addon. arg %q.s %v", rr.Command(), err)
+	disableGCPAuth := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
+		t.Errorf("failed to disable GCP auth addon: %v", err)
 	}
 }

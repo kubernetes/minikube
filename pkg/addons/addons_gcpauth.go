@@ -99,7 +99,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	}
 
 	if creds.JSON == nil {
-		out.WarningT("You have authenicated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file to in order to continue. The image pull secret has been imported.")
+		out.WarningT("You have authenticated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file to in order to continue. The image pull secret has been imported.")
 		return nil
 	}
 
@@ -169,6 +169,9 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 		}
 
 		for _, n := range namespaces.Items {
+			if n.Name == "kube-system" {
+				continue
+			}
 			secrets := client.Secrets(n.Name)
 
 			exists := false
@@ -328,10 +331,32 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	// No need to check for an error here, if the secret doesn't exist, no harm done.
 	for _, n := range namespaces.Items {
+		if n.Name == "kube-system" {
+			continue
+		}
 		secrets := client.Secrets(n.Name)
 		err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 		if err != nil {
 			klog.Infof("error deleting secret: %v", err)
+		}
+
+		serviceaccounts := client.ServiceAccounts(n.Name)
+		salist, err := serviceaccounts.List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			klog.Infof("error getting service accounts: %v", err)
+			return err
+		}
+		for _, sa := range salist.Items {
+			for i, ps := range sa.ImagePullSecrets {
+				if ps.Name == secretName {
+					sa.ImagePullSecrets = append(sa.ImagePullSecrets[:i], sa.ImagePullSecrets[i+1:]...)
+					_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
+					if err != nil {
+						return err
+					}
+					break
+				}
+			}
 		}
 	}
 
