@@ -175,16 +175,14 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 			secrets := client.Secrets(n.Name)
 
 			exists := false
-			if !Refresh {
-				secList, err := secrets.List(context.TODO(), metav1.ListOptions{})
-				if err != nil {
-					return err
-				}
-				for _, s := range secList.Items {
-					if s.Name == secretName {
-						exists = true
-						break
-					}
+			secList, err := secrets.List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+			for _, s := range secList.Items {
+				if s.Name == secretName {
+					exists = true
+					break
 				}
 			}
 
@@ -197,7 +195,8 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 					Type: "kubernetes.io/dockercfg",
 				}
 
-				if Refresh {
+				if exists && Refresh {
+					fmt.Printf("REFRESHING SECRET: %s\n", n.Name)
 					_, err := secrets.Update(context.TODO(), secretObj, metav1.UpdateOptions{})
 					if err != nil {
 						return err
