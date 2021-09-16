@@ -12,6 +12,10 @@ BUILDKIT_BIN_SOURCE = buildkit-$(BUILDKIT_BIN_VERSION).linux-amd64.tar.gz
 # https://github.com/opencontainers/runc.git
 BUILDKIT_RUNC_VERSION = 12644e614e25b05da6fd08a38ffa0cfe1903fdec
 
+define BUILDKIT_BIN_USERS
+	- -1 buildkit -1 - - - - -
+endef
+
 define BUILDKIT_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
 		$(@D)/buildctl \
@@ -25,6 +29,18 @@ define BUILDKIT_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
 		$(@D)/buildkitd \
 		$(TARGET_DIR)/usr/sbin
+endef
+
+define BUILDKIT_BIN_INSTALL_INIT_SYSTEMD
+        $(INSTALL) -D -m 644 \
+                        $(BUILDKIT_BIN_PKGDIR)/buildkit.service \
+                        $(TARGET_DIR)/usr/lib/systemd/system/buildkit.service
+        $(INSTALL) -D -m 644 \
+                        $(BUILDKIT_BIN_PKGDIR)/buildkit.socket \
+                        $(TARGET_DIR)/usr/lib/systemd/system/buildkit.socket
+        $(INSTALL) -D -m 644 \
+                        $(BUILDKIT_BIN_PKGDIR)/buildkit.conf \
+                        $(TARGET_DIR)/usr/lib/tmpfiles.d/buildkit.conf
 endef
 
 $(eval $(generic-package))
