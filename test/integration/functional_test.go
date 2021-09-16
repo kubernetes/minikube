@@ -55,6 +55,8 @@ import (
 	"golang.org/x/build/kubernetes/api"
 )
 
+const addonResizer = "gcr.io/google-containers/addon-resizer"
+
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
 
@@ -181,16 +183,14 @@ func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Skipf("docker is not installed, cannot delete docker images")
 	} else {
-		t.Run("delete busybox image", func(t *testing.T) {
-			newImage := fmt.Sprintf("docker.io/library/busybox:load-%s", profile)
-			rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
-			if err != nil {
-				t.Logf("failed to remove image busybox from docker images. args %q: %v", rr.Command(), err)
-			}
-			newImage = fmt.Sprintf("docker.io/library/busybox:remove-%s", profile)
-			rr, err = Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", newImage))
-			if err != nil {
-				t.Logf("failed to remove image busybox from docker images. args %q: %v", rr.Command(), err)
+		t.Run("delete addon-resizer images", func(t *testing.T) {
+			tags := []string{"1.8.11", "1.8.10", "1.8.9", "1.8.8", "1.8.7", "load-" + profile, "load-from-file-" + profile, "remove-" + profile, "save-" + profile, "save-to-file-" + profile}
+			for _, tag := range tags {
+				image := fmt.Sprintf("%s:%s", addonResizer, tag)
+				rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", image))
+				if err != nil {
+					t.Logf("failed to remove image %q from docker images. args %q: %v", image, rr.Command(), err)
+				}
 			}
 		})
 		t.Run("delete my-image image", func(t *testing.T) {
@@ -227,72 +227,82 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateLoadImage makes sure that `minikube image load` works as expected
-func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
+func checkSkip(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("load image not available on none driver")
 	}
 	if GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
 	}
-	defer PostMortemLogs(t, profile)
-	// pull busybox
-	busyboxImage := "busybox:1.33"
-	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
+}
+
+func pullAndTagImage(ctx context.Context, t *testing.T, version string, action string, profile string) (string, string, error) {
+	// pull addon-resizer
+	pulledImage := fmt.Sprintf("%s:%s", addonResizer, version)
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", pulledImage))
 	if err != nil {
-		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+		return "", "", fmt.Errorf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
-	// tag busybox
-	newImage := fmt.Sprintf("docker.io/library/busybox:load-%s", profile)
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, newImage))
+	// tag addon-resizer
+	tag := fmt.Sprintf("%s-%s", action, profile)
+	taggedImage := fmt.Sprintf("%s:%s", addonResizer, tag)
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", pulledImage, taggedImage))
 	if err != nil {
-		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+		return "", "", fmt.Errorf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
+	return taggedImage, tag, nil
+}
+
+func checkImageLoaded(ctx context.Context, t *testing.T, profile string, tag string) error {
+	// make sure the image was correctly loaded
+	rr, err := listImages(ctx, t, profile)
+	if err != nil {
+		return fmt.Errorf("listing images: %v\n%s", err, rr.Output())
+	}
+	if !strings.Contains(rr.Output(), tag) {
+		return fmt.Errorf("expected %s to be loaded into minikube but the image is not there", tag)
+	}
+
+	return nil
+}
+
+// validateLoadImage makes sure that `minikube image load` works as expected
+func validateLoadImage(ctx context.Context, t *testing.T, profile string) {
+	checkSkip(t)
+	defer PostMortemLogs(t, profile)
+
+	taggedImage, tag, err := pullAndTagImage(ctx, t, "1.8.11", "load", profile)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// try to load the new image into minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", newImage))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage))
 	if err != nil {
 		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
 	}
 
-	// make sure the image was correctly loaded
-	rr, err = inspectImage(ctx, t, profile, newImage)
-	if err != nil {
-		t.Fatalf("listing images: %v\n%s", err, rr.Output())
-	}
-	if !strings.Contains(rr.Output(), fmt.Sprintf("busybox:load-%s", profile)) {
-		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
+	if err := checkImageLoaded(ctx, t, profile, tag); err != nil {
+		t.Fatal(err)
 	}
 
 }
 
 // validateLoadImageFromFile makes sure that `minikube image load` works from a local file
 func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string) {
-	if NoneDriver() {
-		t.Skip("load image not available on none driver")
-	}
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
-		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
-	}
+	checkSkip(t)
 	defer PostMortemLogs(t, profile)
-	// pull busybox
-	busyboxImage := "busybox:1.31"
-	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
-	if err != nil {
-		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
-	}
 
-	tag := fmt.Sprintf("load-from-file-%s", profile)
-	taggedImage := fmt.Sprintf("docker.io/library/busybox:%s", tag)
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, taggedImage))
+	taggedImage, tag, err := pullAndTagImage(ctx, t, "1.8.10", "load-from-file", profile)
 	if err != nil {
-		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+		t.Fatal(err)
 	}
 
 	// save image to file
-	imageFile := "busybox-load.tar"
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "save", "-o", imageFile, taggedImage))
+	imageFile := "addon-resizer-load.tar"
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "save", "-o", imageFile, taggedImage))
 	if err != nil {
 		t.Fatalf("failed to save image to file: %v\n%s", err, rr.Output())
 	}
@@ -308,48 +318,29 @@ func validateLoadImageFromFile(ctx context.Context, t *testing.T, profile string
 		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
 	}
 
-	// make sure the image was correctly loaded
-	rr, err = listImages(ctx, t, profile)
-	if err != nil {
-		t.Fatalf("listing images: %v\n%s", err, rr.Output())
-	}
-	if !strings.Contains(rr.Output(), tag) {
-		t.Fatalf("expected %s to be loaded into minikube but the image is not there: %v", taggedImage, rr.Output())
+	if err := checkImageLoaded(ctx, t, profile, tag); err != nil {
+		t.Fatal(err)
 	}
 }
 
 // validateRemoveImage makes sures that `minikube image rm` works as expected
 func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
-	if NoneDriver() {
-		t.Skip("load image not available on none driver")
-	}
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
-		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
-	}
+	checkSkip(t)
 	defer PostMortemLogs(t, profile)
 
-	// pull busybox
-	busyboxImage := "busybox:1.32"
-	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", busyboxImage))
+	taggedImage, tag, err := pullAndTagImage(ctx, t, "1.8.9", "remove", profile)
 	if err != nil {
-		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
-	}
-
-	// tag busybox
-	newImage := fmt.Sprintf("docker.io/library/busybox:remove-%s", profile)
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", busyboxImage, newImage))
-	if err != nil {
-		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+		t.Fatal(err)
 	}
 
 	// try to load the image into minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", newImage))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", taggedImage))
 	if err != nil {
 		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
 	}
 
 	// try to remove the image from minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", newImage))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", taggedImage))
 	if err != nil {
 		t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
 	}
@@ -359,85 +350,50 @@ func validateRemoveImage(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("listing images: %v\n%s", err, rr.Output())
 	}
-	if strings.Contains(rr.Output(), fmt.Sprintf("busybox:remove-%s", profile)) {
-		t.Fatalf("expected %s to be removed from minikube but the image is there", newImage)
+	if strings.Contains(rr.Output(), tag) {
+		t.Fatalf("expected %s to be removed from minikube but the image is there", tag)
 	}
 
 }
 
 // validateSaveImage makes sure that `minikube image save` works as expected
 func validateSaveImage(ctx context.Context, t *testing.T, profile string) {
-	if NoneDriver() {
-		t.Skip("load image not available on none driver")
-	}
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
-		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
-	}
+	checkSkip(t)
 	defer PostMortemLogs(t, profile)
-	// pull busybox
-	busyboxImage := "docker.io/library/busybox:1.29"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", busyboxImage))
-	if err != nil {
-		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
-	}
 
-	// tag busybox
-	name := "busybox"
-	tag := fmt.Sprintf("save-%s", profile)
-	newImage := fmt.Sprintf("docker.io/library/%s:%s", name, tag)
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "tag", busyboxImage, newImage))
+	taggedImage, tag, err := pullAndTagImage(ctx, t, "1.8.8", "save", profile)
 	if err != nil {
-		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+		t.Fatal(err)
 	}
 
 	// try to save the new image from minikube
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", newImage))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", taggedImage))
 	if err != nil {
 		t.Fatalf("loading image into minikube: %v\n%s", err, rr.Output())
 	}
 
-	// make sure the image was correctly loaded
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "images", name))
-	if err != nil {
-		t.Fatalf("listing images: %v\n%s", err, rr.Output())
+	if err := checkImageLoaded(ctx, t, profile, tag); err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(rr.Output(), fmt.Sprintf("save-%s", profile)) {
-		t.Fatalf("expected %s to be loaded into minikube but the image is not there", newImage)
-	}
-
 }
 
 // validateSaveImageToFile makes sure that `minikube image save` works to a local file
 func validateSaveImageToFile(ctx context.Context, t *testing.T, profile string) {
-	if NoneDriver() {
-		t.Skip("save image not available on none driver")
-	}
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
-		t.Skip("skipping on github actions and darwin, as this test requires a running docker daemon")
-	}
+	checkSkip(t)
 	defer PostMortemLogs(t, profile)
-	// pull busybox
-	busyboxImage := "docker.io/library/busybox:1.30"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", busyboxImage))
-	if err != nil {
-		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
-	}
 
-	name := "busybox"
-	tag := fmt.Sprintf("save-to-file-%s", profile)
-	taggedImage := fmt.Sprintf("docker.io/library/%s:%s", name, tag)
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "tag", busyboxImage, taggedImage))
+	taggedImage, tag, err := pullAndTagImage(ctx, t, "1.8.7", "save-to-file", profile)
 	if err != nil {
-		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+		t.Fatal(err)
 	}
 
 	// try to save the new image from minikube
-	imageFile := "busybox-save.tar"
+	imageFile := "addon-resizer-save.tar"
 	imagePath, err := filepath.Abs(imageFile)
 	if err != nil {
 		t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", taggedImage, imagePath))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", taggedImage, imagePath))
 	if err != nil {
 		t.Fatalf("saving image from minikube: %v\n%s", err, rr.Output())
 	}
@@ -449,13 +405,8 @@ func validateSaveImageToFile(ctx context.Context, t *testing.T, profile string) 
 	}
 	defer os.Remove(imageFile)
 
-	// make sure the image was correctly loaded
-	rr, err = Run(t, exec.CommandContext(ctx, "docker", "images", name))
-	if err != nil {
-		t.Fatalf("listing images: %v\n%s", err, rr.Output())
-	}
-	if !strings.Contains(rr.Output(), tag) {
-		t.Fatalf("expected %s to be loaded but the image is not there", taggedImage)
+	if err := checkImageLoaded(ctx, t, profile, tag); err != nil {
+		t.Fatal(err)
 	}
 
 }
