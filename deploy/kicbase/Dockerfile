@@ -32,6 +32,7 @@ FROM ubuntu:focal-20210401
 ARG BUILDKIT_VERSION="v0.9.0"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
+ARG CRIO_VERSION="1.22"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -156,9 +157,9 @@ RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/li
     apt-key add - < Release.key && \
     clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun
 
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.20/README.md#installing-cri-o
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.20/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.20.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.20/xUbuntu_20.04/Release.key && \
+# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
     clean-install cri-o cri-o-runc
 
