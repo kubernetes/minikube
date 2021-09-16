@@ -770,7 +770,7 @@
 	"You cannot change the CPUs for an existing minikube cluster. Please first delete the cluster.": "",
 	"You cannot change the disk size for an existing minikube cluster. Please first delete the cluster.": "",
 	"You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.": "",
-	"You have authenicated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file to in order to continue. The image pull secret has been imported.": "",
+	"You have authenticated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file to in order to continue. The image pull secret has been imported.": "",
 	"You have chosen to disable the CNI but the \\\"{{.name}}\\\" container runtime requires CNI": "",
 	"You have selected \"virtualbox\" driver, but there are better options !\nFor better performance and support consider using a different driver: {{.drivers}}\n\nTo turn off this warning run:\n\n\t$ minikube config set WantVirtualBoxDriverWarning false\n\n\nTo learn more about on minikube drivers checkout https://minikube.sigs.k8s.io/docs/drivers/\nTo see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/\n\n": "",
 	"You may need to manually remove the \"{{.name}}\" VM from your hypervisor": "",
