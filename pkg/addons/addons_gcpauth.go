@@ -196,7 +196,6 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 				}
 
 				if exists && Refresh {
-					fmt.Printf("REFRESHING SECRET: %s\n", n.Name)
 					_, err := secrets.Update(context.TODO(), secretObj, metav1.UpdateOptions{})
 					if err != nil {
 						return err
