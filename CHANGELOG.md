@@ -1,5 +1,63 @@
 # Release Notes
 
+## Version 1.23.1 - 2021-09-17
+
+Minor Improvements:
+* Add crun version to `minikube version --components` [#12381](https://github.com/kubernetes/minikube/pull/12381)
+
+Bug Fixes:
+* ingress addon: fix regression from v1.23.0 [#12443](https://github.com/kubernetes/minikube/pull/12443)
+* ingress addon: fix role resource's referenced configmap [#12446](https://github.com/kubernetes/minikube/pull/12446)
+* ingress-dns addon: fix regression from v1.23.0 [#12476](https://github.com/kubernetes/minikube/pull/12476)
+* gcp-auth addon: delete image pull secrets on addon disable [#12473](https://github.com/kubernetes/minikube/pull/12473)
+* gcp-auth addon: create pull secret even if creds JSON is nil [#12461](https://github.com/kubernetes/minikube/pull/12461)
+* gcp-auth addon: fix refreshing pull secret [#12497](https://github.com/kubernetes/minikube/pull/12497)
+* metallb addon: ask user for config values even if already set [#12437](https://github.com/kubernetes/minikube/pull/12437)
+* ambassador addon: warn on enable that addon no longer works [#12474](https://github.com/kubernetes/minikube/pull/12474)
+* dashboard addon: fix sha for metrics-scraper [#12496](https://github.com/kubernetes/minikube/pull/12496)
+* windows installer: remove quotes from incorrect fields [#12430](https://github.com/kubernetes/minikube/pull/12430)
+* strip namespace from images from aliyun registry [#11785](https://github.com/kubernetes/minikube/pull/11785)
+
+Version Upgrades:
+* Bump cri-o from v1.20.0 to 1.22.0 [#12425](https://github.com/kubernetes/minikube/pull/12425)
+* Bump dashboard from v2.1.0 to v2.3.1 and metrics-scraper from v1.0.4 to v1.0.7 [#12475](https://github.com/kubernetes/minikube/pull/12475)
+* Bump google.golang.org/api from 0.52.0 to 0.56.0 [#12418](https://github.com/kubernetes/minikube/pull/12418)
+* Bump github.com/mattn/go-isatty from 0.0.13 to 0.0.14 [#12435](https://github.com/kubernetes/minikube/pull/12435)
+* Bump github.com/shirou/gopsutil/v3 from 3.21.7 to 3.21.8 [#12434](https://github.com/kubernetes/minikube/pull/12434)
+* Bump github.com/hashicorp/go-getter from 1.5.7 to 1.5.8 [#12433](https://github.com/kubernetes/minikube/pull/12433)
+* Bump k8s.io/klog/v2 from 2.10.0 to 2.20.0 [#12417](https://github.com/kubernetes/minikube/pull/12417)
+* Bump cloud.google.com/go/storage from 1.15.0 to 1.16.1 [#12419](https://github.com/kubernetes/minikube/pull/12419)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Brian Li
+- Brian de Alwis
+- Hiroya Onoe
+- Jayesh Srivastava
+- Jeff MAURY
+- Joel Jeremy Marquez
+- Leif Ringstad
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+- Toshiaki Inukai
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (9 comments)
+- spowelljr (2 comments)
+- afbjorklund (1 comments)
+
+Thank you to our triage members for this release!
+
+- spowelljr (17 comments)
+- afbjorklund (16 comments)
+- sharifelgamal (16 comments)
+- RA489 (15 comments)
+- medyagh (14 comments)
+
 ## Version 1.23.0 - 2021-09-03
 
 Features:
