@@ -17,4 +17,4 @@
 set -eux -o pipefail
 
 echo "Installing latest version of github-release"
-go get github.com/github-release/github-release
+go install github.com/github-release/github-release@latest
