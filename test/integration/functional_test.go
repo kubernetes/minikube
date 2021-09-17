@@ -221,6 +221,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skip("image commands are not available on the none driver")
