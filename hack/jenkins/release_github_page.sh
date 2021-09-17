@@ -35,6 +35,11 @@ readonly GITHUB_ORGANIZATION="kubernetes"
 readonly GITHUB_REPO="minikube"
 readonly PROJECT_NAME="${GITHUB_REPO}"
 
+# installing golang to install github-release
+./hack/jenkins/installers/check_install_golang.sh "/usr/local"
+# installing latest version of github-release
+./hack/jenkins/installers/check_install_github_release.sh
+
 RELEASE_FLAGS=""
 if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
   RELEASE_FLAGS="-p"  # Pre-release
