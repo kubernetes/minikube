@@ -948,6 +948,7 @@
 	"{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available": "{{.driver_name}} dispose de moins de 2 processeurs disponibles, mais Kubernetes nécessite au moins 2 procésseurs pour fonctionner",
 	"{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB": "{{.driver_name}} ne dispose que de {{.container_limit}}Mo de mémoire, mais vous avez spécifié {{.specified_memory}}Mo",
 	"{{.driver}} only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "{{.driver}} ne dispose que de {{.size}}Mio disponible, moins que les {{.req}}Mio requis pour Kubernetes",
+	"{{.err}}": "",
 	"{{.extra_option_component_name}}.{{.key}}={{.value}}": "{{.extra_option_component_name}}.{{.key}}={{.value}}",
 	"{{.name}} doesn't have images.": "{{.name}} n'a pas d'images.",
 	"{{.name}} has following images:": "{{.name}} a les images suivantes :",

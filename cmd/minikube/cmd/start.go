@@ -1090,7 +1090,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+			exitIfNotForced(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
 
