@@ -75,26 +75,8 @@ are functionality tests which can safely share a profile in parallel
 #### validateNodeLabels
 checks if minikube cluster is created with correct kubernetes's node label
 
-#### validateLoadImage
-makes sure that `minikube image load` works as expected
-
-#### validateLoadImageFromFile
-makes sure that `minikube image load` works from a local file
-
-#### validateRemoveImage
-makes sures that `minikube image rm` works as expected
-
-#### validateSaveImage
-makes sure that `minikube image save` works as expected
-
-#### validateSaveImageToFile
-makes sure that `minikube image save` works to a local file
-
-#### validateBuildImage
-makes sures that `minikube image build` works as expected
-
-#### validateListImages
-makes sures that `minikube image ls` works as expected
+#### validateImageCommands
+runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 
 #### validateDockerEnv
 check functionality of minikube after evaluating docker-env
