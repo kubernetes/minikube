@@ -41,6 +41,9 @@ define BUILDKIT_BIN_INSTALL_INIT_SYSTEMD
         $(INSTALL) -D -m 644 \
                         $(BUILDKIT_BIN_PKGDIR)/buildkit.conf \
                         $(TARGET_DIR)/usr/lib/tmpfiles.d/buildkit.conf
+        $(INSTALL) -D -m 644 \
+                        $(BUILDKIT_BIN_PKGDIR)/buildkit.toml \
+                        $(TARGET_DIR)/etc/buildkit/buildkit.toml
 endef
 
 $(eval $(generic-package))
