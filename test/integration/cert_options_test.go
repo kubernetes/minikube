@@ -81,6 +81,9 @@ func TestCertOptions(t *testing.T) {
 
 }
 
+// TestCertExpiration makes sure minikube can start after its profile certs have expired.
+// It does this by configuring minikube certs to expire after 3 minutes, then waiting 3 minutes, then starting again.
+// It also makes sure minikube prints a cert expiration warning to the user.
 func TestCertExpiration(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")
