@@ -241,6 +241,10 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
 	}
 
+	if NeedsPortForward() {
+		t.Skip("skipping ingress DNS test for any combination that needs port forwarding")
+	}
+
 	// check the ingress-dns addon here as well
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "ingress-dns-example.yaml")))
 	if err != nil {
