@@ -44,13 +44,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) error {
-	localPath := localpath.Profile(k8s.ClusterName)
+func SetupCerts(cmd command.Runner, k8s config.ClusterConfig, n config.Node) error {
+	localPath := localpath.Profile(k8s.KubernetesConfig.ClusterName)
 	klog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
 
 	ccs, regen, err := generateSharedCACerts()
@@ -194,13 +195,14 @@ func generateSharedCACerts() (CACerts, bool, error) {
 }
 
 // generateProfileCerts generates profile certs for a profile
-func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACerts, regen bool) ([]string, error) {
+func generateProfileCerts(cfg config.ClusterConfig, n config.Node, ccs CACerts, regen bool) ([]string, error) {
 
 	// Only generate these certs for the api server
 	if !n.ControlPlane {
 		return []string{}, nil
 	}
 
+	k8s := cfg.KubernetesConfig
 	profilePath := localpath.Profile(k8s.ClusterName)
 
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
@@ -309,6 +311,7 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 			cp, kp, spec.subject,
 			spec.ips, spec.alternateNames,
 			spec.caCertPath, spec.caKeyPath,
+			cfg.CertExpiration,
 		)
 		if err != nil {
 			return xfer, errors.Wrapf(err, "generate signed cert for %q", spec.subject)
@@ -520,6 +523,7 @@ func isValid(certPath, keyPath string) bool {
 	}
 
 	if cert.NotAfter.Before(time.Now()) {
+		out.WarningT("Certificate {{.certPath}} has expired. Generating a new one...", out.V{"certPath": filepath.Base(certPath)})
 		os.Remove(certPath)
 		os.Remove(keyPath)
 		return false

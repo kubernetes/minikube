@@ -122,6 +122,7 @@ const (
 	defaultSSHPort          = 22
 	listenAddress           = "listen-address"
 	extraDisks              = "extra-disks"
+	certExpiration          = "cert-expiration"
 )
 
 var (
@@ -169,6 +170,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
+	startCmd.Flags().Duration(certExpiration, time.Hour*24*365, "Duration until minikube certificate expiration, defaults to one year.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -455,6 +457,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		SSHKey:                  viper.GetString(sshSSHKey),
 		SSHPort:                 viper.GetInt(sshSSHPort),
 		ExtraDisks:              viper.GetInt(extraDisks),
+		CertExpiration:          viper.GetDuration(certExpiration),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -652,6 +655,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
+	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
