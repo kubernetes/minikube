@@ -280,7 +280,7 @@ func (r *CRIO) CGroupDriver() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cgroupManager := "cgroupfs" // default
+	cgroupManager := "systemd" // default
 	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
 		if strings.HasPrefix(line, "cgroup_manager") {
 			// cgroup_manager = "cgroupfs"
