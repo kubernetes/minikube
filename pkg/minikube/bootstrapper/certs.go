@@ -18,6 +18,7 @@ package bootstrapper
 
 import (
 	"crypto/sha1"
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -28,6 +29,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/otiai10/copy"
 	"github.com/pkg/errors"
@@ -51,12 +53,12 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	localPath := localpath.Profile(k8s.ClusterName)
 	klog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
 
-	ccs, err := generateSharedCACerts()
+	ccs, regen, err := generateSharedCACerts()
 	if err != nil {
 		return errors.Wrap(err, "shared CA certs")
 	}
 
-	xfer, err := generateProfileCerts(k8s, n, ccs)
+	xfer, err := generateProfileCerts(k8s, n, ccs, regen)
 	if err != nil {
 		return errors.Wrap(err, "profile certs")
 	}
@@ -148,7 +150,8 @@ type CACerts struct {
 }
 
 // generateSharedCACerts generates CA certs shared among profiles, but only if missing
-func generateSharedCACerts() (CACerts, error) {
+func generateSharedCACerts() (CACerts, bool, error) {
+	regenProfileCerts := false
 	globalPath := localpath.MiniPath()
 	cc := CACerts{
 		caCert:    localpath.CACert(),
@@ -175,22 +178,23 @@ func generateSharedCACerts() (CACerts, error) {
 	}
 
 	for _, ca := range caCertSpecs {
-		if canRead(ca.certPath) && canRead(ca.keyPath) {
+		if isValid(ca.certPath, ca.keyPath) {
 			klog.Infof("skipping %s CA generation: %s", ca.subject, ca.keyPath)
 			continue
 		}
 
+		regenProfileCerts = true
 		klog.Infof("generating %s CA: %s", ca.subject, ca.keyPath)
 		if err := util.GenerateCACert(ca.certPath, ca.keyPath, ca.subject); err != nil {
-			return cc, errors.Wrap(err, "generate ca cert")
+			return cc, false, errors.Wrap(err, "generate ca cert")
 		}
 	}
 
-	return cc, nil
+	return cc, regenProfileCerts, nil
 }
 
 // generateProfileCerts generates profile certs for a profile
-func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACerts) ([]string, error) {
+func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACerts, regen bool) ([]string, error) {
 
 	// Only generate these certs for the api server
 	if !n.ControlPlane {
@@ -289,12 +293,18 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 			kp = kp + "." + spec.hash
 		}
 
-		if canRead(cp) && canRead(kp) {
+		if !regen && isValid(cp, kp) {
 			klog.Infof("skipping %s signed cert generation: %s", spec.subject, kp)
 			continue
 		}
 
 		klog.Infof("generating %s signed cert: %s", spec.subject, kp)
+		if canRead(cp) {
+			os.Remove(cp)
+		}
+		if canRead(kp) {
+			os.Remove(kp)
+		}
 		err := util.GenerateSignedCert(
 			cp, kp, spec.subject,
 			spec.ips, spec.alternateNames,
@@ -476,5 +486,44 @@ func canRead(path string) bool {
 		return false
 	}
 	defer f.Close()
+	return true
+}
+
+// isValid checks a cert/key path and makes sure it's still valid
+func isValid(certPath, keyPath string) bool {
+	if !canRead(keyPath) {
+		return false
+	}
+
+	certFile, err := os.ReadFile(certPath)
+	if err != nil {
+		klog.Infof("failed to read cert file %s: %v", certPath, err)
+		os.Remove(certPath)
+		os.Remove(keyPath)
+		return false
+	}
+
+	certData, _ := pem.Decode(certFile)
+	if certData == nil {
+		klog.Infof("failed to decode cert file %s", certPath)
+		os.Remove(certPath)
+		os.Remove(keyPath)
+		return false
+	}
+
+	cert, err := x509.ParseCertificate(certData.Bytes)
+	if err != nil {
+		klog.Infof("failed to parse cert file %s: %v\n%v", certPath, err, string(certFile))
+		os.Remove(certPath)
+		os.Remove(keyPath)
+		return false
+	}
+
+	if cert.NotAfter.Before(time.Now()) {
+		os.Remove(certPath)
+		os.Remove(keyPath)
+		return false
+	}
+
 	return true
 }
