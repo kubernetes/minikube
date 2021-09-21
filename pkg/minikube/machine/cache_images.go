@@ -651,7 +651,7 @@ func RemoveImages(images []string, profile *config.Profile) error {
 			err = removeImages(cruntime, images)
 			if err != nil {
 				failed = append(failed, m)
-				klog.Warningf("Failed to remove images for profile %s %v", pName, err.Error())
+				klog.Errorf("Failed to remove images for profile %s %v", pName, err.Error())
 				continue
 			}
 			succeeded = append(succeeded, m)
@@ -660,9 +660,6 @@ func RemoveImages(images []string, profile *config.Profile) error {
 
 	klog.Infof("succeeded removing from: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed removing from: %s", strings.Join(failed, " "))
-	if len(failed) > 0 {
-		return errors.Errorf("failed nodes: %s, add --alsologtostderr option to get more messages.", strings.Join(failed, " "))
-	}
 	return nil
 }
 
