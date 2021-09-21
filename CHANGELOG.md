@@ -1,5 +1,35 @@
 # Release Notes
 
+## Version 1.23.2 - 2021-09-21
+
+Fix crio regression:
+* Roll back default crio cgroup to systemd [#12533](https://github.com/kubernetes/minikube/pull/12533)
+* Fix template typo [#12532](https://github.com/kubernetes/minikube/pull/12532)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Jeff MAURY
+- Lakshya Gupta
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (2 comments)
+- sharifelgamal (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (12 comments)
+- yxxhero (10 comments)
+- medyagh (7 comments)
+- spowelljr (4 comments)
+- dilyanpalauzov (2 comments)
+
+
 ## Version 1.23.1 - 2021-09-17
 
 Minor Improvements:
