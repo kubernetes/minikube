@@ -42,6 +42,7 @@ docker rm $(docker ps -aq) || true
 make -j 16 \
   all \
   minikube-darwin-arm64 \
+  out/mkcmp \
   out/minikube_${DEB_VER}_amd64.deb \
   out/minikube_${DEB_VER}_arm64.deb \
   out/docker-machine-driver-kvm2_$(make deb_version_base).deb \
