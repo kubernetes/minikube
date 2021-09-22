@@ -137,7 +137,7 @@ func timeEnableIngress(ctx context.Context, binary *Binary) (*result, error) {
 
 // Ingress doesn't currently work on MacOS with the docker driver
 func skipIngress(driver string, cruntime string) bool {
-	return (runtime.GOOS == "darwin" && driver == "docker") || cruntime == "containerd"
+	return (runtime.GOOS == "darwin" && driver == "docker")
 }
 
 // We only want to run the tests if:
