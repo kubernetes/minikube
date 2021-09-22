@@ -81,9 +81,6 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 	for i, b := range binaries {
 		for t := range rm.results[b].results {
 			index := 0
-			if t == "ingress" {
-				index = 1
-			}
 			totalTimes[t][b.Name()] = rm.totalTimes(b, t)
 			table[index][i+1] = fmt.Sprintf("%.1fs", average(totalTimes[t][b.Name()]))
 		}
