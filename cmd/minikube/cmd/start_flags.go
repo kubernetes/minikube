@@ -583,6 +583,10 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
 	}
 
+	if cc.CertExpiration == 0 {
+		cc.CertExpiration = pkgutil.DefaultCertExpiration
+	}
+
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
