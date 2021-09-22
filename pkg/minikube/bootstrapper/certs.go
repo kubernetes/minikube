@@ -516,7 +516,7 @@ func isValid(certPath, keyPath string) bool {
 
 	cert, err := x509.ParseCertificate(certData.Bytes)
 	if err != nil {
-		klog.Infof("failed to parse cert file %s: %v\n%v", certPath, err, string(certFile))
+		klog.Infof("failed to parse cert file %s: %v\n", certPath, err)
 		os.Remove(certPath)
 		os.Remove(keyPath)
 		return false
@@ -524,6 +524,7 @@ func isValid(certPath, keyPath string) bool {
 
 	if cert.NotAfter.Before(time.Now()) {
 		out.WarningT("Certificate {{.certPath}} has expired. Generating a new one...", out.V{"certPath": filepath.Base(certPath)})
+		klog.Infof("cert expired %s: expiration: %s, now: %s", certPath, cert.NotAfter, time.Now())
 		os.Remove(certPath)
 		os.Remove(keyPath)
 		return false
