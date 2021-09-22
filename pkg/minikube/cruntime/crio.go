@@ -54,10 +54,9 @@ type CRIO struct {
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
 func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
-	cPath := crioConfigFile
 	pauseImage := images.Pause(kv, imageRepository)
 
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, cPath))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, crioConfigFile))
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "generateCRIOConfig.")
 	}
@@ -67,6 +66,16 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 		if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cni_default_network = .*$|cni_default_network = \"%s\"|' -i %s", cni.Network, crioConfigFile))); err != nil {
 			return errors.Wrap(err, "update network_dir")
 		}
+	}
+
+	return nil
+}
+
+func (r *CRIO) forceSystemd() error {
+	// remove `cgroup_manager` since cri-o defaults to `systemd` if nothing set
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^cgroup_manager = .*$||' -i %s", crioConfigFile))
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "force systemd")
 	}
 
 	return nil
@@ -139,7 +148,7 @@ func enableIPForwarding(cr CommandRunner) error {
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable(disOthers, _, inUserNamespace bool) error {
+func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	if inUserNamespace {
 		return errors.New("inUserNamespace must not be true for cri-o (yet)")
 	}
@@ -156,6 +165,11 @@ func (r *CRIO) Enable(disOthers, _, inUserNamespace bool) error {
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
+	}
+	if forceSystemd {
+		if err := r.forceSystemd(); err != nil {
+			return err
+		}
 	}
 	return r.Init.Start("crio")
 }
