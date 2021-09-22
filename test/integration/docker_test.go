@@ -123,7 +123,7 @@ func validateContainerdSystemd(ctx context.Context, t *testing.T, profile string
 }
 
 // validateCrioSystemd makes sure the --force-systemd flag worked with the cri-o container runtime
-func validateCrioSystemd(ctx context.Cotnext, t *testing.T, profile string) {
+func validateCrioSystemd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/crio/crio.conf"))
 	if err != nil {
 		t.Errorf("failed to get cri-o cgroup driver. args %q: %v", rr.Command(), err)
