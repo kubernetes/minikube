@@ -17,30 +17,34 @@
 set -x -o pipefail
 # Only run this on PRs
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
-	exit 0
+      exit 0
 fi
 
-# Make sure docker is installed and configured                                        
+# Make sure docker is installed and configured
 #./installers/check_install_docker.sh
 
-# Make sure gh is installed and configured                                            
-./installers/check_install_gh.sh 
+# Make sure gh is installed and configured
+./installers/check_install_gh.sh
 
-# Make sure go is installed and configured                                            
+# Make sure go is installed and configured
 ./installers/check_install_golang.sh "/usr/local" || true
 
-# Grab latest code                                                                    
-git clone https://github.com/kubernetes/minikube.git                                  
-cd minikube                                                                           
+# Grab latest code
+git clone https://github.com/kubernetes/minikube.git
+cd minikube
 
-# Build minikube binary and mkcmp binary                                              
-make out/minikube out/mkcmp                                                           
+# Grab the PR's version of mkcmp, so it's easier to test changes
+gsutil cp "gs://minikube-builds/${MINIKUBE_LOCATION}/mkcmp" .
+chmod +x ./mkcmp
+
+# Build minikube binary
+make out/minikube
 
 # Make sure there aren't any old minikube clusters laying around
 out/minikube delete --all
 
-# Run mkcmp                                                                           
-out/mkcmp out/minikube pr://${MINIKUBE_LOCATION} | tee mkcmp.log
+# Run mkcmp
+./mkcmp out/minikube pr://${MINIKUBE_LOCATION} | tee mkcmp.log
 if [ $? -gt 0 ]; then
        # Comment that mkcmp failed
        gh pr comment ${MINIKUBE_LOCATION} --body "timing minikube failed, please try again"
