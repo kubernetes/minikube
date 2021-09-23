@@ -94,6 +94,8 @@ func TestForceSystemdFlag(t *testing.T) {
 		validateDockerSystemd(ctx, t, profile)
 	case "containerd":
 		validateContainerdSystemd(ctx, t, profile)
+	case "crio":
+		validateCrioSystemd(ctx, t, profile)
 	}
 
 }
@@ -113,9 +115,21 @@ func validateDockerSystemd(ctx context.Context, t *testing.T, profile string) {
 func validateContainerdSystemd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/containerd/config.toml"))
 	if err != nil {
-		t.Errorf("failed to get docker cgroup driver. args %q: %v", rr.Command(), err)
+		t.Errorf("failed to get containerd cgroup driver. args %q: %v", rr.Command(), err)
 	}
 	if !strings.Contains(rr.Output(), "SystemdCgroup = true") {
+		t.Fatalf("expected systemd cgroup driver, got: %v", rr.Output())
+	}
+}
+
+// validateCrioSystemd makes sure the --force-systemd flag worked with the cri-o container runtime
+func validateCrioSystemd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/crio/crio.conf"))
+	if err != nil {
+		t.Errorf("failed to get cri-o cgroup driver. args %q: %v", rr.Command(), err)
+	}
+	// cri-o defaults to `systemd` if `cgroup_manager` not set, so we remove `cgroup_manager` on force
+	if strings.Contains(rr.Output(), "cgroup_manager = ") {
 		t.Fatalf("expected systemd cgroup driver, got: %v", rr.Output())
 	}
 }
