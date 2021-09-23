@@ -54,6 +54,9 @@ makes sure the --force-systemd flag worked with the docker container runtime
 #### validateContainerdSystemd
 makes sure the --force-systemd flag worked with the containerd container runtime
 
+#### validateCrioSystemd
+makes sure the --force-systemd flag worked with the cri-o container runtime
+
 ## TestForceSystemdEnv
 makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as the --force-systemd flag
 
