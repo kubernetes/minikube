@@ -38,7 +38,7 @@ git pull https://github.com/kubernetes/minikube.git master --tags
 
 tags_to_generate=${1:-1}
 
-# 1) Fetch latest tags.
+# 1) Fetch latest tags (https://github.com/kubernetes/minikube/issues/12561).
 # 2) Get tags.
 # 3) Filter out beta tags.
 # 4) Parse tag name into its version numbers.
