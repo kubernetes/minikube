@@ -35,6 +35,7 @@ cd minikube
 
 # Grab the PR's version of mkcmp, so it's easier to test changes
 gsutil cp "gs://minikube-builds/${MINIKUBE_LOCATION}/mkcmp" .
+chmod +x ./mkcmp
 
 # Build minikube binary
 make out/minikube
