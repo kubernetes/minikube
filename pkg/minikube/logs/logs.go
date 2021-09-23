@@ -187,6 +187,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		c.Stderr = &b
 		if rr, err := runner.RunCmd(c); err != nil {
 			klog.Errorf("command %s failed with error: %v output: %q", rr.Command(), err, rr.Output())
+			continue
 		}
 		l := ""
 		scanner := bufio.NewScanner(&b)
