@@ -42,6 +42,11 @@ tests the GCP Auth addon with either phony or real credentials and makes sure th
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
+## TestCertExpiration
+makes sure minikube can start after its profile certs have expired.
+It does this by configuring minikube certs to expire after 3 minutes, then waiting 3 minutes, then starting again.
+It also makes sure minikube prints a cert expiration warning to the user.
+
 ## TestDockerFlags
 makes sure the --docker-env and --docker-opt parameters are respected
 
@@ -322,10 +327,6 @@ makes sure no left over left after deleting a profile such as containers or volu
 
 #### validateStatus
 makes sure paused clusters show up in minikube status correctly
-
-## TestDebPackageInstall
-TestPackageInstall tests installation of .deb packages with minikube itself and with kvm2 driver
-on various debian/ubuntu docker images
 
 ## TestPreload
 verifies the preload tarballs get pulled in properly by minikube
