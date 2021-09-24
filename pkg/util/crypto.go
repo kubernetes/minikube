@@ -65,7 +65,7 @@ func GenerateCACert(certPath, keyPath string, name string) error {
 // Any parent directories of the certPath or keyPath will be created as needed with file mode 0755.
 
 // GenerateSignedCert generates a signed certificate and key
-func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string) error {
+func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string, expiration time.Duration) error {
 	klog.Infof("Generating cert %s with IP's: %s", certPath, ips)
 	signerCertBytes, err := ioutil.ReadFile(signerCertPath)
 	if err != nil {
@@ -99,7 +99,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 			Organization: []string{"system:masters"},
 		},
 		NotBefore: time.Now().Add(time.Hour * -24),
-		NotAfter:  time.Now().Add(time.Hour * 24 * 365),
+		NotAfter:  time.Now().Add(expiration),
 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},

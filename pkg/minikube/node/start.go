@@ -156,7 +156,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node); err != nil {
+		if err = bs.SetupCerts(*starter.Cfg, *starter.Node); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 
@@ -445,7 +445,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 	}
 
-	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
+	if err := bs.SetupCerts(cfg, n); err != nil {
 		exit.Error(reason.GuestCert, "Failed to setup certs", err)
 	}
 
