@@ -170,7 +170,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
-	startCmd.Flags().Duration(certExpiration, time.Hour*24*365, "Duration until minikube certificate expiration, defaults to one year.")
+	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -584,7 +584,7 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 	}
 
 	if cc.CertExpiration == 0 {
-		cc.CertExpiration = pkgutil.DefaultCertExpiration
+		cc.CertExpiration = constants.DefaultCertExpiration
 	}
 
 }

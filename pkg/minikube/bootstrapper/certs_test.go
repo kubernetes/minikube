@@ -33,7 +33,7 @@ func TestSetupCerts(t *testing.T) {
 	defer tests.RemoveTempDir(tempDir)
 
 	k8s := config.ClusterConfig{
-		CertExpiration: util.DefaultCertExpiration,
+		CertExpiration: constants.DefaultCertExpiration,
 		KubernetesConfig: config.KubernetesConfig{
 			APIServerName: constants.APIServerName,
 			DNSDomain:     constants.ClusterDNSDomain,

@@ -116,6 +116,9 @@ const (
 	TimeFormat = time.RFC1123
 	// MaxResources is the value that can be passed into the memory and cpus flags to specify to use maximum resources
 	MaxResources = "max"
+
+	// DefaultCertExpiration is the amount of time in the future a certificate will expire in by default, which is 3 years
+	DefaultCertExpiration = time.Hour * 24 * 365 * 3
 )
 
 var (

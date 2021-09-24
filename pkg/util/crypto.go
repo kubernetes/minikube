@@ -35,8 +35,6 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-const DefaultCertExpiration = time.Hour * 24 * 365
-
 // GenerateCACert generates a CA certificate and RSA key for a common name
 func GenerateCACert(certPath, keyPath string, name string) error {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)

@@ -493,6 +493,7 @@ func canRead(path string) bool {
 }
 
 // isValid checks a cert/key path and makes sure it's still valid
+// if a cert is expired or otherwise invalid, it will be deleted
 func isValid(certPath, keyPath string) bool {
 	if !canRead(keyPath) {
 		return false
