@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -651,7 +652,8 @@ func RemoveImages(images []string, profile *config.Profile) error {
 			err = removeImages(cruntime, images)
 			if err != nil {
 				failed = append(failed, m)
-				klog.Errorf("Failed to remove images for profile %s %v", pName, err.Error())
+				klog.Warningf("Failed to remove images for profile %s %v", pName, err.Error())
+				out.WarningT("Failed to remove images for profile {{.pNmae}} {{.error}}", out.V{"pNmae": pName, "error": err.Error()})
 				continue
 			}
 			succeeded = append(succeeded, m)
