@@ -39,6 +39,8 @@ sudo -k -n podman version
 ```shell
 podman machine init --cpus 2 --memory 2048 --disk-size 20
 podman machine start
+podman system connection default podman-machine-default-root
+podman info
 ```
 
 ## Troubleshooting
