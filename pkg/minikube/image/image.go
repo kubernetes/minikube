@@ -332,7 +332,6 @@ func fixRemoteImageName(ref name.Reference, imgName string) (name.Reference, str
 		image = strings.TrimPrefix(image, "k8s-minikube/")
 		image = strings.TrimPrefix(image, "kubernetesui/")
 		image = strings.TrimPrefix(image, "coredns/")
-		image = strings.ReplaceAll(image, "coredns:v", "coredns:")
 		remoteRef, err := name.ParseReference(aliyunMirror+image, name.WeakValidation)
 		if err != nil {
 			return nil, "", err

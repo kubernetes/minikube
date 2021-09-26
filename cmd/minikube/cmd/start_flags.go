@@ -379,6 +379,10 @@ func getRepository(cmd *cobra.Command, k8sVersion string) string {
 		repository = autoSelectedRepository
 	}
 
+	if repository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+		download.SetAliyunMirror()
+	}
+
 	if cmd.Flags().Changed(imageRepository) || cmd.Flags().Changed(imageMirrorCountry) {
 		out.Styled(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
 	}

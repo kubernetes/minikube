@@ -89,7 +89,7 @@ func TarballPath(k8sVersion, containerRuntime string) string {
 
 // remoteTarballURL returns the URL for the remote tarball in GCS
 func remoteTarballURL(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", PreloadBucket, TarballName(k8sVersion, containerRuntime))
+	return fmt.Sprintf("https://%s/%s/%s", downloadHost, PreloadBucket, TarballName(k8sVersion, containerRuntime))
 }
 
 func setPreloadState(k8sVersion, containerRuntime string, value bool) {

@@ -185,6 +185,10 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
 	}
 
+	if cc.KubernetesConfig.ImageRepository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+		images, customRegistries = assets.FixAddonImagesAndRegistries(addon, images, customRegistries)
+	}
+
 	mName := config.MachineName(*cc, cp)
 	host, err := machine.LoadHost(api, mName)
 	if err != nil || !machine.IsRunning(api, mName) {

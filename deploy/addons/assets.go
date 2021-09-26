@@ -135,4 +135,8 @@ var (
 	// PortainerAssets assets for portainer addon
 	//go:embed portainer/portainer.yaml.tmpl
 	PortainerAssets embed.FS
+
+	// AliyunMirror assets for aliyun_mirror.json
+	//go:embed aliyun_mirror.json
+	AliyunMirror embed.FS
 )

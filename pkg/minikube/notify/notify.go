@@ -47,6 +47,11 @@ func MaybePrintUpdateTextFromGithub() {
 	maybePrintUpdateText(GithubMinikubeReleasesURL, GithubMinikubeBetaReleasesURL, lastUpdateCheckFilePath)
 }
 
+// MaybePrintUpdateTextFromGithub prints update text if needed, from Aliyun mirror
+func MaybePrintUpdateTextFromAliyunMirror() {
+	maybePrintUpdateText(GithubMinikubeReleasesAliyunURL, GithubMinikubeBetaReleasesAliyunURL, lastUpdateCheckFilePath)
+}
+
 func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string, lastUpdatePath string) {
 	latestVersion, err := latestVersionFromURL(latestReleasesURL)
 	if err != nil {
