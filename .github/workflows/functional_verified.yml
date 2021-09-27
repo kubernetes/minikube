@@ -28,7 +28,7 @@ jobs:
   # builds the minikube binaries
   build_minikube:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
