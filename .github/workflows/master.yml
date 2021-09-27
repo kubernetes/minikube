@@ -19,7 +19,7 @@ jobs:
   # Runs before all other jobs
   # builds the minikube binaries
   build_minikube:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -46,7 +46,7 @@ jobs:
           name: minikube_binaries
           path: out
   lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -65,7 +65,7 @@ jobs:
         run: make test
         continue-on-error: false
   unit_test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -92,7 +92,7 @@ jobs:
       JOB_NAME: "functional_docker_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Install kubectl
         shell: bash
@@ -191,7 +191,7 @@ jobs:
       JOB_NAME: "functional_docker_containerd_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Install kubectl
         shell: bash
@@ -590,7 +590,7 @@ jobs:
         functional_virtualbox_macos,
         functional_baremetal_ubuntu18_04,
       ]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: download all reports
         uses: actions/download-artifact@v2-preview

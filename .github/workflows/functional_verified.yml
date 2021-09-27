@@ -202,7 +202,7 @@ jobs:
       [
         functional_docker_ubuntu_arm64,
       ]
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: download all extra reports
         uses: actions/download-artifact@v2-preview
