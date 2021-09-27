@@ -467,7 +467,6 @@
 	"Removing {{.directory}} ...": "",
 	"Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}": "",
 	"Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}": "",
-	"Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}": "",
 	"Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommend}}MB. Deployments may fail.": "",
 	"Requested memory allocation {{.requested}}MB is more than your system limit {{.system_limit}}MB.": "",
 	"Requested memory allocation {{.requested}}MiB is less than the usable minimum of {{.minimum_memory}}MB": "",
