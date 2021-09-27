@@ -653,7 +653,7 @@ func RemoveImages(images []string, profile *config.Profile) error {
 			if err != nil {
 				failed = append(failed, m)
 				klog.Warningf("Failed to remove images for profile %s %v", pName, err.Error())
-				out.WarningT("Failed to remove images for profile {{.pNmae}} {{.error}}", out.V{"pNmae": pName, "error": err.Error()})
+				out.WarningT("Failed to remove images for profile {{.pName}} {{.error}}", out.V{"pName": pName, "error": err.Error()})
 				continue
 			}
 			succeeded = append(succeeded, m)
