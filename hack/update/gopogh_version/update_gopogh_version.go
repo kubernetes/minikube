@@ -53,7 +53,7 @@ var (
 				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
 			},
 		},
-		".github/workflows/pr_verified.yaml": {
+		".github/workflows/functional_verified.yml": {
 			Replace: map[string]string{
 				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
 			},

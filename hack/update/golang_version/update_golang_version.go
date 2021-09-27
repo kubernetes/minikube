@@ -101,7 +101,7 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
-		".github/workflows/pr_verified.yaml": {
+		".github/workflows/functional_verified.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
