@@ -588,8 +588,6 @@ jobs:
         functional_docker_containerd_ubuntu,
         functional_podman_ubuntu,
         functional_virtualbox_macos,
-        functional_docker_windows,
-        functional_hyperv_windows,
         functional_baremetal_ubuntu18_04,
       ]
     runs-on: ubuntu-18.04
@@ -606,8 +604,6 @@ jobs:
           cp -r ./functional_docker_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
           cp -r ./functional_virtualbox_macos ./all_reports/
-          cp -r ./functional_docker_windows ./all_reports/
-          cp -r ./functional_hyperv_windows ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
 
       - uses: actions/upload-artifact@v1
