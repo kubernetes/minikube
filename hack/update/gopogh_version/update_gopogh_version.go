@@ -53,22 +53,12 @@ var (
 				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
 			},
 		},
-		".github/workflows/pr_verified.yaml": {
+		".github/workflows/functional_verified.yml": {
 			Replace: map[string]string{
 				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
 			},
 		},
-		"hack/jenkins/windows_integration_test_docker.ps1": {
-			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
-			},
-		},
-		"hack/jenkins/windows_integration_test_hyperv.ps1": {
-			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
-			},
-		},
-		"hack/jenkins/windows_integration_test_virtualbox.ps1": {
+		"hack/jenkins/common.ps1": {
 			Replace: map[string]string{
 				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
 			},
