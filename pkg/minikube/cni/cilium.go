@@ -175,7 +175,7 @@ data:
   hubble-tls-key-file: /var/lib/cilium/tls/hubble/server.key
   hubble-tls-client-ca-files: /var/lib/cilium/tls/hubble/client-ca.crt
   ipam: "cluster-pool"
-  cluster-pool-ipv4-cidr: "10.0.0.0/8"
+  cluster-pool-ipv4-cidr: "10.244.0.0/16"
   cluster-pool-ipv4-mask-size: "24"
   disable-cnp-status-updates: "true"
   cgroup-root: "/run/cilium/cgroupv2"
