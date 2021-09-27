@@ -425,7 +425,7 @@ choco install minikube
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
 1. Download the [latest release](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).  
 <br>
-    Or if you have `curl` installed, use this command:
+    Or if you have `curl` installed, use these commands via PowerShell:
     ```shell
     curl -Lo minikube.exe https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe
     New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
