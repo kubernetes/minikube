@@ -28,7 +28,7 @@ jobs:
   # builds the minikube binaries
   build_minikube:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -202,7 +202,7 @@ jobs:
       [
         functional_docker_ubuntu_arm64,
       ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: download all extra reports
         uses: actions/download-artifact@v2-preview
