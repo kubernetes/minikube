@@ -265,6 +265,7 @@
 	"Failed to read temp": "Échec de la lecture du répertoire temporaire",
 	"Failed to reload cached images": "Échec du rechargement des images mises en cache",
 	"Failed to remove image": "Échec de la suppression de l'image",
+	"Failed to remove images for profile {{.pName}} {{.error}}": "",
 	"Failed to save config {{.profile}}": "Échec de l'enregistrement de la configuration {{.profile}}",
 	"Failed to save dir": "Échec de l'enregistrement du répertoire",
 	"Failed to save image": "Échec de l'enregistrement de l'image",

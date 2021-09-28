@@ -282,6 +282,7 @@
 	"Failed to read temp": "",
 	"Failed to reload cached images": "캐시된 이미지를 다시 불러오는 데 실패하였습니다",
 	"Failed to remove image": "",
+	"Failed to remove images for profile {{.pName}} {{.error}}": "",
 	"Failed to save config": "컨피그 저장에 실패하였습니다",
 	"Failed to save config {{.profile}}": "",
 	"Failed to save dir": "",
