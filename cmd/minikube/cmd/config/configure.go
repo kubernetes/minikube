@@ -17,8 +17,8 @@ limitations under the License.
 package config
 
 import (
-	"io/ioutil"
 	"net"
+	"os"
 	"regexp"
 
 	"github.com/spf13/cobra"
@@ -84,7 +84,7 @@ var addonsConfigureCmd = &cobra.Command{
 				}
 
 				// Read file from disk
-				dat, err := ioutil.ReadFile(gcrPath)
+				dat, err := os.ReadFile(gcrPath)
 
 				if err != nil {
 					out.FailureT("Error reading {{.path}}: {{.error}}", out.V{"path": gcrPath, "error": err})

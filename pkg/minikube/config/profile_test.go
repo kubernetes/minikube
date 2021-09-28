@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -302,12 +301,12 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		originalFilePath := profileFilePath(tc.profile, miniDir)
 		tempFilePath := filepath.Join(miniDir, "profiles", tc.profile, "config_temp.json")
 
-		d, err := ioutil.ReadFile(originalFilePath)
+		d, err := os.ReadFile(originalFilePath)
 		if err != nil {
 			t.Fatalf("Failed to read config file : %s", originalFilePath)
 		}
 
-		err = ioutil.WriteFile(tempFilePath, d, 0644)
+		err = os.WriteFile(tempFilePath, d, 0644)
 		if err != nil {
 			t.Fatalf("Failed to write temporal config file : %s", tempFilePath)
 		}

@@ -18,7 +18,6 @@ package tunnel
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -187,7 +186,7 @@ func writeResolverFile(route *Route) error {
 	klog.Infof("preparing DNS forwarding config in %q:\n%s", resolverFile, content)
 
 	// write resolver content into tf, then copy it to /etc/resolver/clusterDomain
-	tf, err := ioutil.TempFile("", "minikube-tunnel-resolver-")
+	tf, err := os.CreateTemp("", "minikube-tunnel-resolver-")
 	if err != nil {
 		return errors.Wrap(err, "tempfile")
 	}

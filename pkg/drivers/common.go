@@ -19,7 +19,6 @@ package drivers
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -136,7 +135,7 @@ func fixMachinePermissions(path string) error {
 	if err := os.Chown(path, syscall.Getuid(), syscall.Getegid()); err != nil {
 		return errors.Wrap(err, "chown dir")
 	}
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return errors.Wrap(err, "read dir")
 	}

@@ -18,7 +18,6 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,7 +59,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	defer os.Setenv("PATH", originalPath)
 
 	for _, tc := range tests {
-		dir, err := ioutil.TempDir("", tc.name)
+		dir, err := os.MkdirTemp("", tc.name)
 		if err != nil {
 			t.Fatalf("Expected to create tempdir. test: %s, got: %v", tc.name, err)
 		}
@@ -129,7 +128,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 	defer os.Setenv("PATH", originalPath)
 
 	for _, tc := range tests {
-		dir, err := ioutil.TempDir("", tc.name)
+		dir, err := os.MkdirTemp("", tc.name)
 		if err != nil {
 			t.Fatalf("Expected to create tempdir. test: %s, got: %v", tc.name, err)
 		}
@@ -267,7 +266,7 @@ func driverVersion(path string) (string, error) {
 // prepareTempMinikubeDirWithHyperkitDriver creates a temp .minikube directory
 // with structure essential to testing of hyperkit driver updates
 func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, string, error) {
-	temp, err := ioutil.TempDir("", name)
+	temp, err := os.MkdirTemp("", name)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create tempdir: %v", err)
 	}

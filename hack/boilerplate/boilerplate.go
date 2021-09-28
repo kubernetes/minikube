@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -75,7 +74,7 @@ func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 	files, _ := filepath.Glob(dir + "/*.txt")
 	for _, filename := range files {
 		extension := strings.ToLower(filepath.Ext(txtExtension.ReplaceAllString(filename, "")))
-		data, err := ioutil.ReadFile(filename)
+		data, err := os.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +96,7 @@ func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 
 // filePasses checks whether the processed file is valid. Returning false means that the file does not the proper boilerplate template.
 func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return false, err
 	}

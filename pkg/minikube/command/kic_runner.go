@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -192,7 +191,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrap(err, "determining temp directory")
 	}
 
-	tf, err := ioutil.TempFile(tmpFolder, "tmpf-memory-asset")
+	tf, err := os.CreateTemp(tmpFolder, "tmpf-memory-asset")
 	if err != nil {
 		return errors.Wrap(err, "creating temporary file")
 	}

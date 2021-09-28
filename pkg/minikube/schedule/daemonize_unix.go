@@ -21,7 +21,6 @@ package schedule
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
@@ -51,7 +50,7 @@ func KillExisting(profiles []string) {
 
 func killPIDForProfile(profile string) error {
 	file := localpath.PID(profile)
-	f, err := ioutil.ReadFile(file)
+	f, err := os.ReadFile(file)
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -91,7 +90,7 @@ func daemonize(profiles []string, duration time.Duration) error {
 func savePIDs(pid int, profiles []string) error {
 	for _, p := range profiles {
 		file := localpath.PID(p)
-		if err := ioutil.WriteFile(file, []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
+		if err := os.WriteFile(file, []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
 			return err
 		}
 	}

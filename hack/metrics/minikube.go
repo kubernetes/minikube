@@ -19,7 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -56,12 +56,12 @@ func downloadMinikube(ctx context.Context, minikubePath string) error {
 	}
 	defer rc.Close()
 
-	data, err := ioutil.ReadAll(rc)
+	data, err := io.ReadAll(rc)
 	if err != nil {
-		return errors.Wrap(err, "ioutil read all")
+		return errors.Wrap(err, "io read all")
 	}
 	log.Printf("downloading gs://%s/%s to %v", bucketName, binary(), minikubePath)
-	if err := ioutil.WriteFile(minikubePath, data, 0777); err != nil {
+	if err := os.WriteFile(minikubePath, data, 0777); err != nil {
 		return errors.Wrap(err, "writing minikubePath")
 	}
 	if err := os.Chmod(minikubePath, 0700); err != nil {

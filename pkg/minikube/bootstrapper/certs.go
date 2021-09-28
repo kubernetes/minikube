@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -334,7 +333,7 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, ccs CACerts, 
 
 // isValidPEMCertificate checks whether the input file is a valid PEM certificate (with at least one CERTIFICATE block)
 func isValidPEMCertificate(filePath string) (bool, error) {
-	fileBytes, err := ioutil.ReadFile(filePath)
+	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return false, err
 	}

@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -524,7 +523,7 @@ func killMountProcess() error {
 	}
 
 	klog.Infof("Found %s ...", pidPath)
-	out, err := ioutil.ReadFile(pidPath)
+	out, err := os.ReadFile(pidPath)
 	if err != nil {
 		return errors.Wrap(err, "ReadFile")
 	}

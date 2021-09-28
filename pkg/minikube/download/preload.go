@@ -21,7 +21,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -188,7 +187,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	if err != nil {
 		klog.Warningf("No checksum for preloaded tarball for k8s version %s: %v", k8sVersion, err)
 		realPath = targetPath
-		tmp, err := ioutil.TempFile(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
+		tmp, err := os.CreateTemp(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
 		if err != nil {
 			return errors.Wrap(err, "tempfile")
 		}
@@ -245,7 +244,7 @@ var getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) {
 // saveChecksumFile saves the checksum to a local file for later verification
 func saveChecksumFile(k8sVersion, containerRuntime string, checksum []byte) error {
 	klog.Infof("saving checksum for %s ...", TarballName(k8sVersion, containerRuntime))
-	return ioutil.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
+	return os.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
 }
 
 // verifyChecksum returns true if the checksum of the local binary matches
@@ -253,13 +252,13 @@ func saveChecksumFile(k8sVersion, containerRuntime string, checksum []byte) erro
 func verifyChecksum(k8sVersion, containerRuntime, path string) error {
 	klog.Infof("verifying checksumm of %s ...", path)
 	// get md5 checksum of tarball path
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return errors.Wrap(err, "reading tarball")
 	}
 	checksum := md5.Sum(contents)
 
-	remoteChecksum, err := ioutil.ReadFile(PreloadChecksumPath(k8sVersion, containerRuntime))
+	remoteChecksum, err := os.ReadFile(PreloadChecksumPath(k8sVersion, containerRuntime))
 	if err != nil {
 		return errors.Wrap(err, "reading checksum file")
 	}

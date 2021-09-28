@@ -25,7 +25,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -825,7 +825,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Errorf("failed to read http response body from dashboard %q: %v", u.String(), err)
 		}
@@ -940,13 +940,13 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				t.Skipf("docker is not installed, skipping local image test")
 			}
 
-			dname, err := ioutil.TempDir("", profile)
+			dname, err := os.MkdirTemp("", profile)
 			if err != nil {
 				t.Fatalf("Cannot create temp dir: %v", err)
 			}
 
 			message := []byte("FROM scratch\nADD Dockerfile /x")
-			err = ioutil.WriteFile(filepath.Join(dname, "Dockerfile"), message, 0644)
+			err = os.WriteFile(filepath.Join(dname, "Dockerfile"), message, 0644)
 			if err != nil {
 				t.Fatalf("unable to write Dockerfile: %v", err)
 			}
@@ -1116,7 +1116,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateLogsFileCmd asserts "logs --file" command functionality
 func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
-	dname, err := ioutil.TempDir("", profile)
+	dname, err := os.MkdirTemp("", profile)
 	if err != nil {
 		t.Fatalf("Cannot create temp dir: %v", err)
 	}
@@ -1130,7 +1130,7 @@ func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected empty minikube logs output, but got: \n***%s***\n", rr.Output())
 	}
 
-	logs, err := ioutil.ReadFile(logFileName)
+	logs, err := os.ReadFile(logFileName)
 	if err != nil {
 		t.Errorf("Failed to read logs output '%s': %v", logFileName, err)
 	}
@@ -1383,7 +1383,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 		defer resp.Body.Close()
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Logf("error reading body from %s: %v", endpoint, err)
 			return err
@@ -1628,7 +1628,7 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 	t.Logf("file sync test content: %s", got)
 
 	syncFile := filepath.Join(*testdataDir, "sync.test")
-	expected, err := ioutil.ReadFile(syncFile)
+	expected, err := os.ReadFile(syncFile)
 	if err != nil {
 		t.Errorf("failed to read test file 'testdata/sync.test' : %v", err)
 	}
@@ -1647,7 +1647,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	testPem := filepath.Join(*testdataDir, "minikube_test.pem")
-	want, err := ioutil.ReadFile(testPem)
+	want, err := os.ReadFile(testPem)
 	if err != nil {
 		t.Errorf("test file not found: %v", err)
 	}
@@ -1674,7 +1674,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	testPem2 := filepath.Join(*testdataDir, "minikube_test2.pem")
-	want, err = ioutil.ReadFile(testPem2)
+	want, err = os.ReadFile(testPem2)
 	if err != nil {
 		t.Errorf("test file not found: %v", err)
 	}
@@ -1791,12 +1791,12 @@ users:
 			t.Parallel()
 			c := exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2")
 			if tc.kubeconfig != nil {
-				tf, err := ioutil.TempFile("", "kubeconfig")
+				tf, err := os.CreateTemp("", "kubeconfig")
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				if err := ioutil.WriteFile(tf.Name(), tc.kubeconfig, 0644); err != nil {
+				if err := os.WriteFile(tf.Name(), tc.kubeconfig, 0644); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
@@ -1832,7 +1832,7 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 		}
 	}()
 
-	mitmDir, err := ioutil.TempDir("", "")
+	mitmDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return errors.Wrap(err, "create temp dir")
 	}

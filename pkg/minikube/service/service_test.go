@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -612,7 +611,7 @@ users:
 		t.Run(test.description, func(t *testing.T) {
 			mockK8sConfigByte := []byte(test.config)
 			mockK8sConfigPath := test.kubeconfigPath
-			err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
+			err := os.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
 			defer os.Remove(mockK8sConfigPath)
 			if err != nil {
 				t.Fatalf("Unexpected error when writing to file %v. Error: %v", test.kubeconfigPath, err)

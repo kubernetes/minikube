@@ -23,7 +23,6 @@ import (
 	"html"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -382,7 +381,7 @@ func displayError(msg string, err error) {
 
 func latestLogFilePath() (string, error) {
 	tmpdir := os.TempDir()
-	files, err := ioutil.ReadDir(tmpdir)
+	files, err := os.ReadDir(tmpdir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get list of files in tempdir: %v", err)
 	}
@@ -392,11 +391,15 @@ func latestLogFilePath() (string, error) {
 		if !strings.Contains(file.Name(), "minikube_") {
 			continue
 		}
-		if !lastModTime.IsZero() && lastModTime.After(file.ModTime()) {
+		fileInfo, err := file.Info()
+		if err != nil {
+			return "", fmt.Errorf("failed to get file info: %v", err)
+		}
+		if !lastModTime.IsZero() && lastModTime.After(fileInfo.ModTime()) {
 			continue
 		}
 		lastModName = file.Name()
-		lastModTime = file.ModTime()
+		lastModTime = fileInfo.ModTime()
 	}
 	fullPath := filepath.Join(tmpdir, lastModName)
 
