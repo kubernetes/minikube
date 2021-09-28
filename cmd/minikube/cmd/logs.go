@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 )
 
@@ -96,7 +97,11 @@ var logsCmd = &cobra.Command{
 			logs.OutputProblems(problems, numberOfProblems, logOutput)
 			return
 		}
-		logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
+		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
+		if err != nil {
+			out.Ln("")
+			out.WarningT("{{.error}}", out.V{"error": err})
+		}
 	},
 }
 
