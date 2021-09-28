@@ -246,6 +246,7 @@
 	"Failed to read temp": "",
 	"Failed to reload cached images": "",
 	"Failed to remove image": "",
+	"Failed to remove images for profile {{.pName}} {{.error}}": "",
 	"Failed to save config {{.profile}}": "",
 	"Failed to save dir": "",
 	"Failed to save image": "",

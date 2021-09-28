@@ -269,6 +269,7 @@
 	"Failed to read temp": "",
 	"Failed to reload cached images": "",
 	"Failed to remove image": "",
+	"Failed to remove images for profile {{.pName}} {{.error}}": "",
 	"Failed to remove profile": "Usunięcie profilu nie powiodło się",
 	"Failed to save config": "Zapisywanie konfiguracji nie powiodło się",
 	"Failed to save config {{.profile}}": "",

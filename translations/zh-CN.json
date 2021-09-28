@@ -332,6 +332,7 @@
 	"Failed to read temp": "",
 	"Failed to reload cached images": "重新加载缓存镜像失败",
 	"Failed to remove image": "",
+	"Failed to remove images for profile {{.pName}} {{.error}}": "",
 	"Failed to remove profile": "无法删除配置文件",
 	"Failed to save config": "无法保存配置",
 	"Failed to save config {{.profile}}": "",
