@@ -425,20 +425,19 @@ choco install minikube
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
 1. Download the [latest release](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).  
 <br>
-    Or if you have `curl` installed, use this command:
-    ```shell
-    curl -Lo minikube.exe https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe
-    New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
-    Move-Item .\minikube.exe c:\minikube\minikube.exe -Force
+    Or if using `PowerShell`, use this command:
+    ```powershell
+    New-Item -Path 'c:\' -Name 'minikube' -ItemType Directory -Force
+    Invoke-WebRequest -OutFile 'c:\minikube\minikube.exe' -Uri 'https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe' -UseBasicParsing
     ```
 
 2. Add the binary in to your `PATH`.  
 <br>
     _Make sure to run PowerShell as Administrator._
-    ```shell
-    $oldpath=[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-    if($oldpath -notlike "*;C:\minikube*"){`
-      [Environment]::SetEnvironmentVariable("Path", $oldpath+";C:\minikube", [EnvironmentVariableTarget]::Machine)`
+    ```powershell
+    $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
+    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
     }
     ```
     _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
@@ -447,22 +446,22 @@ choco install minikube
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
 1. Download the <a href="#" id="latest-beta-download-link">latest beta release</a>.  
 <br>
-    Or if you have `curl` installed, use this command:
-    ```shell
-    $r='https://api.github.com/repos/kubernetes/minikube/releases'
-    $u=curl -s $r | Select-String -Pattern 'http.*download/v.*beta.*/minikube-windows-amd64.exe' | Select Matches -First 1
-    curl -Lo minikube.exe $u.Matches.Value
-    New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
-    Move-Item .\minikube.exe c:\minikube\minikube.exe -Force
+    Or if using `PowerShell`, use this command:
+    ```powershell
+    New-Item -Path 'c:\' -Name 'minikube' -ItemType Directory -Force
+    $response = Invoke-WebRequest -Uri 'https://api.github.com/repos/kubernetes/minikube/releases' -UseBasicParsing
+    $json = $response.Content | ConvertFrom-Json
+    $item = ($json | ?{ $_.prerelease -eq $true })[0].assets | ?{ $_.name -eq 'minikube-windows-amd64.exe' }
+    Invoke-WebRequest -Uri $item.browser_download_url -OutFile 'c:\minikube\minikube.exe' -UseBasicParsing
     ```
 
 2. Add the binary in to your `PATH`.  
 <br>
     _Make sure to run PowerShell as Administrator._
-    ```shell
-    $oldpath=[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-    if($oldpath -notlike "*;C:\minikube*"){`
-      [Environment]::SetEnvironmentVariable("Path", $oldpath+";C:\minikube", [EnvironmentVariableTarget]::Machine)`
+    ```powershell
+    $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
+    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
     }
     ```
     _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
