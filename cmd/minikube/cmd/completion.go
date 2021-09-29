@@ -292,7 +292,7 @@ __minikube_convert_bash_to_zsh() {
 	}
 
 	buf := new(bytes.Buffer)
-	err = cmd.GenBashCompletion(buf)
+	err = cmd.GenZshCompletion(buf)
 	if err != nil {
 		return errors.Wrap(err, "Error generating zsh completion")
 	}
